@@ -10,6 +10,7 @@ export interface TaxDeadline {
     deadline: Date;
     isAdjusted: boolean; 
     status: 'future' | 'current' | 'overdue';
+    periodKey: string; // Added for linking with history
 }
 
 const getNinthDigit = (ruc: string): number => {
@@ -46,7 +47,6 @@ export const calculateTaxDeadlines = (client: Client): TaxDeadline[] => {
     const deadlines: TaxDeadline[] = [];
 
     // --- 1. INCOME TAX (RENTA) ---
-    // Annual obligation usually due in March (General) or May (Rimpe NP) of the following year
     let rentaMonth = 2; // March (0-indexed)
     let rentaLabel = 'Impuesto a la Renta (Anual)';
     
@@ -58,39 +58,39 @@ export const calculateTaxDeadlines = (client: Client): TaxDeadline[] => {
         rentaLabel = 'Impuesto a la Renta RIMPE';
     }
 
-    // Determine if we are calculating for this year's filing (of last year's activity) or next year's
     // Check next 2 years of Rentas
     [currentYear, currentYear + 1].forEach(year => {
         const { date, isAdjusted } = getDeadlineDate(year, rentaMonth, ninthDigit);
+        const periodKey = (year - 1).toString(); // Tax period is previous year
+        
         if (date > today) {
             deadlines.push({
                 obligation: rentaLabel,
                 periodDescription: `Ejercicio Fiscal ${year - 1}`,
                 deadline: date,
                 isAdjusted,
-                status: 'future'
+                status: 'future',
+                periodKey: periodKey
             });
         }
     });
 
     // --- 2. IVA (Monthly or Semestral) ---
     const isMonthly = client.category.includes('Mensual') || client.category === ClientCategory.DevolucionIvaTerceraEdad;
-    const isSemestral = client.category.includes('Semestral') || client.regime === TaxRegime.RimpeEmprendedor; // Emprendedor is typically semestral for IVA unless obligated otherwise
+    const isSemestral = client.category.includes('Semestral') || client.regime === TaxRegime.RimpeEmprendedor; 
 
     if (isMonthly) {
         // Generate next 6 months
         for (let i = 0; i < 6; i++) {
             const futureDate = addMonths(today, i);
-            // Declaration is for the *previous* month, due in *current* month
-            // So we look for the deadline in the current loop month, referring to previous month
             const declarationMonth = futureDate.getMonth();
             const declarationYear = futureDate.getFullYear();
             
             const { date, isAdjusted } = getDeadlineDate(declarationYear, declarationMonth, ninthDigit);
             
-            // Previous month name
             const prevDate = new Date(declarationYear, declarationMonth - 1, 1);
             const periodName = format(prevDate, 'MMMM yyyy', { locale: es });
+            const periodKey = format(prevDate, 'yyyy-MM');
 
             if (date >= today) {
                 deadlines.push({
@@ -98,14 +98,12 @@ export const calculateTaxDeadlines = (client: Client): TaxDeadline[] => {
                     periodDescription: periodName.charAt(0).toUpperCase() + periodName.slice(1),
                     deadline: date,
                     isAdjusted,
-                    status: 'future'
+                    status: 'future',
+                    periodKey: periodKey
                 });
             }
         }
     } else if (isSemestral) {
-        // Semestre 1 (Jan-Jun) -> Due July
-        // Semestre 2 (Jul-Dec) -> Due January (next year)
-        
         // Check S1 Current Year
         const s1Date = getDeadlineDate(currentYear, 6, ninthDigit); // July
         if (s1Date.date >= today) {
@@ -114,7 +112,8 @@ export const calculateTaxDeadlines = (client: Client): TaxDeadline[] => {
                 periodDescription: `1er Semestre ${currentYear}`, 
                 deadline: s1Date.date, 
                 isAdjusted: s1Date.isAdjusted,
-                status: 'future' 
+                status: 'future',
+                periodKey: `${currentYear}-S1`
             });
         }
 
@@ -126,13 +125,13 @@ export const calculateTaxDeadlines = (client: Client): TaxDeadline[] => {
                 periodDescription: `2do Semestre ${currentYear}`, 
                 deadline: s2Date.date, 
                 isAdjusted: s2Date.isAdjusted,
-                status: 'future' 
+                status: 'future',
+                periodKey: `${currentYear}-S2`
             });
         }
     }
 
     // --- 3. ANEXOS (Gastos Personales) ---
-    // Usually Feb
     [currentYear, currentYear + 1].forEach(year => {
         const anexoDate = getDeadlineDate(year, 1, ninthDigit); // Feb
         if (anexoDate.date >= today) {
@@ -141,10 +140,11 @@ export const calculateTaxDeadlines = (client: Client): TaxDeadline[] => {
                 periodDescription: `Proyección ${year - 1}`,
                 deadline: anexoDate.date,
                 isAdjusted: anexoDate.isAdjusted,
-                status: 'future'
+                status: 'future',
+                periodKey: `ANEXO-${year-1}` // Artificial key for task matching if needed
             });
         }
     });
 
-    return deadlines.sort((a, b) => a.deadline.getTime() - b.deadline.getTime()).slice(0, 6); // Return top 6 upcoming
+    return deadlines.sort((a, b) => a.deadline.getTime() - b.deadline.getTime()).slice(0, 6);
 };

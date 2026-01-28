@@ -26,7 +26,6 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Aquí se podría integrar un servicio de logging como Sentry
     console.error("SC Pro System Error Caught:", error, errorInfo);
   }
 
@@ -68,7 +67,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       }
 
       return (
-        <div className="flex flex-col items-center justify-center h-full min-h-[60vh] p-8 text-center animate-fade-in-up bg-slate-50 dark:bg-slate-950 rounded-3xl border border-slate-200 dark:border-slate-800 m-4 shadow-sm">
+        <div className="flex flex-col items-center justify-center h-full min-h-[60vh] p-8 text-center animate-fade-in-up bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 m-4 shadow-sm">
           <div className="relative mb-8 group">
             <div className="absolute inset-0 bg-red-100 dark:bg-red-900/30 rounded-full blur-2xl opacity-70 group-hover:opacity-100 transition-opacity animate-pulse"></div>
             <div className="relative p-6 bg-white dark:bg-slate-800 rounded-full shadow-2xl border-4 border-red-50 dark:border-red-900/50">

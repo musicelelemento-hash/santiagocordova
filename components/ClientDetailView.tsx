@@ -4,7 +4,7 @@ import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, fo
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../services/geminiService';
 import { calculateTaxDeadlines, TaxDeadline } from '../services/taxLogic';
 import { getClientServiceFee } from '../services/clientService';
-import { format, isPast, subMonths, subYears, getYear } from 'date-fns';
+import { format, isPast, subMonths, subYears, getYear, isWeekend } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy, 
@@ -224,34 +224,49 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         setIsSummarizing(false);
     };
 
+    // --- ELITE FIX: ROBUST UPSERT LOGIC FOR DECLARATIONS ---
     const handleConfirmAction = (sendWhatsApp: boolean = false) => {
         if (!confirmation) return;
         setIsProcessingAction(true);
         const { action, period } = confirmation;
         const now = new Date().toISOString();
         
+        // 1. Create a FRESH copy of history to avoid mutation bugs
         const updatedHistory = [...editedClient.declarationHistory];
         const existingIndex = updatedHistory.findIndex(d => d.period === period);
         
+        // 2. Define the new object structure strictly
         const newDecl: Declaration = {
             period,
             status: action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada,
             updatedAt: now,
-            declaredAt: action === 'declare' ? now : (updatedHistory[existingIndex]?.declaredAt || now),
+            // Logic: If declaring, set declaredAt. If paying, keep declaredAt if it exists, else set now (rare case of direct pay)
+            declaredAt: action === 'declare' 
+                ? now 
+                : (existingIndex > -1 ? updatedHistory[existingIndex].declaredAt || now : now),
+            // Logic: Only set paidAt if action is 'pay'
             paidAt: action === 'pay' ? now : undefined,
-            amount: updatedHistory[existingIndex]?.amount 
+            // Preserve amount if it existed, otherwise undefined (will calc dynamically)
+            amount: existingIndex > -1 ? updatedHistory[existingIndex].amount : undefined 
         };
 
+        // 3. Upsert (Update or Insert)
         if (existingIndex > -1) {
             updatedHistory[existingIndex] = { ...updatedHistory[existingIndex], ...newDecl };
         } else {
             updatedHistory.push(newDecl);
         }
     
+        // 4. Construct updated client object (Immutability is key here)
         const updatedClient = { ...editedClient, declarationHistory: updatedHistory };
+        
+        // 5. Update Local State (Immediate Feedback)
         setEditedClient(updatedClient);
+        
+        // 6. Propagate to Store (Persistence)
         onSave(updatedClient); 
     
+        // 7. UX Feedback & Clean up
         setTimeout(() => {
             if (action === 'pay') {
                 const updatedDeclaration = updatedHistory.find(d => d.period === period);
@@ -324,15 +339,6 @@ Total: $${receiptData.totalAmount.toFixed(2)}
         const phone = client.phones[0].replace(/\D/g, '');
         const fullPhone = phone.startsWith('593') ? phone : `593${phone.substring(1)}`;
         window.open(`https://wa.me/${fullPhone}`, '_blank');
-    };
-
-    const handleEmail = () => {
-        if (!client.email) return;
-        window.open(`mailto:${client.email}`, '_blank');
-    };
-
-    const handleOpenSRI = () => {
-        window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
     };
 
     return (
@@ -536,7 +542,7 @@ Total: $${receiptData.totalAmount.toFixed(2)}
                                             </div>
                                         )}
                                         {!isEditing && editedClient.phones?.[0] && (
-                                            <button onClick={() => window.open(`https://wa.me/593${editedClient.phones[0].substring(1)}`, '_blank')} className="p-3 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-colors">
+                                            <button onClick={handleWhatsApp} className="p-3 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-colors">
                                                 <MessageCircle size={20}/>
                                             </button>
                                         )}
@@ -563,30 +569,49 @@ Total: $${receiptData.totalAmount.toFixed(2)}
                                 </div>
                             </div>
 
-                             {/* COL 3: UBICACIÓN */}
-                             <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-200 dark:border-slate-800 space-y-5">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-2">Ubicación</h3>
+                             {/* COL 3: AGENDA INTELIGENTE (REPLACES LOCATION) */}
+                             <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-200 dark:border-slate-800 space-y-5 h-full flex flex-col">
+                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-2 flex items-center gap-2">
+                                    <CalendarRange size={14}/> Agenda Inteligente
+                                </h3>
                                 
-                                <div className="h-full flex flex-col">
-                                    <label className="text-xs font-bold text-slate-500 mb-1.5 block">Dirección Completa (Ref. & Parroquia)</label>
-                                    {isEditing ? (
-                                        <textarea 
-                                            value={editedClient.address || ''} 
-                                            onChange={e => setEditedClient({...editedClient, address: e.target.value})}
-                                            className="w-full flex-1 p-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 resize-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal"
-                                            rows={6}
-                                            placeholder="Calle Principal, Secundaria, Referencia, Parroquia..."
-                                        />
-                                    ) : (
-                                        <div className="flex-1 p-4 bg-slate-50 rounded-xl border border-slate-100 text-sm text-slate-700 leading-relaxed overflow-y-auto max-h-[140px]">
-                                            {editedClient.address ? (
-                                                <div className="flex gap-2">
-                                                    <MapPin size={16} className="text-slate-400 flex-shrink-0 mt-0.5"/>
-                                                    <p>{editedClient.address}</p>
+                                <div className="space-y-3 flex-1 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
+                                    {taxDeadlines.length > 0 ? taxDeadlines.map((deadline, idx) => {
+                                        // CHECK: Si ya está pagado en el historial
+                                        const isPaidAhead = editedClient.declarationHistory.some(
+                                            d => d.period === deadline.periodKey && d.status === DeclarationStatus.Pagada
+                                        );
+
+                                        return (
+                                            <div key={idx} className={`flex gap-3 items-center p-3 rounded-2xl transition-colors border ${isPaidAhead ? 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/30' : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700/50'}`}>
+                                                <div className={`flex flex-col items-center justify-center min-w-[50px] rounded-xl p-2 shadow-sm border ${isPaidAhead ? 'bg-white text-emerald-600 border-emerald-200' : 'bg-white dark:bg-slate-700 border-slate-100 dark:border-slate-600'}`}>
+                                                    {isPaidAhead ? (
+                                                        <CheckCircle size={20} className="text-emerald-500" />
+                                                    ) : (
+                                                        <>
+                                                            <span className="text-[9px] text-slate-400 font-bold uppercase">{format(deadline.deadline, 'MMM', {locale: es})}</span>
+                                                            <span className="text-lg font-black text-brand-navy dark:text-white leading-none">{format(deadline.deadline, 'd')}</span>
+                                                        </>
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <span className="text-slate-400 italic">No registrada</span>
-                                            )}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex justify-between items-start">
+                                                        <p className={`font-bold text-xs leading-tight truncate ${isPaidAhead ? 'text-emerald-700' : 'text-slate-800 dark:text-white'}`}>{deadline.obligation}</p>
+                                                        {isPaidAhead && <span className="text-[9px] font-black text-emerald-600 uppercase bg-white px-1.5 rounded border border-emerald-200 ml-1">Cubierto</span>}
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">{deadline.periodDescription}</p>
+                                                    {!isPaidAhead && deadline.isAdjusted && (
+                                                        <span className="text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1 mt-1 w-max">
+                                                            <Info size={8}/> Ajustado
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    }) : (
+                                        <div className="text-center py-8 text-slate-400">
+                                            <CalendarRange size={32} className="mx-auto mb-2 opacity-50"/>
+                                            <p className="text-xs font-bold">No hay obligaciones calculadas.</p>
                                         </div>
                                     )}
                                 </div>

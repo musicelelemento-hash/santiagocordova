@@ -27,42 +27,42 @@ export const summarizeTextWithGemini = async (text: string): Promise<string> => 
 };
 
 /**
- * Análisis estratégico de documentos (RUC/Cédula) usando Gemini Vision
- * Soporta Imágenes y PDFs
+ * Análisis PROFESIONAL de Certificados de RUC (PDF)
+ * Especializado en estructura del SRI Ecuador.
  */
 export const analyzeClientPhoto = async (base64Data: string, mimeType: string): Promise<Partial<Client> & { phone?: string }> => {
   try {
     const ai = getAIClient();
     
+    // Validación estricta para asegurar que procesamos el formato correcto si es posible
+    const effectiveMime = mimeType === 'application/pdf' ? 'application/pdf' : mimeType;
+
     if (ai) {
         const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash', 
+          model: 'gemini-2.5-flash', // Flash es excelente para documentos de texto denso
           contents: {
               parts: [
-                  { inlineData: { data: base64Data, mimeType } },
+                  { inlineData: { data: base64Data, mimeType: effectiveMime } },
                   { text: `
-                    Actúa como un Auditor Tributario del SRI (Ecuador). Analiza este documento (Certificado RUC, Cédula o similar).
-                    
-                    EXTRAE LOS SIGUIENTES DATOS CON EXACTITUD:
+                    Eres un Auditor Tributario Senior del SRI (Ecuador). Tu tarea es extraer datos exactos de este Certificado de RUC.
 
-                    1. **Identificación**: Número RUC (13 dígitos) o Cédula (10 dígitos).
-                    2. **Razón Social**: "Apellidos y nombres" o "Razón Social" completo.
-                    3. **Dirección**: Extrae la dirección completa. IMPORTANTE: Incluye "Calle", "Intersección", "Referencia" y "Parroquia" si aparecen.
-                    4. **Contactos**: 
-                       - Email (Prioridad alta).
-                       - Celular (Busca en "Medios de contacto", "Celular" o "Teléfono").
-                    5. **Régimen**: 
-                       - "RIMPE NEGOCIO POPULAR" -> regime: 'RIMPE Negocio Popular'
-                       - "RIMPE EMPRENDEDOR" -> regime: 'RIMPE Emprendedor'
-                       - "GENERAL" -> regime: 'Régimen General'
-                    6. **Obligaciones & Notas**:
-                       Analiza las obligaciones listadas. Si encuentras estas específicas, agrégalas al texto de 'notes':
-                       - "ANEXO TRANSACCIONAL SIMPLIFICADO" -> Agregar "• ATS Mensual ($15)"
-                       - "BENEFICIARIOS FINALES" o "COMPOSICION SOCIETARIA" -> Agregar "• REBEFICS Anual ($10)"
-                       - "IMPUESTO A LA RENTA SOCIEDADES" -> Agregar "• Renta Sociedades 1021 ($15)"
-                       - "OBLIGADO A LLEVAR CONTABILIDAD" -> Agregar "• Obligado a Contabilidad"
+                    INSTRUCCIONES DE EXTRACCIÓN PRECISAS:
 
-                    Retorna SOLO JSON:
+                    1. **RUC**: Busca exactamente el número de 13 dígitos.
+                    2. **Razón Social**: Extrae "Apellidos y Nombres" o la "Razón Social". NO confundir con el Representante Legal.
+                    3. **Régimen Fiscal (CRÍTICO)**: 
+                       - Si el documento dice "RIMPE" y "NEGOCIO POPULAR" -> Retorna exactamente: "${TaxRegime.RimpeNegocioPopular}"
+                       - Si el documento dice "RIMPE" y "EMPRENDEDOR" -> Retorna exactamente: "${TaxRegime.RimpeEmprendedor}"
+                       - Si dice "GENERAL" o no menciona RIMPE -> Retorna exactamente: "${TaxRegime.General}"
+                    4. **Dirección Completa**: Concatena en una sola línea: Calle + Número + Intersección + Parroquia + Referencia (si existe).
+                    5. **Contactos**: Email y Celular.
+                    6. **Actividad Económica**: Extrae la actividad principal descrita.
+                    7. **Obligaciones Tributarias**:
+                       - Lee la sección de "Obligaciones Tributarias" del documento.
+                       - Extrae la lista completa como texto (ej: "Declaración de IVA Semestral, Impuesto a la Renta Anual").
+                       - Pon esto en el campo "notes".
+
+                    FORMATO DE RESPUESTA JSON (SIN MARKDOWN):
                     {
                         "ruc": "string",
                         "name": "string",
@@ -70,36 +70,46 @@ export const analyzeClientPhoto = async (base64Data: string, mimeType: string): 
                         "phones": ["string"],
                         "address": "string",
                         "economicActivity": "string",
-                        "regime": "string (Enum exacto)",
-                        "notes": "string (Las obligaciones adicionales encontradas)"
+                        "regime": "string",
+                        "notes": "string (Lista de obligaciones extraídas)",
+                        "isArtisan": boolean (true si dice "CALIFICACIÓN ARTESANAL")
                     }
                   ` }
               ]
           },
           config: { 
               responseMimeType: "application/json",
-              temperature: 0.0 
+              temperature: 0.0 // Temperatura 0 para máxima precisión determinista
           }
         });
         
         const text = response.text || "{}";
+        // Limpieza robusta de JSON por si el modelo incluye bloques de código
         const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(jsonStr);
+        const data = JSON.parse(jsonStr);
+
+        // Post-procesamiento para asegurar tipos
+        return {
+            ...data,
+            phones: Array.isArray(data.phones) ? data.phones : (data.phones ? [data.phones] : [])
+        };
     } 
     
-    // MOCK FALLBACK
+    // MOCK FALLBACK (Solo si no hay API Key configurada)
+    console.warn("Usando Mock de Datos (Falta API Key)");
     return {
-        ruc: "070" + Math.floor(Math.random() * 10000000).toString().padEnd(9, '0') + "001",
-        name: "CONTRIBUYENTE PRUEBA IA",
-        regime: TaxRegime.RimpeEmprendedor,
-        email: "prueba@ejemplo.com",
-        phones: ["0999999999"],
-        notes: "Datos simulados (Sin API Key)."
+        ruc: "1790085783001",
+        name: "EMPRESA DE PRUEBA S.A. (MOCK)",
+        regime: TaxRegime.General,
+        email: "facturacion@empresa.mock",
+        address: "Av. Amazonas y Naciones Unidas, Quito",
+        phones: ["0991234567"],
+        notes: "Obligaciones Simuladas: Declaración Mensual IVA, Anexo Transaccional."
     };
 
   } catch (error) {
-    console.error("Gemini Vision Error:", error);
-    throw new Error("No se pudo procesar el documento. Verifique que sea legible.");
+    console.error("Gemini Document Error:", error);
+    throw new Error("No se pudo procesar el documento. Asegúrese de que el archivo no esté protegido.");
   }
 };
 

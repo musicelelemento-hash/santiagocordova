@@ -1,5 +1,5 @@
 
-export type Screen = 'home' | 'clients' | 'tasks' | 'reports' | 'settings' | 'cobranza' | 'calendar' | 'web_orders';
+export type Screen = 'home' | 'clients' | 'tasks' | 'reports' | 'settings' | 'cobranza' | 'calendar' | 'web_orders' | 'scanner';
 export type Theme = 'light' | 'dark' | 'midnight';
 
 export interface ChatMessage {

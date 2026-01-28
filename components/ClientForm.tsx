@@ -6,7 +6,7 @@ import { analyzeClientPhoto } from '../services/geminiService';
 import { 
     Loader, UploadCloud, CreditCard, User, Key, Eye, EyeOff, 
     Briefcase, MapPin, Phone, Mail, Hammer, Building, 
-    Image as ImageIcon, Plus, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight, Crown, Power
+    Image as ImageIcon, Plus, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight, Crown, Power, FileText
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -113,7 +113,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     ...prev, 
                     ...aiData, 
                     phones: aiData.phones?.length ? aiData.phones : prev.phones,
-                    category
+                    category,
+                    // Append notes if they contain obligations
+                    notes: aiData.notes ? (prev.notes ? `${prev.notes}\n${aiData.notes}` : aiData.notes) : prev.notes
                 }));
                 setIsAnalyzing(false);
                 setFeedback({ type: 'success', message: 'Datos extraídos correctamente.' });
@@ -121,7 +123,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             reader.readAsDataURL(file);
         } catch (error: any) {
             setIsAnalyzing(false);
-            setFeedback({ type: 'error', message: error.message || 'Error al analizar imagen.' });
+            setFeedback({ type: 'error', message: error.message || 'Error al analizar documento.' });
         }
     };
 
@@ -166,7 +168,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
     return (
         <div className="space-y-6">
             <div className="relative group cursor-pointer">
-                <input type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" onChange={handleImageUpload} disabled={isAnalyzing} />
+                {/* Accept PDF too */}
+                <input type="file" accept="image/*,application/pdf" className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" onChange={handleImageUpload} disabled={isAnalyzing} />
                 <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all duration-300 ${isAnalyzing ? 'border-sky-400 bg-sky-50' : 'border-slate-300 hover:border-sky-400 hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800'}`}>
                     {isAnalyzing ? (
                         <div className="flex flex-col items-center animate-pulse">
@@ -176,10 +179,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     ) : (
                         <div className="flex flex-col items-center">
                             <div className="w-12 h-12 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                <ImageIcon size={24} />
+                                <FileText size={24} />
                             </div>
-                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Auto-completar con Imagen</p>
-                            <p className="text-xs text-slate-400 mt-1">Sube foto del RUC o Cédula</p>
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Auto-completar con Documento</p>
+                            <p className="text-xs text-slate-400 mt-1">Sube foto o PDF del RUC</p>
                         </div>
                     )}
                 </div>
