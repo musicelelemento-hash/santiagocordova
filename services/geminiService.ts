@@ -28,8 +28,9 @@ export const summarizeTextWithGemini = async (text: string): Promise<string> => 
 
 /**
  * Análisis estratégico de documentos (RUC/Cédula) usando Gemini Vision
+ * Soporta Imágenes y PDFs
  */
-export const analyzeClientPhoto = async (base64Image: string, mimeType: string): Promise<Partial<Client> & { phone?: string }> => {
+export const analyzeClientPhoto = async (base64Data: string, mimeType: string): Promise<Partial<Client> & { phone?: string }> => {
   try {
     const ai = getAIClient();
     
@@ -38,34 +39,28 @@ export const analyzeClientPhoto = async (base64Image: string, mimeType: string):
           model: 'gemini-2.5-flash', 
           contents: {
               parts: [
-                  { inlineData: { data: base64Image, mimeType } },
+                  { inlineData: { data: base64Data, mimeType } },
                   { text: `
-                    Actúa como un Auditor Tributario del SRI (Ecuador). Analiza este "Certificado de Registro Único de Contribuyentes" o Cédula.
+                    Actúa como un Auditor Tributario del SRI (Ecuador). Analiza este documento (Certificado RUC, Cédula o similar).
                     
-                    EXTRAE LOS DATOS CON EXACTITUD LITERAL DEL DOCUMENTO:
+                    EXTRAE LOS SIGUIENTES DATOS CON EXACTITUD:
 
-                    1. **RUC/CI**: Número de 13 dígitos o 10 dígitos.
-                    2. **Razón Social**: Busca "Apellidos y nombres" o "Razón Social". Ej: RAMIREZ ALVARADO ALEIDA MARLENE.
-                    3. **Email**: CRÍTICO. Busca en la sección "Medios de contacto" o bajo "Email:". Extrae el correo completo.
-                    4. **Teléfono**: Busca en "Medios de contacto" bajo "Celular:" o "Teléfono".
-                    5. **Dirección Completa**: ESTO ES CRÍTICO. Combina los campos "Calle", "Número", "Intersección", "Referencia" y "Parroquia". 
-                       Formato deseado: "Calle Principal y Secundaria, Ref: [Referencia], Pq. [Parroquia]".
-                    6. **Actividad**: Código y descripción principal. Ej: "G4799... VENTA AL POR MENOR...".
-
-                    7. **LÓGICA DE CLASIFICACIÓN (Mapeo)**:
-                       - SI "Régimen" dice "RIMPE NEGOCIO POPULAR" -> regime: 'RIMPE Negocio Popular', category: 'Impuesto a la Renta (Negocio Popular)'.
-                       - SI "Régimen" dice "RIMPE EMPRENDEDOR" -> regime: 'RIMPE Emprendedor'.
-                       - SI "Régimen" dice "GENERAL" -> regime: 'Régimen General'.
-                       
-                       - PARA CATEGORÍA (Si no es Negocio Popular):
-                         Mira "Obligaciones tributarias".
-                         - Si dice "SEMESTRAL" -> category: 'Suscripción Semestral'.
-                         - Si dice "MENSUAL" -> category: 'Suscripción Mensual IVA'.
-                         - Por defecto -> 'Suscripción Mensual IVA'.
-
-                    8. **OTROS**:
-                       - isArtisan: true si ves "Artesano: Calificado" o número de calificación.
-                       - obligadoContabilidad: true si dice "SI".
+                    1. **Identificación**: Número RUC (13 dígitos) o Cédula (10 dígitos).
+                    2. **Razón Social**: "Apellidos y nombres" o "Razón Social" completo.
+                    3. **Dirección**: Extrae la dirección completa. IMPORTANTE: Incluye "Calle", "Intersección", "Referencia" y "Parroquia" si aparecen.
+                    4. **Contactos**: 
+                       - Email (Prioridad alta).
+                       - Celular (Busca en "Medios de contacto", "Celular" o "Teléfono").
+                    5. **Régimen**: 
+                       - "RIMPE NEGOCIO POPULAR" -> regime: 'RIMPE Negocio Popular'
+                       - "RIMPE EMPRENDEDOR" -> regime: 'RIMPE Emprendedor'
+                       - "GENERAL" -> regime: 'Régimen General'
+                    6. **Obligaciones & Notas**:
+                       Analiza las obligaciones listadas. Si encuentras estas específicas, agrégalas al texto de 'notes':
+                       - "ANEXO TRANSACCIONAL SIMPLIFICADO" -> Agregar "• ATS Mensual ($15)"
+                       - "BENEFICIARIOS FINALES" o "COMPOSICION SOCIETARIA" -> Agregar "• REBEFICS Anual ($10)"
+                       - "IMPUESTO A LA RENTA SOCIEDADES" -> Agregar "• Renta Sociedades 1021 ($15)"
+                       - "OBLIGADO A LLEVAR CONTABILIDAD" -> Agregar "• Obligado a Contabilidad"
 
                     Retorna SOLO JSON:
                     {
@@ -76,17 +71,14 @@ export const analyzeClientPhoto = async (base64Image: string, mimeType: string):
                         "address": "string",
                         "economicActivity": "string",
                         "regime": "string (Enum exacto)",
-                        "category": "string (Enum exacto)",
-                        "isArtisan": boolean,
-                        "obligadoContabilidad": boolean,
-                        "notes": "Resumen corto de obligaciones encontradas (ej: Obligado 2011 IVA, 1021 Renta)."
+                        "notes": "string (Las obligaciones adicionales encontradas)"
                     }
                   ` }
               ]
           },
           config: { 
               responseMimeType: "application/json",
-              temperature: 0.0 // Cero creatividad, máxima precisión de extracción
+              temperature: 0.0 
           }
         });
         
@@ -100,7 +92,6 @@ export const analyzeClientPhoto = async (base64Image: string, mimeType: string):
         ruc: "070" + Math.floor(Math.random() * 10000000).toString().padEnd(9, '0') + "001",
         name: "CONTRIBUYENTE PRUEBA IA",
         regime: TaxRegime.RimpeEmprendedor,
-        category: ClientCategory.SuscripcionMensual,
         email: "prueba@ejemplo.com",
         phones: ["0999999999"],
         notes: "Datos simulados (Sin API Key)."
@@ -108,7 +99,7 @@ export const analyzeClientPhoto = async (base64Image: string, mimeType: string):
 
   } catch (error) {
     console.error("Gemini Vision Error:", error);
-    throw new Error("No se pudo leer el PDF. Asegúrate de que sea un archivo válido.");
+    throw new Error("No se pudo procesar el documento. Verifique que sea legible.");
   }
 };
 

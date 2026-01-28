@@ -8,14 +8,14 @@ import { es } from 'date-fns/locale';
 import { 
     AlertTriangle, ShieldCheck, Clock, Crown, Check, Copy,
     CreditCard, FileCheck, Send, CheckCircle2, ChevronRight, DollarSign, FileText, Store, Lock,
-    TrendingUp, Calendar as CalendarIcon
+    TrendingUp, Calendar as CalendarIcon, Printer
 } from 'lucide-react';
 
 interface ClientCardProps {
   client: Client;
   serviceFees: ServiceFeesConfig;
   onView: (client: Client) => void;
-  onQuickAction?: (client: Client, action: 'declare' | 'pay') => void;
+  onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'receipt') => void;
 }
 
 export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction }) => {
@@ -39,10 +39,8 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
   const isOverdue = dueDate && isPast(dueDate) && !isDeclared;
 
   // --- 2. LÓGICA SECUNDARIA: RENTA ANUAL ---
-  // Detectamos si falta la renta del año anterior, incluso si estamos viendo el mes actual
   const prevYearStr = (getYear(today) - 1).toString();
   const rentaDecl = client.declarationHistory.find(d => d.period === prevYearStr);
-  // Es pendiente si: NO está pagada/declarada, NO es negocio popular (ya que ese es su periodo principal), y NO estamos viendo ya el periodo anual.
   const isRentaPending = 
         !isAnnual && 
         client.regime !== TaxRegime.RimpeNegocioPopular && 
@@ -88,13 +86,11 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
       if (!onQuickAction) return;
 
       if (!isDeclared) {
-          navigator.clipboard.writeText(client.ruc);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-          window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
           onQuickAction(client, 'declare');
       } else if (!isPaid) {
           onQuickAction(client, 'pay');
+      } else {
+          onQuickAction(client, 'receipt');
       }
   };
 
@@ -111,10 +107,13 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
 
       if (isPaid) {
           return (
-              <div className="w-full py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2 text-slate-400 text-xs font-bold cursor-default opacity-80">
-                  <ShieldCheck size={16} className="text-brand-teal"/>
-                  <span>CICLO CERRADO</span>
-              </div>
+              <button 
+                  onClick={handleActionClick}
+                  className="w-full py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-bold transition-all"
+              >
+                  <Printer size={16}/>
+                  <span>Ver Comprobante</span>
+              </button>
           );
       }
 
@@ -122,14 +121,14 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
           return (
               <button 
                 onClick={handleActionClick}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-xl shadow-emerald-500/30 flex items-center justify-between px-5 transition-all duration-300 group transform active:scale-[0.98] border border-white/20 animate-pulse-slow"
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-500/30 flex items-center justify-between px-5 transition-all duration-300 group transform active:scale-[0.98] border border-white/20"
               >
                   <div className="flex items-center gap-3">
-                      <div className="p-1.5 bg-white/20 rounded-lg">
+                      <div className="p-1.5 bg-white/20 rounded-lg animate-pulse">
                           <DollarSign size={18} className="text-white" strokeWidth={3} />
                       </div>
                       <div className="text-left leading-none">
-                          <span className="block text-[10px] opacity-90 uppercase tracking-widest font-black text-emerald-100">Trabajo Realizado</span>
+                          <span className="block text-[9px] opacity-90 uppercase tracking-widest font-black text-emerald-100">Paso 2/2</span>
                           <span className="block text-sm font-black tracking-wide">REGISTRAR PAGO</span>
                       </div>
                   </div>
@@ -138,21 +137,24 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
           );
       }
 
-      const btnBaseColor = isAnnual ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-brand-navy hover:bg-blue-900';
+      const btnBaseColor = isAnnual ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-brand-navy hover:bg-blue-800';
       const btnColor = isOverdue ? 'bg-red-600 hover:bg-red-500' : btnBaseColor;
       const shadowColor = isOverdue ? 'shadow-red-900/20' : (isAnnual ? 'shadow-indigo-500/30' : 'shadow-blue-900/20');
       
       return (
           <button 
             onClick={handleActionClick}
-            className={`w-full py-3 rounded-xl ${btnColor} text-white shadow-lg ${shadowColor} flex items-center justify-center gap-2 transition-all duration-300 transform active:scale-[0.98] group relative overflow-hidden`}
+            className={`w-full py-3.5 rounded-xl ${btnColor} text-white shadow-lg ${shadowColor} flex items-center justify-center gap-3 transition-all duration-300 transform active:scale-[0.98] group relative overflow-hidden`}
           >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
               {isAnnual ? <TrendingUp size={18}/> : <FileCheck size={18} />}
-              <span className="font-bold text-sm uppercase tracking-wide">
-                  {isAnnual ? `Declarar Renta ${currentPeriod}` : `Declarar ${formatPeriodForDisplay(currentPeriod).split(' ')[0]}`}
-              </span>
-              <ChevronRight size={16} className="opacity-60 group-hover:translate-x-1 transition-transform"/>
+              <div className="text-left leading-tight">
+                  <span className="block text-[9px] opacity-70 uppercase font-black">Paso 1/2</span>
+                  <span className="font-bold text-sm uppercase tracking-wide">
+                    {isAnnual ? `Declarar Renta` : `Declarar ${formatPeriodForDisplay(currentPeriod).split(' ')[0]}`}
+                  </span>
+              </div>
+              <ChevronRight size={16} className="opacity-60 group-hover:translate-x-1 transition-transform ml-auto"/>
           </button>
       );
   };

@@ -1,5 +1,4 @@
-
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 import { ShieldAlert, RefreshCw, Activity, Home, BarChart } from 'lucide-react';
 
 interface ErrorBoundaryProps {
@@ -16,7 +15,7 @@ interface ErrorBoundaryState {
  * Componente ErrorBoundary de grado empresarial.
  * Captura errores de renderizado para evitar la pantalla blanca de la muerte (WSOD).
  */
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   public state: ErrorBoundaryState = {
     hasError: false,
     error: null
