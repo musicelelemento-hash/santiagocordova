@@ -27,13 +27,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
     const dashboardData = useMemo(() => {
         const today = new Date();
         const activeClients = clients.filter(c => c.isActive !== false);
+        const prevYearStr = (today.getFullYear() - 1).toString();
 
         // 1. Detectar Temporada de Renta (Obligaciones Anuales pendientes)
+        // AHORA: Verificamos explícitamente el historial para el año anterior, 
+        // independientemente de lo que devuelva getPeriod (que ahora prioriza el mes).
         const rentaPendingClients = activeClients.filter(c => {
-             const period = getPeriod(c, today);
-             // Si el periodo es anual (ej: "2024") y no está pagado
-             return period.length === 4 && 
-                    !c.declarationHistory.some(d => d.period === period && d.status === DeclarationStatus.Pagada);
+             // Debe declarar renta si NO es sociedad (asumido para esta app) y NO ha pagado el año anterior
+             const hasPaidRenta = c.declarationHistory.some(d => d.period === prevYearStr && d.status === DeclarationStatus.Pagada);
+             // Incluimos a todos los que no hayan pagado renta del año anterior, salvo que estén exentos (lógica simplificada)
+             return !hasPaidRenta;
         });
 
         const totalRentaRevenue = rentaPendingClients.reduce((sum, c) => sum + getClientServiceFee(c, serviceFees), 0);
@@ -126,8 +129,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
             </header>
 
             {/* 2. WIDGET TEMPORADA DE RENTA (Dinámico) */}
-            {/* Este bloque solo se muestra si hay clientes con obligaciones anuales pendientes */}
-            {dashboardData.rentaPendingCount > 0 && (
+            {/* Solo mostramos este widget si estamos en los meses clave (Ene-Mayo) y hay pendientes */}
+            {dashboardData.rentaPendingCount > 0 && new Date().getMonth() <= 4 && (
                 <div className="bg-gradient-to-r from-indigo-900 via-purple-900 to-indigo-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-indigo-900/30 border border-white/10">
                     {/* Efectos de fondo */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse-slow"></div>
@@ -141,9 +144,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
                                     <h3 className="text-2xl font-black font-display">Temporada de Renta</h3>
-                                    <span className="bg-amber-400 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Prioridad</span>
+                                    <span className="bg-amber-400 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Campaña</span>
                                 </div>
-                                <p className="text-indigo-200 font-medium text-sm">Gestión Anual {getYear(new Date()) - 1} • RIMPE & General</p>
+                                <p className="text-indigo-200 font-medium text-sm">Gestión Anual {getYear(new Date()) - 1} • {dashboardData.rentaPendingCount} clientes por declarar.</p>
                             </div>
                         </div>
                         
@@ -164,7 +167,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
                             className="px-8 py-4 bg-white text-indigo-900 font-black rounded-xl hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wide flex items-center gap-2"
                         >
                             <Zap size={16} className="fill-current"/>
-                            Gestionar Ahora
+                            Filtrar Renta
                         </button>
                     </div>
                 </div>

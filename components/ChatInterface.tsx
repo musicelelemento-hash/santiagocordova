@@ -94,6 +94,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
             >
               {msg.text}
             </div>
+            
+            {/* Render sources if available */}
+            {msg.sources && msg.sources.length > 0 && (
+              <div className="w-full flex flex-wrap gap-2 justify-end mt-1">
+                {msg.sources.map((source, idx) => (
+                  <a
+                    key={idx}
+                    href={source.uri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-1 text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded-full hover:bg-slate-300 transition-colors"
+                  >
+                    <FileText size={10} />
+                    <span className="truncate max-w-[100px]">{source.title}</span>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         

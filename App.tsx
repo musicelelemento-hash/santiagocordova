@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, Users, CheckSquare, BarChart, Settings, Sun, Moon, BellRing, Brush, CalendarDays, LogOut, ShoppingCart, Cloud, RefreshCw, Check, AlertTriangle, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Users, CheckSquare, BarChart, Settings, Sun, Moon, BellRing, CalendarDays, LogOut, ShoppingCart, Cloud, RefreshCw, Check, AlertTriangle, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HomeScreen } from './screens/HomeScreen';
 import { ClientsScreen } from './screens/ClientsScreen';
 import { TasksScreen } from './screens/TasksScreen';
@@ -17,14 +17,13 @@ import { ClientPortalScreen } from './screens/ClientPortalScreen';
 import { Clock } from './components/Clock';
 import { NotificationBell } from './components/NotificationBell';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { Client, Task, Screen, Theme, ClientFilter, TaskStatus, Declaration, DeclarationStatus, ServiceFeesConfig, ReminderConfig, WebOrder, PublicUser } from './types';
+import { Client, Task, Screen, Theme, ClientFilter, ServiceFeesConfig, ReminderConfig, WebOrder, PublicUser } from './types';
 import { mockClients, mockTasks } from './constants';
-import { differenceInCalendarDays } from 'date-fns';
-import { getPeriod, getNextPeriod } from './services/sri';
 import { Logo } from './components/Logo';
 import { loadDataFromSheet, syncDataToSheet } from './services/sheetApi';
 import { Modal } from './components/Modal';
 import { ToastProvider } from './context/ToastContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 const initialServiceFees: ServiceFeesConfig = {
   ivaMensual: 5,
@@ -46,13 +45,16 @@ const defaultReminderConfig: ReminderConfig = {
 
 Le recordamos amablemente que su declaración de {period} por un valor de ${'$'}{amount} vence el {dueDate}.
 
-Para evitar multas e intereses con el SRI, le agradecemos realizar el pago a la brevedad posible.
-
 Saludos cordiales,
 Soluciones Contables Pro`,
 };
 
 const App: React.FC = () => {
+  // Log de versión para depuración
+  useEffect(() => {
+    console.log("%c🚀 SC Pro System", "color: #00A896; font-weight: bold; font-size: 14px;");
+  }, []);
+
   // Navigation State
   const [appState, setAppState] = useState<'landing' | 'login' | 'dashboard' | 'services' | 'client_portal'>(() => {
       if (window.location.pathname === '/services') return 'services';
@@ -84,13 +86,11 @@ const App: React.FC = () => {
   const [upcomingTasks, setUpcomingTasks] = useState<Task[]>([]);
   const [clientToView, setClientToView] = useState<Client | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Sidebar state
-  const initCheckDone = useRef(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const isFirstLoad = useRef(true);
 
   // Cloud Sync State
   const [cloudStatus, setCloudStatus] = useState<'idle' | 'loading' | 'saving' | 'saved' | 'error'>('idle');
-  const [lastSynced, setLastSynced] = useState<Date | null>(null);
-  const isFirstLoad = useRef(true);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // --- AUTOMATIC CLOUD SYNC LOGIC ---
@@ -99,9 +99,7 @@ const App: React.FC = () => {
         const fetchCloudData = async () => {
             setCloudStatus('loading');
             try {
-                console.log("Iniciando Auto-Restauración desde la nube...");
                 const result = await loadDataFromSheet();
-                
                 if (result.status === 'success' && result.data) {
                     const { clients: c, tasks: t, serviceFees: f, reminderConfig: r, webOrders: w, sriCredentials: s } = result.data;
                     if (Array.isArray(c) && c.length > 0) setClients(c);
@@ -111,12 +109,11 @@ const App: React.FC = () => {
                     if (Array.isArray(w)) setWebOrders(w);
                     if (s) setSriCredentials(s);
                     setCloudStatus('saved');
-                    setLastSynced(new Date());
                 } else {
                     setCloudStatus('idle'); 
                 }
             } catch (error) {
-                console.error("Error auto-loading cloud data:", error);
+                console.error("Error loading data:", error);
                 setCloudStatus('error');
             } finally {
                 isFirstLoad.current = false;
@@ -128,95 +125,29 @@ const App: React.FC = () => {
 
   useEffect(() => {
       if (appState !== 'dashboard' || isFirstLoad.current || cloudStatus === 'loading') return;
+      
       const saveData = async () => {
           setCloudStatus('saving');
           try {
               const payload = { clients, tasks, serviceFees, reminderConfig, webOrders, sriCredentials };
               await syncDataToSheet(payload);
               setCloudStatus('saved');
-              setLastSynced(new Date());
           } catch (error) {
               console.error("Error auto-saving:", error);
               setCloudStatus('error');
           }
       };
+
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       setCloudStatus('saving'); 
       saveTimeoutRef.current = setTimeout(() => { saveData(); }, 5000); 
       return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-  }, [clients, tasks, serviceFees, reminderConfig, webOrders, sriCredentials]); 
+  }, [clients, tasks, serviceFees, reminderConfig, webOrders, sriCredentials, appState]); 
 
-  // --- Existing Logic ---
-  useEffect(() => {
-    if (appState === 'dashboard') {
-      window.history.pushState(null, '', window.location.href);
-      const handlePopState = (event: PopStateEvent) => {
-        window.history.pushState(null, '', window.location.href);
-      };
-      window.addEventListener('popstate', handlePopState);
-      return () => {
-        window.removeEventListener('popstate', handlePopState);
-      };
-    }
-  }, [appState]);
-
-  useEffect(() => {
-    const alertShownTasks = new Set(JSON.parse(sessionStorage.getItem('alertShownTasks') || '[]'));
-    const upcoming = tasks.filter(task => {
-        if (task.status === TaskStatus.Completada || task.status === TaskStatus.Pagada) return false;
-        const dueDate = new Date(task.dueDate);
-        const daysUntilDue = differenceInCalendarDays(dueDate, new Date());
-        if (daysUntilDue === 1 && !alertShownTasks.has(task.id) && appState === 'dashboard') {
-            alert(`Recordatorio: La tarea "${task.title}" vence mañana.`);
-            alertShownTasks.add(task.id);
-            sessionStorage.setItem('alertShownTasks', JSON.stringify(Array.from(alertShownTasks)));
-        }
-        return daysUntilDue >= 0 && daysUntilDue <= 3;
-    });
-    setUpcomingTasks(upcoming.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()));
-  }, [tasks, appState]);
-
-  useEffect(() => {
-    if (!initCheckDone.current && appState === 'dashboard') {
-        const ensureDeclarationsAreUpToDate = (clientsToUpdate: Client[]): [Client[], boolean] => {
-            const now = new Date();
-            let wasModified = false;
-            const updatedClients = clientsToUpdate.map(client => {
-                if (!(client.isActive ?? true)) return client;
-                const currentDeclarationPeriod = getPeriod(client, now);
-                const sortedHistory = [...client.declarationHistory].sort((a, b) => a.period.localeCompare(b.period));
-                const latestDeclaration = sortedHistory[sortedHistory.length - 1];
-                if (!latestDeclaration) {
-                    wasModified = true;
-                    const newDeclaration: Declaration = { period: currentDeclarationPeriod, status: DeclarationStatus.Pendiente, updatedAt: now.toISOString(), };
-                    return { ...client, declarationHistory: [newDeclaration] };
-                }
-                let lastKnownPeriod = latestDeclaration.period;
-                const newDeclarations: Declaration[] = [];
-                while (lastKnownPeriod < currentDeclarationPeriod) {
-                    const nextPeriod = getNextPeriod(lastKnownPeriod);
-                    if (!client.declarationHistory.some(d => d.period === nextPeriod)) {
-                        newDeclarations.push({ period: nextPeriod, status: DeclarationStatus.Pendiente, updatedAt: now.toISOString(), });
-                    }
-                    lastKnownPeriod = nextPeriod;
-                }
-                if (newDeclarations.length > 0) {
-                    wasModified = true;
-                    return { ...client, declarationHistory: [...client.declarationHistory, ...newDeclarations] };
-                }
-                return client;
-            });
-            return [updatedClients, wasModified];
-        };
-        const [updatedClients, wasModified] = ensureDeclarationsAreUpToDate(clients);
-        if (wasModified) setClients(updatedClients);
-        initCheckDone.current = true;
-    }
-  }, [clients, setClients, appState]);
-
+  // --- Routing and Theme ---
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove('light', 'dark', 'midnight'); 
+    root.classList.remove('light', 'dark'); 
     if (appState === 'dashboard') {
         if (theme === 'dark') root.classList.add('dark');
         else root.classList.add('light');
@@ -262,81 +193,26 @@ const App: React.FC = () => {
 
   const renderScreen = () => {
     switch (activeScreen) {
-      case 'home':
-        return <HomeScreen navigate={navigate} serviceFees={serviceFees} clients={clients} tasks={tasks} />;
-      case 'clients':
-        return <ClientsScreen 
-                  clients={clients} 
-                  setClients={setClients} 
-                  initialFilter={clientFilter} 
-                  navigate={navigate}
-                  serviceFees={serviceFees}
-                  initialClientData={initialClientData}
-                  clearInitialClientData={() => setInitialClientData(null)}
-                  clientToView={clientToView}
-                  clearClientToView={() => setClientToView(null)}
-                  sriCredentials={sriCredentials}
-               />;
-      case 'tasks':
-        return <TasksScreen 
-                  tasks={tasks} 
-                  setTasks={setTasks} 
-                  clients={clients} 
-                  setClients={setClients}
-                  taskFilter={taskFilter}
-                  clearTaskFilter={clearTaskFilter}
-                  serviceFees={serviceFees}
-                  initialTaskData={initialTaskData}
-                  clearInitialTaskData={() => setInitialTaskData(null)}
-                />;
-      case 'calendar':
-        return <CalendarScreen clients={clients} tasks={tasks} navigate={navigate} />;
-      case 'reports':
-        return <ReportsScreen clients={clients} tasks={tasks} serviceFees={serviceFees} navigate={navigate} />;
-      case 'cobranza':
-        return <CobranzaScreen clients={clients} setClients={setClients} serviceFees={serviceFees} reminderConfig={reminderConfig} />;
-      case 'web_orders':
-        return <WebOrdersScreen orders={webOrders} setOrders={setWebOrders} setTasks={setTasks} navigate={navigate} />;
-      case 'settings':
-        return <SettingsScreen 
-                  clients={clients} 
-                  setClients={setClients}
-                  tasks={tasks}
-                  setTasks={setTasks}
-                  serviceFees={serviceFees}
-                  setServiceFees={setServiceFees}
-                  reminderConfig={reminderConfig}
-                  setReminderConfig={setReminderConfig}
-                  webOrders={webOrders}
-                  setWebOrders={setWebOrders}
-                  sriCredentials={sriCredentials}
-                  setSriCredentials={setSriCredentials}
-                  navigate={navigate}
-               />;
-      case 'scanner':
-        return <DesignScreen navigate={navigate} />;
-      default:
-        return <HomeScreen navigate={navigate} serviceFees={serviceFees} clients={clients} tasks={tasks} />;
+      case 'home': return <HomeScreen navigate={navigate} serviceFees={serviceFees} clients={clients} tasks={tasks} />;
+      case 'clients': return <ClientsScreen clients={clients} setClients={setClients} initialFilter={clientFilter} navigate={navigate} serviceFees={serviceFees} initialClientData={initialClientData} clearInitialClientData={() => setInitialClientData(null)} clientToView={clientToView} clearClientToView={() => setClientToView(null)} sriCredentials={sriCredentials} />;
+      case 'tasks': return <TasksScreen tasks={tasks} setTasks={setTasks} clients={clients} setClients={setClients} taskFilter={taskFilter} clearTaskFilter={clearTaskFilter} serviceFees={serviceFees} initialTaskData={initialTaskData} clearInitialTaskData={() => setInitialTaskData(null)} />;
+      case 'calendar': return <CalendarScreen clients={clients} tasks={tasks} navigate={navigate} />;
+      case 'reports': return <ReportsScreen clients={clients} tasks={tasks} serviceFees={serviceFees} navigate={navigate} />;
+      case 'cobranza': return <CobranzaScreen clients={clients} setClients={setClients} serviceFees={serviceFees} reminderConfig={reminderConfig} />;
+      case 'web_orders': return <WebOrdersScreen orders={webOrders} setOrders={setWebOrders} setTasks={setTasks} navigate={navigate} />;
+      case 'settings': return <SettingsScreen clients={clients} setClients={setClients} tasks={tasks} setTasks={setTasks} serviceFees={serviceFees} setServiceFees={setServiceFees} reminderConfig={reminderConfig} setReminderConfig={setReminderConfig} webOrders={webOrders} setWebOrders={setWebOrders} sriCredentials={sriCredentials} setSriCredentials={setSriCredentials} navigate={navigate} />;
+      case 'scanner': return <DesignScreen navigate={navigate} />;
+      default: return <HomeScreen navigate={navigate} serviceFees={serviceFees} clients={clients} tasks={tasks} />;
     }
   };
 
   const getThemeIcon = () => theme === 'dark' ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-sky-600" />;
-  const mainBgColor = theme === 'dark' ? 'bg-slate-950' : 'bg-slate-50';
   const getCloudStatusIcon = () => {
       switch(cloudStatus) {
           case 'loading': case 'saving': return <RefreshCw className="w-4 h-4 animate-spin text-sky-500" />;
           case 'saved': return <Check className="w-4 h-4 text-green-500" />;
           case 'error': return <Cloud className="w-4 h-4 text-red-500" />;
           default: return <Cloud className="w-4 h-4 text-slate-400" />;
-      }
-  };
-  const getCloudStatusText = () => {
-      switch(cloudStatus) {
-          case 'loading': return 'Cargando...';
-          case 'saving': return 'Guardando...';
-          case 'saved': return 'Sincronizado';
-          case 'error': return 'Error';
-          default: return 'En línea';
       }
   };
 
@@ -351,7 +227,6 @@ const App: React.FC = () => {
     { screen: 'settings', icon: Settings, label: 'Ajustes' },
   ];
 
-  // Routing
   if (appState === 'services') return <ServicesPage onAdminAccess={() => setAppState('login')} onSubmitOrder={handleWebOrderSubmit} onNavigateToHome={() => setAppState('landing')} currentUser={publicUser} onLogin={setPublicUser} onLogout={() => setPublicUser(null)} />;
   if (appState === 'landing') return <LandingPage onAdminAccess={() => setAppState('login')} onNavigateToServices={() => setAppState('services')} currentUser={publicUser} onLogin={setPublicUser} onLogout={() => setPublicUser(null)} />;
   if (appState === 'login') return <LoginScreen onSuccess={handleLoginSuccess} onBack={() => setAppState('landing')} clients={clients} />;
@@ -361,9 +236,8 @@ const App: React.FC = () => {
 
   return (
     <ToastProvider>
-    <div className={`font-body min-h-screen flex ${mainBgColor} text-slate-800 dark:text-slate-100 transition-colors duration-300`}>
+    <div className={`font-body min-h-screen flex ${theme === 'dark' ? 'bg-slate-950' : 'bg-slate-50'} text-slate-800 dark:text-slate-100 transition-colors duration-300`}>
       
-      {/* Desktop Sidebar */}
       <aside className={`hidden md:flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-64'} h-screen sticky top-0 z-40`}>
         <div className="p-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 h-16">
             {!isSidebarCollapsed && (
@@ -404,10 +278,9 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2">
-             {/* Desktop Cloud Status */}
              <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} text-xs text-slate-400`}>
-                {!isSidebarCollapsed && <span>Estado Nube:</span>}
-                <div title={getCloudStatusText()}>{getCloudStatusIcon()}</div>
+                {!isSidebarCollapsed && <span>Bóveda Nube:</span>}
+                <div>{getCloudStatusIcon()}</div>
              </div>
              <button onClick={() => setShowLogoutConfirm(true)} className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : ''} p-2 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors`}>
                 <LogOut className="w-5 h-5" />
@@ -417,16 +290,12 @@ const App: React.FC = () => {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header */}
         <header className="sticky top-0 z-30 flex md:hidden items-center justify-between p-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800">
             <div className="flex items-center space-x-3">
                 <Logo className="w-8 h-8" />
                 <h1 className="text-xl font-display font-bold text-sky-600 dark:text-sky-400">SC Pro</h1>
             </div>
             <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-1 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full border border-slate-200 dark:border-slate-700">
-                    {getCloudStatusIcon()}
-                </div>
                 <NotificationBell tasks={upcomingTasks} clients={clients} navigate={navigate} />
                 <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
                     {getThemeIcon()}
@@ -437,7 +306,6 @@ const App: React.FC = () => {
             </div>
         </header>
 
-        {/* Desktop Header (Simplified) */}
         <header className="hidden md:flex items-center justify-between p-4 px-8 bg-transparent">
              <div className="flex items-center text-slate-500 dark:text-slate-400 text-sm">
                 <Clock />
@@ -450,51 +318,20 @@ const App: React.FC = () => {
              </div>
         </header>
         
-        <main className="flex-grow p-3 sm:p-6 sm:px-8 overflow-y-auto mb-20 md:mb-0 w-full">
-            {renderScreen()}
+        <main className="flex-grow p-3 sm:p-6 sm:px-8 overflow-y-auto mb-20 md:mb-0 w-full relative">
+            <ErrorBoundary>
+                {renderScreen()}
+            </ErrorBoundary>
         </main>
-
-        {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 grid grid-cols-5 p-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20">
-            {/* Show only 5 main items on mobile to avoid overcrowding */}
-            {[navItems[0], navItems[1], navItems[2], navItems[4], navItems[5]].map(({ screen, icon: Icon, label, count }) => (
-            <button 
-                key={screen}
-                onClick={() => navigate(screen as Screen)} 
-                className={`flex flex-col items-center w-full p-1 rounded-xl transition-all duration-300 relative group
-                    ${activeScreen === screen 
-                        ? 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/20' 
-                        : 'text-slate-400 hover:text-sky-500'
-                    }`}
-            >
-                <div className="relative">
-                    <Icon className={`w-6 h-6 mb-0.5 ${activeScreen === screen ? 'scale-110' : ''}`} />
-                    {count !== undefined && count > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-3.5 h-3.5 flex items-center justify-center rounded-full">
-                            {count}
-                        </span>
-                    )}
-                </div>
-                <span className="text-[9px] font-medium tracking-wide truncate w-full text-center">{label}</span>
-            </button>
-            ))}
-        </nav>
       </div>
 
       <Modal isOpen={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)} title="Cerrar Sesión">
           <div className="text-center">
-              <div className="flex justify-center mb-4">
-                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-full">
-                      <AlertTriangle className="w-8 h-8 text-red-500" />
-                  </div>
-              </div>
               <h4 className="text-lg font-bold text-slate-800 dark:text-white mb-2">¿Desea salir del panel?</h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                  Verifique que la nube esté sincronizada ({getCloudStatusIcon()}) para no perder datos.
-              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Verifique que sus cambios se hayan guardado en la nube.</p>
               <div className="flex space-x-3">
-                  <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 font-medium">Cancelar</button>
-                  <button onClick={handleLogoutConfirm} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-lg">Sí, Salir</button>
+                  <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-medium">Cancelar</button>
+                  <button onClick={handleLogoutConfirm} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-bold shadow-lg">Sí, Salir</button>
               </div>
           </div>
       </Modal>

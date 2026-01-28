@@ -73,33 +73,22 @@ export const getNinthDigit = (ruc: string): number => {
 };
 
 /**
- * Lógica Central de Periodos (Actualizada para Prioridad Renta)
+ * Lógica Central de Periodos (Actualizada: Prioridad Mensual/Semestral)
  */
 export const getPeriod = (client: Pick<Client, 'category' | 'regime' | 'declarationHistory'>, date: Date): string => {
     const currentYear = getYear(date);
     const prevYearStr = (currentYear - 1).toString();
     const month = getMonth(date); // 0-11
 
-    // 1. REGLA DE ORO: PRIORIDAD A LA RENTA ANUAL (Enero - Mayo)
-    // Si estamos en los primeros meses del año, verificamos si la Renta del año anterior está pendiente.
-    // Si NO está pagada, el sistema devuelve el AÑO como periodo activo para forzar la gestión.
-    const isRentaSeason = month <= 5; // Enero (0) a Junio (5) - Damos margen
-    const hasPaidRenta = client.declarationHistory?.some(d => d.period === prevYearStr && d.status === DeclarationStatus.Pagada);
-    
-    // Si es Negocio Popular, SIEMPRE es anual.
+    // 1. REGLA: Si es RIMPE Negocio Popular, la obligación principal SIEMPRE es Anual.
     if (client.regime === TaxRegime.RimpeNegocioPopular) {
         return prevYearStr;
     }
 
-    // Para General y Emprendedor, si estamos en temporada y no han pagado, PRIORIZAR RENTA.
-    // Esto hace que la tarjeta muestre "Declarar Renta 20XX" en lugar de "IVA Enero".
-    if (isRentaSeason && !hasPaidRenta) {
-        // Excepción: Si ya está declarada (Enviada) pero no pagada, seguimos mostrando Renta para cobrar.
-        // Si el cliente quiere ver el IVA mensual, puede filtrar, pero la prioridad es la Renta.
-        return prevYearStr;
-    }
+    // 2. REGLA: Para Régimen General y Emprendedor, PRIORIZAMOS LA OBLIGACIÓN RECURRENTE (Mensual/Semestral).
+    // Ya no forzamos la Renta Anual aquí. La Renta se manejará como una alerta secundaria o filtro específico.
 
-    // 2. Lógica Estándar (IVA Mensual / Semestral / Devoluciones)
+    // Lógica Estándar (IVA Mensual / Semestral / Devoluciones)
     if (client.category.includes('Mensual') || client.category === ClientCategory.DevolucionIvaTerceraEdad) {
         const declarationMonth = subMonths(date, 1);
         return format(declarationMonth, 'yyyy-MM');
@@ -113,7 +102,7 @@ export const getPeriod = (client: Pick<Client, 'category' | 'regime' | 'declarat
         }
     }
 
-    // Fallback por defecto
+    // Fallback por defecto a mensual
     const fallbackDate = subMonths(date, 1);
     return format(fallbackDate, 'yyyy-MM');
 };

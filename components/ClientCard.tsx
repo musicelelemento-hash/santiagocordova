@@ -3,12 +3,12 @@ import React, { memo, useState } from 'react';
 import { Client, DeclarationStatus, ServiceFeesConfig, TaxRegime } from '../types';
 import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay } from '../services/sri';
 import { getClientServiceFee } from '../services/clientService';
-import { isPast, format, differenceInCalendarDays } from 'date-fns';
+import { isPast, format, differenceInCalendarDays, getYear } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
     AlertTriangle, ShieldCheck, Clock, Crown, Check, Copy,
     CreditCard, FileCheck, Send, CheckCircle2, ChevronRight, DollarSign, FileText, Store, Lock,
-    TrendingUp
+    TrendingUp, Calendar as CalendarIcon
 } from 'lucide-react';
 
 interface ClientCardProps {
@@ -26,11 +26,9 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
   const currentPeriod = getPeriod(client, today);
   const activeDecl = client.declarationHistory.find(d => d.period === currentPeriod);
   
-  // --- 1. LÓGICA DE ESTADO MAESTRA (Workflow) ---
+  // --- 1. LÓGICA DE ESTADO PRINCIPAL (Mensual/Semestral) ---
   const isDeclared = activeDecl?.status === DeclarationStatus.Enviada || activeDecl?.status === DeclarationStatus.Pagada;
   const isPaid = activeDecl?.status === DeclarationStatus.Pagada;
-  
-  // Detectar si es obligación anual (Renta)
   const isAnnual = currentPeriod.length === 4;
 
   const fee = getClientServiceFee(client, serviceFees);
@@ -40,36 +38,44 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
   const daysUntilDue = dueDate ? differenceInCalendarDays(dueDate, today) : 99;
   const isOverdue = dueDate && isPast(dueDate) && !isDeclared;
 
-  // --- 2. LÓGICA DE SEMÁFORO (Visual Indicators) ---
-  let statusColor = 'border-slate-200 dark:border-slate-800'; // Default
+  // --- 2. LÓGICA SECUNDARIA: RENTA ANUAL ---
+  // Detectamos si falta la renta del año anterior, incluso si estamos viendo el mes actual
+  const prevYearStr = (getYear(today) - 1).toString();
+  const rentaDecl = client.declarationHistory.find(d => d.period === prevYearStr);
+  // Es pendiente si: NO está pagada/declarada, NO es negocio popular (ya que ese es su periodo principal), y NO estamos viendo ya el periodo anual.
+  const isRentaPending = 
+        !isAnnual && 
+        client.regime !== TaxRegime.RimpeNegocioPopular && 
+        (!rentaDecl || (rentaDecl.status !== DeclarationStatus.Pagada && rentaDecl.status !== DeclarationStatus.Enviada));
+
+
+  // --- 3. ESTILOS ---
+  let statusColor = 'border-slate-200 dark:border-slate-800'; 
   let statusDot = 'bg-slate-400';
   let cardBg = 'bg-white dark:bg-slate-900';
   
   if (!client.isActive || !client.sriPassword) {
-      statusColor = 'border-gray-400 opacity-75'; // ⚫ Gris (Inactivo/Sin Clave)
+      statusColor = 'border-gray-400 opacity-75'; 
       statusDot = 'bg-gray-500';
   } else if (isOverdue) {
-      statusColor = 'border-red-600 ring-2 ring-red-100'; // 🔴 Rojo (Vencido)
+      statusColor = 'border-red-600 ring-2 ring-red-100'; 
       statusDot = 'bg-red-600';
   } else if (isPaid) {
-      statusColor = 'border-emerald-500'; // 🟢 Verde (Al día)
+      statusColor = 'border-emerald-500'; 
       statusDot = 'bg-emerald-500';
   } else if (!isPaid) {
-      statusColor = 'border-amber-400'; // 🟡 Amarillo (Pendiente)
+      statusColor = 'border-amber-400'; 
       statusDot = 'bg-amber-400';
       if (isAnnual) {
-          // Estilo Especial para Temporada de Renta Pendiente
           cardBg = 'bg-indigo-50/50 dark:bg-indigo-900/20';
           statusColor = 'border-indigo-400';
       }
   }
 
-  // Estilo VIP
   if (isVip && !isOverdue && !isAnnual) {
       cardBg = 'bg-sky-50/30 dark:bg-sky-900/10';
   }
 
-  // Manejador de Copiado Rápido de RUC
   const handleCopyRuc = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigator.clipboard.writeText(client.ruc);
@@ -77,26 +83,21 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Manejador de Acciones Secuenciales
   const handleActionClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       if (!onQuickAction) return;
 
       if (!isDeclared) {
-          // PASO 1: COPIAR RUC Y DECLARAR (Abre SRI)
           navigator.clipboard.writeText(client.ruc);
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
-          
           window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
           onQuickAction(client, 'declare');
       } else if (!isPaid) {
-          // PASO 2: PAGAR (Genera Recibo)
           onQuickAction(client, 'pay');
       }
   };
 
-  // Renderizado Condicional del Botón Principal
   const renderActionButton = () => {
       if (!client.isActive) return null;
       if (!client.sriPassword) {
@@ -108,7 +109,6 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
           );
       }
 
-      // CASO 1: YA PAGADO (Ciclo Cerrado)
       if (isPaid) {
           return (
               <div className="w-full py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center gap-2 text-slate-400 text-xs font-bold cursor-default opacity-80">
@@ -118,8 +118,6 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
           );
       }
 
-      // CASO 2: DECLARADO PERO NO PAGADO (Muestra Botón de Cobro)
-      // * PRIORIDAD ABSOLUTA EN EL PROYECTO: BOTON PAGO *
       if (isDeclared) {
           return (
               <button 
@@ -140,8 +138,6 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
           );
       }
 
-      // CASO 3: PENDIENTE (Muestra Botón de Declarar)
-      // Si es Renta Anual, el botón es Morado/Indigo para destacar
       const btnBaseColor = isAnnual ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-brand-navy hover:bg-blue-900';
       const btnColor = isOverdue ? 'bg-red-600 hover:bg-red-500' : btnBaseColor;
       const shadowColor = isOverdue ? 'shadow-red-900/20' : (isAnnual ? 'shadow-indigo-500/30' : 'shadow-blue-900/20');
@@ -171,7 +167,6 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
             ${statusColor} hover:shadow-xl
         `}
     >
-        {/* Banner Superior VIP o RENTA */}
         {isVip && (
             <div className="absolute top-0 right-0 z-10">
                 <div className="bg-gradient-to-bl from-brand-teal to-teal-600 text-white px-3 py-1 rounded-bl-2xl text-[9px] font-black uppercase tracking-widest shadow-sm flex items-center gap-1">
@@ -189,7 +184,6 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
 
         <div className="p-5 flex flex-col h-full gap-4">
             
-            {/* Header: Avatar e Info Principal */}
             <div className="flex items-start gap-4">
                 <div className="relative shrink-0">
                     <div className={`
@@ -199,7 +193,6 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     `}>
                         {client.name.substring(0, 2).toUpperCase()}
                     </div>
-                    {/* Traffic Light Dot */}
                     <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-2 border-white dark:border-slate-900 rounded-full shadow-sm ${statusDot}`}></div>
                 </div>
 
@@ -224,7 +217,6 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                 </div>
             </div>
 
-            {/* Info Grid */}
             <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-950/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
                 <div>
                     <span className="block text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Obligación</span>
@@ -240,7 +232,16 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                 </div>
             </div>
 
-            {/* ACTION BUTTON AREA */}
+            {/* Alerta de Renta Pendiente (Menos Invasiva) */}
+            {isRentaPending && (
+                <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-900/50 rounded-lg px-3 py-2 text-[10px] animate-fade-in">
+                     <span className="font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1.5">
+                        <TrendingUp size={12}/> Renta {prevYearStr} Pendiente
+                     </span>
+                     <span className="text-indigo-500 cursor-pointer hover:underline" onClick={(e) => { e.stopPropagation(); onView(client); }}>Ver</span>
+                </div>
+            )}
+
             <div className="mt-auto pt-2">
                 {renderActionButton()}
             </div>
