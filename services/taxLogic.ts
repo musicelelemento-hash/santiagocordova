@@ -1,7 +1,7 @@
 
-import { isWeekend, getYear, format, addDays, getDay } from 'date-fns';
+import { isWeekend, getYear, format, addDays, getDay, addMonths, setMonth, setYear, setDate } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { TaxRegime, Client } from '../types';
+import { TaxRegime, Client, ClientCategory } from '../types';
 import { SRI_DUE_DATES } from '../constants';
 
 export interface TaxDeadline {
@@ -9,125 +9,142 @@ export interface TaxDeadline {
     periodDescription: string;
     deadline: Date;
     isAdjusted: boolean; 
+    status: 'future' | 'current' | 'overdue';
 }
 
 const getNinthDigit = (ruc: string): number => {
-    if (!ruc || ruc.length < 10 || isNaN(Number(ruc))) return 0; 
-    return parseInt(ruc.charAt(8), 10);
+    if (!ruc || ruc.length < 10) return 0; 
+    const char = ruc.length === 13 ? ruc.charAt(8) : ruc.charAt(9); // 9th digit logic
+    return parseInt(char, 10);
 };
 
-const getNextMonday = (date: Date): Date => {
-    const day = getDay(date);
-    const daysToAdd = day === 0 ? 1 : (day === 6 ? 2 : 0);
-    return addDays(date, daysToAdd);
-};
-
-const adjustToBusinessDay = (date: Date): { date: Date; adjusted: boolean } => {
-    if (isWeekend(date)) {
-        return { date: getNextMonday(date), adjusted: true };
+const getNextBusinessDay = (date: Date): Date => {
+    let current = new Date(date);
+    while (isWeekend(current)) {
+        current = addDays(current, 1);
     }
-    return { date, adjusted: false };
+    return current;
+};
+
+// Generates the deadline date based on the 9th digit rule
+const getDeadlineDate = (year: number, month: number, ninthDigit: number): { date: Date, isAdjusted: boolean } => {
+    const day = SRI_DUE_DATES[ninthDigit] || 28;
+    const rawDate = new Date(year, month, day);
+    const businessDate = getNextBusinessDay(rawDate);
+    return {
+        date: businessDate,
+        isAdjusted: rawDate.getTime() !== businessDate.getTime()
+    };
 };
 
 export const calculateTaxDeadlines = (client: Client): TaxDeadline[] => {
-    const { ruc, regime, category, accountingObligated } = client;
-    
-    if (ruc.length === 10) {
-        return []; 
-    }
+    if (!client.ruc || client.ruc.length < 10) return [];
 
-    const ninthDigit = getNinthDigit(ruc);
-    const baseDay = SRI_DUE_DATES[ninthDigit] || 28;
-    const currentYear = getYear(new Date());
+    const ninthDigit = getNinthDigit(client.ruc);
+    const today = new Date();
+    const currentYear = getYear(today);
     const deadlines: TaxDeadline[] = [];
 
-    if (regime === TaxRegime.RimpeNegocioPopular) {
-        const rentaDate = new Date(currentYear, 4, baseDay); 
-        const adjustedRenta = adjustToBusinessDay(rentaDate);
-        deadlines.push({
-            obligation: 'Impuesto a la Renta (Cuota Fija)',
-            periodDescription: `Ejercicio Fiscal ${currentYear - 1}`,
-            deadline: adjustedRenta.date,
-            isAdjusted: adjustedRenta.adjusted
-        });
-        return deadlines;
+    // --- 1. INCOME TAX (RENTA) ---
+    // Annual obligation usually due in March (General) or May (Rimpe NP) of the following year
+    let rentaMonth = 2; // March (0-indexed)
+    let rentaLabel = 'Impuesto a la Renta (Anual)';
+    
+    if (client.regime === TaxRegime.RimpeNegocioPopular) {
+        rentaMonth = 4; // May
+        rentaLabel = 'Impuesto a la Renta (Cuota Fija)';
+    } else if (client.regime === TaxRegime.RimpeEmprendedor) {
+        rentaMonth = 2; // March
+        rentaLabel = 'Impuesto a la Renta RIMPE';
     }
 
-    const isSemestral = category.includes('Semestral');
-    const isMonthly = category.includes('Mensual');
-
-    if (isMonthly) {
-        for (let month = 0; month < 12; month++) {
-            let dueMonth = month + 1;
-            let dueYear = currentYear;
-            if (dueMonth > 11) { dueMonth = 0; dueYear = currentYear + 1; }
-
-            const baseDate = new Date(dueYear, dueMonth, baseDay);
-            const { date, adjusted } = adjustToBusinessDay(baseDate);
-            const monthName = format(new Date(currentYear, month, 1), 'MMMM', { locale: es });
-
+    // Determine if we are calculating for this year's filing (of last year's activity) or next year's
+    // Check next 2 years of Rentas
+    [currentYear, currentYear + 1].forEach(year => {
+        const { date, isAdjusted } = getDeadlineDate(year, rentaMonth, ninthDigit);
+        if (date > today) {
             deadlines.push({
-                obligation: 'Declaración IVA Mensual',
-                periodDescription: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${currentYear}`,
+                obligation: rentaLabel,
+                periodDescription: `Ejercicio Fiscal ${year - 1}`,
                 deadline: date,
-                isAdjusted: adjusted
+                isAdjusted,
+                status: 'future'
             });
         }
-        
-        if (accountingObligated) {
-             for (let month = 0; month < 12; month++) {
-                let dueMonth = month + 1;
-                let dueYear = currentYear;
-                if (dueMonth > 11) { dueMonth = 0; dueYear = currentYear + 1; }
+    });
 
-                const baseDate = new Date(dueYear, dueMonth, baseDay);
-                const { date, adjusted } = adjustToBusinessDay(baseDate);
-                const monthName = format(new Date(currentYear, month, 1), 'MMMM', { locale: es });
+    // --- 2. IVA (Monthly or Semestral) ---
+    const isMonthly = client.category.includes('Mensual') || client.category === ClientCategory.DevolucionIvaTerceraEdad;
+    const isSemestral = client.category.includes('Semestral') || client.regime === TaxRegime.RimpeEmprendedor; // Emprendedor is typically semestral for IVA unless obligated otherwise
 
+    if (isMonthly) {
+        // Generate next 6 months
+        for (let i = 0; i < 6; i++) {
+            const futureDate = addMonths(today, i);
+            // Declaration is for the *previous* month, due in *current* month
+            // So we look for the deadline in the current loop month, referring to previous month
+            const declarationMonth = futureDate.getMonth();
+            const declarationYear = futureDate.getFullYear();
+            
+            const { date, isAdjusted } = getDeadlineDate(declarationYear, declarationMonth, ninthDigit);
+            
+            // Previous month name
+            const prevDate = new Date(declarationYear, declarationMonth - 1, 1);
+            const periodName = format(prevDate, 'MMMM yyyy', { locale: es });
+
+            if (date >= today) {
                 deadlines.push({
-                    obligation: 'Retenciones en la Fuente',
-                    periodDescription: `${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${currentYear}`,
+                    obligation: 'Declaración IVA Mensual',
+                    periodDescription: periodName.charAt(0).toUpperCase() + periodName.slice(1),
                     deadline: date,
-                    isAdjusted: adjusted
+                    isAdjusted,
+                    status: 'future'
                 });
             }
         }
-    } 
-    else if (isSemestral) {
-        const sem1Date = adjustToBusinessDay(new Date(currentYear, 6, baseDay)); 
-        deadlines.push({ obligation: 'IVA Semestral', periodDescription: '1er Semestre (Ene-Jun)', deadline: sem1Date.date, isAdjusted: sem1Date.adjusted });
+    } else if (isSemestral) {
+        // Semestre 1 (Jan-Jun) -> Due July
+        // Semestre 2 (Jul-Dec) -> Due January (next year)
+        
+        // Check S1 Current Year
+        const s1Date = getDeadlineDate(currentYear, 6, ninthDigit); // July
+        if (s1Date.date >= today) {
+            deadlines.push({ 
+                obligation: 'IVA Semestral', 
+                periodDescription: `1er Semestre ${currentYear}`, 
+                deadline: s1Date.date, 
+                isAdjusted: s1Date.isAdjusted,
+                status: 'future' 
+            });
+        }
 
-        const sem2Date = adjustToBusinessDay(new Date(currentYear + 1, 0, baseDay)); 
-        deadlines.push({ obligation: 'IVA Semestral', periodDescription: '2do Semestre (Jul-Dic)', deadline: sem2Date.date, isAdjusted: sem2Date.adjusted });
+        // Check S2 Current Year (Due Jan Next Year)
+        const s2Date = getDeadlineDate(currentYear + 1, 0, ninthDigit); // Jan next year
+        if (s2Date.date >= today) {
+             deadlines.push({ 
+                obligation: 'IVA Semestral', 
+                periodDescription: `2do Semestre ${currentYear}`, 
+                deadline: s2Date.date, 
+                isAdjusted: s2Date.isAdjusted,
+                status: 'future' 
+            });
+        }
     }
 
-    if (regime === TaxRegime.General) {
-        const anexoDate = adjustToBusinessDay(new Date(currentYear, 1, baseDay)); 
-        deadlines.push({
-            obligation: 'Anexo Gastos Personales',
-            periodDescription: `Ejercicio ${currentYear - 1}`,
-            deadline: anexoDate.date,
-            isAdjusted: anexoDate.adjusted
-        });
+    // --- 3. ANEXOS (Gastos Personales) ---
+    // Usually Feb
+    [currentYear, currentYear + 1].forEach(year => {
+        const anexoDate = getDeadlineDate(year, 1, ninthDigit); // Feb
+        if (anexoDate.date >= today) {
+             deadlines.push({
+                obligation: 'Anexo Gastos Personales',
+                periodDescription: `Proyección ${year - 1}`,
+                deadline: anexoDate.date,
+                isAdjusted: anexoDate.isAdjusted,
+                status: 'future'
+            });
+        }
+    });
 
-        const rentaDate = adjustToBusinessDay(new Date(currentYear, 2, baseDay)); 
-        deadlines.push({
-            obligation: 'Impuesto a la Renta (Anual)',
-            periodDescription: `Ejercicio ${currentYear - 1}`,
-            deadline: rentaDate.date,
-            isAdjusted: rentaDate.adjusted
-        });
-    }
-
-    if (regime === TaxRegime.RimpeEmprendedor) {
-        const rentaDate = adjustToBusinessDay(new Date(currentYear, 4, baseDay)); 
-        deadlines.push({
-            obligation: 'Impuesto a la Renta RIMPE',
-            periodDescription: `Ejercicio ${currentYear - 1}`,
-            deadline: rentaDate.date,
-            isAdjusted: rentaDate.adjusted
-        });
-    }
-
-    return deadlines;
+    return deadlines.sort((a, b) => a.deadline.getTime() - b.deadline.getTime()).slice(0, 6); // Return top 6 upcoming
 };

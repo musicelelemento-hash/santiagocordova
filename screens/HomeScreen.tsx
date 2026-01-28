@@ -35,6 +35,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
     const [workflowClient, setWorkflowClient] = useState<Client | null>(null);
     const [workflowStep, setWorkflowStep] = useState<WorkflowStep | null>(null);
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+    const [activePeriod, setActivePeriod] = useState<string>(''); // Track the exact period being worked on
     
     // --- LÓGICA DE NEGOCIO Y DATOS ---
     const dashboardData = useMemo(() => {
@@ -108,9 +109,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
         setWorkflowClient(client);
         setWorkflowStep(action);
         
+        // Determine the target period
+        const period = getPeriod(client, new Date());
+        setActivePeriod(period);
+
         // Pre-fill receipt data if just viewing receipt
         if (action === 'receipt') {
-            const period = getPeriod(client, new Date());
             const decl = client.declarationHistory.find(d => d.period === period);
             if (decl) {
                 prepareReceiptData(client, decl);
@@ -132,26 +136,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
     };
 
     const handleConfirmDeclaration = () => {
-        if (!workflowClient) return;
+        if (!workflowClient || !activePeriod) return;
         const now = new Date();
-        const period = getPeriod(workflowClient, now);
         
-        // Update State
-        const updatedClient = { ...workflowClient };
-        const history = [...updatedClient.declarationHistory];
-        const existingIdx = history.findIndex(d => d.period === period);
+        // Ensure we work with fresh data from the store just in case, though workflowClient should be synced
+        // To be safe, we reconstruct the object for the update
+        
+        const updatedHistory = [...workflowClient.declarationHistory];
+        const existingIdx = updatedHistory.findIndex(d => d.period === activePeriod);
         
         const newDecl: Declaration = {
-            period,
+            period: activePeriod,
             status: DeclarationStatus.Enviada,
             updatedAt: now.toISOString(),
             declaredAt: now.toISOString(),
+            // Preserve payment info if for some reason it exists (unlikely in this flow but good practice)
+            paidAt: existingIdx > -1 ? updatedHistory[existingIdx].paidAt : undefined,
+            transactionId: existingIdx > -1 ? updatedHistory[existingIdx].transactionId : undefined,
+            amount: existingIdx > -1 ? updatedHistory[existingIdx].amount : undefined,
         };
 
-        if (existingIdx > -1) history[existingIdx] = { ...history[existingIdx], ...newDecl };
-        else history.push(newDecl);
+        if (existingIdx > -1) updatedHistory[existingIdx] = newDecl;
+        else updatedHistory.push(newDecl);
         
-        updatedClient.declarationHistory = history;
+        const updatedClient = { ...workflowClient, declarationHistory: updatedHistory };
         
         // Persist
         setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
@@ -162,29 +170,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
     };
 
     const handleConfirmPayment = () => {
-        if (!workflowClient) return;
+        if (!workflowClient || !activePeriod) return;
         const now = new Date();
-        const period = getPeriod(workflowClient, now);
-        
-        // Update State
-        const updatedClient = { ...workflowClient };
-        const history = [...updatedClient.declarationHistory];
-        const existingIdx = history.findIndex(d => d.period === period);
         const fee = getClientServiceFee(workflowClient, serviceFees);
         
+        const updatedHistory = [...workflowClient.declarationHistory];
+        const existingIdx = updatedHistory.findIndex(d => d.period === activePeriod);
+        
         const newDecl: Declaration = {
-            period,
+            period: activePeriod,
             status: DeclarationStatus.Pagada,
             updatedAt: now.toISOString(),
             paidAt: now.toISOString(),
             amount: fee,
-            transactionId: `PAY-${Date.now().toString().slice(-6)}`
+            transactionId: `PAY-${Date.now().toString().slice(-6)}`,
+            // Preserve declared date if it exists
+            declaredAt: existingIdx > -1 ? updatedHistory[existingIdx].declaredAt : now.toISOString(), 
         };
 
-        if (existingIdx > -1) history[existingIdx] = { ...history[existingIdx], ...newDecl };
-        else history.push(newDecl);
+        if (existingIdx > -1) updatedHistory[existingIdx] = newDecl;
+        else updatedHistory.push(newDecl);
         
-        updatedClient.declarationHistory = history;
+        const updatedClient = { ...workflowClient, declarationHistory: updatedHistory };
         
         // Persist
         setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
@@ -199,6 +206,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
         setWorkflowClient(null);
         setWorkflowStep(null);
         setReceiptData(null);
+        setActivePeriod('');
     };
 
     return (
@@ -406,8 +414,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
                                 </div>
                             </div>
                             <div className="text-right">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">Periodo Actual</span>
-                                <p className="font-bold text-slate-700 dark:text-white">{formatPeriodForDisplay(getPeriod(workflowClient, new Date()))}</p>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Periodo Gestión</span>
+                                <p className="font-bold text-slate-700 dark:text-white">{formatPeriodForDisplay(activePeriod)}</p>
                             </div>
                         </div>
 
