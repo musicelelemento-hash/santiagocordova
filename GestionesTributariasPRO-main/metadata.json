@@ -1,0 +1,8 @@
+{
+  "name": "Gestiones Tributarias",
+  "description": "Plataforma profesional de Gestiones Tributarias liderada por Santiago Cordova, Asesor Tributario. Soluciones expertos para SRI, IESS y Supercias.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
