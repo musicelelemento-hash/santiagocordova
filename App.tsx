@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, Users, CheckSquare, BarChart, Settings, Sun, Moon, BellRing, CalendarDays, LogOut, ShoppingCart, Cloud, RefreshCw, Check, AlertTriangle, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Users, CheckSquare, BarChart, Settings, Sun, Moon, BellRing, CalendarDays, LogOut, ShoppingCart, Cloud, RefreshCw, Check, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HomeScreen } from './screens/HomeScreen';
 import { ClientsScreen } from './screens/ClientsScreen';
 import { TasksScreen } from './screens/TasksScreen';
@@ -49,21 +49,65 @@ Saludos cordiales,
 Soluciones Contables Pro`,
 };
 
-const App: React.FC = () => {
-  // Log de versión para depuración
-  useEffect(() => {
-    console.log("%c🚀 SC Pro System", "color: #00A896; font-weight: bold; font-size: 14px;");
-  }, []);
+type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal';
 
-  // Navigation State
-  const [appState, setAppState] = useState<'landing' | 'login' | 'dashboard' | 'services' | 'client_portal'>(() => {
-      if (window.location.pathname === '/services') return 'services';
+const App: React.FC = () => {
+  // --- SESSION & ROUTING LOGIC ---
+  const [appState, setAppState] = useState<AppState>(() => {
+      const path = window.location.pathname;
+      const isAdminLoggedIn = localStorage.getItem('sc_pro_admin_session') === 'true';
+
+      // Rutas directas protegidas
+      if (path === '/admin' || path === '/dashboard') {
+          return isAdminLoggedIn ? 'dashboard' : 'login';
+      }
+      
+      // Rutas públicas
+      if (path === '/services') return 'services';
+      if (path === '/portal') return 'login'; // Login genérico, luego deriva
+      
       return 'landing';
   });
 
   // Session State
   const [publicUser, setPublicUser] = useState<PublicUser | null>(null);
   const [loggedClient, setLoggedClient] = useState<Client | null>(null);
+
+  // Sync Browser URL with App State
+  useEffect(() => {
+      let path = '/';
+      if (appState === 'dashboard') path = '/dashboard';
+      else if (appState === 'services') path = '/services';
+      else if (appState === 'login') path = '/login';
+      else if (appState === 'client_portal') path = '/portal';
+      
+      if (window.location.pathname !== path) {
+          try {
+            window.history.pushState({}, '', path);
+          } catch (e) {
+            console.debug('History pushState blocked (expected in preview environment).');
+          }
+      }
+  }, [appState]);
+
+  // Handle Browser Back Button
+  useEffect(() => {
+      const handlePopState = () => {
+          const path = window.location.pathname;
+          if (path === '/dashboard' || path === '/admin') {
+              const isAdmin = localStorage.getItem('sc_pro_admin_session') === 'true';
+              setAppState(isAdmin ? 'dashboard' : 'login');
+          } else if (path === '/services') {
+              setAppState('services');
+          } else if (path === '/login') {
+              setAppState('login');
+          } else {
+              setAppState('landing');
+          }
+      };
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Dashboard State
   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'light');
@@ -179,10 +223,17 @@ const App: React.FC = () => {
   
   const clearTaskFilter = () => setTaskFilter(null);
   const handleWebOrderSubmit = (order: WebOrder) => setWebOrders(prev => [...prev, order]);
-  const handleLogoutConfirm = () => { setAppState('landing'); setShowLogoutConfirm(false); setLoggedClient(null); };
+  
+  const handleLogoutConfirm = () => { 
+      localStorage.removeItem('sc_pro_admin_session'); // Clear session
+      setAppState('landing'); 
+      setShowLogoutConfirm(false); 
+      setLoggedClient(null); 
+  };
 
   const handleLoginSuccess = (role: 'admin' | 'client', clientData?: Client) => {
       if (role === 'admin') {
+          localStorage.setItem('sc_pro_admin_session', 'true'); // Persist admin session
           setAppState('dashboard');
           setShowSplash(true);
       } else if (role === 'client' && clientData) {

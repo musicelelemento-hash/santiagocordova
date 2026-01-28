@@ -4,7 +4,6 @@ import { Client, Task, AnalysisType, TaxRegime, ClientCategory } from "../types"
 
 // Inicialización del cliente AI
 const getAIClient = () => {
-    // Prioritize the Vercel Env Var, fallback to standard, then check for placeholder
     const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') return null;
     return new GoogleGenAI({ apiKey });
@@ -47,9 +46,10 @@ export const analyzeClientPhoto = async (base64Image: string, mimeType: string):
 
                     1. **RUC/CI**: Número de 13 dígitos o 10 dígitos.
                     2. **Razón Social**: Busca "Apellidos y nombres" o "Razón Social". Ej: RAMIREZ ALVARADO ALEIDA MARLENE.
-                    3. **Email**: CRÍTICO. Busca en la sección "Medios de contacto" o bajo "Email:". Extrae el correo completo (ej: aleidaramirez25@gmail.com).
+                    3. **Email**: CRÍTICO. Busca en la sección "Medios de contacto" o bajo "Email:". Extrae el correo completo.
                     4. **Teléfono**: Busca en "Medios de contacto" bajo "Celular:" o "Teléfono".
-                    5. **Dirección**: Combina "Calle", "Número", "Intersección" y "Referencia" de la sección "Dirección" o "Domicilio tributario".
+                    5. **Dirección Completa**: ESTO ES CRÍTICO. Combina los campos "Calle", "Número", "Intersección", "Referencia" y "Parroquia". 
+                       Formato deseado: "Calle Principal y Secundaria, Ref: [Referencia], Pq. [Parroquia]".
                     6. **Actividad**: Código y descripción principal. Ej: "G4799... VENTA AL POR MENOR...".
 
                     7. **LÓGICA DE CLASIFICACIÓN (Mapeo)**:

@@ -6,7 +6,7 @@ import { analyzeClientPhoto } from '../services/geminiService';
 import { 
     Loader, UploadCloud, CreditCard, User, Key, Eye, EyeOff, 
     Briefcase, MapPin, Phone, Mail, Hammer, Building, 
-    Image as ImageIcon, Plus, CheckCircle, AlertTriangle 
+    Image as ImageIcon, Plus, CheckCircle, AlertTriangle, ToggleLeft, ToggleRight, Crown, Power
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -46,6 +46,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
     const [isSearchingSRI, setIsSearchingSRI] = useState(false);
     const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+    
+    // Derived States for Switches
+    const isVip = clientData.category?.includes('Suscripción');
+    const isActive = clientData.isActive ?? true;
 
     // Auto-fill password from credentials
     useEffect(() => {
@@ -119,6 +123,23 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             setIsAnalyzing(false);
             setFeedback({ type: 'error', message: error.message || 'Error al analizar imagen.' });
         }
+    };
+
+    const handleVipToggle = () => {
+        if (clientData.regime === TaxRegime.RimpeNegocioPopular) return; // NP doesn't have monthly sub logic typically
+
+        let newCategory = clientData.category;
+        if (isVip) {
+            // Downgrade
+            if (newCategory === ClientCategory.SuscripcionMensual) newCategory = ClientCategory.InternoMensual;
+            if (newCategory === ClientCategory.SuscripcionSemestral) newCategory = ClientCategory.InternoSemestral;
+        } else {
+            // Upgrade
+            if (newCategory === ClientCategory.InternoMensual) newCategory = ClientCategory.SuscripcionMensual;
+            if (newCategory === ClientCategory.InternoSemestral) newCategory = ClientCategory.SuscripcionSemestral;
+            if (!newCategory) newCategory = ClientCategory.SuscripcionMensual;
+        }
+        setClientData(prev => ({...prev, category: newCategory}));
     };
 
     const handleSubmit = () => {
@@ -201,11 +222,42 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         </div>
                         {validationErrors.name && <p className="text-red-500 text-xs mt-1">{validationErrors.name}</p>}
                     </div>
+
+                    {/* Dirección Detallada */}
+                    <div className="relative">
+                         <label className="text-xs font-semibold text-slate-500 mb-1 block flex items-center gap-1"><MapPin size={12}/> Dirección Completa</label>
+                         <textarea 
+                            value={clientData.address || ''}
+                            onChange={e => setClientData({...clientData, address: e.target.value})}
+                            className="w-full p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-sky-500 outline-none resize-none h-24"
+                            placeholder="Calle Principal, Intersección, Referencia y Parroquia"
+                        />
+                    </div>
                 </div>
 
                 <div className="space-y-4">
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 mb-2">Tributario</h4>
                     
+                    <div className="flex gap-4 mb-2">
+                        {/* VIP Switch */}
+                        <div 
+                            onClick={handleVipToggle}
+                            className={`flex-1 p-3 rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${isVip ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}
+                        >
+                            {isVip ? <Crown size={24} className="mb-1 fill-current"/> : <Crown size={24} className="mb-1"/>}
+                            <span className="text-xs font-bold">VIP Suscrito</span>
+                        </div>
+                        
+                        {/* Active Switch */}
+                        <div 
+                            onClick={() => setClientData(prev => ({...prev, isActive: !isActive}))}
+                            className={`flex-1 p-3 rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${isActive ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}
+                        >
+                            {isActive ? <Power size={24} className="mb-1"/> : <Power size={24} className="mb-1 opacity-50"/>}
+                            <span className="text-xs font-bold">{isActive ? 'Activo' : 'Inactivo'}</span>
+                        </div>
+                    </div>
+
                     <div className="relative">
                         <div className="relative flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-sky-500 transition-all">
                             <span className="pl-3 text-slate-400"><Key size={18}/></span>
@@ -243,13 +295,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             </div>
 
             {feedback && (
-                <div className={`p-4 text-center text-sm font-bold rounded-xl flex items-center justify-center gap-2 ${feedback.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                <div className={`p-4 text-center text-sm font-bold rounded-xl animate-fade-in-down flex items-center justify-center gap-2 ${feedback.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     {feedback.type === 'success' ? <CheckCircle size={20}/> : <AlertTriangle size={20}/>}
                     {feedback.message}
                 </div>
             )}
             
-            <button onClick={handleSubmit} className="w-full py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
+            <button onClick={handleSubmit} className="w-full py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-sky-200 dark:shadow-sky-900/40 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
                 <Plus size={22} strokeWidth={3} />
                 <span>{initialData ? 'Guardar Cambios' : 'Guardar Nuevo Cliente'}</span>
             </button>
