@@ -1,25 +1,35 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
     UploadCloud, FileText, CheckCircle, AlertTriangle, 
-    ScanLine, Sparkles, ArrowRight, Loader, RefreshCw, 
-    CreditCard, User, MapPin, Mail, Phone, Briefcase, 
-    Save, FileJson, ShieldCheck, ArrowLeft, X, Image as ImageIcon, Camera, FileUp, ToggleLeft, ToggleRight, FileType, DollarSign, Key
+    ScanLine, ArrowRight, Loader, X, Save, ShieldCheck, 
+    User, MapPin, Mail, Phone, Briefcase, FileJson, DollarSign, Key, 
+    ToggleRight, ToggleLeft, ArrowLeft, FileUp, Download, Plus, Clock
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
-import { Client, TaxRegime, ClientCategory, StoredFile, Screen } from '../types';
+import { Client, TaxRegime, ClientCategory, Screen, Task, TaskStatus } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { v4 as uuidv4 } from 'uuid';
-import { analyzeClientPhoto } from '../services/geminiService';
+import { extractDataFromSriPdf } from '../services/pdfExtraction';
+import { addDays } from 'date-fns';
 
 interface DesignScreenProps {
     navigate: (screen: Screen, options?: any) => void;
     sriCredentials?: Record<string, string>;
 }
 
+// Estructura para obligaciones extra detectadas
+interface ExtraObligation {
+    id: string;
+    name: string;
+    price: number;
+    periodicity: 'Mensual' | 'Semestral' | 'Anual';
+    selected: boolean;
+}
+
 export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredentials }) => {
     const { toast } = useToast();
-    const { clients, setClients } = useAppStore();
+    const { clients, setClients, setTasks } = useAppStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Flow State
@@ -29,6 +39,9 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
     const [isVip, setIsVip] = useState(false);
     const [isActiveClient, setIsActiveClient] = useState(true);
     const [foundPasswordInVault, setFoundPasswordInVault] = useState(false);
+    
+    // Extra Obligations State
+    const [extraObligations, setExtraObligations] = useState<ExtraObligation[]>([]);
 
     const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -44,79 +57,106 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
     const processDocument = async (file: File) => {
         setStep('analyzing');
         setFoundPasswordInVault(false);
+        setExtraObligations([]);
+
         try {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const base64String = (e.target?.result as string).split(',')[1];
+            // --- USO DEL EXTRACTOR LOCAL (SIN IA) ---
+            const rawData = await extractDataFromSriPdf(file);
+            
+            // --- TRANSFORMACIÓN A FORMATO INTERNO ---
+            // Detectar duplicados
+            const match = clients.find(c => c.ruc === rawData.ruc);
+            setExistingClient(match || null);
+            
+            // Buscar clave en bóveda local (Robustez: Trim RUC)
+            let finalPassword = match?.sriPassword || '';
+            const cleanRuc = rawData.ruc.trim();
+            if (!finalPassword && cleanRuc && sriCredentials && sriCredentials[cleanRuc]) {
+                finalPassword = sriCredentials[cleanRuc];
+                setFoundPasswordInVault(true);
+            }
+
+            // --- LÓGICA INTELIGENTE DE OBLIGACIONES (Certera) ---
+            let detectedCategory = ClientCategory.InternoMensual; // Default fallback
+            
+            // Re-evaluación basada en la lista explícita para evitar errores (ej: 2021 Semestral vs Mensual)
+            const hasSemestral = rawData.lista_obligaciones.some(o => o.toUpperCase().includes("SEMESTRAL"));
+            const hasMensual = rawData.lista_obligaciones.some(o => o.toUpperCase().includes("MENSUAL"));
+
+            // 1. Determinar Categoría Principal (IVA)
+            if (rawData.regimen === TaxRegime.RimpeNegocioPopular) {
+                detectedCategory = ClientCategory.ImpuestoRentaNegocioPopular;
+            } else if (hasSemestral || rawData.obligaciones_tributarias === 'semestral') {
+                // Si dice Semestral explícitamente, es Semestral.
+                detectedCategory = ClientCategory.InternoSemestral;
+            } else if (hasMensual || rawData.obligaciones_tributarias === 'mensual') {
+                detectedCategory = ClientCategory.InternoMensual;
+            }
+
+            // 2. Detectar Obligaciones Extra (Productos)
+            const extras: ExtraObligation[] = [];
+            rawData.lista_obligaciones.forEach((obs) => {
+                const upperObs = obs.toUpperCase();
                 
-                try {
-                    // Send to Gemini as PDF
-                    const result = await analyzeClientPhoto(base64String, file.type);
-                    
-                    // Duplicate Detection
-                    const match = clients.find(c => c.ruc === result.ruc);
-                    setExistingClient(match || null);
-                    
-                    // Check Vault for Password if not found in client
-                    let finalPassword = result.sriPassword || '';
-                    if (!finalPassword && match?.sriPassword) {
-                        finalPassword = match.sriPassword;
-                    } else if (!finalPassword && result.ruc && sriCredentials && sriCredentials[result.ruc]) {
-                        finalPassword = sriCredentials[result.ruc];
-                        setFoundPasswordInVault(true);
-                    }
+                // Ignorar las obligaciones estándar que ya definen la categoría
+                if (upperObs.includes("DECLARACIÓN SEMESTRAL IVA")) return;
+                if (upperObs.includes("DECLARACIÓN MENSUAL IVA")) return;
+                // Renta General asumida en el servicio base a menos que sea NP
+                if (upperObs.includes("IMPUESTO A LA RENTA") && rawData.regimen !== TaxRegime.RimpeNegocioPopular) return; 
 
-                    // --- INTELLIGENT CATEGORY LOGIC ---
-                    // Default to Monthly unless signs of Semestral or Rimpe Popular
-                    let detectedCategory = ClientCategory.InternoMensual; // Default: "si es mensual solo va a decir declaracion de iva"
-                    const notesUpper = (result.notes || '').toUpperCase();
-                    
-                    if (result.regime === TaxRegime.RimpeNegocioPopular) {
-                        detectedCategory = ClientCategory.ImpuestoRentaNegocioPopular;
-                    } else {
-                        // Check explicit semestral keywords in obligations extracted by Gemini
-                        if (notesUpper.includes('SEMESTRAL') || notesUpper.includes('SEMESTRE')) {
-                            detectedCategory = ClientCategory.InternoSemestral;
-                        } else {
-                            detectedCategory = ClientCategory.InternoMensual;
-                        }
-                    }
+                // Detectar Anexos, Devoluciones, Patentes, etc.
+                let periodicity: 'Mensual' | 'Semestral' | 'Anual' = 'Anual';
+                let price = 10; // Default price as requested
 
-                    // Set defaults based on existing or extracted
-                    if (match) {
-                        // Maintain VIP status if already set
-                        setIsVip(match.category.includes('Suscripción'));
-                        setIsActiveClient(match.isActive ?? true);
-                        // If user manually changed category before, maybe keep it? 
-                        // For now, let's suggest the detected one but allow override, or keep existing if strong match
-                        // Actually, if updating from PDF, we likely want the PDF's truth.
-                        // But VIP status is internal.
-                    } else {
-                        // New client defaults
-                        setIsVip(false);
-                        setIsActiveClient(true);
-                    }
+                if (upperObs.includes("MENSUAL")) periodicity = 'Mensual';
+                if (upperObs.includes("SEMESTRAL")) periodicity = 'Semestral';
+                
+                // Limpiar nombre (quitar año ej: "2021 -")
+                let cleanName = obs.replace(/^\d+\s*-\s*/, '').trim(); 
 
-                    setExtractedData({
-                        ...result,
-                        // Ensure category aligns with logic + VIP toggle will happen in render
-                        category: detectedCategory,
-                        // If updating, preserve IDs and history
-                        id: match?.id || uuidv4(),
-                        customServiceFee: match?.customServiceFee, 
-                        declarationHistory: match?.declarationHistory || [],
-                        sriPassword: finalPassword,
-                    });
-                    setStep('review');
-                } catch (error: any) {
-                    console.error(error);
-                    toast.error(error.message || "Error en el análisis IA.");
-                    setStep('upload');
-                }
-            };
-            reader.readAsDataURL(file);
-        } catch (err) {
-            toast.error("Error al leer el archivo.");
+                extras.push({
+                    id: uuidv4(),
+                    name: cleanName,
+                    price: price,
+                    periodicity: periodicity,
+                    selected: true
+                });
+            });
+            setExtraObligations(extras);
+
+            // Mantener configuración si el cliente ya existe
+            if (match) {
+                setIsVip(match.category.includes('Suscripción'));
+                setIsActiveClient(match.isActive ?? true);
+            } else {
+                setIsVip(false);
+                setIsActiveClient(true);
+            }
+
+            setExtractedData({
+                id: match?.id || uuidv4(),
+                ruc: rawData.ruc,
+                name: rawData.apellidos_nombres,
+                address: rawData.direccion, // Parroquia | Referencia
+                economicActivity: rawData.actividad_economica, // Actividad limpia (sin *)
+                email: rawData.contacto.email,
+                phones: rawData.contacto.celular ? [rawData.contacto.celular] : [],
+                regime: rawData.regimen,
+                category: detectedCategory,
+                sriPassword: finalPassword,
+                notes: `Obligaciones detectadas en PDF:\n${rawData.lista_obligaciones.join('\n')}`,
+                declarationHistory: match?.declarationHistory || [],
+                customServiceFee: match?.customServiceFee,
+                electronicSignaturePassword: match?.electronicSignaturePassword || '',
+                sharedAccessKey: match?.sharedAccessKey || ''
+            });
+
+            setStep('review');
+            toast.success("Datos extraídos correctamente.");
+
+        } catch (error: any) {
+            console.error(error);
+            toast.error("Error al procesar el PDF. Asegúrese de que sea un RUC válido.");
             setStep('upload');
         }
     };
@@ -127,40 +167,32 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             return;
         }
 
-        // Determine Final Category based on Switches & Detected Logic
+        // Apply VIP Override Logic
         let finalCategory = extractedData.category || ClientCategory.InternoMensual;
-        
-        // Apply VIP Override
         if (isVip) {
             if (finalCategory === ClientCategory.InternoMensual) finalCategory = ClientCategory.SuscripcionMensual;
             if (finalCategory === ClientCategory.InternoSemestral) finalCategory = ClientCategory.SuscripcionSemestral;
         } else {
-             // Ensure it's internal if VIP is off
             if (finalCategory === ClientCategory.SuscripcionMensual) finalCategory = ClientCategory.InternoMensual;
             if (finalCategory === ClientCategory.SuscripcionSemestral) finalCategory = ClientCategory.InternoSemestral;
         }
 
+        // Add extra obligations to notes for reference
+        let notes = extractedData.notes || '';
+        const selectedExtras = extraObligations.filter(e => e.selected);
+        
+        if (selectedExtras.length > 0) {
+            notes += `\n\n--- SERVICIOS ADICIONALES CONFIGURADOS ---\n`;
+            selectedExtras.forEach(e => {
+                notes += `• ${e.name} (${e.periodicity}): $${e.price}\n`;
+            });
+        }
+
         const finalClient: Client = {
-            id: extractedData.id || uuidv4(),
-            ruc: extractedData.ruc,
-            name: extractedData.name,
-            tradeName: extractedData.tradeName || existingClient?.tradeName || '',
-            sriPassword: extractedData.sriPassword || existingClient?.sriPassword || '',
-            regime: extractedData.regime || TaxRegime.General,
+            ...extractedData as Client,
             category: finalCategory,
-            customServiceFee: extractedData.customServiceFee, 
-            economicActivity: extractedData.economicActivity || '',
-            address: extractedData.address || '',
-            email: extractedData.email || '',
-            phones: extractedData.phones || [],
-            notes: extractedData.notes || '', 
-            declarationHistory: existingClient?.declarationHistory || [],
             isActive: isActiveClient,
-            isArtisan: !!extractedData.isArtisan,
-            establishmentCount: 1,
-            jurisdiction: 'EL ORO', 
-            electronicSignaturePassword: existingClient?.electronicSignaturePassword || '',
-            sharedAccessKey: existingClient?.sharedAccessKey || ''
+            notes: notes
         };
 
         setClients(prev => {
@@ -170,8 +202,24 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             return [...prev, finalClient];
         });
 
+        // GENERATE TASKS FOR EXTRA OBLIGATIONS
+        if (selectedExtras.length > 0) {
+            const newTasks: Task[] = selectedExtras.map(extra => ({
+                id: uuidv4(),
+                title: extra.name,
+                description: `Obligación adicional detectada en RUC. Periodicidad: ${extra.periodicity}.`,
+                clientId: finalClient.id,
+                dueDate: addDays(new Date(), 7).toISOString(), // Default due date next week
+                status: TaskStatus.Pendiente,
+                cost: extra.price,
+                advancePayment: 0
+            }));
+            setTasks(prev => [...prev, ...newTasks]);
+            toast.success(`${newTasks.length} tareas de servicios adicionales creadas.`);
+        }
+
         setStep('success');
-        toast.success(existingClient ? "Cliente actualizado correctamente" : "Cliente creado exitosamente");
+        toast.success(existingClient ? "Cliente actualizado" : "Cliente creado");
     };
 
     return (
@@ -179,10 +227,10 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             <header className="mb-6 pt-4 flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <h2 className="text-3xl font-display font-black text-brand-navy dark:text-white flex items-center gap-2">
-                        <ScanLine className="text-brand-teal"/> Extractor PDF RUC
+                        <ScanLine className="text-brand-teal"/> Extractor PDF RUC (Local)
                     </h2>
                     <p className="text-slate-500 text-sm font-medium mt-1">
-                        Sube el Certificado de RUC (PDF) para extracción inteligente de datos.
+                        Lectura instantánea de Certificados SRI sin uso de Inteligencia Artificial.
                     </p>
                 </div>
                 <button onClick={() => navigate('clients')} className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white font-bold text-xs uppercase tracking-wider transition-colors self-start md:self-auto">
@@ -204,8 +252,8 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                         {step === 'analyzing' ? (
                             <div className="text-center relative z-10">
                                 <Loader className="w-16 h-16 text-brand-teal animate-spin mx-auto mb-6"/>
-                                <h3 className="text-xl font-black text-brand-navy dark:text-white mb-2">Procesando PDF...</h3>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Buscando obligaciones y contactos...</p>
+                                <h3 className="text-xl font-black text-brand-navy dark:text-white mb-2">Analizando Estructura...</h3>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Extrayendo datos y obligaciones...</p>
                             </div>
                         ) : step === 'success' ? (
                             <div className="text-center relative z-10">
@@ -222,7 +270,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                         Ver Ficha
                                     </button>
                                     <button 
-                                        onClick={(e) => { e.stopPropagation(); setStep('upload'); setExtractedData(null); setExistingClient(null); }}
+                                        onClick={(e) => { e.stopPropagation(); setStep('upload'); setExtractedData(null); setExistingClient(null); setExtraObligations([]); }}
                                         className="flex-1 px-4 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all text-xs uppercase"
                                     >
                                         Nuevo PDF
@@ -236,7 +284,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                 </div>
                                 
                                 <div>
-                                    <h3 className="text-xl font-black text-brand-navy dark:text-white mb-2">Subir Certificado</h3>
+                                    <h3 className="text-xl font-black text-brand-navy dark:text-white mb-2">Subir Certificado RUC</h3>
                                     <p className="text-slate-400 text-sm">Formato aceptado: <strong>Solo PDF</strong></p>
                                 </div>
 
@@ -270,10 +318,6 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                      <button onClick={() => setIsVip(!isVip)} className={`flex flex-col items-center p-2 rounded-lg border transition-all ${isVip ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                                         <span className="text-[9px] font-black uppercase">VIP / Suscrito</span>
                                         {isVip ? <ToggleRight size={24} className="text-amber-500"/> : <ToggleLeft size={24}/>}
-                                     </button>
-                                     <button onClick={() => setIsActiveClient(!isActiveClient)} className={`flex flex-col items-center p-2 rounded-lg border transition-all ${isActiveClient ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-500'}`}>
-                                        <span className="text-[9px] font-black uppercase">Estado</span>
-                                        {isActiveClient ? <ToggleRight size={24} className="text-green-500"/> : <ToggleLeft size={24}/>}
                                      </button>
                                 </div>
                             </div>
@@ -310,7 +354,16 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                     />
                                 </div>
                                 
-                                {/* Password Field (Auto-detected from vault) */}
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Actividad Económica</label>
+                                    <input 
+                                        value={extractedData.economicActivity || ''} 
+                                        onChange={e => setExtractedData({...extractedData, economicActivity: e.target.value})}
+                                        className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 text-sm" 
+                                        placeholder="Actividad extraída..."
+                                    />
+                                </div>
+                                
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1 flex justify-between">
                                         <span>Clave SRI</span>
@@ -326,78 +379,85 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                         placeholder="No encontrada"
                                     />
                                 </div>
-
-                                {/* Address and Tariff Row */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                    <div className="sm:col-span-2 space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Dirección Completa</label>
-                                        <textarea 
-                                            value={extractedData.address || ''} 
-                                            onChange={e => setExtractedData({...extractedData, address: e.target.value})}
-                                            rows={2}
-                                            className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 resize-none" 
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-emerald-600 uppercase tracking-wider ml-1 flex items-center gap-1"><DollarSign size={10}/> Tarifa ($)</label>
-                                        <input 
-                                            type="number"
-                                            value={extractedData.customServiceFee ?? ''} 
-                                            onChange={e => setExtractedData({...extractedData, customServiceFee: parseFloat(e.target.value)})}
-                                            className="w-full p-3 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-xl font-black text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50 text-center" 
-                                            placeholder="Auto"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Actividad Económica Principal</label>
-                                    <textarea 
-                                        value={extractedData.economicActivity || ''} 
-                                        onChange={e => setExtractedData({...extractedData, economicActivity: e.target.value})}
-                                        rows={2}
-                                        className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 resize-none" 
-                                    />
-                                </div>
                                 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Email</label>
-                                        <input 
-                                            value={extractedData.email || ''} 
-                                            onChange={e => setExtractedData({...extractedData, email: e.target.value})}
-                                            className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm font-bold text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
-                                        />
+                                {/* OBLIGACIONES EXTRA DETECTADAS */}
+                                {extraObligations.length > 0 && (
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
+                                        <h4 className="text-xs font-black text-brand-navy dark:text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+                                            <Briefcase size={14}/> Servicios Adicionales Detectados
+                                        </h4>
+                                        <p className="text-[10px] text-slate-500 mb-3">
+                                            Estas obligaciones no están cubiertas por la suscripción estándar. Configúrelas como productos adicionales.
+                                        </p>
+                                        <div className="space-y-3">
+                                            {extraObligations.map((extra, idx) => (
+                                                <div key={extra.id} className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                                    <div className="flex items-center gap-2 flex-1">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={extra.selected} 
+                                                            onChange={e => {
+                                                                const newExtras = [...extraObligations];
+                                                                newExtras[idx].selected = e.target.checked;
+                                                                setExtraObligations(newExtras);
+                                                            }}
+                                                            className="w-4 h-4 rounded text-brand-teal focus:ring-brand-teal"
+                                                        />
+                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{extra.name}</span>
+                                                    </div>
+                                                    
+                                                    {extra.selected && (
+                                                        <div className="flex gap-2 w-full sm:w-auto">
+                                                            <select 
+                                                                value={extra.periodicity}
+                                                                onChange={e => {
+                                                                    const newExtras = [...extraObligations];
+                                                                    newExtras[idx].periodicity = e.target.value as any;
+                                                                    setExtraObligations(newExtras);
+                                                                }}
+                                                                className="text-[10px] p-1.5 rounded-lg border bg-slate-50 dark:bg-slate-700"
+                                                            >
+                                                                <option value="Mensual">Mensual</option>
+                                                                <option value="Semestral">Semestral</option>
+                                                                <option value="Anual">Anual</option>
+                                                            </select>
+                                                            <div className="relative w-20">
+                                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">$</span>
+                                                                <input 
+                                                                    type="number" 
+                                                                    value={extra.price}
+                                                                    onChange={e => {
+                                                                        const newExtras = [...extraObligations];
+                                                                        newExtras[idx].price = parseFloat(e.target.value);
+                                                                        setExtraObligations(newExtras);
+                                                                    }}
+                                                                    className="w-full pl-4 p-1.5 text-[10px] rounded-lg border bg-slate-50 dark:bg-slate-700 font-bold"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Celular</label>
-                                        <input 
-                                            value={(extractedData.phones || [])[0] || ''} 
-                                            onChange={e => setExtractedData({...extractedData, phones: [e.target.value]})}
-                                            className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-sm font-bold text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
-                                        />
-                                    </div>
-                                </div>
+                                )}
                                 
+                                {/* NOTAS DE OBLIGACIONES */}
                                 <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
                                     <p className="text-[10px] font-black text-yellow-700 uppercase tracking-wider mb-2 flex items-center gap-1">
-                                        <FileJson size={12}/> Obligaciones Tributarias (Notas)
+                                        <FileJson size={12}/> Resumen de Obligaciones
                                     </p>
                                     <textarea 
                                         value={extractedData.notes || ''}
                                         onChange={e => setExtractedData({...extractedData, notes: e.target.value})}
                                         className="w-full bg-transparent text-xs text-yellow-800 dark:text-yellow-200 font-medium border-none p-0 focus:ring-0 resize-none h-24"
-                                        placeholder="No se detectaron obligaciones adicionales."
                                     />
-                                    {extractedData.category?.includes('Semestral') && (
-                                        <p className="text-[10px] text-yellow-600 mt-2 font-bold">⚠️ Se detectó periodicidad SEMESTRAL.</p>
-                                    )}
                                 </div>
                             </div>
 
                             <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex gap-4">
                                 <button 
-                                    onClick={() => { setStep('upload'); setExtractedData(null); setExistingClient(null); }}
+                                    onClick={() => { setStep('upload'); setExtractedData(null); setExistingClient(null); setExtraObligations([]); }}
                                     className="flex-1 py-4 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-bold text-sm transition-colors uppercase tracking-wider"
                                 >
                                     Descartar

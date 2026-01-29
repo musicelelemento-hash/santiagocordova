@@ -1,29 +1,30 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { WebOrder, Screen, Task, TaskStatus } from '../types';
 import { ShoppingCart, CheckCircle, Phone, Mail, Clock, Plus, Trash2, MessageSquare, Briefcase } from 'lucide-react';
 import format from 'date-fns/format';
 import es from 'date-fns/locale/es';
 import { v4 as uuidv4 } from 'uuid';
-import { useAppStore } from '../store/useAppStore';
 
 interface WebOrdersScreenProps {
+    orders: WebOrder[];
+    setOrders: React.Dispatch<React.SetStateAction<WebOrder[]>>;
+    setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
     navigate: (screen: Screen) => void;
 }
 
-export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) => {
-    const { webOrders, setWebOrders, setTasks } = useAppStore();
+export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ orders, setOrders, setTasks, navigate }) => {
     
-    // Safety check if orders is undefined
-    const orders = webOrders || [];
+    // Use fallback in case props are missing (safety)
+    const safeOrders = orders || [];
 
     const handleStatusChange = (orderId: string, newStatus: WebOrder['status']) => {
-        setWebOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     };
 
     const handleDeleteOrder = (orderId: string) => {
         if (window.confirm('¿Está seguro de eliminar esta solicitud?')) {
-            setWebOrders(prev => prev.filter(o => o.id !== orderId));
+            setOrders(prev => prev.filter(o => o.id !== orderId));
         }
     };
 
@@ -70,14 +71,14 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                 </h2>
                 <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700">
                     <span className="text-sm font-bold text-gray-500">Total Pendientes: </span>
-                    <span className="text-gold font-bold text-lg">{orders.filter(o => o.status === 'pending').length}</span>
+                    <span className="text-gold font-bold text-lg">{safeOrders.filter(o => o.status === 'pending').length}</span>
                 </div>
             </div>
 
             <div className="flex-1 overflow-x-auto pb-4">
                 <div className="flex gap-6 h-full min-w-[1000px]">
                     {columns.map(col => {
-                        const colOrders = orders.filter(o => o.status === col.id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                        const colOrders = safeOrders.filter(o => o.status === col.id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                         
                         return (
                             <div key={col.id} className={`flex-1 flex flex-col min-w-[300px] bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700`}>

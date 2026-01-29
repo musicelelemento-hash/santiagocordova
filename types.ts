@@ -216,3 +216,17 @@ export interface WhatsAppTemplates {
     paymentConfirmation: string;
     declarationNotice: string;
 }
+
+export interface SriExtractionResult {
+  apellidos_nombres: string;
+  ruc: string;
+  direccion: string;
+  contacto: {
+    email: string;
+    celular: string;
+  };
+  regimen: TaxRegime;
+  obligaciones_tributarias: string; // Resumen simple
+  lista_obligaciones: string[]; // Lista detallada para procesar como productos
+  actividad_economica: string;
+}

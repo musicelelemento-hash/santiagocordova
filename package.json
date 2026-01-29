@@ -20,7 +20,8 @@
     "@google/genai": "latest",
     "crypto-js": "^4.2.0",
     "react-window": "^1.8.10",
-    "react-virtualized-auto-sizer": "^1.0.24"
+    "react-virtualized-auto-sizer": "^1.0.24",
+    "pdfjs-dist": "^4.0.379"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
