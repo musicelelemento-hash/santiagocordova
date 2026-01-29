@@ -226,7 +226,10 @@ export interface SriExtractionResult {
     celular: string;
   };
   regimen: TaxRegime;
-  obligaciones_tributarias: string; // Resumen simple
-  lista_obligaciones: string[]; // Lista detallada para procesar como productos
+  obligaciones_tributarias: string; 
+  lista_obligaciones: string[]; 
   actividad_economica: string;
+  // New fields added
+  es_artesano: boolean;
+  cantidad_establecimientos: number;
 }

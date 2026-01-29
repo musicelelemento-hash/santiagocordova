@@ -26,7 +26,6 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
   // --- LÓGICA DE EXTRACCIÓN (REGEX AVANZADO) ---
 
   // 1. RUC (13 dígitos que terminan en 001)
-  // Buscamos patrones explícitos o el primer número de 13 dígitos válido
   const rucMatch = fullText.match(/NÚMERO RUC:\s*(\d{13})/i) || fullText.match(/\b(\d{10}001)\b/);
   const ruc = rucMatch ? rucMatch[1] : '';
 
@@ -50,19 +49,14 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
   
   const parroquia = parroquiaMatch ? parroquiaMatch[1].trim() : '';
   const referencia = referenciaMatch ? referenciaMatch[1].trim() : '';
-  // Limpiamos la referencia para que no sea excesivamente larga
   const referenciaLimpia = referencia.split("Telefono")[0].split("Email")[0].substring(0, 100); 
   const direccion = parroquia || referenciaLimpia ? `${parroquia} - ${referenciaLimpia}` : '';
 
   // 4. Contacto (Lógica Mejorada)
-  // Buscar TODOS los emails en el documento y tomar el primero que parezca personal
   const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
   const emailsFound = fullText.match(emailRegex) || [];
-  // Filtramos emails del SRI o gobierno que suelen aparecer en el pie de página
   const validEmail = emailsFound.find(e => !e.includes('sri.gob.ec') && !e.includes('gob.ec')) || '';
 
-  // Buscar celular: Formato Ecuador 09xxxxxxxx (10 dígitos empezando por 09)
-  // Usamos \b para asegurar límites de palabra y evitar capturar partes de un RUC
   const cellRegex = /\b09\d{8}\b/g;
   const phonesFound = fullText.match(cellRegex) || [];
   const validPhone = phonesFound.length > 0 ? phonesFound[0] : '';
@@ -91,7 +85,25 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
           .trim();
   }
 
-  // 7. Extracción de LISTA de Obligaciones
+  // 7. Artesano Calificado (Lógica Nueva)
+  // Buscamos patrones como "Calificación Artesanal Nro" o menciones a la Junta
+  const isArtisan = /CALIFICACI[ÓO]N ARTESANAL|JUNTA NACIONAL DE DEFENSA DEL ARTESANO/i.test(upperText);
+
+  // 8. Establecimientos (Conteo Lógica Nueva)
+  // Buscamos ocurrencias de cabeceras de establecimientos
+  // Modelo Nuevo/Antiguo suele usar "No. ESTABLECIMIENTO: 001" o similar
+  const establishmentMatches = fullText.match(/No\.?\s*ESTABLECIMIENTO/gi);
+  let establishmentCount = establishmentMatches ? establishmentMatches.length : 1;
+
+  // Validación extra: Si no encuentra matches explícitos, busca el número más alto de establecimiento
+  if (!establishmentMatches) {
+      const highestEstMatch = fullText.match(/ESTABLECIMIENTO[:\s]+(\d{3})/gi);
+      if (highestEstMatch) {
+          establishmentCount = highestEstMatch.length;
+      }
+  }
+
+  // 9. Extracción de LISTA de Obligaciones
   const obligacionesRawMatch = fullText.match(/Obligaciones tributarias([\s\S]*?)(?=Números del RUC|Establecimientos|Información|$)/i);
   const listaObligaciones: string[] = [];
   
@@ -107,15 +119,13 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
       });
   }
 
-  // 8. Determinación Certera de Periodicidad
+  // 10. Determinación Certera de Periodicidad
   let periodicidadPrincipal = "mensual"; 
   
-  // Buscar explícitamente SEMESTRAL en las obligaciones de IVA
   const hasSemestral = listaObligaciones.some(obs => 
       (obs.includes("IVA") || obs.includes("VALOR AGREGADO")) && obs.includes("SEMESTRAL")
   );
   
-  // Buscar explícitamente MENSUAL
   const hasMensual = listaObligaciones.some(obs => 
       (obs.includes("IVA") || obs.includes("VALOR AGREGADO")) && obs.includes("MENSUAL")
   );
@@ -127,11 +137,8 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
   } else if (hasMensual) {
       periodicidadPrincipal = "mensual";
   } else if (regimen === TaxRegime.RimpeEmprendedor) {
-       // Por defecto RIMPE Emprendedor suele ser semestral si no dice lo contrario, 
-       // pero el documento manda. Si no se encontró nada, asumimos semestral para emprendedor.
        periodicidadPrincipal = "semestral";
   }
-
 
   return {
     apellidos_nombres: nombres,
@@ -144,6 +151,8 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
     regimen: regimen,
     obligaciones_tributarias: periodicidadPrincipal,
     lista_obligaciones: listaObligaciones,
-    actividad_economica: actividadEconomica
+    actividad_economica: actividadEconomica,
+    es_artesano: isArtisan,
+    cantidad_establecimientos: establishmentCount
   };
 };

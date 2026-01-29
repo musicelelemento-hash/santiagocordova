@@ -4,7 +4,8 @@ import {
     UploadCloud, FileText, CheckCircle, AlertTriangle, 
     ScanLine, ArrowRight, Loader, X, Save, ShieldCheck, 
     User, MapPin, Mail, Phone, Briefcase, FileJson, DollarSign, Key, 
-    ToggleRight, ToggleLeft, ArrowLeft, FileUp, Download, Plus, Clock, Crown
+    ToggleRight, ToggleLeft, ArrowLeft, FileUp, Download, Plus, Clock, Crown,
+    Hammer, Building
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { Client, TaxRegime, ClientCategory, Screen, Task, TaskStatus } from '../types';
@@ -18,7 +19,6 @@ interface DesignScreenProps {
     sriCredentials?: Record<string, string>;
 }
 
-// Estructura para obligaciones extra detectadas
 interface ExtraObligation {
     id: string;
     name: string;
@@ -32,7 +32,6 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
     const { clients, setClients, setTasks } = useAppStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Flow State
     const [step, setStep] = useState<'upload' | 'analyzing' | 'review' | 'success'>('upload');
     const [extractedData, setExtractedData] = useState<Partial<Client> | null>(null);
     const [existingClient, setExistingClient] = useState<Client | null>(null);
@@ -40,10 +39,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
     const [isActiveClient, setIsActiveClient] = useState(true);
     const [foundPasswordInVault, setFoundPasswordInVault] = useState(false);
     
-    // UI State for Review
     const [selectedFrequency, setSelectedFrequency] = useState<'MENSUAL' | 'SEMESTRAL' | 'ANUAL' | 'DEVOLUCION'>('MENSUAL');
-    
-    // Extra Obligations State (PRODUCTOS)
     const [extraObligations, setExtraObligations] = useState<ExtraObligation[]>([]);
 
     const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,15 +59,11 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
         setExtraObligations([]);
 
         try {
-            // --- USO DEL EXTRACTOR LOCAL (SIN IA) ---
             const rawData = await extractDataFromSriPdf(file);
             
-            // --- TRANSFORMACIÓN A FORMATO INTERNO ---
-            // Detectar duplicados
             const match = clients.find(c => c.ruc === rawData.ruc);
             setExistingClient(match || null);
             
-            // Buscar clave en bóveda local (Robustez: Trim RUC)
             let finalPassword = match?.sriPassword || '';
             const cleanRuc = rawData.ruc.trim();
             if (!finalPassword && cleanRuc && sriCredentials && sriCredentials[cleanRuc]) {
@@ -79,88 +71,42 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 setFoundPasswordInVault(true);
             }
 
-            // --- LÓGICA INTELIGENTE DE OBLIGACIONES ---
-            
-            // 1. Determinar Frecuencia Visual Inicial basada en el análisis del PDF
             if (rawData.regimen === TaxRegime.RimpeNegocioPopular) {
                 setSelectedFrequency('ANUAL');
             } else if (rawData.obligaciones_tributarias === 'semestral') {
                 setSelectedFrequency('SEMESTRAL');
             } else {
-                // Por defecto mensual para régimen general si no dice semestral
                 setSelectedFrequency('MENSUAL');
             }
 
-            // 2. DETECTAR PRODUCTOS/OBLIGACIONES ESPECÍFICAS (Separados del régimen)
             const extras: ExtraObligation[] = [];
-            
             rawData.lista_obligaciones.forEach((obs) => {
                 const upperObs = obs.toUpperCase();
-                
-                // Mapeo de obligaciones especiales a productos con precio
                 if (upperObs.includes("ICE")) {
                      const isMensual = upperObs.includes("MENSUAL");
-                     extras.push({
-                         id: uuidv4(),
-                         name: isMensual ? "Declaración Mensual de ICE" : "Declaración de ICE",
-                         price: 25.00,
-                         periodicity: isMensual ? 'Mensual' : 'Anual',
-                         selected: true
-                     });
-                     // A menudo el ICE implica Anexo
+                     extras.push({ id: uuidv4(), name: isMensual ? "Declaración Mensual de ICE" : "Declaración de ICE", price: 25.00, periodicity: isMensual ? 'Mensual' : 'Anual', selected: true });
                      if (upperObs.includes("ANEXO")) {
-                         extras.push({
-                             id: uuidv4(),
-                             name: "Anexo de Movimiento ICE",
-                             price: 20.00,
-                             periodicity: 'Mensual',
-                             selected: true
-                         });
+                         extras.push({ id: uuidv4(), name: "Anexo de Movimiento ICE", price: 20.00, periodicity: 'Mensual', selected: true });
                      }
                 }
-                
                 if (upperObs.includes("PVP") || upperObs.includes("PRECIOS DE VENTA")) {
-                    extras.push({
-                         id: uuidv4(),
-                         name: "Anexo Anual PVP",
-                         price: 30.00,
-                         periodicity: 'Anual',
-                         selected: true
-                     });
+                    extras.push({ id: uuidv4(), name: "Anexo Anual PVP", price: 30.00, periodicity: 'Anual', selected: true });
                 }
-                
                 if (upperObs.includes("VEHÍCULOS") || upperObs.includes("MOTORIZADOS")) {
-                    extras.push({
-                         id: uuidv4(),
-                         name: "Impuesto a la Propiedad de Vehículos",
-                         price: 10.00,
-                         periodicity: 'Anual',
-                         selected: true
-                     });
+                    extras.push({ id: uuidv4(), name: "Impuesto a la Propiedad de Vehículos", price: 10.00, periodicity: 'Anual', selected: true });
                 }
-                
                  if (upperObs.includes("ACCIONISTAS") || upperObs.includes("APS")) {
-                    extras.push({
-                         id: uuidv4(),
-                         name: "Anexo de Accionistas (APS)",
-                         price: 40.00,
-                         periodicity: 'Anual',
-                         selected: true
-                     });
+                    extras.push({ id: uuidv4(), name: "Anexo de Accionistas (APS)", price: 40.00, periodicity: 'Anual', selected: true });
                 }
             });
-            
-            // Eliminar duplicados por nombre
             const uniqueExtras = extras.filter((v,i,a)=>a.findIndex(t=>(t.name===v.name))===i);
             setExtraObligations(uniqueExtras);
 
-            // Mantener configuración si el cliente ya existe
             if (match) {
-                // Si ya existe, preservamos si era VIP o no
                 setIsVip(match.category.includes('Suscripción'));
                 setIsActiveClient(match.isActive ?? true);
             } else {
-                setIsVip(false); // Default to not VIP
+                setIsVip(false);
                 setIsActiveClient(true);
             }
 
@@ -168,17 +114,20 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 id: match?.id || uuidv4(),
                 ruc: rawData.ruc,
                 name: rawData.apellidos_nombres,
-                address: rawData.direccion, // Parroquia | Referencia
-                economicActivity: rawData.actividad_economica, // Actividad limpia (sin *)
-                email: rawData.contacto.email, // Email extraído mejorado
-                phones: rawData.contacto.celular ? [rawData.contacto.celular] : [], // Celular extraído mejorado
-                regime: rawData.regimen, // El régimen se mantiene estricto (3 tipos)
+                address: rawData.direccion,
+                economicActivity: rawData.actividad_economica,
+                email: rawData.contacto.email,
+                phones: rawData.contacto.celular ? [rawData.contacto.celular] : [],
+                regime: rawData.regimen,
                 sriPassword: finalPassword,
                 notes: `Obligaciones detectadas en PDF:\n${rawData.lista_obligaciones.join('\n')}`,
                 declarationHistory: match?.declarationHistory || [],
                 customServiceFee: match?.customServiceFee,
                 electronicSignaturePassword: match?.electronicSignaturePassword || '',
-                sharedAccessKey: match?.sharedAccessKey || ''
+                sharedAccessKey: match?.sharedAccessKey || '',
+                // NUEVOS CAMPOS MAPEDOS
+                isArtisan: rawData.es_artesano,
+                establishmentCount: rawData.cantidad_establecimientos
             });
 
             setStep('review');
@@ -197,9 +146,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             return;
         }
 
-        // Apply VIP Override Logic based on Frequency Selection
         let finalCategory = ClientCategory.InternoMensual;
-        
         if (selectedFrequency === 'ANUAL') {
              finalCategory = ClientCategory.ImpuestoRentaNegocioPopular;
         } else if (selectedFrequency === 'DEVOLUCION') {
@@ -207,14 +154,11 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
         } else if (selectedFrequency === 'SEMESTRAL') {
              finalCategory = isVip ? ClientCategory.SuscripcionSemestral : ClientCategory.InternoSemestral;
         } else {
-             // MENSUAL
              finalCategory = isVip ? ClientCategory.SuscripcionMensual : ClientCategory.InternoMensual;
         }
 
-        // Add extra obligations to notes and potentially schedule tasks
         let notes = extractedData.notes || '';
         const selectedExtras = extraObligations.filter(e => e.selected);
-        
         if (selectedExtras.length > 0) {
             notes += `\n\n--- PRODUCTOS / OBLIGACIONES ADICIONALES ---\n`;
             selectedExtras.forEach(e => {
@@ -236,14 +180,13 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             return [...prev, finalClient];
         });
 
-        // GENERATE TASKS FOR EXTRA OBLIGATIONS (PRODUCTOS)
         if (selectedExtras.length > 0) {
             const newTasks: Task[] = selectedExtras.map(extra => ({
                 id: uuidv4(),
                 title: extra.name,
                 description: `Obligación específica detectada en RUC. Periodicidad: ${extra.periodicity}. Generado automáticamente.`,
                 clientId: finalClient.id,
-                dueDate: addDays(new Date(), 7).toISOString(), // Default due date next week
+                dueDate: addDays(new Date(), 7).toISOString(),
                 status: TaskStatus.Pendiente,
                 cost: extra.price,
                 advancePayment: 0
@@ -347,7 +290,6 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                     )}
                                 </div>
                                 
-                                {/* Switches */}
                                 <div className="flex gap-4">
                                      <button onClick={() => setIsVip(!isVip)} className={`flex flex-col items-center p-2 rounded-lg border transition-all ${isVip ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                                         <span className="text-[9px] font-black uppercase flex items-center gap-1"><Crown size={10}/> VIP Suscrito</span>
@@ -357,7 +299,6 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                             </div>
 
                             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-5">
-                                {/* Form Fields */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">RUC / ID</label>
@@ -380,6 +321,41 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                         >
                                             {Object.values(TaxRegime).map(r => <option key={r} value={r}>{r}</option>)}
                                         </select>
+                                    </div>
+                                </div>
+                                
+                                {/* NUEVOS CAMPOS: ARTESANO Y ESTABLECIMIENTOS */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                                    <div className="space-y-1">
+                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Condición</label>
+                                         <div className="flex items-center gap-2">
+                                             <div className={`p-2 rounded-lg ${extractedData.isArtisan ? 'bg-purple-100 text-purple-600' : 'bg-slate-200 text-slate-500'}`}>
+                                                 <Hammer size={16}/>
+                                             </div>
+                                             <select 
+                                                value={extractedData.isArtisan ? 'yes' : 'no'}
+                                                onChange={e => setExtractedData({...extractedData, isArtisan: e.target.value === 'yes'})}
+                                                className="bg-transparent font-bold text-sm text-slate-700 dark:text-slate-200 outline-none w-full"
+                                             >
+                                                 <option value="no">Normal</option>
+                                                 <option value="yes">Artesano Calificado</option>
+                                             </select>
+                                         </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Establecimientos</label>
+                                         <div className="flex items-center gap-2">
+                                             <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
+                                                 <Building size={16}/>
+                                             </div>
+                                             <input 
+                                                type="number"
+                                                min="1"
+                                                value={extractedData.establishmentCount || 1}
+                                                onChange={e => setExtractedData({...extractedData, establishmentCount: parseInt(e.target.value) || 1})}
+                                                className="bg-transparent font-bold text-sm text-slate-700 dark:text-slate-200 outline-none w-full"
+                                             />
+                                         </div>
                                     </div>
                                 </div>
                                 
