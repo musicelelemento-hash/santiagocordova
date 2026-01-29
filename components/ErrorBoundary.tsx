@@ -1,5 +1,4 @@
-
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 import { ShieldAlert, RefreshCw, Activity, Home, BarChart } from 'lucide-react';
 
 interface ErrorBoundaryProps {
@@ -22,10 +21,6 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     hasError: false,
     error: null
   };
-
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-  }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };

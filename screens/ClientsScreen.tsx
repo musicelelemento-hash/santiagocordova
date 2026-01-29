@@ -44,7 +44,7 @@ const newClientInitialState: Partial<Client> = {
   phones: [''],
 };
 
-// --- OBLIGATION GROUPS CONFIGURATION (ELITE UI) ---
+// --- OBLIGATION GROUPS CONFIGURATION ---
 const OBLIGATION_GROUPS = [
     { id: 'all', label: 'Todas', icon: Layers, color: 'text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800' },
     { id: 'mensual', label: 'IVA Mensual', icon: Calendar, color: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/20' },
@@ -67,7 +67,6 @@ interface ClientsScreenProps {
 }
 
 // ... (Helper functions: getRecentPeriods, DeclarationProgressBar, PaymentHistoryChart, DynamicStatusIndicator remain the same) ...
-// (Including them briefly to ensure context, assuming they are defined above in the real file or imported)
 
 const getRecentPeriods = (client: Client, count: number): string[] => {
     const periods: string[] = [];
@@ -230,10 +229,21 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [sortOption, setSortOption] = useState<'9th_digit' | 'name' | 'status'>('9th_digit');
     const [filterOption, setFilterOption] = useState<'active' | 'inactive' | 'all'>('active');
     
-    // NEW: Group Filter State (Smart Tabs)
-    const [activeGroupTab, setActiveGroupTab] = useState('all');
-    
+    // --- SMART TABS STATE LOGIC ---
+    const getInitialGroupTab = () => {
+        if (!initialFilter?.category) return 'all';
+        const cat = initialFilter.category;
+        if (cat.includes('Mensual') && !cat.includes('Devolución')) return 'mensual';
+        if (cat.includes('Semestral')) return 'semestral';
+        if (cat.includes('Renta') || cat.includes('Popular')) return 'renta';
+        if (cat.includes('Devolución')) return 'devolucion';
+        return 'all';
+    };
+
+    const [activeGroupTab, setActiveGroupTab] = useState(getInitialGroupTab());
+    const [specificCategoryFilter, setSpecificCategoryFilter] = useState<ClientCategory | null>(initialFilter?.category || null);
     const [regimeFilter, setRegimeFilter] = useState<TaxRegime | 'all'>('all');
+
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [isSearchingSRI, setIsSearchingSRI] = useState(false);
     const [isPasswordFocused, setIsPasswordFocused] = useState(false);
@@ -243,6 +253,18 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     
     const phoneInputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const phoneCount = (newClient.phones || []).length;
+
+    // Reset filters if navigation changes from outside
+    useEffect(() => {
+        setActiveGroupTab(getInitialGroupTab());
+        setSpecificCategoryFilter(initialFilter?.category || null);
+    }, [initialFilter]);
+
+    // Handle Tab Click - Clears specific filters to allow broader view
+    const handleTabClick = (tabId: string) => {
+        setActiveGroupTab(tabId);
+        setSpecificCategoryFilter(null); // Unlock the specific filter when user manually switches tabs
+    };
 
     // ... (Existing Effects for SRI Data, Transcriptions, etc.) ...
     
@@ -346,7 +368,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         });
     }
 
-    // --- FILTER LOGIC (UPDATED WITH SMART TABS) ---
+    // --- FILTER LOGIC (FIXED) ---
     const filteredClients = useMemo(() => {
         return clients.filter(client => {
             if (client.isDeleted) return false;
@@ -363,23 +385,20 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 client.ruc.includes(searchTerm);
             if (!searchMatch) return false;
 
-            // Navigation Filter (Initial)
-            if (initialFilter) {
-                 if (initialFilter.category && client.category !== initialFilter.category) return false;
-                 if (initialFilter.regimes && !initialFilter.regimes.includes(client.regime)) return false;
-            }
-
-            // OBLIGATION GROUP FILTER (SMART TABS)
-            if (activeGroupTab === 'mensual') {
-                // Includes Subscriptions and Internal Monthly
-                if (!client.category.includes('Mensual') || client.category.includes('Devolución')) return false;
-            } else if (activeGroupTab === 'semestral') {
-                if (!client.category.includes('Semestral')) return false;
-            } else if (activeGroupTab === 'renta') {
-                // Includes Popular and General Income Tax
-                if (!client.category.includes('Renta') && !client.category.includes('Popular')) return false;
-            } else if (activeGroupTab === 'devolucion') {
-                if (!client.category.includes('Devolución')) return false;
+            // Specific Category Filter (From Dashboard Navigation)
+            if (specificCategoryFilter) {
+                if (client.category !== specificCategoryFilter) return false;
+            } else {
+                // Group Filter (Smart Tabs)
+                if (activeGroupTab === 'mensual') {
+                    if (!client.category.includes('Mensual') || client.category.includes('Devolución')) return false;
+                } else if (activeGroupTab === 'semestral') {
+                    if (!client.category.includes('Semestral')) return false;
+                } else if (activeGroupTab === 'renta') {
+                    if (!client.category.includes('Renta') && !client.category.includes('Popular')) return false;
+                } else if (activeGroupTab === 'devolucion') {
+                    if (!client.category.includes('Devolución')) return false;
+                }
             }
 
             // Additional Filter (Regime)
@@ -387,7 +406,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             return true;
         });
-    }, [clients, searchTerm, initialFilter, filterOption, activeGroupTab, regimeFilter]);
+    }, [clients, searchTerm, specificCategoryFilter, filterOption, activeGroupTab, regimeFilter]);
     
      const sortedClients = useMemo(() => {
         const getStatusScore = (client: Client): number => {
@@ -588,7 +607,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     {OBLIGATION_GROUPS.map(group => (
                         <button
                             key={group.id}
-                            onClick={() => setActiveGroupTab(group.id)}
+                            onClick={() => handleTabClick(group.id)}
                             className={`
                                 flex items-center space-x-2 px-4 py-2.5 rounded-xl border font-bold text-sm transition-all whitespace-nowrap
                                 ${activeGroupTab === group.id 
@@ -604,11 +623,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 </div>
             </div>
             
-             {initialFilter?.title && (
+             {(initialFilter?.title || specificCategoryFilter) && (
                 <div className="mb-4 flex items-center justify-between text-sm">
                     <div className="flex items-center bg-sky-100 text-sky-800 px-3 py-1 rounded-full text-xs font-bold">
-                        <span className="mr-2">Filtrado por:</span> {initialFilter.title}
-                        <button onClick={() => navigate('home')} className="ml-2 hover:text-sky-900"><X size={14}/></button>
+                        <span className="mr-2">Filtrado por:</span> {specificCategoryFilter || initialFilter?.title || 'Filtro Personalizado'}
+                        <button onClick={() => { navigate('clients'); setSpecificCategoryFilter(null); }} className="ml-2 hover:text-sky-900"><X size={14}/></button>
                     </div>
                 </div>
              )}
@@ -633,7 +652,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     else if (client.category.includes('Devolución')) GroupIcon = DollarSign;
 
                     return (
-                        <div key={client.id} onClick={() => handleOpenClientDetails(client)} className={`p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer border-l-4 ${getClientCardBg(client)} ${getClientCardBorder(client)} animate-slide-up-fade group`} style={{ animationDelay: `${index * 50}ms`, opacity: 0 }}>
+                        <div key={client.id} onClick={() => handleOpenClientDetails(client)} className={`p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-gray-700 hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer border-l-4 ${getClientCardBg(client)} ${getClientCardBorder(client)} animate-slide-up-fade group`}>
                             <div className="flex justify-between items-start">
                                <div className="flex-1 min-w-0">
                                     <div className="flex items-center space-x-2 mb-1">

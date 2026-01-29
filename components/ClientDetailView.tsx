@@ -10,7 +10,7 @@ import {
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy, 
     ShieldCheck, FileText, Zap, UserCheck, UserX, UserCheck2, 
     MoreHorizontal, Printer, Clipboard, CheckCircle, Send, Loader, ArrowDownToLine, 
-    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download
+    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, FileCheck
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -155,6 +155,13 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     // UI Logic for Editing
     const [obligation, setObligation] = useState(getObligationFromCategory(client.category));
     const [isVip, setIsVip] = useState(isVipCategory(client.category));
+    const [extraObligations, setExtraObligations] = useState({
+        iceMensual: client.notes?.includes('ICE') || false,
+        anexoPvp: client.notes?.includes('PVP') || false,
+        vehiculos: client.notes?.includes('Vehículos') || false,
+        patente: client.notes?.includes('Patente') || false,
+        supercias: client.notes?.includes('Supercias') || false,
+    });
     
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [signaturePasswordVisible, setSignaturePasswordVisible] = useState(false);
@@ -199,8 +206,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const periods = getRecentPeriods(editedClient, 1);
         const currentPeriod = periods[0] || getPeriod(editedClient, new Date());
         
-        // --- CAMBIO CLAVE: Detectar tanto 'Pendiente' como 'Enviada' para mostrar el Workflow Wizard ---
-        // Prioridad: Si hay algo pendiente de declarar, mostramos eso. Si todo está declarado pero falta pagar, mostramos eso.
         const pendingToDeclare = editedClient.declarationHistory.find(d => d.period === currentPeriod && d.status === DeclarationStatus.Pendiente);
         const pendingToPay = editedClient.declarationHistory.find(d => d.period === currentPeriod && d.status === DeclarationStatus.Enviada);
         
@@ -221,13 +226,29 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         };
     }, [editedClient, serviceFees]);
 
+    const handleExtraChange = (key: keyof typeof extraObligations) => {
+        setExtraObligations(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
     const handleSave = () => {
         let newCategory = editedClient.category;
         if (editedClient.regime !== TaxRegime.RimpeNegocioPopular) {
              newCategory = buildCategory(obligation, isVip);
         }
         
-        const toSave = { ...editedClient, category: newCategory };
+        // Build notes from extras
+        let finalNotes = editedClient.notes || '';
+        const extrasList = [];
+        if (extraObligations.iceMensual && !finalNotes.includes('ICE')) extrasList.push("• Declaración/Anexo ICE");
+        if (extraObligations.anexoPvp && !finalNotes.includes('PVP')) extrasList.push("• Anexo PVP");
+        if (extraObligations.vehiculos && !finalNotes.includes('Vehículos')) extrasList.push("• Impuestos Vehiculares");
+        if (extraObligations.patente && !finalNotes.includes('Patente')) extrasList.push("• Patente Municipal");
+        
+        if (extrasList.length > 0) {
+            finalNotes += `\n\n--- OBLIGACIONES ADICIONALES ---\n${extrasList.join('\n')}`;
+        }
+        
+        const toSave = { ...editedClient, category: newCategory, notes: finalNotes };
         onSave(toSave);
         setIsEditing(false);
         setIsMenuOpen(false);
@@ -277,7 +298,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         }, 500);
     };
 
-    // Nueva función para manejo rápido desde el Wizard
     const handleWizardAction = (period: string, action: 'declare' | 'pay') => {
         setConfirmation({ action, period });
     };
