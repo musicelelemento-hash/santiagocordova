@@ -4,7 +4,7 @@ import {
     UploadCloud, FileText, CheckCircle, AlertTriangle, 
     ScanLine, ArrowRight, Loader, X, Save, ShieldCheck, 
     User, MapPin, Mail, Phone, Briefcase, FileJson, DollarSign, Key, 
-    ToggleRight, ToggleLeft, ArrowLeft, FileUp, Download, Plus, Clock
+    ToggleRight, ToggleLeft, ArrowLeft, FileUp, Download, Plus, Clock, Crown
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { Client, TaxRegime, ClientCategory, Screen, Task, TaskStatus } from '../types';
@@ -39,6 +39,9 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
     const [isVip, setIsVip] = useState(false);
     const [isActiveClient, setIsActiveClient] = useState(true);
     const [foundPasswordInVault, setFoundPasswordInVault] = useState(false);
+    
+    // UI State for Review
+    const [selectedFrequency, setSelectedFrequency] = useState<'MENSUAL' | 'SEMESTRAL' | 'ANUAL' | 'DEVOLUCION'>('MENSUAL');
     
     // Extra Obligations State (PRODUCTOS)
     const [extraObligations, setExtraObligations] = useState<ExtraObligation[]>([]);
@@ -78,14 +81,13 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
 
             // --- LÓGICA INTELIGENTE DE OBLIGACIONES ---
             
-            // 1. Determinar Categoría Principal (BASE: IVA)
-            let detectedCategory = ClientCategory.InternoMensual;
+            // 1. Determinar Frecuencia Visual Inicial
             if (rawData.regimen === TaxRegime.RimpeNegocioPopular) {
-                detectedCategory = ClientCategory.ImpuestoRentaNegocioPopular;
+                setSelectedFrequency('ANUAL');
             } else if (rawData.obligaciones_tributarias === 'semestral') {
-                detectedCategory = ClientCategory.InternoSemestral;
-            } else if (rawData.obligaciones_tributarias === 'mensual') {
-                detectedCategory = ClientCategory.InternoMensual;
+                setSelectedFrequency('SEMESTRAL');
+            } else {
+                setSelectedFrequency('MENSUAL');
             }
 
             // 2. DETECTAR PRODUCTOS/OBLIGACIONES ESPECÍFICAS (Separados del régimen)
@@ -156,7 +158,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 setIsVip(match.category.includes('Suscripción'));
                 setIsActiveClient(match.isActive ?? true);
             } else {
-                setIsVip(false);
+                setIsVip(false); // Default to not VIP
                 setIsActiveClient(true);
             }
 
@@ -169,7 +171,6 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 email: rawData.contacto.email,
                 phones: rawData.contacto.celular ? [rawData.contacto.celular] : [],
                 regime: rawData.regimen, // El régimen se mantiene estricto (3 tipos)
-                category: detectedCategory,
                 sriPassword: finalPassword,
                 notes: `Obligaciones detectadas en PDF:\n${rawData.lista_obligaciones.join('\n')}`,
                 declarationHistory: match?.declarationHistory || [],
@@ -194,14 +195,18 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             return;
         }
 
-        // Apply VIP Override Logic for main category
-        let finalCategory = extractedData.category || ClientCategory.InternoMensual;
-        if (isVip) {
-            if (finalCategory === ClientCategory.InternoMensual) finalCategory = ClientCategory.SuscripcionMensual;
-            if (finalCategory === ClientCategory.InternoSemestral) finalCategory = ClientCategory.SuscripcionSemestral;
+        // Apply VIP Override Logic based on Frequency Selection
+        let finalCategory = ClientCategory.InternoMensual;
+        
+        if (selectedFrequency === 'ANUAL') {
+             finalCategory = ClientCategory.ImpuestoRentaNegocioPopular;
+        } else if (selectedFrequency === 'DEVOLUCION') {
+             finalCategory = ClientCategory.DevolucionIvaTerceraEdad;
+        } else if (selectedFrequency === 'SEMESTRAL') {
+             finalCategory = isVip ? ClientCategory.SuscripcionSemestral : ClientCategory.InternoSemestral;
         } else {
-            if (finalCategory === ClientCategory.SuscripcionMensual) finalCategory = ClientCategory.InternoMensual;
-            if (finalCategory === ClientCategory.SuscripcionSemestral) finalCategory = ClientCategory.InternoSemestral;
+             // MENSUAL
+             finalCategory = isVip ? ClientCategory.SuscripcionMensual : ClientCategory.InternoMensual;
         }
 
         // Add extra obligations to notes and potentially schedule tasks
@@ -343,7 +348,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                 {/* Switches */}
                                 <div className="flex gap-4">
                                      <button onClick={() => setIsVip(!isVip)} className={`flex flex-col items-center p-2 rounded-lg border transition-all ${isVip ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
-                                        <span className="text-[9px] font-black uppercase">VIP / Suscrito</span>
+                                        <span className="text-[9px] font-black uppercase flex items-center gap-1"><Crown size={10}/> VIP Suscrito</span>
                                         {isVip ? <ToggleRight size={24} className="text-amber-500"/> : <ToggleLeft size={24}/>}
                                      </button>
                                 </div>
@@ -364,11 +369,26 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Régimen</label>
                                         <select 
                                             value={extractedData.regime}
-                                            onChange={e => setExtractedData({...extractedData, regime: e.target.value as TaxRegime})}
+                                            onChange={e => {
+                                                const val = e.target.value as TaxRegime;
+                                                setExtractedData({...extractedData, regime: val});
+                                                if(val === TaxRegime.RimpeNegocioPopular) setSelectedFrequency('ANUAL');
+                                            }}
                                             className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-bold text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 text-sm"
                                         >
                                             {Object.values(TaxRegime).map(r => <option key={r} value={r}>{r}</option>)}
                                         </select>
+                                    </div>
+                                </div>
+                                
+                                {/* OBLIGACIÓN PRINCIPAL SELECTOR */}
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Obligación Principal (IVA/Renta)</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button onClick={() => setSelectedFrequency('MENSUAL')} className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedFrequency === 'MENSUAL' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-500'}`}>IVA MENSUAL</button>
+                                        <button onClick={() => setSelectedFrequency('SEMESTRAL')} className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedFrequency === 'SEMESTRAL' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-500'}`}>IVA SEMESTRAL</button>
+                                        <button onClick={() => setSelectedFrequency('ANUAL')} className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedFrequency === 'ANUAL' ? 'bg-purple-50 border-purple-500 text-purple-700' : 'bg-white border-slate-200 text-slate-500'}`}>IMP. RENTA</button>
+                                        <button onClick={() => setSelectedFrequency('DEVOLUCION')} className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedFrequency === 'DEVOLUCION' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-slate-200 text-slate-500'}`}>DEVOLUCIÓN</button>
                                     </div>
                                 </div>
 
@@ -378,16 +398,6 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                         value={extractedData.name || ''} 
                                         onChange={e => setExtractedData({...extractedData, name: e.target.value})}
                                         className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-bold text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
-                                    />
-                                </div>
-                                
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Actividad Económica</label>
-                                    <input 
-                                        value={extractedData.economicActivity || ''} 
-                                        onChange={e => setExtractedData({...extractedData, economicActivity: e.target.value})}
-                                        className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 text-sm" 
-                                        placeholder="Actividad extraída..."
                                     />
                                 </div>
                                 
