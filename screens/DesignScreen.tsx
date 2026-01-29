@@ -4,7 +4,7 @@ import {
     UploadCloud, FileText, CheckCircle, AlertTriangle, 
     ScanLine, Sparkles, ArrowRight, Loader, RefreshCw, 
     CreditCard, User, MapPin, Mail, Phone, Briefcase, 
-    Save, FileJson, ShieldCheck, ArrowLeft, X, Image as ImageIcon, Camera, FileUp, ToggleLeft, ToggleRight, FileType, DollarSign
+    Save, FileJson, ShieldCheck, ArrowLeft, X, Image as ImageIcon, Camera, FileUp, ToggleLeft, ToggleRight, FileType, DollarSign, Key
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { Client, TaxRegime, ClientCategory, StoredFile, Screen } from '../types';
@@ -14,9 +14,10 @@ import { analyzeClientPhoto } from '../services/geminiService';
 
 interface DesignScreenProps {
     navigate: (screen: Screen, options?: any) => void;
+    sriCredentials?: Record<string, string>;
 }
 
-export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate }) => {
+export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredentials }) => {
     const { toast } = useToast();
     const { clients, setClients } = useAppStore();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,6 +28,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate }) => {
     const [existingClient, setExistingClient] = useState<Client | null>(null);
     const [isVip, setIsVip] = useState(false);
     const [isActiveClient, setIsActiveClient] = useState(true);
+    const [foundPasswordInVault, setFoundPasswordInVault] = useState(false);
 
     const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -41,6 +43,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate }) => {
 
     const processDocument = async (file: File) => {
         setStep('analyzing');
+        setFoundPasswordInVault(false);
         try {
             const reader = new FileReader();
             reader.onload = async (e) => {
@@ -54,23 +57,55 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate }) => {
                     const match = clients.find(c => c.ruc === result.ruc);
                     setExistingClient(match || null);
                     
+                    // Check Vault for Password if not found in client
+                    let finalPassword = result.sriPassword || '';
+                    if (!finalPassword && match?.sriPassword) {
+                        finalPassword = match.sriPassword;
+                    } else if (!finalPassword && result.ruc && sriCredentials && sriCredentials[result.ruc]) {
+                        finalPassword = sriCredentials[result.ruc];
+                        setFoundPasswordInVault(true);
+                    }
+
+                    // --- INTELLIGENT CATEGORY LOGIC ---
+                    // Default to Monthly unless signs of Semestral or Rimpe Popular
+                    let detectedCategory = ClientCategory.InternoMensual; // Default: "si es mensual solo va a decir declaracion de iva"
+                    const notesUpper = (result.notes || '').toUpperCase();
+                    
+                    if (result.regime === TaxRegime.RimpeNegocioPopular) {
+                        detectedCategory = ClientCategory.ImpuestoRentaNegocioPopular;
+                    } else {
+                        // Check explicit semestral keywords in obligations extracted by Gemini
+                        if (notesUpper.includes('SEMESTRAL') || notesUpper.includes('SEMESTRE')) {
+                            detectedCategory = ClientCategory.InternoSemestral;
+                        } else {
+                            detectedCategory = ClientCategory.InternoMensual;
+                        }
+                    }
+
                     // Set defaults based on existing or extracted
                     if (match) {
+                        // Maintain VIP status if already set
                         setIsVip(match.category.includes('Suscripción'));
                         setIsActiveClient(match.isActive ?? true);
+                        // If user manually changed category before, maybe keep it? 
+                        // For now, let's suggest the detected one but allow override, or keep existing if strong match
+                        // Actually, if updating from PDF, we likely want the PDF's truth.
+                        // But VIP status is internal.
                     } else {
-                        // Default logic for new
+                        // New client defaults
                         setIsVip(false);
                         setIsActiveClient(true);
                     }
 
                     setExtractedData({
                         ...result,
-                        // If updating, preserve IDs and history but allow overwriting details
+                        // Ensure category aligns with logic + VIP toggle will happen in render
+                        category: detectedCategory,
+                        // If updating, preserve IDs and history
                         id: match?.id || uuidv4(),
-                        customServiceFee: match?.customServiceFee, // Preserve fee if exists, or edit later
+                        customServiceFee: match?.customServiceFee, 
                         declarationHistory: match?.declarationHistory || [],
-                        sriPassword: match?.sriPassword || '',
+                        sriPassword: finalPassword,
                     });
                     setStep('review');
                 } catch (error: any) {
@@ -92,13 +127,17 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate }) => {
             return;
         }
 
-        // Determine Category based on Switches & Regime
-        let finalCategory = ClientCategory.InternoMensual;
-        if (extractedData.regime === TaxRegime.RimpeNegocioPopular) {
-            finalCategory = ClientCategory.ImpuestoRentaNegocioPopular;
+        // Determine Final Category based on Switches & Detected Logic
+        let finalCategory = extractedData.category || ClientCategory.InternoMensual;
+        
+        // Apply VIP Override
+        if (isVip) {
+            if (finalCategory === ClientCategory.InternoMensual) finalCategory = ClientCategory.SuscripcionMensual;
+            if (finalCategory === ClientCategory.InternoSemestral) finalCategory = ClientCategory.SuscripcionSemestral;
         } else {
-            // General or Emprendedor
-            finalCategory = isVip ? ClientCategory.SuscripcionMensual : ClientCategory.InternoMensual;
+             // Ensure it's internal if VIP is off
+            if (finalCategory === ClientCategory.SuscripcionMensual) finalCategory = ClientCategory.InternoMensual;
+            if (finalCategory === ClientCategory.SuscripcionSemestral) finalCategory = ClientCategory.InternoSemestral;
         }
 
         const finalClient: Client = {
@@ -109,12 +148,12 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate }) => {
             sriPassword: extractedData.sriPassword || existingClient?.sriPassword || '',
             regime: extractedData.regime || TaxRegime.General,
             category: finalCategory,
-            customServiceFee: extractedData.customServiceFee, // Guardar Tarifa
+            customServiceFee: extractedData.customServiceFee, 
             economicActivity: extractedData.economicActivity || '',
             address: extractedData.address || '',
             email: extractedData.email || '',
             phones: extractedData.phones || [],
-            notes: extractedData.notes || '', // Guardar Obligaciones
+            notes: extractedData.notes || '', 
             declarationHistory: existingClient?.declarationHistory || [],
             isActive: isActiveClient,
             isArtisan: !!extractedData.isArtisan,
@@ -166,7 +205,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate }) => {
                             <div className="text-center relative z-10">
                                 <Loader className="w-16 h-16 text-brand-teal animate-spin mx-auto mb-6"/>
                                 <h3 className="text-xl font-black text-brand-navy dark:text-white mb-2">Procesando PDF...</h3>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Leyendo Obligaciones y RUC</p>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Buscando obligaciones y contactos...</p>
                             </div>
                         ) : step === 'success' ? (
                             <div className="text-center relative z-10">
@@ -270,6 +309,23 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate }) => {
                                         className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-bold text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
                                     />
                                 </div>
+                                
+                                {/* Password Field (Auto-detected from vault) */}
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1 flex justify-between">
+                                        <span>Clave SRI</span>
+                                        {foundPasswordInVault && (
+                                            <span className="text-emerald-600 flex items-center gap-1"><Key size={10}/> Encontrada en Bóveda</span>
+                                        )}
+                                    </label>
+                                    <input 
+                                        type="password"
+                                        value={extractedData.sriPassword || ''} 
+                                        onChange={e => setExtractedData({...extractedData, sriPassword: e.target.value})}
+                                        className={`w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-mono font-bold text-slate-800 dark:text-white border ${foundPasswordInVault ? 'border-emerald-300' : 'border-slate-200 dark:border-slate-700'}`} 
+                                        placeholder="No encontrada"
+                                    />
+                                </div>
 
                                 {/* Address and Tariff Row */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -325,7 +381,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate }) => {
                                 
                                 <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
                                     <p className="text-[10px] font-black text-yellow-700 uppercase tracking-wider mb-2 flex items-center gap-1">
-                                        <FileJson size={12}/> Obligaciones Tributarias / Notas
+                                        <FileJson size={12}/> Obligaciones Tributarias (Notas)
                                     </p>
                                     <textarea 
                                         value={extractedData.notes || ''}
@@ -333,6 +389,9 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate }) => {
                                         className="w-full bg-transparent text-xs text-yellow-800 dark:text-yellow-200 font-medium border-none p-0 focus:ring-0 resize-none h-24"
                                         placeholder="No se detectaron obligaciones adicionales."
                                     />
+                                    {extractedData.category?.includes('Semestral') && (
+                                        <p className="text-[10px] text-yellow-600 mt-2 font-bold">⚠️ Se detectó periodicidad SEMESTRAL.</p>
+                                    )}
                                 </div>
                             </div>
 

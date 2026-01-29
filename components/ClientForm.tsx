@@ -36,6 +36,7 @@ const newClientInitialState: Partial<Client> = {
   economicActivity: '',
   isActive: true,
   phones: [''],
+  email: ''
 };
 
 export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, onCancel, sriCredentials }) => {
@@ -51,17 +52,21 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
     const isVip = clientData.category?.includes('Suscripción');
     const isActive = clientData.isActive ?? true;
 
-    // Auto-fill password from credentials
+    // --- AUTO-DETECT PASSWORD FROM VAULT ---
     useEffect(() => {
-        if (clientData.ruc && clientData.ruc.length === 13 && sriCredentials && !clientData.sriPassword) {
-            const foundPassword = sriCredentials[clientData.ruc];
+        const ruc = clientData.ruc || '';
+        // Solo buscar si tiene 13 dígitos (RUC válido) y tenemos credenciales disponibles
+        if (ruc.length === 13 && sriCredentials && !clientData.sriPassword) {
+            const foundPassword = sriCredentials[ruc];
             if (foundPassword) {
                 setClientData(prev => ({ ...prev, sriPassword: foundPassword }));
-                setFeedback({ type: 'success', message: 'Clave recuperada de la base de datos.' });
-                setTimeout(() => setFeedback(null), 3000);
+                setFeedback({ type: 'success', message: '¡Clave encontrada en la Bóveda de Contraseñas!' });
+                // Limpiar mensaje después de 3 segundos
+                const timer = setTimeout(() => setFeedback(null), 3000);
+                return () => clearTimeout(timer);
             }
         }
-    }, [clientData.ruc, sriCredentials]);
+    }, [clientData.ruc, sriCredentials]); // Dependencias: ejecutar cuando cambie el RUC o las credenciales
 
     // Auto-query SRI Public Data
     useEffect(() => {
@@ -78,7 +83,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                             address: data.address || prev.address,
                             economicActivity: data.activity || prev.economicActivity
                         }));
-                        setFeedback({ type: 'success', message: 'Datos encontrados en SRI.' });
+                        setFeedback({ type: 'success', message: 'Datos públicos encontrados en SRI.' });
                         setTimeout(() => setFeedback(null), 2500);
                     }
                 } catch (e) {
@@ -101,6 +106,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const base64String = (e.target?.result as string).split(',')[1];
+                // Enviamos a Gemini para extracción completa (incluyendo email y celular)
                 const aiData = await analyzeClientPhoto(base64String, file.type) as any;
                 
                 let category = aiData.category;
@@ -109,16 +115,18 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                      else category = ClientCategory.SuscripcionMensual;
                 }
 
+                // Mezclar datos extraídos preservando lo que ya estaba si la IA devuelve vacío
                 setClientData(prev => ({
                     ...prev, 
                     ...aiData, 
-                    phones: aiData.phones?.length ? aiData.phones : prev.phones,
+                    // Asegurar arrays de teléfonos
+                    phones: (aiData.phones && aiData.phones.length > 0) ? aiData.phones : prev.phones,
+                    email: aiData.email || prev.email,
                     category,
-                    // Append notes if they contain obligations
                     notes: aiData.notes ? (prev.notes ? `${prev.notes}\n${aiData.notes}` : aiData.notes) : prev.notes
                 }));
                 setIsAnalyzing(false);
-                setFeedback({ type: 'success', message: 'Datos extraídos correctamente.' });
+                setFeedback({ type: 'success', message: 'Datos extraídos del documento (incluyendo contactos).' });
             };
             reader.readAsDataURL(file);
         } catch (error: any) {
@@ -128,7 +136,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
     };
 
     const handleVipToggle = () => {
-        if (clientData.regime === TaxRegime.RimpeNegocioPopular) return; // NP doesn't have monthly sub logic typically
+        if (clientData.regime === TaxRegime.RimpeNegocioPopular) return; 
 
         let newCategory = clientData.category;
         if (isVip) {
@@ -174,7 +182,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     {isAnalyzing ? (
                         <div className="flex flex-col items-center animate-pulse">
                             <Loader className="w-10 h-10 text-sky-500 animate-spin mb-2"/>
-                            <p className="text-sm font-bold text-sky-600">Analizando Documento...</p>
+                            <p className="text-sm font-bold text-sky-600">Analizando RUC y Contactos...</p>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center">
@@ -182,13 +190,14 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 <FileText size={24} />
                             </div>
                             <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Auto-completar con Documento</p>
-                            <p className="text-xs text-slate-400 mt-1">Sube foto o PDF del RUC</p>
+                            <p className="text-xs text-slate-400 mt-1">Sube foto o PDF del RUC para extraer datos</p>
                         </div>
                     )}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* COLUMNA IZQUIERDA: IDENTIFICACIÓN Y DIRECCIÓN */}
                 <div className="space-y-4">
                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 mb-2">Identificación</h4>
                     
@@ -238,8 +247,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     </div>
                 </div>
 
+                {/* COLUMNA DERECHA: TRIBUTARIO & CONTACTO */}
                 <div className="space-y-4">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 mb-2">Tributario</h4>
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 mb-2">Tributario & Contacto</h4>
                     
                     <div className="flex gap-4 mb-2">
                         {/* VIP Switch */}
@@ -262,13 +272,19 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     </div>
 
                     <div className="relative">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex justify-between">
+                             <span>Clave SRI</span>
+                             {sriCredentials && clientData.ruc && sriCredentials[clientData.ruc] && (
+                                <span className="text-sky-600 flex items-center gap-1 animate-fade-in"><Key size={10}/> Detectada en Bóveda</span>
+                             )}
+                        </label>
                         <div className="relative flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-sky-500 transition-all">
                             <span className="pl-3 text-slate-400"><Key size={18}/></span>
                             <input 
                                 type={passwordVisible ? 'text' : 'password'} 
                                 value={clientData.sriPassword || ''} 
                                 onChange={e => setClientData({...clientData, sriPassword: e.target.value})} 
-                                className="w-full p-3 bg-transparent outline-none text-slate-800 dark:text-white text-sm font-mono"
+                                className={`w-full p-3 bg-transparent outline-none text-slate-800 dark:text-white text-sm font-mono ${sriCredentials && clientData.ruc && sriCredentials[clientData.ruc] === clientData.sriPassword ? 'text-sky-600 font-bold' : ''}`}
                                 placeholder="Clave SRI"
                             />
                             <button onClick={() => setPasswordVisible(!passwordVisible)} className="pr-3 text-slate-400 hover:text-slate-600">{passwordVisible ? <EyeOff size={18}/> : <Eye size={18}/>}</button>
@@ -282,6 +298,30 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         <select value={clientData.category} onChange={e => setClientData({...clientData, category: e.target.value as ClientCategory})} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-sky-500 outline-none">
                             {IVA_CATEGORIES.map(val => <option key={val} value={val}>{val}</option>)}
                         </select>
+                    </div>
+                    
+                    {/* NUEVOS CAMPOS: EMAIL Y CELULAR (EXTRAÍDOS DE PDF) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                         <div className="relative flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                            <span className="pl-3 text-slate-400"><Phone size={16}/></span>
+                            <input 
+                                type="text" 
+                                value={(clientData.phones || [''])[0]} 
+                                onChange={e => setClientData({...clientData, phones: [e.target.value]})} 
+                                className="w-full p-3 bg-transparent outline-none text-slate-800 dark:text-white text-sm"
+                                placeholder="Celular"
+                            />
+                        </div>
+                        <div className="relative flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                            <span className="pl-3 text-slate-400"><Mail size={16}/></span>
+                            <input 
+                                type="email" 
+                                value={clientData.email || ''} 
+                                onChange={e => setClientData({...clientData, email: e.target.value})} 
+                                className="w-full p-3 bg-transparent outline-none text-slate-800 dark:text-white text-sm"
+                                placeholder="Email"
+                            />
+                        </div>
                     </div>
 
                     <div className="relative flex items-center bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">

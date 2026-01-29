@@ -34,6 +34,7 @@ const initialServiceFees: ServiceFeesConfig = {
   devolucionRenta: 15,
   anexoGastosPersonales: 15,
   customPunctualServices: [],
+  serviceBundles: []
 };
 
 const defaultReminderConfig: ReminderConfig = {
@@ -57,23 +58,18 @@ const App: React.FC = () => {
       const path = window.location.pathname;
       const isAdminLoggedIn = localStorage.getItem('sc_pro_admin_session') === 'true';
 
-      // Rutas directas protegidas
       if (path === '/admin' || path === '/dashboard') {
           return isAdminLoggedIn ? 'dashboard' : 'login';
       }
-      
-      // Rutas públicas
       if (path === '/services') return 'services';
-      if (path === '/portal') return 'login'; // Login genérico, luego deriva
+      if (path === '/portal') return 'login';
       
       return 'landing';
   });
 
-  // Session State
   const [publicUser, setPublicUser] = useState<PublicUser | null>(null);
   const [loggedClient, setLoggedClient] = useState<Client | null>(null);
 
-  // Sync Browser URL with App State
   useEffect(() => {
       let path = '/';
       if (appState === 'dashboard') path = '/dashboard';
@@ -90,7 +86,6 @@ const App: React.FC = () => {
       }
   }, [appState]);
 
-  // Handle Browser Back Button
   useEffect(() => {
       const handlePopState = () => {
           const path = window.location.pathname;
@@ -225,7 +220,7 @@ const App: React.FC = () => {
   const handleWebOrderSubmit = (order: WebOrder) => setWebOrders(prev => [...prev, order]);
   
   const handleLogoutConfirm = () => { 
-      localStorage.removeItem('sc_pro_admin_session'); // Clear session
+      localStorage.removeItem('sc_pro_admin_session'); 
       setAppState('landing'); 
       setShowLogoutConfirm(false); 
       setLoggedClient(null); 
@@ -233,7 +228,7 @@ const App: React.FC = () => {
 
   const handleLoginSuccess = (role: 'admin' | 'client', clientData?: Client) => {
       if (role === 'admin') {
-          localStorage.setItem('sc_pro_admin_session', 'true'); // Persist admin session
+          localStorage.setItem('sc_pro_admin_session', 'true'); 
           setAppState('dashboard');
           setShowSplash(true);
       } else if (role === 'client' && clientData) {
@@ -252,7 +247,7 @@ const App: React.FC = () => {
       case 'cobranza': return <CobranzaScreen clients={clients} setClients={setClients} serviceFees={serviceFees} reminderConfig={reminderConfig} />;
       case 'web_orders': return <WebOrdersScreen orders={webOrders} setOrders={setWebOrders} setTasks={setTasks} navigate={navigate} />;
       case 'settings': return <SettingsScreen clients={clients} setClients={setClients} tasks={tasks} setTasks={setTasks} serviceFees={serviceFees} setServiceFees={setServiceFees} reminderConfig={reminderConfig} setReminderConfig={setReminderConfig} webOrders={webOrders} setWebOrders={setWebOrders} sriCredentials={sriCredentials} setSriCredentials={setSriCredentials} navigate={navigate} />;
-      case 'scanner': return <DesignScreen navigate={navigate} />;
+      case 'scanner': return <DesignScreen navigate={navigate} sriCredentials={sriCredentials} />;
       default: return <HomeScreen navigate={navigate} serviceFees={serviceFees} clients={clients} tasks={tasks} />;
     }
   };

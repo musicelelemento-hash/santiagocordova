@@ -44,25 +44,28 @@ export const analyzeClientPhoto = async (base64Data: string, mimeType: string): 
               parts: [
                   { inlineData: { data: base64Data, mimeType: effectiveMime } },
                   { text: `
-                    Eres un Auditor Tributario Senior del SRI (Ecuador). Tu tarea es extraer datos exactos de este Certificado de RUC.
+                    Eres un Auditor Tributario del SRI (Ecuador). Analiza este Certificado de RUC.
+                    
+                    EXTRAE CON PRECISIÓN QUIRÚRGICA:
 
-                    INSTRUCCIONES DE EXTRACCIÓN PRECISAS:
+                    1. **RUC**: 13 dígitos exactos.
+                    2. **Razón Social**: Nombre completo o Razón Social.
+                    3. **Régimen (CRÍTICO)**: 
+                       - "RIMPE NEGOCIO POPULAR" -> "${TaxRegime.RimpeNegocioPopular}"
+                       - "RIMPE EMPRENDEDOR" -> "${TaxRegime.RimpeEmprendedor}"
+                       - Si no dice RIMPE -> "${TaxRegime.General}"
+                    4. **Contactos (BUSCA EN TODO EL DOCUMENTO)**: 
+                       - Email: Busca patrones de correo (@) en la sección "Medios de Contacto" o "Ubicación".
+                       - Celular: Busca números de 10 dígitos que empiecen con '09'. Prioriza celulares sobre fijos.
+                    5. **Dirección**: Calle, número, intersección y parroquia.
+                    6. **Actividad**: La actividad principal listada.
+                    7. **Obligaciones (PERIODICIDAD)**:
+                       - Lee la sección "Obligaciones Tributarias".
+                       - Si encuentras la palabra "SEMESTRAL" junto a "IVA" -> Escribe en notas: "OBLIGACIÓN SEMESTRAL DETECTADA".
+                       - Si solo dice "DECLARACIÓN DE IVA" o "MENSUAL" -> Escribe en notas: "OBLIGACIÓN MENSUAL DETECTADA".
+                       - Copia textualmente las obligaciones encontradas en el campo 'notes'.
 
-                    1. **RUC**: Busca exactamente el número de 13 dígitos.
-                    2. **Razón Social**: Extrae "Apellidos y Nombres" o la "Razón Social". NO confundir con el Representante Legal.
-                    3. **Régimen Fiscal (CRÍTICO)**: 
-                       - Si el documento dice "RIMPE" y "NEGOCIO POPULAR" -> Retorna exactamente: "${TaxRegime.RimpeNegocioPopular}"
-                       - Si el documento dice "RIMPE" y "EMPRENDEDOR" -> Retorna exactamente: "${TaxRegime.RimpeEmprendedor}"
-                       - Si dice "GENERAL" o no menciona RIMPE -> Retorna exactamente: "${TaxRegime.General}"
-                    4. **Dirección Completa**: Concatena en una sola línea: Calle + Número + Intersección + Parroquia + Referencia (si existe).
-                    5. **Contactos**: Email y Celular.
-                    6. **Actividad Económica**: Extrae la actividad principal descrita.
-                    7. **Obligaciones Tributarias**:
-                       - Lee la sección de "Obligaciones Tributarias" del documento.
-                       - Extrae la lista completa como texto (ej: "Declaración de IVA Semestral, Impuesto a la Renta Anual").
-                       - Pon esto en el campo "notes".
-
-                    FORMATO DE RESPUESTA JSON (SIN MARKDOWN):
+                    JSON RETURN:
                     {
                         "ruc": "string",
                         "name": "string",
@@ -71,31 +74,29 @@ export const analyzeClientPhoto = async (base64Data: string, mimeType: string): 
                         "address": "string",
                         "economicActivity": "string",
                         "regime": "string",
-                        "notes": "string (Lista de obligaciones extraídas)",
-                        "isArtisan": boolean (true si dice "CALIFICACIÓN ARTESANAL")
+                        "notes": "string",
+                        "isArtisan": boolean
                     }
                   ` }
               ]
           },
           config: { 
               responseMimeType: "application/json",
-              temperature: 0.0 // Temperatura 0 para máxima precisión determinista
+              temperature: 0.0
           }
         });
         
         const text = response.text || "{}";
-        // Limpieza robusta de JSON por si el modelo incluye bloques de código
         const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(jsonStr);
 
-        // Post-procesamiento para asegurar tipos
         return {
             ...data,
             phones: Array.isArray(data.phones) ? data.phones : (data.phones ? [data.phones] : [])
         };
     } 
     
-    // MOCK FALLBACK (Solo si no hay API Key configurada)
+    // MOCK FALLBACK
     console.warn("Usando Mock de Datos (Falta API Key)");
     return {
         ruc: "1790085783001",
@@ -104,7 +105,7 @@ export const analyzeClientPhoto = async (base64Data: string, mimeType: string): 
         email: "facturacion@empresa.mock",
         address: "Av. Amazonas y Naciones Unidas, Quito",
         phones: ["0991234567"],
-        notes: "Obligaciones Simuladas: Declaración Mensual IVA, Anexo Transaccional."
+        notes: "Obligaciones: Declaración de IVA MENSUAL."
     };
 
   } catch (error) {
