@@ -1,14 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, ShoppingCart, ArrowRight, X, Trash2, CheckCircle, User, Phone, CreditCard, Mail, Star, TrendingUp, MapPin, Menu, LogOut, MessageCircle, FileKey, Laptop, ShieldCheck, Briefcase, Package } from 'lucide-react';
+import { Check, ShoppingCart, ArrowRight, X, Trash2, CheckCircle, User, Phone, CreditCard, Mail, Star, TrendingUp, MapPin, Menu, LogOut, MessageCircle, FileKey, Laptop, ShieldCheck, Briefcase, Package, FileText, Activity } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { Modal } from '../components/Modal';
 import { AuthModal } from '../components/AuthModal';
 import { OrderItem, WebOrder, PublicUser } from '../types';
 import { INITIAL_SERVICE_FEES } from '../constants'; // Import default to check structure if needed, though we use local data usually passed via props if dynamic.
-// Note: In a real dynamic app, ServicesPage should receive the configured fees/bundles from App.tsx via props.
-// Assuming ServicesPage needs access to current `serviceFees` state, we should update App.tsx to pass it, or read from localStorage if strictly client-side for public view (less secure but works for this demo).
-// For now, I'll use a hardcoded fallback + props pattern.
 
 import { v4 as uuidv4 } from 'uuid';
 
@@ -22,6 +19,17 @@ const getStoredBundles = () => {
         }
     } catch(e) {}
     return INITIAL_SERVICE_FEES.serviceBundles;
+}
+
+const getStoredCustomServices = () => {
+    try {
+        const stored = localStorage.getItem('serviceFees');
+        if(stored) {
+            const parsed = JSON.parse(stored);
+            return parsed.customPunctualServices || INITIAL_SERVICE_FEES.customPunctualServices;
+        }
+    } catch(e) {}
+    return INITIAL_SERVICE_FEES.customPunctualServices;
 }
 
 interface ServicesPageProps {
@@ -39,7 +47,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     
     // Toggle State for Services
-    const [activeCategory, setActiveCategory] = useState<'tax' | 'tech' | 'combos'>('combos'); // Default to combos to show off new feature
+    const [activeCategory, setActiveCategory] = useState<'combos' | 'tax' | 'tech' | 'special'>('combos'); 
     
     // Cart State
     const [cart, setCart] = useState<OrderItem[]>([]);
@@ -56,8 +64,9 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
     const phoneNumber = "593978980722"; 
     const whatsappLink = `https://wa.me/${phoneNumber}`;
 
-    // Load dynamic bundles
+    // Load dynamic data
     const dynamicBundles = getStoredBundles() || [];
+    const customServices = getStoredCustomServices() || [];
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -202,8 +211,28 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
         color: "bg-emerald-50 text-emerald-700",
         popular: true
     }));
+    
+    // Obligaciones Especiales dinámicas
+    const specialPlans = customServices.map(service => ({
+        title: service.name,
+        price: service.price.toFixed(2),
+        description: "Obligación tributaria específica según actividad económica.",
+        features: ["Elaboración de Anexo", "Carga en plataforma SRI", "Confirmación de recepción", "Respaldo digital"],
+        icon: service.name.toUpperCase().includes('ICE') ? Activity : FileText,
+        color: "bg-amber-50 text-amber-700",
+        popular: false
+    }));
 
-    const activePlans = activeCategory === 'tax' ? taxPlans : (activeCategory === 'tech' ? techPlans : comboPlans);
+    const getActivePlans = () => {
+        switch(activeCategory) {
+            case 'tax': return taxPlans;
+            case 'tech': return techPlans;
+            case 'special': return specialPlans;
+            default: return comboPlans;
+        }
+    };
+    
+    const activePlans = getActivePlans();
 
     return (
         <div className="min-h-screen bg-slate-50 font-body overflow-x-hidden text-slate-800">
@@ -309,24 +338,30 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                     </p>
 
                     {/* Category Toggle */}
-                    <div className="inline-flex bg-slate-800/50 p-1.5 rounded-full backdrop-blur-md border border-slate-700 shadow-xl overflow-x-auto max-w-full">
+                    <div className="inline-flex bg-slate-800/50 p-1.5 rounded-full backdrop-blur-md border border-slate-700 shadow-xl overflow-x-auto max-w-full no-scrollbar">
                         <button 
                             onClick={() => setActiveCategory('combos')}
-                            className={`px-8 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'combos' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
+                            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'combos' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
                         >
-                            <Package size={16}/> Packs & Combos
+                            <Package size={16}/> Packs
                         </button>
                         <button 
                             onClick={() => setActiveCategory('tax')}
-                            className={`px-8 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'tax' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
+                            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'tax' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
                         >
-                            <Briefcase size={16}/> Gestión Tributaria
+                            <Briefcase size={16}/> Tributaria
+                        </button>
+                         <button 
+                            onClick={() => setActiveCategory('special')}
+                            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'special' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
+                        >
+                            <Activity size={16}/> Especiales
                         </button>
                         <button 
                             onClick={() => setActiveCategory('tech')}
-                            className={`px-8 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'tech' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
+                            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'tech' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
                         >
-                            <Laptop size={16}/> Firma & Tecnología
+                            <Laptop size={16}/> Firma
                         </button>
                     </div>
                 </div>
@@ -413,7 +448,6 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 </div>
             </section>
 
-            {/* Cart Modal & Checkout Modal are rendered here... (Existing Logic) */}
             {/* Cart Modal (Sidebar) */}
             {isCartOpen && (
                 <div className="fixed inset-0 z-[60] flex justify-end">

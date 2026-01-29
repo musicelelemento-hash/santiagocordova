@@ -29,7 +29,15 @@ export const INITIAL_SERVICE_FEES = {
   devolucionIva: 15,
   devolucionRenta: 20, 
   anexoGastosPersonales: 15, 
-  customPunctualServices: [],
+  customPunctualServices: [
+      { id: 'ice-mensual', name: 'Declaración Mensual de ICE', price: 25.00 },
+      { id: 'anexo-ice', name: 'Anexo de Movimiento ICE', price: 20.00 },
+      { id: 'anexo-pvp', name: 'Anexo Anual PVP', price: 30.00 },
+      { id: 'impuesto-vehicular', name: 'Impuesto a la Propiedad de Vehículos', price: 10.00 },
+      { id: 'anexo-transaccional', name: 'Anexo Transaccional Simplificado (ATS)', price: 25.00 },
+      { id: 'anexo-accionistas', name: 'Anexo de Accionistas (APS)', price: 40.00 },
+      { id: 'supercias', name: 'Informe Superintendencia de Compañías', price: 50.00 }
+  ],
   serviceBundles: [
     {
         id: 'combo-devolucion-renta',

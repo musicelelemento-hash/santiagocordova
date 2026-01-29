@@ -40,7 +40,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
     const [isActiveClient, setIsActiveClient] = useState(true);
     const [foundPasswordInVault, setFoundPasswordInVault] = useState(false);
     
-    // Extra Obligations State
+    // Extra Obligations State (PRODUCTOS)
     const [extraObligations, setExtraObligations] = useState<ExtraObligation[]>([]);
 
     const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -76,53 +76,80 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 setFoundPasswordInVault(true);
             }
 
-            // --- LÓGICA INTELIGENTE DE OBLIGACIONES (Certera) ---
-            let detectedCategory = ClientCategory.InternoMensual; // Default fallback
+            // --- LÓGICA INTELIGENTE DE OBLIGACIONES ---
             
-            // Re-evaluación basada en la lista explícita para evitar errores (ej: 2021 Semestral vs Mensual)
-            const hasSemestral = rawData.lista_obligaciones.some(o => o.toUpperCase().includes("SEMESTRAL"));
-            const hasMensual = rawData.lista_obligaciones.some(o => o.toUpperCase().includes("MENSUAL"));
-
-            // 1. Determinar Categoría Principal (IVA)
+            // 1. Determinar Categoría Principal (BASE: IVA)
+            let detectedCategory = ClientCategory.InternoMensual;
             if (rawData.regimen === TaxRegime.RimpeNegocioPopular) {
                 detectedCategory = ClientCategory.ImpuestoRentaNegocioPopular;
-            } else if (hasSemestral || rawData.obligaciones_tributarias === 'semestral') {
-                // Si dice Semestral explícitamente, es Semestral.
+            } else if (rawData.obligaciones_tributarias === 'semestral') {
                 detectedCategory = ClientCategory.InternoSemestral;
-            } else if (hasMensual || rawData.obligaciones_tributarias === 'mensual') {
+            } else if (rawData.obligaciones_tributarias === 'mensual') {
                 detectedCategory = ClientCategory.InternoMensual;
             }
 
-            // 2. Detectar Obligaciones Extra (Productos)
+            // 2. DETECTAR PRODUCTOS/OBLIGACIONES ESPECÍFICAS (Separados del régimen)
             const extras: ExtraObligation[] = [];
+            
             rawData.lista_obligaciones.forEach((obs) => {
                 const upperObs = obs.toUpperCase();
                 
-                // Ignorar las obligaciones estándar que ya definen la categoría
-                if (upperObs.includes("DECLARACIÓN SEMESTRAL IVA")) return;
-                if (upperObs.includes("DECLARACIÓN MENSUAL IVA")) return;
-                // Renta General asumida en el servicio base a menos que sea NP
-                if (upperObs.includes("IMPUESTO A LA RENTA") && rawData.regimen !== TaxRegime.RimpeNegocioPopular) return; 
-
-                // Detectar Anexos, Devoluciones, Patentes, etc.
-                let periodicity: 'Mensual' | 'Semestral' | 'Anual' = 'Anual';
-                let price = 10; // Default price as requested
-
-                if (upperObs.includes("MENSUAL")) periodicity = 'Mensual';
-                if (upperObs.includes("SEMESTRAL")) periodicity = 'Semestral';
+                // Mapeo de obligaciones especiales a productos con precio
+                if (upperObs.includes("ICE")) {
+                     const isMensual = upperObs.includes("MENSUAL");
+                     extras.push({
+                         id: uuidv4(),
+                         name: isMensual ? "Declaración Mensual de ICE" : "Declaración de ICE",
+                         price: 25.00,
+                         periodicity: isMensual ? 'Mensual' : 'Anual',
+                         selected: true
+                     });
+                     // A menudo el ICE implica Anexo
+                     if (upperObs.includes("ANEXO")) {
+                         extras.push({
+                             id: uuidv4(),
+                             name: "Anexo de Movimiento ICE",
+                             price: 20.00,
+                             periodicity: 'Mensual',
+                             selected: true
+                         });
+                     }
+                }
                 
-                // Limpiar nombre (quitar año ej: "2021 -")
-                let cleanName = obs.replace(/^\d+\s*-\s*/, '').trim(); 
-
-                extras.push({
-                    id: uuidv4(),
-                    name: cleanName,
-                    price: price,
-                    periodicity: periodicity,
-                    selected: true
-                });
+                if (upperObs.includes("PVP") || upperObs.includes("PRECIOS DE VENTA")) {
+                    extras.push({
+                         id: uuidv4(),
+                         name: "Anexo Anual PVP",
+                         price: 30.00,
+                         periodicity: 'Anual',
+                         selected: true
+                     });
+                }
+                
+                if (upperObs.includes("VEHÍCULOS") || upperObs.includes("MOTORIZADOS")) {
+                    extras.push({
+                         id: uuidv4(),
+                         name: "Impuesto a la Propiedad de Vehículos",
+                         price: 10.00,
+                         periodicity: 'Anual',
+                         selected: true
+                     });
+                }
+                
+                 if (upperObs.includes("ACCIONISTAS") || upperObs.includes("APS")) {
+                    extras.push({
+                         id: uuidv4(),
+                         name: "Anexo de Accionistas (APS)",
+                         price: 40.00,
+                         periodicity: 'Anual',
+                         selected: true
+                     });
+                }
             });
-            setExtraObligations(extras);
+            
+            // Eliminar duplicados por nombre
+            const uniqueExtras = extras.filter((v,i,a)=>a.findIndex(t=>(t.name===v.name))===i);
+            setExtraObligations(uniqueExtras);
 
             // Mantener configuración si el cliente ya existe
             if (match) {
@@ -141,7 +168,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 economicActivity: rawData.actividad_economica, // Actividad limpia (sin *)
                 email: rawData.contacto.email,
                 phones: rawData.contacto.celular ? [rawData.contacto.celular] : [],
-                regime: rawData.regimen,
+                regime: rawData.regimen, // El régimen se mantiene estricto (3 tipos)
                 category: detectedCategory,
                 sriPassword: finalPassword,
                 notes: `Obligaciones detectadas en PDF:\n${rawData.lista_obligaciones.join('\n')}`,
@@ -167,7 +194,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             return;
         }
 
-        // Apply VIP Override Logic
+        // Apply VIP Override Logic for main category
         let finalCategory = extractedData.category || ClientCategory.InternoMensual;
         if (isVip) {
             if (finalCategory === ClientCategory.InternoMensual) finalCategory = ClientCategory.SuscripcionMensual;
@@ -177,12 +204,12 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             if (finalCategory === ClientCategory.SuscripcionSemestral) finalCategory = ClientCategory.InternoSemestral;
         }
 
-        // Add extra obligations to notes for reference
+        // Add extra obligations to notes and potentially schedule tasks
         let notes = extractedData.notes || '';
         const selectedExtras = extraObligations.filter(e => e.selected);
         
         if (selectedExtras.length > 0) {
-            notes += `\n\n--- SERVICIOS ADICIONALES CONFIGURADOS ---\n`;
+            notes += `\n\n--- PRODUCTOS / OBLIGACIONES ADICIONALES ---\n`;
             selectedExtras.forEach(e => {
                 notes += `• ${e.name} (${e.periodicity}): $${e.price}\n`;
             });
@@ -202,12 +229,12 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             return [...prev, finalClient];
         });
 
-        // GENERATE TASKS FOR EXTRA OBLIGATIONS
+        // GENERATE TASKS FOR EXTRA OBLIGATIONS (PRODUCTOS)
         if (selectedExtras.length > 0) {
             const newTasks: Task[] = selectedExtras.map(extra => ({
                 id: uuidv4(),
                 title: extra.name,
-                description: `Obligación adicional detectada en RUC. Periodicidad: ${extra.periodicity}.`,
+                description: `Obligación específica detectada en RUC. Periodicidad: ${extra.periodicity}. Generado automáticamente.`,
                 clientId: finalClient.id,
                 dueDate: addDays(new Date(), 7).toISOString(), // Default due date next week
                 status: TaskStatus.Pendiente,
@@ -380,14 +407,14 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                     />
                                 </div>
                                 
-                                {/* OBLIGACIONES EXTRA DETECTADAS */}
+                                {/* OBLIGACIONES EXTRA DETECTADAS (PRODUCTOS) */}
                                 {extraObligations.length > 0 && (
                                     <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
                                         <h4 className="text-xs font-black text-brand-navy dark:text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                                            <Briefcase size={14}/> Servicios Adicionales Detectados
+                                            <Briefcase size={14}/> Productos / Obligaciones Detectadas
                                         </h4>
                                         <p className="text-[10px] text-slate-500 mb-3">
-                                            Estas obligaciones no están cubiertas por la suscripción estándar. Configúrelas como productos adicionales.
+                                            Seleccione las obligaciones adicionales que se configurarán como tareas/productos tarifados.
                                         </p>
                                         <div className="space-y-3">
                                             {extraObligations.map((extra, idx) => (
@@ -408,19 +435,6 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                                     
                                                     {extra.selected && (
                                                         <div className="flex gap-2 w-full sm:w-auto">
-                                                            <select 
-                                                                value={extra.periodicity}
-                                                                onChange={e => {
-                                                                    const newExtras = [...extraObligations];
-                                                                    newExtras[idx].periodicity = e.target.value as any;
-                                                                    setExtraObligations(newExtras);
-                                                                }}
-                                                                className="text-[10px] p-1.5 rounded-lg border bg-slate-50 dark:bg-slate-700"
-                                                            >
-                                                                <option value="Mensual">Mensual</option>
-                                                                <option value="Semestral">Semestral</option>
-                                                                <option value="Anual">Anual</option>
-                                                            </select>
                                                             <div className="relative w-20">
                                                                 <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">$</span>
                                                                 <input 

@@ -21,6 +21,7 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
 
   // Limpieza básica de espacios múltiples
   fullText = fullText.replace(/\s+/g, ' ');
+  const upperText = fullText.toUpperCase();
 
   // --- LÓGICA DE EXTRACCIÓN (REGEX) ---
 
@@ -59,8 +60,6 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
   // 5. Régimen (Lógica Estricta)
   let regimen = TaxRegime.General;
   
-  const upperText = fullText.toUpperCase();
-  
   // Prioridad: Negocio Popular > Emprendedor > General
   if (upperText.includes("NEGOCIO POPULAR") || upperText.includes("RIMPE POPULAR")) {
       regimen = TaxRegime.RimpeNegocioPopular;
@@ -82,9 +81,6 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
           .replace(/\*/g, '') // Eliminar asteriscos
           .replace(/\s+/g, ' ') // Normalizar espacios
           .trim();
-      
-      // Si hay código de actividad (e.g. A0123...), tratar de limpiarlo si se desea, o dejarlo
-      // Por ahora dejamos el texto limpio de asteriscos.
   }
 
   // 7. Extracción de LISTA de Obligaciones
@@ -100,22 +96,21 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
       lines.forEach(line => {
           const cleanLine = line.trim();
           if (cleanLine.length > 5 && !cleanLine.includes("Revise periódicamente")) {
-               listaObligaciones.push(cleanLine);
+               // Mejorar limpieza de texto para coincidencias posteriores
+               listaObligaciones.push(cleanLine.toUpperCase());
           }
       });
   }
 
-  // 8. Determinación Certera de Periodicidad
-  // Buscamos específicamente en la LISTA, no en todo el texto, para evitar falsos positivos
-  let periodicidadPrincipal = "mensual"; // Default para General
+  // 8. Determinación Certera de Periodicidad (Para categoría base)
+  let periodicidadPrincipal = "mensual"; 
   
-  const hasSemestral = listaObligaciones.some(obs => obs.toUpperCase().includes("SEMESTRAL"));
-  const hasMensual = listaObligaciones.some(obs => obs.toUpperCase().includes("MENSUAL"));
+  const hasSemestral = listaObligaciones.some(obs => obs.includes("SEMESTRAL"));
+  const hasMensual = listaObligaciones.some(obs => obs.includes("MENSUAL"));
 
   if (regimen === TaxRegime.RimpeNegocioPopular) {
       periodicidadPrincipal = "anual";
   } else if (hasSemestral) {
-      // La regla semestral gana si aparece explícitamente, incluso si hay texto mensual antiguo
       periodicidadPrincipal = "semestral";
   } else if (hasMensual) {
       periodicidadPrincipal = "mensual";
