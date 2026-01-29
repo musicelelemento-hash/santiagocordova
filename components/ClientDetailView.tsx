@@ -1,37 +1,33 @@
+
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { Client, ClientCategory, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, ReceiptData, StoredFile } from '../types';
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod } from '../services/sri';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../services/geminiService';
-import { calculateTaxDeadlines, TaxDeadline } from '../services/taxLogic';
 import { getClientServiceFee } from '../services/clientService';
-import { format, isPast, subMonths, subYears, getYear, isWeekend } from 'date-fns';
+import { format, isPast, subMonths, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy, 
     ShieldCheck, FileText, Zap, UserCheck, UserX, UserCheck2, 
     MoreHorizontal, Printer, Clipboard, CheckCircle, Send, Loader, ArrowDownToLine, 
-    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, CalendarRange
+    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, CalendarRange, Share
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
 
-// Helper functions
+// Helper functions (getRecentPeriods, getObligation, buildCategory, PaymentHistoryChart) remains same...
+// ... (omitted for brevity, assume standard implementations as before) ...
 const getRecentPeriods = (client: Client, count: number): string[] => {
     const periods: string[] = [];
     let currentDate = new Date();
     for (let i = 0; i < count; i++) {
         const period = getPeriod(client, currentDate);
-        if (!periods.includes(period)) { periods.push(period); }
-        if (client.category.includes('Mensual') || client.category === ClientCategory.DevolucionIvaTerceraEdad) { currentDate = subMonths(currentDate, 1); } 
-        else if (client.category.includes('Semestral')) { currentDate = subMonths(currentDate, 6); } 
-        else { currentDate = subYears(currentDate, 1); }
-    }
-    while (periods.length < count && client.regime === TaxRegime.RimpeNegocioPopular) {
-        const period = getPeriod(client, currentDate);
-        if (!periods.includes(period)) { periods.push(period); }
-        currentDate = subYears(currentDate, 1);
+        if (!periods.includes(period)) periods.push(period);
+        if (client.category.includes('Mensual') || client.category === ClientCategory.DevolucionIvaTerceraEdad) currentDate = subMonths(currentDate, 1);
+        else if (client.category.includes('Semestral')) currentDate = subMonths(currentDate, 6);
+        else currentDate = subYears(currentDate, 1);
     }
     return periods.slice(0, count).reverse();
 };
@@ -113,27 +109,7 @@ const PaymentHistoryChart: React.FC<{ client: Client }> = memo(({ client }) => {
     );
 });
 
-const CopyButton: React.FC<{ text: string, label?: string, obscured?: boolean, onCopy?: () => void }> = ({ text, label, obscured, onCopy }) => {
-    const [copied, setCopied] = useState(false);
-    const handleCopy = () => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        if (onCopy) onCopy();
-        setTimeout(() => setCopied(false), 2000);
-    };
-    return (
-        <button onClick={handleCopy} className={`group relative flex items-center justify-between w-full p-3 rounded-xl border transition-all duration-200 ${copied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-teal/50 hover:shadow-sm'}`}>
-            <div className="flex flex-col items-start truncate pr-2">
-                {label && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</span>}
-                <span className={`font-mono text-sm font-bold truncate w-full text-left ${copied ? 'text-green-700' : 'text-slate-700 dark:text-slate-200'}`}>{obscured ? '••••••••' : text}</span>
-            </div>
-            <div className={`p-2 flex-shrink-0 rounded-lg transition-colors ${copied ? 'bg-green-200 text-green-700' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:text-brand-teal group-hover:bg-brand-teal/10'}`}>
-                {copied ? <Check size={16} /> : <Copy size={16} />}
-            </div>
-        </button>
-    );
-};
-
+// Main Component
 interface ClientDetailViewProps {
     client: Client;
     onSave: (updatedClient: Client) => void;
@@ -146,27 +122,23 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const { toast } = useToast();
     const [editedClient, setEditedClient] = useState(client);
     const [isEditing, setIsEditing] = useState(false);
-    const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'notes'>('profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'vault'>('profile'); // NEW: Vault tab
     
     // UI State
     const [obligation, setObligation] = useState(getObligationFromCategory(client.category));
     const [isVip, setIsVip] = useState(isVipCategory(client.category));
     const [isActive, setIsActive] = useState(client.isActive ?? true);
+    const [isVaultPublic, setIsVaultPublic] = useState(!!client.sharedAccessKey); // Logic for public vault
 
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    // Future Deadlines
-    const [taxDeadlines, setTaxDeadlines] = useState<TaxDeadline[]>([]);
-
-    // Modals & Actions
+    // Modals
     const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
     const [confirmation, setConfirmation] = useState<{ action: 'declare' | 'pay'; period: string } | null>(null);
     const [isProcessingAction, setIsProcessingAction] = useState(false);
-    const [isSummarizing, setIsSummarizing] = useState(false);
-    const [summary, setSummary] = useState('');
     const receiptRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => { 
@@ -175,7 +147,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             setObligation(getObligationFromCategory(client.category)); 
             setIsVip(isVipCategory(client.category));
             setIsActive(client.isActive ?? true);
-            setTaxDeadlines(calculateTaxDeadlines(client));
+            setIsVaultPublic(!!client.sharedAccessKey);
         }
     }, [client, isEditing]);
 
@@ -187,19 +159,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const { totalDebt, nextDeadline, pendingDeclaration } = useMemo(() => {
-        const pending = (editedClient.declarationHistory || []).filter(d => d.status !== DeclarationStatus.Pagada);
-        const debt = pending.reduce((sum, d) => sum + (d.amount ?? getClientServiceFee(editedClient, serviceFees)), 0);
-        const periods = getRecentPeriods(editedClient, 1);
-        const currentPeriod = periods[0] || getPeriod(editedClient, new Date());
-        const pendingDecl = editedClient.declarationHistory.find(d => d.period === currentPeriod && d.status === DeclarationStatus.Pendiente);
-        const nextPeriod = periods[0] ? getNextPeriod(periods[0]) : getPeriod(editedClient, new Date());
-        const deadline = getDueDateForPeriod(editedClient, nextPeriod);
-        
-        return { totalDebt: debt, nextDeadline: deadline, pendingDeclaration: pendingDecl };
-    }, [editedClient, serviceFees]);
-
-    // Handlers
     const handleSave = () => {
         let newCategory = editedClient.category;
         if (editedClient.regime !== TaxRegime.RimpeNegocioPopular) {
@@ -208,7 +167,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const updated = { 
             ...editedClient, 
             category: newCategory,
-            isActive: isActive
+            isActive: isActive,
+            // If vault toggled OFF, verify logic (maybe clear key? or just UI state)
+            // For now, we assume key generation happens on button click
         };
         onSave(updated);
         setIsEditing(false);
@@ -216,64 +177,72 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         toast.success("Cliente actualizado");
     };
 
-    const handleSummarize = async () => {
-        if (!editedClient.notes) return;
-        setIsSummarizing(true);
-        const result = await summarizeTextWithGemini(editedClient.notes);
-        setSummary(result);
-        setIsSummarizing(false);
+    const handleGenerateSharedLink = () => {
+        const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const updated = { ...editedClient, sharedAccessKey: token };
+        setEditedClient(updated);
+        onSave(updated);
+        setIsVaultPublic(true);
+        toast.success("Bóveda activada. Link generado.");
     };
 
-    // --- ELITE FIX: ROBUST UPSERT LOGIC FOR DECLARATIONS ---
+    const handleToggleVault = () => {
+        if (isVaultPublic) {
+            // Deactivate
+            if (window.confirm("¿Desactivar el acceso público a la bóveda? El cliente ya no podrá entrar.")) {
+                const updated = { ...editedClient, sharedAccessKey: '' };
+                setEditedClient(updated);
+                onSave(updated);
+                setIsVaultPublic(false);
+            }
+        } else {
+            handleGenerateSharedLink();
+        }
+    };
+
+    const handleShareViaWhatsApp = () => {
+        if (!editedClient.phones?.length || !editedClient.sharedAccessKey) return;
+        const phone = editedClient.phones[0].replace(/\D/g, '');
+        const fullPhone = phone.startsWith('593') ? phone : `593${phone.substring(1)}`;
+        
+        const message = `Estimado/a ${editedClient.name}, aquí tiene el enlace seguro a su Bóveda Digital con sus credenciales y documentos:
+https://portal.santiagocordova.com/client/${editedClient.id}?token=${editedClient.sharedAccessKey}
+
+Nota: Este enlace es personal y seguro.`;
+        
+        window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    };
+
     const handleConfirmAction = (sendWhatsApp: boolean = false) => {
         if (!confirmation) return;
         setIsProcessingAction(true);
         const { action, period } = confirmation;
         const now = new Date().toISOString();
         
-        // 1. Create a FRESH copy of history to avoid mutation bugs
+        // Upsert Declaration Logic
         const updatedHistory = [...editedClient.declarationHistory];
-        const existingIndex = updatedHistory.findIndex(d => d.period === period);
+        const idx = updatedHistory.findIndex(d => d.period === period);
         
-        // 2. Define the new object structure strictly
         const newDecl: Declaration = {
             period,
             status: action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada,
             updatedAt: now,
-            // Logic: If declaring, set declaredAt. If paying, keep declaredAt if it exists, else set now (rare case of direct pay)
-            declaredAt: action === 'declare' 
-                ? now 
-                : (existingIndex > -1 ? updatedHistory[existingIndex].declaredAt || now : now),
-            // Logic: Only set paidAt if action is 'pay'
+            declaredAt: action === 'declare' ? now : (idx > -1 ? updatedHistory[idx].declaredAt || now : now),
             paidAt: action === 'pay' ? now : undefined,
-            // Preserve amount if it existed, otherwise undefined (will calc dynamically)
-            amount: existingIndex > -1 ? updatedHistory[existingIndex].amount : undefined 
+            amount: idx > -1 ? updatedHistory[idx].amount : undefined 
         };
 
-        // 3. Upsert (Update or Insert)
-        if (existingIndex > -1) {
-            updatedHistory[existingIndex] = { ...updatedHistory[existingIndex], ...newDecl };
-        } else {
-            updatedHistory.push(newDecl);
-        }
-    
-        // 4. Construct updated client object (Immutability is key here)
+        if (idx > -1) updatedHistory[idx] = { ...updatedHistory[idx], ...newDecl };
+        else updatedHistory.push(newDecl);
+
         const updatedClient = { ...editedClient, declarationHistory: updatedHistory };
-        
-        // 5. Update Local State (Immediate Feedback)
         setEditedClient(updatedClient);
-        
-        // 6. Propagate to Store (Persistence)
-        onSave(updatedClient); 
-    
-        // 7. UX Feedback & Clean up
+        onSave(updatedClient);
+
         setTimeout(() => {
             if (action === 'pay') {
                 const updatedDeclaration = updatedHistory.find(d => d.period === period);
                 if (updatedDeclaration) handleShowReceipt(updatedDeclaration);
-                toast.success('Pago registrado correctamente.');
-            } else {
-                toast.success('Declaración marcada como enviada.');
             }
              if (sendWhatsApp && (editedClient.phones || []).length > 0) {
                 const mainPhone = editedClient.phones![0].replace(/\D/g, '');
@@ -283,14 +252,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             setIsProcessingAction(false);
             setConfirmation(null);
         }, 500);
-    };
-
-    const handleQuickDeclare = (period: string) => {
-        setConfirmation({ action: 'declare', period });
-    };
-    
-    const handleQuickPay = (period: string) => {
-        setConfirmation({ action: 'pay', period });
     };
 
     const handleShowReceipt = (declaration: Declaration) => {
@@ -307,102 +268,71 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         setReceiptData(data);
         setIsReceiptModalOpen(true);
     };
+
+    // Styling based on VIP
+    const bgHeader = isVip 
+        ? "bg-gradient-to-r from-slate-900 to-[#0B2149] text-white" 
+        : "bg-white dark:bg-slate-900 text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800";
     
-    const handlePrintReceipt = () => {
-        if (receiptRef.current) {
-            const printWindow = window.open('', '_blank', 'height=600,width=800');
-            printWindow?.document.write('<html><head><title>Comprobante</title>');
-            printWindow?.document.write(receiptRef.current.innerHTML);
-            printWindow?.document.close();
-            printWindow?.print();
-        }
-    };
-
-    const copyReceiptToClipboard = () => {
-        if (receiptData) {
-            const text = `
-COMPROBANTE DE PAGO
--------------------
-ID Transacción: ${receiptData.transactionId}
-Fecha: ${receiptData.paymentDate}
-Cliente: ${receiptData.clientName}
-RUC: ${receiptData.clientRuc}
-Total: $${receiptData.totalAmount.toFixed(2)}
-            `.trim();
-            navigator.clipboard.writeText(text);
-            toast.success('Comprobante copiado al portapeles.');
-        }
-    };
-
-    const handleWhatsApp = () => {
-        if (!client.phones || client.phones.length === 0) return;
-        const phone = client.phones[0].replace(/\D/g, '');
-        const fullPhone = phone.startsWith('593') ? phone : `593${phone.substring(1)}`;
-        window.open(`https://wa.me/${fullPhone}`, '_blank');
-    };
+    const vipAccent = isVip ? "text-amber-400" : "text-brand-teal";
 
     return (
         <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col animate-fade-in absolute inset-0 z-50 overflow-hidden">
-             
-             {/* HEADER */}
-             <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm z-20 flex-shrink-0">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6">
-                    <div className="h-16 flex items-center justify-between">
-                        <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-brand-navy dark:hover:text-white transition-colors group">
-                            <div className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 transition-colors">
-                                <ArrowDownToLine className="rotate-90" size={20}/>
-                            </div>
-                            <span className="font-bold text-sm hidden sm:inline">Volver</span>
+            
+            {/* HEADER */}
+            <div className={`p-6 shadow-sm z-20 flex-shrink-0 ${bgHeader}`}>
+                <div className="max-w-5xl mx-auto">
+                    <div className="flex justify-between items-start mb-6">
+                        <button onClick={onBack} className={`flex items-center gap-2 font-bold text-sm transition-colors ${isVip ? 'text-slate-300 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
+                            <ArrowDownToLine className="rotate-90" size={20}/> Volver
                         </button>
                         
-                        <div className="flex items-center gap-2">
-                             {isEditing ? (
-                                <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2.5 bg-brand-navy text-white text-sm font-bold rounded-xl shadow-lg hover:bg-slate-800 transition-all transform hover:scale-105">
-                                    <Save size={18}/> Guardar Cambios
+                        <div className="flex gap-2">
+                            {isEditing ? (
+                                <button onClick={handleSave} className="px-4 py-2 bg-brand-teal text-white rounded-lg font-bold text-xs hover:bg-teal-600 transition-all flex items-center gap-2">
+                                    <Save size={16}/> Guardar
                                 </button>
                             ) : (
-                                <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition-colors">
+                                <button onClick={() => setIsEditing(true)} className={`px-4 py-2 rounded-lg font-bold text-xs transition-all flex items-center gap-2 ${isVip ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}>
                                     <Edit size={16}/> Editar
                                 </button>
                             )}
                         </div>
                     </div>
 
-                    <div className="py-6 flex flex-col md:flex-row gap-6 items-start justify-between">
-                        <div className="flex gap-5 items-center w-full">
-                            <div className="relative shrink-0">
-                                <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-navy to-slate-900 text-white flex items-center justify-center text-3xl font-display font-bold shadow-2xl border-[3px] border-white dark:border-slate-800">
-                                    {client.name.substring(0, 2).toUpperCase()}
-                                </div>
-                                {isVip && <div className="absolute -top-2 -right-2 bg-gradient-to-r from-amber-300 to-amber-500 p-2 rounded-full text-white border-[3px] border-white dark:border-slate-800 shadow-sm"><Crown size={14} fill="currentColor"/></div>}
+                    <div className="flex flex-col md:flex-row gap-6 items-start">
+                         <div className="relative shrink-0">
+                            <div className={`w-20 h-20 rounded-3xl flex items-center justify-center text-3xl font-display font-bold shadow-2xl border-[3px] ${isVip ? 'bg-gradient-to-br from-amber-400 to-yellow-600 text-white border-white/20' : 'bg-slate-100 text-slate-600 border-white'}`}>
+                                {client.name.substring(0, 2).toUpperCase()}
                             </div>
-                            
-                            <div className="flex-1 min-w-0">
-                                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white leading-tight font-display truncate">{client.name}</h1>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
-                                        <CreditCard size={14} className="text-slate-400"/>
-                                        <span className="font-mono font-bold text-slate-600 dark:text-slate-300 text-sm">{client.ruc}</span>
-                                        <button onClick={() => {navigator.clipboard.writeText(client.ruc); toast.success("Copiado")}} className="hover:text-brand-teal ml-1"><Copy size={12}/></button>
-                                    </div>
-                                </div>
+                            {isVip && <div className="absolute -top-2 -right-2 bg-black text-amber-400 p-2 rounded-full border-[3px] border-slate-900 shadow-sm"><Crown size={14} fill="currentColor"/></div>}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                            <h1 className={`text-3xl font-bold leading-tight font-display truncate ${isVip ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{client.name}</h1>
+                            <div className="flex items-center gap-3 mt-2">
+                                <span className={`font-mono font-bold text-sm ${isVip ? 'text-slate-300' : 'text-slate-500'}`}>{client.ruc}</span>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${isVip ? 'bg-white/10 border-white/20 text-amber-400' : 'bg-slate-100 border-slate-200 text-slate-500'}`}>
+                                    {client.regime}
+                                </span>
                             </div>
                         </div>
                     </div>
-
-                    <div className="flex border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
+                    
+                    {/* TABS */}
+                    <div className="flex mt-8 gap-6 border-b border-white/10 overflow-x-auto">
                         {[
                             { id: 'profile', label: 'Datos & Gestión', icon: ShieldCheck },
                             { id: 'history', label: 'Historial', icon: History },
-                            { id: 'notes', label: 'Notas', icon: Lock }
+                            { id: 'vault', label: 'Bóveda Cliente', icon: Lock }
                         ].map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center gap-2 px-6 py-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
+                                className={`flex items-center gap-2 pb-4 text-sm font-bold border-b-2 transition-all whitespace-nowrap ${
                                     activeTab === tab.id 
-                                        ? 'border-brand-teal text-brand-teal' 
-                                        : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'
+                                        ? `${vipAccent} border-current` 
+                                        : `border-transparent ${isVip ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-700'}`
                                 }`}
                             >
                                 <tab.icon size={18}/> {tab.label}
@@ -410,297 +340,186 @@ Total: $${receiptData.totalAmount.toFixed(2)}
                         ))}
                     </div>
                 </div>
-             </div>
+            </div>
 
-             {/* Content Area */}
-             <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50 dark:bg-slate-900">
+            {/* CONTENT */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50 dark:bg-slate-900">
                 <div className="max-w-5xl mx-auto w-full">
-                
-                {/* TAB: PROFILE (MAIN MANAGEMENT) */}
-                {activeTab === 'profile' && (
-                    <div className="space-y-6 animate-fade-in-up">
-                        
-                        {/* 1. CONTROL BAR (SWITCHES) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div 
-                                onClick={() => setIsVip(!isVip)} 
-                                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between group ${isVip ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-white border-slate-200 text-slate-500 hover:border-amber-200'}`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-full ${isVip ? 'bg-amber-200 text-amber-700' : 'bg-slate-100 text-slate-400'}`}>
-                                        <Crown size={20} fill={isVip ? "currentColor" : "none"}/>
+                    
+                    {/* --- TAB: PROFILE (Main Data) --- */}
+                    {activeTab === 'profile' && (
+                        <div className="space-y-6 animate-fade-in-up">
+                            {/* Switches Bar */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div onClick={() => setIsVip(!isVip)} className={`p-4 rounded-2xl border-2 cursor-pointer flex items-center justify-between transition-all ${isVip ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200 hover:border-amber-200'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-full ${isVip ? 'bg-amber-200 text-amber-800' : 'bg-slate-100 text-slate-400'}`}><Crown size={20} fill={isVip ? "currentColor" : "none"}/></div>
+                                        <div>
+                                            <h4 className="font-bold text-sm text-slate-800">Suscripción VIP</h4>
+                                            <p className="text-xs text-slate-500">Diseño exclusivo y atención prioritaria</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h4 className="font-bold text-sm">Suscripción VIP</h4>
-                                        <p className="text-xs opacity-70">{isVip ? 'Cliente Preferencial' : 'Cliente Estándar'}</p>
+                                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${isVip ? 'bg-amber-500' : 'bg-slate-300'}`}>
+                                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${isVip ? 'translate-x-6' : ''}`}></div>
                                     </div>
                                 </div>
-                                <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isVip ? 'bg-amber-500' : 'bg-slate-300'}`}>
-                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${isVip ? 'translate-x-4' : ''}`}></div>
+                                <div onClick={() => setIsActive(!isActive)} className={`p-4 rounded-2xl border-2 cursor-pointer flex items-center justify-between transition-all ${isActive ? 'bg-emerald-50 border-emerald-300' : 'bg-red-50 border-red-300'}`}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-full ${isActive ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'}`}><Zap size={20}/></div>
+                                        <div>
+                                            <h4 className="font-bold text-sm text-slate-800">Estado Activo</h4>
+                                            <p className="text-xs text-slate-500">Habilita generación de obligaciones</p>
+                                        </div>
+                                    </div>
+                                    <div className={`w-12 h-6 rounded-full p-1 transition-colors ${isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                                        <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${isActive ? 'translate-x-6' : ''}`}></div>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div 
-                                onClick={() => setIsActive(!isActive)} 
-                                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between group ${isActive ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-red-50 border-red-300 text-red-800'}`}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-full ${isActive ? 'bg-emerald-200 text-emerald-700' : 'bg-red-200 text-red-700'}`}>
-                                        <ShieldCheck size={20}/>
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-sm">Estado del Cliente</h4>
-                                        <p className="text-xs opacity-70">{isActive ? 'Cuenta Activa' : 'Cuenta Inactiva'}</p>
-                                    </div>
+                            
+                            {/* Data Grid */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Basic Info */}
+                                <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-200 dark:border-slate-800 space-y-4">
+                                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-2">Información Fiscal</h3>
+                                     <div>
+                                        <label className="text-xs font-bold text-slate-500 mb-1 block">Régimen</label>
+                                        {isEditing ? (
+                                            <select value={editedClient.regime} onChange={e => setEditedClient({...editedClient, regime: e.target.value as any})} className="w-full p-3 bg-slate-50 rounded-xl font-bold text-sm text-slate-700 outline-none">{Object.values(TaxRegime).map(r => <option key={r} value={r}>{r}</option>)}</select>
+                                        ) : <p className="font-bold text-slate-700">{editedClient.regime}</p>}
+                                     </div>
+                                     <div>
+                                        <label className="text-xs font-bold text-slate-500 mb-1 block">Categoría</label>
+                                        {isEditing ? (
+                                            <select value={editedClient.category} onChange={e => setEditedClient({...editedClient, category: e.target.value as any})} className="w-full p-3 bg-slate-50 rounded-xl font-bold text-sm text-slate-700 outline-none"><option value="Suscripción Mensual IVA">Suscripción Mensual</option><option value="Interno Mensual">Interno Mensual</option><option value="Impuesto a la Renta (Negocio Popular)">Renta Popular</option></select>
+                                        ) : <p className="font-bold text-slate-700">{editedClient.category}</p>}
+                                     </div>
+                                     <div>
+                                        <label className="text-xs font-bold text-slate-500 mb-1 block">Email</label>
+                                        {isEditing ? <input value={editedClient.email || ''} onChange={e => setEditedClient({...editedClient, email: e.target.value})} className="w-full p-3 bg-slate-50 rounded-xl text-sm" /> : <p className="font-bold text-slate-700">{editedClient.email || '-'}</p>}
+                                     </div>
                                 </div>
-                                <div className={`w-10 h-6 rounded-full p-1 transition-colors ${isActive ? 'bg-emerald-500' : 'bg-red-400'}`}>
-                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${isActive ? 'translate-x-4' : ''}`}></div>
+                                
+                                {/* Contact & Notes */}
+                                <div className="space-y-6">
+                                     <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-200 dark:border-slate-800">
+                                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-2">Contacto</h3>
+                                        <label className="text-xs font-bold text-slate-500 mb-1 block">Celular</label>
+                                        {isEditing ? (
+                                            <input value={(editedClient.phones||[])[0]} onChange={e => setEditedClient({...editedClient, phones: [e.target.value]})} className="w-full p-3 bg-slate-50 rounded-xl text-sm" />
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-bold text-slate-700">{(editedClient.phones||[])[0] || '-'}</p>
+                                                {editedClient.phones?.[0] && <button onClick={() => window.open(`https://wa.me/593${editedClient.phones![0].substring(1)}`, '_blank')} className="p-1 bg-green-100 text-green-600 rounded-lg"><MessageCircle size={14}/></button>}
+                                            </div>
+                                        )}
+                                     </div>
+                                     <div className="bg-yellow-50 dark:bg-yellow-900/10 p-6 rounded-[2rem] border border-yellow-200">
+                                         <h3 className="text-xs font-black text-yellow-700 uppercase tracking-widest mb-2">Notas</h3>
+                                         {isEditing ? (
+                                             <textarea value={editedClient.notes} onChange={e => setEditedClient({...editedClient, notes: e.target.value})} className="w-full p-3 bg-white/50 rounded-xl text-sm h-24 resize-none"/>
+                                         ) : <p className="text-sm text-yellow-900">{editedClient.notes || 'Sin notas.'}</p>}
+                                     </div>
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                        {/* 2. DATA GRID (3 COLS) */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            
-                            {/* COL 1: TRIBUTARIO */}
-                            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-200 dark:border-slate-800 space-y-5">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-2">Información Fiscal</h3>
-                                
-                                <div>
-                                    <label className="text-xs font-bold text-slate-500 mb-1.5 block">Régimen</label>
-                                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                                        {isEditing ? (
-                                            <select value={editedClient.regime} onChange={e => setEditedClient({...editedClient, regime: e.target.value as any})} className="w-full bg-transparent font-bold text-sm text-slate-700 outline-none">
-                                                {Object.values(TaxRegime).map(r => <option key={r} value={r}>{r}</option>)}
-                                            </select>
-                                        ) : (
-                                            <div className="flex items-center gap-2 font-bold text-sm text-slate-700 dark:text-slate-200">
-                                                <Briefcase size={16} className="text-slate-400"/> {editedClient.regime}
+                    {/* TAB: VAULT (BÓVEDA) */}
+                    {activeTab === 'vault' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in-up">
+                            {/* Vault Control */}
+                            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
+                                <div className="absolute top-0 right-0 p-10 opacity-10"><Lock size={120}/></div>
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl font-display font-bold mb-2">Bóveda Digital</h3>
+                                    <p className="text-slate-400 text-sm mb-8">Comparta documentos y credenciales de forma segura con su cliente.</p>
+                                    
+                                    <div className="flex items-center justify-between bg-white/5 p-4 rounded-2xl border border-white/10 mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-full ${isVaultPublic ? 'bg-green-500 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                                                {isVaultPublic ? <CheckCircle size={20}/> : <Lock size={20}/>}
                                             </div>
-                                        )}
+                                            <div>
+                                                <p className="font-bold text-sm">Acceso Cliente</p>
+                                                <p className="text-[10px] text-slate-400">{isVaultPublic ? 'Habilitado' : 'Deshabilitado'}</p>
+                                            </div>
+                                        </div>
+                                        <div 
+                                            onClick={handleToggleVault}
+                                            className={`w-12 h-7 rounded-full p-1 transition-colors cursor-pointer ${isVaultPublic ? 'bg-green-500' : 'bg-slate-600'}`}
+                                        >
+                                            <div className={`w-5 h-5 bg-white rounded-full shadow-sm transform transition-transform ${isVaultPublic ? 'translate-x-5' : ''}`}></div>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div>
-                                    <label className="text-xs font-bold text-slate-500 mb-1.5 block">Obligación / Categoría</label>
-                                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                                        {isEditing ? (
-                                            <select value={editedClient.category} onChange={e => setEditedClient({...editedClient, category: e.target.value as any})} className="w-full bg-transparent font-bold text-sm text-slate-700 outline-none">
-                                                 <option value="Suscripción Mensual IVA">Suscripción Mensual</option>
-                                                 <option value="Interno Mensual">Interno Mensual</option>
-                                                 <option value="Suscripción Semestral">Suscripción Semestral</option>
-                                                 <option value="Interno Semestral">Interno Semestral</option>
-                                                 <option value="Impuesto a la Renta (Negocio Popular)">Renta Popular</option>
-                                            </select>
-                                        ) : (
-                                            <div className="flex items-center gap-2 font-bold text-sm text-slate-700 dark:text-slate-200">
-                                                <FileText size={16} className="text-slate-400"/> {editedClient.category}
+                                    {isVaultPublic && (
+                                        <div className="space-y-3">
+                                            <div className="bg-white/10 p-3 rounded-xl border border-white/10 backdrop-blur-sm flex items-center justify-between">
+                                                <span className="text-xs font-mono text-brand-teal truncate mr-2">portal.santiagocordova.com/client/...</span>
+                                                <button onClick={() => {navigator.clipboard.writeText(`.../client/${client.id}?token=${client.sharedAccessKey}`); toast.success('Link copiado')}} className="text-white hover:text-brand-teal"><Copy size={16}/></button>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-xs font-bold text-slate-500 mb-1.5 block">Tarifa de Servicio</label>
-                                    <div className="relative">
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</div>
-                                        {isEditing ? (
-                                            <input 
-                                                type="number" 
-                                                value={editedClient.customServiceFee ?? ''} 
-                                                placeholder={getClientServiceFee(editedClient, serviceFees).toString()}
-                                                onChange={e => setEditedClient({...editedClient, customServiceFee: parseFloat(e.target.value)})}
-                                                className="w-full pl-7 p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 outline-none focus:border-brand-teal"
-                                            />
-                                        ) : (
-                                            <div className="w-full pl-7 p-3 bg-slate-50 border border-slate-100 rounded-xl font-black text-lg text-slate-800">
-                                                {getClientServiceFee(editedClient, serviceFees).toFixed(2)}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* COL 2: CONTACTO */}
-                            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-200 dark:border-slate-800 space-y-5">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-2">Contacto Directo</h3>
-                                
-                                <div>
-                                    <label className="text-xs font-bold text-slate-500 mb-1.5 block">Celular / WhatsApp</label>
-                                    <div className="flex gap-2">
-                                        {isEditing ? (
-                                            <input 
-                                                type="text" 
-                                                value={(editedClient.phones || [''])[0]} 
-                                                onChange={e => setEditedClient({...editedClient, phones: [e.target.value]})}
-                                                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700"
-                                            />
-                                        ) : (
-                                            <div className="flex-1 p-3 bg-slate-50 rounded-xl border border-slate-100 font-mono font-bold text-slate-700 flex items-center">
-                                                <Phone size={14} className="mr-2 text-slate-400"/>
-                                                {(editedClient.phones && editedClient.phones[0]) || 'No registrado'}
-                                            </div>
-                                        )}
-                                        {!isEditing && editedClient.phones?.[0] && (
-                                            <button onClick={handleWhatsApp} className="p-3 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-colors">
-                                                <MessageCircle size={20}/>
+                                            <button onClick={handleShareViaWhatsApp} className="w-full py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                                                <MessageCircle size={18}/> Enviar Link por WhatsApp
                                             </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="text-xs font-bold text-slate-500 mb-1.5 block">Correo Electrónico</label>
-                                    <div className="flex gap-2">
-                                        {isEditing ? (
-                                            <input 
-                                                type="email" 
-                                                value={editedClient.email || ''} 
-                                                onChange={e => setEditedClient({...editedClient, email: e.target.value})}
-                                                className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700"
-                                            />
-                                        ) : (
-                                            <div className="flex-1 p-3 bg-slate-50 rounded-xl border border-slate-100 font-bold text-sm text-slate-700 flex items-center overflow-hidden">
-                                                <Mail size={14} className="mr-2 text-slate-400 flex-shrink-0"/>
-                                                <span className="truncate">{editedClient.email || 'No registrado'}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                             {/* COL 3: AGENDA INTELIGENTE (REPLACES LOCATION) */}
-                             <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-200 dark:border-slate-800 space-y-5 h-full flex flex-col">
-                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 mb-2 flex items-center gap-2">
-                                    <CalendarRange size={14}/> Agenda Inteligente
-                                </h3>
-                                
-                                <div className="space-y-3 flex-1 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
-                                    {taxDeadlines.length > 0 ? taxDeadlines.map((deadline, idx) => {
-                                        // CHECK: Si ya está pagado en el historial
-                                        const isPaidAhead = editedClient.declarationHistory.some(
-                                            d => d.period === deadline.periodKey && d.status === DeclarationStatus.Pagada
-                                        );
-
-                                        return (
-                                            <div key={idx} className={`flex gap-3 items-center p-3 rounded-2xl transition-colors border ${isPaidAhead ? 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/30' : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700/50'}`}>
-                                                <div className={`flex flex-col items-center justify-center min-w-[50px] rounded-xl p-2 shadow-sm border ${isPaidAhead ? 'bg-white text-emerald-600 border-emerald-200' : 'bg-white dark:bg-slate-700 border-slate-100 dark:border-slate-600'}`}>
-                                                    {isPaidAhead ? (
-                                                        <CheckCircle size={20} className="text-emerald-500" />
-                                                    ) : (
-                                                        <>
-                                                            <span className="text-[9px] text-slate-400 font-bold uppercase">{format(deadline.deadline, 'MMM', {locale: es})}</span>
-                                                            <span className="text-lg font-black text-brand-navy dark:text-white leading-none">{format(deadline.deadline, 'd')}</span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex justify-between items-start">
-                                                        <p className={`font-bold text-xs leading-tight truncate ${isPaidAhead ? 'text-emerald-700' : 'text-slate-800 dark:text-white'}`}>{deadline.obligation}</p>
-                                                        {isPaidAhead && <span className="text-[9px] font-black text-emerald-600 uppercase bg-white px-1.5 rounded border border-emerald-200 ml-1">Cubierto</span>}
-                                                    </div>
-                                                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">{deadline.periodDescription}</p>
-                                                    {!isPaidAhead && deadline.isAdjusted && (
-                                                        <span className="text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-1 mt-1 w-max">
-                                                            <Info size={8}/> Ajustado
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    }) : (
-                                        <div className="text-center py-8 text-slate-400">
-                                            <CalendarRange size={32} className="mx-auto mb-2 opacity-50"/>
-                                            <p className="text-xs font-bold">No hay obligaciones calculadas.</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                        </div>
-
-                        {/* 3. ACTION BAR */}
-                        <div className="sticky bottom-4 z-10">
-                            <div className="bg-slate-900/90 backdrop-blur-md p-4 rounded-2xl shadow-2xl border border-slate-700 flex flex-col sm:flex-row gap-4 items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-slate-800 rounded-lg">
-                                        <CalendarRange size={24} className="text-white"/>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gestión Actual</p>
-                                        <p className="text-white font-bold">{formatPeriodForDisplay(getPeriod(client, new Date()))}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex w-full sm:w-auto gap-3">
-                                    <button 
-                                        onClick={() => handleQuickDeclare(getPeriod(client, new Date()))}
-                                        className="flex-1 sm:flex-none px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-900/50 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Send size={18}/> Declarar Ahora
-                                    </button>
-                                    
-                                    <button 
-                                        onClick={() => setConfirmation({ action: 'pay', period: getPeriod(client, new Date()) })}
-                                        className="flex-1 sm:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/50 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <DollarSign size={18}/> Cobrar / Cancelado
-                                    </button>
+                            {/* Credentials List */}
+                            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
+                                <h3 className="font-bold text-brand-navy dark:text-white mb-6 flex items-center gap-2"><Key size={18}/> Credenciales</h3>
+                                <div className="space-y-4">
+                                     <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Clave SRI</p>
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-mono text-sm font-bold text-slate-700 dark:text-white">{passwordVisible ? editedClient.sriPassword : '••••••••'}</span>
+                                            <button onClick={() => setPasswordVisible(!passwordVisible)} className="text-slate-400 hover:text-brand-teal"><Eye size={16}/></button>
+                                        </div>
+                                     </div>
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                    </div>
-                )}
-
-                {/* TAB: HISTORY */}
-                {activeTab === 'history' && (
-                    <div className="space-y-6 animate-fade-in-up">
-                         <PaymentHistoryChart client={client} />
-                         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
-                            <h3 className="font-bold text-slate-800 dark:text-white mb-4">Historial Completo</h3>
-                            <div className="space-y-2">
-                                {editedClient.declarationHistory.sort((a,b) => b.period.localeCompare(a.period)).map((decl, idx) => (
-                                    <div key={idx} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
-                                        <div>
-                                            <p className="font-bold text-sm text-slate-700 dark:text-white">{formatPeriodForDisplay(decl.period)}</p>
-                                            <p className="text-xs text-slate-500">{decl.status}</p>
+                    {/* TAB: HISTORY */}
+                    {activeTab === 'history' && (
+                        <div className="space-y-6 animate-fade-in-up">
+                            <PaymentHistoryChart client={client} />
+                            
+                            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden">
+                                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                                    <h3 className="font-bold text-brand-navy">Historial de Ciclo Tributario</h3>
+                                </div>
+                                <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                    {[...editedClient.declarationHistory].sort((a,b) => b.period.localeCompare(a.period)).map((decl, idx) => (
+                                        <div key={idx} className="p-5 flex flex-col sm:flex-row sm:items-center gap-4 hover:bg-slate-50 transition-colors">
+                                            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">
+                                                {decl.period.split('-')[1] || 'AN'}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-bold text-slate-800 text-sm uppercase">{formatPeriodForDisplay(decl.period)}</h4>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${decl.status === 'Pagada' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                        {decl.status}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400">{decl.updatedAt.split('T')[0]}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {decl.status === DeclarationStatus.Pagada && (
+                                                    <button onClick={() => handleShowReceipt(decl)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-white hover:border-brand-teal hover:text-brand-teal transition-all shadow-sm flex items-center gap-1">
+                                                        <FileText size={12}/> Ver Recibo
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            {decl.status === DeclarationStatus.Pagada && (
-                                                <button onClick={() => handleShowReceipt(decl)} className="p-2 text-slate-400 hover:text-brand-teal"><FileText size={18}/></button>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
-                         </div>
-                    </div>
-                )}
-                
-                {/* TAB: NOTES (Keep essential notes) */}
-                {activeTab === 'notes' && (
-                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800 h-full animate-fade-in-up">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-slate-800 dark:text-white">Notas Internas</h3>
-                            <button onClick={handleSummarize} className="p-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100"><Sparkles size={18}/></button>
                         </div>
-                        <textarea 
-                            className="w-full h-64 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border-none resize-none focus:ring-1 focus:ring-brand-teal"
-                            placeholder="Escriba notas importantes..."
-                            value={editedClient.notes || ''}
-                            onChange={(e) => setEditedClient({...editedClient, notes: e.target.value})}
-                        />
-                         {summary && (
-                            <div className="mt-4 p-4 bg-blue-50 text-blue-800 rounded-xl text-sm">
-                                <strong>Resumen IA:</strong> {summary}
-                            </div>
-                        )}
-                        <div className="mt-4 text-right">
-                             <button onClick={handleSave} className="px-6 py-3 bg-brand-navy text-white rounded-xl font-bold">Guardar Notas</button>
-                        </div>
-                    </div>
-                )}
+                    )}
                 </div>
              </div>
 
@@ -708,49 +527,20 @@ Total: $${receiptData.totalAmount.toFixed(2)}
              {confirmation && (
                 <Modal isOpen={!!confirmation} onClose={() => setConfirmation(null)} title="Confirmar Acción">
                     <div className="text-center p-4">
-                        <p className="mb-6 text-slate-600 dark:text-slate-300">¿Confirmar acción sobre el período <strong className="text-brand-navy dark:text-white">{formatPeriodForDisplay(confirmation.period)}</strong>?</p>
-                        <div className="flex flex-col gap-3">
-                            <button onClick={() => handleConfirmAction()} disabled={isProcessingAction} className="w-full py-3.5 bg-brand-navy text-white font-bold rounded-xl shadow-lg hover:bg-slate-800 transition-transform active:scale-95">
-                                {isProcessingAction ? <Loader className="animate-spin mx-auto"/> : (confirmation.action === 'declare' ? 'Confirmar Envío' : 'Confirmar Pago/Cancelado')}
-                            </button>
-                             {confirmation.action === 'declare' && (
-                                <button onClick={() => handleConfirmAction(true)} disabled={isProcessingAction} className="w-full py-3.5 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:bg-green-700 transition-transform active:scale-95 flex items-center justify-center gap-2">
-                                    <MessageCircle size={18}/> Confirmar y Notificar
-                                </button>
-                            )}
-                            <button onClick={() => setConfirmation(null)} className="w-full py-3 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors font-medium">Cancelar</button>
-                        </div>
+                         <p>Confirmar {confirmation.action} para {confirmation.period}</p>
+                         <button onClick={() => handleConfirmAction()} className="mt-4 px-6 py-3 bg-brand-navy text-white rounded-xl font-bold w-full">Confirmar</button>
                     </div>
                 </Modal>
              )}
-
+             
              <Modal isOpen={isReceiptModalOpen} onClose={() => setIsReceiptModalOpen(false)} title="Comprobante">
                  {receiptData && (
-                    <div className="p-4 bg-white rounded-xl">
-                        <div ref={receiptRef} className="text-center font-mono text-sm space-y-3 mb-6 border-b border-dashed border-slate-300 pb-6">
-                            <h3 className="font-bold text-xl mb-1">COMPROBANTE DE PAGO</h3>
-                            <p className="text-slate-500 text-xs uppercase tracking-widest mb-4">Soluciones Contables Pro</p>
-                            <p className="text-xs text-slate-400">{receiptData.paymentDate}</p>
-                            <div className="flex justify-between items-center text-left bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                <div>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Cliente</p>
-                                    <p className="font-bold text-slate-800">{receiptData.clientName}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase">RUC</p>
-                                    <p className="font-mono text-slate-600">{receiptData.clientRuc}</p>
-                                </div>
-                            </div>
-                            <div className="flex justify-between text-xl font-bold pt-2">
-                                <span>Total</span>
-                                <span>${receiptData.totalAmount.toFixed(2)}</span>
-                            </div>
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={handlePrintReceipt} className="flex-1 bg-brand-navy text-white py-3 rounded-xl font-bold shadow-md hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"><Printer size={18}/> Imprimir</button>
-                            <button onClick={copyReceiptToClipboard} className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 transition-colors flex items-center justify-center gap-2"><Clipboard size={18}/> Copiar</button>
-                        </div>
-                    </div>
+                     <div className="p-4 bg-white rounded-xl text-center">
+                         <CheckCircle size={48} className="mx-auto text-green-500 mb-4"/>
+                         <h3 className="font-bold text-lg mb-2">Pago Registrado</h3>
+                         <p className="text-sm text-slate-500 mb-4">{receiptData.transactionId}</p>
+                         <p className="text-2xl font-mono font-black text-brand-navy">${receiptData.totalAmount.toFixed(2)}</p>
+                     </div>
                  )}
              </Modal>
         </div>

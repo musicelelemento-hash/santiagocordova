@@ -1,4 +1,5 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+
+import React, { ErrorInfo, ReactNode } from 'react';
 import { ShieldAlert, RefreshCw, Activity, Home, BarChart } from 'lucide-react';
 
 interface ErrorBoundaryProps {

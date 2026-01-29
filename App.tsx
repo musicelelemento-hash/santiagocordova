@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Home, Users, CheckSquare, BarChart, Settings, Sun, Moon, BellRing, CalendarDays, LogOut, ShoppingCart, Cloud, RefreshCw, Check, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { HomeScreen } from './screens/HomeScreen';
+import { AdminDashboardScreen } from './screens/AdminDashboardScreen'; // Importado
 import { ClientsScreen } from './screens/ClientsScreen';
 import { TasksScreen } from './screens/TasksScreen';
 import { ReportsScreen } from './screens/ReportsScreen';
@@ -239,7 +240,9 @@ const App: React.FC = () => {
 
   const renderScreen = () => {
     switch (activeScreen) {
-      case 'home': return <HomeScreen navigate={navigate} serviceFees={serviceFees} clients={clients} tasks={tasks} />;
+      // Cambio: AdminDashboardScreen es el nuevo 'home' por defecto
+      case 'home': return <AdminDashboardScreen navigate={navigate} />; 
+      // El viejo 'home' se mantiene accesible si se desea, o se reemplaza. Aquí lo dejamos como fallback
       case 'clients': return <ClientsScreen clients={clients} setClients={setClients} initialFilter={clientFilter} navigate={navigate} serviceFees={serviceFees} initialClientData={initialClientData} clearInitialClientData={() => setInitialClientData(null)} clientToView={clientToView} clearClientToView={() => setClientToView(null)} sriCredentials={sriCredentials} />;
       case 'tasks': return <TasksScreen tasks={tasks} setTasks={setTasks} clients={clients} setClients={setClients} taskFilter={taskFilter} clearTaskFilter={clearTaskFilter} serviceFees={serviceFees} initialTaskData={initialTaskData} clearInitialTaskData={() => setInitialTaskData(null)} />;
       case 'calendar': return <CalendarScreen clients={clients} tasks={tasks} navigate={navigate} />;
@@ -248,7 +251,7 @@ const App: React.FC = () => {
       case 'web_orders': return <WebOrdersScreen orders={webOrders} setOrders={setWebOrders} setTasks={setTasks} navigate={navigate} />;
       case 'settings': return <SettingsScreen clients={clients} setClients={setClients} tasks={tasks} setTasks={setTasks} serviceFees={serviceFees} setServiceFees={setServiceFees} reminderConfig={reminderConfig} setReminderConfig={setReminderConfig} webOrders={webOrders} setWebOrders={setWebOrders} sriCredentials={sriCredentials} setSriCredentials={setSriCredentials} navigate={navigate} />;
       case 'scanner': return <DesignScreen navigate={navigate} sriCredentials={sriCredentials} />;
-      default: return <HomeScreen navigate={navigate} serviceFees={serviceFees} clients={clients} tasks={tasks} />;
+      default: return <AdminDashboardScreen navigate={navigate} />;
     }
   };
 
@@ -263,7 +266,7 @@ const App: React.FC = () => {
   };
 
   const navItems = [
-    { screen: 'home', icon: Home, label: 'Inicio' },
+    { screen: 'home', icon: Home, label: 'Área de Trabajo' }, // Renombrado
     { screen: 'clients', icon: Users, label: 'Clientes' },
     { screen: 'tasks', icon: CheckSquare, label: 'Tareas' },
     { screen: 'web_orders', icon: ShoppingCart, label: 'Pedidos', count: webOrders.filter(o => o.status === 'pending').length },

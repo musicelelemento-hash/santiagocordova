@@ -44,15 +44,6 @@ export enum RentaCategory {
   Interno = 'Interno Renta',
 }
 
-export interface ServiceBundle {
-  id: string;
-  title: string;
-  price: number;
-  description: string;
-  features: string[];
-  originalPrice?: number; // Para mostrar tachado
-}
-
 export interface ServiceFeesConfig {
   ivaMensual: number;
   ivaSemestral: number;
@@ -62,7 +53,14 @@ export interface ServiceFeesConfig {
   devolucionRenta: number;
   anexoGastosPersonales: number;
   customPunctualServices?: Array<{ id: string; name: string; price: number }>;
-  serviceBundles?: ServiceBundle[];
+  serviceBundles?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    price: number;
+    originalPrice?: number;
+    features: string[];
+  }>;
 }
 
 export interface ReminderConfig {
@@ -100,7 +98,6 @@ export interface Client {
   name: string;
   tradeName?: string;
   sriPassword: string;
-  iessPassword?: string;
   phones?: string[];
   email?: string;
   address?: string;
@@ -123,7 +120,7 @@ export interface Client {
   signatureFile?: StoredFile; 
   rucPdf?: StoredFile;        
   sharedAccessKey?: string;   
-  accountingObligated?: boolean;
+  iessPassword?: string;
   signatureExpirationDate?: string;
 }
 
@@ -210,7 +207,7 @@ export interface BusinessProfile {
     address: string;
     phone: string;
     email: string;
-    authNumber: string;
+    authNumber?: string;
     currentSequence?: number;
 }
 
