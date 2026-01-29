@@ -81,12 +81,13 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
 
             // --- LÓGICA INTELIGENTE DE OBLIGACIONES ---
             
-            // 1. Determinar Frecuencia Visual Inicial
+            // 1. Determinar Frecuencia Visual Inicial basada en el análisis del PDF
             if (rawData.regimen === TaxRegime.RimpeNegocioPopular) {
                 setSelectedFrequency('ANUAL');
             } else if (rawData.obligaciones_tributarias === 'semestral') {
                 setSelectedFrequency('SEMESTRAL');
             } else {
+                // Por defecto mensual para régimen general si no dice semestral
                 setSelectedFrequency('MENSUAL');
             }
 
@@ -155,6 +156,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
 
             // Mantener configuración si el cliente ya existe
             if (match) {
+                // Si ya existe, preservamos si era VIP o no
                 setIsVip(match.category.includes('Suscripción'));
                 setIsActiveClient(match.isActive ?? true);
             } else {
@@ -168,8 +170,8 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 name: rawData.apellidos_nombres,
                 address: rawData.direccion, // Parroquia | Referencia
                 economicActivity: rawData.actividad_economica, // Actividad limpia (sin *)
-                email: rawData.contacto.email,
-                phones: rawData.contacto.celular ? [rawData.contacto.celular] : [],
+                email: rawData.contacto.email, // Email extraído mejorado
+                phones: rawData.contacto.celular ? [rawData.contacto.celular] : [], // Celular extraído mejorado
                 regime: rawData.regimen, // El régimen se mantiene estricto (3 tipos)
                 sriPassword: finalPassword,
                 notes: `Obligaciones detectadas en PDF:\n${rawData.lista_obligaciones.join('\n')}`,
@@ -399,6 +401,26 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                         onChange={e => setExtractedData({...extractedData, name: e.target.value})}
                                         className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-bold text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
                                     />
+                                </div>
+
+                                {/* CONTACTOS EXTRAÍDOS */}
+                                <div className="grid grid-cols-2 gap-4">
+                                     <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Celular</label>
+                                        <input 
+                                            value={extractedData.phones?.[0] || ''} 
+                                            onChange={e => setExtractedData({...extractedData, phones: [e.target.value]})}
+                                            className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-medium text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
+                                        />
+                                    </div>
+                                     <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Email</label>
+                                        <input 
+                                            value={extractedData.email || ''} 
+                                            onChange={e => setExtractedData({...extractedData, email: e.target.value})}
+                                            className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-medium text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
+                                        />
+                                    </div>
                                 </div>
                                 
                                 <div className="space-y-1">
