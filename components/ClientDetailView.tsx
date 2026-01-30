@@ -10,14 +10,14 @@ import {
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy, 
     ShieldCheck, FileText, Zap, UserCheck, UserX, UserCheck2, 
     MoreHorizontal, Printer, Clipboard, CheckCircle, Send, Loader, ArrowDownToLine, 
-    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, FileCheck
+    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, FileCheck, Power
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
 
-// Helper functions (getRecentPeriods, getObligation, buildCategory, PaymentHistoryChart) remains same...
+// ... (Existing Helpers keep existing code) ...
 const getRecentPeriods = (client: Client, count: number): string[] => {
     const periods: string[] = [];
     let currentDate = new Date();
@@ -108,17 +108,14 @@ const PaymentHistoryChart: React.FC<{ client: Client }> = memo(({ client }) => {
     );
 });
 
-// Componente para copiar texto con feedback visual
 const CopyButton: React.FC<{ text: string, label?: string, obscured?: boolean, onCopy?: () => void }> = ({ text, label, obscured, onCopy }) => {
     const [copied, setCopied] = useState(false);
-
     const handleCopy = () => {
         navigator.clipboard.writeText(text);
         setCopied(true);
         if (onCopy) onCopy();
         setTimeout(() => setCopied(false), 2000);
     };
-
     return (
         <button 
             onClick={handleCopy}
@@ -177,7 +174,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [isSummarizing, setIsSummarizing] = useState(false);
     const [summary, setSummary] = useState('');
     
-    // File inputs
     const p12InputRef = useRef<HTMLInputElement>(null);
     const pdfInputRef = useRef<HTMLInputElement>(null);
 
@@ -210,10 +206,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const pendingToPay = editedClient.declarationHistory.find(d => d.period === currentPeriod && d.status === DeclarationStatus.Enviada);
         
         const activeWorkflowDeclaration = pendingToDeclare || pendingToPay;
-
         const nextPeriod = periods[0] ? getNextPeriod(periods[0]) : getPeriod(editedClient, new Date());
         const deadline = getDueDateForPeriod(editedClient, nextPeriod);
-        
         const lastActivity = editedClient.declarationHistory.length > 0 
             ? new Date(Math.max(...editedClient.declarationHistory.map(d => new Date(d.updatedAt).getTime())))
             : null;
@@ -235,19 +229,15 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         if (editedClient.regime !== TaxRegime.RimpeNegocioPopular) {
              newCategory = buildCategory(obligation, isVip);
         }
-        
-        // Build notes from extras
         let finalNotes = editedClient.notes || '';
         const extrasList = [];
         if (extraObligations.iceMensual && !finalNotes.includes('ICE')) extrasList.push("• Declaración/Anexo ICE");
         if (extraObligations.anexoPvp && !finalNotes.includes('PVP')) extrasList.push("• Anexo PVP");
         if (extraObligations.vehiculos && !finalNotes.includes('Vehículos')) extrasList.push("• Impuestos Vehiculares");
         if (extraObligations.patente && !finalNotes.includes('Patente')) extrasList.push("• Patente Municipal");
-        
         if (extrasList.length > 0) {
             finalNotes += `\n\n--- OBLIGACIONES ADICIONALES ---\n${extrasList.join('\n')}`;
         }
-        
         const toSave = { ...editedClient, category: newCategory, notes: finalNotes };
         onSave(toSave);
         setIsEditing(false);
@@ -289,7 +279,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 const message = action === 'declare' 
                     ? `Estimado/a ${editedClient.name}, su declaración del período ${formatPeriodForDisplay(period)} ha sido enviada exitosamente al SRI.`
                     : `Estimado/a ${editedClient.name}, hemos registrado el pago de sus honorarios/impuestos del período ${formatPeriodForDisplay(period)}. Gracias.`;
-                
                 window.open(`https://wa.me/593${mainPhone.substring(1)}?text=${encodeURIComponent(message)}`, "_blank");
             }
             setIsProcessingAction(false);
@@ -376,11 +365,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 size: file.size,
                 lastModified: file.lastModified
             };
-            
             const updated = type === 'p12' 
                 ? { ...editedClient, signatureFile: storedFile }
                 : { ...editedClient, rucPdf: storedFile };
-            
             setEditedClient(updated);
             onSave(updated);
         }
@@ -390,12 +377,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         if (!client.phones?.length || !client.sharedAccessKey) return;
         const phone = client.phones[0].replace(/\D/g, '');
         const fullPhone = phone.startsWith('593') ? phone : `593${phone.substring(1)}`;
-        
         const message = `Estimado/a ${client.name}, aquí tiene el enlace seguro a su Bóveda Digital con sus credenciales y documentos:
 https://portal.santiagocordova.com/client/${client.id}?token=${client.sharedAccessKey}
-
 Nota: Este enlace es personal y seguro.`;
-        
         window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
     };
 
@@ -460,11 +444,6 @@ Nota: Este enlace es personal y seguro.`;
                                     <span className="px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs font-bold flex items-center gap-1.5">
                                         <Briefcase size={12}/> {client.regime}
                                     </span>
-                                    {client.isArtisan && (
-                                        <span className="px-3 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 text-purple-700 dark:text-purple-300 text-xs font-bold flex items-center gap-1.5">
-                                            <Hammer size={12}/> Artesano
-                                        </span>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -614,73 +593,126 @@ Nota: Este enlace es personal y seguro.`;
                             {/* Card: RUC Data */}
                             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
                                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
-                                    <FileText size={16} className="text-brand-teal"/> Datos del Certificado RUC
+                                    <FileText size={16} className="text-brand-teal"/> Datos Generales & RUC
                                 </h3>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-6">
-                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 transition-colors hover:border-brand-teal/30">
-                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Artesano Calificado</label>
-                                            {isEditing ? (
-                                                <select 
-                                                    value={editedClient.isArtisan ? 'yes' : 'no'} 
-                                                    onChange={e => setEditedClient({...editedClient, isArtisan: e.target.value === 'yes'})} 
-                                                    className="w-full p-2 bg-white dark:bg-slate-700 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-teal"
-                                                >
-                                                    <option value="no">No</option>
-                                                    <option value="yes">Sí, Calificado</option>
-                                                </select>
-                                            ) : (
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`p-1.5 rounded-lg ${editedClient.isArtisan ? 'bg-purple-100 text-purple-600' : 'bg-slate-200 text-slate-500'}`}>
-                                                        <Hammer size={16}/>
-                                                    </div>
-                                                    <span className="font-bold text-slate-800 dark:text-white text-sm">{editedClient.isArtisan ? 'Sí, Calificado' : 'No Registra'}</span>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 transition-colors hover:border-brand-teal/30">
-                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Establecimientos</label>
-                                            {isEditing ? (
-                                                <select 
-                                                    value={editedClient.establishmentCount || 1} 
-                                                    onChange={e => setEditedClient({...editedClient, establishmentCount: parseInt(e.target.value)})} 
-                                                    className="w-full p-2 bg-white dark:bg-slate-700 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-teal"
-                                                >
-                                                    {Array.from({length: 10}, (_, i) => i + 1).map(num => (
-                                                        <option key={num} value={num}>{num}</option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
-                                                        <Building size={16}/>
-                                                    </div>
-                                                    <span className="font-bold text-slate-800 dark:text-white text-sm">{editedClient.establishmentCount || 1} Abierto(s)</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
+                                <div className="grid grid-cols-1 gap-6">
                                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 h-full transition-colors hover:border-brand-teal/30">
-                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Jurisdicción / Dirección</label>
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Dirección (Parroquia y Referencia)</label>
                                         {isEditing ? (
                                             <textarea 
                                                 rows={4}
-                                                value={editedClient.jurisdiction || ''} 
-                                                onChange={e => setEditedClient({...editedClient, jurisdiction: e.target.value})} 
+                                                value={editedClient.address || ''} 
+                                                onChange={e => setEditedClient({...editedClient, address: e.target.value})} 
                                                 className="w-full p-3 bg-white dark:bg-slate-700 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-teal resize-none"
-                                                placeholder="Dirección exacta según RUC"
+                                                placeholder="Dirección exacta según RUC, incluir Parroquia y Referencia"
                                             />
                                         ) : (
                                             <div className="flex items-start gap-3">
                                                 <MapPin size={20} className="text-slate-400 mt-0.5 flex-shrink-0"/>
                                                 <p className="font-medium text-slate-800 dark:text-white text-sm leading-relaxed">
-                                                    {editedClient.jurisdiction || 'No registrada'}
+                                                    {editedClient.address || 'Dirección no registrada'}
                                                 </p>
                                             </div>
                                         )}
+                                    </div>
+                                    
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 transition-colors hover:border-brand-teal/30">
+                                        <div className="flex justify-between items-center mb-4">
+                                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Configuración Tributaria</label>
+                                             {/* Switches moved here */}
+                                             <div className="flex gap-2">
+                                                 {isEditing ? (
+                                                     <>
+                                                        <button 
+                                                            onClick={() => setIsVip(!isVip)}
+                                                            className={`px-3 py-1 rounded-lg border text-[10px] font-bold uppercase transition-all flex items-center gap-1 ${isVip ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-slate-300 text-slate-400'}`}
+                                                        >
+                                                            <Crown size={12}/> {isVip ? 'VIP Activado' : 'No VIP'}
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => setEditedClient({...editedClient, isActive: !editedClient.isActive})}
+                                                            className={`px-3 py-1 rounded-lg border text-[10px] font-bold uppercase transition-all flex items-center gap-1 ${(editedClient.isActive ?? true) ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-red-50 border-red-300 text-red-700'}`}
+                                                        >
+                                                            <Power size={12}/> {(editedClient.isActive ?? true) ? 'Activo' : 'Inactivo'}
+                                                        </button>
+                                                     </>
+                                                 ) : (
+                                                     <>
+                                                        {isVip && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 flex items-center gap-1"><Crown size={10}/> VIP</span>}
+                                                        {(editedClient.isActive === false) && <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">Inactivo</span>}
+                                                     </>
+                                                 )}
+                                             </div>
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-500 mb-1 block">Régimen</label>
+                                                {isEditing ? (
+                                                    <select 
+                                                        value={editedClient.regime} 
+                                                        onChange={e => setEditedClient({...editedClient, regime: e.target.value as TaxRegime})} 
+                                                        className="w-full p-2 bg-white dark:bg-slate-700 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-teal"
+                                                    >
+                                                        {Object.values(TaxRegime).map(val => <option key={val} value={val}>{val}</option>)}
+                                                    </select>
+                                                ) : (
+                                                    <span className="font-bold text-slate-800 dark:text-white text-sm">{editedClient.regime}</span>
+                                                )}
+                                                
+                                                {/* Smart Alert for Income Tax Date */}
+                                                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-start gap-2 border border-blue-100 dark:border-blue-800">
+                                                    <Info size={14} className="text-blue-500 mt-0.5 flex-shrink-0"/>
+                                                    <div>
+                                                        <p className="text-[10px] font-bold text-blue-700 dark:text-blue-300 uppercase">Recordatorio Renta Anual</p>
+                                                        <p className="text-xs text-blue-600 dark:text-blue-400">
+                                                            {editedClient.regime === TaxRegime.RimpeNegocioPopular 
+                                                                ? "Declaración y Pago obligatorio en MAYO." 
+                                                                : "Declaración y Pago obligatorio en MARZO."}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-500 mb-1 block">Obligación Principal</label>
+                                                {isEditing ? (
+                                                    <select 
+                                                        value={obligation}
+                                                        onChange={(e) => setObligation(e.target.value)}
+                                                        className="w-full p-2 bg-white dark:bg-slate-700 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-teal"
+                                                    >
+                                                        <option value="Mensual">IVA Mensual</option>
+                                                        <option value="Semestral">IVA Semestral</option>
+                                                        <option value="Renta">Solo Renta (Negocio Popular)</option>
+                                                        <option value="Devolucion">Devolución IVA</option>
+                                                    </select>
+                                                ) : (
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="p-1.5 rounded-lg bg-slate-200 text-slate-600">
+                                                            <Briefcase size={16}/>
+                                                        </div>
+                                                        <span className="font-bold text-slate-800 dark:text-white text-sm">{editedClient.category}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="text-[10px] font-bold text-slate-500 mb-1 block">Tarifa Servicio</label>
+                                                {isEditing ? (
+                                                    <input 
+                                                        type="number"
+                                                        value={editedClient.customServiceFee || ''}
+                                                        onChange={e => setEditedClient({...editedClient, customServiceFee: parseFloat(e.target.value)})}
+                                                        placeholder="Dejar vacío para tarifa por defecto"
+                                                        className="w-full p-2 bg-white dark:bg-slate-700 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-teal"
+                                                    />
+                                                ) : (
+                                                    <span className="font-mono font-bold text-slate-800 dark:text-white text-sm">${getClientServiceFee(editedClient, serviceFees).toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

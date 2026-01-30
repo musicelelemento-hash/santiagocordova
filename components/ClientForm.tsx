@@ -297,14 +297,14 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     </div>
                     
                     <div>
-                         <label className="text-[10px] font-bold text-slate-500 mb-1 block">Dirección Fiscal</label>
+                         <label className="text-[10px] font-bold text-slate-500 mb-1 block">Dirección (Parroquia y Referencia)</label>
                          <div className="relative">
                             <MapPin size={16} className="absolute left-3 top-3 text-slate-400"/>
                             <textarea 
                                 value={clientData.address || ''}
                                 onChange={e => setClientData({...clientData, address: e.target.value})}
                                 className="w-full pl-9 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium outline-none resize-none h-20"
-                                placeholder="Ubicación exacta..."
+                                placeholder="Ej: Parroquia Uzhcurrumi, Frente a la cancha..."
                             />
                          </div>
                     </div>
@@ -372,7 +372,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                             </select>
                         </div>
 
-                        {/* 3. Obligación Principal (Frecuencia) - ELITE CHANGE */}
+                        {/* 3. Obligación Principal (Frecuencia) */}
                         <div>
                             <label className="text-[10px] font-bold text-slate-500 mb-1 block">OBLIGACIÓN PRINCIPAL (IVA/RENTA)</label>
                             <div className="grid grid-cols-2 gap-2">
@@ -404,7 +404,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         </div>
                     </div>
 
-                    {/* OBLIGACIONES ADICIONALES (CHECKBOXES) - ELITE CHANGE */}
+                    {/* OBLIGACIONES ADICIONALES */}
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4">
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 block flex items-center gap-1">
                             <FileCheck size={12}/> Obligaciones Adicionales
