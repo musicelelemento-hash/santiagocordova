@@ -1,14 +1,13 @@
-
 import React, { useMemo, useState, useRef } from 'react';
-import { Client, DeclarationStatus, ReceiptData, TaxRegime } from '../types';
-import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod } from '../services/sri';
+import { Client, DeclarationStatus, ReceiptData, TaxRegime, ClientCategory } from '../types';
+import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, getNextPeriod } from '../services/sri';
 import { getClientServiceFee } from '../services/clientService';
 import { differenceInCalendarDays, isSameMonth, parseISO, isValid, subMonths, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
     AlertTriangle, CheckCircle, MessageSquare, DollarSign, 
     Printer, Search, Loader, TrendingUp, 
-    Wallet, Layers, Filter, RefreshCw, CheckSquare, Square
+    Wallet, Layers, Filter, RefreshCw, CheckSquare, Square, Info
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useAppStore } from '../store/useAppStore';
@@ -59,7 +58,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
     const [isReceiptOpen, setIsReceiptOpen] = useState(false);
     const receiptRef = useRef<HTMLDivElement>(null);
 
-    // --- MOTOR DE AUDITORÍA FINANCIERA (ELITE V2) ---
+    // --- MOTOR DE AUDITORÍA FINANCIERA (ELITE V3) ---
     const financialData = useMemo(() => {
         const receivable: FinancialItem[] = [];
         const projected: FinancialItem[] = [];
@@ -127,28 +126,26 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                 }
             });
 
-            // 2. DETECCIÓN DE DEUDAS FANTASMA (El caso "Alan")
-            // Analizamos si faltan declaraciones recientes que NO están en el historial.
-            // Para mensuales: revisamos mes actual y anterior.
-            // Para semestrales: revisamos semestre actual.
-
+            // 2. DETECCIÓN PROACTIVA DE DEUDAS (Auditoría Profunda)
+            // Generamos los periodos que DEBERÍAN existir para este cliente
             const periodsToAudit: string[] = [];
 
             if (type === 'mensual' || type === 'dev') {
-                // Periodo Actual (Proyección)
-                periodsToAudit.push(getPeriod(client, now)); 
-                // Mes Anterior (Deuda Potencial si hoy > dia de vencimiento del mes pasado)
-                periodsToAudit.push(getPeriod(client, subMonths(now, 1)));
+                // Revisamos los últimos 3 meses para asegurar que nada se escape
+                periodsToAudit.push(getPeriod(client, now)); // Actual (Proyección o Vencido si es fin de mes)
+                periodsToAudit.push(getPeriod(client, subMonths(now, 1))); // Mes Anterior (Deuda)
+                periodsToAudit.push(getPeriod(client, subMonths(now, 2))); // 2 Meses atrás (Deuda)
             } else if (type === 'semestral') {
                 periodsToAudit.push(getPeriod(client, now));
+                // Check previous semester too just in case
+                periodsToAudit.push(getPeriod(client, subMonths(now, 6)));
             } else if (type === 'renta') {
-                // Renta es anual, se verifica el año en curso
                 periodsToAudit.push(getPeriod(client, now));
             }
 
             periodsToAudit.forEach(p => {
+                // Si el periodo NO está en el historial, es una deuda potencial o proyección
                 if (!processedPeriods.has(p)) {
-                    // ¡Ajá! Falta este periodo en el historial.
                     const dueDate = getDueDateForPeriod(client, p);
                     
                     // Si no hay fecha de vencimiento (error de config), asumimos fin de mes
@@ -169,9 +166,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                         isVirtual: true
                     };
 
-                    // REGLA DE ORO: 
-                    // Si ya pasó la fecha de vencimiento (diff > 0), es DEUDA REAL (Por Cobrar).
-                    // Si no ha pasado (diff <= 0), es PROYECCIÓN.
+                    // REGLA DE NEGOCIO: 
+                    // Si diff > 0 (Hoy es posterior al vencimiento) -> ES DEUDA (Receivable)
+                    // Si diff <= 0 (Aún no vence) -> ES PROYECCIÓN (Projected)
                     if (diff > 0) {
                         receivable.push(item);
                     } else {
@@ -186,11 +183,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
         receivable.sort((a, b) => (b.daysDiff || 0) - (a.daysDiff || 0));
         // Ingresos: Los más recientes primero
         collected.sort((a, b) => b.dateReference.getTime() - a.dateReference.getTime());
-        // Proyección: Alfabético
+        // Proyección: Alfabético y luego por fecha
         projected.sort((a, b) => a.clientName.localeCompare(b.clientName));
 
         return { receivable, projected, collected };
-    }, [clients, serviceFees, obligationFilter, isRecalculating]); // Dependencia added: isRecalculating
+    }, [clients, serviceFees, obligationFilter, isRecalculating]);
 
     // --- CHART DATA ---
     const chartData = useMemo(() => {
@@ -255,7 +252,6 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
         // Recorremos los seleccionados
         selectedItems.forEach(key => {
             // key format: "clientId-period"
-            // Nota: Este split es simple, si ID contiene guiones podría fallar. Mejor buscar en currentList.
             const item = currentList.find(i => `${i.clientId}-${i.period}` === key);
             if (!item) return;
 
@@ -478,7 +474,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                                             {formatPeriodForDisplay(item.period)}
                                         </span>
                                         {item.isVirtual && activeTab === 'receivable' && (
-                                            <p className="text-[9px] text-red-500 font-bold mt-1">Detectado (Sin Historial)</p>
+                                            <p className="text-[9px] text-red-500 font-bold mt-1 flex items-center justify-center gap-1">
+                                                <Info size={10}/> Detectado (Sin Historial)
+                                            </p>
                                         )}
                                         {!item.isVirtual && item.daysDiff !== undefined && item.daysDiff > 0 && activeTab === 'receivable' && (
                                             <p className="text-[9px] text-red-500 font-bold mt-1">Hace {item.daysDiff} días</p>
