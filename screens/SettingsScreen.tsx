@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Client, ClientCategory, TaxRegime, ServiceFeesConfig, Screen, Task, DeclarationStatus, Declaration, ReminderConfig, WebOrder } from '../types';
 import { Trash2, UploadCloud, Download, Info, Edit, Save, XCircle, CheckCircle, Loader, Printer, Clipboard, DollarSign, AlertTriangle, ChevronUp, ChevronDown, Palette, ChevronRight, MessageSquare, ToggleLeft, ToggleRight, CalendarClock, Key } from 'lucide-react';
@@ -808,7 +809,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
         </div>
       </div>
 
-      <Modal isOpen={isSecurityModalOpen} onClose={() => setIsSecurityModalOpen(false)} title="Confirmación de Seguridad">
+      <Modal isOpen={isSecurityModalOpen} onClose={() => setIsSecurityModalOpen(false)} title="Confirmación de Seguridad" disableBackdropClick={true}>
         <div className="space-y-4">
           <p className="dark:text-gray-300">Para confirmar el pago para <span className="font-bold text-gold">{selectedClient?.name}</span>, por favor ingrese el código de seguridad.</p>
           <input 
@@ -893,6 +894,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                 setIsServiceModalOpen(false)
             }} 
             title={currentService?.id ? "Editar Servicio" : "Nuevo Servicio Puntual"}
+            disableBackdropClick={true} // Prevent accidental close
         >
             <div className="space-y-4">
                 <div>

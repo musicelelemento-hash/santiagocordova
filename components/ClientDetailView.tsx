@@ -1084,7 +1084,12 @@ Nota: Este enlace es personal y seguro.`;
 
              {/* Modals (Confirmation & Receipt - No Changes) */}
              {confirmation && (
-                <Modal isOpen={!!confirmation} onClose={() => setConfirmation(null)} title="Confirmar Acción">
+                <Modal 
+                    isOpen={!!confirmation} 
+                    onClose={() => setConfirmation(null)} 
+                    title="Confirmar Acción"
+                    disableBackdropClick={true} // Safe modal
+                >
                     <div className="text-center p-4">
                         <p className="mb-6 text-slate-600 dark:text-slate-300">¿Confirmar acción sobre el período <strong className="text-brand-navy dark:text-white">{formatPeriodForDisplay(confirmation.period)}</strong>?</p>
                         <div className="flex flex-col gap-3">

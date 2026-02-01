@@ -258,7 +258,12 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ tasks, setTasks, clien
                 })}
             </div>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Crear Nueva Tarea">
+            <Modal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                title="Crear Nueva Tarea"
+                disableBackdropClick={true} // Prevent accidental close
+            >
                 <div className="space-y-4">
                     <div>
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Descripción</label>

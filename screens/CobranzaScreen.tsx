@@ -285,7 +285,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({ autoRegister, cl
             if (debtor && debtor.client.phones?.length) {
                 const phone = debtor.client.phones[0].replace(/\D/g, '');
                 const fullPhone = phone.startsWith('593') ? phone : `593${phone.substring(1)}`;
-                const message = `Estimado/a ${debtor.client.name}, le recordamos que mantiene un saldo pendiente de $${debtor.totalDebt.toFixed(2)}. Agradecemos su pago.`;
+                const message = `Estimado/a ${debtor.client.name}, le saludamos de Santiago Cordova. Le recordamos que mantiene un saldo pendiente de $${debtor.totalDebt.toFixed(2)}. Agradecemos su pago.`;
                 // Opening multiple windows is blocked by browsers usually, so this is a UX limitation in web apps.
                 // In a real app, this would use a backend API (Twilio/Meta) to send messages.
                 // For this demo, we simulate or just open the first one.
@@ -450,7 +450,12 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({ autoRegister, cl
             </div>
 
             {/* Payment Modal */}
-            <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Registrar Pago">
+            <Modal 
+                isOpen={isPaymentModalOpen} 
+                onClose={() => setIsPaymentModalOpen(false)} 
+                title="Registrar Pago"
+                disableBackdropClick={true} // Prevent accidental close
+            >
                 {activeDebtor && (
                     <div className="space-y-6">
                         <div className="flex justify-between items-start bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { X } from 'lucide-react';
 
@@ -6,13 +7,21 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  disableBackdropClick?: boolean; // New prop to prevent accidental closing
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, disableBackdropClick = false }) => {
   if (!isOpen) return null;
 
+  const handleBackdropClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!disableBackdropClick) {
+          onClose();
+      }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm animate-fade-in-down" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm animate-fade-in-down" onClick={handleBackdropClick}>
       <div 
         className="relative w-full max-w-lg p-4 sm:p-6 mx-2 sm:mx-4 bg-white rounded-lg shadow-xl dark:bg-gray-900 transform transition-all flex flex-col border border-gold/20"
         onClick={(e) => e.stopPropagation()}
