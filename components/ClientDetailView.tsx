@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
-import { Client, ClientCategory, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, ReceiptData, Task, TaskStatus } from '../types';
+import { Client, ClientCategory, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, ReceiptData, StoredFile, TaskStatus, Task } from '../types';
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod } from '../services/sri';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../services/geminiService';
-import { extractDataFromSriPdf } from '../services/pdfExtraction';
+import { extractDataFromSriPdf } from '../services/pdfExtraction'; // Importante: usar el extractor mejorado
 import { getClientServiceFee } from '../services/clientService';
 import { format, isPast, subMonths, subYears, addDays, getYear } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -12,14 +11,14 @@ import {
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy, 
     ShieldCheck, FileText, Zap, UserCheck, UserX, UserCheck2, 
     MoreHorizontal, Printer, Clipboard, CheckCircle, Send, Loader, ArrowDownToLine, 
-    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, FileCheck, Power, ScanLine, FilePlus
+    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, ScanLine, FilePlus, Power, FileCheck
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
 
-// Safe wrapper for getPeriod logic
+// ... (Helper functions remain unchanged: getRecentPeriods, getObligationFromCategory, isVipCategory, buildCategory, PaymentHistoryChart, CopyButton) ...
 const getRecentPeriods = (client: Client, count: number): string[] => {
     if (!client || !client.category) return [];
     const periods: string[] = [];
@@ -148,19 +147,12 @@ interface ClientDetailViewProps {
     sriCredentials?: Record<string, string>;
 }
 
-interface ExtraTaskConfig {
-    id: string;
-    name: string;
-    frequency: 'Mensual' | 'Semestral' | 'Anual';
-    price: number;
-}
-
 export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client, onSave, onBack, serviceFees, sriCredentials }) => {
     // Safety check for null client
     if (!client) return <div className="p-10 text-center">No se ha seleccionado un cliente válido.</div>;
 
     const { toast } = useToast();
-    const { setTasks } = useAppStore();
+    const { whatsappTemplates, setTasks } = useAppStore();
     const [editedClient, setEditedClient] = useState(client);
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'notes'>('profile');
@@ -170,15 +162,16 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [isVip, setIsVip] = useState(isVipCategory(client.category));
     
     const [passwordVisible, setPasswordVisible] = useState(false);
+    const [signaturePasswordVisible, setSignaturePasswordVisible] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isAnalyzingPdf, setIsAnalyzingPdf] = useState(false);
 
-    // Extras
-    const [extraTasks, setExtraTasks] = useState<ExtraTaskConfig[]>([]);
+    // Extra Tasks State
+    const [extraTasks, setExtraTasks] = useState<Array<{id: string, name: string, frequency: string}>>([]);
     const [newExtraTaskName, setNewExtraTaskName] = useState('');
-    const [newExtraTaskFreq, setNewExtraTaskFreq] = useState<'Mensual' | 'Semestral' | 'Anual'>('Mensual');
+    const [newExtraTaskFreq, setNewExtraTaskFreq] = useState('Mensual');
 
     // Modals
     const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
@@ -189,6 +182,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [isSummarizing, setIsSummarizing] = useState(false);
     const [summary, setSummary] = useState('');
     
+    // File inputs
+    const p12InputRef = useRef<HTMLInputElement>(null);
+    const pdfInputRef = useRef<HTMLInputElement>(null);
+
     useEffect(() => { 
         if (!isEditing && client) {
             setEditedClient(client); 
@@ -234,7 +231,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         };
     }, [editedClient, serviceFees]);
 
-    // PDF Extraction Logic
+    // PDF Extraction Logic - MEJORADA
     const handlePdfUpdate = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -252,14 +249,18 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
             setEditedClient(prev => ({
                 ...prev,
-                ruc: extracted.ruc,
-                name: extracted.apellidos_nombres,
-                address: extracted.direccion,
-                regime: extracted.regimen,
-                sriPassword: passwordToUse
+                ruc: extracted.ruc || prev.ruc,
+                name: extracted.apellidos_nombres || prev.name,
+                address: extracted.direccion || prev.address,
+                regime: extracted.regimen || prev.regime,
+                sriPassword: passwordToUse || prev.sriPassword,
+                // Mantener otros datos si no vienen en el PDF
+                economicActivity: extracted.actividad_economica || prev.economicActivity,
+                isArtisan: extracted.es_artesano,
+                establishmentCount: extracted.cantidad_establecimientos || prev.establishmentCount
             }));
 
-            // Suggest Frequency based on Extraction
+            // Sugerir frecuencia basada en el PDF
             if (extracted.regimen === TaxRegime.RimpeNegocioPopular) setObligation('Renta');
             else if (extracted.obligaciones_tributarias === 'semestral') setObligation('Semestral');
             else setObligation('Mensual');
@@ -267,13 +268,36 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             toast.success("Datos actualizados desde PDF");
         } catch (error) {
             console.error(error);
-            toast.error("Error al leer PDF");
+            toast.error("Error al leer PDF. Verifique que sea un archivo válido.");
         } finally {
             setIsAnalyzingPdf(false);
             if(fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
+    // Extra Tasks Handlers
+    const handleAddExtraTask = () => {
+        if(!newExtraTaskName) return;
+        setExtraTasks(prev => [...prev, {id: uuidv4(), name: newExtraTaskName, frequency: newExtraTaskFreq}]);
+        setNewExtraTaskName('');
+    };
+
+    const handleGenerateTask = (taskDef: {name: string, frequency: string}) => {
+        const newTask: Task = {
+            id: uuidv4(),
+            title: taskDef.name,
+            description: `Generada desde obligaciones adicionales. Frecuencia: ${taskDef.frequency}`,
+            clientId: client.id,
+            dueDate: addDays(new Date(), 3).toISOString(),
+            status: TaskStatus.Pendiente,
+            cost: 0, 
+            advancePayment: 0
+        };
+        setTasks(prev => [...prev, newTask]);
+        toast.success(`Tarea creada: ${taskDef.name}`);
+    };
+
+    // ... (rest of the file remains the same: handleSave, handleCopy, handleSummarize, handleConfirmAction, etc.)
     const handleSave = () => {
         let newCategory = editedClient.category;
         if (editedClient.regime !== TaxRegime.RimpeNegocioPopular) {
@@ -286,32 +310,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         setIsMenuOpen(false);
     };
 
-    const handleAddExtraTask = () => {
-        if (!newExtraTaskName) return;
-        const newTask: ExtraTaskConfig = {
-            id: uuidv4(),
-            name: newExtraTaskName,
-            frequency: newExtraTaskFreq,
-            price: 0
-        };
-        setExtraTasks([...extraTasks, newTask]);
-        setNewExtraTaskName('');
-    };
-
-    const handleGenerateTask = (extraTask: ExtraTaskConfig) => {
-        const newTaskItem: Task = {
-            id: uuidv4(),
-            title: extraTask.name,
-            description: `Tarea adicional (${extraTask.frequency}) generada desde ficha de cliente.`,
-            clientId: client.id,
-            dueDate: addDays(new Date(), 7).toISOString(),
-            status: TaskStatus.Pendiente,
-            cost: extraTask.price || 0
-        };
-        setTasks(prev => [...prev, newTaskItem]);
-        toast.success(`Tarea creada: ${extraTask.name}`);
-    };
-
     const handleCopy = (text: string) => navigator.clipboard.writeText(text);
 
     const handleSummarize = async () => {
@@ -322,7 +320,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         setIsSummarizing(false);
     };
 
-    // ... (Confirm, Receipt, WhatsApp handlers remain the same) ...
      const handleConfirmAction = (sendWhatsApp: boolean = false) => {
         if (!confirmation) return;
         setIsProcessingAction(true);
@@ -432,6 +429,25 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         setEditedClient(updated);
         onSave(updated);
     };
+    
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'p12' | 'pdf') => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const storedFile: StoredFile = {
+                name: file.name,
+                type: type,
+                size: file.size,
+                lastModified: file.lastModified
+            };
+            
+            const updated = type === 'p12' 
+                ? { ...editedClient, signatureFile: storedFile }
+                : { ...editedClient, rucPdf: storedFile };
+            
+            setEditedClient(updated);
+            onSave(updated);
+        }
+    };
 
     const handleShareViaWhatsApp = () => {
         if (!client.phones?.length || !client.sharedAccessKey) return;
@@ -446,14 +462,12 @@ Nota: Este enlace es personal y seguro.`;
         window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
     };
 
-    // Determine Annual Tax Month
     const annualTaxMonth = editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'Mayo' : 'Marzo';
     const annualTaxColor = editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'text-purple-600 bg-purple-50' : 'text-orange-600 bg-orange-50';
 
-    // --- RENDER ---
     return (
         <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col animate-fade-in absolute inset-0 z-50 overflow-hidden">
-             {/* HEADER (Same as before) */}
+             {/* ... Header and Tabs ... */}
              <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm z-20 flex-shrink-0">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6">
                     <div className="h-16 flex items-center justify-between">
@@ -493,7 +507,8 @@ Nota: Este enlace es personal y seguro.`;
                     </div>
 
                     <div className="py-6 flex flex-col md:flex-row gap-6 items-start justify-between">
-                        <div className="flex gap-5 items-center">
+                         {/* ... Client Title Header ... */}
+                         <div className="flex gap-5 items-center">
                             <div className="relative">
                                 <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-navy to-slate-900 text-white flex items-center justify-center text-3xl font-display font-bold shadow-2xl border-[3px] border-white dark:border-slate-800">
                                     {client.name.substring(0, 2).toUpperCase()}
@@ -510,6 +525,11 @@ Nota: Este enlace es personal y seguro.`;
                                     <span className="px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs font-bold flex items-center gap-1.5">
                                         <Briefcase size={12}/> {client.regime}
                                     </span>
+                                    {client.isArtisan && (
+                                        <span className="px-3 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 text-purple-700 dark:text-purple-300 text-xs font-bold flex items-center gap-1.5">
+                                            <Hammer size={12}/> Artesano
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -547,7 +567,7 @@ Nota: Este enlace es personal y seguro.`;
                         {/* --- CENTRO DE COMANDO TRIBUTARIO --- */}
                         {pendingDeclaration && (
                             <div className="lg:col-span-3">
-                                {/* ... (Workflow code hidden for brevity, same as before) ... */}
+                                {/* ... (Workflow code) ... */}
                                 <div className="bg-slate-900 rounded-3xl p-6 shadow-xl border border-slate-800 relative overflow-hidden text-white">
                                     <div className="absolute top-0 right-0 w-64 h-64 bg-brand-teal/20 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none"></div>
                                     <div className="relative z-10">
@@ -560,14 +580,17 @@ Nota: Este enlace es personal y seguro.`;
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+                                            {/* Step 1 */}
                                             <div className="flex gap-4">
                                                 <div className="flex-shrink-0 flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-brand-teal text-white flex items-center justify-center font-bold shadow-lg ring-4 ring-slate-800 z-10">1</div><div className="h-full w-0.5 bg-slate-700/50 my-1"></div></div>
                                                 <div className="flex-1 pb-4"><h4 className="font-bold text-slate-200 mb-2">Copiar Credenciales</h4><div className="space-y-2"><CopyButton label="RUC" text={editedClient.ruc} /><CopyButton label="Clave" text={editedClient.sriPassword} obscured /></div></div>
                                             </div>
+                                            {/* Step 2 */}
                                             <div className="flex gap-4">
                                                 <div className="flex-shrink-0 flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-brand-teal text-white flex items-center justify-center font-bold shadow-lg ring-4 ring-slate-800 z-10">2</div><div className="h-full w-0.5 bg-slate-700/50 my-1"></div></div>
                                                 <div className="flex-1 pb-4"><h4 className="font-bold text-slate-200 mb-2">Acceder al Portal</h4><button onClick={handleOpenSRI} className="w-full flex items-center justify-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all shadow-md group"><Globe size={24} className="text-brand-teal group-hover:scale-110 transition-transform"/><div className="text-left"><span className="block font-bold text-sm">Abrir SRI en Línea</span><span className="text-[10px] text-slate-400">srienlinea.sri.gob.ec</span></div><ExternalLink size={14} className="ml-auto text-slate-500"/></button></div>
                                             </div>
+                                            {/* Step 3 */}
                                             <div className="flex gap-4">
                                                 <div className="flex-shrink-0 flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-brand-teal text-white flex items-center justify-center font-bold shadow-lg ring-4 ring-slate-800 z-10">3</div></div>
                                                 <div className="flex-1"><h4 className="font-bold text-slate-200 mb-2">Finalizar Proceso</h4><button onClick={() => handleQuickDeclare(pendingDeclaration.period)} className="w-full h-[68px] bg-green-600 hover:bg-green-500 text-white font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02]"><CheckCircle size={24}/><span>Confirmar Declaración</span></button></div>
@@ -907,7 +930,120 @@ Nota: Este enlace es personal y seguro.`;
                                             </div>
                                         )}
                                     </div>
-                                    {/* ... rest of files ... */}
+
+                                    {/* Firma Electrónica */}
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-brand-teal/30 transition-colors group">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                                <FileKey size={14} className="text-purple-500"/> Firma Electrónica (.p12)
+                                            </span>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${editedClient.signatureFile ? 'bg-purple-100 text-purple-700' : 'bg-slate-200 text-slate-500'}`}>
+                                                {editedClient.signatureFile ? 'Activa' : 'Pendiente'}
+                                            </span>
+                                        </div>
+                                        
+                                        {isEditing ? (
+                                            <div className="space-y-3">
+                                                    <div className="relative">
+                                                    <input 
+                                                        type={signaturePasswordVisible ? "text" : "password"} 
+                                                        placeholder="Clave de Firma"
+                                                        value={editedClient.electronicSignaturePassword || ''} 
+                                                        onChange={e => setEditedClient({...editedClient, electronicSignaturePassword: e.target.value})} 
+                                                        className="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-sm font-mono focus:ring-2 focus:ring-purple-500 outline-none"
+                                                    />
+                                                    <button 
+                                                        onClick={() => setSignaturePasswordVisible(!signaturePasswordVisible)}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-purple-500"
+                                                    >
+                                                        {signaturePasswordVisible ? <EyeOff size={16}/> : <Eye size={16}/>}
+                                                    </button>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <input 
+                                                        type="file" 
+                                                        accept=".p12,.pfx"
+                                                        className="hidden"
+                                                        ref={p12InputRef}
+                                                        onChange={(e) => handleFileUpload(e, 'p12')}
+                                                    />
+                                                    <button onClick={() => p12InputRef.current?.click()} className="flex-1 py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-500 hover:border-purple-500 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex items-center justify-center gap-2">
+                                                        <UploadCloud size={16}/> {editedClient.signatureFile ? 'Actualizar Archivo' : 'Subir Archivo .P12'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white dark:bg-slate-700 rounded-xl p-3 border border-slate-200 dark:border-slate-600 flex items-center justify-between">
+                                                 <div className="flex items-center gap-3">
+                                                    <div className={`p-2 rounded-lg ${editedClient.signatureFile ? 'bg-purple-100 text-purple-600' : 'bg-slate-100 text-slate-400'}`}>
+                                                        <FileKey size={20}/>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-800 dark:text-white">
+                                                            {editedClient.signatureFile ? editedClient.signatureFile.name : 'Sin archivo'}
+                                                        </p>
+                                                        <div className="flex items-center gap-1 mt-0.5">
+                                                            <span className="text-[10px] text-slate-400">Clave:</span>
+                                                            <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 rounded">
+                                                                {editedClient.electronicSignaturePassword ? (signaturePasswordVisible ? editedClient.electronicSignaturePassword : '••••') : 'N/A'}
+                                                            </span>
+                                                             {editedClient.electronicSignaturePassword && (
+                                                                <button onClick={() => setSignaturePasswordVisible(!signaturePasswordVisible)} className="ml-1 text-slate-400 hover:text-purple-500">
+                                                                    {signaturePasswordVisible ? <EyeOff size={10}/> : <Eye size={10}/>}
+                                                                </button>
+                                                             )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {/* RUC Digital */}
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-brand-teal/30 transition-colors group">
+                                        <div className="flex justify-between items-center mb-3">
+                                            <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                                                <FileText size={14} className="text-blue-500"/> RUC Digital
+                                            </span>
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${editedClient.rucPdf ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'}`}>
+                                                {editedClient.rucPdf ? 'Disponible' : 'Faltante'}
+                                            </span>
+                                        </div>
+                                         {isEditing ? (
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="file" 
+                                                    accept=".pdf"
+                                                    className="hidden"
+                                                    ref={pdfInputRef}
+                                                    onChange={(e) => handleFileUpload(e, 'pdf')}
+                                                />
+                                                <button onClick={() => pdfInputRef.current?.click()} className="w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-xs font-bold text-slate-500 hover:border-blue-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all flex items-center justify-center gap-2">
+                                                    <UploadCloud size={16}/> {editedClient.rucPdf ? 'Actualizar PDF' : 'Subir PDF RUC'}
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="bg-white dark:bg-slate-700 rounded-xl p-3 border border-slate-200 dark:border-slate-600 flex items-center justify-between">
+                                                 <div className="flex items-center gap-3">
+                                                    <div className={`p-2 rounded-lg ${editedClient.rucPdf ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
+                                                        <FileText size={20}/>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-800 dark:text-white">
+                                                            {editedClient.rucPdf ? editedClient.rucPdf.name : 'Documento no cargado'}
+                                                        </p>
+                                                        {editedClient.rucPdf && <p className="text-[10px] text-slate-400">PDF • {Math.round(editedClient.rucPdf.size / 1024)} KB</p>}
+                                                    </div>
+                                                </div>
+                                                {editedClient.rucPdf && (
+                                                     <button className="p-2 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-lg transition-colors">
+                                                        <Download size={18}/>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
                                 </div>
                             </div>
                             
