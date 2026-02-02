@@ -1,23 +1,25 @@
-import React, { useMemo, useState, useRef } from 'react';
-import { Client, DeclarationStatus, ReceiptData, TaxRegime, ClientCategory } from '../types';
-import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, getNextPeriod } from '../services/sri';
+
+import React, { useMemo, useState } from 'react';
+import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, ReminderConfig, BusinessProfile } from '../types';
+import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod } from '../services/sri';
 import { getClientServiceFee } from '../services/clientService';
 import { differenceInCalendarDays, isSameMonth, parseISO, isValid, subMonths, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
     AlertTriangle, CheckCircle, MessageSquare, DollarSign, 
     Printer, Search, Loader, TrendingUp, 
-    Wallet, Layers, Filter, RefreshCw, CheckSquare, Square, Info
+    Wallet, Layers, RefreshCw, CheckSquare, Square, Info
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
-import { useAppStore } from '../store/useAppStore';
 import { Modal } from '../components/Modal';
 import { printSalesNote } from '../services/printService';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface CobranzaScreenProps {
-    autoRegister?: boolean;
-    clearAutoAction?: () => void;
+    clients: Client[];
+    setClients: React.Dispatch<React.SetStateAction<Client[]>>;
+    serviceFees: ServiceFeesConfig;
+    reminderConfig: ReminderConfig;
 }
 
 type TabView = 'receivable' | 'projected' | 'collected';
@@ -34,11 +36,21 @@ interface FinancialItem {
     dateReference: Date; 
     daysDiff?: number;
     phones: string[];
-    isVirtual?: boolean; // Deuda detectada automáticamente
+    isVirtual?: boolean; // Deuda detectada automáticamente (no existe en historial aún)
 }
 
-export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
-    const { clients, setClients, serviceFees, businessProfile } = useAppStore();
+// Default profile for receipt generation if not provided via props
+const defaultBusinessProfile: BusinessProfile = {
+    ruc: '0700000000001',
+    businessName: 'Santiago Cordova',
+    tradeName: 'Soluciones Tributarias',
+    address: 'Colon y Sucre / Pasaje - El Oro',
+    phone: '+593 978 980 722',
+    email: 'info@santiagocordova.com',
+    authNumber: '0000000000'
+};
+
+export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({ clients, setClients, serviceFees }) => {
     const { toast } = useToast();
 
     // UI States
@@ -56,42 +68,42 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
     // Receipt Logic
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
     const [isReceiptOpen, setIsReceiptOpen] = useState(false);
-    const receiptRef = useRef<HTMLDivElement>(null);
 
     // --- MOTOR DE AUDITORÍA FINANCIERA (ELITE V3) ---
+    // Analiza qué debería deber cada cliente hoy.
     const financialData = useMemo(() => {
         const receivable: FinancialItem[] = [];
         const projected: FinancialItem[] = [];
         const collected: FinancialItem[] = [];
         const now = new Date();
-        const selectedMonth = new Date(); // Asumimos mes actual por defecto para la vista de ingresos
+        const selectedMonth = new Date(); // Para filtro de ingresos mensuales
 
         clients.forEach(client => {
-            // Ignorar clientes eliminados o explícitamente inactivos
+            // Ignorar clientes eliminados o inactivos
             if (client.isDeleted || client.isActive === false) return;
 
-            // Calcular tarifa (Si es 0 o undefined, forzar mínimo $5 para evitar ceros en pantalla)
+            // 1. Calcular Tarifa (Prioridad: Personalizada > Configuración Global)
             let fee = getClientServiceFee(client, serviceFees);
-            if (fee <= 0) fee = 5.00; 
+            if (fee <= 0) fee = 10.00; // Fallback de seguridad visual
 
-            // Determinar Tipo de Obligación
+            // 2. Determinar Tipo de Obligación Principal
             let type: FinancialItem['type'] = 'mensual';
             if (client.category.includes('Semestral') || client.regime === TaxRegime.RimpeEmprendedor) type = 'semestral';
             else if (client.regime === TaxRegime.RimpeNegocioPopular) type = 'renta';
             else if (client.category.includes('Devolución')) type = 'dev';
 
-            // Filtro Global
+            // Filtro Global de UI
             if (obligationFilter !== 'all' && type !== obligationFilter && !(obligationFilter === 'renta' && type === 'dev')) return;
 
-            // Mapa para rastrear periodos ya procesados en el historial
+            // Set para rastrear qué periodos YA existen en el historial del cliente
             const processedPeriods = new Set<string>();
 
-            // 1. PROCESAR HISTORIAL EXISTENTE
+            // --- A. PROCESAR LO QUE YA EXISTE (Historial) ---
             client.declarationHistory.forEach(decl => {
                 processedPeriods.add(decl.period);
 
                 if (decl.status === DeclarationStatus.Pagada) {
-                    // INGRESOS (Collected)
+                    // INGRESOS (Lo que ya pagaron este mes)
                     if (decl.paidAt) {
                         const paidDate = parseISO(decl.paidAt);
                         if (isValid(paidDate) && isSameMonth(paidDate, selectedMonth)) {
@@ -109,7 +121,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                         }
                     }
                 } else if (decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pendiente) {
-                    // POR COBRAR (Receivable) - Deuda explícita
+                    // POR COBRAR (Deuda explícita en historial)
                     const dueDate = getDueDateForPeriod(client, decl.period) || now;
                     receivable.push({
                         clientId: client.id,
@@ -126,29 +138,27 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                 }
             });
 
-            // 2. DETECCIÓN PROACTIVA DE DEUDAS (Auditoría Profunda)
-            // Generamos los periodos que DEBERÍAN existir para este cliente
+            // --- B. DETECCIÓN DE HUECOS (El caso "Alan") ---
+            // Si el cliente no tiene historial, el sistema debe "imaginar" qué debería deber hoy.
+            
             const periodsToAudit: string[] = [];
 
             if (type === 'mensual' || type === 'dev') {
-                // Revisamos los últimos 3 meses para asegurar que nada se escape
-                periodsToAudit.push(getPeriod(client, now)); // Actual (Proyección o Vencido si es fin de mes)
-                periodsToAudit.push(getPeriod(client, subMonths(now, 1))); // Mes Anterior (Deuda)
-                periodsToAudit.push(getPeriod(client, subMonths(now, 2))); // 2 Meses atrás (Deuda)
+                // Revisamos Mes Actual y Mes Anterior
+                periodsToAudit.push(getPeriod(client, now)); 
+                periodsToAudit.push(getPeriod(client, subMonths(now, 1))); 
             } else if (type === 'semestral') {
+                // Revisamos Semestre Actual
                 periodsToAudit.push(getPeriod(client, now));
-                // Check previous semester too just in case
-                periodsToAudit.push(getPeriod(client, subMonths(now, 6)));
             } else if (type === 'renta') {
+                // Revisamos Año Fiscal
                 periodsToAudit.push(getPeriod(client, now));
             }
 
             periodsToAudit.forEach(p => {
-                // Si el periodo NO está en el historial, es una deuda potencial o proyección
+                // Si este periodo NO está en el historial procesado arriba...
                 if (!processedPeriods.has(p)) {
                     const dueDate = getDueDateForPeriod(client, p);
-                    
-                    // Si no hay fecha de vencimiento (error de config), asumimos fin de mes
                     const effectiveDueDate = dueDate || new Date(); 
                     const diff = differenceInCalendarDays(now, effectiveDueDate);
 
@@ -163,12 +173,12 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                         dateReference: effectiveDueDate,
                         daysDiff: diff,
                         phones: client.phones || [],
-                        isVirtual: true
+                        isVirtual: true // Marcamos como virtual
                     };
 
-                    // REGLA DE NEGOCIO: 
-                    // Si diff > 0 (Hoy es posterior al vencimiento) -> ES DEUDA (Receivable)
-                    // Si diff <= 0 (Aún no vence) -> ES PROYECCIÓN (Projected)
+                    // LÓGICA DE NEGOCIO:
+                    // Si diff > 0: La fecha límite ya pasó -> ES DEUDA (Receivable)
+                    // Si diff <= 0: Aún no vence -> ES PROYECCIÓN (Projected)
                     if (diff > 0) {
                         receivable.push(item);
                     } else {
@@ -178,12 +188,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
             });
         });
 
-        // Ordenamiento
-        // Por cobrar: Los más atrasados primero
-        receivable.sort((a, b) => (b.daysDiff || 0) - (a.daysDiff || 0));
-        // Ingresos: Los más recientes primero
+        // Ordenamiento Inteligente
+        receivable.sort((a, b) => (b.daysDiff || 0) - (a.daysDiff || 0)); // Más vencidos primero
         collected.sort((a, b) => b.dateReference.getTime() - a.dateReference.getTime());
-        // Proyección: Alfabético y luego por fecha
         projected.sort((a, b) => a.clientName.localeCompare(b.clientName));
 
         return { receivable, projected, collected };
@@ -246,12 +253,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
         let lastClient: Client | null = null;
         let paidPeriods: any[] = [];
 
-        // Clonamos clientes para mutar
+        // Clonamos clientes para mutar el estado
         const newClients = [...clients];
 
-        // Recorremos los seleccionados
         selectedItems.forEach(key => {
-            // key format: "clientId-period"
             const item = currentList.find(i => `${i.clientId}-${i.period}` === key);
             if (!item) return;
 
@@ -275,30 +280,29 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                     amount: item.amount
                 };
             } else {
-                // Crear nueva (Vino de virtual/proyección)
+                // Crear nueva (Viene de deuda virtual)
                 history.push({
                     period: item.period,
                     status: DeclarationStatus.Pagada,
                     updatedAt: now,
                     paidAt: now,
-                    declaredAt: now, // Asumimos declarado si paga
+                    declaredAt: now, // Asumimos declarado al pagar
                     transactionId,
                     amount: item.amount
                 });
             }
             
-            // Actualizar cliente en array
             newClients[clientIndex] = { ...client, declarationHistory: history };
             lastClient = newClients[clientIndex];
         });
 
         setTimeout(() => {
-            setClients(newClients);
+            setClients(newClients); // Actualiza el Store Global -> Actualiza Clientes -> Actualiza Cobros
             setIsProcessing(false);
             setIsPaymentModalOpen(false);
             setSelectedItems(new Set());
             
-            if (lastClient) { // Generar recibo del último (o único) cliente
+            if (lastClient) {
                  setReceiptData({
                     transactionId,
                     clientName: lastClient.name,
@@ -311,8 +315,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                 setIsReceiptOpen(true);
             }
             toast.success(`Cobro registrado: $${totalPaid.toFixed(2)}`);
-            // Forzar recálculo
-            setIsRecalculating(p => !p);
+            setIsRecalculating(p => !p); // Forzar refresco visual
         }, 800);
     };
 
@@ -336,7 +339,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
     };
 
     return (
-        <div className="pb-20 space-y-6">
+        <div className="pb-20 space-y-6 animate-fade-in">
             
             {/* Header Stats */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
@@ -344,7 +347,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                     <h2 className="text-3xl font-display font-black text-brand-navy dark:text-white flex items-center gap-2">
                         <Wallet className="text-gold"/> Gestión de Cobranza
                     </h2>
-                    <p className="text-slate-500 font-medium text-sm mt-1">Control financiero en tiempo real.</p>
+                    <p className="text-slate-500 font-medium text-sm mt-1">Conciliación automática con base de clientes.</p>
                 </div>
                 
                  <div className="flex gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
@@ -390,7 +393,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                         <input 
                             type="text" 
-                            placeholder="Buscar..."
+                            placeholder="Buscar cliente o RUC..."
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                             className="w-full pl-9 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-brand-teal"
@@ -474,9 +477,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                                             {formatPeriodForDisplay(item.period)}
                                         </span>
                                         {item.isVirtual && activeTab === 'receivable' && (
-                                            <p className="text-[9px] text-red-500 font-bold mt-1 flex items-center justify-center gap-1">
-                                                <Info size={10}/> Detectado (Sin Historial)
-                                            </p>
+                                            <div className="text-[9px] text-red-500 font-bold mt-1 flex items-center justify-center gap-1">
+                                                <Info size={10}/> Deuda Detectada
+                                            </div>
                                         )}
                                         {!item.isVirtual && item.daysDiff !== undefined && item.daysDiff > 0 && activeTab === 'receivable' && (
                                             <p className="text-[9px] text-red-500 font-bold mt-1">Hace {item.daysDiff} días</p>
@@ -552,9 +555,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = () => {
                             <CheckCircle size={32}/>
                         </div>
                         <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">¡Pago Registrado!</h3>
-                        <p className="text-slate-500 text-sm mb-6">El cobro se ha guardado correctamente.</p>
+                        <p className="text-slate-500 text-sm mb-6">El cobro se ha guardado y sincronizado con la ficha del cliente.</p>
                         <div className="flex gap-3">
-                             <button onClick={() => printSalesNote(receiptData, businessProfile)} className="flex-1 py-3 bg-brand-navy text-white font-bold rounded-xl flex items-center justify-center gap-2">
+                             <button onClick={() => printSalesNote(receiptData, defaultBusinessProfile)} className="flex-1 py-3 bg-brand-navy text-white font-bold rounded-xl flex items-center justify-center gap-2">
                                 <Printer size={18}/> Imprimir
                              </button>
                              <button onClick={() => setIsReceiptOpen(false)} className="px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200">

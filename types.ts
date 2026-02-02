@@ -92,6 +92,12 @@ export interface StoredFile {
     content?: string; // Base64 content (optional to avoid huge DBs)
 }
 
+export interface ClientFeeStructure {
+    monthly?: number;
+    semestral?: number;
+    annual?: number; // Renta
+}
+
 export interface Client {
   id: string;
   ruc: string;
@@ -109,7 +115,13 @@ export interface Client {
   declarationHistory: Declaration[];
   isDeleted?: boolean;
   isActive?: boolean;
-  customServiceFee?: number;
+  
+  // Deprecated in favor of feeStructure, kept for backward compat logic
+  customServiceFee?: number; 
+  
+  // New Fee Structure
+  feeStructure?: ClientFeeStructure;
+
   annualRentaStatus?: DeclarationStatus;
   
   // New fields

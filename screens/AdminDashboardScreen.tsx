@@ -42,26 +42,24 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 const p = getPeriod(c, today);
                 const d = getDueDateForPeriod(c, p);
                 const isPaid = c.declarationHistory.some(dh => dh.period === p && dh.status === DeclarationStatus.Pagada);
-                // Urgente: Vencido o Vence en <= 3 días y no está pagado
                 return !isPaid && d && (isPast(d) || isToday(d) || isTomorrow(d) || d.getTime() - today.getTime() < 3 * 24 * 60 * 60 * 1000);
             });
         } else if (filter === 'rimpe') {
-            list = list.filter(c => c.regime === TaxRegime.RimpeEmprendedor);
+            // Broaden "RIMPE" to include all non-General
+            list = list.filter(c => c.regime === TaxRegime.RimpeEmprendedor || c.regime === TaxRegime.RimpeNegocioPopular);
         } else if (filter === 'popular') {
             list = list.filter(c => c.regime === TaxRegime.RimpeNegocioPopular);
         }
 
-        // 3. Ordenamiento por Prioridad (Algoritmo de Atencion)
+        // 3. Ordenamiento
         return list.sort((a, b) => {
             const pA = getPeriod(a, today);
             const pB = getPeriod(b, today);
             const dueA = getDueDateForPeriod(a, pA)?.getTime() || 9999999999999;
             const dueB = getDueDateForPeriod(b, pB)?.getTime() || 9999999999999;
 
-            // Primero los vencidos/próximos
             if (dueA !== dueB) return dueA - dueB;
             
-            // Luego VIPs
             const aVip = a.category.includes('Suscripción') ? 1 : 0;
             const bVip = b.category.includes('Suscripción') ? 1 : 0;
             return bVip - aVip;
@@ -77,7 +75,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
              return d && isPast(d) && !isDone && c.isActive;
         }).length;
 
-        const monthlyIncome = clients.filter(c => c.isActive).reduce((sum, c) => sum + (c.customServiceFee || 0), 0);
+        // Updated income calculation using new fee structure if available
+        const monthlyIncome = clients.filter(c => c.isActive).reduce((sum, c) => {
+            const monthlyFee = c.feeStructure?.monthly ?? c.customServiceFee ?? 0;
+            return sum + monthlyFee;
+        }, 0);
 
         return {
             total: clients.length,
@@ -87,6 +89,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         };
     }, [clients]);
 
+    // ... (handleAction remains same) ...
     const handleAction = (client: Client, action: 'declare' | 'pay') => {
         const today = new Date();
         const period = getPeriod(client, today);
@@ -120,8 +123,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
     return (
         <div className="space-y-8 animate-fade-in pb-20">
-            {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            {/* ... (Header and KPIs remain largely the same, just keeping the structure) ... */}
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                 <div>
                     <h2 className="text-3xl font-display font-black text-brand-navy dark:text-white">Área de Trabajo</h2>
                     <p className="text-slate-500 text-sm font-medium">Control operativo y cumplimiento tributario.</p>
@@ -140,6 +143,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* ... KPIs ... */}
                 <div className="bg-white dark:bg-slate-900 p-5 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-brand-teal/10 rounded-lg text-brand-teal"><Users size={20}/></div>
@@ -147,16 +151,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     </div>
                     <p className="text-2xl font-black text-brand-navy dark:text-white">{kpis.total}</p>
                 </div>
-                
-                <div className="bg-gradient-to-br from-[#0B2149] to-[#1a2e5a] p-5 rounded-[1.5rem] shadow-lg text-white">
+                 <div className="bg-gradient-to-br from-[#0B2149] to-[#1a2e5a] p-5 rounded-[1.5rem] shadow-lg text-white">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-white/10 rounded-lg text-amber-400"><Crown size={20} fill="currentColor"/></div>
                         <span className="text-xs font-bold text-slate-300 uppercase">VIPs</span>
                     </div>
                     <p className="text-2xl font-black">{kpis.vip}</p>
                 </div>
-
-                <div className={`p-5 rounded-[1.5rem] border shadow-sm transition-shadow ${kpis.overdue > 0 ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
+                 <div className={`p-5 rounded-[1.5rem] border shadow-sm transition-shadow ${kpis.overdue > 0 ? 'bg-red-50 border-red-100' : 'bg-emerald-50 border-emerald-100'}`}>
                     <div className="flex items-center gap-3 mb-2">
                         <div className={`p-2 rounded-lg ${kpis.overdue > 0 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
                             {kpis.overdue > 0 ? <AlertTriangle size={20}/> : <ShieldCheck size={20}/>}
@@ -169,13 +171,12 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         {kpis.overdue > 0 ? `${kpis.overdue} Vencidos` : 'Al Día'}
                     </p>
                 </div>
-
                 <div className="bg-white dark:bg-slate-900 p-5 rounded-[1.5rem] border border-slate-100 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-green-50 rounded-lg text-green-600"><DollarSign size={20}/></div>
-                        <span className="text-xs font-bold text-slate-400 uppercase">Proyección Mes</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase">Recurrente (Mes)</span>
                     </div>
-                    <p className="text-2xl font-black text-brand-navy dark:text-white">${kpis.projectedIncome}</p>
+                    <p className="text-2xl font-black text-brand-navy dark:text-white">${kpis.projectedIncome.toFixed(0)}</p>
                 </div>
             </div>
 
@@ -185,7 +186,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     { id: 'all', label: 'Todos', icon: Briefcase },
                     { id: 'urgent', label: 'Por Vencer', icon: AlertTriangle },
                     { id: 'vip', label: 'VIP Suscritos', icon: Crown },
-                    { id: 'rimpe', label: 'RIMPE Emp.', icon: TrendingUp },
+                    { id: 'rimpe', label: 'RIMPE (Emp/Pop)', icon: TrendingUp },
                     { id: 'popular', label: 'Neg. Popular', icon: Store },
                 ].map(tab => (
                     <button

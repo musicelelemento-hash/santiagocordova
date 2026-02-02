@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { ArrowRight, UserCheck, Users, Calendar, Clock as ClockIcon, FileText, Receipt, UserPlus } from 'lucide-react';
+import { ArrowRight, UserCheck, Users, Calendar, Clock as ClockIcon, FileText, Receipt, UserPlus, Gift } from 'lucide-react';
 import { Screen, ClientCategory, ClientFilter, TaxRegime, ServiceFeesConfig, Task, Client } from '../types';
 
 interface HomeScreenProps {
@@ -18,6 +18,7 @@ interface MenuItem {
         screen: Screen;
         options?: { clientFilter?: ClientFilter; initialTaskData?: Partial<Task>; initialClientData?: Partial<Client> };
     };
+    highlight?: boolean;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, clients, tasks }) => {
@@ -62,6 +63,26 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
                         category: ClientCategory.DevolucionIvaTerceraEdad, 
                         title: 'Devolución IVA 3ra Edad' 
                     } 
+                }
+            }
+          },
+          // New Combo Button
+          {
+            title: 'Combo Devolución Renta',
+            description: 'Pack $25: Anexo Gastos + Devolución + Declaración.',
+            icon: Gift,
+            highlight: true,
+            navigation: {
+                screen: 'tasks',
+                options: {
+                    initialTaskData: {
+                        title: 'Combo Devolución Impuesto a la Renta',
+                        description: `SERVICIO COMBO ($25.00) INCLUYE:
+1. Elaboración Anexo de Gastos Personales.
+2. Trámite de Devolución de Impuesto a la Renta.
+3. Declaración de Impuesto a la Renta.`,
+                        cost: 25.00
+                    }
                 }
             }
           },
@@ -122,18 +143,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
         {allMenuItems.map((item, index) => (
           <div
             key={item.title + index}
-            className="p-6 rounded-lg shadow-lg cursor-pointer bg-white dark:from-gray-800 dark:to-gray-900 dark:bg-gradient-to-br hover:shadow-gold/20 transition-all duration-300 transform hover:-translate-y-1 group animate-slide-up-fade"
+            className={`p-6 rounded-lg shadow-lg cursor-pointer bg-white dark:from-gray-800 dark:to-gray-900 dark:bg-gradient-to-br hover:shadow-gold/20 transition-all duration-300 transform hover:-translate-y-1 group animate-slide-up-fade ${item.highlight ? 'border-2 border-gold/50 relative overflow-hidden' : ''}`}
             onClick={() => navigate(item.navigation.screen, item.navigation.options)}
             style={{ animationDelay: `${index * 80}ms`, opacity: 0 }}
           >
+            {item.highlight && <div className="absolute top-0 right-0 bg-gold text-black text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Nuevo</div>}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className={`p-3 rounded-full ${item.title === 'Nuevo Cliente' ? 'bg-gold text-black' : 'bg-gold/10 text-gold'}`}>
+                <div className={`p-3 rounded-full ${item.title === 'Nuevo Cliente' ? 'bg-gold text-black' : item.highlight ? 'bg-gold/20 text-gold' : 'bg-gold/10 text-gold'}`}>
                     <item.icon className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold font-body text-gray-800 dark:text-white">{item.title}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{item.description}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap">{item.description}</p>
                 </div>
               </div>
               <ArrowRight className="w-6 h-6 text-gray-400 dark:text-gray-500 transition-transform duration-300 group-hover:translate-x-1" />
