@@ -1,12 +1,12 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Client, ClientCategory, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField, Task, TaskStatus } from '../types';
-import { Plus, Search, User, Users, X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy, ExternalLink, ShieldCheck, Phone, Mail, FileText, Zap, UserCheck, ToggleLeft, ToggleRight, UserX, UserCheck2, MoreHorizontal, Printer, Clipboard, CheckCircle, SlidersHorizontal, MessageCircle, Pin, Send, XCircle, Loader, ArrowDownToLine, ChevronUp, ChevronDown, Sparkles, AlertTriangle, Star, Info, Clock, Mic, Image as ImageIcon, MapPin, Briefcase, Key, CreditCard, Calendar, TrendingUp, RefreshCw, Layers } from 'lucide-react';
+import { Client, ClientCategory, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField } from '../types';
+import { Plus, Search, User, Users, X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy, ExternalLink, ShieldCheck, Phone, Mail, FileText, Zap, UserCheck, ToggleLeft, ToggleRight, UserX, UserCheck2, MoreHorizontal, Printer, Clipboard, CheckCircle, SlidersHorizontal, MessageCircle, Pin, Send, XCircle, Loader, ArrowDownToLine, ChevronUp, ChevronDown, Sparkles, AlertTriangle, Star, Info, Clock, Mic, Image as ImageIcon, MapPin, Briefcase, Key, CreditCard, Calendar } from 'lucide-react';
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData } from '../services/sri';
 import { Modal } from '../components/Modal';
 import { v4 as uuidv4 } from 'uuid';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../services/geminiService';
-import { format, isPast, subMonths, subYears, addDays } from 'date-fns';
+import { format, isPast, subMonths, subYears } from 'date-fns';
 import { addAdvancePayments, getClientServiceFee } from '../services/clientService';
 import { es } from 'date-fns/locale';
 import { useTranscription } from '../hooks/useTranscription';
@@ -18,10 +18,10 @@ import { VirtualClientList } from '../components/VirtualClientList';
 
 // Agregamos el grupo 'devolucion' explícitamente
 const OBLIGATION_GROUPS = [
-    { id: 'all', label: 'Todas', icon: Layers, color: 'text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800' },
-    { id: 'mensual', label: 'IVA Mensual', icon: Calendar, color: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/20' },
-    { id: 'semestral', label: 'IVA Semestral', icon: Clock, color: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-900/20' },
-    { id: 'renta', label: 'Impuesto Renta', icon: TrendingUp, color: 'text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-900/20' },
+    { id: 'all', label: 'Todas', icon: Calendar, color: 'text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800' },
+    { id: 'mensual', label: 'IVA Mensual', icon: Clock, color: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/20' },
+    { id: 'semestral', label: 'IVA Semestral', icon: Briefcase, color: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-900/20' },
+    { id: 'renta', label: 'Impuesto Renta', icon: DollarSign, color: 'text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-900/20' },
     { id: 'devolucion', label: 'Devoluciones', icon: DollarSign, color: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/20' },
 ];
 
@@ -59,7 +59,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const sortMenuRef = useRef<HTMLDivElement>(null);
     const [sortOption, setSortOption] = useState<'9th_digit' | 'name' | 'status'>('9th_digit');
     const [filterOption, setFilterOption] = useState<'active' | 'inactive' | 'all'>('active');
-    const [isComboModalOpen, setIsComboModalOpen] = useState(false); // Modal para venta de combo
+    const [isComboModalOpen, setIsComboModalOpen] = useState(false);
     
     // Smart Tabs Logic
     const getInitialGroupTab = () => {
@@ -76,7 +76,6 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [specificCategoryFilter, setSpecificCategoryFilter] = useState<ClientCategory | null>(initialFilter?.category || null);
     const [regimeFilter, setRegimeFilter] = useState<TaxRegime | 'all'>('all');
 
-    // ... (UseEffect Hooks remain same) ...
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
@@ -134,10 +133,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     client.regime === TaxRegime.General;
                 if (!hasRenta) return false;
             } else if (activeGroupTab === 'devolucion') {
-                // Aquí solo mostramos si tienen la categoría específica de devolución O si es una vista general de devoluciones
-                // Pero el botón de combo aparecerá independientemente si la lista está vacía.
                 if (!client.category.includes('Devolución') && !client.category.includes('Renta')) return false;
-                // Nota: Relajamos el filtro para mostrar posibles candidatos
             }
 
             if (regimeFilter !== 'all' && client.regime !== regimeFilter) return false;
@@ -146,13 +142,33 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         });
     }, [clients, searchTerm, specificCategoryFilter, filterOption, activeGroupTab, regimeFilter]);
     
+    // --- LÓGICA DE ORDENAMIENTO MEJORADA (CALENDARIO SRI) ---
     const sortedClients = useMemo(() => {
         return [...filteredClients].sort((a, b) => {
             if (sortOption === 'name') return a.name.localeCompare(b.name);
-            const sortKeyA = getIdentifierSortKey(a.ruc);
-            const sortKeyB = getIdentifierSortKey(b.ruc);
-            if (sortKeyA !== sortKeyB) return sortKeyA - sortKeyB;
-            return a.name.localeCompare(b.name);
+            
+            if (sortOption === '9th_digit') {
+                // Obtenemos el periodo actual para calcular el vencimiento real
+                const periodA = getPeriod(a, new Date());
+                const periodB = getPeriod(b, new Date());
+                
+                const dueA = getDueDateForPeriod(a, periodA);
+                const dueB = getDueDateForPeriod(b, periodB);
+                
+                // Si ambos tienen fecha, ordenamos por fecha (esto maneja el 1...9, 0 correctamente)
+                if (dueA && dueB) {
+                    return dueA.getTime() - dueB.getTime();
+                }
+                
+                // Fallback a lógica de dígito si falla la fecha (0 al final)
+                const digitA = parseInt(a.ruc[8] || '0', 10);
+                const digitB = parseInt(b.ruc[8] || '0', 10);
+                const valA = digitA === 0 ? 10 : digitA;
+                const valB = digitB === 0 ? 10 : digitB;
+                return valA - valB;
+            }
+            
+            return 0;
         });
     }, [filteredClients, sortOption]);
 
@@ -181,9 +197,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         setTimeout(() => setSelectedClient(null), 300);
     };
 
-    // --- COMBO BUTTON LOGIC ---
     const handleAddComboTask = (selectedClientId: string) => {
-        // Enviar a la pantalla de tareas pre-llenado
         navigate('tasks', { 
             initialTaskData: {
                 clientId: selectedClientId,
@@ -193,8 +207,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 2. Trámite de Devolución de Retenciones de la Fuente.
 3. Declaración de Impuesto a la Renta.`,
                 cost: 25.00,
-                dueDate: addDays(new Date(), 7).toISOString(),
-                status: TaskStatus.Pendiente
+                status: 'Pendiente' as any // Force cast if needed or use enum
             } 
         });
         setIsComboModalOpen(false);
@@ -236,7 +249,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             </div>
                             <p className="text-xs font-bold text-slate-400 px-2 pb-1 uppercase tracking-wider">Orden</p>
                             <div className="flex flex-col space-y-1">
-                                <button onClick={() => setSortOption('9th_digit')} className={`text-left px-3 py-2 text-xs font-medium rounded-lg transition-colors ${sortOption === '9th_digit' ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/30' : 'hover:bg-slate-50 dark:hover:bg-gray-700'}`}>Por 9no Dígito (Vencimiento)</button>
+                                <button onClick={() => setSortOption('9th_digit')} className={`text-left px-3 py-2 text-xs font-medium rounded-lg transition-colors ${sortOption === '9th_digit' ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/30' : 'hover:bg-slate-50 dark:hover:bg-gray-700'}`}>Por Calendario SRI (Vencimiento)</button>
                                 <button onClick={() => setSortOption('name')} className={`text-left px-3 py-2 text-xs font-medium rounded-lg transition-colors ${sortOption === 'name' ? 'bg-sky-50 text-sky-700 dark:bg-sky-900/30' : 'hover:bg-slate-50 dark:hover:bg-gray-700'}`}>Por Nombre</button>
                             </div>
                         </div>
@@ -316,7 +329,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         Seleccione un cliente existente para generar la tarea del Combo ($25.00) o cree uno nuevo.
                     </p>
                     
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 max-h-[300px] overflow-y-auto">
                         {clients.filter(c => c.isActive).map(c => (
                             <button 
                                 key={c.id} 
