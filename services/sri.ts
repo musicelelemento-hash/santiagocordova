@@ -51,7 +51,10 @@ export const getIdentifierSortKey = (identifier: string | undefined): number => 
   if (!identifier || identifier.length < 9) {
     return 99; // Sort items without a valid identifier last
   }
-  return parseInt(identifier[8], 10);
+  const digit = parseInt(identifier[8], 10);
+  // SRI Calendar Logic: 1 (10th) -> ... -> 9 (26th) -> 0 (28th)
+  // So '0' must be treated as 10 to sort at the end.
+  return digit === 0 ? 10 : digit;
 };
 
 export const validateSriPassword = (password: string): { isValid: boolean, criteria: { length: boolean, uppercase: boolean, lowercase: boolean, number: boolean, special: boolean } } => {
@@ -79,6 +82,9 @@ export const getPeriod = (client: Pick<Client, 'category' | 'regime' | 'declarat
     const currentYear = getYear(date);
     const prevYearStr = (currentYear - 1).toString();
     const month = getMonth(date); // 0-11
+    
+    // Safety check
+    const category = client.category || '';
 
     // 1. REGLA: Si es RIMPE Negocio Popular, la obligación principal SIEMPRE es Anual.
     if (client.regime === TaxRegime.RimpeNegocioPopular) {
@@ -86,15 +92,13 @@ export const getPeriod = (client: Pick<Client, 'category' | 'regime' | 'declarat
     }
 
     // 2. REGLA: Para Régimen General y Emprendedor, PRIORIZAMOS LA OBLIGACIÓN RECURRENTE (Mensual/Semestral).
-    // Ya no forzamos la Renta Anual aquí. La Renta se manejará como una alerta secundaria o filtro específico.
-
     // Lógica Estándar (IVA Mensual / Semestral / Devoluciones)
-    if (client.category.includes('Mensual') || client.category === ClientCategory.DevolucionIvaTerceraEdad) {
+    if (category.includes('Mensual') || category === ClientCategory.DevolucionIvaTerceraEdad) {
         const declarationMonth = subMonths(date, 1);
         return format(declarationMonth, 'yyyy-MM');
     }
     
-    if (client.category.includes('Semestral')) {
+    if (category.includes('Semestral')) {
         if (month < 6) { // Ene-Jun (Se declara el S2 del año anterior)
             return `${currentYear - 1}-S2`;
         } else { // Jul-Dic (Se declara el S1 del año actual)
@@ -149,6 +153,7 @@ export const getDaysUntilDue = (dueDate: Date | null): number | null => {
 }
 
 export const formatPeriodForDisplay = (period: string): string => {
+    if (!period) return 'N/A';
     if (period.length === 4) { // Annual
         return `Renta ${period}`;
     }
@@ -167,6 +172,7 @@ export const formatPeriodForDisplay = (period: string): string => {
 };
 
 export const getNextPeriod = (period: string): string => {
+    if (!period) return '';
     if (period.includes('-S')) {
         const [yearStr, semester] = period.split('-S');
         const year = parseInt(yearStr, 10);
@@ -196,6 +202,7 @@ export const getNextPeriod = (period: string): string => {
 };
 
 export const getDueDateForPeriod = (client: Client, period: string): Date | null => {
+    if (!period) return null;
     let referenceDate: Date;
     if (period.includes('-S')) {
         const [year, semester] = period.split('-S');
@@ -245,7 +252,6 @@ export const isPeriodInThePast = (period: string, referenceDate: Date): boolean 
 
 // ... (SRI Fetch Logic remains same)
 export const fetchSRIPublicData = async (identifier: string): Promise<SRIPublicData | null> => {
-    // ... existing implementation
     if (!identifier || (identifier.length !== 10 && identifier.length !== 13)) return null;
     const rucToQuery = identifier.length === 10 ? `${identifier}001` : identifier;
     
