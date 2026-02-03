@@ -5,7 +5,7 @@ import {
     ScanLine, ArrowRight, Loader, X, Save, ShieldCheck, 
     User, MapPin, Mail, Phone, Briefcase, FileJson, DollarSign, Key, 
     ToggleRight, ToggleLeft, ArrowLeft, FileUp, Download, Plus, Clock, Crown,
-    Hammer, Building
+    Hammer, Building, RefreshCw, ArrowRightLeft
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { Client, TaxRegime, ClientCategory, Screen, Task, TaskStatus } from '../types';
@@ -42,6 +42,9 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
     const [selectedFrequency, setSelectedFrequency] = useState<'MENSUAL' | 'SEMESTRAL' | 'ANUAL' | 'DEVOLUCION'>('MENSUAL');
     const [extraObligations, setExtraObligations] = useState<ExtraObligation[]>([]);
 
+    // Data Comparison State
+    const [nameConflict, setNameConflict] = useState(false);
+
     const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -57,20 +60,45 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
         setStep('analyzing');
         setFoundPasswordInVault(false);
         setExtraObligations([]);
+        setExistingClient(null);
+        setNameConflict(false);
 
         try {
             const rawData = await extractDataFromSriPdf(file);
             
-            const match = clients.find(c => c.ruc === rawData.ruc);
-            setExistingClient(match || null);
-            
-            let finalPassword = match?.sriPassword || '';
+            // Verificación defensiva
+            if (!rawData || !rawData.ruc) {
+                throw new Error("No se pudieron extraer datos del PDF.");
+            }
+
             const cleanRuc = rawData.ruc.trim();
+            
+            // 1. IDENTIFICACIÓN ÚNICA POR RUC (CRÍTICO)
+            const match = clients.find(c => c.ruc === cleanRuc);
+            
+            if (match) {
+                setExistingClient(match);
+                // Detectar si el nombre cambió radicalmente
+                // Usa optional chaining para seguridad
+                const oldName = (match.name || '').split(' ')[0].toLowerCase();
+                const newName = (rawData.apellidos_nombres || '').split(' ')[0].toLowerCase();
+
+                if (oldName !== newName) {
+                    setNameConflict(true);
+                    toast.warning(`¡Atención! El RUC ${cleanRuc} ya existe pero tiene un nombre diferente.`);
+                } else {
+                    toast.info(`Cliente encontrado: ${match.name}`);
+                }
+            }
+            
+            // 2. Búsqueda de Clave
+            let finalPassword = match?.sriPassword || '';
             if (!finalPassword && cleanRuc && sriCredentials && sriCredentials[cleanRuc]) {
                 finalPassword = sriCredentials[cleanRuc];
                 setFoundPasswordInVault(true);
             }
 
+            // 3. Determinación de Frecuencia
             if (rawData.regimen === TaxRegime.RimpeNegocioPopular) {
                 setSelectedFrequency('ANUAL');
             } else if (rawData.obligaciones_tributarias === 'semestral') {
@@ -79,29 +107,33 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 setSelectedFrequency('MENSUAL');
             }
 
+            // 4. Obligaciones Extras
             const extras: ExtraObligation[] = [];
-            rawData.lista_obligaciones.forEach((obs) => {
-                const upperObs = obs.toUpperCase();
-                if (upperObs.includes("ICE")) {
-                     const isMensual = upperObs.includes("MENSUAL");
-                     extras.push({ id: uuidv4(), name: isMensual ? "Declaración Mensual de ICE" : "Declaración de ICE", price: 25.00, periodicity: isMensual ? 'Mensual' : 'Anual', selected: true });
-                     if (upperObs.includes("ANEXO")) {
-                         extras.push({ id: uuidv4(), name: "Anexo de Movimiento ICE", price: 20.00, periodicity: 'Mensual', selected: true });
-                     }
-                }
-                if (upperObs.includes("PVP") || upperObs.includes("PRECIOS DE VENTA")) {
-                    extras.push({ id: uuidv4(), name: "Anexo Anual PVP", price: 30.00, periodicity: 'Anual', selected: true });
-                }
-                if (upperObs.includes("VEHÍCULOS") || upperObs.includes("MOTORIZADOS")) {
-                    extras.push({ id: uuidv4(), name: "Impuesto a la Propiedad de Vehículos", price: 10.00, periodicity: 'Anual', selected: true });
-                }
-                 if (upperObs.includes("ACCIONISTAS") || upperObs.includes("APS")) {
-                    extras.push({ id: uuidv4(), name: "Anexo de Accionistas (APS)", price: 40.00, periodicity: 'Anual', selected: true });
-                }
-            });
+            if (rawData.lista_obligaciones) {
+                rawData.lista_obligaciones.forEach((obs) => {
+                    const upperObs = obs.toUpperCase();
+                    if (upperObs.includes("ICE")) {
+                         const isMensual = upperObs.includes("MENSUAL");
+                         extras.push({ id: uuidv4(), name: isMensual ? "Declaración Mensual de ICE" : "Declaración de ICE", price: 25.00, periodicity: isMensual ? 'Mensual' : 'Anual', selected: true });
+                         if (upperObs.includes("ANEXO")) {
+                             extras.push({ id: uuidv4(), name: "Anexo de Movimiento ICE", price: 20.00, periodicity: 'Mensual', selected: true });
+                         }
+                    }
+                    if (upperObs.includes("PVP")) {
+                        extras.push({ id: uuidv4(), name: "Anexo Anual PVP", price: 30.00, periodicity: 'Anual', selected: true });
+                    }
+                    if (upperObs.includes("VEHÍCULOS") || upperObs.includes("MOTORIZADOS")) {
+                        extras.push({ id: uuidv4(), name: "Impuesto a la Propiedad de Vehículos", price: 10.00, periodicity: 'Anual', selected: true });
+                    }
+                     if (upperObs.includes("ACCIONISTAS") || upperObs.includes("APS")) {
+                        extras.push({ id: uuidv4(), name: "Anexo de Accionistas (APS)", price: 40.00, periodicity: 'Anual', selected: true });
+                    }
+                });
+            }
             const uniqueExtras = extras.filter((v,i,a)=>a.findIndex(t=>(t.name===v.name))===i);
             setExtraObligations(uniqueExtras);
 
+            // 5. Configurar datos pre-existentes si es update
             if (match) {
                 setIsVip(match.category.includes('Suscripción'));
                 setIsActiveClient(match.isActive ?? true);
@@ -110,33 +142,34 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 setIsActiveClient(true);
             }
 
+            // 6. Preparar datos finales
             setExtractedData({
-                id: match?.id || uuidv4(),
-                ruc: rawData.ruc,
+                id: match?.id || uuidv4(), // MANTENER ID SI EXISTE
+                ruc: cleanRuc,
                 name: rawData.apellidos_nombres,
                 address: rawData.direccion,
                 economicActivity: rawData.actividad_economica,
-                email: rawData.contacto.email,
-                phones: rawData.contacto.celular ? [rawData.contacto.celular] : [],
+                email: rawData.contacto.email || match?.email || '',
+                phones: rawData.contacto.celular ? [rawData.contacto.celular] : (match?.phones || []),
                 regime: rawData.regimen,
                 sriPassword: finalPassword,
-                notes: `Obligaciones detectadas en PDF:\n${rawData.lista_obligaciones.join('\n')}`,
+                notes: `Obligaciones detectadas en PDF:\n${(rawData.lista_obligaciones || []).join('\n')}`,
                 declarationHistory: match?.declarationHistory || [],
                 customServiceFee: match?.customServiceFee,
                 electronicSignaturePassword: match?.electronicSignaturePassword || '',
                 sharedAccessKey: match?.sharedAccessKey || '',
-                // NUEVOS CAMPOS MAPEDOS
                 isArtisan: rawData.es_artesano,
                 establishmentCount: rawData.cantidad_establecimientos
             });
 
             setStep('review');
-            toast.success("Datos extraídos correctamente.");
 
         } catch (error: any) {
             console.error(error);
-            toast.error("Error al procesar el PDF. Asegúrese de que sea un RUC válido.");
+            toast.error("Error al procesar el PDF: " + (error.message || "Formato desconocido"));
             setStep('upload');
+            // Limpiar input para permitir reintentar el mismo archivo
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -174,8 +207,18 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
         };
 
         setClients(prev => {
-            if (existingClient) {
-                return prev.map(c => c.id === finalClient.id ? finalClient : c);
+            // Lógica crítica: ACTUALIZAR POR ID O RUC
+            const existingIndex = prev.findIndex(c => c.ruc === finalClient.ruc);
+            if (existingIndex > -1) {
+                const newClients = [...prev];
+                // Fusionar datos conservando historial y ID original
+                newClients[existingIndex] = { 
+                    ...prev[existingIndex], 
+                    ...finalClient,
+                    id: prev[existingIndex].id, // Forzar ID original
+                    declarationHistory: prev[existingIndex].declarationHistory // Mantener historial
+                }; 
+                return newClients;
             }
             return [...prev, finalClient];
         });
@@ -192,11 +235,30 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 advancePayment: 0
             }));
             setTasks(prev => [...prev, ...newTasks]);
-            toast.success(`${newTasks.length} tareas de servicios adicionales creadas.`);
+            toast.success(`${newTasks.length} tareas adicionales creadas.`);
         }
 
         setStep('success');
-        toast.success(existingClient ? "Cliente actualizado" : "Cliente creado");
+        toast.success(existingClient ? "Ficha de cliente actualizada" : "Nuevo cliente registrado");
+    };
+
+    const ComparisonRow = ({ label, oldVal, newVal, highlight = false }: { label: string, oldVal?: string, newVal?: string, highlight?: boolean }) => {
+        if (!existingClient) return null;
+        const isDiff = oldVal !== newVal;
+        if (!isDiff && !highlight) return null;
+
+        return (
+            <div className={`grid grid-cols-2 gap-2 text-xs p-2 rounded-lg ${isDiff ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                <div className="text-slate-500">
+                    <span className="block font-bold text-[9px] uppercase">{label} (Actual)</span>
+                    <span className="line-through opacity-70">{oldVal || '-'}</span>
+                </div>
+                <div className="text-slate-800 dark:text-white font-bold">
+                     <span className="block font-bold text-[9px] uppercase text-brand-teal">{label} (Nuevo)</span>
+                    {newVal || '-'}
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -204,10 +266,10 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             <header className="mb-6 pt-4 flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
                     <h2 className="text-3xl font-display font-black text-brand-navy dark:text-white flex items-center gap-2">
-                        <ScanLine className="text-brand-teal"/> Extractor PDF RUC (Local)
+                        <ScanLine className="text-brand-teal"/> Extractor PDF RUC (Pro)
                     </h2>
                     <p className="text-slate-500 text-sm font-medium mt-1">
-                        Lectura instantánea de Certificados SRI sin uso de Inteligencia Artificial.
+                        El sistema usará el <strong>RUC</strong> como identificador único para crear o actualizar.
                     </p>
                 </div>
                 <button onClick={() => navigate('clients')} className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white font-bold text-xs uppercase tracking-wider transition-colors self-start md:self-auto">
@@ -229,8 +291,8 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                         {step === 'analyzing' ? (
                             <div className="text-center relative z-10">
                                 <Loader className="w-16 h-16 text-brand-teal animate-spin mx-auto mb-6"/>
-                                <h3 className="text-xl font-black text-brand-navy dark:text-white mb-2">Analizando Estructura...</h3>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Extrayendo datos y obligaciones...</p>
+                                <h3 className="text-xl font-black text-brand-navy dark:text-white mb-2">Analizando RUC...</h3>
+                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Verificando existencia en base de datos</p>
                             </div>
                         ) : step === 'success' ? (
                             <div className="text-center relative z-10">
@@ -238,7 +300,11 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                     <CheckCircle size={48} />
                                 </div>
                                 <h3 className="text-2xl font-black text-emerald-700 mb-2">¡Proceso Exitoso!</h3>
-                                <p className="text-slate-500 mb-8 text-sm">{existingClient ? 'Datos del cliente actualizados.' : 'Cliente registrado en la base.'}</p>
+                                <p className="text-slate-500 mb-8 text-sm">
+                                    {existingClient 
+                                        ? `Los datos de ${extractedData?.name} han sido sincronizados.` 
+                                        : 'Cliente registrado correctamente.'}
+                                </p>
                                 <div className="flex gap-2">
                                     <button 
                                         onClick={(e) => { e.stopPropagation(); navigate('clients', { clientIdToView: extractedData?.id }); }}
@@ -262,7 +328,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                 
                                 <div>
                                     <h3 className="text-xl font-black text-brand-navy dark:text-white mb-2">Subir Certificado RUC</h3>
-                                    <p className="text-slate-400 text-sm">Formato aceptado: <strong>Solo PDF</strong></p>
+                                    <p className="text-slate-400 text-sm">Si el RUC ya existe, actualizaremos los datos. Si es nuevo, lo crearemos.</p>
                                 </div>
 
                                 <button onClick={() => fileInputRef.current?.click()} className="w-full py-4 bg-brand-teal text-white rounded-xl font-bold shadow-lg shadow-teal-500/20 hover:bg-teal-600 transition-all flex items-center justify-center gap-2">
@@ -284,9 +350,19 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                         <ShieldCheck size={24} className="text-brand-teal"/> Revisión de Datos
                                     </h3>
                                     {existingClient ? (
-                                        <span className="text-xs font-bold text-amber-600 flex items-center gap-1 mt-1"><AlertTriangle size={12}/> Cliente Existente Detectado (Modo Actualización)</span>
+                                        <div className="flex flex-col mt-1">
+                                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-100 text-amber-700 w-fit">
+                                                <RefreshCw size={12} className="animate-spin-slow"/>
+                                                <span className="text-[10px] font-bold uppercase">Actualizando Cliente Existente</span>
+                                            </div>
+                                            {nameConflict && (
+                                                <div className="text-[10px] text-red-500 font-bold mt-1 flex items-center gap-1">
+                                                    <AlertTriangle size={10}/> Conflicto de Nombre detectado
+                                                </div>
+                                            )}
+                                        </div>
                                     ) : (
-                                        <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 mt-1"><CheckCircle size={12}/> Nuevo Cliente Detectado</span>
+                                        <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 mt-1"><Plus size={12}/> Nuevo Cliente Detectado</span>
                                     )}
                                 </div>
                                 
@@ -299,13 +375,30 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                             </div>
 
                             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-5">
+                                {/* COMPARISON SECTION FOR UPDATES */}
+                                {existingClient && (
+                                    <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                        <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                            <ArrowRightLeft size={14}/> Cambios Detectados
+                                        </h4>
+                                        <div className="space-y-2">
+                                            <ComparisonRow label="Razón Social" oldVal={existingClient.name} newVal={extractedData.name} />
+                                            <ComparisonRow label="Dirección" oldVal={existingClient.address} newVal={extractedData.address} />
+                                            <ComparisonRow label="Régimen" oldVal={existingClient.regime} newVal={extractedData.regime} />
+                                            {extractedData.name === existingClient.name && extractedData.address === existingClient.address && extractedData.regime === existingClient.regime && (
+                                                <p className="text-xs text-slate-400 italic">No hay cambios significativos en los datos principales.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">RUC / ID</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">RUC (Llave Principal)</label>
                                         <input 
                                             value={extractedData.ruc || ''} 
-                                            onChange={e => setExtractedData({...extractedData, ruc: e.target.value})}
-                                            className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-mono font-bold text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
+                                            readOnly // RUC IS READ ONLY FROM PDF TO AVOID ERRORS
+                                            className="w-full p-3 bg-slate-100 dark:bg-slate-900 rounded-xl font-mono font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 cursor-not-allowed" 
                                         />
                                     </div>
                                     <div className="space-y-1">
@@ -324,162 +417,37 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                     </div>
                                 </div>
                                 
-                                {/* NUEVOS CAMPOS: ARTESANO Y ESTABLECIMIENTOS */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
-                                    <div className="space-y-1">
-                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Condición</label>
-                                         <div className="flex items-center gap-2">
-                                             <div className={`p-2 rounded-lg ${extractedData.isArtisan ? 'bg-purple-100 text-purple-600' : 'bg-slate-200 text-slate-500'}`}>
-                                                 <Hammer size={16}/>
-                                             </div>
-                                             <select 
-                                                value={extractedData.isArtisan ? 'yes' : 'no'}
-                                                onChange={e => setExtractedData({...extractedData, isArtisan: e.target.value === 'yes'})}
-                                                className="bg-transparent font-bold text-sm text-slate-700 dark:text-slate-200 outline-none w-full"
-                                             >
-                                                 <option value="no">Normal</option>
-                                                 <option value="yes">Artesano Calificado</option>
-                                             </select>
-                                         </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Establecimientos</label>
-                                         <div className="flex items-center gap-2">
-                                             <div className="p-2 rounded-lg bg-blue-100 text-blue-600">
-                                                 <Building size={16}/>
-                                             </div>
-                                             <input 
-                                                type="number"
-                                                min="1"
-                                                value={extractedData.establishmentCount || 1}
-                                                onChange={e => setExtractedData({...extractedData, establishmentCount: parseInt(e.target.value) || 1})}
-                                                className="bg-transparent font-bold text-sm text-slate-700 dark:text-slate-200 outline-none w-full"
-                                             />
-                                         </div>
-                                    </div>
-                                </div>
-                                
-                                {/* OBLIGACIÓN PRINCIPAL SELECTOR */}
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Obligación Principal (IVA/Renta)</label>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button onClick={() => setSelectedFrequency('MENSUAL')} className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedFrequency === 'MENSUAL' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-500'}`}>IVA MENSUAL</button>
-                                        <button onClick={() => setSelectedFrequency('SEMESTRAL')} className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedFrequency === 'SEMESTRAL' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-slate-200 text-slate-500'}`}>IVA SEMESTRAL</button>
-                                        <button onClick={() => setSelectedFrequency('ANUAL')} className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedFrequency === 'ANUAL' ? 'bg-purple-50 border-purple-500 text-purple-700' : 'bg-white border-slate-200 text-slate-500'}`}>IMP. RENTA</button>
-                                        <button onClick={() => setSelectedFrequency('DEVOLUCION')} className={`p-2 rounded-xl text-xs font-bold border transition-all ${selectedFrequency === 'DEVOLUCION' ? 'bg-emerald-50 border-emerald-500 text-emerald-700' : 'bg-white border-slate-200 text-slate-500'}`}>DEVOLUCIÓN</button>
-                                    </div>
-                                </div>
-
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Nombre / Razón Social</label>
                                     <input 
                                         value={extractedData.name || ''} 
                                         onChange={e => setExtractedData({...extractedData, name: e.target.value})}
-                                        className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-bold text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
+                                        className={`w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-bold text-slate-800 dark:text-white border ${nameConflict ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200 dark:border-slate-700'}`} 
                                     />
+                                    {nameConflict && <p className="text-[10px] text-red-500 font-bold px-2">Nombre difiere del registro actual</p>}
                                 </div>
 
-                                {/* CONTACTOS EXTRAÍDOS */}
-                                <div className="grid grid-cols-2 gap-4">
-                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Celular</label>
-                                        <input 
-                                            value={extractedData.phones?.[0] || ''} 
-                                            onChange={e => setExtractedData({...extractedData, phones: [e.target.value]})}
-                                            className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-medium text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
-                                        />
-                                    </div>
-                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Email</label>
-                                        <input 
-                                            value={extractedData.email || ''} 
-                                            onChange={e => setExtractedData({...extractedData, email: e.target.value})}
-                                            className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-medium text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700" 
-                                        />
-                                    </div>
-                                </div>
-                                
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1 flex justify-between">
-                                        <span>Clave SRI</span>
-                                        {foundPasswordInVault && (
-                                            <span className="text-emerald-600 flex items-center gap-1"><Key size={10}/> Encontrada en Bóveda</span>
-                                        )}
-                                    </label>
-                                    <input 
-                                        type="password"
-                                        value={extractedData.sriPassword || ''} 
-                                        onChange={e => setExtractedData({...extractedData, sriPassword: e.target.value})}
-                                        className={`w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-mono font-bold text-slate-800 dark:text-white border ${foundPasswordInVault ? 'border-emerald-300' : 'border-slate-200 dark:border-slate-700'}`} 
-                                        placeholder="No encontrada"
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Dirección (Extraída)</label>
+                                    <textarea 
+                                        rows={3}
+                                        value={extractedData.address || ''} 
+                                        onChange={e => setExtractedData({...extractedData, address: e.target.value})}
+                                        className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-medium text-xs text-slate-800 dark:text-white border border-slate-200 dark:border-slate-700 resize-none" 
                                     />
                                 </div>
                                 
-                                {/* OBLIGACIONES EXTRA DETECTADAS (PRODUCTOS) */}
-                                {extraObligations.length > 0 && (
-                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
-                                        <h4 className="text-xs font-black text-brand-navy dark:text-white uppercase tracking-wider mb-3 flex items-center gap-2">
-                                            <Briefcase size={14}/> Productos / Obligaciones Detectadas
-                                        </h4>
-                                        <p className="text-[10px] text-slate-500 mb-3">
-                                            Seleccione las obligaciones adicionales que se configurarán como tareas/productos tarifados.
-                                        </p>
-                                        <div className="space-y-3">
-                                            {extraObligations.map((extra, idx) => (
-                                                <div key={extra.id} className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                                                    <div className="flex items-center gap-2 flex-1">
-                                                        <input 
-                                                            type="checkbox" 
-                                                            checked={extra.selected} 
-                                                            onChange={e => {
-                                                                const newExtras = [...extraObligations];
-                                                                newExtras[idx].selected = e.target.checked;
-                                                                setExtraObligations(newExtras);
-                                                            }}
-                                                            className="w-4 h-4 rounded text-brand-teal focus:ring-brand-teal"
-                                                        />
-                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{extra.name}</span>
-                                                    </div>
-                                                    
-                                                    {extra.selected && (
-                                                        <div className="flex gap-2 w-full sm:w-auto">
-                                                            <div className="relative w-20">
-                                                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">$</span>
-                                                                <input 
-                                                                    type="number" 
-                                                                    value={extra.price}
-                                                                    onChange={e => {
-                                                                        const newExtras = [...extraObligations];
-                                                                        newExtras[idx].price = parseFloat(e.target.value);
-                                                                        setExtraObligations(newExtras);
-                                                                    }}
-                                                                    className="w-full pl-4 p-1.5 text-[10px] rounded-lg border bg-slate-50 dark:bg-slate-700 font-bold"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
+                                {foundPasswordInVault && (
+                                    <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2">
+                                        <Key size={16} className="text-emerald-600"/>
+                                        <span className="text-xs text-emerald-800 font-medium">Contraseña recuperada automáticamente de la Bóveda.</span>
                                     </div>
                                 )}
-                                
-                                {/* NOTAS DE OBLIGACIONES */}
-                                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
-                                    <p className="text-[10px] font-black text-yellow-700 uppercase tracking-wider mb-2 flex items-center gap-1">
-                                        <FileJson size={12}/> Resumen de Obligaciones
-                                    </p>
-                                    <textarea 
-                                        value={extractedData.notes || ''}
-                                        onChange={e => setExtractedData({...extractedData, notes: e.target.value})}
-                                        className="w-full bg-transparent text-xs text-yellow-800 dark:text-yellow-200 font-medium border-none p-0 focus:ring-0 resize-none h-24"
-                                    />
-                                </div>
                             </div>
 
                             <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex gap-4">
                                 <button 
-                                    onClick={() => { setStep('upload'); setExtractedData(null); setExistingClient(null); setExtraObligations([]); }}
+                                    onClick={() => { setStep('upload'); setExtractedData(null); setExistingClient(null); setExtraObligations([]); setNameConflict(false); }}
                                     className="flex-1 py-4 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-bold text-sm transition-colors uppercase tracking-wider"
                                 >
                                     Descartar
@@ -488,7 +456,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                     onClick={handleSave}
                                     className={`flex-[2] py-4 rounded-xl font-black text-sm shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wide transform hover:scale-[1.02] ${existingClient ? 'bg-amber-500 text-white hover:bg-amber-600' : 'bg-brand-navy text-white hover:bg-slate-800'}`}
                                 >
-                                    <Save size={18}/> {existingClient ? 'Actualizar Cliente' : 'Crear Cliente'}
+                                    <Save size={18}/> {existingClient ? 'Confirmar Fusión de Datos' : 'Guardar Nuevo Cliente'}
                                 </button>
                             </div>
                         </div>

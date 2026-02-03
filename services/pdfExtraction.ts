@@ -2,9 +2,9 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { TaxRegime, SriExtractionResult } from '../types';
 
-// AJUSTE CRÍTICO: Usar exactamente la misma versión del worker que la librería principal (v5.4.530)
-// Esto soluciona el error de "Fake Worker" o fallo silencioso al leer.
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@5.4.530/build/pdf.worker.min.js';
+// AJUSTE CRÍTICO: Sincronización de Versión del Worker
+const pdfjsVersion = pdfjsLib.version || '5.4.530'; 
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
 
 export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionResult> => {
   try {
@@ -13,151 +13,197 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
       const pdf = await loadingTask.promise;
       
       let fullText = '';
+      const maxPages = Math.min(pdf.numPages, 2); 
 
-      // Extraer texto de las primeras páginas
-      const maxPages = Math.min(pdf.numPages, 3);
+      // Leer páginas y unir
       for (let i = 1; i <= maxPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        // Agregamos un separador ' | ' para evitar que palabras de columnas distintas se peguen
+        // Usamos ' | ' para separar items y conservar estructura visual
         const pageText = textContent.items.map((item: any) => item.str).join(' | ');
-        fullText += pageText + ' ';
+        fullText += pageText + ' | ';
       }
 
-      // Limpieza: Eliminar múltiples espacios y saltos de línea extraños
-      fullText = fullText.replace(/\s+/g, ' ');
-      const upperText = fullText.toUpperCase();
+      // Limpieza inicial: Mayúsculas y normalización de espacios
+      const cleanText = fullText.toUpperCase().replace(/\s+/g, ' ').replace(/\|\s*\|/g, '|');
 
-      console.log("Texto PDF Extraído (Raw):", upperText.substring(0, 600));
+      console.log("SRI RAW DATA (Extracted):", cleanText.substring(0, 1500));
 
-      // --- 1. RUC ---
-      // Busca explícitamente 13 dígitos donde los últimos 3 sean 001
-      const rucMatch = upperText.match(/\b([0-9]{10}001)\b/);
-      const ruc = rucMatch ? rucMatch[1] : '';
-
-      // --- 2. NOMBRES / RAZÓN SOCIAL ---
-      // Estrategia A: Etiqueta "RAZÓN SOCIAL"
-      let nameMatch = upperText.match(/RAZÓN SOCIAL[:\s]*\|?\s*(.*?)(?=\s*\|?\s*(?:NOMBRE COMERCIAL|ESTADO|RÉGIMEN|CLASE))/i);
-      let nombres = nameMatch ? nameMatch[1].trim() : '';
+      // --- 1. EXTRACCIÓN DE RUC ---
+      let ruc = '';
+      // Buscar específicamente la etiqueta seguida de 13 dígitos
+      const rucLabelMatch = cleanText.match(/N[ÚU]MERO RUC\s*[:\|]?\s*(\d{13})/);
       
-      // Estrategia B (Certificado Alan): Etiqueta "APELLIDOS Y NOMBRES"
-      // En el PDF provisto, el nombre aparece debajo o al lado de "Apellidos y nombres" y antes de "Número RUC"
-      if (!nombres || nombres.length < 3) {
-          const altMatch = upperText.match(/APELLIDOS Y NOMBRES[:\s]*\|?\s*(.*?)(?=\s*\|?\s*(?:NÚMERO RUC|ESTADO|RÉGIMEN))/i);
-          if (altMatch) {
-              nombres = altMatch[1].replace(/\|/g, '').trim();
+      if (rucLabelMatch) {
+          ruc = rucLabelMatch[1];
+      } else {
+          // Fallback: Cualquier 13 dígitos terminados en 001
+          const anyRucMatch = cleanText.match(/\b(\d{10}001)\b/);
+          ruc = anyRucMatch ? anyRucMatch[1] : '';
+      }
+
+      // --- 2. EXTRACCIÓN DE NOMBRE ---
+      let nombres = '';
+      
+      if (ruc) {
+          const parts = cleanText.split('|').map(p => p.trim()).filter(p => p.length > 0);
+          const rucIndex = parts.findIndex(p => p.includes(ruc));
+          
+          if (rucIndex > 0) {
+              for (let i = 1; i <= 3; i++) {
+                  const candidate = parts[rucIndex - i];
+                  if (!candidate) continue;
+
+                  if (candidate.includes("NÚMERO RUC") || 
+                      candidate.includes("APELLIDOS Y NOMBRES") || 
+                      candidate.includes("REGISTRO") || 
+                      candidate.includes("CONTRIBUYENTES") ||
+                      candidate.length < 5) {
+                      continue;
+                  }
+                  nombres = candidate;
+                  break;
+              }
           }
       }
 
-      // Limpieza final del nombre (quitar caracteres extraños del pipe)
-      nombres = nombres.replace(/\|/g, '').trim();
-
-      // --- 3. DIRECCIÓN ---
-      // El certificado suele tener etiquetas explícitas.
-      // Formato observado: "Calle: 4 DE AGOSTO Número: S/N Intersección: COLON..."
-      const calleMatch = fullText.match(/Calle:\s*(.*?)(?=\s+N[uú]mero:)/i);
-      const numeroMatch = fullText.match(/N[uú]mero:\s*(.*?)(?=\s+Intersecci[oó]n:)/i);
-      const interseccionMatch = fullText.match(/Intersecci[oó]n:\s*(.*?)(?=\s+Referencia:|\s+Parroquia:|$)/i);
-      const parroquiaMatch = fullText.match(/Parroquia:\s*(.*?)(?=\s+Calle:|\s+Barrio:|$)/i);
-      const referenciaMatch = fullText.match(/Referencia:\s*(.*?)(?=\s+Medios de contacto|\s+Teléfono|$)/i);
-
-      let direccion = '';
-      const parts = [];
-      
-      if (parroquiaMatch) parts.push(parroquiaMatch[1].trim().replace(/\|/g, ''));
-      if (calleMatch) parts.push(calleMatch[1].trim().replace(/\|/g, ''));
-      if (numeroMatch) parts.push(numeroMatch[1].trim().replace(/\|/g, ''));
-      if (interseccionMatch) parts.push('y ' + interseccionMatch[1].trim().replace(/\|/g, ''));
-      
-      direccion = parts.filter(p => p && p !== 'S/N' && p !== 'SN').join(' ').trim();
-
-      // Si hay referencia, la agregamos
-      if (referenciaMatch) {
-          direccion += ` (${referenciaMatch[1].trim().replace(/\|/g, '')})`;
+      if (!nombres || nombres.length < 5) {
+          const labelNameRegex = /(?:RAZ[ÓO]N SOCIAL|APELLIDOS Y NOMBRES)\s*[:\|]?\s*([^\|]+?)(?=\s*\|?\s*(?:NOMBRE COMERCIAL|ESTADO|RÉGIMEN|CLASE|FECHA|N[ÚU]MERO RUC))/i;
+          const matchA = cleanText.match(labelNameRegex);
+          if (matchA && matchA[1].trim().length > 3) {
+              nombres = matchA[1].trim();
+          } 
       }
 
-      // Fallback dirección general
-      if (direccion.length < 5) {
-           const dirGeneralMatch = fullText.match(/DIRECCI[OÓ]N.*?:(.*?)(?=\s+MEDIOS DE CONTACTO|\s+ACTIVIDAD|$)/i);
-           if (dirGeneralMatch) direccion = dirGeneralMatch[1].replace(/\|/g, ' ').trim();
+      nombres = nombres.replace(/\|/g, '').replace(/[0-9]/g, '').trim();
+
+      // --- 3. DIRECCIÓN (LÓGICA ELEGANTE ACTUALIZADA) ---
+      // Objetivo: "Calle y Intersección / Canton / Provincia" o "Referencia / Canton / Provincia"
+      
+      const provinciaM = cleanText.match(/PROVINCIA:\s*([^\|]+)/);
+      const cantonM = cleanText.match(/CANT[ÓO]N:\s*([^\|]+)/);
+      const calleM = cleanText.match(/CALLE:\s*([^\|]+)/);
+      const interseccionM = cleanText.match(/INTERSECCI[ÓO]N:\s*([^\|]+)/);
+      const numeroM = cleanText.match(/N[ÚU]MERO:\s*([^\|]+)/);
+      const referenciaM = cleanText.match(/(?:REFERENCIA|REF:)\s*([^\|]+?)(?=\s*\|?\s*(?:MEDIOS|UBICACI|EMAIL|CELULAR|TELEFONO|DOMICILIO))/);
+
+      const provincia = provinciaM ? provinciaM[1].trim() : '';
+      const canton = cantonM ? cantonM[1].trim() : '';
+      const calle = calleM ? calleM[1].trim() : '';
+      const interseccion = interseccionM ? interseccionM[1].trim() : '';
+      const numero = numeroM ? numeroM[1].trim() : '';
+      const referencia = referenciaM ? referenciaM[1].trim() : '';
+
+      let direccionPrincipal = '';
+
+      // Estrategia 1: Calle + Intersección (Prioridad Alta)
+      if (calle && calle !== 'S/N' && calle.length > 2) {
+          direccionPrincipal = calle;
+          if (interseccion && interseccion !== 'S/N') {
+              direccionPrincipal += ` Y ${interseccion}`;
+          }
+          if (numero && numero !== 'S/N') {
+              direccionPrincipal += ` ${numero}`;
+          }
+      } 
+      // Estrategia 2: Referencia (Si no hay calle)
+      else if (referencia && referencia.length > 3) {
+          direccionPrincipal = referencia;
+      }
+      // Estrategia 3: Fallback a bloque genérico
+      else {
+          const dirBlock = cleanText.match(/DIRECCI[ÓO]N\s*[:\|]?\s*([^\|]+?)(?=\s*\|?\s*(?:MEDIOS|UBICACI|EMAIL))/);
+          if (dirBlock) direccionPrincipal = dirBlock[1].trim();
       }
 
-      // --- 4. CONTACTO ---
-      const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
-      const emailsFound = fullText.match(emailRegex) || [];
-      const validEmail = emailsFound.find(e => !e.toLowerCase().includes('sri.gob.ec') && !e.toLowerCase().includes('gob.ec')) || '';
-
-      // Celular: Buscar 09...
-      const cellRegex = /\b09\d{8}\b/g;
-      const phonesFound = fullText.match(cellRegex) || [];
-      // Teléfono fijo (07...) como en el ejemplo
-      const landlineRegex = /\b0[2-7]\d{7}\b/g;
-      const landlinesFound = fullText.match(landlineRegex) || [];
+      // Limpieza y Formato Final
+      const partesDireccion = [direccionPrincipal];
+      if (canton) partesDireccion.push(canton);
+      if (provincia) partesDireccion.push(provincia);
       
-      const validPhone = phonesFound.length > 0 ? phonesFound[0] : (landlinesFound.length > 0 ? landlinesFound[0] : '');
+      const direccionFinal = partesDireccion
+        .filter(p => p && p !== 'S/N')
+        .join(' / ')
+        .replace(/\s+/g, ' ');
 
-      // --- 5. RÉGIMEN ---
+      // --- 4. CONTACTOS (LÓGICA VALIOSA DE DOMICILIO) ---
+      
+      // A. Extraer EMAIL
+      let validEmail = '';
+      const allEmails = cleanText.match(/[\w\.-]+@[\w\.-]+\.\w{2,}/g);
+      if (allEmails) {
+          const personalEmails = allEmails.filter(e => !e.includes("sri.gob.ec") && !e.includes("gobierno.ec"));
+          validEmail = personalEmails.length > 0 ? personalEmails[0] : allEmails[0];
+      }
+
+      // B. Extraer TELÉFONO (Celular o Domicilio)
+      let validPhone = '';
+      
+      // 1. Buscar etiqueta explícita primero (incluyendo Domicilio)
+      const phoneLabelMatch = cleanText.match(/(?:CELULAR|TELEFONO|TELF|DOMICILIO)[^:0-9]*[:\.]?\s*[\|-]?\s*((?:09\d{8})|(?:0[2-7]\d{7}))/);
+      if (phoneLabelMatch) {
+          validPhone = phoneLabelMatch[1];
+      } else {
+           // 2. Barrido global: Prioridad Celular (09...) luego Fijo (02-07...)
+           const allMobiles = cleanText.match(/\b09\d{8}\b/g);
+           const allLandlines = cleanText.match(/\b0[2-7]\d{7}\b/g); // Captura fijos de 7 dígitos + código provincia (9 total)
+           
+           if (allMobiles && allMobiles.length > 0) {
+               validPhone = allMobiles[0];
+           } else if (allLandlines && allLandlines.length > 0) {
+               validPhone = allLandlines[0]; // "Extráelo igual es valioso"
+           }
+      }
+
+      // --- 5. RÉGIMEN & OBLIGACIONES ---
       let regimen = TaxRegime.General;
-      if (upperText.includes("NEGOCIO POPULAR") || upperText.includes("RIMPE POPULAR")) {
+      if (cleanText.includes("NEGOCIO POPULAR") || cleanText.includes("POPULARES")) {
           regimen = TaxRegime.RimpeNegocioPopular;
-      } else if (upperText.includes("RIMPE") || upperText.includes("EMPRENDEDOR")) {
+      } else if (cleanText.includes("RIMPE") && cleanText.includes("EMPRENDEDOR")) {
           regimen = TaxRegime.RimpeEmprendedor;
-      } else {
-          // Por defecto General, que es lo que dice el PDF de Alan ("Régimen GENERAL")
-          regimen = TaxRegime.General;
       }
 
-      // --- 6. ACTIVIDAD ECONÓMICA ---
-      // Buscar códigos de actividad (ej: G47220201)
-      const actividadMatch = fullText.match(/Actividades económicas.*?([A-Z]\d{8}.*?)(?=\s+Establecimientos|\s+Abiertos)/i);
-      let actividadEconomica = '';
-      
-      if (actividadMatch) {
-           // Limpiar un poco el texto capturado
-           actividadEconomica = actividadMatch[1].replace(/\|/g, ' ').replace(/\s+/g, ' ').trim();
-           // Tomar solo la primera actividad si hay muchas
-           if (actividadEconomica.length > 150) actividadEconomica = actividadEconomica.substring(0, 150) + '...';
-      } else {
-          // Intento fallback buscando texto descriptivo común
-          const descMatch = fullText.match(/VENTA.*?|SERVICIOS.*?|ACTIVIDADES.*?/i);
-          if(descMatch && descMatch[0].length > 10) actividadEconomica = descMatch[0].substring(0, 100);
-      }
-
-      // --- 7. OTROS ---
-      const isArtisan = /CALIFICACI[ÓO]N ARTESANAL|JUNTA NACIONAL DE DEFENSA DEL ARTESANO/i.test(upperText);
-      const establishmentMatches = fullText.match(/No\.?\s*ESTABLECIMIENTO/gi);
-      let establishmentCount = establishmentMatches ? establishmentMatches.length : 1;
-      // Ajuste si el PDF dice explícitamente "Abiertos [número]"
-      const abiertosMatch = fullText.match(/Abiertos\s*\|?\s*(\d+)/i);
-      if (abiertosMatch) establishmentCount = parseInt(abiertosMatch[1]);
-
-      // --- 8. OBLIGACIONES ---
       const listaObligaciones: string[] = [];
-      if (upperText.includes("MENSUAL") || upperText.includes("MES")) listaObligaciones.push("IVA Mensual");
-      if (upperText.includes("SEMESTRAL") || upperText.includes("SEMESTRE")) listaObligaciones.push("IVA Semestral");
-      if (upperText.includes("RENTA")) listaObligaciones.push("Renta");
-
       let periodicidadPrincipal = "mensual";
+
+      if (cleanText.includes("SEMESTRAL")) {
+          listaObligaciones.push("IVA Semestral");
+          periodicidadPrincipal = "semestral";
+      } else if (cleanText.includes("DECLARACION DE IVA") || cleanText.includes("MENSUAL")) {
+          listaObligaciones.push("IVA Mensual");
+          periodicidadPrincipal = "mensual";
+      }
+      
+      if (cleanText.includes("RENTA")) listaObligaciones.push("Impuesto a la Renta");
       if (regimen === TaxRegime.RimpeNegocioPopular) periodicidadPrincipal = "anual";
-      else if (listaObligaciones.some(o => o.includes("Semestral"))) periodicidadPrincipal = "semestral";
+
+      // --- 6. OTROS ---
+      const actMatch = cleanText.match(/([A-Z]\d{6,})\s*[\-]?\s*([^\|]+)/);
+      let actividad = actMatch ? actMatch[2].trim() : '';
+      if (actividad.length > 150) actividad = actividad.substring(0, 150) + '...';
+
+      const isArtisan = cleanText.includes("ARTESANO") && !cleanText.includes("NO REGISTRA") && !cleanText.includes("ARTESANO: NO");
+      const establecimientosMatch = cleanText.match(/ESTABLECIMIENTOS\s*(?:ABIERTOS|REGISTRADOS)?\s*[:\|]?\s*(\d+)/);
+      const estCount = establecimientosMatch ? parseInt(establecimientosMatch[1]) : 1;
 
       return {
         apellidos_nombres: nombres || 'CONTRIBUYENTE',
         ruc: ruc,
-        direccion: direccion,
+        direccion: direccionFinal || 'Dirección no detectada',
         contacto: {
-          email: validEmail,
-          celular: validPhone
+          email: validEmail || '',
+          celular: validPhone || ''
         },
         regimen: regimen,
         obligaciones_tributarias: periodicidadPrincipal,
         lista_obligaciones: listaObligaciones,
-        actividad_economica: actividadEconomica,
+        actividad_economica: actividad,
         es_artesano: isArtisan,
-        cantidad_establecimientos: establishmentCount
+        cantidad_establecimientos: estCount
       };
+
   } catch (error) {
       console.error("Error crítico en extracción PDF:", error);
-      throw new Error("No se pudo leer el archivo PDF. Intente abrirlo y guardarlo nuevamente como PDF estándar.");
+      throw new Error("No se pudo procesar el archivo PDF. Asegúrese de que no esté dañado.");
   }
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Client, ClientCategory, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField } from '../types';
 import { Plus, Search, User, Users, X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy, ExternalLink, ShieldCheck, Phone, Mail, FileText, Zap, UserCheck, ToggleLeft, ToggleRight, UserX, UserCheck2, MoreHorizontal, Printer, Clipboard, CheckCircle, SlidersHorizontal, MessageCircle, Pin, Send, XCircle, Loader, ArrowDownToLine, ChevronUp, ChevronDown, Sparkles, AlertTriangle, Star, Info, Clock, Mic, Image as ImageIcon, MapPin, Briefcase, Key, CreditCard, Calendar } from 'lucide-react';
@@ -15,6 +14,7 @@ import { ClientDetailView } from '../components/ClientDetailView';
 import { ClientForm } from '../components/ClientForm';
 import { useToast } from '../context/ToastContext';
 import { VirtualClientList } from '../components/VirtualClientList';
+import { ClientCard } from '../components/ClientCard'; // New Import
 
 // Agregamos el grupo 'devolucion' explícitamente
 const OBLIGATION_GROUPS = [
@@ -197,6 +197,62 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         setTimeout(() => setSelectedClient(null), 300);
     };
 
+    // Quick Action Handler for the Cards
+    const handleQuickAction = (client: Client, action: 'declare' | 'pay') => {
+        const today = new Date();
+        const period = getPeriod(client, today);
+        const nowIso = today.toISOString();
+        
+        let updatedClient = client;
+
+        setClients(prev => prev.map(c => {
+            if (c.id !== client.id) return c;
+            
+            const history = [...c.declarationHistory];
+            const idx = history.findIndex(d => d.period === period);
+            const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
+            
+            const newEntry = {
+                period,
+                status: newStatus,
+                updatedAt: nowIso,
+                ...(action === 'declare' ? { declaredAt: nowIso } : {}),
+                ...(action === 'pay' ? { paidAt: nowIso, transactionId: `Q-${Date.now().toString().slice(-4)}` } : {})
+            };
+
+            if (idx > -1) {
+                history[idx] = { ...history[idx], ...newEntry };
+            } else {
+                history.push(newEntry);
+            }
+            updatedClient = { ...c, declarationHistory: history };
+            return updatedClient;
+        }));
+
+        // AJUSTE CRÍTICO: Sincronizar el cliente seleccionado si está abierto en el modal
+        if (selectedClient && selectedClient.id === client.id) {
+             // Forzamos la actualización inmediata del estado local para el detalle
+             // Esto asegura que al abrirse o estar abierto, vea el cambio inmediatamente.
+             const history = [...client.declarationHistory];
+             const idx = history.findIndex(d => d.period === period);
+             const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
+             
+             const newEntry = {
+                period,
+                status: newStatus,
+                updatedAt: nowIso,
+                ...(action === 'declare' ? { declaredAt: nowIso } : {}),
+                ...(action === 'pay' ? { paidAt: nowIso, transactionId: `Q-${Date.now().toString().slice(-4)}` } : {})
+            };
+             if (idx > -1) { history[idx] = { ...history[idx], ...newEntry }; } 
+             else { history.push(newEntry); }
+             
+             setSelectedClient({ ...client, declarationHistory: history });
+        }
+
+        toast.success(action === 'declare' ? 'Declaración registrada' : 'Pago registrado');
+    };
+
     const handleAddComboTask = (selectedClientId: string) => {
         navigate('tasks', { 
             initialTaskData: {
@@ -207,7 +263,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 2. Trámite de Devolución de Retenciones de la Fuente.
 3. Declaración de Impuesto a la Renta.`,
                 cost: 25.00,
-                status: 'Pendiente' as any // Force cast if needed or use enum
+                status: 'Pendiente' as any
             } 
         });
         setIsComboModalOpen(false);
@@ -300,13 +356,26 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 </div>
             )}
             
-            {/* Client List */}
-            <div className="space-y-4">
-                 <VirtualClientList 
-                    clients={sortedClients} 
-                    serviceFees={serviceFees} 
-                    onView={handleOpenClientDetails}
-                />
+            {/* Client Grid - Using the new ClientCard */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 {sortedClients.length > 0 ? (
+                    sortedClients.map(client => (
+                        <ClientCard 
+                            key={client.id}
+                            client={client}
+                            serviceFees={serviceFees}
+                            onView={handleOpenClientDetails}
+                            onQuickAction={handleQuickAction}
+                        />
+                    ))
+                 ) : (
+                    <div className="col-span-full py-20 text-center">
+                        <div className="inline-flex p-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mb-4">
+                            <Search size={32}/>
+                        </div>
+                        <p className="text-slate-500 font-medium">No se encontraron clientes con este filtro.</p>
+                    </div>
+                 )}
             </div>
 
             <Modal 

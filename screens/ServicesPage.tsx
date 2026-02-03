@@ -1,36 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, ShoppingCart, ArrowRight, X, Trash2, CheckCircle, User, Phone, CreditCard, Mail, Star, TrendingUp, MapPin, Menu, LogOut, MessageCircle, FileKey, Laptop, ShieldCheck, Briefcase, Package, FileText, Activity } from 'lucide-react';
+import { Check, ShoppingCart, ArrowRight, X, Trash2, CheckCircle, User, Phone, CreditCard, Mail, Star, TrendingUp, MapPin, Menu, LogOut, MessageCircle, FileKey, Laptop, ShieldCheck, Briefcase, Package, Activity, Globe, DollarSign } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { Modal } from '../components/Modal';
 import { AuthModal } from '../components/AuthModal';
 import { OrderItem, WebOrder, PublicUser } from '../types';
-import { INITIAL_SERVICE_FEES } from '../constants'; // Import default to check structure if needed, though we use local data usually passed via props if dynamic.
-
 import { v4 as uuidv4 } from 'uuid';
-
-// Mock fetching if not passed (In a real app, this comes from an API or Prop)
-const getStoredBundles = () => {
-    try {
-        const stored = localStorage.getItem('serviceFees');
-        if(stored) {
-            const parsed = JSON.parse(stored);
-            return parsed.serviceBundles || INITIAL_SERVICE_FEES.serviceBundles;
-        }
-    } catch(e) {}
-    return INITIAL_SERVICE_FEES.serviceBundles;
-}
-
-const getStoredCustomServices = () => {
-    try {
-        const stored = localStorage.getItem('serviceFees');
-        if(stored) {
-            const parsed = JSON.parse(stored);
-            return parsed.customPunctualServices || INITIAL_SERVICE_FEES.customPunctualServices;
-        }
-    } catch(e) {}
-    return INITIAL_SERVICE_FEES.customPunctualServices;
-}
 
 interface ServicesPageProps {
     onAdminAccess: () => void;
@@ -45,9 +20,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-    
-    // Toggle State for Services
-    const [activeCategory, setActiveCategory] = useState<'combos' | 'tax' | 'tech' | 'special'>('combos'); 
+    const [activeCategory, setActiveCategory] = useState<'tax' | 'tech' | 'special'>('tax'); 
     
     // Cart State
     const [cart, setCart] = useState<OrderItem[]>([]);
@@ -63,10 +36,6 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
 
     const phoneNumber = "593978980722"; 
     const whatsappLink = `https://wa.me/${phoneNumber}`;
-
-    // Load dynamic data
-    const dynamicBundles = getStoredBundles() || [];
-    const customServices = getStoredCustomServices() || [];
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -134,360 +103,261 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
     };
 
     // --- DATA DEFINITION ---
-    const techPlans = [
-        {
-            title: "Firma Electrónica (1 Año)",
-            price: "35.00",
-            description: "Esencial para facturación y trámites legales.",
-            features: ["Archivo .P12 (Token Virtual)", "Válida para SRI, Judicial, Quipux", "Entrega 100% Online Inmediata", "Soporte de Instalación Remota"],
-            icon: FileKey,
-            color: "bg-purple-50 text-purple-700",
-            popular: false
-        },
-        {
-            title: "Pack Facturación PRO",
-            price: "55.00",
-            originalPrice: "75.00",
-            save: "20.00",
-            description: "Todo lo que necesita para empezar a facturar.",
-            features: ["Firma Electrónica (1 Año)", "Sistema de Facturación Web/App", "Emisión Ilimitada de Comprobantes", "Control de Inventario Básico", "Reportes de Ventas"],
-            icon: Laptop,
-            color: "bg-blue-50 text-blue-700",
-            popular: true
-        }
-    ];
-
-    const taxPlans = [
-        {
-            title: "Declaración Mensual (Empleados)",
-            price: "49.99",
-            originalPrice: "75.30",
-            save: "25.31",
-            description: "Ideal para profesionales bajo relación de dependencia.",
-            features: ["Declaración de IVA (Anual/Semestral)", "Impuesto a la Renta Personas Naturales", "Anexo de Gastos Personales", "Asesoría en Deducibles"],
-            icon: User,
-            popular: true
-        },
-        {
-            title: "RIMPE – Negocio Popular",
-            price: "4.99",
-            originalPrice: "8.99",
-            save: "4.00",
-            description: "Para pequeños negocios con cuota fija anual.",
-            features: ["Declaración Impuesto a la Renta", "Cumplimiento de Deberes Formales", "Reporte Financiero Anual", "Soporte ante notificaciones"],
-            icon: Star,
-            popular: false
-        },
-        {
-            title: "RIMPE – Emprendedor",
-            price: "8.99",
-            originalPrice: "12.99",
-            save: "4.00",
-            description: "Para emprendedores en crecimiento.",
-            features: ["Declaración de IVA Semestral", "Declaración de Impuesto a la Renta", "Registro de Compras y Ventas", "Asesoría Continua"],
-            icon: TrendingUp,
-            popular: false
-        },
-        {
-            title: "Patente Municipal",
-            price: "25.00",
-            originalPrice: "35.00",
-            save: "10.00",
-            description: "Gestión de permisos municipales.",
-            features: ["Declaración Patente Municipal", "Gestión de exoneraciones (si aplica)", "Cálculo de impuesto 1.5 por mil"],
-            icon: MapPin,
-            popular: false
-        }
-    ];
-
-    const comboPlans = dynamicBundles.map(bundle => ({
-        title: bundle.title,
-        price: bundle.price.toFixed(2),
-        originalPrice: bundle.originalPrice?.toFixed(2),
-        save: bundle.originalPrice ? (bundle.originalPrice - bundle.price).toFixed(2) : null,
-        description: bundle.description,
-        features: bundle.features,
-        icon: Package,
-        color: "bg-emerald-50 text-emerald-700",
-        popular: true
-    }));
-    
-    // Obligaciones Especiales dinámicas
-    const specialPlans = customServices.map(service => ({
-        title: service.name,
-        price: service.price.toFixed(2),
-        description: "Obligación tributaria específica según actividad económica.",
-        features: ["Elaboración de Anexo", "Carga en plataforma SRI", "Confirmación de recepción", "Respaldo digital"],
-        icon: service.name.toUpperCase().includes('ICE') ? Activity : FileText,
-        color: "bg-amber-50 text-amber-700",
-        popular: false
-    }));
-
-    const getActivePlans = () => {
-        switch(activeCategory) {
-            case 'tax': return taxPlans;
-            case 'tech': return techPlans;
-            case 'special': return specialPlans;
-            default: return comboPlans;
-        }
+    const plans = {
+        tech: [
+            {
+                title: "Firma Electrónica",
+                price: "35.00",
+                description: "Token .P12 válido para facturación SRI, Quipux y trámites legales.",
+                features: ["Vigencia 1 Año", "Entrega Inmediata", "Instalación Remota", "Soporte Técnico"],
+                icon: FileKey,
+                popular: false,
+                color: "purple"
+            },
+            {
+                title: "Pack Facturador",
+                price: "55.00",
+                originalPrice: "75.00",
+                save: "20.00",
+                description: "Sistema de facturación web ilimitado + Firma electrónica.",
+                features: ["Firma Electrónica (1 Año)", "Facturación Ilimitada", "App Móvil", "Control de Inventario"],
+                icon: Laptop,
+                popular: true,
+                color: "blue"
+            }
+        ],
+        tax: [
+            {
+                title: "RIMPE Popular",
+                price: "4.99",
+                originalPrice: "8.99",
+                save: "4.00",
+                description: "Cumplimiento anual para pequeños negocios.",
+                features: ["Declaración Renta Anual", "Reporte de Obligaciones", "Asesoría Básica"],
+                icon: Star,
+                popular: false,
+                color: "teal"
+            },
+            {
+                title: "RIMPE Emprendedor",
+                price: "15.00",
+                originalPrice: "25.00",
+                save: "10.00",
+                description: "Gestión semestral para negocios en crecimiento.",
+                features: ["IVA Semestral", "Renta Anual", "Anexo Transaccional", "Soporte Prioritario"],
+                icon: TrendingUp,
+                popular: true,
+                color: "teal"
+            },
+            {
+                title: "Profesionales",
+                price: "49.99",
+                description: "Gestión mensual completa para servicios profesionales.",
+                features: ["IVA Mensual", "Anexo Gastos Personales", "Devolución de Retenciones", "Planeación Fiscal"],
+                icon: User,
+                popular: false,
+                color: "teal"
+            }
+        ],
+        special: [
+            {
+                title: "Devolución IVA",
+                price: "15.00",
+                description: "Trámite para Tercera Edad y Discapacidad.",
+                features: ["Análisis de facturas", "Carga de solicitud", "Seguimiento hasta acreditación"],
+                icon: DollarSign,
+                popular: true,
+                color: "amber"
+            },
+            {
+                title: "Patente Municipal",
+                price: "25.00",
+                description: "Declaración anual de patente y 1.5 por mil.",
+                features: ["Cálculo de impuesto", "Generación de título", "Gestión de exoneraciones"],
+                icon: MapPin,
+                popular: false,
+                color: "amber"
+            }
+        ]
     };
-    
-    const activePlans = getActivePlans();
+
+    const activePlans = (plans as any)[activeCategory] || [];
 
     return (
-        <div className="min-h-screen bg-slate-50 font-body overflow-x-hidden text-slate-800">
-            {/* Navbar ... (Existing Navbar Code) ... */}
-            <nav className={`fixed w-full z-50 transition-all duration-300 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-4 border-slate-100' : 'bg-[#0B2149] py-4 border-transparent'}`}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <button onClick={onNavigateToHome} className="flex items-center space-x-3 group h-10">
-                        <Logo className="h-full w-auto" />
-                        <div className="flex flex-col text-left">
-                            <span className={`text-lg font-display font-black tracking-tight leading-none ${scrolled ? 'text-[#0B2149]' : 'text-white'}`}>GESTIONES</span>
-                            <span className={`text-[9px] font-black tracking-[0.25em] uppercase ${scrolled ? 'text-[#00A896]' : 'text-slate-300'}`}>Tributarias</span>
+        <div className="min-h-screen bg-slate-50 font-body text-slate-800 selection:bg-[#00A896] selection:text-white overflow-x-hidden">
+            
+            {/* Header / Nav */}
+            <nav className={`fixed w-full z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-4 border-slate-100' : 'bg-[#0B2149] py-6 border-transparent'}`}>
+                <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+                    <button onClick={onNavigateToHome} className="flex items-center gap-3 group">
+                        <div className={`p-2 rounded-xl transition-all ${scrolled ? 'bg-[#0B2149]' : 'bg-white/10 border border-white/20'}`}>
+                            <Logo className="w-6 h-6" />
+                        </div>
+                        <div className="text-left">
+                            <span className={`text-base font-display font-black tracking-tight leading-none block ${scrolled ? 'text-[#0B2149]' : 'text-white'}`}>GESTIONES</span>
                         </div>
                     </button>
                     
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
-                        <button onClick={onNavigateToHome} className={`text-sm font-bold transition-colors ${scrolled ? 'text-slate-600 hover:text-[#0B2149]' : 'text-slate-300 hover:text-white'}`}>Inicio</button>
-                        <span className={`text-sm font-bold border-b-2 pb-1 cursor-default ${scrolled ? 'text-[#00A896] border-[#00A896]' : 'text-white border-white'}`}>Servicios</span>
-                        <button onClick={() => setIsCartOpen(true)} className={`relative transition-colors flex items-center gap-1 text-sm font-bold ${scrolled ? 'text-slate-600 hover:text-[#00A896]' : 'text-slate-300 hover:text-white'}`}>
-                            <ShoppingCart size={18} /> Carrito
-                            {cart.length > 0 && (
-                                <span className="ml-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                                    {cart.length}
-                                </span>
-                            )}
-                        </button>
-
-                        {currentUser ? (
-                            <div className={`flex items-center space-x-3 border-l pl-4 ${scrolled ? 'border-slate-200' : 'border-slate-700'}`}>
-                                <span className={`text-sm font-bold ${scrolled ? 'text-[#0B2149]' : 'text-white'}`}>{currentUser.name}</span>
-                                <button onClick={onLogout} className="text-slate-400 hover:text-red-400 transition-colors" title="Cerrar Sesión">
-                                    <LogOut size={18} />
-                                </button>
+                    <div className="hidden md:flex items-center gap-8">
+                        <button onClick={onNavigateToHome} className={`text-sm font-bold transition-colors ${scrolled ? 'text-slate-500 hover:text-[#0B2149]' : 'text-white/70 hover:text-white'}`}>Inicio</button>
+                        <button onClick={() => setIsCartOpen(true)} className={`relative flex items-center gap-2 text-sm font-bold transition-colors ${scrolled ? 'text-slate-800' : 'text-white'}`}>
+                            <div className="relative">
+                                <ShoppingCart size={20} />
+                                {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full shadow-sm">{cart.length}</span>}
                             </div>
-                        ) : (
-                            <button onClick={() => setIsAuthModalOpen(true)} className={`text-sm font-bold transition-colors flex items-center gap-1 ${scrolled ? 'text-slate-600 hover:text-[#0B2149]' : 'text-slate-300 hover:text-white'}`}>
-                                <User size={18} /> Cuenta
-                            </button>
-                        )}
-
-                        <a 
-                            href={whatsappLink} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="flex items-center gap-2 px-6 py-2.5 bg-[#00A896] text-white font-bold rounded-full transition-all duration-300 shadow-md hover:shadow-lg hover:bg-teal-600 text-xs uppercase tracking-wider"
-                        >
-                            <MessageCircle size={16} />
-                            <span>Consultar</span>
+                            <span>Carrito</span>
+                        </button>
+                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="px-6 py-2.5 bg-[#00A896] text-white font-black rounded-xl hover:bg-teal-600 transition-all shadow-lg shadow-teal-500/30 text-xs uppercase tracking-wider flex items-center gap-2">
+                            <MessageCircle size={16}/> Asesoría
                         </a>
                     </div>
-
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden flex items-center space-x-4">
-                        <button onClick={() => setIsCartOpen(true)} className={`relative p-2 ${scrolled ? 'text-[#0B2149]' : 'text-white'}`}>
-                            <ShoppingCart size={24} />
-                            {cart.length > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-                                    {cart.length}
-                                </span>
-                            )}
-                        </button>
-                        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className={`${scrolled ? 'text-[#0B2149]' : 'text-white'}`}>
-                            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                        </button>
-                    </div>
+                    
+                    <button onClick={() => setMobileMenuOpen(true)} className={`md:hidden p-2 ${scrolled ? 'text-[#0B2149]' : 'text-white'}`}><Menu size={24}/></button>
                 </div>
-
-                {/* Mobile Menu */}
-                {mobileMenuOpen && (
-                    <div className="md:hidden bg-white absolute w-full border-b border-slate-100 animate-fade-in-down shadow-xl">
-                        <div className="px-4 pt-2 pb-6 space-y-2">
-                             <button onClick={() => { onNavigateToHome(); setMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 text-base font-medium text-slate-600 hover:bg-slate-50 rounded-md">Inicio</button>
-                             <div className="block px-3 py-2 text-base font-bold text-[#00A896] bg-slate-50 rounded-md">Servicios</div>
-                             
-                             {currentUser ? (
-                                <div className="px-3 py-2 border-t border-slate-100 mt-2">
-                                    <p className="text-sm text-slate-500 mb-2">Hola, {currentUser.name}</p>
-                                    <button onClick={() => { onLogout(); setMobileMenuOpen(false); }} className="flex items-center text-red-500 font-medium"><LogOut size={16} className="mr-2"/> Cerrar Sesión</button>
-                                </div>
-                             ) : (
-                                <button onClick={() => { setIsAuthModalOpen(true); setMobileMenuOpen(false); }} className="block w-full text-left px-3 py-2 text-base font-medium text-slate-600 hover:bg-slate-50 rounded-md flex items-center gap-2"><User size={18}/> Mi Cuenta</button>
-                             )}
-
-                             <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="block px-3 py-3 text-base font-bold text-white bg-[#00A896] rounded-md flex items-center justify-center gap-2 mt-4">
-                                <MessageCircle size={18}/>
-                                Consultar con Asesor Ahora
-                             </a>
-                             <button onClick={() => { onAdminAccess(); setMobileMenuOpen(false); }} className="w-full text-left block px-3 py-2 text-base font-bold text-slate-400 hover:text-[#0B2149] rounded-md border-t border-slate-100 mt-2 pt-4">Administración</button>
-                        </div>
-                    </div>
-                )}
             </nav>
 
-            {/* Header with Selector */}
-            <div className="bg-[#0B2149] pt-32 pb-24 px-4 text-center rounded-b-[3rem] relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#00A896]/20 rounded-full blur-[100px] -mr-32 -mt-32"></div>
-                
-                <div className="relative z-10 max-w-4xl mx-auto">
-                    <h1 className="text-4xl md:text-5xl font-display font-black text-white mb-6">Planes Flexibles</h1>
-                    <p className="text-slate-300 text-lg max-w-2xl mx-auto mb-10 font-medium">
-                        Seleccione el tipo de servicio que necesita y optimice su gestión hoy mismo.
-                    </p>
-
-                    {/* Category Toggle */}
-                    <div className="inline-flex bg-slate-800/50 p-1.5 rounded-full backdrop-blur-md border border-slate-700 shadow-xl overflow-x-auto max-w-full no-scrollbar">
-                        <button 
-                            onClick={() => setActiveCategory('combos')}
-                            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'combos' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            <Package size={16}/> Packs
-                        </button>
-                        <button 
-                            onClick={() => setActiveCategory('tax')}
-                            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'tax' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            <Briefcase size={16}/> Tributaria
-                        </button>
-                         <button 
-                            onClick={() => setActiveCategory('special')}
-                            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'special' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            <Activity size={16}/> Especiales
-                        </button>
-                        <button 
-                            onClick={() => setActiveCategory('tech')}
-                            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 whitespace-nowrap ${activeCategory === 'tech' ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
-                        >
-                            <Laptop size={16}/> Firma
-                        </button>
-                    </div>
+             {/* Mobile Menu */}
+             {mobileMenuOpen && (
+                <div className="fixed inset-0 z-[60] bg-[#020617] flex flex-col items-center justify-center space-y-8 animate-fade-in p-8">
+                    <button className="absolute top-8 right-8 p-3 bg-white/10 rounded-full text-white" onClick={() => setMobileMenuOpen(false)}>
+                        <X size={24}/>
+                    </button>
+                    <button onClick={() => { onNavigateToHome(); setMobileMenuOpen(false); }} className="text-3xl font-display font-black text-white">Inicio</button>
+                    <button onClick={() => { setIsCartOpen(true); setMobileMenuOpen(false); }} className="text-3xl font-display font-black text-white">Ver Carrito ({cart.length})</button>
+                    <button onClick={() => { onAdminAccess(); setMobileMenuOpen(false); }} className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-8">Acceso Admin</button>
                 </div>
+            )}
+
+            {/* Hero & Selector */}
+            <div className="bg-[#0B2149] pt-40 pb-32 px-6 rounded-b-[4rem] relative overflow-hidden text-center shadow-2xl shadow-blue-900/20">
+                 {/* Abstract BG */}
+                 <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+                 <div className="absolute top-[-100px] right-[-100px] w-[600px] h-[600px] bg-[#00A896]/20 rounded-full blur-[120px]"></div>
+
+                 <div className="relative z-10 max-w-4xl mx-auto">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest mb-6 backdrop-blur-md">
+                        <Globe size={12}/> Servicios Digitales 2026
+                    </div>
+                    <h1 className="text-5xl md:text-7xl font-display font-black text-white mb-8 tracking-tight leading-[1.1]">
+                        Soluciones a su <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] to-emerald-300">Medida.</span>
+                    </h1>
+                    
+                    {/* Category Switcher */}
+                    <div className="inline-flex bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl overflow-x-auto max-w-full">
+                        {[
+                            { id: 'tax', label: 'Tributarios', icon: Briefcase },
+                            { id: 'tech', label: 'Firma & Fact.', icon: Laptop },
+                            { id: 'special', label: 'Trámites', icon: Activity }
+                        ].map(cat => (
+                            <button 
+                                key={cat.id}
+                                onClick={() => setActiveCategory(cat.id as any)}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${activeCategory === cat.id ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
+                            >
+                                <cat.icon size={16}/> {cat.label}
+                            </button>
+                        ))}
+                    </div>
+                 </div>
             </div>
 
             {/* Plans Grid */}
-            <div className="max-w-7xl mx-auto px-4 -mt-16 pb-24 relative z-20">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {activePlans.length > 0 ? activePlans.map((plan, index) => (
+            <div className="max-w-7xl mx-auto px-6 -mt-20 relative z-20 pb-24">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {activePlans.map((plan: any, index: number) => (
                         <div 
                             key={index} 
-                            className={`bg-white rounded-[2rem] shadow-xl flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden group border ${plan.popular ? 'border-[#00A896] ring-4 ring-teal-50/50 scale-[1.02]' : 'border-slate-100'}`}
+                            className={`group bg-white rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden border ${plan.popular ? 'border-[#00A896] ring-4 ring-[#00A896]/10' : 'border-slate-100'}`}
                         >
-                            {plan.popular && (
-                                <div className="bg-[#00A896] text-white text-[10px] font-black text-center py-2 uppercase tracking-widest absolute top-0 left-0 w-full z-10 shadow-sm">
-                                    Más Solicitado
-                                </div>
-                            )}
-                            
-                            <div className={`p-8 ${plan.popular ? 'pt-12' : ''}`}>
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${plan.color || 'bg-slate-100 text-slate-600'}`}>
+                            <div className="p-8 pb-0">
+                                {plan.popular && (
+                                    <div className="inline-block bg-[#00A896] text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest mb-4 shadow-md shadow-teal-500/30">
+                                        Más Vendido
+                                    </div>
+                                )}
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${plan.popular ? 'bg-[#0B2149] text-white' : 'bg-slate-100 text-slate-500'}`}>
                                     <plan.icon size={28} />
                                 </div>
-                                
-                                <h3 className="text-xl font-black text-[#0B2149] mb-2 leading-tight min-h-[3.5rem]">{plan.title}</h3>
-                                <p className="text-xs font-medium text-slate-500 mb-6 min-h-[2.5rem] leading-relaxed">{plan.description}</p>
-                                
-                                <div className="flex items-end gap-2 mb-2">
-                                    <span className="text-4xl font-display font-black text-slate-900 tracking-tight">${plan.price}</span>
-                                    {plan.originalPrice && <span className="text-sm font-bold text-slate-400 line-through mb-1.5">${plan.originalPrice}</span>}
+                                <h3 className="text-2xl font-black text-[#0B2149] mb-2">{plan.title}</h3>
+                                <p className="text-sm font-medium text-slate-500 min-h-[3rem] leading-relaxed">{plan.description}</p>
+                            </div>
+
+                            <div className="p-8 pt-4">
+                                <div className="flex items-end gap-2 mb-6">
+                                    <span className="text-5xl font-display font-black text-slate-900 tracking-tighter">${plan.price}</span>
+                                    {plan.originalPrice && (
+                                        <div className="flex flex-col mb-1">
+                                            <span className="text-xs font-bold text-slate-400 line-through">${plan.originalPrice}</span>
+                                            <span className="text-[10px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded">SAVE ${plan.save}</span>
+                                        </div>
+                                    )}
                                 </div>
-                                
-                                {plan.save && (
-                                    <span className="inline-block bg-green-100 text-green-700 text-[10px] font-black px-3 py-1 rounded-full mb-6">
-                                        AHORRAS ${plan.save}
-                                    </span>
-                                )}
+
+                                <div className="space-y-3 mb-8">
+                                    {plan.features.map((feat: string, i: number) => (
+                                        <div key={i} className="flex items-start gap-3 text-xs font-bold text-slate-600">
+                                            <div className="min-w-[16px] mt-0.5 text-[#00A896]"><CheckCircle size={16}/></div>
+                                            <span>{feat}</span>
+                                        </div>
+                                    ))}
+                                </div>
 
                                 <button 
                                     onClick={() => handleAddToCart(plan)}
-                                    className={`w-full py-4 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl uppercase tracking-wider transform active:scale-95
-                                        ${plan.popular ? 'bg-[#00A896] text-white hover:bg-teal-600' : 'bg-[#0B2149] text-white hover:bg-slate-800'}
-                                    `}
+                                    className={`w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg ${plan.popular ? 'bg-[#00A896] text-white hover:bg-teal-600 shadow-teal-500/20' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20'}`}
                                 >
-                                    <ShoppingCart size={18} /> Añadir al Carrito
+                                    <ShoppingCart size={18}/> Agregar
                                 </button>
                             </div>
-
-                            <div className="p-8 bg-slate-50 border-t border-slate-100 flex-grow">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Lo que incluye:</p>
-                                <ul className="space-y-4">
-                                    {plan.features.map((feature: string, fIdx: number) => (
-                                        <li key={fIdx} className="flex items-start text-xs font-bold text-slate-600">
-                                            <CheckCircle size={16} className="mr-3 flex-shrink-0 text-green-500 mt-0.5" />
-                                            <span>{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
                         </div>
-                    )) : (
-                        <div className="col-span-full text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
-                            <p className="text-slate-400 font-bold">No hay planes disponibles en esta categoría.</p>
-                        </div>
-                    )}
+                    ))}
                 </div>
             </div>
 
-            {/* Satisfaction Guarantee Section */}
-            <section className="py-20 bg-white border-t border-slate-100">
-                <div className="max-w-4xl mx-auto px-4 text-center">
-                    <div className="inline-flex p-5 bg-[#0B2149]/5 rounded-full mb-8 text-[#0B2149]">
-                        <ShieldCheck size={56} strokeWidth={1.5} />
-                    </div>
-                    <h2 className="text-3xl font-display font-black text-slate-900 mb-6">Garantía de Servicio Profesional</h2>
-                    <p className="text-slate-600 mb-10 leading-relaxed text-lg font-medium">
-                        Entendemos la importancia de su tranquilidad fiscal. Si nuestro servicio no cumple con la normativa vigente o se presentan errores atribuibles a nuestra gestión, nos comprometemos a solucionarlo sin costo adicional.
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-8 text-sm font-bold text-slate-700">
-                        <span className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full text-green-700 border border-green-100"><Check className="text-green-500" size={16}/> Confidencialidad Total</span>
-                        <span className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full text-green-700 border border-green-100"><Check className="text-green-500" size={16}/> Soporte Personalizado</span>
-                        <span className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full text-green-700 border border-green-100"><Check className="text-green-500" size={16}/> Actualización Constante</span>
-                    </div>
-                </div>
-            </section>
-
-            {/* Cart Modal (Sidebar) */}
+            {/* Cart Sidebar */}
             {isCartOpen && (
-                <div className="fixed inset-0 z-[60] flex justify-end">
-                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
-                    <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 flex flex-col animate-slide-in-right text-slate-900">
-                        <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-                            <h3 className="text-2xl font-display font-black text-[#0B2149]">Su Pedido</h3>
-                            <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-gray-100 rounded-full text-slate-400 hover:text-slate-600"><X size={24} /></button>
+                <div className="fixed inset-0 z-[100] flex justify-end">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}></div>
+                    <div className="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
+                        <div className="p-6 bg-[#0B2149] text-white flex justify-between items-center shadow-lg z-10">
+                            <h3 className="text-xl font-display font-black tracking-tight flex items-center gap-2">
+                                <ShoppingCart size={20}/> Su Pedido
+                            </h3>
+                            <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20}/></button>
                         </div>
 
-                        <div className="flex-grow overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                        <div className="flex-grow overflow-y-auto p-6 space-y-4 bg-slate-50">
                             {cart.length === 0 ? (
-                                <div className="text-center py-20 text-gray-400">
-                                    <ShoppingCart size={64} className="mx-auto mb-4 opacity-20"/>
-                                    <p className="font-bold">Su carrito está vacío.</p>
+                                <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
+                                    <Package size={64} strokeWidth={1} className="mb-4"/>
+                                    <p className="font-black text-lg">Carrito Vacío</p>
                                 </div>
                             ) : (
                                 cart.map(item => (
-                                    <div key={item.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                                    <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center group">
                                         <div>
-                                            <p className="font-bold text-sm text-slate-800 mb-1">{item.title}</p>
-                                            <p className="text-[#00A896] font-black">${item.price.toFixed(2)}</p>
+                                            <p className="font-bold text-slate-800 text-sm mb-1">{item.title}</p>
+                                            <p className="text-[#00A896] font-black text-lg">${item.price.toFixed(2)}</p>
                                         </div>
-                                        <button onClick={() => removeFromCart(item.id)} className="text-slate-400 hover:text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={18}/></button>
+                                        <button onClick={() => removeFromCart(item.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+                                            <Trash2 size={18}/>
+                                        </button>
                                     </div>
                                 ))
                             )}
                         </div>
 
-                        <div className="mt-6 pt-6 border-t border-slate-200">
-                            <div className="flex justify-between items-center mb-8 text-2xl font-black text-[#0B2149]">
-                                <span>Total</span>
-                                <span className="text-green-600 font-mono tracking-tight">${cartTotal.toFixed(2)}</span>
+                        <div className="p-6 bg-white border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-10">
+                            <div className="flex justify-between items-center mb-6">
+                                <span className="text-slate-400 font-bold text-sm uppercase tracking-wider">Total a Pagar</span>
+                                <span className="text-3xl font-black text-[#0B2149] tracking-tight">${cartTotal.toFixed(2)}</span>
                             </div>
                             <button 
                                 onClick={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }}
                                 disabled={cart.length === 0}
-                                className="w-full py-5 bg-[#0B2149] text-white font-black rounded-2xl hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 uppercase tracking-wider text-sm shadow-xl"
+                                className="w-full py-5 bg-[#00A896] text-white font-black rounded-2xl hover:bg-teal-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-teal-500/20 flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
                             >
-                                Completar Pedido <ArrowRight size={20}/>
+                                Confirmar Pedido <ArrowRight size={18}/>
                             </button>
                         </div>
                     </div>
@@ -498,92 +368,57 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
             <Modal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} title="Finalizar Solicitud">
                 {orderSuccess ? (
                     <div className="text-center py-12">
-                        <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce shadow-lg shadow-green-500/20">
+                        <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce shadow-lg shadow-emerald-500/30">
                             <CheckCircle size={48} />
                         </div>
-                        <h3 className="text-3xl font-black text-slate-900 mb-3">¡Solicitud Recibida!</h3>
-                        <p className="text-slate-500 font-medium max-w-xs mx-auto">Gracias por su confianza. Un asesor se pondrá en contacto con usted en breve para coordinar los detalles.</p>
+                        <h3 className="text-2xl font-black text-[#0B2149] mb-2">¡Solicitud Enviada!</h3>
+                        <p className="text-slate-500 font-medium max-w-xs mx-auto">Un asesor revisará su pedido y le contactará vía WhatsApp en breve.</p>
                     </div>
                 ) : (
                     <form onSubmit={handleCheckoutSubmit} className="space-y-5">
-                        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 mb-8">
-                            <h4 className="font-black text-[#0B2149] mb-4 text-xs uppercase tracking-widest border-b border-slate-200 pb-2">Resumen</h4>
-                            <ul className="text-sm text-slate-600 space-y-3 font-medium">
-                                {cart.map(i => <li key={i.id} className="flex justify-between"><span>{i.title}</span><span className="font-mono font-bold">${i.price.toFixed(2)}</span></li>)}
-                            </ul>
-                            <div className="flex justify-between font-black text-xl mt-4 pt-4 border-t border-slate-200 text-slate-900">
-                                <span>Total a Pagar:</span>
-                                <span className="font-mono text-[#00A896] tracking-tight">${cartTotal.toFixed(2)}</span>
-                            </div>
-                        </div>
+                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                             <div className="flex justify-between items-center mb-2">
+                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Resumen</span>
+                                <span className="text-xs font-bold text-[#00A896]">{cart.length} ítems</span>
+                             </div>
+                             <div className="text-2xl font-black text-[#0B2149]">${cartTotal.toFixed(2)}</div>
+                         </div>
 
-                        <div>
-                            <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Nombre Completo *</label>
+                         <div className="grid grid-cols-1 gap-4">
                             <div className="relative">
                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
-                                <input required type="text" value={clientName} onChange={e => setClientName(e.target.value)} className="w-full pl-12 p-4 bg-slate-100 rounded-xl border-none focus:ring-2 focus:ring-[#00A896] font-bold text-slate-800 placeholder-slate-400" placeholder="Juan Pérez" disabled={!!currentUser}/>
+                                <input required type="text" value={clientName} onChange={e => setClientName(e.target.value)} className="w-full pl-12 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-[#00A896] focus:bg-white transition-all placeholder-slate-400" placeholder="Su Nombre" disabled={!!currentUser}/>
                             </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Teléfono / WhatsApp *</label>
-                                <div className="relative">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
-                                    <input required type="tel" value={clientPhone} onChange={e => setClientPhone(e.target.value)} className="w-full pl-12 p-4 bg-slate-100 rounded-xl border-none focus:ring-2 focus:ring-[#00A896] font-bold text-slate-800 placeholder-slate-400" placeholder="0991234567"/>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">RUC / CI (Opcional)</label>
-                                <div className="relative">
-                                    <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
-                                    <input type="text" value={clientRuc} onChange={e => setClientRuc(e.target.value)} className="w-full pl-12 p-4 bg-slate-100 rounded-xl border-none focus:ring-2 focus:ring-[#00A896] font-bold text-slate-800 placeholder-slate-400" placeholder="1712345678001"/>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Correo Electrónico (Opcional)</label>
                             <div className="relative">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
-                                <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} className="w-full pl-12 p-4 bg-slate-100 rounded-xl border-none focus:ring-2 focus:ring-[#00A896] font-bold text-slate-800 placeholder-slate-400" placeholder="juan@email.com" disabled={!!currentUser}/>
+                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
+                                <input required type="tel" value={clientPhone} onChange={e => setClientPhone(e.target.value)} className="w-full pl-12 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-[#00A896] focus:bg-white transition-all placeholder-slate-400" placeholder="WhatsApp (099...)"/>
                             </div>
-                        </div>
+                             <div className="relative">
+                                <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
+                                <input type="text" value={clientRuc} onChange={e => setClientRuc(e.target.value)} className="w-full pl-12 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 outline-none focus:border-[#00A896] focus:bg-white transition-all placeholder-slate-400" placeholder="RUC / CI (Opcional)"/>
+                            </div>
+                         </div>
 
-                        <button type="submit" className="w-full py-5 bg-[#00A896] text-white font-black rounded-xl hover:bg-teal-600 transition-colors text-sm uppercase tracking-widest shadow-xl mt-6 flex items-center justify-center gap-3">
-                            Confirmar Pedido <CheckCircle size={20}/>
+                        <button type="submit" className="w-full py-5 bg-[#0B2149] text-white font-black rounded-2xl hover:bg-slate-800 transition-all text-sm uppercase tracking-widest shadow-xl mt-4 flex items-center justify-center gap-3">
+                            Enviar Solicitud <CheckCircle size={18}/>
                         </button>
-                        <p className="text-[10px] text-center text-slate-400 font-bold mt-4 uppercase tracking-wider">Sus datos serán tratados con estricta confidencialidad.</p>
                     </form>
                 )}
             </Modal>
 
-            {/* Footer ... (Existing Footer) ... */}
-            <footer className="bg-slate-950 py-16 border-t border-slate-900 text-white">
-                <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
-                    <div className="flex items-center space-x-4">
-                        <div className="bg-white/5 p-3 rounded-2xl border border-white/10 backdrop-blur-sm">
-                            <Logo className="w-8 h-auto" />
-                        </div>
-                        <div>
-                            <span className="text-xl font-display font-black text-white block leading-none uppercase tracking-tight">SANTIAGO CORDOVA</span>
-                            <span className="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-bold mt-1 block">Soluciones Tributarias</span>
-                        </div>
+            {/* Simple Clean Footer */}
+            <footer className="bg-white border-t border-slate-100 py-12">
+                <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-3 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500">
+                        <Logo className="w-8 h-8"/>
+                        <span className="font-display font-black text-slate-900 tracking-tight">SANTIAGO CORDOVA</span>
                     </div>
-                    
-                    <div className="flex gap-8 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                        <a href="#" className="hover:text-[#00A896] transition-colors">Aviso Legal</a>
-                        <a href="#" className="hover:text-[#00A896] transition-colors">Privacidad</a>
-                        <a href="#" className="hover:text-[#00A896] transition-colors">Términos</a>
-                    </div>
-
-                    <div className="text-slate-600 text-[10px] font-bold uppercase tracking-widest text-center md:text-right">
-                        <p>&copy; {new Date().getFullYear()} Santiago Cordova.</p>
-                        <p>Todos los derechos reservados.</p>
-                    </div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        © 2026. Todos los derechos reservados.
+                    </p>
                 </div>
             </footer>
-
+            
             <AuthModal 
                 isOpen={isAuthModalOpen} 
                 onClose={() => setIsAuthModalOpen(false)} 

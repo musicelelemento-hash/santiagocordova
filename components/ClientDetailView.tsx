@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
-import { Client, ClientCategory, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, ReceiptData, StoredFile, TaskStatus, Task } from '../types';
+import { Client, ClientCategory, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, ReceiptData, StoredFile, Task, TaskStatus } from '../types';
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod } from '../services/sri';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../services/geminiService';
-import { extractDataFromSriPdf } from '../services/pdfExtraction'; // Importante: usar el extractor mejorado
+import { extractDataFromSriPdf } from '../services/pdfExtraction';
 import { getClientServiceFee } from '../services/clientService';
 import { format, isPast, subMonths, subYears, addDays, getYear } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { v4 as uuidv4 } from 'uuid';
 import { 
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy, 
     ShieldCheck, FileText, Zap, UserCheck, UserX, UserCheck2, 
     MoreHorizontal, Printer, Clipboard, CheckCircle, Send, Loader, ArrowDownToLine, 
-    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, ScanLine, FilePlus, Power, FileCheck
+    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, ScanLine, FilePlus, Power, FileCheck, Coins
 } from 'lucide-react';
 import { Modal } from './Modal';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
+import { v4 as uuidv4 } from 'uuid';
 
-// ... (Helper functions remain unchanged: getRecentPeriods, getObligationFromCategory, isVipCategory, buildCategory, PaymentHistoryChart, CopyButton) ...
+// ... (Existing Helpers like getRecentPeriods, getObligationFromCategory, PaymentHistoryChart - NO CHANGES NEEDED) ...
 const getRecentPeriods = (client: Client, count: number): string[] => {
     if (!client || !client.category) return [];
     const periods: string[] = [];
@@ -26,9 +26,14 @@ const getRecentPeriods = (client: Client, count: number): string[] => {
     for (let i = 0; i < count; i++) {
         const period = getPeriod(client, currentDate);
         if (!periods.includes(period)) periods.push(period);
-        if (client.category.includes('Mensual') || client.category === ClientCategory.DevolucionIvaTerceraEdad) currentDate = subMonths(currentDate, 1);
-        else if (client.category.includes('Semestral')) currentDate = subMonths(currentDate, 6);
-        else currentDate = subYears(currentDate, 1);
+        if (client.category.includes('Mensual') || client.category === ClientCategory.DevolucionIvaTerceraEdad) { currentDate = subMonths(currentDate, 1); } 
+        else if (client.category.includes('Semestral')) { currentDate = subMonths(currentDate, 6); } 
+        else { currentDate = subYears(currentDate, 1); }
+    }
+    while (periods.length < count && client.regime === TaxRegime.RimpeNegocioPopular) {
+        const period = getPeriod(client, currentDate);
+        if (!periods.includes(period)) { periods.push(period); }
+        currentDate = subYears(currentDate, 1);
     }
     return periods.slice(0, count).reverse();
 };
@@ -161,6 +166,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [obligation, setObligation] = useState(getObligationFromCategory(client.category));
     const [isVip, setIsVip] = useState(isVipCategory(client.category));
     
+    // Fee Structures
+    const [monthlyFee, setMonthlyFee] = useState<string>((client.feeStructure?.monthly ?? 0).toString());
+    const [annualFee, setAnnualFee] = useState<string>((client.feeStructure?.annual ?? 0).toString());
+
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [signaturePasswordVisible, setSignaturePasswordVisible] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -191,6 +200,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             setEditedClient(client); 
             setObligation(getObligationFromCategory(client.category)); 
             setIsVip(isVipCategory(client.category));
+            setMonthlyFee((client.feeStructure?.monthly ?? 0).toString());
+            setAnnualFee((client.feeStructure?.annual ?? 0).toString());
         }
     }, [client, isEditing]);
 
@@ -204,8 +215,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const { totalDebt, nextDeadline, lastActivityDate, pendingDeclaration } = useMemo(() => {
-        if (!editedClient) return { totalDebt: 0, nextDeadline: null, lastActivityDate: null, pendingDeclaration: null };
+    const { totalDebt, nextDeadline, lastActivityDate, activeWorkflowDeclaration } = useMemo(() => {
+        if (!editedClient) return { totalDebt: 0, nextDeadline: null, lastActivityDate: null, activeWorkflowDeclaration: null };
         const pending = (editedClient.declarationHistory || []).filter(d => d.status !== DeclarationStatus.Pagada);
         const debt = pending.reduce((sum, d) => sum + (d.amount ?? getClientServiceFee(editedClient, serviceFees, d.period)), 0);
         
@@ -215,6 +226,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const pendingToDeclare = editedClient.declarationHistory.find(d => d.period === currentPeriod && d.status === DeclarationStatus.Pendiente);
         const pendingToPay = editedClient.declarationHistory.find(d => d.period === currentPeriod && d.status === DeclarationStatus.Enviada);
         
+        // CORRECCIÓN CLAVE: El flujo de trabajo debe estar activo si está Pendiente O Enviada (Pendiente de Pago)
         const activeWorkflowDeclaration = pendingToDeclare || pendingToPay;
         const nextPeriod = periods[0] ? getNextPeriod(periods[0]) : getPeriod(editedClient, new Date());
         const deadline = getDueDateForPeriod(editedClient, nextPeriod);
@@ -227,7 +239,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             totalDebt: debt, 
             nextDeadline: deadline, 
             lastActivityDate: lastActivity,
-            pendingDeclaration: activeWorkflowDeclaration
+            activeWorkflowDeclaration
         };
     }, [editedClient, serviceFees]);
 
@@ -254,10 +266,12 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 address: extracted.direccion || prev.address,
                 regime: extracted.regimen || prev.regime,
                 sriPassword: passwordToUse || prev.sriPassword,
-                // Mantener otros datos si no vienen en el PDF
                 economicActivity: extracted.actividad_economica || prev.economicActivity,
                 isArtisan: extracted.es_artesano,
-                establishmentCount: extracted.cantidad_establecimientos || prev.establishmentCount
+                establishmentCount: extracted.cantidad_establecimientos || prev.establishmentCount,
+                // Update contact info if available from PDF
+                email: extracted.contacto.email || prev.email,
+                phones: extracted.contacto.celular ? [extracted.contacto.celular] : prev.phones
             }));
 
             // Sugerir frecuencia basada en el PDF
@@ -265,7 +279,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             else if (extracted.obligaciones_tributarias === 'semestral') setObligation('Semestral');
             else setObligation('Mensual');
             
-            toast.success("Datos actualizados desde PDF");
+            toast.success("Nombre, Dirección y Régimen actualizados.");
         } catch (error) {
             console.error(error);
             toast.error("Error al leer PDF. Verifique que sea un archivo válido.");
@@ -297,14 +311,26 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         toast.success(`Tarea creada: ${taskDef.name}`);
     };
 
-    // ... (rest of the file remains the same: handleSave, handleCopy, handleSummarize, handleConfirmAction, etc.)
     const handleSave = () => {
         let newCategory = editedClient.category;
         if (editedClient.regime !== TaxRegime.RimpeNegocioPopular) {
              newCategory = buildCategory(obligation, isVip);
         }
         let finalNotes = editedClient.notes || '';
-        const toSave = { ...editedClient, category: newCategory, notes: finalNotes };
+        
+        // Actualizar estructura de tarifas
+        const finalFeeStructure = {
+            monthly: parseFloat(monthlyFee) || 0,
+            annual: parseFloat(annualFee) || 0,
+            semestral: parseFloat(monthlyFee) || 0 // Default semestral to monthly if not explicit
+        };
+
+        const toSave = { 
+            ...editedClient, 
+            category: newCategory, 
+            notes: finalNotes,
+            feeStructure: finalFeeStructure
+        };
         onSave(toSave);
         setIsEditing(false);
         setIsMenuOpen(false);
@@ -364,6 +390,11 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const updatedClient = { ...editedClient, declarationHistory: updatedHistory };
         setEditedClient(updatedClient);
         onSave(updatedClient);
+        toast.success("Estado actualizado a Declarado");
+    };
+    
+    const handleQuickPay = (period: string) => {
+        setConfirmation({ action: 'pay', period: period });
     };
 
     const handleShowReceipt = (declaration: Declaration) => {
@@ -464,10 +495,14 @@ Nota: Este enlace es personal y seguro.`;
 
     const annualTaxMonth = editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'Mayo' : 'Marzo';
     const annualTaxColor = editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'text-purple-600 bg-purple-50' : 'text-orange-600 bg-orange-50';
+    
+    // Determine header state based on workflow
+    const headerIsPending = activeWorkflowDeclaration?.status === DeclarationStatus.Pendiente;
+    const headerIsDeclared = activeWorkflowDeclaration?.status === DeclarationStatus.Enviada;
 
     return (
         <div className="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col animate-fade-in absolute inset-0 z-50 overflow-hidden">
-             {/* ... Header and Tabs ... */}
+             {/* ... Header and Tabs (No changes here) ... */}
              <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm z-20 flex-shrink-0">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6">
                     <div className="h-16 flex items-center justify-between">
@@ -565,35 +600,48 @@ Nota: Este enlace es personal y seguro.`;
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up">
                         
                         {/* --- CENTRO DE COMANDO TRIBUTARIO --- */}
-                        {pendingDeclaration && (
+                        {activeWorkflowDeclaration && (
                             <div className="lg:col-span-3">
                                 {/* ... (Workflow code) ... */}
-                                <div className="bg-slate-900 rounded-3xl p-6 shadow-xl border border-slate-800 relative overflow-hidden text-white">
-                                    <div className="absolute top-0 right-0 w-64 h-64 bg-brand-teal/20 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none"></div>
+                                <div className={`rounded-3xl p-6 shadow-xl border relative overflow-hidden text-white transition-colors duration-500 ${headerIsDeclared ? 'bg-emerald-900 border-emerald-800' : 'bg-slate-900 border-slate-800'}`}>
+                                    <div className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none ${headerIsDeclared ? 'bg-emerald-500/20' : 'bg-brand-teal/20'}`}></div>
                                     <div className="relative z-10">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                                             <div>
-                                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-wider mb-2">
-                                                    <Clock size={12}/> Acción Requerida
+                                                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wider mb-2 ${headerIsDeclared ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300' : 'bg-amber-500/20 border-amber-500/30 text-amber-300'}`}>
+                                                    <Clock size={12}/> {headerIsDeclared ? 'Declaración Enviada - Pendiente Pago' : 'Acción Requerida'}
                                                 </div>
-                                                <h3 className="text-xl font-bold">Declaración Pendiente: {formatPeriodForDisplay(pendingDeclaration.period)}</h3>
+                                                <h3 className="text-xl font-bold">
+                                                    {headerIsDeclared ? 'Confirmar Pago:' : 'Declaración Pendiente:'} {formatPeriodForDisplay(activeWorkflowDeclaration.period)}
+                                                </h3>
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
                                             {/* Step 1 */}
-                                            <div className="flex gap-4">
-                                                <div className="flex-shrink-0 flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-brand-teal text-white flex items-center justify-center font-bold shadow-lg ring-4 ring-slate-800 z-10">1</div><div className="h-full w-0.5 bg-slate-700/50 my-1"></div></div>
+                                            <div className={`flex gap-4 ${headerIsDeclared ? 'opacity-50 grayscale' : ''}`}>
+                                                <div className="flex-shrink-0 flex flex-col items-center"><div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg ring-4 z-10 ${headerIsDeclared ? 'bg-slate-700 ring-slate-800 text-slate-400' : 'bg-brand-teal text-white ring-slate-800'}`}>1</div><div className="h-full w-0.5 bg-slate-700/50 my-1"></div></div>
                                                 <div className="flex-1 pb-4"><h4 className="font-bold text-slate-200 mb-2">Copiar Credenciales</h4><div className="space-y-2"><CopyButton label="RUC" text={editedClient.ruc} /><CopyButton label="Clave" text={editedClient.sriPassword} obscured /></div></div>
                                             </div>
                                             {/* Step 2 */}
-                                            <div className="flex gap-4">
-                                                <div className="flex-shrink-0 flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-brand-teal text-white flex items-center justify-center font-bold shadow-lg ring-4 ring-slate-800 z-10">2</div><div className="h-full w-0.5 bg-slate-700/50 my-1"></div></div>
+                                            <div className={`flex gap-4 ${headerIsDeclared ? 'opacity-50 grayscale' : ''}`}>
+                                                <div className="flex-shrink-0 flex flex-col items-center"><div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg ring-4 z-10 ${headerIsDeclared ? 'bg-slate-700 ring-slate-800 text-slate-400' : 'bg-brand-teal text-white ring-slate-800'}`}>2</div><div className="h-full w-0.5 bg-slate-700/50 my-1"></div></div>
                                                 <div className="flex-1 pb-4"><h4 className="font-bold text-slate-200 mb-2">Acceder al Portal</h4><button onClick={handleOpenSRI} className="w-full flex items-center justify-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all shadow-md group"><Globe size={24} className="text-brand-teal group-hover:scale-110 transition-transform"/><div className="text-left"><span className="block font-bold text-sm">Abrir SRI en Línea</span><span className="text-[10px] text-slate-400">srienlinea.sri.gob.ec</span></div><ExternalLink size={14} className="ml-auto text-slate-500"/></button></div>
                                             </div>
                                             {/* Step 3 */}
                                             <div className="flex gap-4">
-                                                <div className="flex-shrink-0 flex flex-col items-center"><div className="w-8 h-8 rounded-full bg-brand-teal text-white flex items-center justify-center font-bold shadow-lg ring-4 ring-slate-800 z-10">3</div></div>
-                                                <div className="flex-1"><h4 className="font-bold text-slate-200 mb-2">Finalizar Proceso</h4><button onClick={() => handleQuickDeclare(pendingDeclaration.period)} className="w-full h-[68px] bg-green-600 hover:bg-green-500 text-white font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02]"><CheckCircle size={24}/><span>Confirmar Declaración</span></button></div>
+                                                <div className="flex-shrink-0 flex flex-col items-center"><div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg ring-4 z-10 ${headerIsDeclared ? 'bg-emerald-500 text-white ring-emerald-900' : 'bg-brand-teal text-white ring-slate-800'}`}>3</div></div>
+                                                <div className="flex-1">
+                                                    <h4 className="font-bold text-slate-200 mb-2">Finalizar Proceso</h4>
+                                                    {headerIsDeclared ? (
+                                                         <button onClick={() => handleQuickPay(activeWorkflowDeclaration.period)} className="w-full h-[68px] bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02]">
+                                                            <DollarSign size={24}/><span>Registrar Pago</span>
+                                                         </button>
+                                                    ) : (
+                                                        <button onClick={() => handleQuickDeclare(activeWorkflowDeclaration.period)} className="w-full h-[68px] bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 transform hover:scale-[1.02]">
+                                                            <CheckCircle size={24}/><span>Confirmar Declaración</span>
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -603,7 +651,9 @@ Nota: Este enlace es personal y seguro.`;
 
                         {/* Column 1: Tax Data (Fully Detailed) */}
                         <div className="lg:col-span-2 space-y-6">
+                           {/* ... (Rest of component remains largely the same) ... */}
                             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+                                {/* ... (Code for Tax Config Card) ... */}
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
                                         <FileText size={16} className="text-brand-teal"/> Configuración Tributaria
@@ -672,6 +722,19 @@ Nota: Este enlace es personal y seguro.`;
                                 </div>
 
                                 <div className="space-y-4">
+                                     {/* EDITABLE NAME FIELD (ADDED HERE) */}
+                                    {isEditing && (
+                                        <div className="border-b border-slate-100 dark:border-slate-700 pb-3 mb-3">
+                                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Razón Social / Nombres</label>
+                                            <input 
+                                                type="text" 
+                                                value={editedClient.name} 
+                                                onChange={e => setEditedClient({...editedClient, name: e.target.value})}
+                                                className="w-full p-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold focus:ring-2 focus:ring-brand-teal outline-none"
+                                            />
+                                        </div>
+                                    )}
+
                                     <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-2 mb-3">Dirección & Referencia</h4>
                                     {isEditing ? (
                                         <textarea 
@@ -691,8 +754,41 @@ Nota: Este enlace es personal y seguro.`;
                                     )}
                                 </div>
 
+                                {/* TARIFAS PERSONALIZADAS */}
+                                {isEditing && (
+                                    <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                        <h4 className="text-xs font-black text-brand-navy dark:text-white uppercase tracking-wider mb-3 flex items-center gap-2">
+                                            <Coins size={14}/> Tarifas Personalizadas
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="relative">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase absolute -top-2 left-2 bg-white dark:bg-slate-900 px-1">Mensual</label>
+                                                <input 
+                                                    type="number"
+                                                    value={monthlyFee}
+                                                    onChange={e => setMonthlyFee(e.target.value)}
+                                                    className="w-full p-3 bg-slate-50 border rounded-xl text-sm font-bold pl-6"
+                                                    placeholder="0.00"
+                                                />
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                                            </div>
+                                            <div className="relative">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase absolute -top-2 left-2 bg-white dark:bg-slate-900 px-1">Renta Anual</label>
+                                                <input 
+                                                    type="number"
+                                                    value={annualFee}
+                                                    onChange={e => setAnnualFee(e.target.value)}
+                                                    className="w-full p-3 bg-slate-50 border rounded-xl text-sm font-bold pl-6"
+                                                    placeholder="0.00"
+                                                />
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* EXTRA OBLIGATIONS MANAGER */}
-                                <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                                     <div className="flex justify-between items-center mb-4">
                                         <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider flex items-center gap-2">
                                             <FilePlus size={14}/> Obligaciones Adicionales
@@ -745,6 +841,7 @@ Nota: Este enlace es personal y seguro.`;
 
                         {/* Column 2: Status & Config */}
                         <div className="lg:col-span-1">
+                             {/* ... (Status Card - No changes needed here) ... */}
                             <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 h-full flex flex-col justify-between">
                                 <div>
                                     <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
@@ -856,7 +953,7 @@ Nota: Este enlace es personal y seguro.`;
                                                                 <FileCheck size={14}/> Registrar Declaración
                                                             </button>
                                                         )}
-                                                        {decl.status === DeclarationStatus.Enviada && (
+                                                        {(decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pendiente) && (
                                                             <button onClick={() => setConfirmation({action: 'pay', period: decl.period})} className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 shadow-sm flex items-center gap-1"><DollarSign size={12}/> Pagar</button>
                                                         )}
                                                         {isPaid && (
@@ -875,7 +972,8 @@ Nota: Este enlace es personal y seguro.`;
                         </div>
                     </div>
                 )}
-                {/* ... Rest of tabs (notes, etc) ... */}
+
+                {/* TAB: VAULT & NOTES (Redesigned) */}
                 {activeTab === 'notes' && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up">
                         {/* Section 1: Credentials & Files */}
@@ -884,9 +982,10 @@ Nota: Este enlace es personal y seguro.`;
                                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
                                     <Lock size={16} className="text-brand-teal"/> Credenciales Críticas
                                 </h3>
-                                {/* ... (Same Credentials & Files Section) ... */}
+
                                 <div className="space-y-4">
-                                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-brand-teal/30 transition-colors group">
+                                    {/* Clave SRI */}
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-brand-teal/30 transition-colors group">
                                         <div className="flex justify-between items-center mb-3">
                                             <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
                                                 <Key size={14} className="text-brand-teal"/> Clave SRI
@@ -1072,10 +1171,10 @@ Nota: Este enlace es personal y seguro.`;
                                 )}
                             </div>
                         </div>
+
                         {/* Section 2: Internal Notes (Existing) */}
                         <div className="bg-yellow-50 dark:bg-yellow-900/10 p-6 rounded-3xl border border-yellow-200 dark:border-yellow-800/50 shadow-sm h-full flex flex-col">
-                            {/* ... (Same as provided before) ... */}
-                             <div className="flex justify-between items-start mb-4">
+                            <div className="flex justify-between items-start mb-4">
                                 <h3 className="font-bold text-yellow-800 dark:text-yellow-200 flex items-center gap-2 text-lg">
                                     <FileText size={20}/> Notas Internas
                                 </h3>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '../context/ToastContext';
+import { useAppStore } from '../store/useAppStore';
 
 interface ClientFormProps {
     initialData?: Partial<Client>;
@@ -41,13 +42,14 @@ type FrequencyType = 'MENSUAL' | 'SEMESTRAL' | 'ANUAL_RENTA' | 'DEVOLUCION';
 
 export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, onCancel, sriCredentials }) => {
     const { toast } = useToast();
+    const { clients } = useAppStore(); // Access global clients for validation
     const [clientData, setClientData] = useState<Partial<Client>>({ ...newClientInitialState, ...initialData });
     const fileInputRef = useRef<HTMLInputElement>(null);
     
     // UI States
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [modalFeedback, setModalFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [modalFeedback, setModalFeedback] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
     // Switches
@@ -67,6 +69,28 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         return 'MENSUAL';
     };
     const [frequency, setFrequency] = useState<FrequencyType>(getInitialFrequency());
+
+    // REAL-TIME RUC VALIDATION
+    const checkExistingRuc = (ruc: string) => {
+        const cleanRuc = ruc.trim();
+        if (cleanRuc.length >= 10) {
+            const exists = clients.find(c => c.ruc === cleanRuc && c.id !== clientData.id); // Exclude self if editing
+            if (exists) {
+                setValidationErrors(prev => ({...prev, ruc: `RUC ya registrado: ${exists.name}`}));
+                setModalFeedback({ 
+                    message: `El cliente ${exists.name} ya está registrado con este RUC. Se actualizará su ficha.`, 
+                    type: 'warning' 
+                });
+            } else {
+                setValidationErrors(prev => {
+                    const newErrors = {...prev};
+                    delete newErrors.ruc;
+                    return newErrors;
+                });
+                if(modalFeedback?.type === 'warning') setModalFeedback(null);
+            }
+        }
+    };
 
     // --- LÓGICA DEL EXTRACTOR PDF ---
     const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,28 +115,41 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 toast.success("¡Clave encontrada en Bóveda!");
             }
 
+            // Check existing
+            checkExistingRuc(extracted.ruc);
+
+            // Alerta si no hay contactos
+            if (!extracted.contacto.celular && !extracted.contacto.email) {
+                toast.warning("No se encontraron medios de contacto (celular/email/fijo) en el RUC. Por favor ingréselos manualmente.");
+            } else {
+                toast.success("Medios de contacto extraídos.");
+            }
+
+            // Construir notas enriquecidas
+            const obligationsList = extracted.lista_obligaciones.map(o => `• ${o}`).join('\n');
+            const newNotes = (clientData.notes ? clientData.notes + '\n\n' : '') + 
+                           `--- OBLIGACIONES DETECTADAS ---\n${obligationsList}\n` +
+                           `Actividad: ${extracted.actividad_economica.substring(0, 100)}...`;
+
             setClientData(prev => ({
                 ...prev,
                 ruc: extracted.ruc,
                 name: extracted.apellidos_nombres,
-                address: extracted.direccion, // Aquí viene Parroquia y Referencia del PDF
-                email: extracted.contacto.email,
+                address: extracted.direccion,
+                email: extracted.contacto.email || prev.email,
                 phones: extracted.contacto.celular ? [extracted.contacto.celular] : prev.phones,
                 regime: extracted.regimen,
                 sriPassword: passwordToUse,
-                notes: (prev.notes ? prev.notes + '\n' : '') + `Obligaciones detectadas: ${extracted.lista_obligaciones.join(', ')}`
+                notes: newNotes,
+                isArtisan: extracted.es_artesano,
+                establishmentCount: extracted.cantidad_establecimientos
             }));
 
-            // Auto-seleccionar frecuencia
-            if (extracted.obligaciones_tributarias === 'anual' || extracted.regimen === TaxRegime.RimpeNegocioPopular) {
-                setFrequency('ANUAL_RENTA');
-            } else if (extracted.obligaciones_tributarias === 'semestral') {
-                setFrequency('SEMESTRAL');
-            } else {
-                setFrequency('MENSUAL');
-            }
+            if (extracted.regimen === TaxRegime.RimpeNegocioPopular) setFrequency('ANUAL_RENTA');
+            else if (extracted.obligaciones_tributarias === 'semestral') setFrequency('SEMESTRAL');
+            else setFrequency('MENSUAL');
 
-            setModalFeedback({ message: 'Datos extraídos correctamente.', type: 'success' });
+            setModalFeedback({ message: 'Datos extraídos correctamente del RUC.', type: 'success' });
 
         } catch (error: any) {
             console.error(error);
@@ -207,12 +244,16 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 <input 
                                     type="text" 
                                     value={clientData.ruc || ''} 
-                                    onChange={e => setClientData({...clientData, ruc: e.target.value})}
-                                    className={`w-full pl-10 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm font-mono font-bold outline-none focus:ring-2 focus:ring-brand-teal transition-all ${validationErrors.ruc ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'}`}
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        setClientData({...clientData, ruc: val});
+                                        checkExistingRuc(val);
+                                    }}
+                                    className={`w-full pl-10 p-2.5 bg-slate-50 dark:bg-slate-800 border rounded-xl text-sm font-mono font-bold outline-none focus:ring-2 focus:ring-brand-teal transition-all ${validationErrors.ruc ? 'border-amber-500 focus:ring-amber-500' : 'border-slate-200 dark:border-slate-700'}`}
                                     placeholder="1790000000001"
                                 />
                             </div>
-                            {validationErrors.ruc && <p className="text-red-500 text-[10px] mt-1 font-bold">{validationErrors.ruc}</p>}
+                            {validationErrors.ruc && <p className="text-amber-600 text-[10px] mt-1 font-bold flex items-center gap-1"><Info size={10}/> {validationErrors.ruc}</p>}
                         </div>
 
                         {/* NOMBRE */}
@@ -245,7 +286,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         {/* CONTACTO */}
                         <div className="grid grid-cols-2 gap-4">
                              <div>
-                                <label className="text-[10px] font-bold text-slate-500 mb-1.5 block uppercase">Celular</label>
+                                <label className="text-[10px] font-bold text-slate-500 mb-1.5 block uppercase">Celular / Teléfono</label>
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                                     <input 
@@ -253,7 +294,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                         value={(clientData.phones || [''])[0]} 
                                         onChange={e => setClientData({...clientData, phones: [e.target.value]})}
                                         className="w-full pl-8 p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold outline-none"
-                                        placeholder="099..."
+                                        placeholder="099... / 072..."
                                     />
                                 </div>
                             </div>
@@ -318,7 +359,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
 
                         {/* FRECUENCIA / OBLIGACIÓN */}
                         <div>
-                             <label className="text-[10px] font-bold text-slate-500 mb-2 block uppercase">Frecuencia / Obligación</label>
+                             <label className="text-[10px] font-bold text-slate-500 mb-2 block uppercase">Frecuencia / Obligación Principal</label>
                              <div className="grid grid-cols-2 gap-2">
                                  <button onClick={() => setFrequency('MENSUAL')} className={`p-2.5 rounded-xl text-[10px] font-bold border transition-all ${frequency === 'MENSUAL' ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm' : 'bg-white border-slate-200 text-slate-500'}`}>IVA MENSUAL</button>
                                  <button onClick={() => setFrequency('SEMESTRAL')} className={`p-2.5 rounded-xl text-[10px] font-bold border transition-all ${frequency === 'SEMESTRAL' ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-sm' : 'bg-white border-slate-200 text-slate-500'}`}>IVA SEMESTRAL</button>
@@ -376,9 +417,22 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                  </div>
              </div>
 
+             {/* NOTAS Y OBLIGACIONES DETALLADAS */}
+             <div className="mt-2 p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
+                 <p className="text-[10px] font-black text-yellow-700 uppercase tracking-wider mb-2 flex items-center gap-1">
+                     <Info size={12}/> Notas & Obligaciones
+                 </p>
+                 <textarea 
+                     value={clientData.notes || ''}
+                     onChange={e => setClientData({...clientData, notes: e.target.value})}
+                     className="w-full bg-transparent text-xs text-yellow-800 dark:text-yellow-200 font-medium border-none p-0 focus:ring-0 resize-none h-20"
+                     placeholder="Las obligaciones detectadas aparecerán aquí..."
+                 />
+             </div>
+
              {modalFeedback && (
-                <div className={`p-4 text-center text-xs font-bold rounded-xl flex items-center justify-center gap-2 animate-fade-in ${modalFeedback.type === 'success' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
-                    {modalFeedback.type === 'success' ? <CheckCircle size={18}/> : <AlertTriangle size={18}/>}
+                <div className={`p-4 text-center text-xs font-bold rounded-xl flex items-center justify-center gap-2 animate-fade-in ${modalFeedback.type === 'success' ? 'bg-emerald-100 text-emerald-800' : modalFeedback.type === 'warning' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>
+                    {modalFeedback.type === 'success' ? <CheckCircle size={18}/> : modalFeedback.type === 'warning' ? <AlertTriangle size={18}/> : <AlertTriangle size={18}/>}
                     {modalFeedback.message}
                 </div>
             )}
