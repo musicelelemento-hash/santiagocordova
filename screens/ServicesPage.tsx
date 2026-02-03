@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, ShoppingCart, ArrowRight, X, Trash2, CheckCircle, User, Phone, CreditCard, Mail, Star, TrendingUp, MapPin, Menu, LogOut, MessageCircle, FileKey, Laptop, ShieldCheck, Briefcase, Package, Activity, Globe, DollarSign } from 'lucide-react';
+import { Check, ShoppingCart, ArrowRight, X, Trash2, CheckCircle, User, Phone, CreditCard, Mail, Star, TrendingUp, MapPin, Menu, LogOut, MessageCircle, FileKey, Laptop, ShieldCheck, Briefcase, Package, Activity, Globe, DollarSign, Zap } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { Modal } from '../components/Modal';
 import { AuthModal } from '../components/AuthModal';
@@ -58,7 +58,10 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
             quantity: 1
         };
         setCart([...cart, newItem]);
-        setIsCartOpen(true);
+        // Don't open cart automatically on mobile to keep flow fluid, just show the floating bar
+        if (window.innerWidth > 768) {
+            setIsCartOpen(true);
+        }
     };
 
     const removeFromCart = (id: string) => {
@@ -183,8 +186,24 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
 
     const activePlans = (plans as any)[activeCategory] || [];
 
+    const CategoryButton = ({ id, label, icon: Icon }: { id: string, label: string, icon: any }) => (
+        <button 
+            onClick={() => { setActiveCategory(id as any); window.scrollTo({top: 300, behavior: 'smooth'}); }}
+            className={`
+                flex items-center gap-2 px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex-shrink-0
+                ${activeCategory === id 
+                    ? 'bg-[#00A896] text-white shadow-lg shadow-teal-500/30 scale-105' 
+                    : 'bg-white/80 dark:bg-slate-800/80 text-slate-500 hover:bg-white hover:text-slate-800 border border-transparent'
+                }
+            `}
+        >
+            <Icon size={16} strokeWidth={2.5}/> {label}
+            {activeCategory === id && <div className="w-1.5 h-1.5 rounded-full bg-white ml-1 animate-pulse"></div>}
+        </button>
+    );
+
     return (
-        <div className="min-h-screen bg-slate-50 font-body text-slate-800 selection:bg-[#00A896] selection:text-white overflow-x-hidden">
+        <div className="min-h-screen bg-slate-50 font-body text-slate-800 selection:bg-[#00A896] selection:text-white overflow-x-hidden pb-20 md:pb-0">
             
             {/* Header / Nav */}
             <nav className={`fixed w-full z-50 transition-all duration-500 border-b ${scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-4 border-slate-100' : 'bg-[#0B2149] py-6 border-transparent'}`}>
@@ -216,7 +235,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 </div>
             </nav>
 
-             {/* Mobile Menu */}
+             {/* Mobile Menu Overlay */}
              {mobileMenuOpen && (
                 <div className="fixed inset-0 z-[60] bg-[#020617] flex flex-col items-center justify-center space-y-8 animate-fade-in p-8">
                     <button className="absolute top-8 right-8 p-3 bg-white/10 rounded-full text-white" onClick={() => setMobileMenuOpen(false)}>
@@ -228,9 +247,8 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 </div>
             )}
 
-            {/* Hero & Selector */}
-            <div className="bg-[#0B2149] pt-40 pb-32 px-6 rounded-b-[4rem] relative overflow-hidden text-center shadow-2xl shadow-blue-900/20">
-                 {/* Abstract BG */}
+            {/* Hero Section */}
+            <div className="bg-[#0B2149] pt-32 pb-24 px-6 rounded-b-[3rem] relative overflow-hidden text-center shadow-2xl shadow-blue-900/20">
                  <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
                  <div className="absolute top-[-100px] right-[-100px] w-[600px] h-[600px] bg-[#00A896]/20 rounded-full blur-[120px]"></div>
 
@@ -238,57 +256,50 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest mb-6 backdrop-blur-md">
                         <Globe size={12}/> Servicios Digitales 2026
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-display font-black text-white mb-8 tracking-tight leading-[1.1]">
+                    <h1 className="text-4xl md:text-7xl font-display font-black text-white mb-6 tracking-tight leading-[1.1]">
                         Soluciones a su <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] to-emerald-300">Medida.</span>
                     </h1>
-                    
-                    {/* Category Switcher */}
-                    <div className="inline-flex bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-xl shadow-2xl overflow-x-auto max-w-full">
-                        {[
-                            { id: 'tax', label: 'Tributarios', icon: Briefcase },
-                            { id: 'tech', label: 'Firma & Fact.', icon: Laptop },
-                            { id: 'special', label: 'Trámites', icon: Activity }
-                        ].map(cat => (
-                            <button 
-                                key={cat.id}
-                                onClick={() => setActiveCategory(cat.id as any)}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${activeCategory === cat.id ? 'bg-white text-[#0B2149] shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
-                            >
-                                <cat.icon size={16}/> {cat.label}
-                            </button>
-                        ))}
-                    </div>
                  </div>
             </div>
 
+            {/* --- STICKY CATEGORY NAV (MOBILE OPTIMIZED) --- */}
+            <div className="sticky top-[72px] z-40 py-4 -mt-10 mb-8 overflow-x-auto no-scrollbar px-6 flex justify-center">
+                <div className="inline-flex gap-2 p-1.5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 shadow-xl rounded-full">
+                    <CategoryButton id="tax" label="Tributarios" icon={Briefcase} />
+                    <CategoryButton id="tech" label="Firma & Fact." icon={Laptop} />
+                    <CategoryButton id="special" label="Trámites" icon={Activity} />
+                </div>
+            </div>
+
             {/* Plans Grid */}
-            <div className="max-w-7xl mx-auto px-6 -mt-20 relative z-20 pb-24">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="max-w-7xl mx-auto px-6 relative z-20 pb-24">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {activePlans.map((plan: any, index: number) => (
                         <div 
                             key={index} 
-                            className={`group bg-white rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden border ${plan.popular ? 'border-[#00A896] ring-4 ring-[#00A896]/10' : 'border-slate-100'}`}
+                            className={`group bg-white rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden border relative ${plan.popular ? 'border-[#00A896] ring-4 ring-[#00A896]/10' : 'border-slate-100'}`}
                         >
-                            <div className="p-8 pb-0">
-                                {plan.popular && (
-                                    <div className="inline-block bg-[#00A896] text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest mb-4 shadow-md shadow-teal-500/30">
-                                        Más Vendido
-                                    </div>
-                                )}
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${plan.popular ? 'bg-[#0B2149] text-white' : 'bg-slate-100 text-slate-500'}`}>
-                                    <plan.icon size={28} />
+                            {plan.popular && (
+                                <div className="absolute top-0 right-0 bg-[#00A896] text-white text-[9px] font-black px-4 py-1.5 rounded-bl-2xl uppercase tracking-widest z-10">
+                                    Popular
                                 </div>
-                                <h3 className="text-2xl font-black text-[#0B2149] mb-2">{plan.title}</h3>
-                                <p className="text-sm font-medium text-slate-500 min-h-[3rem] leading-relaxed">{plan.description}</p>
+                            )}
+                            
+                            <div className="p-8 pb-0">
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${plan.popular ? 'bg-[#0B2149] text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                    <plan.icon size={28} strokeWidth={1.5} />
+                                </div>
+                                <h3 className="text-2xl font-black text-[#0B2149] mb-2 leading-tight">{plan.title}</h3>
+                                <p className="text-xs font-medium text-slate-500 min-h-[2.5rem] leading-relaxed line-clamp-2">{plan.description}</p>
                             </div>
 
                             <div className="p-8 pt-4">
                                 <div className="flex items-end gap-2 mb-6">
                                     <span className="text-5xl font-display font-black text-slate-900 tracking-tighter">${plan.price}</span>
                                     {plan.originalPrice && (
-                                        <div className="flex flex-col mb-1">
+                                        <div className="flex flex-col mb-1.5">
                                             <span className="text-xs font-bold text-slate-400 line-through">${plan.originalPrice}</span>
-                                            <span className="text-[10px] font-black text-green-600 bg-green-50 px-1.5 py-0.5 rounded">SAVE ${plan.save}</span>
+                                            <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">AHORRA ${plan.save}</span>
                                         </div>
                                     )}
                                 </div>
@@ -304,9 +315,16 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
 
                                 <button 
                                     onClick={() => handleAddToCart(plan)}
-                                    className={`w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg ${plan.popular ? 'bg-[#00A896] text-white hover:bg-teal-600 shadow-teal-500/20' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20'}`}
+                                    className={`
+                                        w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg
+                                        relative overflow-hidden group/btn
+                                        ${plan.popular ? 'bg-[#00A896] text-white hover:bg-teal-600 shadow-teal-500/20' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20'}
+                                    `}
                                 >
-                                    <ShoppingCart size={18}/> Agregar
+                                    <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-in-out"></div>
+                                    <span className="relative flex items-center gap-2">
+                                        <Zap size={16} fill="currentColor"/> Contratar Ahora
+                                    </span>
                                 </button>
                             </div>
                         </div>
@@ -314,7 +332,25 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 </div>
             </div>
 
-            {/* Cart Sidebar */}
+            {/* --- FLOATING CART BAR (MOBILE ONLY) --- */}
+            {cart.length > 0 && (
+                <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 animate-slide-up-fade">
+                    <div className="bg-[#0B2149] text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center border border-white/10 backdrop-blur-xl">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">{cart.length} Servicio{cart.length > 1 ? 's' : ''}</span>
+                            <span className="text-xl font-black">${cartTotal.toFixed(2)}</span>
+                        </div>
+                        <button 
+                            onClick={() => setIsCheckoutOpen(true)}
+                            className="px-6 py-3 bg-[#00A896] rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform flex items-center gap-2 shadow-lg shadow-teal-500/30"
+                        >
+                            Pagar <ArrowRight size={16}/>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Cart Sidebar (Desktop) */}
             {isCartOpen && (
                 <div className="fixed inset-0 z-[100] flex justify-end">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}></div>
