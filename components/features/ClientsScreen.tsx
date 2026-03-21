@@ -23,7 +23,7 @@ const IVA_FREQUENCIES = ['Mensual', 'Semestral', 'Ninguno'];
 
 const newClientInitialState: Partial<Client> = {
     regime: TaxRegime.General,
-    declarationHistory: [],
+    declarations: [],
     sriPassword: '',
     ruc: '',
     name: '',
@@ -83,7 +83,7 @@ const getRecentPeriods = (client: Client, count: number): string[] => {
 
 const DeclarationProgressBar: React.FC<{ client: Client }> = ({ client }) => {
     const periodsToDisplay = getRecentPeriods(client, 12);
-    const historyMap = new Map(client.declarationHistory.map(d => [d.period, d.status]));
+    const historyMap = new Map(client.declarations.map(d => [d.period, d.status]));
 
     return (
         <div className="flex mt-3 h-3 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
@@ -119,7 +119,7 @@ const DeclarationProgressBar: React.FC<{ client: Client }> = ({ client }) => {
 
 const PaymentHistoryChart: React.FC<{ client: Client }> = ({ client }) => {
     const periods = getRecentPeriods(client, 6);
-    const historyMap = new Map((client.declarationHistory || []).map(d => [d.period, d] as [string, Declaration]));
+    const historyMap = new Map((client.declarations || []).map(d => [d.period, d] as [string, Declaration]));
     
     const chartData = periods.map(period => {
         const declaration = historyMap.get(period) as Declaration | undefined;
@@ -309,10 +309,10 @@ const ClientDetailView: React.FC<{ client: Client, onSave: (updatedClient: Clien
 
     const latestDeclarationForAction = useMemo(() => {
         if (isProspect) return null;
-        return [...editedClient.declarationHistory]
+        return [...editedClient.declarations]
             .sort((a, b) => b.period.localeCompare(a.period))
             .find(d => d.status === DeclarationStatus.Pendiente || d.status === DeclarationStatus.Enviada);
-    }, [editedClient.declarationHistory, isProspect]);
+    }, [editedClient.declarations, isProspect]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -346,12 +346,12 @@ const ClientDetailView: React.FC<{ client: Client, onSave: (updatedClient: Clien
     };
 
     const handleRevertPayment = (periodToRevert: string) => {
-        const updatedHistory = editedClient.declarationHistory.map(dec =>
+        const updatedHistory = editedClient.declarations.map(dec =>
             dec.period === periodToRevert && dec.status === DeclarationStatus.Pagada
                 ? { ...dec, status: DeclarationStatus.Enviada, paidAt: undefined, updatedAt: new Date().toISOString() }
                 : dec
         );
-        onSave({ ...editedClient, declarationHistory: updatedHistory });
+        onSave({ ...editedClient, declarations: updatedHistory });
     };
 
     const handleShowReceipt = (declaration: Declaration) => {
@@ -376,7 +376,7 @@ const ClientDetailView: React.FC<{ client: Client, onSave: (updatedClient: Clien
         const { action, period } = confirmation;
         const now = new Date().toISOString();
 
-        const updatedHistory = editedClient.declarationHistory.map(d => {
+        const updatedHistory = editedClient.declarations.map(d => {
             if (d.period === period) {
                 if (action === 'declare') {
                     return { ...d, status: DeclarationStatus.Enviada, declaredAt: now, updatedAt: now };
@@ -388,7 +388,7 @@ const ClientDetailView: React.FC<{ client: Client, onSave: (updatedClient: Clien
             return d;
         });
 
-        const updatedClient = { ...editedClient, declarationHistory: updatedHistory };
+        const updatedClient = { ...editedClient, declarations: updatedHistory };
         setEditedClient(updatedClient);
         onSave(updatedClient);
 
@@ -601,7 +601,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                 <div className="space-y-2 max-h-96 overflow-y-auto pr-2 -ml-2 pl-2">
                     <div className="relative pl-8">
                         <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
-                        {[...editedClient.declarationHistory]
+                        {[...editedClient.declarations]
                             .sort((a, b) => b.period.localeCompare(a.period))
                             .map((declaration, index, array) => {
                                 const dueDate = getDueDateForPeriod(editedClient, declaration.period);

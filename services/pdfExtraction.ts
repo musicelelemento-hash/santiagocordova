@@ -151,6 +151,10 @@ export const extractDataFromDeclarationPdf = async (file: File): Promise<{
 
     const cleanText = fullText.toUpperCase();
 
+    if (cleanText.trim().length < 50) {
+      throw new Error("Documento Ilegible o Imagen Escaneada. Se requiere un PDF estructurado.");
+    }
+
     // Extracción de RUC
     const rucMatch = cleanText.match(/RUC\s*[:]?\s*(\d{13})/) || cleanText.match(/\b(\d{13})\b/);
     const ruc = rucMatch ? rucMatch[1] : '';
@@ -225,8 +229,12 @@ export const extractDataFromDeclarationPdf = async (file: File): Promise<{
     const dateMatch = cleanText.match(/FECHA Y HORA DE DECLARACI[ÓO]N\s*[:]?\s*(\d{2})\/(\d{2})\/(\d{4})/i);
     const declarationDate = dateMatch ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : '';
 
+    if (!ruc && formType === 'DESCONOCIDO') {
+      throw new Error("Documento no reconocido como declaración válida del SRI.");
+    }
+
     return { 
-      ruc, 
+      ruc,
       formType, 
       period, 
       amount, 
@@ -242,9 +250,9 @@ export const extractDataFromDeclarationPdf = async (file: File): Promise<{
         isFuture: declarationDate ? isPast(new Date(declarationDate)) === false : false
       }
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error parsing declaration PDF:", error);
-    throw new Error("No se pudo leer la declaración.");
+    throw new Error(error.message || "No se pudo leer la declaración.");
   }
 };
 

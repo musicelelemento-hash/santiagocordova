@@ -30,7 +30,7 @@ const IVA_CATEGORIES = [
 const newClientInitialState: Partial<Client> = {
   regime: TaxRegime.General,
   category: ClientCategory.SuscripcionMensual,
-  declarationHistory: [],
+  declarations: [],
   sriPassword: '',
   ruc: '',
   name: '',
@@ -90,7 +90,7 @@ const getRecentPeriods = (client: Client, count: number): string[] => {
 
 const DeclarationProgressBar: React.FC<{ client: Client }> = ({ client }) => {
     const periodsToDisplay = getRecentPeriods(client, 12);
-    const historyMap = new Map(client.declarationHistory.map(d => [d.period, d.status]));
+    const historyMap = new Map(client.declarations.map(d => [d.period, d.status]));
 
     return (
         <div className="flex mt-3 h-3 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
@@ -126,7 +126,7 @@ const DeclarationProgressBar: React.FC<{ client: Client }> = ({ client }) => {
 
 const PaymentHistoryChart: React.FC<{ client: Client }> = ({ client }) => {
     const periods = getRecentPeriods(client, 6);
-    const historyMap = new Map(client.declarationHistory.map(d => [d.period, d] as [string, Declaration]));
+    const historyMap = new Map(client.declarations.map(d => [d.period, d] as [string, Declaration]));
 
     const chartData = periods.map(period => {
         const declaration = historyMap.get(period) as Declaration | undefined;
@@ -333,7 +333,7 @@ const ClientDetailView: React.FC<{ client: Client, onSave: (updatedClient: Clien
                 ? { ...dec, status: DeclarationStatus.Enviada, paidAt: undefined, updatedAt: new Date().toISOString() }
                 : dec
         );
-        onSave({ ...editedClient, declarationHistory: updatedHistory });
+        onSave({ ...editedClient, declarations: updatedHistory });
     };
 
     const handleShowReceipt = (declaration: Declaration) => {
@@ -370,7 +370,7 @@ const ClientDetailView: React.FC<{ client: Client, onSave: (updatedClient: Clien
             return d;
         });
     
-        const updatedClient = { ...editedClient, declarationHistory: updatedHistory };
+        const updatedClient = { ...editedClient, declarations: updatedHistory };
         setEditedClient(updatedClient);
         onSave(updatedClient);
     

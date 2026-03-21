@@ -112,7 +112,7 @@ export const getNinthDigit = (ruc: string): number => {
 /**
  * Lógica Central de Periodos (Actualizada: Prioridad Mensual/Semestral vía TaxProfile)
  */
-export const getPeriod = (client: Pick<Client, 'taxProfile' | 'regime' | 'declarationHistory'>, date: Date): string => {
+export const getPeriod = (client: Pick<Client, 'taxProfile' | 'regime' | 'declarations'>, date: Date): string => {
     const currentYear = getYear(date);
     const prevYearStr = (currentYear - 1).toString();
     const month = getMonth(date); // 0-11

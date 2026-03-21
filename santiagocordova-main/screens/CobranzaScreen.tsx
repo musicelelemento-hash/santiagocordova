@@ -83,7 +83,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
             const processedPeriods = new Set<string>();
 
-            client.declarationHistory.forEach(decl => {
+            client.declarations.forEach(decl => {
                 processedPeriods.add(decl.period);
                 if (decl.status === DeclarationStatus.Pagada && decl.paidAt) {
                     const paidDate = parseISO(decl.paidAt);
@@ -168,7 +168,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             const entry = { period: item.period, status: DeclarationStatus.Pagada, paidAt: nowIso, transactionId, amount: item.amount, updatedAt: nowIso };
             if (declIdx > -1) history[declIdx] = { ...history[declIdx], ...entry };
             else history.push(entry as any);
-            newClients[clientIdx] = { ...newClients[clientIdx], declarationHistory: history };
+            newClients[clientIdx] = { ...newClients[clientIdx], declarations: history };
             lastClient = newClients[clientIdx];
             paidPeriods.push({ period: item.period, amount: item.amount });
         });

@@ -337,7 +337,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                             sriPassword: '',
                             email: extracted.contacto?.email || '',
                             phones: extracted.contacto?.celular ? [extracted.contacto.celular] : [],
-                            declarationHistory: [],
+                            declarations: [],
                             notes: `Importado masivamente de PDF.\nActividad: ${extracted.actividad_economica || 'N/A'}\nObligaciones: ${extracted.lista_obligaciones?.join(', ') || 'N/A'}`,
                             isActive: true,
                             regime: extracted.regimen || TaxRegime.General,
@@ -1036,7 +1036,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     onClick={() => {
                                         if (window.confirm('¿Deseas ascender/convertir a TODOS los clientes actuales a clientes VIP?')) {
                                             const idsToUpdate = clients.map(c => c.id);
-                                            bulkUpdateClients(idsToUpdate, { isVip: true });
+                                            bulkUpdateClients(idsToUpdate, {  });
                                             alert('Protocolo VIP aplicado a todos los registros.');
                                         }
                                     }}

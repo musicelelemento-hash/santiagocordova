@@ -63,7 +63,7 @@ const buildCategory = (obligation: string, isVip: boolean): ClientCategory => {
 const PaymentHistoryChart: React.FC<{ client: Client }> = memo(({ client }) => {
     if (!client) return null;
     const periods = getRecentPeriods(client, 6);
-    const historyMap = new Map((client.declarationHistory || []).map(d => [d.period, d] as [string, Declaration]));
+    const historyMap = new Map((client.declarations || []).map(d => [d.period, d] as [string, Declaration]));
     const chartData = periods.map(period => {
         const declaration = historyMap.get(period) as Declaration | undefined;
         let status = 'No Generado';
@@ -168,8 +168,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [obligation, setObligation] = useState(getObligationFromCategory(client.category));
     const [isVip, setIsVip] = useState(isVipCategory(client.category));
     
-    const [monthlyFee, setMonthlyFee] = useState<string>((client.feeStructure?.monthly ?? 5).toString());
-    const [annualFee, setAnnualFee] = useState<string>((client.feeStructure?.annual ?? 10).toString());
+    const [monthlyFee, setMonthlyFee] = useState<string>((client.fee_structure?.monthly ?? 5).toString());
+    const [annualFee, setAnnualFee] = useState<string>((client.fee_structure?.annual ?? 10).toString());
 
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [signaturePasswordVisible, setSignaturePasswordVisible] = useState(false);
@@ -193,8 +193,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             setEditedClient(client); 
             setObligation(getObligationFromCategory(client.category)); 
             setIsVip(isVipCategory(client.category));
-            setMonthlyFee((client.feeStructure?.monthly ?? 5).toString());
-            setAnnualFee((client.feeStructure?.annual ?? 10).toString());
+            setMonthlyFee((client.fee_structure?.monthly ?? 5).toString());
+            setAnnualFee((client.fee_structure?.annual ?? 10).toString());
         }
     }, [client, isEditing]);
 
@@ -310,7 +310,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const toSave = { 
             ...editedClient, 
             category: newCategory, 
-            feeStructure: finalFeeStructure
+            fee_structure: finalFeeStructure
         };
         onSave(toSave);
         setIsEditing(false);
@@ -337,7 +337,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             }
             return d;
         });
-        const updatedClient = { ...editedClient, declarationHistory: updatedHistory };
+        const updatedClient = { ...editedClient, declarations: updatedHistory };
         setEditedClient(updatedClient);
         onSave(updatedClient);
         setTimeout(() => {
@@ -366,7 +366,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             }
             return d;
         });
-        const updatedClient = { ...editedClient, declarationHistory: updatedHistory };
+        const updatedClient = { ...editedClient, declarations: updatedHistory };
         setEditedClient(updatedClient);
         onSave(updatedClient);
         toast.success("Estado actualizado a Declarado");
@@ -397,7 +397,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 ? { ...dec, status: DeclarationStatus.Enviada, paidAt: undefined, updatedAt: new Date().toISOString() }
                 : dec
         );
-        onSave({ ...editedClient, declarationHistory: updatedHistory });
+        onSave({ ...editedClient, declarations: updatedHistory });
     };
 
     const handlePrintReceipt = () => {

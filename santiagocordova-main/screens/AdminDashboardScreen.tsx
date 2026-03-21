@@ -41,7 +41,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             list = list.filter(c => {
                 const p = getPeriod(c, today);
                 const d = getDueDateForPeriod(c, p);
-                const isPaid = c.declarationHistory.some(dh => dh.period === p && dh.status === DeclarationStatus.Pagada);
+                const isPaid = c.declarations.some(dh => dh.period === p && dh.status === DeclarationStatus.Pagada);
                 return !isPaid && d && (isPast(d) || isToday(d) || isTomorrow(d) || d.getTime() - today.getTime() < 3 * 24 * 60 * 60 * 1000);
             });
         } else if (filter === 'rimpe') {
@@ -71,13 +71,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         const overdue = clients.filter(c => {
              const p = getPeriod(c, today);
              const d = getDueDateForPeriod(c, p);
-             const isDone = c.declarationHistory.some(dh => dh.period === p && (dh.status === DeclarationStatus.Pagada || dh.status === DeclarationStatus.Enviada));
+             const isDone = c.declarations.some(dh => dh.period === p && (dh.status === DeclarationStatus.Pagada || dh.status === DeclarationStatus.Enviada));
              return d && isPast(d) && !isDone && c.isActive;
         }).length;
 
         // Updated income calculation using new fee structure if available
         const monthlyIncome = clients.filter(c => c.isActive).reduce((sum, c) => {
-            const monthlyFee = c.feeStructure?.monthly ?? c.customServiceFee ?? 0;
+            const monthlyFee = c.fee_structure?.monthly ?? c.customServiceFee ?? 0;
             return sum + monthlyFee;
         }, 0);
 
@@ -98,7 +98,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         setClients(prev => prev.map(c => {
             if (c.id !== client.id) return c;
             
-            const history = [...c.declarationHistory];
+            const history = [...c.declarations];
             const idx = history.findIndex(d => d.period === period);
             const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
             
@@ -115,7 +115,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             } else {
                 history.push(newEntry);
             }
-            return { ...c, declarationHistory: history };
+            return { ...c, declarations: history };
         }));
 
         toast.success(action === 'declare' ? 'Declaración registrada' : 'Pago registrado');

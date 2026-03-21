@@ -205,7 +205,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         let updatedClient = client;
         setClients(prev => prev.map(c => {
             if (c.id !== client.id) return c;
-            const history = [...(c.declarationHistory || [])];
+            const history = [...(c.declarations || [])];
             const idx = history.findIndex(d => d.period === period);
             const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
             const newEntry = {
@@ -217,7 +217,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             };
             if (idx > -1) history[idx] = { ...history[idx], ...newEntry };
             else history.push(newEntry);
-            updatedClient = { ...c, declarationHistory: history };
+            updatedClient = { ...c, declarations: history };
             return updatedClient;
         }));
         if (selectedClient && selectedClient.id === client.id) setSelectedClient(updatedClient);

@@ -121,20 +121,20 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
         clients.filter(c => !c.isDeleted).forEach(client => {
             const period = getPeriod(client, today);
-            const decl = client.declarationHistory.find(d => d.period === period);
+            const decl = client.declarations.find(d => d.period === period);
             const dueDate = getDueDateForPeriod(client, period);
 
             const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
             const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && ivaFreq !== 'Ninguno';
-            const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proofFile);
-            const isIvaPaid = !needsIva || (decl?.isPaid || decl?.status === 'Pagada');
+            const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proof_file);
+            const isIvaPaid = !needsIva || (decl?.is_paid || decl?.status === 'Pagada');
 
             const currentYear = today.getFullYear();
             const rentaPeriod = (currentYear - 1).toString();
             const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
-            const rentaDecl = client.declarationHistory.find(d => d.period === rentaPeriod);
-            const isRentaDeclared = !needsRenta || (!!rentaDecl?.proofFile || rentaDecl?.status === 'Enviada' || rentaDecl?.status === 'Pagada' || !!client.annualRentaProof);
-            const isRentaPaid = !needsRenta || (!!rentaDecl?.isPaid || rentaDecl?.status === 'Pagada' || !!client.annualRentaPaid);
+            const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+            const isRentaDeclared = !needsRenta || (!!rentaDecl?.proof_file || rentaDecl?.status === 'Enviada' || rentaDecl?.status === 'Pagada' || false);
+            const isRentaPaid = !needsRenta || (!!rentaDecl?.is_paid || rentaDecl?.status === 'Pagada' || false);
 
             const fullyDeclared = isIvaDeclared && isRentaDeclared;
             const fullyPaid = isIvaPaid && isRentaPaid;
@@ -195,12 +195,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             if (activeGroupTab === 'vencidos') {
                 const today = new Date();
                 const period = getPeriod(client, today);
-                const decl = client.declarationHistory.find(d => d.period === period);
+                const decl = client.declarations.find(d => d.period === period);
                 const dueDate = getDueDateForPeriod(client, period);
 
                 const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
                 const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && ivaFreq !== 'Ninguno';
-                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proofFile);
+                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proof_file);
 
                 return !!dueDate && isPast(dueDate) && !isIvaDeclared;
             }
@@ -208,21 +208,21 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             if (activeGroupTab === 'ordenes') {
                 const today = new Date();
                 const period = getPeriod(client, today);
-                const decl = client.declarationHistory.find(d => d.period === period);
+                const decl = client.declarations.find(d => d.period === period);
 
                 const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
                 const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && ivaFreq !== 'Ninguno';
-                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proofFile);
-                const isIvaPaid = !needsIva || (decl?.isPaid || decl?.status === 'Pagada');
+                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proof_file);
+                const isIvaPaid = !needsIva || (decl?.is_paid || decl?.status === 'Pagada');
 
                 if (isIvaPaid && !isIvaDeclared) return true;
 
                 const currentYear = today.getFullYear();
                 const rentaPeriod = (currentYear - 1).toString();
                 const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
-                const rentaDecl = client.declarationHistory.find(d => d.period === rentaPeriod);
-                const isRentaDeclared = !needsRenta || (!!rentaDecl?.proofFile || rentaDecl?.status === 'Enviada' || rentaDecl?.status === 'Pagada' || !!client.annualRentaProof);
-                const isRentaPaid = !needsRenta || (!!rentaDecl?.isPaid || rentaDecl?.status === 'Pagada' || !!client.annualRentaPaid);
+                const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+                const isRentaDeclared = !needsRenta || (!!rentaDecl?.proof_file || rentaDecl?.status === 'Enviada' || rentaDecl?.status === 'Pagada' || false);
+                const isRentaPaid = !needsRenta || (!!rentaDecl?.is_paid || rentaDecl?.status === 'Pagada' || false);
 
                 if (isRentaPaid && !isRentaDeclared) return true;
                 return false;
@@ -231,12 +231,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             if (activeGroupTab === 'cobros') {
                 const today = new Date();
                 const period = getPeriod(client, today);
-                const decl = client.declarationHistory.find(d => d.period === period);
+                const decl = client.declarations.find(d => d.period === period);
 
                 const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
                 const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && ivaFreq !== 'Ninguno';
-                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proofFile);
-                const isIvaPaid = !needsIva || (decl?.isPaid || decl?.status === 'Pagada');
+                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proof_file);
+                const isIvaPaid = !needsIva || (decl?.is_paid || decl?.status === 'Pagada');
 
                 if (isIvaDeclared && !isIvaPaid) return true;
                 return false;
@@ -245,19 +245,19 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             if (activeGroupTab === 'al-dia') {
                 const today = new Date();
                 const period = getPeriod(client, today);
-                const decl = client.declarationHistory.find(d => d.period === period);
+                const decl = client.declarations.find(d => d.period === period);
 
                 const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
                 const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && ivaFreq !== 'Ninguno';
-                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proofFile);
-                const isIvaPaid = !needsIva || (decl?.isPaid || decl?.status === 'Pagada');
+                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proof_file);
+                const isIvaPaid = !needsIva || (decl?.is_paid || decl?.status === 'Pagada');
 
                 const currentYear = today.getFullYear();
                 const rentaPeriod = (currentYear - 1).toString();
                 const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
-                const rentaDecl = client.declarationHistory.find(d => d.period === rentaPeriod);
-                const isRentaDeclared = !needsRenta || (!!rentaDecl?.proofFile || rentaDecl?.status === 'Enviada' || rentaDecl?.status === 'Pagada' || !!client.annualRentaProof);
-                const isRentaPaid = !needsRenta || (!!rentaDecl?.isPaid || rentaDecl?.status === 'Pagada' || !!client.annualRentaPaid);
+                const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+                const isRentaDeclared = !needsRenta || (!!rentaDecl?.proof_file || rentaDecl?.status === 'Enviada' || rentaDecl?.status === 'Pagada' || false);
+                const isRentaPaid = !needsRenta || (!!rentaDecl?.is_paid || rentaDecl?.status === 'Pagada' || false);
 
                 return isIvaDeclared && isIvaPaid && isRentaDeclared && isRentaPaid;
             }
@@ -283,8 +283,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             // FILTRO DE AUDITORÍA DE BÓVEDA (Missing PDFs)
             if (initialFilter?.hasMissingPdf) {
-                const missingPdf = client.declarationHistory.some(d => 
-                    (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proofFile
+                const missingPdf = client.declarations.some(d => 
+                    (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
                 );
                 if (!missingPdf) return false;
             }
@@ -298,17 +298,17 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         const getPendingStatus = (client: Client) => {
             const today = new Date();
             const period = getPeriod(client, today);
-            const decl = client.declarationHistory.find(d => d.period === period);
+            const decl = client.declarations.find(d => d.period === period);
             
-            const isIvaDeclared = !!decl?.proofFile;
-            const isIvaPaid = !!decl?.isPaid;
+            const isIvaDeclared = !!decl?.proof_file;
+            const isIvaPaid = !!decl?.is_paid;
 
             const currentYear = today.getFullYear();
             const rentaPeriod = (currentYear - 1).toString();
             const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular || client.regime === TaxRegime.General);
-            const rentaDecl = client.declarationHistory.find(d => d.period === rentaPeriod);
-            const isRentaDeclared = !!rentaDecl?.proofFile || !!client.annualRentaProof;
-            const isRentaPaid = !!rentaDecl?.isPaid || !!client.annualRentaPaid;
+            const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+            const isRentaDeclared = !!rentaDecl?.proof_file || false;
+            const isRentaPaid = !!rentaDecl?.is_paid || false;
 
             const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && client.taxProfile?.ivaFrequency !== 'Ninguno';
 
@@ -360,7 +360,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             const mergedClient: Client = {
                 ...client,
                 id: existingClient.id,
-                declarationHistory: existingClient.declarationHistory,
+                declarations: existingClient.declarations,
                 vault: existingClient.vault,
                 createdAt: existingClient.createdAt
             };
@@ -401,7 +401,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
         let updatedClient = client;
 
-        const history = [...client.declarationHistory];
+        const history = [...client.declarations];
         const idx = history.findIndex(d => d.period === period);
         const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
 
@@ -410,7 +410,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             status: newStatus,
             updatedAt: nowIso,
             ...(action === 'declare' ? { declaredAt: nowIso } : {}),
-            ...(action === 'pay' ? { isPaid: true, paidAt: nowIso, transactionId: `Q-${Date.now().toString().slice(-4)}` } : {})
+            ...(action === 'pay' ? { is_paid: true, paidAt: nowIso, transactionId: `Q-${Date.now().toString().slice(-4)}` } : {})
         };
 
         if (idx > -1) {
@@ -419,24 +419,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             history.push(newEntry);
         }
 
-        const updates: Partial<Client> = { declarationHistory: history };
-
-        // SINCRONIZACIÓN CON FLAGS LEGACY
-        const isAnnual = /^\d{4}$/.test(period);
-        if (isAnnual) {
-            if (action === 'declare') updates.annualRentaStatus = DeclarationStatus.Enviada;
-            if (action === 'pay') updates.annualRentaPaid = true;
-        }
-
-        const periodLower = period.toLowerCase();
-        if (periodLower.includes('ice')) {
-            if (action === 'declare') updates.iceDeclarationStatus = DeclarationStatus.Enviada;
-            if (action === 'pay') updates.iceDeclarationPaid = true;
-        }
-        if (periodLower.includes('pvp')) {
-            if (action === 'declare') updates.anexoPvpStatus = DeclarationStatus.Enviada;
-            if (action === 'pay') updates.anexoPvpPaid = true;
-        }
+        const updates: Partial<Client> = { declarations: history };
 
         updateClient(client.id, updates);
 
@@ -474,7 +457,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             const period = receiptUploadState.period || data.period || getPeriod(receiptUploadState.client, today);
             const nowIso = today.toISOString();
 
-            const history = [...receiptUploadState.client.declarationHistory];
+            const history = [...receiptUploadState.client.declarations];
             const idx = history.findIndex(d => d.period === period);
 
             const proofFileObj: StoredFile = {
@@ -498,10 +481,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 status: DeclarationStatus.Enviada,
                 updatedAt: nowIso,
                 declaredAt: nowIso,
-                isPaid: false,
+                is_paid: false,
                 amount: data.amount || 0,
                 transactionId: data.id || `PDF-${Date.now().toString().slice(-4)}`,
-                proofFile: proofFileObj
+                proof_file: proofFileObj
             };
 
             if (idx > -1) {
@@ -510,16 +493,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 history.push(entry);
             }
 
-            const updates: Partial<Client> = { declarationHistory: history };
-
-            // Sincronizar Flags
-            if (data.formType === 'IVA') {
-                // El historial ya cubre IVA
-            } else if (data.formType.includes('RENTA')) {
-                updates.annualRentaStatus = DeclarationStatus.Enviada;
-                updates.annualRentaPaid = false;
-                updates.annualRentaProof = proofFileObj;
-            }
+            const updates: Partial<Client> = { declarations: history };
 
             updateClient(receiptUploadState.client.id, updates);
             toast.success('¡Comprobante validado! Obligación marcada como HECHA (Cobro Pendiente)');
@@ -574,7 +548,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             requiresIce: false,
                             requiresAnexoPvp: false
                         },
-                        declarationHistory: [],
+                        declarations: [],
                         vault: []
                     };
                     addClient(newClient);
@@ -583,20 +557,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
                 const period = data.period;
                 const nowIso = new Date().toISOString();
-                const history = [...(targetClient.declarationHistory || [])];
+                const history = [...(targetClient.declarations || [])];
                 const idx = history.findIndex(d => d.period === period);
 
                 // Detección de Duplicados
-                const isDuplicate = history.some(d => d.period === period && d.proofFile?.metadata?.sriId === data.id);
+                const isDuplicate = history.some(d => d.period === period && d.proof_file?.metadata?.sriId === data.id);
 
                 // Determine payment status
-                let isPaid = false;
-                if (data.formType.includes('RENTA')) {
-                    isPaid = !!targetClient.annualRentaPaid;
-                } else {
-                    const existingDecl = history.find(d => d.period === period);
-                    isPaid = !!existingDecl?.isPaid;
-                }
+                const existingDecl = history.find(d => d.period === period);
+                const isPaid = !!existingDecl?.is_paid;
 
                 if (isDuplicate) {
                     results.push({
@@ -607,7 +576,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         period: formatPeriodForDisplay(period),
                         type: data.formType,
                         amount: data.amount,
-                        isPaid: isPaid,
+                        is_paid: isPaid,
                         phones: targetClient.phones
                     });
                     continue;
@@ -634,10 +603,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     status: DeclarationStatus.Enviada,
                     updatedAt: nowIso,
                     declaredAt: nowIso,
-                    isPaid: false,
+                    is_paid: false,
                     amount: data.amount || 0,
                     transactionId: data.id || `PDF-${Date.now().toString().slice(-4)}`,
-                    proofFile: proofFileObj
+                    proof_file: proofFileObj
                 };
 
                 if (idx > -1) {
@@ -647,15 +616,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 }
 
                 const updates: Partial<Client> = { 
-                    declarationHistory: history,
+                    declarations: history,
                     vault: [...(targetClient.vault || []), proofFileObj]
                 };
-                
-                if (data.formType.includes('RENTA')) {
-                    updates.annualRentaStatus = DeclarationStatus.Enviada;
-                    updates.annualRentaPaid = false;
-                    updates.annualRentaProof = proofFileObj;
-                }
 
                 updateClient(targetClient.id, updates);
 
@@ -667,8 +630,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     period: formatPeriodForDisplay(period),
                     type: data.formType,
                     amount: data.amount,
-                    isPaid: isPaid,
-                    phones: targetClient.phones
+                    is_paid: isPaid,
+                    phones: targetClient.phones,
+                    proof_file: proofFileObj
                 });
 
             } catch (err) {
@@ -1033,8 +997,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Progreso Declaraciones {safeFormat(new Date(), 'MMMM')}</span>
                                     <span className="text-xs font-black text-sky-600">{sortedClients.filter(c => {
-                                        const d = c.declarationHistory.find(dh => dh.period === getPeriod(c, new Date()));
-                                        return !!d?.proofFile || d?.status === DeclarationStatus.Enviada;
+                                        const d = c.declarations.find(dh => dh.period === getPeriod(c, new Date()));
+                                        return !!d?.proof_file || d?.status === DeclarationStatus.Enviada;
                                     }).length} de {sortedClients.length}</span>
                                 </div>
                                 <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -1042,8 +1006,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         className="h-full bg-sky-500 transition-all duration-1000"
                                         style={{
                                             width: `${(sortedClients.filter(c => {
-                                                const d = c.declarationHistory.find(dh => dh.period === getPeriod(c, new Date()));
-                                                return !!d?.proofFile || d?.status === DeclarationStatus.Enviada;
+                                                const d = c.declarations.find(dh => dh.period === getPeriod(c, new Date()));
+                                                return !!d?.proof_file || d?.status === DeclarationStatus.Enviada;
                                             }).length / (sortedClients.length || 1)) * 100}%`
                                         }}
                                     />
@@ -1105,8 +1069,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
-                                            const decl = c.declarationHistory.find(d => d.period === period);
-                                            return !!decl?.isPaid && !decl?.proofFile;
+                                            const decl = c.declarations.find(d => d.period === period);
+                                            return !!decl?.is_paid && !decl?.proof_file;
                                         }).length}
                                     </span>
                                 </h3>
@@ -1116,8 +1080,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        return !!decl?.isPaid && !decl?.proofFile;
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        return !!decl?.is_paid && !decl?.proof_file;
                                     })}
                                     serviceFees={serviceFees}
                                     onView={handleOpenClientDetails}
@@ -1129,8 +1093,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        return !!decl?.isPaid && !decl?.proofFile;
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        return !!decl?.is_paid && !decl?.proof_file;
                                     })}
                                     serviceFees={serviceFees}
                                     onView={handleOpenClientDetails}
@@ -1141,8 +1105,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             {sortedClients.filter(c => {
                                 const today = new Date();
                                 const period = getPeriod(c, today);
-                                const decl = c.declarationHistory.find(d => d.period === period);
-                                return !!decl?.isPaid && !decl?.proofFile;
+                                const decl = c.declarations.find(d => d.period === period);
+                                return !!decl?.is_paid && !decl?.proof_file;
                             }).length === 0 && (
                                 <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
                                     <p className="text-slate-400 text-xs font-bold uppercase">No hay órdenes de trabajo pendientes</p>
@@ -1160,8 +1124,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
-                                            const decl = c.declarationHistory.find(d => d.period === period);
-                                            return !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
+                                            const decl = c.declarations.find(d => d.period === period);
+                                            return !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         }).length}
                                     </span>
                                 </h3>
@@ -1171,8 +1135,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        return !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        return !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                     })}
                                     serviceFees={serviceFees}
                                     onView={handleOpenClientDetails}
@@ -1184,8 +1148,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        return !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        return !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                     })}
                                     serviceFees={serviceFees}
                                     onView={handleOpenClientDetails}
@@ -1205,9 +1169,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
-                                            const decl = c.declarationHistory.find(d => d.period === period);
-                                            const isWorkOrder = !!decl?.isPaid && !decl?.proofFile;
-                                            const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
+                                            const decl = c.declarations.find(d => d.period === period);
+                                            const isWorkOrder = !!decl?.is_paid && !decl?.proof_file;
+                                            const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                             return !isWorkOrder && !isDeclared;
                                         }).length}
                                     </span>
@@ -1218,9 +1182,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        const isWorkOrder = !!decl?.isPaid && !decl?.proofFile;
-                                        const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        const isWorkOrder = !!decl?.is_paid && !decl?.proof_file;
+                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         return !isWorkOrder && !isDeclared;
                                     })}
                                     serviceFees={serviceFees}
@@ -1233,9 +1197,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        const isWorkOrder = !!decl?.isPaid && !decl?.proofFile;
-                                        const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        const isWorkOrder = !!decl?.is_paid && !decl?.proof_file;
+                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         return !isWorkOrder && !isDeclared;
                                     })}
                                     serviceFees={serviceFees}
@@ -1258,9 +1222,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
-                                            const decl = c.declarationHistory.find(d => d.period === period);
-                                            const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
-                                            return isDeclared && !decl?.isPaid;
+                                            const decl = c.declarations.find(d => d.period === period);
+                                            const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
+                                            return isDeclared && !decl?.is_paid;
                                         }).length}
                                     </span>
                                 </h3>
@@ -1270,9 +1234,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
-                                        return isDeclared && !decl?.isPaid;
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
+                                        return isDeclared && !decl?.is_paid;
                                     })}
                                     serviceFees={serviceFees}
                                     onView={handleOpenClientDetails}
@@ -1284,9 +1248,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
-                                        return isDeclared && !decl?.isPaid;
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
+                                        return isDeclared && !decl?.is_paid;
                                     })}
                                     serviceFees={serviceFees}
                                     onView={handleOpenClientDetails}
@@ -1297,9 +1261,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             {sortedClients.filter(c => {
                                 const today = new Date();
                                 const period = getPeriod(c, today);
-                                const decl = c.declarationHistory.find(d => d.period === period);
-                                const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
-                                return isDeclared && !decl?.isPaid;
+                                const decl = c.declarations.find(d => d.period === period);
+                                const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
+                                return isDeclared && !decl?.is_paid;
                             }).length === 0 && (
                                 <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
                                     <p className="text-slate-400 text-xs font-bold uppercase">No hay cobros pendientes</p>
@@ -1317,8 +1281,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
-                                            const decl = c.declarationHistory.find(d => d.period === period);
-                                            return !!decl?.isPaid && (!!decl?.proofFile || decl?.status === DeclarationStatus.Enviada);
+                                            const decl = c.declarations.find(d => d.period === period);
+                                            return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
                                         }).length}
                                     </span>
                                 </h3>
@@ -1328,8 +1292,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        return !!decl?.isPaid && (!!decl?.proofFile || decl?.status === DeclarationStatus.Enviada);
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
                                     })}
                                     serviceFees={serviceFees}
                                     onView={handleOpenClientDetails}
@@ -1341,8 +1305,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        return !!decl?.isPaid && (!!decl?.proofFile || decl?.status === DeclarationStatus.Enviada);
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
                                     })}
                                     serviceFees={serviceFees}
                                     onView={handleOpenClientDetails}
@@ -1362,10 +1326,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
-                                            const decl = c.declarationHistory.find(d => d.period === period);
-                                            const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
-                                            const isElite = !!decl?.isPaid && isDeclared;
-                                            const isCobroPending = isDeclared && !decl?.isPaid;
+                                            const decl = c.declarations.find(d => d.period === period);
+                                            const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
+                                            const isElite = !!decl?.is_paid && isDeclared;
+                                            const isCobroPending = isDeclared && !decl?.is_paid;
                                             return !isElite && !isCobroPending;
                                         }).length}
                                     </span>
@@ -1376,10 +1340,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
-                                        const isElite = !!decl?.isPaid && isDeclared;
-                                        const isCobroPending = isDeclared && !decl?.isPaid;
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
+                                        const isElite = !!decl?.is_paid && isDeclared;
+                                        const isCobroPending = isDeclared && !decl?.is_paid;
                                         return !isElite && !isCobroPending;
                                     })}
                                     serviceFees={serviceFees}
@@ -1392,10 +1356,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today);
-                                        const decl = c.declarationHistory.find(d => d.period === period);
-                                        const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada;
-                                        const isElite = !!decl?.isPaid && isDeclared;
-                                        const isCobroPending = isDeclared && !decl?.isPaid;
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
+                                        const isElite = !!decl?.is_paid && isDeclared;
+                                        const isCobroPending = isDeclared && !decl?.is_paid;
                                         return !isElite && !isCobroPending;
                                     })}
                                     serviceFees={serviceFees}

@@ -48,7 +48,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Aleida2021*',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [
+        declarations: [
             {
                 period: '2024-05',
                 status: DeclarationStatus.Pagada,
@@ -58,7 +58,7 @@ export const mockClients: Client[] = [
             }
         ],
         isActive: true,
-        feeStructure: { monthly: 5, annual: 10, semestral: 5 }
+        fee_structure: { monthly: 5, annual: 10, semestral: 5 }
     }
 ];
 

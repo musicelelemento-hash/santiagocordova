@@ -13,10 +13,6 @@ interface NavItem {
 }
 
 interface SidebarProps {
-    isExpanded: boolean;
-    isLocked: boolean;
-    onToggleLock: () => void;
-    onToggleExpand: (val: boolean) => void;
     onNavigate: (screen: Screen) => void;
     activeScreen: Screen;
     navItems: NavItem[];
@@ -27,10 +23,6 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-    isExpanded,
-    isLocked,
-    onToggleLock,
-    onToggleExpand,
     onNavigate,
     activeScreen,
     navItems,
@@ -64,124 +56,95 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const addClientItem = navItems.find(i => i.screen === 'add_client' as any) as any;
 
     return (
-        <aside
-            className={`hidden md:flex flex-col border-r border-slate-200/40 dark:border-white/5 glass-elite transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] ${isExpanded ? 'w-80' : 'w-24'} h-screen sticky top-0 z-40 shadow-[20px_0_40px_-15px_rgba(0,0,0,0.03)] dark:shadow-none overflow-hidden`}
-            onMouseEnter={() => !isLocked && onToggleExpand(true)}
-            onMouseLeave={() => !isLocked && onToggleExpand(false)}
-        >
-            <div className="p-6 flex items-center justify-between h-24 overflow-hidden relative border-b border-slate-200/30 dark:border-white/5">
-                <div className={`flex items-center space-x-4 transition-all duration-700 ${isExpanded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10 w-0'}`}>
-                    <div className="p-2 bg-gradient-to-tr from-sky-600 via-brand-teal to-emerald-500 rounded-2xl shadow-xl shadow-emerald-500/30">
-                        <Logo className="w-10 h-10 text-white" />
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="font-display font-black text-slate-900 dark:text-white leading-none tracking-tighter text-xl uppercase">Legión</span>
-                        <span className="text-[10px] font-black text-emerald-500 tracking-[0.3em] mt-1.5 opacity-80">STGO. CORDOVA</span>
+        <aside className="hidden md:flex fixed bottom-8 left-1/2 -translate-x-1/2 z-50 glass-elite items-center gap-1 p-2.5 rounded-[2rem] border border-white/10 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] transition-all duration-500 hover:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.6)] animate-in slide-in-from-bottom-5 fade-in">
+            {/* Logo Section */}
+            <div className="flex items-center gap-3 pr-4 pl-2 border-r border-white/10">
+                <div className="p-2 bg-gradient-to-tr from-sky-600 via-brand-teal to-emerald-500 rounded-2xl shadow-xl shadow-emerald-500/20 group cursor-pointer relative" onClick={() => onNavigate('home')}>
+                    <Logo className="w-8 h-8 text-white group-hover:scale-110 transition-transform duration-500" />
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 border border-white/10 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-xl">
+                        Inicio
                     </div>
                 </div>
-                {!isExpanded && (
-                    <div className="mx-auto p-2 bg-gradient-to-tr from-sky-600 to-emerald-500 rounded-xl shadow-lg border border-white/20">
-                        <Logo className="w-8 h-8 text-white" />
-                    </div>
-                )}
-                {isExpanded && (
-                    <button onClick={onToggleLock} className={`p-2.5 rounded-2xl transition-all duration-300 ${isLocked ? 'bg-sky-50 dark:bg-sky-400/10 text-sky-600 shadow-sm' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-                        {isLocked ? <Pin size={18} className="fill-current" /> : <PinOff size={18} />}
-                    </button>
-                )}
             </div>
 
-            <div className="px-6 pt-8 pb-8 flex flex-col gap-4">
-                {isExpanded ? (
-                    <>
-                        <button onClick={onQuickManagement} className="group relative w-full flex items-center p-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[22px] shadow-2xl shadow-slate-900/20 dark:shadow-white/10 transition-all duration-500 hover:-translate-y-1 active:scale-95 overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div className="relative flex items-center">
-                                <Zap size={18} className="fill-current mr-3 text-amber-400" />
-                                <span className="font-display font-black text-sm uppercase tracking-wide">Escuadrón Rápido</span>
-                            </div>
-                        </button>
-                        {addClientItem?.onClick && (
-                            <button onClick={addClientItem.onClick} className="group w-full flex items-center p-4 bg-white/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-white/5 text-slate-800 dark:text-white rounded-[22px] shadow-sm hover:shadow-xl hover:bg-white dark:hover:bg-slate-800 transition-all duration-500 hover:-translate-y-1 active:scale-95">
-                                <div className="p-2 bg-sky-50 dark:bg-sky-900/30 rounded-xl mr-3 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
-                                    <UserPlus size={18} />
-                                </div>
-                                <span className="font-display font-black text-sm uppercase tracking-wide">Nuevo Cliente</span>
-                            </button>
-                        )}
-                    </>
-                ) : (
-                    <div className="flex flex-col gap-5 items-center">
-                        <button onClick={onQuickManagement} className="p-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl shadow-xl transition-all hover:scale-110 active:scale-95"><Zap size={20} className="fill-current text-amber-400" /></button>
-                        {addClientItem?.onClick && (
-                            <button onClick={addClientItem.onClick} className="p-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/5 text-slate-800 dark:text-white rounded-2xl shadow-lg transition-all hover:scale-110 active:scale-95"><UserPlus size={20} /></button>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            <nav className="flex-1 overflow-y-auto pt-2 pb-6 space-y-2 px-6 no-scrollbar">
-                <div className={`text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-[0.3em] mb-6 pl-4 transition-opacity duration-700 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
-                    Centro de Comando
-                </div>
-                {navItems.filter(i => i.screen !== 'add_client').map(({ screen, icon: Icon, label, count, onHover }) => (
+            {/* Navigation Items (Dock style) */}
+            <nav className="flex items-center gap-1.5 px-3">
+                {navItems.filter(i => i.screen !== 'add_client' && i.screen !== 'home').map(({ screen, icon: Icon, label, count, onHover }) => (
                     <button
                         key={screen}
                         onClick={() => onNavigate(screen as Screen)}
                         onMouseEnter={onHover}
-                        className={`flex items-center w-full p-4 rounded-[18px] transition-all duration-500 group relative
+                        className={`group relative flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-500 
                             ${activeScreen === screen
-                                ? 'bg-sky-600 text-white shadow-xl shadow-sky-600/40'
-                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
-                            } ${isExpanded ? 'justify-start px-5' : 'justify-center'}`}
-                        title={!isExpanded ? label : ''}
+                                ? 'bg-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]'
+                                : 'hover:bg-white/5 active:scale-95'
+                            }`}
                     >
-                        {activeScreen === screen && isExpanded && (
-                            <div className="absolute left-0 w-2 h-7 bg-emerald-400 rounded-r-full shadow-[0_0_15px_rgba(52,211,153,1)]"></div>
+                        {activeScreen === screen && (
+                            <div className="absolute -bottom-2 w-5 h-1 bg-emerald-400 rounded-t-full shadow-[0_0_15px_rgba(52,211,153,1)]"></div>
                         )}
-                        <Icon className={`w-5 h-5 transition-all duration-500 ${activeScreen === screen ? 'scale-125 rotate-3' : 'group-hover:scale-110'}`} />
+                        <Icon className={`w-6 h-6 transition-all duration-500 ${activeScreen === screen ? 'text-emerald-400 scale-110' : 'text-slate-400 group-hover:text-white group-hover:scale-125 group-hover:-translate-y-1'}`} />
+                        
                         {count !== undefined && count > 0 && (
-                            <span className={`absolute -top-1 -right-1 h-6 min-w-[24px] px-2 flex items-center justify-center rounded-full text-[10px] font-black border-2 transition-colors duration-500 ${activeScreen === screen ? 'bg-white text-sky-600 border-sky-600' : 'bg-rose-500 text-white border-white dark:border-slate-950 shadow-lg shadow-rose-500/20'}`}>
+                            <span className="absolute top-1 right-1 h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-full text-[9px] font-black bg-rose-500 text-white border-2 border-slate-900 shadow-lg shadow-rose-500/30 animate-pulse">
                                 {count}
                             </span>
                         )}
-                        <span className={`ml-4 text-xs font-black uppercase tracking-widest whitespace-nowrap overflow-hidden transition-all duration-700 font-display ${isExpanded ? 'opacity-100 w-auto translate-x-0' : 'opacity-0 w-0 -translate-x-10'}`}>{label}</span>
+
+                        {/* Hover Tooltip */}
+                        <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-slate-900 border border-white/10 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-xl z-50">
+                            {label}
+                            {/* Decorative arrow */}
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-b border-r border-white/10 rotate-45"></div>
+                        </div>
                     </button>
                 ))}
             </nav>
 
-            <div className="p-6 pb-10 space-y-5">
-                <div className="p-5 bg-slate-100/50 dark:bg-white/5 rounded-3xl border border-slate-200/50 dark:border-white/5 shadow-inner group/cloud">
-                    <div className={`flex items-center ${isExpanded ? 'justify-between' : 'justify-center'} gap-3`}>
-                        {isExpanded && (
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Doble Nube</span>
-                                <span className="text-[9px] font-bold text-emerald-500/80 uppercase tracking-tighter">{getCloudStatusText()}</span>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                            {onManualSave && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onManualSave(); }}
-                                    className="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all text-sky-600 shadow-sm border border-transparent hover:border-sky-100 dark:hover:border-sky-900"
-                                    title="Sincronizar ahora"
-                                >
-                                    <Cloud size={16} />
-                                </button>
-                            )}
-                            <div className="relative w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-white/5">
-                                {getCloudStatusIcon()}
-                                {cloudStatus === 'saved' && <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="w-[1px] h-10 bg-white/10 mx-3"></div>
 
-                <button onClick={onLogout} className={`w-full flex items-center ${isExpanded ? 'justify-start' : 'justify-center'} p-4 rounded-2xl text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all duration-500 group shadow-sm hover:shadow-rose-100`}>
-                    <div className="p-2.5 group-hover:bg-rose-100 dark:group-hover:bg-rose-900/30 rounded-xl transition-colors">
-                        <LogOut size={20} />
+            {/* Quick Actions & Status */}
+            <div className="flex items-center gap-3 pl-1 pr-1">
+                <button onClick={onQuickManagement} className="group relative w-12 h-12 flex items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-400 hover:text-slate-900 transition-all duration-500 hover:-translate-y-1 hover:scale-110 shadow-lg shadow-amber-500/10">
+                    <Zap size={22} className={activeScreen === 'home' ? 'fill-current' : ''} />
+                    <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-amber-500 border border-amber-400 text-slate-900 text-[10px] font-black uppercase px-3 py-1.5 rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-xl z-50">
+                        Escuadrón Rápido
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-amber-500 border-b border-r border-amber-400 rotate-45"></div>
                     </div>
-                    {isExpanded && <span className="ml-4 text-xs font-black uppercase tracking-[0.2em] font-display">Desconectar</span>}
+                </button>
+
+                {addClientItem?.onClick && (
+                    <button onClick={addClientItem.onClick} className="group relative w-12 h-12 flex items-center justify-center rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-white transition-all duration-500 hover:-translate-y-1 hover:scale-110 shadow-lg shadow-sky-500/10">
+                        <UserPlus size={22} />
+                        <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-sky-500 border border-sky-400 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-xl z-50">
+                            Nuevo Cliente
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-sky-500 border-b border-r border-sky-400 rotate-45"></div>
+                        </div>
+                    </button>
+                )}
+
+                <div className="w-[1px] h-8 bg-white/10 mx-2"></div>
+
+                {onManualSave && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onManualSave(); }}
+                        className="group relative w-12 h-12 flex items-center justify-center hover:bg-white/10 rounded-2xl transition-all duration-500 text-slate-400 hover:text-sky-400"
+                    >
+                        {getCloudStatusIcon()}
+                        <div className="absolute -top-14 right-0 translate-x-1/4 bg-slate-900 border border-white/10 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-xl z-50">
+                            {getCloudStatusText()}
+                            <div className="absolute -bottom-1 right-6 w-2 h-2 bg-slate-900 border-b border-r border-white/10 rotate-45"></div>
+                        </div>
+                        {cloudStatus === 'saved' && <div className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-slate-900 animate-pulse"></div>}
+                    </button>
+                )}
+
+                <button onClick={onLogout} className="group relative w-12 h-12 flex items-center justify-center rounded-2xl hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-all duration-500 hover:-translate-y-1 hover:scale-110">
+                    <LogOut size={20} />
+                    <div className="absolute -top-14 right-0 translate-x-1/4 bg-rose-500 border border-rose-400 text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-xl z-50">
+                        Desconectar
+                        <div className="absolute -bottom-1 right-5 w-2 h-2 bg-rose-500 border-b border-r border-rose-400 rotate-45"></div>
+                    </div>
                 </button>
             </div>
         </aside>

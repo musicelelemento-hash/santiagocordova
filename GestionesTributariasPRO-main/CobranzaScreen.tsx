@@ -65,7 +65,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({ clients, setClie
                 return; // Skip inactive clients or those with no contact info
             }
 
-            client.declarationHistory.forEach(declaration => {
+            client.declarations.forEach(declaration => {
                 if (declaration.status === DeclarationStatus.Pagada) return;
 
                 const dueDate = getDueDateForPeriod(client, declaration.period);
@@ -138,7 +138,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({ clients, setClie
         const newReminder = { date: new Date().toISOString(), channel, type };
         const updatedClient = {
             ...client,
-            declarationHistory: client.declarationHistory.map(d => {
+            declarations: client.declarations.map(d => {
                 if (d.period === declaration.period) {
                     return {
                         ...d,

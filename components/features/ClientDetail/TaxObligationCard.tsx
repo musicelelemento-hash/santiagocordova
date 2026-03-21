@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, ShieldCheck, FileCheck, Send, DollarSign, UploadCloud, MessageCircle } from 'lucide-react';
+import { Calendar, ShieldCheck, FileCheck, Send, DollarSign, UploadCloud, MessageCircle, RotateCcw } from 'lucide-react';
 import { DeclarationStatus } from '../../../types';
 import { formatPeriodForDisplay } from '../../../services/sri';
 
@@ -15,6 +15,7 @@ interface TaxObligationCardProps {
     onUpload?: () => void;
     onWhatsApp?: () => void;
     declarationDate?: string;
+    onRevertPayment?: () => void;
 }
 
 export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
@@ -28,7 +29,8 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
     onPay,
     onUpload,
     onWhatsApp,
-    declarationDate
+    declarationDate,
+    onRevertPayment
 }) => {
     const isDeclared = status === DeclarationStatus.Enviada || status === DeclarationStatus.Pagada;
     const isCompleted = isDeclared && isPaid;
@@ -108,9 +110,18 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                         </div>
                     </div>
                     {isPaid ? (
-                        <div className="flex items-center gap-3 text-emerald-400 bg-emerald-500/10 px-5 py-2 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]">
+                        <div className="flex items-center gap-3 text-emerald-400 bg-emerald-500/10 px-5 py-2 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)] relative group/revert">
                             <DollarSign size={18} />
                             <span className="text-[12px] font-black uppercase tracking-[0.15em] font-mono">${amount.toFixed(2)} LIQUIDADO</span>
+                            {onRevertPayment && (
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); onRevertPayment(); }} 
+                                    className="ml-2 p-1.5 opacity-0 group-hover/revert:opacity-100 hover:bg-rose-500/20 text-rose-400 rounded-md transition-all active:scale-95 absolute -right-4 -top-4 sm:static" 
+                                    title="Revertir Pago"
+                                >
+                                    <RotateCcw size={14} />
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="flex items-center gap-4">

@@ -30,7 +30,7 @@ const newClientInitialState: Partial<Client> = {
   phones: [''],
   email: '',
   notes: '',
-  feeStructure: {
+  fee_structure: {
       monthly: 5, 
       annual: 10,
       semestral: 5
@@ -123,7 +123,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 phones: extracted.contacto.celular ? [extracted.contacto.celular] : prev.phones,
                 regime: extracted.regimen,
                 sriPassword: passwordToUse,
-                feeStructure: {
+                fee_structure: {
                     monthly: 5,
                     annual: 10,
                     semestral: 5
@@ -176,7 +176,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             category: finalCategory,
             phones: (clientData.phones || []).filter(p => p.trim() !== ''),
             isActive: isActive,
-            feeStructure: {
+            fee_structure: {
                 monthly: mFee,
                 semestral: mFee, 
                 annual: aFee

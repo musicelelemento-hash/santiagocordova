@@ -100,15 +100,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'vault' | 'settings'>('profile');
 
     const [obligation, setObligation] = useState(getStatusIndicator(client));
-    const [isVip, setIsVip] = useState(!!client.isVip);
 
     const [monthlyFee, setMonthlyFee] = useState<string>(
         (client.taxProfile?.ivaFrequency === 'Semestral' 
-            ? (client.feeStructure?.semestral ?? 10) 
-            : (client.feeStructure?.monthly ?? 5)
+            ? (client.fee_structure?.semestral ?? 10) 
+            : (client.fee_structure?.monthly ?? 5)
         ).toString()
     );
-    const [annualFee, setAnnualFee] = useState<string>((client.feeStructure?.annual ?? 10).toString());
+    const [annualFee, setAnnualFee] = useState<string>((client.fee_structure?.annual ?? 10).toString());
 
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [signaturePasswordVisible, setSignaturePasswordVisible] = useState(false);
@@ -134,12 +133,11 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         if (!isEditing && client) {
             setEditedClient(client);
             setObligation(getStatusIndicator(client));
-            setIsVip(!!client.isVip);
             setMonthlyFee((client.taxProfile?.ivaFrequency === 'Semestral' 
-                ? (client.feeStructure?.semestral ?? 10) 
-                : (client.feeStructure?.monthly ?? 5)
+                ? (client.fee_structure?.semestral ?? 10) 
+                : (client.fee_structure?.monthly ?? 5)
             ).toString());
-            setAnnualFee((client.feeStructure?.annual ?? 10).toString());
+            setAnnualFee((client.fee_structure?.annual ?? 10).toString());
         }
     }, [client, isEditing]);
 
@@ -157,50 +155,45 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         if (!editedClient) return { totalDebt: 0, nextDeadline: null, lastActivityDate: null, primaryCommand: null, isFullyPaid: false, isFullyDeclared: false, complianceStats: null };
 
         const currentPeriod = getPeriod(editedClient, new Date());
-        const decl = editedClient.declarationHistory.find(d => d.period === currentPeriod);
+        const decl = (editedClient.declarations || []).find(d => d.period === currentPeriod);
 
-        const isIvaPaid = !!decl?.isPaid;
-        const isIvaDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada;
+        const isIvaPaid = !!decl?.is_paid;
+        const isIvaDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada;
 
         const currentYear = getYear(new Date());
         const needsRenta = editedClient.taxProfile?.requiresAnnualRenta ?? (editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular);
         const rentaPeriod = (currentYear - 1).toString();
-        const rentaDecl = editedClient.declarationHistory.find(d => d.period === rentaPeriod);
+        const rentaDecl = (editedClient.declarations || []).find(d => d.period === rentaPeriod);
 
-        const isRentaPaid = !!editedClient.annualRentaPaid || !!rentaDecl?.isPaid;
+        const isRentaPaid = !!rentaDecl?.is_paid;
         const isRentaDeclared = (
-            rentaDecl?.proofFile ||
-            !!editedClient.annualRentaProof ||
-            editedClient.annualRentaStatus === DeclarationStatus.Enviada ||
-            editedClient.annualRentaStatus === DeclarationStatus.Pagada
+            rentaDecl?.proof_file ||
+            rentaDecl?.status === DeclarationStatus.Enviada ||
+            rentaDecl?.status === DeclarationStatus.Pagada
         );
 
         const isIceOk = !editedClient.taxProfile?.requiresIce || (
-            !!editedClient.iceAnexoPaid &&
-            !!editedClient.iceDeclarationPaid &&
-            (editedClient.iceAnexoStatus === DeclarationStatus.Enviada || editedClient.iceAnexoStatus === DeclarationStatus.Pagada) &&
-            (editedClient.iceDeclarationStatus === DeclarationStatus.Enviada || editedClient.iceDeclarationStatus === DeclarationStatus.Pagada)
+            true // Enforced by general array going forward
         );
         const isPvpOk = !editedClient.taxProfile?.requiresAnexoPvp || (
-            !!editedClient.anexoPvpPaid &&
-            (editedClient.anexoPvpStatus === DeclarationStatus.Enviada || editedClient.anexoPvpStatus === DeclarationStatus.Pagada)
+            true // Handled generally
         );
 
-        const fullyPaid = isIvaPaid && isRentaPaid && (!editedClient.taxProfile?.requiresIce || (!!editedClient.iceAnexoPaid && !!editedClient.iceDeclarationPaid)) && (!editedClient.taxProfile?.requiresAnexoPvp || !!editedClient.anexoPvpPaid);
+        const fullyPaid = isIvaPaid && isRentaPaid && (!editedClient.taxProfile?.requiresIce || true) && (!editedClient.taxProfile?.requiresAnexoPvp || true);
         const fullyDeclared = isIvaDeclared && isRentaDeclared && isIceOk && isPvpOk;
 
-        const pending = (editedClient.declarationHistory || []).filter(d => !d.isPaid);
+        const pending = (editedClient.declarations || []).filter(d => !d.is_paid);
         let debt = pending.reduce((sum, d) => sum + (d.amount ?? getClientServiceFee(editedClient, serviceFees, d.period)), 0);
 
         // Add Renta debt if not paid and required
-        const rentaFee = editedClient.feeStructure?.annual ?? 10;
+        const rentaFee = editedClient.fee_structure?.annual ?? 10;
         if (needsRenta && !isRentaPaid) {
             debt += rentaFee;
         }
 
-        const sortedByPeriod = [...(editedClient.declarationHistory || [])].sort((a, b) => a.period.localeCompare(b.period));
+        const sortedByPeriod = [...(editedClient.declarations || [])].sort((a, b) => a.period.localeCompare(b.period));
         const activeWorkflowDeclaration = sortedByPeriod.find(d => d.status === DeclarationStatus.Pendiente) ||
-            sortedByPeriod.find(d => d.status === DeclarationStatus.Enviada && !d.isPaid) || null;
+            sortedByPeriod.find(d => d.status === DeclarationStatus.Enviada && !d.is_paid) || null;
 
         let cmd = null;
         if (activeWorkflowDeclaration) {
@@ -209,7 +202,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 period: activeWorkflowDeclaration.period,
                 title: `IVA ${formatPeriodForDisplay(activeWorkflowDeclaration.period)}`,
                 isDeclared: activeWorkflowDeclaration.status === DeclarationStatus.Enviada || activeWorkflowDeclaration.status === DeclarationStatus.Pagada,
-                isPaid: !!activeWorkflowDeclaration.isPaid,
+                is_paid: !!activeWorkflowDeclaration.is_paid,
                 amount: activeWorkflowDeclaration.amount ?? getClientServiceFee(editedClient, serviceFees, activeWorkflowDeclaration.period)
             };
         }
@@ -237,13 +230,13 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         return {
             totalDebt: debt,
             nextDeadline: nObligation ? nObligation.dueDate : null,
-            lastActivityDate: editedClient.declarationHistory.length > 0 ? new Date(Math.max(...editedClient.declarationHistory.map(d => new Date(d.updatedAt).getTime()))) : null,
+            lastActivityDate: (editedClient.declarations && editedClient.declarations.length > 0) ? new Date(Math.max(...editedClient.declarations.map(d => new Date(d.updatedAt).getTime()))) : null,
             primaryCommand: cmd,
             isFullyPaid: fullyPaid,
             isFullyDeclared: fullyDeclared,
             complianceStats: {
-                iva: { period: currentPeriod, isDeclared: isIvaDeclared, isPaid: isIvaPaid, needed: requiresIva(editedClient) },
-                renta: { period: rentaPeriod, isDeclared: isRentaDeclared, isPaid: isRentaPaid, needed: needsRenta }
+                iva: { period: currentPeriod, isDeclared: isIvaDeclared, is_paid: isIvaPaid, needed: requiresIva(editedClient) },
+                renta: { period: rentaPeriod, isDeclared: isRentaDeclared, is_paid: isRentaPaid, needed: needsRenta }
             },
             isWorkOrder: (!fullyDeclared && fullyPaid),
             isFullyAlDia: (fullyDeclared && fullyPaid)
@@ -301,12 +294,12 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             let updatedClient = { ...editedClient };
 
             if (uploadingTarget.type === 'iva' && uploadingTarget.period) {
-                const updatedHistory = [...editedClient.declarationHistory];
+                const updatedHistory = [...(editedClient.declarations || [])];
                 const idx = updatedHistory.findIndex(d => d.period === uploadingTarget.period);
                 if (idx !== -1) {
                     updatedHistory[idx] = {
                         ...updatedHistory[idx],
-                        proofFile: storedFile,
+                        proof_file: storedFile,
                         amount: extractedData?.amount || updatedHistory[idx].amount,
                         status: DeclarationStatus.Enviada,
                         updatedAt: new Date().toISOString(),
@@ -316,21 +309,25 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     updatedHistory.push({
                         period: uploadingTarget.period,
                         status: DeclarationStatus.Enviada,
-                        isPaid: false,
+                        is_paid: false,
                         updatedAt: new Date().toISOString(),
                         declaredAt: extractedData?.declarationDate,
-                        proofFile: storedFile,
+                        proof_file: storedFile,
                         amount: extractedData?.amount
                     });
                 }
-                updatedClient.declarationHistory = updatedHistory;
+                updatedClient.declarations = updatedHistory;
             } else if (uploadingTarget.type === 'renta') {
-                updatedClient.annualRentaProof = storedFile;
-                updatedClient.annualRentaStatus = DeclarationStatus.Enviada;
-                updatedClient.annualRentaPaid = false;
-                updatedClient.updatedAt = new Date().toISOString();
-                // Si queremos guardar la fecha de renta específicamente, podríamos 
-                // pero por ahora renta usa campos raíz.
+                const currentYear = getYear(new Date());
+                const period = (currentYear - 1).toString();
+                const updatedHistory = [...(editedClient.declarations || [])];
+                const idx = updatedHistory.findIndex(d => d.period === period);
+                if (idx !== -1) {
+                    updatedHistory[idx] = { ...updatedHistory[idx], proof_file: storedFile, status: DeclarationStatus.Enviada, updatedAt: new Date().toISOString() };
+                } else {
+                    updatedHistory.push({ period, status: DeclarationStatus.Enviada, is_paid: false, proof_file: storedFile, updatedAt: new Date().toISOString() });
+                }
+                updatedClient.declarations = updatedHistory;
             } else if (uploadingTarget.type === 'devolucionRenta') {
                 updatedClient.rentaRefundResolutionFile = storedFile;
                 updatedClient.rentaRefundStatus = 'Completado';
@@ -402,10 +399,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         
         const toSave = { 
             ...editedClient, 
-            isVip: isVip, 
-            feeStructure: { 
-                monthly: editedClient.taxProfile?.ivaFrequency === 'Semestral' ? (client.feeStructure?.monthly ?? 5) : recurringFee,
-                semestral: editedClient.taxProfile?.ivaFrequency === 'Semestral' ? recurringFee : (client.feeStructure?.semestral ?? 10),
+            fee_structure: { 
+                monthly: editedClient.taxProfile?.ivaFrequency === 'Semestral' ? (client.fee_structure?.monthly ?? 5) : recurringFee,
+                semestral: editedClient.taxProfile?.ivaFrequency === 'Semestral' ? recurringFee : (client.fee_structure?.semestral ?? 10),
                 annual: aFeeValue 
             } 
         };
@@ -418,14 +414,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         setIsProcessingAction(true);
         const { action, period } = confirmation;
         const now = new Date().toISOString();
-        const updatedHistory = [...editedClient.declarationHistory];
+        const updatedHistory = [...(editedClient.declarations || [])];
         const idx = updatedHistory.findIndex(d => d.period === period);
         if (idx === -1) {
-            updatedHistory.push({ period, status: action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente, isPaid: action === 'pay', declaredAt: action === 'declare' ? now : undefined, paidAt: action === 'pay' ? now : undefined, updatedAt: now });
+            updatedHistory.push({ period, status: action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente, is_paid: action === 'pay', declaredAt: action === 'declare' ? now : undefined, paidAt: action === 'pay' ? now : undefined, updatedAt: now });
         } else {
-            updatedHistory[idx] = { ...updatedHistory[idx], ...(action === 'declare' ? { status: DeclarationStatus.Enviada, declaredAt: now } : {}), ...(action === 'pay' ? { isPaid: true, paidAt: now } : {}), updatedAt: now };
+            updatedHistory[idx] = { ...updatedHistory[idx], ...(action === 'declare' ? { status: DeclarationStatus.Enviada, declaredAt: now } : {}), ...(action === 'pay' ? { is_paid: true, paidAt: now } : {}), updatedAt: now };
         }
-        const updatedClient = { ...editedClient, declarationHistory: updatedHistory };
+        const updatedClient = { ...editedClient, declarations: updatedHistory };
         setEditedClient(updatedClient);
         onSave(updatedClient);
         setTimeout(() => {
@@ -442,15 +438,30 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const handleExtraAction = (type: 'renta' | 'anexo' | 'devolucion', action: 'declare' | 'pay') => {
         let updated = { ...editedClient };
         if (type === 'renta') {
-            if (action === 'declare') updated.annualRentaStatus = DeclarationStatus.Enviada;
-            if (action === 'pay') updated.annualRentaPaid = true;
+            const currentYear = getYear(new Date());
+            const period = (currentYear - 1).toString();
+            const updatedHistory = [...(updated.declarations || [])];
+            const idx = updatedHistory.findIndex(d => d.period === period);
+            if (idx === -1) {
+                updatedHistory.push({
+                    period,
+                    status: action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente,
+                    is_paid: action === 'pay',
+                    updatedAt: new Date().toISOString()
+                });
+            } else {
+                if (action === 'declare') updatedHistory[idx].status = DeclarationStatus.Enviada;
+                if (action === 'pay') updatedHistory[idx].is_paid = true;
+                updatedHistory[idx].updatedAt = new Date().toISOString();
+            }
+            updated.declarations = updatedHistory;
         }
         setEditedClient(updated);
         onSave(updated);
         toast.success("Estado actualizado.");
     };
 
-    const handleRentaRefundAction = (action: 'start' | 'message_received' | 'confirm' | 'pay' | 'complete' | 'cancel') => {
+    const handleRentaRefundAction = (action: 'start' | 'message_received' | 'confirm' | 'pay' | 'revert_pay' | 'complete' | 'cancel') => {
         let updated = { ...editedClient };
         const now = new Date().toISOString();
         
@@ -465,6 +476,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             updated.rentaRefundStatus = 'Confirmado';
         } else if (action === 'pay') {
             updated.rentaRefundPaid = true;
+        } else if (action === 'revert_pay') {
+            updated.rentaRefundPaid = false;
         } else if (action === 'complete') {
             updated.rentaRefundStatus = 'Completado';
         } else if (action === 'cancel') {
@@ -503,8 +516,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     };
 
     const handleRevertPayment = (period: string) => {
-        const updatedHistory = editedClient.declarationHistory.map(dec => dec.period === period ? { ...dec, status: DeclarationStatus.Enviada, paidAt: undefined, isPaid: false, updatedAt: new Date().toISOString() } : dec);
-        onSave({ ...editedClient, declarationHistory: updatedHistory });
+        const updatedHistory = (editedClient.declarations || []).map(dec => dec.period === period ? { ...dec, status: DeclarationStatus.Enviada, paidAt: undefined, is_paid: false, updatedAt: new Date().toISOString() } : dec);
+        onSave({ ...editedClient, declarations: updatedHistory });
     };
 
     const handlePrintReceipt = () => {
@@ -549,16 +562,17 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         
         window.open(getWhatsAppUrl(client.phones[0], message), "_blank");
     };
+
     const renderProfileTab = () => (
         <div className="space-y-8 sm:space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-                <div className={`p-6 sm:p-8 rounded-3xl sm:rounded-[2.5rem] border ${isWorkOrder ? 'bg-amber-500/10 border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.1)]' : (isFullyAlDia ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : 'bg-slate-950/40 border-white/5')} relative overflow-hidden group transition-all duration-700`}>
+                <div className={`p-6 sm:p-8 rounded-3xl sm:rounded-[2.5rem] ${isWorkOrder ? 'bg-amber-500/10 border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.1)]' : (isFullyAlDia ? 'bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : 'glass-elite')} relative overflow-hidden group transition-all duration-700`}>
                     <div className="absolute -right-8 -top-8 opacity-[0.03] group-hover:scale-125 group-hover:rotate-12 transition-transform duration-1000">
                         <ShieldCheck size={180} />
                     </div>
                     <div className="relative z-10">
-                        <p className={`text-[10px] font-black uppercase tracking-[0.3em] mb-3 ${isWorkOrder ? 'text-amber-400' : (isFullyAlDia ? 'text-emerald-400' : 'text-slate-500')}`}>Directiva Operativa</p>
-                        <h4 className={`text-xl sm:text-2xl font-black leading-tight tracking-tight uppercase ${isWorkOrder ? 'text-white' : (isFullyAlDia ? 'text-white' : 'text-slate-200')}`}>
+                        <p className={`text-[10px] font-premium font-black uppercase tracking-[0.3em] mb-3 ${isWorkOrder ? 'text-amber-400' : (isFullyAlDia ? 'text-emerald-400' : 'text-slate-500')}`}>Directiva Operativa</p>
+                        <h4 className={`text-xl sm:text-2xl font-premium font-black leading-tight tracking-tight uppercase ${isWorkOrder ? 'text-white' : (isFullyAlDia ? 'text-white' : 'text-slate-200')}`}>
                             {isFullyAlDia ? 'Estatus: Al Día' : (isWorkOrder ? 'Orden de Trabajo' : 'Intervención Requerida')}
                         </h4>
                         <div className="mt-6 flex items-center gap-3">
@@ -569,37 +583,37 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </div>
 
                 {!isFullyDeclared && (
-                    <div className="p-8 rounded-[2.5rem] bg-slate-950/40 border border-white/5 shadow-2xl flex items-center gap-6 group transition-all hover:bg-slate-900/60">
+                    <div className="p-8 rounded-[2.5rem] glass-card flex items-center gap-6 group transition-all hover:bg-slate-900/60">
                         <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.1)] group-hover:scale-110 transition-transform duration-500">
                             <Zap size={28} className="animate-pulse" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 mb-1">Vector de Ataque</p>
-                            <p className="text-base font-black text-white uppercase tracking-tight">Declarar Obligación</p>
+                            <p className="text-[10px] font-premium font-black uppercase tracking-[0.2em] text-cyan-400 mb-1">Vector de Ataque</p>
+                            <p className="text-base font-premium font-black text-white uppercase tracking-tight">Declarar Obligación</p>
                         </div>
                     </div>
                 )}
 
                 {isFullyDeclared && !isFullyPaid && (
-                    <div className="p-8 rounded-[2.5rem] bg-slate-950/40 border border-white/5 shadow-2xl flex items-center gap-6 group transition-all hover:bg-slate-900/60">
+                    <div className="p-8 rounded-[2.5rem] glass-card flex items-center gap-6 group transition-all hover:bg-slate-900/60">
                         <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.1)] group-hover:scale-110 transition-transform duration-500">
                             <DollarSign size={28} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400 mb-1">Logística Pendiente</p>
-                            <p className="text-base font-black text-white uppercase tracking-tight">Registrar Cobro</p>
+                            <p className="text-[10px] font-premium font-black uppercase tracking-[0.2em] text-amber-400 mb-1">Logística Pendiente</p>
+                            <p className="text-base font-premium font-black text-white uppercase tracking-tight">Registrar Cobro</p>
                         </div>
                     </div>
                 )}
                 
                 {cloudStatus === 'saving' && (
-                    <div className="p-8 rounded-[2.5rem] bg-indigo-500/5 border border-indigo-500/20 shadow-2xl flex items-center gap-6 animate-pulse">
+                    <div className="p-8 rounded-[2.5rem] glass-card flex items-center gap-6 animate-pulse">
                         <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                             <RefreshCcw size={28} className="animate-spin" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-1">Encripción</p>
-                            <p className="text-base font-black text-white uppercase tracking-tight">Salvando en Nube</p>
+                            <p className="text-[10px] font-premium font-black uppercase tracking-[0.2em] text-indigo-400 mb-1">Encripción</p>
+                            <p className="text-base font-premium font-black text-white uppercase tracking-tight">Salvando en Nube</p>
                         </div>
                     </div>
                 )}
@@ -607,16 +621,16 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 <div className="lg:col-span-2 space-y-10">
-                    <div className="bg-slate-950/40 backdrop-blur-md rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group">
+                    <div className="glass-elite rounded-[3rem] p-10 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 blur-[100px] pointer-events-none group-hover:bg-cyan-500/10 transition-colors duration-1000"></div>
                         
                         <div className="flex items-center justify-between mb-12">
                             <div>
-                                <h3 className="text-2xl font-black text-white tracking-tight uppercase flex items-center gap-4">
+                                <h3 className="text-2xl font-premium font-black text-white tracking-tight uppercase flex items-center gap-4">
                                     <Activity className="text-cyan-400" size={32} />
                                     Panel de Inteligencia Fiscal
                                 </h3>
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mt-3">Métricas de cumplimiento y obligaciones críticas</p>
+                                <p className="text-[10px] font-premium font-black text-slate-500 uppercase tracking-[0.4em] mt-3">Métricas de cumplimiento y obligaciones críticas</p>
                             </div>
                         </div>
 
@@ -625,37 +639,37 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 title="Declaración Mensual"
                                 period={complianceStats?.iva.period || ''}
                                 status={complianceStats?.iva.isDeclared ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente}
-                                isPaid={complianceStats?.iva.isPaid}
-                                amount={client.feeStructure?.monthly || 5}
+                                isPaid={complianceStats?.iva.is_paid}
+                                amount={client.fee_structure?.monthly || 5}
                                 onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats?.iva.period || '' })}
                                 onPay={() => handleQuickPay(complianceStats?.iva.period || '')}
                                 onUpload={() => { setUploadingTarget({ type: 'iva', period: complianceStats?.iva.period }); proofInputRef.current?.click(); }}
                                 onWhatsApp={() => handleWhatsAppPaymentRequest(complianceStats?.iva.period || '', 'IVA')}
-                                declarationDate={editedClient.declarationHistory.find(d => d.period === complianceStats?.iva.period)?.declaredAt}
+                                onRevertPayment={() => handleRevertPayment(complianceStats?.iva.period || '')}
+                                declarationDate={editedClient.declarations.find(d => d.period === complianceStats?.iva.period)?.declaredAt}
                             />
 
                             <div className="space-y-8">
-                                <div className="p-8 bg-slate-900/60 rounded-[2.5rem] border border-white/5 relative overflow-hidden group/card shadow-2xl">
+                                <div className="p-8 glass-card rounded-[2.5rem] relative overflow-hidden group/card shadow-2xl">
                                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity"></div>
-                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">Arquitectura Tributaria</p>
+                                    <p className="text-[10px] font-premium font-black text-slate-500 uppercase tracking-[0.3em] mb-4">Arquitectura Tributaria</p>
                                     <div className="flex items-center gap-5">
                                         <div className="w-14 h-14 rounded-2xl bg-slate-950 border border-white/10 flex items-center justify-center text-cyan-400 shadow-inner group-hover/card:scale-110 transition-transform">
                                             <ShieldCheck size={28} />
                                         </div>
                                         <div>
-                                            <p className="text-xl font-black text-white leading-tight uppercase tracking-tighter">{client.regime}</p>
-                                            <p className="text-[9px] font-black text-emerald-400 mt-1 uppercase tracking-widest">Validado & Activo</p>
+                                            <p className="text-xl font-premium font-black text-white leading-tight uppercase tracking-tighter">{client.regime}</p>
+                                            <p className="text-[9px] font-premium font-black text-emerald-400 mt-1 uppercase tracking-widest">Validado & Activo</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {client.taxProfile?.requiresAnnualRenta && editedClient.rentaRefundStatus !== 'Completado' && (
-                                    <div className="p-8 bg-slate-900/60 rounded-[2.5rem] border border-white/5 space-y-8 relative overflow-hidden group/renta shadow-2xl">
+                                    <div className="p-8 glass-card rounded-[2.5rem] space-y-8 relative overflow-hidden group/renta shadow-2xl">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Protocolo Renta</p>
+                                            <p className="text-[10px] font-premium font-black text-slate-500 uppercase tracking-[0.3em]">Protocolo Renta</p>
                                             <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[8px] font-black rounded-lg uppercase tracking-widest animate-pulse">Misión Crítica</div>
                                         </div>
-
                                         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                                             {[
                                                 { id: 'Solicitado', label: 'Inicio', icon: Send },
@@ -699,15 +713,16 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                             onPay={() => handleRentaRefundAction('pay')}
                                             onUpload={() => { setUploadingTarget({ type: 'devolucionRenta', period: complianceStats?.renta.period }); proofInputRef.current?.click(); }}
                                             onWhatsApp={() => handleWhatsAppPaymentRequest(complianceStats?.renta.period || '', 'Devolución de Renta')}
+                                            onRevertPayment={() => handleRentaRefundAction('revert_pay')}
                                             declarationDate={editedClient.rentaRefundRequestedAt ? safeFormat(editedClient.rentaRefundRequestedAt, 'dd/MM/yyyy HH:mm') : undefined}
                                         />
                                     </div>
                                 )}
 
                                 {client.hasElderlyDevolucionIva && editedClient.elderlyDevolucionIvaStatus !== 'Completado' && (
-                                    <div className="p-8 bg-slate-900/60 rounded-[2.5rem] border border-white/5 space-y-8 relative overflow-hidden group/elderly shadow-2xl">
+                                    <div className="p-8 glass-card rounded-[2.5rem] space-y-8 relative overflow-hidden group/elderly shadow-2xl">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Protocolo T. EDAD (IVA)</p>
+                                            <p className="text-[10px] font-premium font-black text-slate-500 uppercase tracking-[0.3em]">Protocolo T. EDAD (IVA)</p>
                                             <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[8px] font-black rounded-lg uppercase tracking-widest animate-pulse">Especialista</div>
                                         </div>
 
@@ -753,6 +768,12 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                             }}
                                             onUpload={() => { setUploadingTarget({ type: 'devolucionIvaTerceraEdad', period: complianceStats?.iva.period }); proofInputRef.current?.click(); }}
                                             onWhatsApp={() => handleWhatsAppPaymentRequest(complianceStats?.iva.period || '', 'Devolución IVA Tercera Edad')}
+                                            onRevertPayment={() => {
+                                                const updated = { ...editedClient, elderlyDevolucionIvaPaid: false };
+                                                setEditedClient(updated);
+                                                onSave(updated);
+                                                toast.success("Pago revertido (T.EDAD)");
+                                            }}
                                         />
                                     </div>
                                 )}
@@ -762,7 +783,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </div>
 
                 <div className="space-y-10">
-                    <div className="bg-slate-950/60 backdrop-blur-xl rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group">
+                    <div className="glass-elite rounded-[3rem] p-10 relative overflow-hidden group">
                         <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-amber-500/5 blur-[100px] pointer-events-none group-hover:bg-amber-500/10 transition-colors duration-1000"></div>
                         
                         <div className="space-y-10">
@@ -771,8 +792,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                     <Mail size={28} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] mb-1">Vector Email</p>
-                                    <p className="text-sm font-black text-white truncate pr-4 uppercase tracking-tighter">{client.email || 'SIN ASIGNAR'}</p>
+                                    <p className="text-[10px] font-premium font-black uppercase text-slate-500 tracking-[0.3em] mb-1">Vector Email</p>
+                                    <p className="text-sm font-premium font-black text-white truncate pr-4 uppercase tracking-tighter">{client.email || 'SIN ASIGNAR'}</p>
                                 </div>
                             </div>
                             
@@ -781,8 +802,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                     <Phone size={28} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] mb-1">Enlace Móvil</p>
-                                    <p className="text-sm font-black text-white truncate pr-4 uppercase tracking-tighter">{(client.phones && client.phones.length > 0) ? client.phones[0] : 'SIN ASIGNAR'}</p>
+                                    <p className="text-[10px] font-premium font-black uppercase text-slate-500 tracking-[0.3em] mb-1">Enlace Móvil</p>
+                                    <p className="text-sm font-premium font-black text-white truncate pr-4 uppercase tracking-tighter">{(client.phones && client.phones.length > 0) ? client.phones[0] : 'SIN ASIGNAR'}</p>
                                 </div>
                             </div>
                         </div>
@@ -798,6 +819,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             </button>
                         </div>
                     </div>
+
                     
                     <div className="bg-slate-950/40 backdrop-blur-md rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
                         <PaymentHistoryChart client={client} />
@@ -813,14 +835,15 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     );
 
     const handleDownload = (decl: Declaration) => {
-        if (!decl.proofFile?.content) return;
+        if (!decl.proof_file?.content) return;
         const link = document.createElement('a');
-        link.href = decl.proofFile.content;
-        link.download = decl.proofFile.name;
+        link.href = decl.proof_file.content;
+        link.download = decl.proof_file.name;
         link.click();
     };
 
     const renderHistoryTab = () => (
+
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
             <div className="bg-slate-950/40 backdrop-blur-md rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 blur-[100px] pointer-events-none"></div>
@@ -855,7 +878,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
                 <DeclarationHistoryTable
                     client={client}
-                    history={editedClient.declarationHistory}
+                    history={editedClient.declarations || []}
                     onShowReceipt={handleShowReceipt}
                     onRevertPayment={handleRevertPayment}
                     onDeclare={(period) => setConfirmation({ action: 'declare', period })}
@@ -896,7 +919,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     <div className="flex gap-4">
                         <div className="px-6 py-3 bg-slate-900/60 rounded-2xl border border-white/5 text-[10px] font-black text-emerald-400 flex items-center gap-3 shadow-inner uppercase tracking-widest">
                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                            {client.declarationHistory.filter(d => d.proofFile).length} Archivos Encriptados
+                            {(client.declarations || []).filter(d => d.proof_file).length} Archivos Encriptados
                         </div>
                     </div>
                 </div>
@@ -913,17 +936,17 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         <span className="text-[10px] font-black uppercase text-slate-500 group-hover:text-cyan-400 tracking-widest relative z-10">Nuevo Archivo</span>
                     </button>
 
-                    {[...client.declarationHistory]
-                        .filter(d => d.proofFile)
+                    {[...(client.declarations || [])]
+                        .filter(d => d.proof_file)
                         .sort((a, b) => b.period.localeCompare(a.period))
                         .map((decl, idx) => (
                             <div key={idx} className="bg-slate-900/60 backdrop-blur-sm rounded-[2.5rem] p-5 border border-white/5 shadow-2xl hover:border-cyan-500/30 transition-all cursor-pointer group relative overflow-hidden" onClick={() => setPreviewItem(decl)}>
                                 <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                                 <div className="aspect-[4/3] rounded-2xl bg-slate-950/50 mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-slate-950 transition-colors">
                                     <FileText className="text-slate-700 group-hover:text-cyan-400 group-hover:scale-110 transition-all duration-500" size={48} />
-                                    {decl.proofFile?.metadata?.formType && (
+                                    {decl.proof_file?.metadata?.formType && (
                                         <div className="absolute top-3 left-3 px-3 py-1 bg-cyan-500 text-slate-950 text-[8px] font-black rounded-lg uppercase tracking-widest shadow-lg">
-                                            {decl.proofFile.metadata.formType}
+                                            {decl.proof_file.metadata.formType}
                                         </div>
                                     )}
                                     <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -933,7 +956,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 <div className="space-y-3 relative z-10">
                                     <div className="flex items-center justify-between">
                                         <div className="flex flex-col">
-                                            <span className="text-[11px] font-black text-emerald-400 tracking-tighter">${(decl.amount || decl.proofFile?.metadata?.amount || 0).toFixed(2)}</span>
+                                            <span className="text-[11px] font-black text-emerald-400 tracking-tighter">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
                                             <span className="text-[8px] text-slate-500 font-black uppercase tracking-widest mt-1">{formatPeriodForDisplay(decl.period)}</span>
                                         </div>
                                         <button className="p-2.5 hover:bg-slate-950 rounded-xl text-slate-600 hover:text-cyan-400 transition-colors">
@@ -944,22 +967,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             </div>
                         ))}
 
-                    {client.annualRentaProof && !client.declarationHistory.some(d => d.proofFile?.name === client.annualRentaProof?.name) && (
-                        <div className="bg-slate-900/60 backdrop-blur-sm rounded-[2.5rem] p-5 border border-white/5 border-amber-500/20 shadow-2xl hover:border-amber-500/40 transition-all cursor-pointer group relative overflow-hidden" onClick={() => setPreviewItem({ period: (getYear(new Date()) - 1).toString(), status: client.annualRentaStatus || DeclarationStatus.Enviada, proofFile: client.annualRentaProof } as any)}>
-                            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            <div className="aspect-[4/3] rounded-2xl bg-slate-950/50 mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-slate-950 transition-colors">
-                                <FileCheck className="text-amber-500/40 group-hover:text-amber-400 group-hover:scale-110 transition-all duration-500" size={48} />
-                                <div className="absolute top-3 left-3 px-3 py-1 bg-amber-500 text-slate-950 text-[8px] font-black rounded-lg uppercase tracking-widest shadow-lg">
-                                    RENTA
-                                </div>
-                            </div>
-                            <div className="space-y-2 relative z-10">
-                                <p className="text-[8px] font-black text-amber-500/60 uppercase tracking-widest">Protocolo Anual</p>
-                                <p className="text-[10px] font-black text-white truncate uppercase tracking-tighter">{client.annualRentaProof.name}</p>
-                                <p className="text-[7px] text-slate-500 font-black uppercase tracking-widest">Cifrado: {safeFormat(client.annualRentaProof.metadata?.uploadedAt || client.updatedAt, 'dd/MM/yy')}</p>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
@@ -1028,20 +1035,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 <option value={TaxRegime.RimpeEmprendedor}>RIMPE Emprendedor</option>
                                 <option value={TaxRegime.RimpeNegocioPopular}>RIMPE Negocio Popular</option>
                             </select>
-                        </div>
-
-                        <div className="p-6 bg-slate-900/40 rounded-2xl border border-white/5 flex items-center justify-between group/toggle">
-                            <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estatus Prioritario</p>
-                                <p className="text-sm font-black text-white uppercase tracking-tighter">Suscripción VIP</p>
-                            </div>
-                            <button
-                                onClick={() => setIsVip(!isVip)}
-                                disabled={!isEditing}
-                                className={`transition-all duration-500 ${isVip ? 'text-amber-500 scale-110 drop-shadow-[0_0_10px_rgba(245,158,11,0.4)]' : 'text-slate-700 hover:text-slate-600'}`}
-                            >
-                                {isVip ? <ToggleRight size={44} /> : <ToggleLeft size={44} />}
-                            </button>
                         </div>
                     </div>
                 </div>

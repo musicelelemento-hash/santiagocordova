@@ -97,9 +97,9 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 regime: rawData.regimen,
                 sriPassword: finalPassword,
                 notes: `Obligaciones detectadas en PDF:\n${(rawData.lista_obligaciones || []).join('\n')}`,
-                declarationHistory: match?.declarationHistory || [],
+                declarations: match?.declarationHistory || [],
                 // TARIFAS PREDETERMINADAS 5/10
-                feeStructure: match?.feeStructure || {
+                fee_structure: match?.feeStructure || {
                     monthly: 5,
                     annual: 10,
                     semestral: 5

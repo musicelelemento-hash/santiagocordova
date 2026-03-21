@@ -29,26 +29,26 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
 
     // SMART PERIOD LOGIC
     const campaignP = getPeriod(client, today);
-    const campaignDecl = (client.declarationHistory || []).find(d => d.period === campaignP);
-    const isCampaignDone = campaignDecl?.status === DeclarationStatus.Enviada || campaignDecl?.status === DeclarationStatus.Pagada || !!campaignDecl?.proofFile;
-    const isCampaignPaid = !!campaignDecl?.isPaid;
+    const campaignDecl = (client.declarations || []).find(d => d.period === campaignP);
+    const isCampaignDone = campaignDecl?.status === DeclarationStatus.Enviada || campaignDecl?.status === DeclarationStatus.Pagada || !!campaignDecl?.proof_file;
+    const isCampaignPaid = !!campaignDecl?.is_paid;
 
     const period = isCampaignDone ? getNextPeriod(campaignP) : campaignP;
-    const decl = (client.declarationHistory || []).find(d => d.period === period);
-    const isPaid = !!decl?.isPaid;
-    const isDeclared = decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada || !!decl?.proofFile;
+    const decl = (client.declarations || []).find(d => d.period === period);
+    const isPaid = !!decl?.is_paid;
+    const isDeclared = decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada || !!decl?.proof_file;
 
     const needsRenta = client.taxProfile?.requiresAnnualRenta || client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular;
     const rentaPeriod = (currentYear - 1).toString();
-    const rentaDecl = (client.declarationHistory || []).find(d => d.period === rentaPeriod);
-    const isRentaPaid = !!client.annualRentaPaid || !!rentaDecl?.isPaid;
+    const rentaDecl = (client.declarations || []).find(d => d.period === rentaPeriod);
+    const isRentaPaid = false || !!rentaDecl?.is_paid;
     const isRentaDeclared = (
         rentaDecl?.status === DeclarationStatus.Enviada ||
         rentaDecl?.status === DeclarationStatus.Pagada ||
-        !!rentaDecl?.proofFile ||
-        client.annualRentaStatus === DeclarationStatus.Enviada ||
-        client.annualRentaStatus === DeclarationStatus.Pagada ||
-        !!client.annualRentaProof
+        !!rentaDecl?.proof_file ||
+        undefined === DeclarationStatus.Enviada ||
+        undefined === DeclarationStatus.Pagada ||
+        false
     );
 
     const ivaDueDate = getDueDateForPeriod(client, period);
@@ -71,7 +71,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
     }
 
     // Visual Styles
-    const isVip = !!client.isVip;
+    const isVip = true;
     
     // Elite Tactical Card Styles
     const cardBaseStyles = `
@@ -91,9 +91,9 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
         width: "calc(100% - 16px)"
     };
 
-    const hasCurrentProof = !!campaignDecl?.proofFile || !!client.annualRentaProof;
-    const hasMissingHistoryPdf = client.declarationHistory?.some(d => 
-        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proofFile
+    const hasCurrentProof = !!campaignDecl?.proof_file || false;
+    const hasMissingHistoryPdf = client.declarations?.some(d => 
+        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
     );
 
     return (
@@ -111,7 +111,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                             <div className={`p-2 rounded-xl bg-${merit.rank === 1 ? 'amber' : (merit.rank === 2 ? 'slate' : 'orange')}-500/10`}>
                                 <merit.icon size={20} className={merit.color} strokeWidth={2.5} />
                             </div>
-                            {isVip && (
+                            {true && (
                                 <div className="absolute -top-1 -right-1 bg-amber-500 text-white p-0.5 rounded-full ring-2 ring-white dark:ring-slate-900 shadow-lg">
                                     <LucideIcons.Crown size={8} className="fill-current" />
                                 </div>
@@ -124,7 +124,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                                     <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)] shrink-0" title="Falta documentación histórica" />
                                 )}
                                 <span className="truncate">{client.name}</span>
-                                {isVip && <LucideIcons.Crown size={12} className="text-amber-500 shrink-0" />}
+                                {true && <LucideIcons.Crown size={12} className="text-amber-500 shrink-0" />}
                             </h3>
                             
                             <div className="flex flex-wrap items-center gap-1.5 mb-2">

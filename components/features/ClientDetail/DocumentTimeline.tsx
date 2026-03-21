@@ -11,8 +11,8 @@ interface DocumentTimelineProps {
 }
 
 export const DocumentTimeline: React.FC<DocumentTimelineProps> = ({ client, onViewPreview, onDownload, onWhatsApp }) => {
-    const documents = [...(client.declarationHistory || [])]
-        .filter(d => d.proofFile || d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada)
+    const documents = [...(client.declarations || [])]
+        .filter(d => d.proof_file || d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada)
         .sort((a, b) => b.period.localeCompare(a.period));
 
     if (documents.length === 0) {
@@ -29,8 +29,8 @@ export const DocumentTimeline: React.FC<DocumentTimelineProps> = ({ client, onVi
             {documents.map((doc, idx) => (
                 <div key={doc.period + idx} className="relative group">
                     {/* Timeline Dot */}
-                    <div className={`absolute -left-[22px] sm:-left-[45px] top-1.5 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-950 border-4 ${!doc.proofFile ? 'border-rose-500' : 'border-cyan-500'} z-10 shadow-[0_0_20px_rgba(6,182,212,0.4)] group-hover:scale-125 transition-all duration-500`}>
-                        <div className={`absolute inset-0 ${!doc.proofFile ? 'bg-rose-400' : 'bg-cyan-400'} blur-[4px] opacity-20 animate-pulse`}></div>
+                    <div className={`absolute -left-[22px] sm:-left-[45px] top-1.5 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-950 border-4 ${!doc.proof_file ? 'border-rose-500' : 'border-cyan-500'} z-10 shadow-[0_0_20px_rgba(6,182,212,0.4)] group-hover:scale-125 transition-all duration-500`}>
+                        <div className={`absolute inset-0 ${!doc.proof_file ? 'bg-rose-400' : 'bg-cyan-400'} blur-[4px] opacity-20 animate-pulse`}></div>
                     </div>
 
                     <div className="bg-slate-950/60 backdrop-blur-2xl rounded-3xl sm:rounded-[2.5rem] p-5 sm:p-8 border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.5)] hover:shadow-cyan-500/20 hover:border-cyan-500/30 transition-all duration-700 relative overflow-hidden aura-premium">
@@ -44,11 +44,11 @@ export const DocumentTimeline: React.FC<DocumentTimelineProps> = ({ client, onVi
                                 </div>
                                 <div>
                                     <h4 className="font-black text-white text-sm sm:text-base uppercase tracking-tight">
-                                        {doc.proofFile?.metadata?.formType || 'DECLARACIÓN'} {formatPeriodForDisplay(doc.period)}
+                                        {doc.proof_file?.metadata?.formType || 'DECLARACIÓN'} {formatPeriodForDisplay(doc.period)}
                                     </h4>
                                     <div className="flex items-center gap-3 mt-1">
                                         <div className="flex items-center gap-1 text-[10px] font-bold text-sky-600 dark:text-sky-400 uppercase">
-                                            📎 {safeFormat(doc.proofFile?.metadata?.uploadedAt || doc.updatedAt, 'EEE/MMM/yy').toUpperCase()}
+                                            📎 {safeFormat(doc.proof_file?.metadata?.uploadedAt || doc.updatedAt, 'EEE/MMM/yy').toUpperCase()}
                                         </div>
                                         {doc.declaredAt && (
                                             <>
@@ -61,7 +61,7 @@ export const DocumentTimeline: React.FC<DocumentTimelineProps> = ({ client, onVi
                                         <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700" />
                                         <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase">
                                             <Clock size={12} />
-                                            Hora: {safeFormat(doc.proofFile?.metadata?.uploadedAt || doc.updatedAt, 'HH:mm')}
+                                            Hora: {safeFormat(doc.proof_file?.metadata?.uploadedAt || doc.updatedAt, 'HH:mm')}
                                         </div>
                                     </div>
                                 </div>
@@ -92,9 +92,9 @@ export const DocumentTimeline: React.FC<DocumentTimelineProps> = ({ client, onVi
                             </div>
                         </div>
 
-                        {doc.proofFile?.metadata?.previewText && (
+                        {doc.proof_file?.metadata?.previewText && (
                             <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800/50 italic text-[10px] text-slate-500 line-clamp-2">
-                                "{doc.proofFile.metadata.previewText.substring(0, 200)}..."
+                                "{doc.proof_file.metadata.previewText.substring(0, 200)}..."
                             </div>
                         )}
                     </div>

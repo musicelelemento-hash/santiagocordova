@@ -12,8 +12,9 @@ export interface BulkUploadResult {
     type?: string;
     amount?: number;
     error?: string;
-    isPaid?: boolean;
+    is_paid?: boolean;
     phones?: string[];
+    proof_file?: any; // To allow preview inline
 }
 
 interface BulkUploadReportModalProps {
@@ -36,6 +37,14 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
         return r.status === activeTab;
     });
 
+    const [previewPdf, setPreviewPdf] = React.useState<any>(null);
+
+    const handlePreview = (res: BulkUploadResult) => {
+        if (res.proof_file) {
+            setPreviewPdf(res.proof_file);
+        }
+    };
+
     const getWhatsAppLink = (res: BulkUploadResult) => {
         if (!res.phones || res.phones.length === 0) return null;
         const phone = res.phones[0].replace(/\D/g, '');
@@ -47,7 +56,7 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
         if (hour >= 12 && hour < 19) greeting = "Buenas tardes";
         else if (hour >= 19 || hour < 5) greeting = "Buenas noches";
 
-        const statusMsg = res.isPaid
+        const statusMsg = res.is_paid
             ? "Le informo que los honorarios por este trámite ya se encuentran cancelados. ¡Muchas gracias!"
             : "Le informo que el pago de honorarios por este trámite se encuentra pendiente de registro.";
 
@@ -133,9 +142,9 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
                                         {(res.status === 'success' || res.status === 'new_client') && (
                                             <span className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest shadow-lg ${
                                                 res.status === 'new_client' ? 'bg-sky-500 text-white animate-pulse' :
-                                                res.isPaid ? 'bg-emerald-600 text-white' : 'bg-amber-600 text-white'
+                                                res.is_paid ? 'bg-emerald-600 text-white' : 'bg-amber-600 text-white'
                                                 }`}>
-                                                {res.status === 'new_client' ? 'NUEVO OPERATIVO' : (res.isPaid ? 'LIQUIDACIÓN: ELITE' : 'COBRO PENDIENTE')}
+                                                {res.status === 'new_client' ? 'NUEVO OPERATIVO' : (res.is_paid ? 'LIQUIDACIÓN: ELITE' : 'COBRO PENDIENTE')}
                                             </span>
                                         )}
                                     </div>
@@ -161,6 +170,15 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
                             </div>
 
                             <div className="flex items-center gap-3 shrink-0">
+                                {res.status === 'success' && res.proof_file && (
+                                    <button
+                                        onClick={() => handlePreview(res)}
+                                        className="p-4 bg-sky-500/10 text-sky-400 rounded-2xl hover:bg-sky-500 hover:text-white transition-all shadow-lg active:scale-95 border border-sky-500/30 hover:shadow-sky-500/20"
+                                        title="Vista Previa de Extracción"
+                                    >
+                                        <LucideIcons.Eye size={22} />
+                                    </button>
+                                )}
                                 {res.status === 'success' && res.phones && res.phones.length > 0 && (
                                     <a
                                         href={getWhatsAppLink(res) || '#'}
@@ -197,6 +215,46 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
                     </button>
                 </div>
             </div>
+
+            {previewPdf && (
+                <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
+                    <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-2xl" onClick={() => setPreviewPdf(null)}></div>
+                    <div className="relative w-full max-w-6xl h-[85vh] glass-elite rounded-[2rem] border border-white/10 flex flex-col md:flex-row overflow-hidden flex shadow-2xl">
+                        <div className="flex-1 bg-black/40 relative">
+                            <iframe 
+                                src={`${URL.createObjectURL(new Blob([Uint8Array.from(atob(previewPdf.content.includes(',') ? previewPdf.content.split(',')[1] : previewPdf.content), c => c.charCodeAt(0))], { type: 'application/pdf' }))}#toolbar=0`} 
+                                className="w-full h-full border-none"
+                            ></iframe>
+                        </div>
+                        <div className="w-80 bg-slate-900/80 p-8 border-l border-white/5 flex flex-col shrink-0">
+                            <h3 className="text-xl font-black text-white uppercase tracking-tight mb-6">Radar Táctico</h3>
+                            <div className="space-y-6 flex-1">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">FORMA TRIBUTARIA</p>
+                                    <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-sm font-black text-white uppercase tracking-wider font-mono">
+                                        {previewPdf.metadata?.formType || 'DESCONOCIDO'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">PERIODO FISCAL</p>
+                                    <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-sky-400 text-lg font-black uppercase tracking-wider font-mono">
+                                        {previewPdf.metadata?.period || 'N/A'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Monto Valido</p>
+                                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-2xl font-black uppercase tracking-tighter font-mono">
+                                        ${(previewPdf.metadata?.amount || 0).toFixed(2)}
+                                    </div>
+                                </div>
+                            </div>
+                            <button onClick={() => setPreviewPdf(null)} className="py-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-black uppercase tracking-widest transition-all">
+                                Cerrar Visor
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </Modal>
     );
 };

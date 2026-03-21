@@ -70,7 +70,7 @@ const buildCategory = (obligation: string, isVip: boolean): ClientCategory => {
 
 const PaymentHistoryChart: React.FC<{ client: Client }> = memo(({ client }) => {
     const periods = getRecentPeriods(client, 6);
-    const historyMap = new Map((client.declarationHistory || []).map(d => [d.period, d] as [string, Declaration]));
+    const historyMap = new Map((client.declarations || []).map(d => [d.period, d] as [string, Declaration]));
     const chartData = periods.map(period => {
         const declaration = historyMap.get(period) as Declaration | undefined;
         let status = 'No Generado';
@@ -157,7 +157,7 @@ const RentaSeasonCard: React.FC<{ client: Client, onAction: (type: 'declare_simp
     const currentYear = getYear(today);
     const fiscalYear = currentYear - 1;
     const periodKey = fiscalYear.toString();
-    const decl = client.declarationHistory.find(d => d.period === periodKey);
+    const decl = client.declarations.find(d => d.period === periodKey);
     const isPaid = decl?.status === DeclarationStatus.Pagada;
     const isDeclared = decl?.status === DeclarationStatus.Enviada;
 

@@ -43,7 +43,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ clients, tasks, se
                 }
             }
 
-            client.declarationHistory.forEach(d => {
+            client.declarations.forEach(d => {
                 const fee = d.amount ?? getClientServiceFee(client, serviceFees);
                 if (d.status === DeclarationStatus.Pagada) {
                     totalPaid += fee;

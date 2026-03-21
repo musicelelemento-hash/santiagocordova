@@ -50,9 +50,9 @@ export const DesignScreen: React.FC<{ navigate: (screen: Screen, options?: any) 
                 regime: res.regimen,
                 sriPassword: password,
                 isActive: true,
-                declarationHistory: [],
+                declarations: [],
                 notes: `[Análisis IA Profesional] Actividad Detectada: ${res.actividad_economica}`,
-                feeStructure: {
+                fee_structure: {
                     monthly: res.regimen === TaxRegime.RimpeNegocioPopular ? 0 : 5,
                     annual: 10,
                 },

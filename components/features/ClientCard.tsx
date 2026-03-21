@@ -22,13 +22,13 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
 
     const today = new Date();
     const currentPeriod = getPeriod(client, today);
-    const activeDecl = client.declarationHistory.find(d => d.period === currentPeriod);
+    const activeDecl = client.declarations.find(d => d.period === currentPeriod);
 
     // Lógica de Estado
-    const isPaid = !!activeDecl?.isPaid;
-    const isDeclared = !!activeDecl?.proofFile || activeDecl?.status === DeclarationStatus.Enviada;
+    const isPaid = !!activeDecl?.is_paid;
+    const isDeclared = !!activeDecl?.proof_file || activeDecl?.status === DeclarationStatus.Enviada;
     const fee = getClientServiceFee(client, serviceFees);
-    const isVip = !!client.isVip;
+    const isVip = true;
     const dueDate = getDueDateForPeriod(client, currentPeriod);
 
     // Cálculos de Tiempo
@@ -44,9 +44,9 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
 
     // For annual income in year Y, the period name is Y-1. E.g. in 2025 declaring 2024.
     const rentaPeriod = (currentYear - 1).toString();
-    const rentaDecl = client.declarationHistory.find(d => d.period === rentaPeriod);
-    const isRentaDeclared = !!rentaDecl?.proofFile || !!client.annualRentaProof || rentaDecl?.status === DeclarationStatus.Enviada;
-    const isRentaPaid = !!client.annualRentaPaid || !!rentaDecl?.isPaid;
+    const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+    const isRentaDeclared = !!rentaDecl?.proof_file || false || rentaDecl?.status === DeclarationStatus.Enviada;
+    const isRentaPaid = false || !!rentaDecl?.is_paid;
     const isRentaFullyDone = isRentaDeclared && isRentaPaid;
     const showRentaExtraButtons = !compact && needsRenta && currentMonth >= rentaStartMonth;
 
@@ -55,8 +55,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     const isFullyAlDia = isFullyPaid && isFullyDeclared;
 
     // ORDEN DE TRABAJO (Prioridad)
-    const hasWorkOrder = (client.declarationHistory || []).some(d => d.isPaid && d.status === DeclarationStatus.Pendiente) ||
-        (client.annualRentaPaid && (client.annualRentaStatus === DeclarationStatus.Pendiente || !isRentaDeclared));
+    const hasWorkOrder = (client.declarations || []).some(d => d.is_paid && d.status === DeclarationStatus.Pendiente);
 
     // REFRESH PULSE LOGIC (Discrete Heartbeat)
     const isRefundAlertActive = 
@@ -107,7 +106,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
         }
     };
 
-    const theme = !client.isActive && client.isDeleted ? cardThemes.deleted : (isFullyAlDia ? cardThemes.elite : (isVip ? cardThemes.vip : (isOverdue ? cardThemes.alert : cardThemes.command)));
+    const theme = !client.isActive && client.isDeleted ? cardThemes.deleted : (isFullyAlDia ? cardThemes.elite : (true ? cardThemes.vip : (isOverdue ? cardThemes.alert : cardThemes.command)));
     const titleColor = theme.title;
     const textColor = theme.text;
 
@@ -122,8 +121,8 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     else if (isUrgent) statusBadge = { color: 'bg-amber-100 text-amber-700 border-amber-200', text: 'DUE SOON', icon: LucideIcons.Timer };
 
     // ALERTA DE PDF FALTANTE
-    const isMissingPdf = isDeclared && !activeDecl?.proofFile;
-    const isRentaMissingPdf = isRentaDeclared && !rentaDecl?.proofFile && !client.annualRentaProof;
+    const isMissingPdf = isDeclared && !activeDecl?.proof_file;
+    const isRentaMissingPdf = isRentaDeclared && !rentaDecl?.proof_file;
 
     const handleCopy = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -153,17 +152,15 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className={`
-                relative rounded-[2rem] border transition-all duration-500 cursor-pointer overflow-hidden group
-                ${theme.bg} ${theme.border} ${theme.glow}
-                ${isHovered ? 'shadow-2xl -translate-y-1.5' : ''}
+                relative rounded-[2rem] transition-all duration-500 cursor-pointer overflow-hidden group
+                ${isHovered ? 'glass-elite -translate-y-1.5' : 'glass-card'}
                 ${hasWorkOrder ? 'ring-2 ring-amber-400/50' : ''}
-                ${isFullyAlDia ? 'opacity-95 hover:opacity-100' : ''}
                 ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-sky-500/50' : ''}
             `}
         >
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
             
-            {isVip && !client.isDeleted && (
+            {true && !client.isDeleted && (
                 <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-1000 rotate-12">
                     <LucideIcons.Crown size={200} />
                 </div>
@@ -173,7 +170,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                 <div className={`flex justify-between items-start ${compact ? 'mb-4' : 'mb-6'}`}>
                     <div className="flex items-center gap-4">
                         <div className={`relative group/avatar`}>
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm transition-all duration-500 ${isVip && !client.isDeleted ? 'bg-amber-500 text-slate-900 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300'}`}>
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm transition-all duration-500 ${true && !client.isDeleted ? 'bg-amber-500 text-slate-900 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300'}`}>
                                 {client.name.substring(0, 2).toUpperCase()}
                             </div>
                             {isFullyAlDia && !client.isDeleted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center"><LucideIcons.Check size={10} className="text-white" /></div>}
@@ -181,30 +178,30 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                         
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
-                                <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black tracking-widest uppercase border ${isVip && !client.isDeleted ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/5'}`}>
+                                <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black tracking-widest uppercase border ${true && !client.isDeleted ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/5'}`}>
                                     {client.taxProfile?.ivaFrequency || 'MENSUAL'}
                                 </span>
-                                {isVip && !client.isDeleted && <span className="text-[9px] px-2 py-0.5 bg-amber-500 text-slate-900 rounded-lg font-black tracking-widest shadow-sm">VIP</span>}
+                                {true && !client.isDeleted && <span className="text-[9px] px-2 py-0.5 bg-amber-500 text-slate-900 rounded-lg font-black tracking-widest shadow-sm">VIP</span>}
                                 {client.hasElderlyDevolucionIva && (
                                     <span className="text-[9px] px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-lg font-black tracking-widest flex items-center gap-1">
                                         <LucideIcons.Heart size={8} /> T. EDAD
                                     </span>
                                 )}
                             </div>
-                            <h3 className={`font-black text-base line-clamp-1 leading-tight uppercase tracking-tight ${titleColor}`} title={client.name}>
-                                {client.tradeName || client.name}
-                            </h3>
-                            {client.tradeName && (
-                                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 truncate uppercase mt-0.5" title={client.name}>
-                                    {client.name}
-                                </p>
-                            )}
+                                <h3 className={`font-premium font-black text-lg line-clamp-1 leading-tight uppercase tracking-tight text-white dark:text-white`} title={client.name}>
+                                    {client.tradeName || client.name}
+                                </h3>
+                                {client.tradeName && (
+                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate uppercase mt-0.5" title={client.name}>
+                                        {client.name}
+                                    </p>
+                                )}
                             <div className="flex items-center gap-2 mt-1">
                                 <button onClick={handleCopy} className={`group/ruc flex items-center gap-2 px-2 py-1 rounded-lg border transition-all ${copied ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50/50 dark:bg-white/5 border-slate-100 dark:border-white/5 hover:border-sky-500'}`}>
                                     <span className="font-mono text-[10px] font-black tracking-widest">{client.ruc}</span>
                                     {copied ? <LucideIcons.Check size={10} strokeWidth={3} /> : <LucideIcons.Copy size={10} className="text-slate-400 group-hover/ruc:text-sky-500" />}
                                 </button>
-                                {client.declarationHistory && client.declarationHistory.find(d => d.period === currentPeriod && !!d.proofFile) && (
+                                {client.declarations && client.declarations.find(d => d.period === currentPeriod && !!d.proof_file) && (
                                     <button 
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -273,16 +270,16 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             {/* Cobrar Button removed from main list per Phase 4 plan */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
-                                className={`flex items-center justify-center gap-1.5 rounded-xl transition-all font-black border px-3 py-1.5 text-[9px] uppercase ${activeDecl?.proofFile ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-sky-50 text-sky-600 border-sky-200'} shadow-sm active:scale-95`}
+                                className={`flex items-center justify-center gap-1.5 rounded-xl transition-all font-black border px-3 py-1.5 text-[9px] uppercase ${activeDecl?.proof_file ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-sky-50 text-sky-600 border-sky-200'} shadow-sm active:scale-95`}
                             >
-                                <LucideIcons.UploadCloud size={13} /> {activeDecl?.proofFile ? 'PDF OK' : 'IVA PDF'}
+                                <LucideIcons.UploadCloud size={13} /> {activeDecl?.proof_file ? 'PDF OK' : 'IVA PDF'}
                             </button>
 
-                            {(activeDecl?.proofFile || isRentaDeclared) && (
+                            {(activeDecl?.proof_file || isRentaDeclared) && (
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        const fileToPreview = activeDecl?.proofFile || (needsRenta ? (rentaDecl?.proofFile || client.annualRentaProof) : null);
+                                        const fileToPreview = activeDecl?.proof_file || (needsRenta ? (rentaDecl?.proof_file || undefined) : null);
                                         if (fileToPreview && onPreview && activeDecl) onPreview(client, activeDecl);
                                         else if (fileToPreview) {
                                             const blob = new Blob([Uint8Array.from(atob(fileToPreview.content.split(',')[1] || fileToPreview.content), c => c.charCodeAt(0))], { type: 'application/pdf' });

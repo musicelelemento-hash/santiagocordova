@@ -212,7 +212,7 @@ async function handleAgentResponse(ctx: any, response: string) {
         console.log("🎙️ Generating TTS...");
         const voiceInputFile = await textToSpeech(finalResponse);
         console.log("🎙️ Sending voice message...");
-        await ctx.replyWithVoice(voiceInputFile, { caption: "Baku Voice" });
+        await ctx.replyWithAudio(voiceInputFile, { caption: "Baku Voice" });
       } catch (ttsErr: any) {
         console.error("⚠️ TTS Error:", ttsErr.message);
         // Better error reporting for audio failures

@@ -20,12 +20,10 @@ const sanitizeSingleClient = (c: any): Client => {
     phones: Array.isArray(c.phones) ? c.phones : [c.phone || ''],
     address: c.address || '',
     economicActivity: c.economicActivity || '',
-    isVip: true,
-    regime: Object.values(TaxRegime).includes(c.regime) ? c.regime : TaxRegime.General,
-    declarationHistory: Array.isArray(c.declarationHistory) ? c.declarationHistory.map((d: any) => ({
+    declarations: Array.isArray(c.declarations) ? c.declarations : (Array.isArray(c.declarations) ? c.declarations.map((d: any) => ({
       ...d,
-      isPaid: typeof d.isPaid === 'boolean' ? d.isPaid : d.status === DeclarationStatus.Pagada
-    })) : [],
+      is_paid: typeof d.is_paid === 'boolean' ? d.is_paid : typeof d.is_paid === 'boolean' ? d.is_paid : d.status === DeclarationStatus.Pagada
+    })) : []),
     isActive: typeof c.isActive === 'boolean' ? c.isActive : true,
     // Bóveda de Datos
     isArtisan: !!c.isArtisan,
@@ -38,23 +36,11 @@ const sanitizeSingleClient = (c: any): Client => {
     sharedAccessKey: c.sharedAccessKey || '',
     notes: c.notes || '',
     // Fee Structure Preservation
-    feeStructure: c.feeStructure ? {
-      ...c.feeStructure,
-      semestral: (c.feeStructure.semestral === 5 || !c.feeStructure.semestral) ? 10 : c.feeStructure.semestral
+    fee_structure: c.fee_structure || c.fee_structure ? {
+      ...(c.fee_structure || c.fee_structure),
+      semestral: ((c.fee_structure || c.fee_structure).semestral === 5 || !(c.fee_structure || c.fee_structure).semestral) ? 10 : (c.fee_structure || c.fee_structure).semestral
     } : undefined,
     rentaCategory: c.rentaCategory || undefined,
-    annualRentaStatus: c.annualRentaStatus || undefined,
-    annualRentaPaid: !!c.annualRentaPaid,
-    anexoGastosStatus: c.anexoGastosStatus || undefined,
-    anexoGastosPaid: !!c.anexoGastosPaid,
-    devolucionIvaStatus: c.devolucionIvaStatus || undefined,
-    devolucionIvaPaid: !!c.devolucionIvaPaid,
-    iceAnexoStatus: c.iceAnexoStatus || undefined,
-    iceAnexoPaid: !!c.iceAnexoPaid,
-    iceDeclarationStatus: c.iceDeclarationStatus || undefined,
-    iceDeclarationPaid: !!c.iceDeclarationPaid,
-    anexoPvpStatus: c.anexoPvpStatus || undefined,
-    anexoPvpPaid: !!c.anexoPvpPaid,
     signatureExpirationDate: c.signatureExpirationDate || '',
     vault: Array.isArray(c.vault) ? c.vault : [],
     needsVerification: typeof c.needsVerification === 'boolean' ? c.needsVerification : false,
@@ -117,8 +103,8 @@ const sanitizeClients = (rawClients: any[]): Client[] => {
     } else {
       const existing = uniqueClients.get(key)!;
       // Resolve collision: Keep the one with the most declaration history.
-      const clientHistoryStr = client.declarationHistory ? client.declarationHistory.length : 0;
-      const existingHistoryStr = existing.declarationHistory ? existing.declarationHistory.length : 0;
+      const clientHistoryStr = client.declarations ? client.declarations.length : 0;
+      const existingHistoryStr = existing.declarations ? existing.declarations.length : 0;
 
       if (clientHistoryStr > existingHistoryStr) {
         uniqueClients.set(key, client);
@@ -604,18 +590,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       const mergedClients = incomingClients.map(incomingClient => {
         const existingClient = currentClients.find(c => c.ruc === incomingClient.ruc || c.id === incomingClient.id);
         if (existingClient) {
-          // Merge declarationHistory by period, keeping local proofFiles and payment status
-          const mergedHistory: Declaration[] = incomingClient.declarationHistory.map((incDecl: Declaration) => {
-            const existingDecl = existingClient.declarationHistory.find((d: Declaration) => d.period === incDecl.period);
+          // Merge declarations by period, keeping local proof_files and payment status
+          const mergedHistory: Declaration[] = (incomingClient.declarations || []).map((incDecl: Declaration) => {
+            const existingDecl = (existingClient.declarations || []).find((d: Declaration) => d.period === incDecl.period);
             if (existingDecl) {
               return {
                 ...incDecl,
-                isPaid: existingDecl.isPaid ?? incDecl.isPaid,
+                is_paid: existingDecl.is_paid ?? incDecl.is_paid,
                 paidAt: existingDecl.paidAt || incDecl.paidAt,
                 transactionId: existingDecl.transactionId || incDecl.transactionId,
                 amount: existingDecl.amount || incDecl.amount,
-                proofFile: existingDecl.proofFile || incDecl.proofFile,
-                status: (existingDecl.status === DeclarationStatus.Pagada ? DeclarationStatus.Pagada : existingDecl.proofFile ? (existingDecl.status || incDecl.status) : incDecl.status) as DeclarationStatus,
+                proof_file: existingDecl.proof_file || incDecl.proof_file,
+                status: (existingDecl.status === DeclarationStatus.Pagada ? DeclarationStatus.Pagada : existingDecl.proof_file ? (existingDecl.status || incDecl.status) : incDecl.status) as DeclarationStatus,
                 reminders: existingDecl.reminders || incDecl.reminders,
               };
             }
@@ -623,7 +609,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           });
           
           // Add any existing declarations that might not be in the incoming data
-          existingClient.declarationHistory.forEach(existingDecl => {
+          (existingClient.declarations || []).forEach(existingDecl => {
             if (!mergedHistory.some(d => d.period === existingDecl.period)) {
               mergedHistory.push(existingDecl);
             }
@@ -632,9 +618,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           return {
             ...incomingClient,
             id: existingClient.id, // Mantener ID original
-            declarationHistory: mergedHistory,
+            declarations: mergedHistory,
             vault: existingClient.vault?.length > 0 ? existingClient.vault : incomingClient.vault,
-            annualRentaProof: existingClient.annualRentaProof || incomingClient.annualRentaProof,
             signatureFile: existingClient.signatureFile || incomingClient.signatureFile,
             rucPdf: existingClient.rucPdf || incomingClient.rucPdf,
             rucCertificate: existingClient.rucCertificate || incomingClient.rucCertificate,

@@ -80,7 +80,7 @@ const importClientsFromCSV = (
             newClientsList.push({
                 id: `imported-${Date.now()}-${i}`,
                 ruc: ruc,
-                declarationHistory: [],
+                declarations: [],
                 isActive: true,
                 ...clientProps,
                 sriPassword: clientProps.sriPassword || '', // Ensure sriPassword is a string

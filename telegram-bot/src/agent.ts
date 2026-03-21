@@ -2,7 +2,7 @@ import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
 import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
-import { searchClient, updateClientData, getDatabaseSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, bulkUpdateVipStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks } from './database_ops';
+import { searchClient, updateClientData, getDatabaseSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -71,9 +71,6 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
     },
     check_sri_credentials: async (args: any, chatId: string) => {
         return await getCredentialStatus();
-    },
-    bulk_update_vip_status: async ({ isVip, rucs }: { isVip: boolean, rucs?: string[] }, chatId: string) => {
-        return await bulkUpdateVipStatus(isVip, rucs);
     },
     web_search_sri: async ({ query }: { query: string }, chatId: string) => {
         console.log(`🌐 Performing live SRI web search for: ${query}`);
@@ -190,7 +187,6 @@ const toolDefinitions = [
     { type: "function", function: { name: "mark_payment_as_paid", description: "Marca pago (IVA/RENTA/HONORARIOS).", parameters: { type: "object", properties: { ruc: { type: "string" }, type: { type: "string", enum: ["IVA", "RENTA", "HONORARIOS"] }, period: { type: "string", description: "YYYY-MM" } }, required: ["ruc", "type"] } } },
     { type: "function", function: { name: "mark_payment_as_unpaid", description: "Revierte pago a PENDIENTE (IVA/RENTA/HONORARIOS).", parameters: { type: "object", properties: { ruc: { type: "string" }, type: { type: "string", enum: ["IVA", "RENTA", "HONORARIOS"] }, period: { type: "string", description: "YYYY-MM" } }, required: ["ruc", "type"] } } },
     { type: "function", function: { name: "check_sri_credentials", description: "Salud credenciales SRI." } },
-    { type: "function", function: { name: "bulk_update_vip_status", description: "Update VIP masivo.", parameters: { type: "object", properties: { isVip: { type: "boolean" }, rucs: { type: "array", items: { type: "string" } } }, required: ["isVip"] } } },
     { type: "function", function: { name: "clear_chat_history", description: "Limpia historial chat.", parameters: { type: "object", properties: {} } } },
     { type: "function", function: { name: "web_search_sri", description: "Busca leyes SRI web.", parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] } } },
     { type: "function", function: { name: "escudo_fiscal", description: "Escaneo inconsistencias." } },

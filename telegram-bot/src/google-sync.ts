@@ -34,13 +34,21 @@ export async function syncToSheets(clients: any[]) {
         }
 
         // Prepare data rows
-        const rows = clients.map(c => [
-            c.ruc,
-            c.name,
-            c.regime || 'General',
-            c.annualRentaStatus || 'Pendiente',
-            c.notes || ''
-        ]);
+        const currentYear = new Date().getFullYear();
+        const prevYear = (currentYear - 1).toString();
+        
+        const rows = clients.map(c => {
+            const rentaDecl = (c.declarations || []).find((d: any) => d.period === prevYear);
+            const rentaStatus = rentaDecl ? rentaDecl.status : 'Pendiente';
+            
+            return [
+                c.ruc,
+                c.name,
+                c.regime || 'General',
+                rentaStatus,
+                c.notes || ''
+            ];
+        });
 
         // Add header
         rows.unshift(['RUC', 'NOMBRE', 'RÉGIMEN', 'RENTA 2025', 'NOTAS']);

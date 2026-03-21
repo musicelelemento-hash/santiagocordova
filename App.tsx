@@ -113,9 +113,6 @@ const App: React.FC = () => {
   const [clientToView, setClientToView] = useState<Client | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const [isSidebarLocked, setIsSidebarLocked] = useLocalStorage<boolean>('sidebarLocked', true);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(isSidebarLocked);
-
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline'>('idle');
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -292,10 +289,6 @@ const App: React.FC = () => {
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-emerald-500/10 via-sky-600/5 to-transparent blur-[120px] -z-10 animate-aurora pointer-events-none"></div>
 
         <Sidebar
-          isExpanded={isSidebarExpanded}
-          isLocked={isSidebarLocked}
-          onToggleLock={() => setIsSidebarLocked(!isSidebarLocked)}
-          onToggleExpand={(val) => !isSidebarLocked && setIsSidebarExpanded(val)}
           onNavigate={(screen) => {
             if (screen === 'landing' as any) setAppState('landing');
             else navigate(screen as Screen);
@@ -370,7 +363,32 @@ const App: React.FC = () => {
               </div>
             </div>
           </header>
-          <main className="flex-grow p-6 sm:px-10 overflow-y-auto w-full relative no-scrollbar">
+
+          {/* Mobile Ultra-Premium Header */}
+          <header className="flex md:hidden fixed top-0 w-full z-50 items-center justify-between px-5 py-3 glass-elite border-b border-white/5 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-600 to-emerald-500 flex items-center justify-center shadow-lg pointer-events-none">
+                <Logo className="w-5 h-5 text-white" />
+              </div>
+              <span className="font-display font-black text-white text-sm uppercase tracking-widest">Legión</span>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <button onClick={() => setIsUploadModalOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:scale-110 active:scale-95 transition-transform shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                <LucideIcons.Zap size={14} className="fill-current" />
+              </button>
+              
+              <div className="scale-75 origin-right">
+                <NotificationBell clients={clients} navigate={navigate} />
+              </div>
+
+              <button onClick={toggleTheme} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 dark:bg-slate-800/40 border border-white/20 dark:border-white/10 text-sky-600 dark:text-yellow-400 shadow-lg hover:scale-110 active:scale-95 transition-transform">
+                {theme === 'dark' ? <LucideIcons.Sun size={14} fill="currentColor" /> : <LucideIcons.Moon size={14} fill="currentColor" />}
+              </button>
+            </div>
+          </header>
+
+          <main className="flex-grow px-4 pt-24 pb-32 sm:pt-6 sm:p-6 sm:px-10 sm:pb-32 overflow-y-auto w-full relative no-scrollbar">
             <ErrorBoundary>
               <div className="max-w-[1600px] mx-auto">
                 {renderScreen()}

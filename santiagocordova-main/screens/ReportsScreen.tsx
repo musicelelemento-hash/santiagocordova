@@ -90,7 +90,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ clients, tasks, se
             }
 
             // Historial de Pagos
-            client.declarationHistory.forEach(d => {
+            client.declarations.forEach(d => {
                 const fee = d.amount ?? getClientServiceFee(client, serviceFees, d.period);
                 
                 // Ingresos Reales
@@ -168,7 +168,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ clients, tasks, se
 
             // Sumar pagos de declaraciones en este mes
             clients.forEach(c => {
-                c.declarationHistory.forEach(d => {
+                c.declarations.forEach(d => {
                     if (d.status === DeclarationStatus.Pagada && d.paidAt) {
                         if (isSameMonth(parseISO(d.paidAt), monthDate)) {
                             monthIncome += (d.amount || getClientServiceFee(c, serviceFees, d.period));

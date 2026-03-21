@@ -13,13 +13,13 @@ export const getClientServiceFee = (client: Client, fees: ServiceFeesConfig, per
     if (period) {
         // Annual Period (e.g., "2024")
         if (period.length === 4 && !period.includes('-')) {
-             if (client.feeStructure?.annual !== undefined) return client.feeStructure.annual;
+             if (client.fee_structure?.annual !== undefined) return client.fee_structure.annual;
              return client.regime === TaxRegime.RimpeNegocioPopular ? fees.rentaNP : fees.rentaGeneral;
         }
         
         // Semestral Period (e.g., "2024-S1")
         if (period.includes('-S')) {
-            if (client.feeStructure?.semestral !== undefined) return client.feeStructure.semestral;
+            if (client.fee_structure?.semestral !== undefined) return client.fee_structure.semestral;
             // Fallback to customServiceFee if no specific structure
             if (client.customServiceFee !== undefined) return client.customServiceFee;
             return fees.ivaSemestral;
@@ -27,7 +27,7 @@ export const getClientServiceFee = (client: Client, fees: ServiceFeesConfig, per
 
         // Monthly Period (e.g., "2024-05")
         if (period.includes('-') && !period.includes('S')) {
-            if (client.feeStructure?.monthly !== undefined) return client.feeStructure.monthly;
+            if (client.fee_structure?.monthly !== undefined) return client.fee_structure.monthly;
             // Fallback
              if (client.customServiceFee !== undefined) return client.customServiceFee;
              return fees.ivaMensual;
@@ -38,19 +38,19 @@ export const getClientServiceFee = (client: Client, fees: ServiceFeesConfig, per
     // Priority: Specific Structure > Legacy Custom Fee > Global Config
     
     if (client.category.includes('Semestral')) {
-        return client.feeStructure?.semestral ?? client.customServiceFee ?? fees.ivaSemestral;
+        return client.fee_structure?.semestral ?? client.customServiceFee ?? fees.ivaSemestral;
     }
     
     if (client.category.includes('Mensual') || client.category === ClientCategory.DevolucionIvaTerceraEdad) {
-        return client.feeStructure?.monthly ?? client.customServiceFee ?? fees.ivaMensual;
+        return client.fee_structure?.monthly ?? client.customServiceFee ?? fees.ivaMensual;
     }
 
     if (client.regime === TaxRegime.RimpeNegocioPopular) {
-        return client.feeStructure?.annual ?? client.customServiceFee ?? fees.rentaNP;
+        return client.fee_structure?.annual ?? client.customServiceFee ?? fees.rentaNP;
     }
 
     // Default for others
-    return client.feeStructure?.annual ?? client.customServiceFee ?? fees.rentaGeneral;
+    return client.fee_structure?.annual ?? client.customServiceFee ?? fees.rentaGeneral;
 };
 
 export const addAdvancePayments = (
@@ -68,14 +68,14 @@ export const addAdvancePayments = (
     const paidPeriods: { period: string; amount: number }[] = [];
     let newRentaTask: Task | undefined = undefined;
 
-    const pendingDeclarations = client.declarationHistory
+    const pendingDeclarations = client.declarations
         .filter(d => d.status !== DeclarationStatus.Pagada)
         .sort((a, b) => a.period.localeCompare(b.period));
 
     const periodsToPay = pendingDeclarations.slice(0, advancePeriods);
     const periodsToPaySet = new Set(periodsToPay.map(p => p.period));
 
-    const updatedHistory = client.declarationHistory.map(declaration => {
+    const updatedHistory = client.declarations.map(declaration => {
         if (periodsToPaySet.has(declaration.period)) {
             // Pass the period to get the correct fee type (Annual vs Monthly)
             const amount = declaration.amount ?? getClientServiceFee(client, fees, declaration.period);
@@ -116,7 +116,7 @@ export const addAdvancePayments = (
 
     const updatedClient = {
         ...client,
-        declarationHistory: updatedHistory,
+        declarations: updatedHistory,
     };
     
     return {

@@ -82,41 +82,32 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                 };
 
                 // Update Client Data
-                if (data.formType === 'IVA') {
-                    const history = [...client.declarationHistory];
-                    const eraPeriod = data.period;
-                    const idx = history.findIndex(d => d.period === eraPeriod);
+                const history = [...client.declarations];
+                const eraPeriod = data.period;
+                const idx = history.findIndex(d => d.period === eraPeriod);
 
-                    if (idx !== -1) {
-                        history[idx] = {
-                            ...history[idx],
-                            status: DeclarationStatus.Pagada,
-                            isPaid: true,
-                            paidAt: new Date().toISOString(),
-                            amount: data.amount,
-                            proofFile: storedFile,
-                            updatedAt: new Date().toISOString()
-                        };
-                    } else {
-                        history.push({
-                            period: eraPeriod,
-                            status: DeclarationStatus.Pagada,
-                            isPaid: true,
-                            paidAt: new Date().toISOString(),
-                            amount: data.amount,
-                            proofFile: storedFile,
-                            updatedAt: new Date().toISOString()
-                        });
-                    }
-                    updatedClients[clientIndex] = { ...client, declarationHistory: history };
-                } else if (data.formType.includes('RENTA')) {
-                    updatedClients[clientIndex] = {
-                        ...client,
-                        annualRentaStatus: DeclarationStatus.Pagada,
-                        annualRentaPaid: true,
-                        annualRentaProof: storedFile
+                if (idx !== -1) {
+                    history[idx] = {
+                        ...history[idx],
+                        status: DeclarationStatus.Pagada,
+                        is_paid: true,
+                        paidAt: new Date().toISOString(),
+                        amount: data.amount,
+                        proof_file: storedFile,
+                        updatedAt: new Date().toISOString()
                     };
+                } else {
+                    history.push({
+                        period: eraPeriod,
+                        status: DeclarationStatus.Pagada,
+                        is_paid: true,
+                        paidAt: new Date().toISOString(),
+                        amount: data.amount,
+                        proof_file: storedFile,
+                        updatedAt: new Date().toISOString()
+                    });
                 }
+                updatedClients[clientIndex] = { ...client, declarations: history };
 
                 anyChanges = true;
                 newResults.push({

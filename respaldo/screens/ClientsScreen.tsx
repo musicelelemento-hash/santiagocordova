@@ -208,7 +208,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         setClients(prev => prev.map(c => {
             if (c.id !== client.id) return c;
             
-            const history = [...c.declarationHistory];
+            const history = [...c.declarations];
             const idx = history.findIndex(d => d.period === period);
             const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
             
@@ -225,13 +225,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             } else {
                 history.push(newEntry);
             }
-            updatedClient = { ...c, declarationHistory: history };
+            updatedClient = { ...c, declarations: history };
             return updatedClient;
         }));
 
         // AJUSTE CRÍTICO: Sincronizar el cliente seleccionado si está abierto en el modal
         if (selectedClient && selectedClient.id === client.id) {
-             const history = [...client.declarationHistory];
+             const history = [...client.declarations];
              const idx = history.findIndex(d => d.period === period);
              const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
              
@@ -245,7 +245,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
              if (idx > -1) { history[idx] = { ...history[idx], ...newEntry }; } 
              else { history.push(newEntry); }
              
-             setSelectedClient({ ...client, declarationHistory: history });
+             setSelectedClient({ ...client, declarations: history });
         }
 
         toast.success(action === 'declare' ? 'Declaración registrada' : 'Pago registrado');

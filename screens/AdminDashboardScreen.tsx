@@ -62,7 +62,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             list = list.filter(c => {
                 const p = getPeriod(c, today);
                 const d = getDueDateForPeriod(c, p);
-                const isDeclared = (c.declarationHistory || []).some(dh => dh.period === p && (dh.status === DeclarationStatus.Enviada || dh.status === DeclarationStatus.Pagada || !!dh.proofFile));
+                const isDeclared = (c.declarations || []).some(dh => dh.period === p && (dh.status === DeclarationStatus.Enviada || dh.status === DeclarationStatus.Pagada || !!dh.proof_file));
                 return !isDeclared && d && (isPast(d) || isToday(d) || isTomorrow(d) || d.getTime() - today.getTime() < 3 * 24 * 60 * 60 * 1000);
             });
         } else if (filter === 'rimpe') {
@@ -75,14 +75,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             list = list.filter(c => {
                 const p = getPeriod(c, today);
                 const d = getDueDateForPeriod(c, p);
-                const isDone = (c.declarationHistory || []).some(dh => dh.period === p && (dh.status === DeclarationStatus.Enviada || dh.status === DeclarationStatus.Pagada));
+                const isDone = (c.declarations || []).some(dh => dh.period === p && (dh.status === DeclarationStatus.Enviada || dh.status === DeclarationStatus.Pagada));
                 return d && isPast(d) && !isDone && c.isActive;
             });
         } else if (filter === 'prepaid') {
             list = list.filter(c => {
                 const p = getPeriod(c, today);
-                const dec = (c.declarationHistory || []).find(dh => dh.period === p);
-                return dec?.isPaid && dec?.status === DeclarationStatus.Pendiente && c.isActive;
+                const dec = (c.declarations || []).find(dh => dh.period === p);
+                return dec?.is_paid && dec?.status === DeclarationStatus.Pendiente && c.isActive;
             });
         } else if (filter === 'no-iva') {
             list = list.filter(c => c.taxProfile?.ivaFrequency === 'Ninguno');
@@ -91,8 +91,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         } else if (filter === 'boveda') {
             list = list.filter(c => {
                 const p = getPeriod(c, today);
-                const decl = (c.declarationHistory || []).find(dh => dh.period === p);
-                return decl && !decl.proofFile && (decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pagada);
+                const decl = (c.declarations || []).find(dh => dh.period === p);
+                return decl && !decl.proof_file && (decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pagada);
             });
         }
 
@@ -123,15 +123,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             const currentP = getPeriod(c, today);
             
             // Check IVA
-            const ivaDecl = (c.declarationHistory || []).find(dh => dh.period === currentP);
-            const isIvaDeclared = !!ivaDecl?.proofFile || ivaDecl?.status === DeclarationStatus.Enviada || ivaDecl?.status === DeclarationStatus.Pagada;
+            const ivaDecl = (c.declarations || []).find(dh => dh.period === currentP);
+            const isIvaDeclared = !!ivaDecl?.proof_file || ivaDecl?.status === DeclarationStatus.Enviada || ivaDecl?.status === DeclarationStatus.Pagada;
             
             // Check Renta
             const currentYear = today.getFullYear();
             const rentaPeriod = (currentYear - 1).toString();
             const needsRenta = c.taxProfile?.requiresAnnualRenta ?? (c.regime === TaxRegime.RimpeEmprendedor || c.regime === TaxRegime.RimpeNegocioPopular || c.regime === TaxRegime.General);
-            const rentaDecl = (c.declarationHistory || []).find(dh => dh.period === rentaPeriod);
-            const isRentaDeclared = !!rentaDecl?.proofFile || !!c.annualRentaProof || rentaDecl?.status === DeclarationStatus.Enviada || rentaDecl?.status === DeclarationStatus.Pagada;
+            const rentaDecl = (c.declarations || []).find(dh => dh.period === rentaPeriod);
+            const isRentaDeclared = !!rentaDecl?.proof_file || rentaDecl?.status === DeclarationStatus.Enviada || rentaDecl?.status === DeclarationStatus.Pagada;
 
             const needsIva = c.regime !== TaxRegime.RimpeNegocioPopular && c.taxProfile?.ivaFrequency !== 'Ninguno';
 
@@ -159,10 +159,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 }
 
                 // RED DOT: Declarado pero sin PDF
-                if (ivaDecl && !ivaDecl.proofFile && ivaDecl.status === DeclarationStatus.Enviada) isUrgent = true;
-                if (rentaDecl && !rentaDecl.proofFile && (rentaDecl.status === DeclarationStatus.Enviada || !!c.annualRentaProof)) {
-                    // This logic depends on where the proof is stored. Ensuring it flags missing PDF.
-                    if (!c.annualRentaProof) isUrgent = true;
+                if (ivaDecl && !ivaDecl.proof_file && ivaDecl.status === DeclarationStatus.Enviada) isUrgent = true;
+                if (rentaDecl && !rentaDecl.proof_file && rentaDecl.status === DeclarationStatus.Enviada) {
+                    isUrgent = true;
                 }
 
                 if (isUrgent) {
@@ -182,20 +181,20 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         const overdue = clients.filter(c => {
             const p = getPeriod(c, today);
             const d = getDueDateForPeriod(c, p);
-            const isDone = (c.declarationHistory || []).some(dh => dh.period === p && (dh.status === DeclarationStatus.Pagada || dh.status === DeclarationStatus.Enviada));
+            const isDone = (c.declarations || []).some(dh => dh.period === p && (dh.status === DeclarationStatus.Pagada || dh.status === DeclarationStatus.Enviada));
             return d && isPast(d) && !isDone && c.isActive;
         }).length;
 
         // Updated income calculation using new fee structure if available
         const monthlyIncome = clients.filter(c => c.isActive).reduce((sum, c) => {
-            const monthlyFee = c.feeStructure?.monthly ?? c.customServiceFee ?? 0;
+            const monthlyFee = c.fee_structure?.monthly ?? c.customServiceFee ?? 0;
             return sum + monthlyFee;
         }, 0);
 
         const prepaidCount = clients.filter(c => {
             const p = getPeriod(c, today);
-            const dec = (c.declarationHistory || []).find(dh => dh.period === p);
-            return dec?.isPaid && dec?.status === DeclarationStatus.Pendiente && c.isActive;
+            const dec = (c.declarations || []).find(dh => dh.period === p);
+            return dec?.is_paid && dec?.status === DeclarationStatus.Pendiente && c.isActive;
         }).length;
 
         return {
@@ -237,7 +236,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         setClients(prev => prev.map(c => {
             if (c.id !== client.id) return c;
 
-            const history = [...c.declarationHistory];
+            const history = [...c.declarations];
             const idx = history.findIndex(d => d.period === period);
             const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
 
@@ -254,7 +253,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             } else {
                 history.push(newEntry);
             }
-            return { ...c, declarationHistory: history };
+            return { ...c, declarations: history };
         }));
 
         toast.success(action === 'declare' ? 'Declaración registrada' : 'Pago registrado');
@@ -335,9 +334,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         <div className="space-y-8 animate-fade-in pb-20 relative aurora-premium min-h-screen">
             {/* Stitch Design Suggestion Hub - Elite Tactical Refinement */}
             {stitchSuggestions.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in relative z-30">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in relative z-30 px-4 sm:px-0">
                     {stitchSuggestions.map((s, idx) => (
-                        <div key={idx} onClick={s.action} className="group relative overflow-hidden glass-tactical p-6 rounded-[2.5rem] border border-white/10 hover:neon-border-teal transition-all cursor-pointer hover:-translate-y-2 shadow-2xl">
+                        <div key={idx} onClick={s.action} className="group relative overflow-hidden glass-card p-6 cursor-pointer">
                             <div className={`absolute top-0 right-0 w-32 h-32 blur-[80px] rounded-full -mr-16 -mt-16 transition-all duration-700 group-hover:scale-150 ${s.priority === 'high' ? 'bg-rose-500/10' : s.priority === 'medium' ? 'bg-amber-500/10' : 'bg-sky-500/10'}`}></div>
                             <div className="flex flex-col relative z-10">
                                 <div className="flex items-center gap-2 mb-3">
@@ -359,8 +358,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
             {/* Tactical Warning Banner: Compact for Mobile */}
             {tacticalInfo.todayDigit !== null && (
-                <div className="relative z-30 sm:mb-8 mb-4 animate-fade-in-down">
-                    <div className="glass-tactical rounded-3xl sm:rounded-[2rem] border border-rose-500/30 p-4 sm:p-6 shadow-2xl shadow-rose-500/10 flex items-center justify-between">
+                <div className="relative z-30 sm:mb-8 mb-4 animate-fade-in-down px-4 sm:px-0">
+                    <div className="glass-elite rounded-[2rem] p-4 sm:p-6 flex items-center justify-between border-rose-500/30">
                         <div className="flex items-center gap-4 sm:gap-6">
                             <div className="relative">
                                 <div className="bg-rose-600 p-3 sm:p-4 rounded-full text-white shadow-2xl shadow-rose-600/40 relative z-10">
@@ -393,8 +392,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             <div className="absolute top-1/2 left-0 w-[800px] h-[800px] bg-emerald-500/5 dark:bg-emerald-400/5 blur-[140px] rounded-full pointer-events-none"></div>
 
             {/* MANDO CENTRAL: Compact Mobile Hub */}
-            <div className="relative z-20 sm:space-y-6 space-y-4">
-                <div className="glass-tactical rounded-3xl sm:rounded-[3rem] border border-white/10 p-5 sm:p-8 shadow-2xl relative overflow-hidden group">
+            <div className="relative z-20 sm:space-y-6 space-y-4 px-4 sm:px-0">
+                <div className="glass-elite rounded-[2.5rem] p-5 sm:p-8 relative overflow-hidden group">
                     {/* Animated grid overlay */}
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none group-hover:opacity-[0.05] transition-opacity"></div>
                     
@@ -406,8 +405,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <div className="w-3 h-1 bg-emerald-500 rounded-full"></div>
                                     <span className="text-[8px] sm:text-[10px] font-black text-emerald-500 uppercase tracking-[0.4em]">ALPHA CORE</span>
                                 </div>
-                                <h1 className="text-xl sm:text-4xl font-display font-black text-slate-900 dark:text-white tracking-tighter leading-tight mb-1 truncate">
-                                    Tablero <span className="neon-text-teal">Tributario</span>
+                                <h1 className="text-xl sm:text-5xl font-premium font-black text-slate-900 dark:text-white tracking-tighter leading-tight mb-1 truncate">
+                                    Tablero <span className="text-gradient-teal">Tributario</span>
                                 </h1>
                                 <p className="text-[8px] sm:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                                     <LucideIcons.Shield size={10} /> HQ-V2.5
@@ -472,9 +471,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     </div>
 
                     {/* METRICS DOCK: High-Density Swiper on Mobile */}
-        <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-6 mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-white/5 overflow-x-auto sm:overflow-x-visible no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0 snap-x snap-mandatory pb-4 sm:pb-0">
-                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 hover:bg-white/5 bg-white/10 dark:bg-white/5 sm:bg-transparent rounded-[2rem] transition-all cursor-pointer group" onClick={() => setFilter('all')}>
-                            <div className="p-3 sm:p-4 bg-sky-500/10 text-sky-500 rounded-2xl group-hover:bg-sky-500 group-hover:text-white transition-all shadow-lg shadow-sky-500/10 border border-sky-500/20 shrink-0">
+                    <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-6 mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-white/5 overflow-x-auto sm:overflow-x-visible no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0 snap-x snap-mandatory pb-4 sm:pb-0">
+                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-card group" onClick={() => setFilter('all')}>
+                            <div className="p-3 sm:p-4 bg-sky-500/10 text-sky-500 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all shadow-lg shadow-sky-500/10 border border-sky-500/20 shrink-0">
                                 <LucideIcons.Users size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2.5} />
                             </div>
                             <div className="min-w-0">
@@ -482,7 +481,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <p className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white tech-font tracking-tighter leading-none">{kpis.total}</p>
                             </div>
                         </div>
-                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 hover:bg-white/5 bg-white/10 dark:bg-white/5 sm:bg-transparent rounded-[2rem] transition-all cursor-pointer group" onClick={() => setFilter('overdue')}>
+                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-card group" onClick={() => setFilter('overdue')}>
                             <div className={`p-3 sm:p-4 rounded-2xl transition-all shadow-lg border shrink-0 ${kpis.overdue > 0 ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 group-hover:bg-rose-500 group-hover:text-white' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'}`}>
                                 <LucideIcons.ShieldAlert size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2.5} />
                             </div>
@@ -491,10 +490,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <p className={`text-xl sm:text-3xl font-black tech-font tracking-tighter leading-none ${kpis.overdue > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{kpis.overdue}</p>
                             </div>
                         </div>
-                        <div className="flex-none w-[85%] sm:w-auto snap-center flex items-center gap-5 p-4 hover:bg-white/5 bg-white/10 dark:bg-white/5 sm:bg-transparent rounded-[2rem] transition-all cursor-pointer group" onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true, title: 'Auditoría de Bóveda' } })}>
+                        <div className="flex-none w-[85%] sm:w-auto snap-center flex items-center gap-5 p-4 glass-card group" onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true, title: 'Auditoría de Bóveda' } })}>
                             <div className={`p-3.5 sm:p-4 rounded-2xl transition-all shadow-lg border shrink-0 ${clients.filter(c => 
-                                    c.declarationHistory?.some(d => 
-                                        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proofFile
+                                    c.declarations?.some(d => 
+                                        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
                                     )
                                 ).length > 0 ? 'bg-amber-500 text-white border-amber-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white'}`}>
                                 <LucideIcons.Vault size={22} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2.5} />
@@ -502,17 +501,17 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <div className="min-w-0">
                                 <p className="text-[8px] sm:text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em] mb-1">BOVEDA PENDIENTE</p>
                                 <p className={`text-2xl sm:text-3xl font-black tech-font tracking-tighter leading-none ${clients.filter(c => 
-                                    c.declarationHistory?.some(d => 
-                                        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proofFile
+                                    c.declarations?.some(d => 
+                                        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
                                     )
                                 ).length > 0 ? 'text-amber-500' : 'text-slate-400'}`}>{clients.filter(c => 
-                                    c.declarationHistory?.some(d => 
-                                        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proofFile
+                                    c.declarations?.some(d => 
+                                        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
                                     )
                                 ).length}</p>
                             </div>
                         </div>
-                        <div className="flex-none w-[90%] sm:w-auto sm:col-span-1 snap-center flex flex-col justify-center p-4 sm:p-5 bg-white/5 rounded-3xl border border-white/5 relative overflow-hidden group/progress">
+                        <div className="flex-none w-[90%] sm:w-auto sm:col-span-1 snap-center flex flex-col justify-center p-4 sm:p-5 glass-card relative overflow-hidden group/progress">
                              <div className="relative z-10 w-full">
                                 <div className="flex justify-between items-end mb-2 sm:mb-3">
                                     <div className="flex flex-col">
@@ -673,15 +672,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <button
                             onClick={() => setInboxTab('pendientes')}
-                            className={`flex-1 sm:flex-none group relative flex items-center gap-3 sm:gap-5 p-1.5 sm:p-2 pr-4 sm:pr-8 rounded-full transition-all duration-500 border ${inboxTab === 'pendientes' ? 'glass-tactical border-emerald-500/30 shadow-lg' : 'border-transparent opacity-60'}`}
+                            className={`flex-1 sm:flex-none group relative flex items-center gap-3 sm:gap-5 p-1.5 sm:p-2 pr-4 sm:pr-8 rounded-full transition-all duration-500 border ${inboxTab === 'pendientes' ? 'glass-elite border-emerald-500/30' : 'border-transparent opacity-60'}`}
                         >
-                            <div className={`p-3 sm:p-4 rounded-full transition-all duration-500 ${inboxTab === 'pendientes' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-slate-800'}`}>
+                            <div className={`p-3 sm:p-4 rounded-full transition-all duration-500 ${inboxTab === 'pendientes' ? 'bg-primary text-white shadow-lg' : 'bg-slate-800'}`}>
                                 <LucideIcons.Flashlight size={18} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
                             </div>
                             <div className="flex flex-col items-start translate-y-[1px]">
                                 <span className="text-[7px] sm:text-[10px] font-black tech-font text-emerald-500 uppercase tracking-widest mb-0.5">PENDIENTES</span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm sm:text-xl font-display font-black text-slate-900 dark:text-white uppercase tracking-tight">Deploy</span>
+                                    <span className="text-sm sm:text-xl font-premium font-black text-slate-900 dark:text-white uppercase tracking-tight">Deploy</span>
                                     <span className="px-1.5 py-0.5 bg-rose-500/20 text-rose-500 text-[8px] sm:text-[10px] font-black rounded tech-font">{pendientes.length}</span>
                                 </div>
                             </div>
@@ -689,15 +688,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                         <button
                             onClick={() => setInboxTab('completados')}
-                            className={`flex-1 sm:flex-none group relative flex items-center gap-3 sm:gap-5 p-1.5 sm:p-2 pr-4 sm:pr-8 rounded-full transition-all duration-500 border ${inboxTab === 'completados' ? 'glass-tactical border-emerald-500/30 shadow-lg' : 'border-transparent opacity-60'}`}
+                            className={`flex-1 sm:flex-none group relative flex items-center gap-3 sm:gap-5 p-1.5 sm:p-2 pr-4 sm:pr-8 rounded-full transition-all duration-500 border ${inboxTab === 'completados' ? 'glass-elite border-sky-500/30' : 'border-transparent opacity-60'}`}
                         >
-                            <div className={`p-3 sm:p-4 rounded-full transition-all duration-500 ${inboxTab === 'completados' ? 'bg-sky-500 text-white shadow-lg' : 'bg-slate-800'}`}>
+                            <div className={`p-3 sm:p-4 rounded-full transition-all duration-500 ${inboxTab === 'completados' ? 'bg-accent text-white shadow-lg' : 'bg-slate-800'}`}>
                                 <LucideIcons.ShieldCheck size={18} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
                             </div>
                             <div className="flex flex-col items-start translate-y-[1px]">
                                 <span className="text-[7px] sm:text-[10px] font-black tech-font text-sky-500 uppercase tracking-widest mb-0.5">COMPLETADOS</span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-sm sm:text-xl font-display font-black text-slate-900 dark:text-white uppercase tracking-tight">Docs</span>
+                                    <span className="text-sm sm:text-xl font-premium font-black text-slate-900 dark:text-white uppercase tracking-tight">Docs</span>
                                     <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-500 text-[8px] sm:text-[10px] font-black rounded tech-font">{completados.length}</span>
                                 </div>
                             </div>
@@ -768,8 +767,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     declaration={previewState.declaration}
                     onDownload={() => {
                         const link = document.createElement('a');
-                        link.href = previewState.declaration.proofFile.url;
-                        link.download = previewState.declaration.proofFile.name;
+                        link.href = previewState.declaration.proof_file.url;
+                        link.download = previewState.declaration.proof_file.name;
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);

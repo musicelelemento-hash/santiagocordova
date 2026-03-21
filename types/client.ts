@@ -59,12 +59,12 @@ export interface Declaration {
     status: DeclarationStatus;
     updatedAt: string;
     declaredAt?: string;
-    isPaid?: boolean;
+    is_paid?: boolean;
     paidAt?: string;
     transactionId?: string;
     amount?: number;
     reminders?: Array<{ date: string; channel: 'email' | 'whatsapp', type: ReminderType }>;
-    proofFile?: StoredFile;
+    proof_file?: StoredFile;
 }
 
 export interface ClientFeeStructure {
@@ -113,33 +113,14 @@ export interface Client {
     address?: string;
     notes?: string;
     regime: TaxRegime;
-    isVip?: boolean;
     rentaCategory?: RentaCategory;
     economicActivity?: string;
-    declarationHistory: Declaration[];
+    declarations?: Declaration[];
     isDeleted?: boolean;
     isActive?: boolean;
     taxProfile?: TaxProfile;
     customServiceFee?: number;
-    feeStructure?: ClientFeeStructure;
-    annualRentaStatus?: DeclarationStatus;
-    annualRentaPaid?: boolean;
-    annualRentaProof?: StoredFile;
-    anexoGastosStatus?: DeclarationStatus;
-    anexoGastosPaid?: boolean;
-    anexoGastosProof?: StoredFile;
-    devolucionIvaStatus?: DeclarationStatus;
-    devolucionIvaPaid?: boolean;
-    devolucionIvaProof?: StoredFile;
-    iceAnexoStatus?: DeclarationStatus;
-    iceAnexoPaid?: boolean;
-    iceAnexoProof?: StoredFile;
-    iceDeclarationStatus?: DeclarationStatus;
-    iceDeclarationPaid?: boolean;
-    iceDeclarationProof?: StoredFile;
-    anexoPvpStatus?: DeclarationStatus;
-    anexoPvpPaid?: boolean;
-    anexoPvpProof?: StoredFile;
+    fee_structure?: ClientFeeStructure;
     isArtisan?: boolean;
     establishmentCount?: number;
     jurisdiction?: string;

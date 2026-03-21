@@ -53,12 +53,17 @@ export const GeminiScreen: React.FC<GeminiScreenProps> = ({ navigate }) => {
       timestamp: new Date()
     };
 
+    const newMessages = [...messages, userMessage];
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await getAssistantResponse(input, clients, tasks);
+      const apiMessages = newMessages.map(m => ({ 
+          role: m.role === 'user' ? 'user' : 'model', 
+          text: m.content 
+      }));
+      const response = await getAssistantResponse(apiMessages as any, clients, tasks);
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',

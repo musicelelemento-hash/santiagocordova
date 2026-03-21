@@ -13,13 +13,13 @@ export const getClientServiceFee = (client: Client, fees: ServiceFeesConfig, per
     if (period) {
         // Annual Period (e.g., "2024")
         if (period.length === 4 && !period.includes('-')) {
-            if (client.feeStructure?.annual !== undefined) return client.feeStructure.annual;
+            if (client.fee_structure?.annual !== undefined) return client.fee_structure.annual;
             return client.regime === TaxRegime.RimpeNegocioPopular ? fees.rentaNP : fees.rentaGeneral;
         }
 
         // Semestral Period (e.g., "2024-S1")
         if (period.includes('-S')) {
-            if (client.feeStructure?.semestral !== undefined) return client.feeStructure.semestral;
+            if (client.fee_structure?.semestral !== undefined) return client.fee_structure.semestral;
             // Fallback to customServiceFee if no specific structure
             if (client.customServiceFee !== undefined) return client.customServiceFee;
             return fees.ivaSemestral;
@@ -27,12 +27,12 @@ export const getClientServiceFee = (client: Client, fees: ServiceFeesConfig, per
 
         // Monthly Period (e.g., "2024-05")
         if (period.includes('-') && !period.includes('S')) {
-            let total = client.feeStructure?.monthly ?? (client.customServiceFee ?? fees.ivaMensual);
+            let total = client.fee_structure?.monthly ?? (client.customServiceFee ?? fees.ivaMensual);
 
             // Add ICE fees if required
             if (client.taxProfile?.requiresIce) {
-                total += client.feeStructure?.iceMonthly ?? 5; // Default $5
-                total += client.feeStructure?.iceAnexo ?? 5;   // Default $5
+                total += client.fee_structure?.iceMonthly ?? 5; // Default $5
+                total += client.fee_structure?.iceAnexo ?? 5;   // Default $5
             }
 
             return total;
@@ -43,23 +43,23 @@ export const getClientServiceFee = (client: Client, fees: ServiceFeesConfig, per
     // Priority: Specific Structure > Legacy Custom Fee > Global Config
 
     if (client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor) {
-        return client.feeStructure?.semestral ?? client.customServiceFee ?? fees.ivaSemestral;
+        return client.fee_structure?.semestral ?? client.customServiceFee ?? fees.ivaSemestral;
     }
 
     if (client.taxProfile?.ivaFrequency === 'Mensual' || client.taxProfile?.hasActiveDevolucionIva) {
-        let total = client.feeStructure?.monthly ?? client.customServiceFee ?? fees.ivaMensual;
+        let total = client.fee_structure?.monthly ?? client.customServiceFee ?? fees.ivaMensual;
         if (client.taxProfile?.requiresIce) {
-            total += client.feeStructure?.iceMonthly ?? 5;
-            total += client.feeStructure?.iceAnexo ?? 5;
+            total += client.fee_structure?.iceMonthly ?? 5;
+            total += client.fee_structure?.iceAnexo ?? 5;
         }
         return total;
     }
 
     if (client.regime === TaxRegime.RimpeNegocioPopular) {
-        return client.feeStructure?.annual ?? client.customServiceFee ?? fees.rentaNP;
+        return client.fee_structure?.annual ?? client.customServiceFee ?? fees.rentaNP;
     }
 
     // Default for others
-    return client.feeStructure?.annual ?? client.customServiceFee ?? fees.rentaGeneral;
+    return client.fee_structure?.annual ?? client.customServiceFee ?? fees.rentaGeneral;
 };
 

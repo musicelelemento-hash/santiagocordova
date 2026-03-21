@@ -40,14 +40,14 @@ export const addAdvancePayments = (
     const paidPeriods: { period: string; amount: number }[] = [];
     let newRentaTask: Task | undefined = undefined;
 
-    const pendingDeclarations = client.declarationHistory
+    const pendingDeclarations = client.declarations
         .filter(d => d.status !== DeclarationStatus.Pagada)
         .sort((a, b) => a.period.localeCompare(b.period));
 
     const periodsToPay = pendingDeclarations.slice(0, advancePeriods);
     const periodsToPaySet = new Set(periodsToPay.map(p => p.period));
 
-    const updatedHistory = client.declarationHistory.map(declaration => {
+    const updatedHistory = client.declarations.map(declaration => {
         if (periodsToPaySet.has(declaration.period)) {
             const amount = declaration.amount ?? getClientServiceFee(client, fees);
             paidPeriods.push({ period: declaration.period, amount });
@@ -84,7 +84,7 @@ export const addAdvancePayments = (
 
     const updatedClient = {
         ...client,
-        declarationHistory: updatedHistory,
+        declarations: updatedHistory,
     };
     
     return {

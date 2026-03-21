@@ -41,7 +41,7 @@ const newClientInitialState: Partial<Client> = {
   billingSystemUrl: '',
   billingSystemUser: '',
   billingSystemPassword: '',
-  feeStructure: { monthly: 0, annual: 0 }
+  fee_structure: { monthly: 0, annual: 0 }
 };
 
 type FrequencyType = 'MENSUAL' | 'SEMESTRAL' | 'ANUAL_RENTA' | 'DEVOLUCION';
@@ -211,7 +211,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             category: finalCategory,
             isActive: isActive,
             notes: notes.trim(),
-            feeStructure: {
+            fee_structure: {
                 monthly: parseFloat(monthlyFee) || 0,
                 annual: parseFloat(annualFee) || 0
             }

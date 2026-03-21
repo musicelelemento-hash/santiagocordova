@@ -23,7 +23,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
   
   const today = new Date();
   const currentPeriod = getPeriod(client, today);
-  const activeDecl = client.declarationHistory.find(d => d.period === currentPeriod);
+  const activeDecl = client.declarations.find(d => d.period === currentPeriod);
   
   // Lógica de Estado
   const isDeclared = activeDecl?.status === DeclarationStatus.Enviada || activeDecl?.status === DeclarationStatus.Pagada;

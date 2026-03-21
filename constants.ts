@@ -50,7 +50,6 @@ export const mockClients: Client[] = [
         name: 'Aleida',
         sriPassword: 'Aleida2021*',
         regime: TaxRegime.General,
-        isVip: true,
         taxProfile: {
             ivaFrequency: 'Mensual',
             requiresAnnualRenta: true,
@@ -60,7 +59,7 @@ export const mockClients: Client[] = [
             requiresIce: false,
             requiresAnexoPvp: false
         },
-        declarationHistory: [
+        declarations: [
             {
                 period: '2024-05',
                 status: DeclarationStatus.Pagada,
@@ -70,7 +69,7 @@ export const mockClients: Client[] = [
             }
         ],
         isActive: true,
-        feeStructure: { monthly: 5, annual: 10, semestral: 10 }
+        fee_structure: { monthly: 5, annual: 10, semestral: 10 }
     },
     {
         id: uuidv4(),
@@ -78,7 +77,6 @@ export const mockClients: Client[] = [
         name: 'CHAVEZ CORDOVA GUIDO ERMEL',
         sriPassword: 'Guido2026*',
         regime: TaxRegime.General,
-        isVip: true,
         taxProfile: {
             ivaFrequency: 'Mensual',
             requiresAnnualRenta: true,
@@ -88,9 +86,9 @@ export const mockClients: Client[] = [
             requiresIce: true,
             requiresAnexoPvp: true
         },
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
-        feeStructure: { 
+        fee_structure: { 
             monthly: 25, 
             annual: 10, 
             iceMonthly: 10, 

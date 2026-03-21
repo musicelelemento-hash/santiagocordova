@@ -29,7 +29,7 @@ interface TasksScreenProps {
 const newClientInitialState: Partial<Client> = {
   regime: TaxRegime.General,
   category: ClientCategory.SuscripcionMensual,
-  declarationHistory: [],
+  declarations: [],
   sriPassword: '',
   ruc: '',
   name: '',

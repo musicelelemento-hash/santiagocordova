@@ -28,7 +28,7 @@ const newClientInitialState: Partial<Client> = {
     email: '',
     notes: '',
     signatureExpirationDate: '',
-    feeStructure: {
+    fee_structure: {
         monthly: 5,
         annual: 10,
         semestral: 10
@@ -55,7 +55,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
     const [modalFeedback, setModalFeedback] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-    const [isVip, setIsVip] = useState(initialData?.isVip ?? false);
+    const [isVip, setIsVip] = useState(true);
     const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
 
     // Tax Profile States
@@ -77,10 +77,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
     const [requiresAnexoPvp, setRequiresAnexoPvp] = useState(initialData?.taxProfile?.requiresAnexoPvp ?? false);
 
     const [monthlyFee, setMonthlyFee] = useState<string>(
-        (clientData.feeStructure?.monthly ?? 5).toString()
+        (clientData.fee_structure?.monthly ?? 5).toString()
     );
     const [annualFee, setAnnualFee] = useState<string>(
-        (clientData.feeStructure?.annual ?? 10).toString()
+        (clientData.fee_structure?.annual ?? 10).toString()
     );
 
     const checkExistingRuc = (ruc: string) => {
@@ -140,8 +140,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 setClientData(prev => ({ ...prev, rucCertificate: certFile }));
             }
             // Preserve existing VIP status if client already exists; otherwise default to false
-            const existingVip = exists ? exists.isVip : false;
-            setIsVip(existingVip);
+            // Everyone is VIP now
+            setIsVip(true);
 
             setClientData(prev => {
                 const baseClient = exists || prev;
@@ -154,8 +154,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     phones: extracted.contacto.celular ? [extracted.contacto.celular] : baseClient.phones,
                     regime: extracted.regimen || baseClient.regime,
                     sriPassword: passwordToUse,
-                    // Preserve existing feeStructure; only set defaults for new clients
-                    feeStructure: exists ? baseClient.feeStructure : {
+                    // Preserve existing fee_structure; only set defaults for new clients
+                    fee_structure: exists ? baseClient.fee_structure: {
                         monthly: 5,
                         annual: 10,
                         semestral: 10
@@ -179,8 +179,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 setModalFeedback({ message: 'Datos escaneados. Perfil tributario autoconfigurado.', type: 'success' });
             }
 
-            setMonthlyFee(exists ? (exists.feeStructure?.monthly ?? 5).toString() : "5");
-            setAnnualFee(exists ? (exists.feeStructure?.annual ?? 10).toString() : "10");
+            setMonthlyFee(exists ? (exists.fee_structure?.monthly ?? 5).toString() : "5");
+            setAnnualFee(exists ? (exists.fee_structure?.annual ?? 10).toString() : "10");
             // VIP status already set above based on existence; no override needed
 
             if (!exists) {
@@ -190,7 +190,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 } else if (extracted.regimen === TaxRegime.RimpeEmprendedor || extracted.obligaciones_tributarias === 'semestral') {
                     setIvaFrequency('Semestral');
                     setRequiresAnnualRenta(true);
-                    if (!exists || !exists.feeStructure?.semestral) setMonthlyFee("10");
+                    if (!exists || !exists.fee_structure?.semestral) setMonthlyFee("10");
                 } else {
                     setIvaFrequency('Mensual');
                     setRequiresAnnualRenta(true);
@@ -230,7 +230,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         const finalClient: Client = {
             id: clientData.id || uuidv4(),
             ...clientData as Client,
-            isVip: isVip,
             phones: (clientData.phones || []).filter(p => p.trim() !== ''),
             isActive: isActive,
             notes: notes.trim(),
@@ -244,12 +243,12 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 requiresIce,
                 requiresAnexoPvp
             },
-            feeStructure: {
-                monthly: ivaFrequency === 'Mensual' ? mFee : (clientData.feeStructure?.monthly ?? 5),
-                semestral: ivaFrequency === 'Semestral' ? mFee : (clientData.feeStructure?.semestral ?? 10),
+            fee_structure: {
+                monthly: ivaFrequency === 'Mensual' ? mFee : (clientData.fee_structure?.monthly ?? 5),
+                semestral: ivaFrequency === 'Semestral' ? mFee : (clientData.fee_structure?.semestral ?? 10),
                 annual: aFee
             },
-            declarationHistory: clientData.declarationHistory || [
+            declarations: clientData.declarations || [
                 {
                     period: getPeriod({ ...clientData, regime: clientData.regime || TaxRegime.General } as Client, new Date()),
                     status: DeclarationStatus.Pendiente,
@@ -529,7 +528,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                         <div className="flex-1">
                                             <div className="flex justify-between items-center mb-0.5">
                                                 <span className={`text-[11px] font-black uppercase tracking-tight ${mod.checked ? 'text-slate-800 dark:text-white' : 'text-slate-500'}`}>{mod.label}</span>
-                                                {mod.alert && <span className="text-[8px] font-black uppercase bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/20">{mod.alert}</span>}
+                                                {(mod as any).alert && <span className="text-[8px] font-black uppercase bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/20">{(mod as any).alert}</span>}
                                             </div>
                                             <div className="flex items-center gap-2 opacity-50">
                                                 <mod.icon size={10} />
@@ -544,11 +543,11 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         <div className="bg-slate-950/5 dark:bg-white/5 rounded-3xl p-5 border border-white/10 shadow-inner backdrop-blur-3xl">
                             <div className="flex flex-col gap-4">
                                 <div className="flex justify-between items-center gap-4">
-                                    <div onClick={() => setIsVip(!isVip)} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer flex-1 ${isVip ? 'bg-amber-500/10 border-amber-500/30' : 'bg-white/5 border-white/10 opacity-50'}`}>
-                                        <Sparkles size={18} className={isVip ? 'text-amber-500' : 'text-slate-400'} />
+                                    <div onClick={() => setIsVip(!true)} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer flex-1 ${true ? 'bg-amber-500/10 border-amber-500/30' : 'bg-white/5 border-white/10 opacity-50'}`}>
+                                        <Sparkles size={18} className={true ? 'text-amber-500' : 'text-slate-400'} />
                                         <div className="flex flex-col">
                                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Socio VIP</span>
-                                            <span className={`text-[10px] font-black ${isVip ? 'text-amber-500' : 'text-slate-400'}`}>{isVip ? 'ELITE' : 'NORMAL'}</span>
+                                            <span className={`text-[10px] font-black ${true ? 'text-amber-500' : 'text-slate-400'}`}>{true ? 'ELITE' : 'NORMAL'}</span>
                                         </div>
                                     </div>
 

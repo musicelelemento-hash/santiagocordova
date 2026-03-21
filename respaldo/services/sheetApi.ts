@@ -36,7 +36,7 @@ const sanitizeClients = (rawClients: any[]): Client[] => {
         regime: Object.values(TaxRegime).includes(c.regime) ? c.regime : TaxRegime.General,
         category: Object.values(ClientCategory).includes(c.category) ? c.category : ClientCategory.SuscripcionMensual,
         isActive: typeof c.isActive === 'boolean' ? c.isActive : true,
-        declarationHistory: Array.isArray(c.declarationHistory) ? c.declarationHistory : [],
+        declarations: Array.isArray(c.declarations) ? c.declarations : [],
         // New Fields Preservation
         isArtisan: !!c.isArtisan,
         establishmentCount: typeof c.establishmentCount === 'number' ? c.establishmentCount : 1,

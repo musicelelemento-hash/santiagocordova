@@ -27,7 +27,7 @@ interface PaymentHistoryChartProps {
 export const PaymentHistoryChart: React.FC<PaymentHistoryChartProps> = memo(({ client }) => {
     if (!client) return null;
     const periods = getRecentPeriods(client, 6);
-    const historyMap = new Map((client.declarationHistory || []).map(d => [d.period, d] as [string, Declaration]));
+    const historyMap = new Map((client.declarations || []).map(d => [d.period, d] as [string, Declaration]));
     
     const chartData = periods.map(period => {
         const declaration = historyMap.get(period) as Declaration | undefined;

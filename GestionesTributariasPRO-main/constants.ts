@@ -30,7 +30,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Aleida2021*',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [
+        declarations: [
             {
                 period: '2024-05',
                 status: DeclarationStatus.Pagada,
@@ -48,7 +48,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Uyaguari0702*',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'falta'
     },
@@ -59,7 +59,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -70,7 +70,7 @@ export const mockClients: Client[] = [
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual, // Updated
         customServiceFee: 15, // Added custom fee
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -80,7 +80,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Machuca@1997',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -90,7 +90,7 @@ export const mockClients: Client[] = [
         sriPassword: 'KARLAv07500.',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -100,7 +100,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'falta'
     },
@@ -111,7 +111,7 @@ export const mockClients: Client[] = [
         sriPassword: '29De11de1997@',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'falta'
     },
@@ -122,7 +122,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Eve88ariel0@',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -132,7 +132,7 @@ export const mockClients: Client[] = [
         sriPassword: 'WALTER08010m.',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -142,7 +142,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Jzaid132411@',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -152,7 +152,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Noviembre28@@',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'falta'
     },
@@ -163,7 +163,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Gregorio13*',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: '25 saldo. ALICIAZA ZAMORA. ZAMORA777'
     },
@@ -174,7 +174,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Joaquin2023#',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'llamar'
     },
@@ -185,7 +185,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Paradise1419*',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -195,7 +195,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Lilibeth95@',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -205,7 +205,7 @@ export const mockClients: Client[] = [
         sriPassword: 'GAROFALOq@1975',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -215,7 +215,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Redrovan1967*',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'falta'
     },
@@ -226,7 +226,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Pineda2013*',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -236,7 +236,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'hacer y llamar 0994983292'
     },
@@ -247,7 +247,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Ortiz0705*',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -257,7 +257,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Lemm1997**',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'esposa Walter'
     },
@@ -268,7 +268,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Gbatari95_',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: '4 meses desde mayo'
     },
@@ -279,7 +279,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -289,7 +289,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Luoruier2025!',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -299,7 +299,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Fromero777.',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'Debe 3 declaraciones'
     },
@@ -310,7 +310,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -320,7 +320,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Joelito2005@',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -330,7 +330,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Antonio1991@',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -340,7 +340,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Reyes2021*',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -350,7 +350,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'falta'
     },
@@ -361,7 +361,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'declaración'
     },
@@ -372,7 +372,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'declaración'
     },
@@ -383,7 +383,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -393,7 +393,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -403,7 +403,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Es Mabie123059_',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -413,7 +413,7 @@ export const mockClients: Client[] = [
         sriPassword: 'Vinos2025@',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -423,7 +423,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true
     },
     {
@@ -433,7 +433,7 @@ export const mockClients: Client[] = [
         sriPassword: '',
         regime: TaxRegime.General,
         category: ClientCategory.SuscripcionMensual,
-        declarationHistory: [],
+        declarations: [],
         isActive: true,
         notes: 'Desde julio no aparece'
     }

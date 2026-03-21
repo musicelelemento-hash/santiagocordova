@@ -90,9 +90,8 @@ export const processBulkPdfs = async (
                     name: (data as any).clientName || 'Contribuyente Detectado',
                     sriPassword: '',
                     regime: (data as any).regime || TaxRegime.General,
-                    declarationHistory: [],
+                    declarations: [],
                     isActive: true,
-                    isVip: false,
                     needsVerification: true,
                     verificationReason: `Registrado automáticamente via Bulk Upload. Detectado como: ${(data as any).clientName}`,
                     address: (data as any).address || '',
@@ -147,7 +146,7 @@ export const processBulkPdfs = async (
                 }
             } else if ((data as any).period) {
                 const decPeriod = (data as any).period;
-                const existingDec = client.declarationHistory.find(d => d.period === decPeriod);
+                const existingDec = client.declarations.find(d => d.period === decPeriod);
                 
                 if (existingDec && existingDec.status === DeclarationStatus.Enviada) {
                     // Evitar duplicados si ya está enviada, pero adjuntar el archivo
@@ -159,11 +158,11 @@ export const processBulkPdfs = async (
                         updatedAt: new Date().toISOString(),
                         declaredAt: (data as any).declarationDate || new Date().toISOString(),
                         amount: (data as any).amount || 0,
-                        proofFile: storedFile
+                        proof_file: storedFile
                     };
  
-                    const newHistory = [...client.declarationHistory.filter(d => d.period !== decPeriod), newDec];
-                    updates.declarationHistory = newHistory;
+                    const newHistory = [...client.declarations.filter(d => d.period !== decPeriod), newDec];
+                    updates.declarations = newHistory;
                 }
             }
 

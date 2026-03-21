@@ -34,7 +34,6 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
     const [step, setStep] = useState<'upload' | 'analyzing' | 'review' | 'success'>('upload');
     const [extractedData, setExtractedData] = useState<Partial<Client> | null>(null);
     const [existingClient, setExistingClient] = useState<Client | null>(null);
-    const [isVip, setIsVip] = useState(true); // VIP por defecto
     const [isActiveClient, setIsActiveClient] = useState(true);
     
     const [selectedFrequency, setSelectedFrequency] = useState<'MENSUAL' | 'SEMESTRAL' | 'ANUAL' | 'DEVOLUCION'>('MENSUAL');
@@ -65,10 +64,8 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
             const match = clients.find(c => c.ruc === cleanRuc);
             
             if (match) {
-                setIsVip(match.isVip ?? true);
                 setIsActiveClient(match.isActive ?? true);
             } else {
-                setIsVip(true); // VIP por defecto para nuevos
                 setIsActiveClient(true);
             }
             
@@ -96,9 +93,9 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                 regime: rawData.regimen,
                 sriPassword: finalPassword,
                 notes: `Obligaciones detectadas en PDF:\n${(rawData.lista_obligaciones || []).join('\n')}`,
-                declarationHistory: match?.declarationHistory || [],
+                declarations: match?.declarations || [],
                 // TARIFAS PREDETERMINADAS 5/10
-                feeStructure: match?.feeStructure || {
+                fee_structure: match?.fee_structure || {
                     monthly: 5,
                     annual: 10,
                     semestral: 5
@@ -127,7 +124,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
         
         const finalClient: Client = {
             ...extractedData as Client,
-            isVip,
+            
             isActive: isActiveClient,
             taxProfile: {
                 ivaFrequency,
@@ -320,13 +317,12 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <button 
-                                            onClick={() => setIsVip(!isVip)}
-                                            className={`p-2 rounded-xl transition-all ${isVip ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}
-                                            title="Plan Suscripción"
+                                        <div 
+                                            className="p-2 rounded-xl bg-amber-100 text-amber-600"
+                                            title="Plan VIP"
                                         >
-                                            <Crown size={20} fill={isVip ? "currentColor" : "none"}/>
-                                        </button>
+                                            <Crown size={20} fill="currentColor"/>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

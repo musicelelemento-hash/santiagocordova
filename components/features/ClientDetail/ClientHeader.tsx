@@ -42,7 +42,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                 </button>
 
                 <div className="flex items-center gap-3 sm:gap-4">
-                    {client.isVip && (
+                    {true && (
                         <div className="relative group/vip">
                             <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/30 to-yellow-500/30 blur-md rounded-xl opacity-50 group-hover/vip:opacity-100 transition-opacity"></div>
                             <div className="relative flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-slate-950/80 backdrop-blur-md text-amber-400 rounded-xl border border-amber-500/30 shadow-lg">
@@ -58,7 +58,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
             </div>
 
             {/* Profile Tactical Dossier Card */}
-            <div className="bg-slate-950/40 backdrop-blur-xl rounded-3xl p-6 sm:p-8 md:p-10 border border-white/10 shadow-2xl relative overflow-hidden group aurora-premium">
+            <div className="glass-elite rounded-3xl p-6 sm:p-8 md:p-10 relative overflow-hidden group aurora-premium">
                 {/* Tactical HUD accents */}
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-cyan-500/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-cyan-500/10 transition-colors duration-1000"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/5 rounded-full -ml-32 -mb-32 blur-3xl group-hover:bg-amber-500/10 transition-colors duration-1000"></div>
@@ -90,7 +90,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                         {isEditing && editedClient && setEditedClient ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                                 <div className="space-y-3">
-                                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Razón Social</label>
+                                    <label className="text-[11px] font-premium font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Razón Social</label>
                                     <input
                                         type="text"
                                         value={editedClient.name}
@@ -99,7 +99,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Nombre Comercial</label>
+                                    <label className="text-[11px] font-premium font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Nombre Comercial</label>
                                     <input
                                         type="text"
                                         value={editedClient.tradeName || ''}
@@ -109,7 +109,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                                     />
                                 </div>
                                 <div className="space-y-3">
-                                    <label className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">RUC / ID Personal</label>
+                                    <label className="text-[11px] font-premium font-black text-slate-500 uppercase tracking-[0.2em] ml-1">RUC / ID Personal</label>
                                     <div className="relative">
                                         <input
                                             type="text"
@@ -148,7 +148,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                                         <span className="text-[9px] font-black uppercase tracking-[0.2em]">SISTEMA SEGURO</span>
                                     </div>
                                 </div>
-                                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-6 tracking-tight leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:via-white group-hover:to-cyan-400 transition-all duration-1000 max-w-3xl break-words">
+                                <h1 className="text-3xl sm:text-4xl md:text-5xl font-premium font-black text-white mb-6 tracking-tight leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:via-white group-hover:to-cyan-400 transition-all duration-1000 max-w-3xl break-words">
                                     {client.name}
                                 </h1>
                             </>

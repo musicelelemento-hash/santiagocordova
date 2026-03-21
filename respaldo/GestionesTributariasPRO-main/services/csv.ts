@@ -9,7 +9,7 @@ export const exportClientsToCSV = (clients: Client[], serviceFees: ServiceFeesCo
   const headers = ['ID', 'RUC', 'Nombre', 'Clave SRI', 'Régimen', 'Categoría IVA', 'Categoría Renta', 'Teléfono', 'Email', 'Estado Declaración Actual', 'Tarifa Servicio', 'Estado Cliente', 'Notas'];
   const rows = clients.map(client => {
     const currentPeriod = getPeriod(client, new Date());
-    const currentDeclaration = client.declarationHistory.find(d => d.period === currentPeriod);
+    const currentDeclaration = client.declarations.find(d => d.period === currentPeriod);
     const status = currentDeclaration ? currentDeclaration.status : DeclarationStatus.Pendiente;
     const fee = getClientServiceFee(client, serviceFees);
     const clientStatus = client.isActive ?? true ? 'Activo' : 'Inactivo';
@@ -141,7 +141,7 @@ export const parseClientsFromCSV = (
             const newClient: Client = {
                 id: uuidv4(),
                 ruc: ruc,
-                declarationHistory: [],
+                declarations: [],
                 isActive: true,
                 ...clientProps,
                 name: clientProps.name,
@@ -230,7 +230,7 @@ export const parseBrowserPasswordsCSV = (
                 sriPassword: data.password,
                 regime: TaxRegime.General, // Default
                 category: ClientCategory.SuscripcionMensual, // Default
-                declarationHistory: [],
+                declarations: [],
                 isActive: true,
                 notes: 'Importado desde contraseñas del navegador. Verificar nombre y régimen.'
             };

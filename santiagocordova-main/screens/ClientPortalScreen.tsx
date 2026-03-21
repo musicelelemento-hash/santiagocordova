@@ -85,7 +85,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
 
     const fee = getClientServiceFee(client, serviceFees);
     const currentPeriod = getPeriod(client, new Date());
-    const declaration = client.declarationHistory.find(d => d.period === currentPeriod);
+    const declaration = client.declarations.find(d => d.period === currentPeriod);
     
     // Status Logic
     const isPaid = declaration?.status === DeclarationStatus.Pagada;
@@ -94,7 +94,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
     const daysUntil = getDaysUntilDue(dueDate);
 
     // Debt Calc
-    const pendingDecls = client.declarationHistory.filter(d => d.status !== DeclarationStatus.Pagada);
+    const pendingDecls = client.declarations.filter(d => d.status !== DeclarationStatus.Pagada);
     const totalDebt = pendingDecls.reduce((acc, curr) => acc + (curr.amount || fee), 0);
 
     const toggleKeyVisibility = (key: string) => {
@@ -203,18 +203,18 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     <h3 className="font-bold text-[#0B2149]">Última Actividad</h3>
                                     <button onClick={() => setActiveTab('vault')} className="text-xs font-bold text-[#00A896] hover:underline">Ver Historial</button>
                                 </div>
-                                {client.declarationHistory.length > 0 ? (
+                                {client.declarations.length > 0 ? (
                                     <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
                                         <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-[#00A896] shadow-sm">
                                             <FileCheck size={24}/>
                                         </div>
                                         <div>
-                                            <p className="font-bold text-slate-800">{formatPeriodForDisplay(client.declarationHistory[client.declarationHistory.length - 1].period)}</p>
-                                            <p className="text-xs text-slate-500 font-medium capitalize">{client.declarationHistory[client.declarationHistory.length - 1].status.toLowerCase()}</p>
+                                            <p className="font-bold text-slate-800">{formatPeriodForDisplay(client.declarations[client.declarations.length - 1].period)}</p>
+                                            <p className="text-xs text-slate-500 font-medium capitalize">{client.declarations[client.declarations.length - 1].status.toLowerCase()}</p>
                                         </div>
                                         <div className="ml-auto">
                                             <span className="text-xs font-mono font-bold text-slate-400">
-                                                {format(new Date(client.declarationHistory[client.declarationHistory.length - 1].updatedAt), 'dd MMM yyyy', {locale: es})}
+                                                {format(new Date(client.declarations[client.declarations.length - 1].updatedAt), 'dd MMM yyyy', {locale: es})}
                                             </span>
                                         </div>
                                     </div>
@@ -290,11 +290,11 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     <h3 className="font-bold text-[#0B2149] flex items-center gap-2">
                                         <FileText size={18} className="text-[#00A896]"/> Documentos Digitales
                                     </h3>
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{client.declarationHistory.length} Archivos</span>
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{client.declarations.length} Archivos</span>
                                 </div>
                                 
                                 <div className="p-2 max-h-[500px] overflow-y-auto custom-scrollbar">
-                                    {client.declarationHistory.length > 0 ? [...client.declarationHistory].reverse().map((decl, idx) => (
+                                    {client.declarations.length > 0 ? [...client.declarations].reverse().map((decl, idx) => (
                                         <div key={idx} className="p-4 hover:bg-slate-50 rounded-2xl transition-colors flex items-center justify-between group">
                                             <div className="flex items-center gap-4">
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${decl.status === 'Pagada' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>

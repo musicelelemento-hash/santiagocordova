@@ -180,25 +180,25 @@ const App: React.FC = () => {
             const updatedClients = clientsToUpdate.map(client => {
                 if (!(client.isActive ?? true)) return client;
                 const currentDeclarationPeriod = getPeriod(client, now);
-                const sortedHistory = [...client.declarationHistory].sort((a, b) => a.period.localeCompare(b.period));
+                const sortedHistory = [...client.declarations].sort((a, b) => a.period.localeCompare(b.period));
                 const latestDeclaration = sortedHistory[sortedHistory.length - 1];
                 if (!latestDeclaration) {
                     wasModified = true;
                     const newDeclaration: Declaration = { period: currentDeclarationPeriod, status: DeclarationStatus.Pendiente, updatedAt: now.toISOString(), };
-                    return { ...client, declarationHistory: [newDeclaration] };
+                    return { ...client, declarations: [newDeclaration] };
                 }
                 let lastKnownPeriod = latestDeclaration.period;
                 const newDeclarations: Declaration[] = [];
                 while (lastKnownPeriod < currentDeclarationPeriod) {
                     const nextPeriod = getNextPeriod(lastKnownPeriod);
-                    if (!client.declarationHistory.some(d => d.period === nextPeriod)) {
+                    if (!client.declarations.some(d => d.period === nextPeriod)) {
                         newDeclarations.push({ period: nextPeriod, status: DeclarationStatus.Pendiente, updatedAt: now.toISOString(), });
                     }
                     lastKnownPeriod = nextPeriod;
                 }
                 if (newDeclarations.length > 0) {
                     wasModified = true;
-                    return { ...client, declarationHistory: [...client.declarationHistory, ...newDeclarations] };
+                    return { ...client, declarations: [...client.declarations, ...newDeclarations] };
                 }
                 return client;
             });

@@ -17,7 +17,7 @@ interface VipClientCardProps {
 
 export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, serviceFees, onClick }) => {
     const currentPeriod = getPeriod(client, new Date());
-    const declaration = client.declarationHistory.find(d => d.period === currentPeriod);
+    const declaration = client.declarations.find(d => d.period === currentPeriod);
     const fee = getClientServiceFee(client, serviceFees);
     
     // Check if VIP (Subscription)
@@ -74,7 +74,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
     if (client.regime === TaxRegime.RimpeNegocioPopular) {
         const year = getYear(new Date());
         const fiscalPeriod = `${year - 1}`;
-        const annualDecl = client.declarationHistory.find(d => d.period === fiscalPeriod);
+        const annualDecl = client.declarations.find(d => d.period === fiscalPeriod);
         const isAnnualDone = annualDecl?.status === DeclarationStatus.Pagada || annualDecl?.status === DeclarationStatus.Enviada;
         
         return (
@@ -133,8 +133,8 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
         const currentYear = getYear(new Date());
         const sem1Period = `${currentYear}-S1`;
         const sem2Period = `${currentYear}-S2`;
-        const s1Decl = client.declarationHistory.find(d => d.period === sem1Period);
-        const s2Decl = client.declarationHistory.find(d => d.period === sem2Period);
+        const s1Decl = client.declarations.find(d => d.period === sem1Period);
+        const s2Decl = client.declarations.find(d => d.period === sem2Period);
 
         const getSemStyle = (decl?: any) => {
             if (decl?.status === DeclarationStatus.Pagada) return 'bg-emerald-100 text-emerald-700 border-emerald-200';

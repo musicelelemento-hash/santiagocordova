@@ -20,7 +20,7 @@ const sanitizeClients = (rawClients: any[]): Client[] => {
         economicActivity: c.economicActivity || '',
         category: Object.values(ClientCategory).includes(c.category) ? c.category : ClientCategory.InternoMensual,
         regime: Object.values(TaxRegime).includes(c.regime) ? c.regime : TaxRegime.General,
-        declarationHistory: Array.isArray(c.declarationHistory) ? c.declarationHistory : [],
+        declarations: Array.isArray(c.declarations) ? c.declarations : [],
         isActive: typeof c.isActive === 'boolean' ? c.isActive : true,
         isArtisan: !!c.isArtisan,
         establishmentCount: c.establishmentCount || 1,

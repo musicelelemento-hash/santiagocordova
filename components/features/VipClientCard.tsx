@@ -16,23 +16,23 @@ interface VipClientCardProps {
 export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, serviceFees, onClick, onQuickAction }) => {
     const [copied, setCopied] = React.useState(false);
     const currentPeriod = getPeriod(client, new Date());
-    const declaration = client.declarationHistory.find(d => d.period === currentPeriod);
+    const declaration = client.declarations.find(d => d.period === currentPeriod);
     const fee = getClientServiceFee(client, serviceFees);
 
     // Check if VIP (Subscription)
-    const isVip = !!client.isVip;
+    const isVip = true;
 
     // Determine Status Logic
     // Determine Status Logic
-    const isPaid = !!declaration?.isPaid;
+    const isPaid = !!declaration?.is_paid;
 
     // Renta Logic for fully paid check
     const currentYear = getYear(new Date());
     const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
     const rentaPeriod = (currentYear - 1).toString();
-    const rentaDecl = client.declarationHistory.find(d => d.period === rentaPeriod);
-    const isRentaDeclared = !!rentaDecl?.proofFile || !!client.annualRentaProof || rentaDecl?.status === DeclarationStatus.Enviada;
-    const isRentaPaid = !!client.annualRentaPaid || !!rentaDecl?.isPaid;
+    const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+    const isRentaDeclared = !!rentaDecl?.proof_file || false || rentaDecl?.status === DeclarationStatus.Enviada;
+    const isRentaPaid = false || !!rentaDecl?.is_paid;
     const isRentaFullyDone = isRentaDeclared && isRentaPaid;
 
     // ICE & PVP Logic
@@ -40,21 +40,21 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
     const iceAnexoPeriod = `${currentPeriod}:ANEXO_ICE`;
     const pvpPeriod = `${currentYear}:PVP`;
 
-    const iceDecl = client.declarationHistory.find(d => d.period === icePeriod);
-    const iceAnexoDecl = client.declarationHistory.find(d => d.period === iceAnexoPeriod);
-    const pvpDecl = client.declarationHistory.find(d => d.period === pvpPeriod);
+    const iceDecl = client.declarations.find(d => d.period === icePeriod);
+    const iceAnexoDecl = client.declarations.find(d => d.period === iceAnexoPeriod);
+    const pvpDecl = client.declarations.find(d => d.period === pvpPeriod);
 
-    const isIceDeclared = !!iceDecl?.proofFile || iceDecl?.status === DeclarationStatus.Enviada;
-    const isIcePaid = !!iceDecl?.isPaid || !!client.iceDeclarationPaid;
+    const isIceDeclared = !!iceDecl?.proof_file || iceDecl?.status === DeclarationStatus.Enviada;
+    const isIcePaid = !!iceDecl?.is_paid || false;
     
-    const isIceAnexoDone = !!iceAnexoDecl?.proofFile || iceAnexoDecl?.status === DeclarationStatus.Enviada || !!client.iceAnexoPaid;
-    const isPvpDone = !!pvpDecl?.proofFile || pvpDecl?.status === DeclarationStatus.Enviada || !!client.anexoPvpPaid;
+    const isIceAnexoDone = !!iceAnexoDecl?.proof_file || iceAnexoDecl?.status === DeclarationStatus.Enviada || false;
+    const isPvpDone = !!pvpDecl?.proof_file || pvpDecl?.status === DeclarationStatus.Enviada || false;
 
     const isIcePending = client.taxProfile?.requiresIce && (!isIceDeclared || !isIcePaid || !isIceAnexoDone);
     const isPvpPending = client.taxProfile?.requiresAnexoPvp && !isPvpDone;
 
     const isFullyPaid = (isPaid || !declaration) && (isRentaPaid || !needsRenta) && (!client.taxProfile?.requiresIce || (isIcePaid && isIceAnexoDone)) && !isPvpPending;
-    const isFullyAlDia = isFullyPaid && (declaration?.status === DeclarationStatus.Enviada || !!declaration?.proofFile || !declaration) && (isRentaDeclared || !needsRenta) && (!client.taxProfile?.requiresIce || (isIceDeclared && isIceAnexoDone)) && (!client.taxProfile?.requiresAnexoPvp || isPvpDone);
+    const isFullyAlDia = isFullyPaid && (declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file || !declaration) && (isRentaDeclared || !needsRenta) && (!client.taxProfile?.requiresIce || (isIceDeclared && isIceAnexoDone)) && (!client.taxProfile?.requiresAnexoPvp || isPvpDone);
 
     let status = declaration?.status || DeclarationStatus.Pendiente;
     const dueDate = getDueDateForPeriod(client, currentPeriod);
@@ -65,16 +65,10 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
     const subName = client.tradeName ? client.name : null;
 
     // ORDEN DE TRABAJO (Prioridad)
-    const hasWorkOrder = (client.declarationHistory || []).some(d => d.isPaid && d.status === DeclarationStatus.Pendiente) ||
-        (client.annualRentaPaid && client.annualRentaStatus === DeclarationStatus.Pendiente) ||
-        (client.iceAnexoPaid && client.iceAnexoStatus === DeclarationStatus.Pendiente) ||
-        (client.iceDeclarationPaid && client.iceDeclarationStatus === DeclarationStatus.Pendiente) ||
-        (client.anexoPvpPaid && client.anexoPvpStatus === DeclarationStatus.Pendiente);
+    const hasWorkOrder = (client.declarations || []).some(d => d.is_paid && d.status === DeclarationStatus.Pendiente);
 
     // Status Styles Configuration
     const getStatusConfig = (currentStatus: string, overdue: boolean, paid: boolean, fullyPaid: boolean) => {
-        const isIcePending = client.taxProfile?.requiresIce && (!client.iceAnexoPaid || !client.iceDeclarationPaid);
-        const isPvpPending = client.taxProfile?.requiresAnexoPvp && !client.anexoPvpPaid;
 
         if (fullyPaid && (paid || isRentaPaid) && !isIcePending && !isPvpPending) {
             return { color: 'text-white bg-emerald-600 border-emerald-700 shadow-xl scale-105', icon: CheckCircle, text: 'OBJETIVO CUMPLIDO' };
@@ -91,7 +85,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
         if (paid) {
             return { color: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: ShieldCheck, text: 'Cuota Al Día' };
         }
-        if (currentStatus === DeclarationStatus.Enviada || !!declaration?.proofFile) {
+        if (currentStatus === DeclarationStatus.Enviada || !!declaration?.proof_file) {
             return { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Send, text: 'Declarado' };
         }
         if (overdue) {
@@ -140,9 +134,9 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
     if (client.regime === TaxRegime.RimpeNegocioPopular) {
         const year = getYear(new Date());
         const fiscalPeriod = `${year - 1}`;
-        const annualDecl = client.declarationHistory.find(d => d.period === fiscalPeriod);
-        const isAnnualDone = annualDecl?.status === DeclarationStatus.Enviada || annualDecl?.status === DeclarationStatus.Pagada || !!annualDecl?.proofFile || !!client.annualRentaProof;
-        const isAnnualPaid = !!client.annualRentaPaid || !!annualDecl?.isPaid;
+        const annualDecl = client.declarations.find(d => d.period === fiscalPeriod);
+        const isAnnualDone = annualDecl?.status === DeclarationStatus.Enviada || annualDecl?.status === DeclarationStatus.Pagada || !!annualDecl?.proof_file || false;
+        const isAnnualPaid = false || !!annualDecl?.is_paid;
 
         return (
             <div
@@ -215,16 +209,16 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
         const currentYear = getYear(new Date());
         const sem1Period = `${currentYear}-S1`;
         const sem2Period = `${currentYear}-S2`;
-        const s1Decl = client.declarationHistory.find(d => d.period === sem1Period);
-        const s2Decl = client.declarationHistory.find(d => d.period === sem2Period);
+        const s1Decl = client.declarations.find(d => d.period === sem1Period);
+        const s2Decl = client.declarations.find(d => d.period === sem2Period);
 
         const getSemStyle = (decl?: any) => {
-            if (decl?.isPaid) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            if (decl?.is_paid) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             if (decl?.status === DeclarationStatus.Enviada) return 'bg-blue-100 text-blue-700 border-blue-200';
             return 'bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-800 dark:border-slate-700';
         }
 
-        const containerClass = isVip
+        const containerClass = true
             ? "border-amber-300 dark:border-amber-700/50 shadow-md hover:shadow-amber-500/20"
             : "border-slate-200 dark:border-slate-700 hover:border-sky-300";
 
@@ -234,7 +228,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                 className={`relative group overflow-hidden bg-white dark:bg-slate-800 rounded-2xl border ${containerClass} ${hasWorkOrder ? 'border-amber-500 ring-4 ring-amber-400/50 animate-pulse-subtle' : ''} transition-all duration-300 hover:-translate-y-1 cursor-pointer`}
             >
                 {/* Accent Line */}
-                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${isVip ? 'from-amber-300 via-yellow-400 to-amber-500' : 'from-sky-400 to-blue-500'}`}></div>
+                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${true ? 'from-amber-300 via-yellow-400 to-amber-500' : 'from-sky-400 to-blue-500'}`}></div>
                 {hasWorkOrder && (
                     <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
                         <Sparkles size={8} className="animate-spin-slow" /> DINERO EN MANO
@@ -244,7 +238,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                 <div className="p-5">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-lg shadow-sm ${isVip ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-lg shadow-sm ${true ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
                                 {client.name.substring(0, 2).toUpperCase()}
                             </div>
                             <div>
@@ -258,7 +252,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                                     {client.taxProfile?.requiresAnexosGastos && <span className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Anexo</span>}
                                     {client.taxProfile?.hasActiveDevolucionIva && <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Devolución</span>}
                                 </div>
-                                {isVip && (
+                                {true && (
                                     <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1 mt-0.5">
                                         <Crown size={10} fill="currentColor" /> VIP Semestral
                                     </span>
@@ -289,11 +283,11 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
 
     // --- CARA 1: VIP / MENSUAL (Default) ---
     // Premium Design Logic
-    const containerClasses = isVip
+    const containerClasses = true
         ? `${hasWorkOrder ? 'border-amber-500 ring-4 ring-amber-400/50 shadow-amber-500/30 animate-pulse-subtle' : 'border-amber-300 dark:border-amber-700/50'} shadow-md hover:shadow-amber-500/20 bg-gradient-to-b from-white to-amber-50/20 dark:from-slate-800 dark:to-slate-900`
         : `${hasWorkOrder ? 'border-amber-500 ring-4 ring-amber-400/50 animate-pulse-subtle' : 'border-slate-200 dark:border-slate-700'} hover:border-brand-teal/50 bg-white dark:bg-slate-800`;
 
-    const topAccent = isVip
+    const topAccent = true
         ? "bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 h-1.5"
         : `${hasWorkOrder ? 'bg-amber-500' : 'bg-brand-navy'} h-1`;
 
@@ -315,10 +309,10 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
                         <div className="relative">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-lg shadow-sm ${isVip ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}`}>
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-lg shadow-sm ${true ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}`}>
                                 {client.name.substring(0, 2).toUpperCase()}
                             </div>
-                            {isVip && (
+                            {true && (
                                 <div className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white p-1 rounded-full shadow-sm border-2 border-white dark:border-slate-800">
                                     <Crown size={10} fill="currentColor" />
                                 </div>
@@ -408,13 +402,13 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                     ) : (
                         <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 mb-4 space-y-2 border border-slate-100 dark:border-slate-700/50">
                             {/* IVA Info Cluster - Refined to focus on declared status */}
-                            <div className={`flex flex-col gap-1 p-2 rounded-lg border ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proofFile ? 'bg-emerald-50/30 border-emerald-100/30' : 'bg-white/50 border-white/20'}`}>
+                            <div className={`flex flex-col gap-1 p-2 rounded-lg border ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'bg-emerald-50/30 border-emerald-100/30' : 'bg-white/50 border-white/20'}`}>
                                 <div className="flex justify-between items-center text-[10px]">
                                     <p className="text-slate-400 uppercase font-black tracking-wider flex items-center gap-1">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proofFile ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`}></div>
+                                        <div className={`w-1.5 h-1.5 rounded-full ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`}></div>
                                         IVA {formatPeriodForDisplay(currentPeriod)}
                                     </p>
-                                    <p className={`font-black ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proofFile ? 'text-emerald-500' : 'text-slate-500'}`}>{declaration?.status === DeclarationStatus.Enviada || !!declaration?.proofFile ? 'DECLARADO' : 'PENDIENTE'}</p>
+                                    <p className={`font-black ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'text-emerald-500' : 'text-slate-500'}`}>{declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'DECLARADO' : 'PENDIENTE'}</p>
                                 </div>
                                 <div className="flex justify-between items-center text-[10px]">
                                     <p className="font-bold text-slate-400">Vence:</p>

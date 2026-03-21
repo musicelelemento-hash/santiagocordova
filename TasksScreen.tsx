@@ -28,7 +28,7 @@ interface TasksScreenProps {
 
 const newClientInitialState: Partial<Client> = {
   regime: TaxRegime.General,
-  isVip: true,
+  ,
   taxProfile: {
     ivaFrequency: 'Mensual',
     requiresAnnualRenta: true,
@@ -37,7 +37,7 @@ const newClientInitialState: Partial<Client> = {
     requiresIce: false,
     requiresAnexoPvp: false
   },
-  declarationHistory: [],
+  declarations: [],
   sriPassword: '',
   ruc: '',
   name: '',

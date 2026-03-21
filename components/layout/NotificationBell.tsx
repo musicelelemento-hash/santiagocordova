@@ -28,12 +28,12 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ clients, nav
         clients.forEach(c => {
             if (!c.isActive || c.isDeleted) return;
             const p = getPeriod(c, today);
-            const decl = (c.declarationHistory || []).find(dh => dh.period === p);
-            const isDeclared = !!decl?.proofFile || decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada;
+            const decl = (c.declarations || []).find(dh => dh.period === p);
+            const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada;
             const dueDate = getDueDateForPeriod(c, p);
 
             // 1. Missing PDF (Red Dot equivalent)
-            if (decl && !decl.proofFile && (decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pagada)) {
+            if (decl && !decl.proof_file && (decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pagada)) {
                 currentAlerts.push({
                     id: `pdf-${c.id}-${p}`,
                     type: 'danger',

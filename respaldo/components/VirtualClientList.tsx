@@ -27,7 +27,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
     // Status Logic duplicated from ClientCard but simplified for performance
     const today = new Date();
     const currentPeriod = getPeriod(client, today);
-    const declaration = client.declarationHistory.find(d => d.period === currentPeriod);
+    const declaration = client.declarations.find(d => d.period === currentPeriod);
     const isDeclared = declaration?.status === DeclarationStatus.Enviada || declaration?.status === DeclarationStatus.Pagada;
     const isPaid = declaration?.status === DeclarationStatus.Pagada;
     const fee = getClientServiceFee(client, serviceFees);

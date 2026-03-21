@@ -254,8 +254,8 @@ export async function getUpcomingDeadlines() {
             const typeLabel = isPopular ? 'Popular' : (c.tax_profile?.ivaFrequency === 'Semestral' || isEmprendedor ? 'Semst.' : 'Mens.');
             
             // Check if already declared for the likely current period
-            const latest = c.declarationHistory?.[0];
-            const isDone = latest?.status === 'Enviada' || latest?.status === 'Pagada' || !!latest?.proofFile;
+            const latest = c.declarations?.[0];
+            const isDone = latest?.status === 'Enviada' || latest?.status === 'Pagada' || !!latest?.proof_file;
 
             response += `🔔 *Día ${dueDay}:* ${c.name.split(' ')[0]} | ${typeLabel} | ${isDone ? '✅' : '❌'}\n`;
         });
@@ -573,28 +573,7 @@ export async function getCredentialStatus() {
     }
 }
 
-/**
- * Updates VIP status for multiple clients or all clients. Baku.
- */
-export async function bulkUpdateVipStatus(isVip: boolean, rucs?: string[]) {
-    console.log(`🌟 Bulk updating VIP status in Supabase...`);
-    try {
-        let query = supabase.from('clients').update({ is_vip: isVip, updated_at: new Date().toISOString() });
-        if (rucs && rucs.length > 0) {
-            query = query.in('ruc', rucs);
-        } else {
-            query = query.neq('id', '00000000-0000-0000-0000-000000000000');
-        }
 
-        const { data, error } = await query.select('id');
-        if (error) throw error;
-        
-        return `✅ Estado VIP actualizado para ${data ? data.length : 0} clientes en Supabase. Baku.`;
-    } catch (error: any) {
-        console.error("Error in bulk VIP update:", error);
-        return "Error al actualizar estados VIP: " + error.message;
-    }
-}
 
 /**
  * Analyzes the database for inconsistencies and risks (Escudo Fiscal). Baku.

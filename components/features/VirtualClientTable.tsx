@@ -27,27 +27,27 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
 
     // SMART PERIOD LOGIC
     const campaignP = getPeriod(client, today);
-    const campaignDecl = (client.declarationHistory || []).find(d => d.period === campaignP);
-    const isCampaignDone = campaignDecl?.status === DeclarationStatus.Enviada || campaignDecl?.status === DeclarationStatus.Pagada || !!campaignDecl?.proofFile;
-    const isCampaignPaid = !!campaignDecl?.isPaid;
+    const campaignDecl = (client.declarations || []).find(d => d.period === campaignP);
+    const isCampaignDone = campaignDecl?.status === DeclarationStatus.Enviada || campaignDecl?.status === DeclarationStatus.Pagada || !!campaignDecl?.proof_file;
+    const isCampaignPaid = !!campaignDecl?.is_paid;
 
     const period = isCampaignDone ? getNextPeriod(campaignP) : campaignP;
-    const decl = (client.declarationHistory || []).find(d => d.period === period);
-    const isPaid = !!decl?.isPaid;
-    const isDeclared = decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada || !!decl?.proofFile;
+    const decl = (client.declarations || []).find(d => d.period === period);
+    const isPaid = !!decl?.is_paid;
+    const isDeclared = decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada || !!decl?.proof_file;
 
     const needsIva = requiresIva(client);
     const needsRenta = client.taxProfile?.requiresAnnualRenta || client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular;
     const rentaPeriod = (currentYear - 1).toString();
-    const rentaDecl = (client.declarationHistory || []).find(d => d.period === rentaPeriod);
-    const isRentaPaid = !!client.annualRentaPaid || !!rentaDecl?.isPaid;
+    const rentaDecl = (client.declarations || []).find(d => d.period === rentaPeriod);
+    const isRentaPaid = false || !!rentaDecl?.is_paid;
     const isRentaDeclared = (
         rentaDecl?.status === DeclarationStatus.Enviada ||
         rentaDecl?.status === DeclarationStatus.Pagada ||
-        !!rentaDecl?.proofFile ||
-        client.annualRentaStatus === DeclarationStatus.Enviada ||
-        client.annualRentaStatus === DeclarationStatus.Pagada ||
-        !!client.annualRentaProof
+        !!rentaDecl?.proof_file ||
+        undefined === DeclarationStatus.Enviada ||
+        undefined === DeclarationStatus.Pagada ||
+        false
     );
 
     const ivaDueDate = getDueDateForPeriod(client, period);
@@ -56,12 +56,12 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
     // ICE & PVP
     const icePeriod = `${getPeriod(client, today)}:ICE`;
     const pvpPeriod = `${currentYear}:PVP`;
-    const iceDecl = (client.declarationHistory || []).find(d => d.period === icePeriod);
-    const pvpDecl = (client.declarationHistory || []).find(d => d.period === pvpPeriod);
-    const isIceDone = !!iceDecl?.proofFile || iceDecl?.status === DeclarationStatus.Enviada || !!client.iceDeclarationPaid;
-    const isPvpDone = !!pvpDecl?.proofFile || pvpDecl?.status === DeclarationStatus.Enviada || !!client.anexoPvpPaid;
-    const hasMissingHistoryPdf = client.declarationHistory?.some(d => 
-        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proofFile
+    const iceDecl = (client.declarations || []).find(d => d.period === icePeriod);
+    const pvpDecl = (client.declarations || []).find(d => d.period === pvpPeriod);
+    const isIceDone = !!iceDecl?.proof_file || iceDecl?.status === DeclarationStatus.Enviada || false;
+    const isPvpDone = !!pvpDecl?.proof_file || pvpDecl?.status === DeclarationStatus.Enviada || false;
+    const hasMissingHistoryPdf = client.declarations?.some(d => 
+        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
     );
 
     const frequencyText = client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor ? 'IVA Semestral' : (client.taxProfile?.ivaFrequency === 'Ninguno' ? 'Anual' : 'IVA Mensual');
@@ -114,7 +114,7 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                             Desactivado
                         </span>
                     )}
-                    {client.isVip && (
+                    {true && (
                         <div className="flex items-center gap-1 text-[7px] font-black bg-amber-500 text-white px-2 py-0.5 rounded-full uppercase tracking-tighter ring-2 ring-amber-500/20">
                             <LucideIcons.Crown size={8} fill="currentColor" />
                             VIP UNIT
@@ -172,17 +172,17 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                         <span className={`text-[10px] font-black uppercase tracking-tighter ${(needsIva ? isCampaignDone : isRentaDeclared) ? 'text-emerald-500' : 'text-slate-700 dark:text-slate-300'}`}>
                             {formatPeriodForDisplay(needsIva ? period : rentaPeriod)}
                         </span>
-                        <span className={`text-[8px] font-black font-mono tracking-widest ${(needsIva ? isCampaignDone : isRentaDeclared) ? ((((needsIva ? campaignDecl : rentaDecl)?.proofFile) || (needsIva ? decl : rentaDecl)?.proofFile) ? 'text-emerald-500/70' : 'text-rose-500 animate-pulse') : (needsIva && ivaDueDate && isPast(ivaDueDate) ? 'text-rose-500/70' : 'text-sky-500/70')}`}>
+                        <span className={`text-[8px] font-black font-mono tracking-widest ${(needsIva ? isCampaignDone : isRentaDeclared) ? ((((needsIva ? campaignDecl : rentaDecl)?.proof_file) || (needsIva ? decl : rentaDecl)?.proof_file) ? 'text-emerald-500/70' : 'text-rose-500 animate-pulse') : (needsIva && ivaDueDate && isPast(ivaDueDate) ? 'text-rose-500/70' : 'text-sky-500/70')}`}>
                             {(needsIva ? isCampaignDone : isRentaDeclared) ? 
-                                ((((needsIva ? campaignDecl : rentaDecl)?.proofFile) || (needsIva ? decl : rentaDecl)?.proofFile) ? 'TARGET OK' : 'FALTA PDF') 
+                                ((((needsIva ? campaignDecl : rentaDecl)?.proof_file) || (needsIva ? decl : rentaDecl)?.proof_file) ? 'TARGET OK' : 'FALTA PDF') 
                                 : (needsIva ? (ivaDueDate ? safeFormat(ivaDueDate, 'dd MMM') : 'N/A') : (rentaDueDate ? safeFormat(rentaDueDate, 'dd MMM') : 'N/A'))}
                         </span>
                     </div>
-                    {(campaignDecl?.proofFile || decl?.proofFile) && (
+                    {(campaignDecl?.proof_file || decl?.proof_file) && (
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const file = campaignDecl?.proofFile || decl?.proofFile;
+                                const file = campaignDecl?.proof_file || decl?.proof_file;
                                 if (file?.content) {
                                     // Abrir PDF en nueva pestaña si es base64
                                     const win = window.open();

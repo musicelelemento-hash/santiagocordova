@@ -80,7 +80,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                             decl.status === DeclarationStatus.Enviada ? 'bg-sky-400' : 'bg-amber-400'
                                         }`} />
                                         {decl.status}
-                                        {!decl.proofFile && (decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pagada) && (
+                                        {!decl.proof_file && (decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pagada) && (
                                             <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)] animate-pulse" title="Falta Comprobante PDF" />
                                         )}
                                     </div>
@@ -88,7 +88,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                 <td className="px-8 py-6">
                                     <div className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2">
-                                            {decl.isPaid ? (
+                                            {decl.is_paid ? (
                                                 <div className="flex items-center gap-1.5 text-emerald-400">
                                                     <DollarSign size={12} strokeWidth={3} />
                                                     <span className="text-[11px] font-black uppercase tracking-widest">Liquidado</span>
@@ -109,7 +109,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                 </td>
                                 <td className="px-8 py-6 text-right">
                                     <div className="flex justify-end gap-3">
-                                        {!decl.isPaid ? (
+                                        {!decl.is_paid ? (
                                             <div className="flex items-center gap-3">
                                                 {(decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pagada) && onWhatsApp && (
                                                     <button 

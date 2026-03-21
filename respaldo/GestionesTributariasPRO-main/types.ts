@@ -97,7 +97,7 @@ export interface Client {
   category: ClientCategory;
   rentaCategory?: RentaCategory;
   economicActivity?: string;
-  declarationHistory: Declaration[];
+  declarations: Declaration[];
   isDeleted?: boolean;
   isActive?: boolean;
   customServiceFee?: number;

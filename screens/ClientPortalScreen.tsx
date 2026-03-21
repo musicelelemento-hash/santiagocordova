@@ -81,7 +81,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
 
     const fee = getClientServiceFee(client, serviceFees);
     const currentPeriod = getPeriod(client, new Date());
-    const declaration = client.declarationHistory.find(d => d.period === currentPeriod);
+    const declaration = client.declarations.find(d => d.period === currentPeriod);
 
     // Status Logic
     const isPaid = declaration?.status === DeclarationStatus.Pagada;
@@ -90,7 +90,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
     const daysUntil = getDaysUntilDue(dueDate);
 
     // Debt Calc
-    const pendingDecls = client.declarationHistory.filter(d => d.status !== DeclarationStatus.Pagada);
+    const pendingDecls = client.declarations.filter(d => d.status !== DeclarationStatus.Pagada);
     const totalDebt = pendingDecls.reduce((acc, curr) => acc + (curr.amount || fee), 0);
 
     const toggleKeyVisibility = (key: string) => {
@@ -101,10 +101,10 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
         navigator.clipboard.writeText(text);
         alert("Copiado al portapapeles");
     };    const handleOpenInNewTab = (decl: Declaration) => {
-        if (!decl.proofFile?.content) return;
+        if (!decl.proof_file?.content) return;
         
         // Convert base64 to Blob
-        const base64Data = decl.proofFile.content.split(',')[1];
+        const base64Data = decl.proof_file.content.split(',')[1];
         const byteCharacters = atob(base64Data);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -127,11 +127,11 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
     };
 
     const handleDownloadPdf = (decl: Declaration) => {
-        if (!decl.proofFile?.content) return;
+        if (!decl.proof_file?.content) return;
         
         const link = document.createElement('a');
-        link.href = decl.proofFile.content;
-        link.download = decl.proofFile.name;
+        link.href = decl.proof_file.content;
+        link.download = decl.proof_file.name;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -143,14 +143,14 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                 period: 'RUC',
                 status: DeclarationStatus.Pagada,
                 updatedAt: new Date().toISOString(),
-                proofFile: client.rucCertificate
+                proof_file: client.rucCertificate
             } as Declaration);
         } else if (client.rucPdf) {
             handleOpenInNewTab({
                 period: 'RUC',
                 status: DeclarationStatus.Pagada,
                 updatedAt: new Date().toISOString(),
-                proofFile: client.rucPdf
+                proof_file: client.rucPdf
             } as Declaration);
         }
     };
@@ -273,12 +273,12 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                         <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
                                             <LucideIcons.FolderOpen size={20} className="text-[#00A896]" /> Galería de Comprobantes
                                         </h3>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Total {client.declarationHistory.length} documentos encontrados</p>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Total {client.declarations.length} documentos encontrados</p>
                                     </div>
                                 </div>
 
                                 <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto no-scrollbar">
-                                    {client.declarationHistory.length > 0 ? [...client.declarationHistory].reverse().map((decl, idx) => (
+                                    {client.declarations.length > 0 ? [...client.declarations].reverse().map((decl, idx) => (
                                         <div key={idx} className="px-10 py-6 hover:bg-slate-50/50 transition-colors flex items-center justify-between group">
                                             <div className="flex items-center gap-6">
                                                 <div className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-[#00A896] group-hover:border-[#00A896]/20 transition-all">
@@ -297,7 +297,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                                 </div>
                                             </div>
 
-                                            {decl.proofFile ? (
+                                            {decl.proof_file ? (
                                                 <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0">
                                                     <button 
                                                         onClick={() => handleOpenInNewTab(decl)}
