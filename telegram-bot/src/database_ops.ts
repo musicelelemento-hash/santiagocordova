@@ -27,7 +27,7 @@ export async function searchClient(query: string) {
         // Try searching by RUC exactly first
         let { data: clients, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('*, declarations(*)')
             .or(`ruc.ilike.%${query}%,name.ilike.%${query}%,trade_name.ilike.%${query}%`)
             .eq('is_deleted', false);
 
@@ -66,7 +66,6 @@ export async function searchClient(query: string) {
 
             let sriStatus = "⚖️ *SRI:* ";
             if (ivaFreq !== 'Ninguno') {
-                // In SQL, we'd look at declarations table. For this inline summary, we check simple profile
                 sriStatus += `IVA ${ivaFreq}: 📊 | `;
             }
             if (reqRenta) {
@@ -79,18 +78,27 @@ export async function searchClient(query: string) {
             let feeBreakdown = "";
             const isCortesia = (c.name || "").includes("Daniel Cordova") || (c.name || "").includes("Ramirez Aleida") || (c.name || "").includes("Aleida Ramirez");
             
-            const ivaFee = c.feeStructure?.[ivaFreq.toLowerCase()] ?? (ivaFreq === 'Semestral' ? 10 : 5);
-            const pendingIvaCount = c.declarationHistory?.filter((d: any) => !d.isPaid).length || 0;
+            const ivaFee = c.fee_structure?.[ivaFreq.toLowerCase()] ?? (ivaFreq === 'Semestral' ? 10 : 5);
+            
+            const allDeclarations = c.declarations || [];
+            const pendingIvaCount = allDeclarations.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)).length;
+            
             if (pendingIvaCount > 0) {
                 const sumIva = pendingIvaCount * ivaFee;
                 totalToPay += sumIva;
                 feeBreakdown += `$${sumIva} IVA (${pendingIvaCount} pend.) + `;
             }
 
-            if (reqRenta && !c.annualRentaPaid) {
-                const rentaFee = c.feeStructure?.annual ?? 10;
-                totalToPay += rentaFee;
-                feeBreakdown += `$${rentaFee} Renta + `;
+            const unPaidRentaCount = allDeclarations.filter((d: any) => d.type === 'RENTA' && !d.is_paid).length;
+            
+            if (reqRenta && unPaidRentaCount > 0) {
+                const rentaFee = c.fee_structure?.annual ?? 10;
+                totalToPay += (rentaFee * unPaidRentaCount);
+                if (unPaidRentaCount === 1) {
+                    feeBreakdown += `$${rentaFee} Renta + `;
+                } else {
+                    feeBreakdown += `$${rentaFee * unPaidRentaCount} Renta (${unPaidRentaCount} pend.) + `;
+                }
             }
 
             if (totalToPay > 0) {
