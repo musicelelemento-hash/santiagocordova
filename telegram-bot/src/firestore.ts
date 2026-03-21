@@ -1,0 +1,676 @@
+import { supabase } from './supabase';
+import crypto from 'crypto';
+
+/**
+ * Searches for a client by RUC or Name in the 'sc_pro_backup' collection
+ */
+export async function searchClient(query: string) {
+    console.log(`🔍 Searching client with query: ${query}`);
+    try {
+        const queryLower = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        // Try searching by RUC exactly first
+        let { data: clients, error } = await supabase
+            .from('clients')
+            .select('*')
+            .or(`ruc.ilike.%${query}%,name.ilike.%${query}%,trade_name.ilike.%${query}%`)
+            .eq('is_deleted', false);
+
+        if (error) throw error;
+
+        if (!clients || clients.length === 0) {
+            return `No he podido encontrar a ningún cliente con el nombre o RUC "${query}" en la base de datos de PostgreSQL. ¿Podrías verificar el nombre?`;
+        }
+
+        // Limit to top 5 matches
+        const totalMatches = clients.length;
+        const resultsToSummarize = clients.slice(0, 5);
+
+        let response = `He localizado ${totalMatches} expediente(s) en la base de datos SQL${totalMatches > 5 ? ' (mostrando los primeros 5)' : ''}:\n\n`;
+
+        const SRI_DUE_DATES: Record<number, number> = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18, 6: 20, 7: 22, 8: 24, 9: 26, 0: 28 };
+
+        resultsToSummarize.forEach((c: any) => {
+            const ruc = c.ruc || "";
+            const ninthDigit = ruc.length >= 9 ? parseInt(ruc[8]) : -1;
+            const dueDay = ninthDigit !== -1 ? SRI_DUE_DATES[ninthDigit] : "N/A";
+            
+            // 1. Header (UI Style)
+            response += `👤 *${c.name}*\n`;
+            response += `🆔 \`${ruc}\` | 📅 Vence: Día ${dueDay}\n`;
+            
+            // Add contact info
+            if (c.email) response += `📧 *Email:* ${c.email}\n`;
+            if (c.phones && c.phones.length > 0) response += `📞 *Telf:* ${c.phones.join(', ')}\n`;
+
+            // 2. Obligaciones SRI
+            const isEmprendedor = c.regime === 'Rimpe Emprendedor';
+            const isPopular = c.regime === 'Rimpe Negocio Popular';
+            const reqRenta = c.tax_profile?.requiresAnnualRenta ?? (isEmprendedor || isPopular);
+            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+
+            let sriStatus = "⚖️ *SRI:* ";
+            if (ivaFreq !== 'Ninguno') {
+                // In SQL, we'd look at declarations table. For this inline summary, we check simple profile
+                sriStatus += `IVA ${ivaFreq}: 📊 | `;
+            }
+            if (reqRenta) {
+                sriStatus += `Renta: 📊 | `;
+            }
+            response += sriStatus.slice(0, -3) + "\n";
+
+            // 3. Honorarios (Suma Transparente)
+            let totalToPay = 0;
+            let feeBreakdown = "";
+            const isCortesia = (c.name || "").includes("Daniel Cordova") || (c.name || "").includes("Ramirez Aleida") || (c.name || "").includes("Aleida Ramirez");
+            
+            const ivaFee = c.feeStructure?.[ivaFreq.toLowerCase()] ?? (ivaFreq === 'Semestral' ? 10 : 5);
+            const pendingIvaCount = c.declarationHistory?.filter((d: any) => !d.isPaid).length || 0;
+            if (pendingIvaCount > 0) {
+                const sumIva = pendingIvaCount * ivaFee;
+                totalToPay += sumIva;
+                feeBreakdown += `$${sumIva} IVA (${pendingIvaCount} pend.) + `;
+            }
+
+            if (reqRenta && !c.annualRentaPaid) {
+                const rentaFee = c.feeStructure?.annual ?? 10;
+                totalToPay += rentaFee;
+                feeBreakdown += `$${rentaFee} Renta + `;
+            }
+
+            if (totalToPay > 0) {
+                response += `💰 *Honorarios:* $${totalToPay} (${feeBreakdown.slice(0, -3)}) ❌\n`;
+            } else if (isCortesia) {
+                response += `💰 *Honorarios:* Cortesía 🎁 ✅\n`;
+            } else {
+                response += `💰 *Honorarios:* ¡Todo al día! ✅\n`;
+            }
+
+            if (c.notes) response += `📝 _${c.notes}_\n`;
+            response += `--------------------------\n`;
+        });
+
+        if (totalMatches > 5) {
+            response += `\n*Aviso:* Hay ${totalMatches - 5} resultados adicionales. Sé más específico en tu búsqueda para ver los demás.`;
+        }
+
+        return response;
+    } catch (error: any) {
+        console.error("Error searching in Firestore:", error);
+        return "Error al consultar la base de datos: " + error.message;
+    }
+}
+
+/**
+ * Gets a list of clients who have pending payments or pending declarations.
+ */
+export async function getDebtorClients() {
+    console.log(`💸 Fetching debtor clients from Supabase...`);
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('*, declarations(*)')
+            .eq('is_deleted', false);
+
+        if (error) throw error;
+        if (!clients || clients.length === 0) return "No hay clientes registrados.";
+        
+        let totalDebt = 0;
+        const debtors: any[] = [];
+
+        let mensalesCount = 0;
+        let semestralesCount = 0;
+        let popularCount = 0;
+        let rentaCount = 0;
+
+        clients.forEach(c => {
+            const regime = c.regime || 'Régimen General';
+            const isPopular = regime === 'Rimpe Negocio Popular';
+            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+            
+            const pendingDeclarations = c.declarations?.filter((d: any) => d.status === 'Pendiente') || [];
+            const unpaidDeclarations = c.declarations?.filter((d: any) => !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada')) || [];
+            
+            let clientDebt = 0;
+            const ivaFee = c.fee_structure?.[ivaFreq.toLowerCase()] ?? (ivaFreq === 'Semestral' ? 10 : 5);
+            clientDebt += unpaidDeclarations.length * ivaFee;
+
+            if (clientDebt > 0 || pendingDeclarations.length > 0) {
+                totalDebt += clientDebt;
+                
+                if (ivaFreq === 'Mensual') mensalesCount++;
+                if (ivaFreq === 'Semestral') semestralesCount++;
+                if (isPopular) popularCount++;
+                if (c.tax_profile?.requiresAnnualRenta) rentaCount++;
+
+                debtors.push({ 
+                    ...c, 
+                    clientDebt, 
+                    pendingDecCount: pendingDeclarations.length, 
+                    typeLabel: isPopular ? 'Popular' : (ivaFreq === 'Semestral' ? 'Semestral' : 'Mensual') 
+                });
+            }
+        });
+
+        if (debtors.length === 0) return "✅ Todo al día. No hay pendientes de IVA, Renta o Honorarios. Baku.";
+
+        let response = `📊 *REPORTE FINANCIERO DE PENDIENTES:*
+- Total por Cobrar: **$${totalDebt}** 💰
+- IVA Mensual: ${mensalesCount}
+- IVA Semestral: ${semestralesCount}
+- Renta Anual: ${rentaCount}
+- Negocio Popular: ${popularCount}
+
+---
+`;
+
+        debtors.slice(0, 10).forEach((c: any) => {
+            response += `👤 *${c.name.split(' ')[0]}* | ${c.typeLabel}\n`;
+            response += `   💼 Cobro Honorarios: ${c.clientDebt > 0 ? `$${c.clientDebt} (Total) ❌` : '✅'}\n`;
+            response += `   ⚖️ Declaración SRI: ${c.pendingDecCount > 0 ? `${c.pendingDecCount} pend. ❌` : '✅'}\n`;
+        });
+
+        if (debtors.length > 10) response += `\n_...y ${debtors.length - 10} clientes más._`;
+
+        return response;
+    } catch (error: any) {
+        return "Error al obtener deudores: " + error.message;
+    }
+}
+
+/**
+ * Calculates upcoming SRI deadlines based on the 9th digit of RUC.
+ */
+export async function getUpcomingDeadlines() {
+    console.log(`📅 Calculating upcoming deadlines from Supabase...`);
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('*')
+            .eq('is_deleted', false);
+
+        if (error) throw error;
+        if (!clients || clients.length === 0) return "No hay clientes registrados.";
+        const SRI_DUE_DATES: Record<number, number> = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18, 6: 20, 7: 22, 8: 24, 9: 26, 0: 28 };
+        
+        const today = new Date();
+        const currentDay = today.getDate();
+        
+        const upcoming = clients.filter((c: any) => {
+            const ruc = c.ruc || "";
+            const ninthDigit = ruc.length >= 9 ? parseInt(ruc[8]) : -1;
+            if (ninthDigit === -1) return false;
+            
+            const dueDay = SRI_DUE_DATES[ninthDigit];
+            return dueDay >= currentDay && dueDay <= currentDay + 7;
+        });
+
+        if (upcoming.length === 0) return "📅 No hay vencimientos del SRI programados para los próximos 7 días.";
+
+        const monthlyCount = upcoming.filter((c: any) => c.tax_profile?.ivaFrequency === 'Mensual' && c.regime === 'Régimen General').length;
+        const semiannualCount = upcoming.filter((c: any) => c.tax_profile?.ivaFrequency === 'Semestral' || c.regime === 'Rimpe Emprendedor').length;
+        const popularCount = upcoming.filter((c: any) => c.regime === 'Rimpe Negocio Popular').length;
+
+        let response = `📅 *RESUMEN DE VENCIMIENTOS (7 DÍAS):*
+- IVA Mensual: ${monthlyCount}
+- IVA Semestral: ${semiannualCount}
+- Negocio Popular: ${popularCount}
+
+---
+`;
+
+        upcoming.sort((a: any, b: any) => {
+            const dayA = SRI_DUE_DATES[parseInt(String(a.ruc).charAt(8))];
+            const dayB = SRI_DUE_DATES[parseInt(String(b.ruc).charAt(8))];
+            return dayA - dayB;
+        }).slice(0, 15).forEach((c: any) => {
+            const dueDay = SRI_DUE_DATES[parseInt(String(c.ruc).charAt(8))];
+            const isEmprendedor = c.regime === 'Rimpe Emprendedor';
+            const isPopular = c.regime === 'Rimpe Negocio Popular';
+            const typeLabel = isPopular ? 'Popular' : (c.tax_profile?.ivaFrequency === 'Semestral' || isEmprendedor ? 'Semst.' : 'Mens.');
+            
+            // Check if already declared for the likely current period
+            const latest = c.declarationHistory?.[0];
+            const isDone = latest?.status === 'Enviada' || latest?.status === 'Pagada' || !!latest?.proofFile;
+
+            response += `🔔 *Día ${dueDay}:* ${c.name.split(' ')[0]} | ${typeLabel} | ${isDone ? '✅' : '❌'}\n`;
+        });
+
+        return response;
+    } catch (error: any) {
+        return "Error al calcular vencimientos: " + error.message;
+    }
+}
+
+// Google Sync logic placeholder
+export const syncToSheets = async () => { console.log("Sheets sync not yet migrated to SQL. Baku."); };
+
+/**
+ * Updates or adds information to a client's record
+ */
+export async function updateClientData(ruc: string, updates: any) {
+    console.log(`📝 Updating client ${ruc} in Supabase with:`, updates);
+    try {
+        const { error } = await supabase
+            .from('clients')
+            .update(updates)
+            .eq('ruc', ruc);
+
+        if (error) throw error;
+
+        return `✅ Expediente de RUC ${ruc} actualizado correctamente en PostgreSQL.`;
+    } catch (error: any) {
+        console.error("Error updating Supabase:", error);
+        return "Error al actualizar la base de datos: " + error.message;
+    }
+}
+
+/**
+ * Marks a task as complete or deletes it from Supabase.
+ */
+export async function completeTask(taskId: string, action: 'complete' | 'delete') {
+    console.log(`📝 Task Action: ${action} on ${taskId}`);
+    try {
+        if (action === 'delete') {
+            const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+            if (error) throw error;
+        } else {
+            const { error } = await supabase.from('tasks').update({ status: 'Completada' }).eq('id', taskId);
+            if (error) throw error;
+        }
+
+        return `✅ Tarea ${action === 'delete' ? 'eliminada' : 'marcada como completada'} con éxito en Supabase.`;
+    } catch (error: any) {
+        return "Error al gestionar la tarea: " + error.message;
+    }
+}
+
+/**
+ * Clears ALL tasks from the internal agenda. Baku.
+ */
+export async function getDatabaseSummary() {
+    console.log(`📊 Generating global database summary from Supabase...`);
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('*, declarations(*)')
+            .eq('is_deleted', false);
+
+        if (error) throw error;
+        if (!clients || clients.length === 0) return "La base de datos está vacía.";
+
+        const total = clients.length;
+        const rimpePopular = clients.filter(c => c.regime === 'Rimpe Negocio Popular').length;
+        const rimpeEmprendedor = clients.filter(c => c.regime === 'Rimpe Emprendedor').length;
+        const general = total - rimpePopular - rimpeEmprendedor;
+
+        let pendingIvaPayments = 0;
+        let pendingDeclarations = 0;
+        let eliteCount = 0;
+        let totalFeesAmount = 0;
+
+        clients.forEach(c => {
+            const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
+            const needsIva = c.regime !== 'Rimpe Negocio Popular' && ivaFreq !== 'Ninguno';
+            
+            const declarations = c.declarations || [];
+            const lastIva = declarations.filter((d: any) => d.type === 'IVA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+            
+            const isIvaDeclared = !needsIva || (lastIva?.status === 'Enviada' || lastIva?.status === 'Pagada' || !!lastIva?.proof_file);
+            const isIvaPaid = !needsIva || (lastIva?.is_paid || lastIva?.status === 'Pagada');
+
+            const needsRenta = c.tax_profile?.requiresAnnualRenta ?? (c.regime === 'Rimpe Negocio Popular' || c.regime === 'Rimpe Emprendedor');
+            // Check for RENTA type declaration
+            const lastRenta = declarations.filter((d: any) => d.type === 'RENTA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+            const isRentaDeclared = !needsRenta || (lastRenta?.status === 'Enviada' || lastRenta?.status === 'Pagada');
+            const isRentaPaid = !needsRenta || lastRenta?.is_paid;
+
+            if (needsIva) {
+                if (!isIvaDeclared) pendingDeclarations++;
+                if (isIvaDeclared && !isIvaPaid) {
+                    pendingIvaPayments++;
+                    const ivaFee = c.fee_structure?.[ivaFreq.toLowerCase()] || (ivaFreq === 'Semestral' ? 10 : 5);
+                    totalFeesAmount += ivaFee;
+                }
+            }
+
+            if (needsRenta && !isRentaPaid) {
+                const rentaFee = c.fee_structure?.annual || 10;
+                totalFeesAmount += rentaFee;
+            }
+
+            if (isIvaDeclared && isIvaPaid && isRentaDeclared && isRentaPaid) {
+                eliteCount++;
+            }
+        });
+
+        const pendingRentaCount = clients.filter(c => {
+            const needsRenta = c.tax_profile?.requiresAnnualRenta ?? (c.regime === 'Rimpe Negocio Popular' || c.regime === 'Rimpe Emprendedor');
+            const lastRenta = (c.declarations || []).filter((d: any) => d.type === 'RENTA')[0];
+            return needsRenta && !lastRenta?.is_paid;
+        }).length;
+
+        const compliancePercent = Math.round((eliteCount / total) * 100);
+
+        return `📊 *RESUMEN EJECUTIVO DE CARTERA:*
+Total Clientes: ${total} | Cumplimiento: ${compliancePercent}%
+- 🟢 Régimen General: ${general}
+- 🟠 Rimpe Emprendedor: ${rimpeEmprendedor}
+- 🟣 Rimpe Popular: ${rimpePopular}
+
+🛑 *PENDIENTES CRÍTICOS:*
+- 📑 Declaraciones SRI por realizar: ${pendingDeclarations}
+- 💰 Cobros de Honorarios (IVA): ${pendingIvaPayments}
+- 🏦 Cobros de Honorarios (Renta): ${pendingRentaCount}
+- 💵 **Total por Cobrar:** $${totalFeesAmount} USD
+
+Santiago, tu cumplimiento real es del ${compliancePercent}%. Tienes ${pendingDeclarations} expedientes por declarar y un total de **$${totalFeesAmount} por cobrar**. Baku.`;
+
+    } catch (error: any) {
+        return "Error al generar resumen: " + error.message;
+    }
+}
+
+
+/**
+ * Creates a new client in the database. Baku.
+ */
+export async function createClient(data: {
+    ruc: string;
+    name: string;
+    regime: string;
+    sriPassword: string;
+    email?: string;
+    phones?: string[];
+}) {
+    console.log(`🆕 Creating new client in Supabase: ${data.name} (${data.ruc})`);
+    try {
+        const { data: existing } = await supabase.from('clients').select('id').eq('ruc', data.ruc).single();
+        if (existing) return `⚠️ El RUC ${data.ruc} ya está registrado.`;
+
+        const newClient = {
+            ruc: data.ruc,
+            name: data.name,
+            sri_password: data.sriPassword,
+            regime: data.regime,
+            email: data.email || "",
+            phones: data.phones || [],
+            is_active: true,
+            tax_profile: {
+                ivaFrequency: data.regime.includes('Rimpe') ? 'Semestral' : 'Mensual',
+                requiresAnnualRenta: true
+            }
+        };
+
+        const { error } = await supabase.from('clients').insert(newClient);
+        if (error) throw error;
+
+        return `✅ Cliente **${data.name}** creado exitosamente en Supabase. Baku.`;
+    } catch (error: any) {
+        console.error("Error creating client:", error);
+        return "Error al crear cliente: " + error.message;
+    }
+}
+
+/**
+ * Marks a specific payment as paid. Baku.
+ */
+export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string): Promise<string> {
+    console.log(`💰 Marking ${type} ${period || ''} as paid in Supabase for client ${ruc}`);
+    try {
+        const { data: clients, error } = await supabase.from('clients').select('*, declarations(*)').eq('ruc', ruc);
+        if (error) throw error;
+        if (!clients || clients.length === 0) return `No se encontró al cliente con RUC ${ruc}.`;
+
+        const client = clients[0];
+
+        if (type === 'RENTA') {
+            // Find current period renta
+            const periodToMark = period || new Date().getFullYear().toString();
+            const { error: updErr } = await supabase
+                .from('declarations')
+                .update({ is_paid: true, paid_at: new Date().toISOString() })
+                .eq('client_id', client.id)
+                .eq('type', 'RENTA')
+                .eq('period', periodToMark);
+
+            if (updErr) throw updErr;
+            return `✅ Cobro de **Renta Anual (${periodToMark})** para ${client.name} marcado como pagado en Supabase. Baku.`;
+        }
+
+        if (type === 'IVA' || type === 'HONORARIOS') {
+            // Find declarations to mark
+            let query = supabase.from('declarations').update({ is_paid: true, paid_at: new Date().toISOString() }).eq('client_id', client.id);
+            
+            if (period) {
+                query = query.eq('period', period);
+            } else {
+                // Mark oldest unpaid
+                const oldest = (client.declarations || [])
+                    .filter((d: any) => !d.is_paid && d.status !== 'Pendiente')
+                    .sort((a: any, b: any) => a.period.localeCompare(b.period))[0];
+                
+                if (!oldest) return `No hay pagos pendientes de ${type} para ${client.name}.`;
+                query = query.eq('id', oldest.id);
+            }
+
+            const { error: updErr } = await query;
+            if (updErr) throw updErr;
+            return `✅ Cobro de **${type}** para ${client.name} actualizado en Supabase. Baku.`;
+        }
+
+        return "Tipo de pago no reconocido. Baku.";
+    } catch (error: any) {
+        console.error("Error marking payment:", error);
+        return "Error al actualizar pago: " + error.message;
+    }
+}
+
+/**
+ * Reverts a payment status to unpaid. Baku.
+ */
+export async function markPaymentAsUnpaid(ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string): Promise<string> {
+    console.log(`⏪ Reverting ${type} ${period || ''} to unpaid in Supabase for ${ruc}`);
+    try {
+        const { data: clients, error } = await supabase.from('clients').select('id, name, declarations(*)').eq('ruc', ruc);
+        if (error) throw error;
+        if (!clients || clients.length === 0) return `No se encontró al cliente RUC ${ruc}.`;
+
+        const client = clients[0];
+        let query = supabase.from('declarations').update({ is_paid: false, paid_at: null }).eq('client_id', client.id);
+
+        if (type === 'RENTA') query = query.eq('type', 'RENTA');
+        if (period) query = query.eq('period', period);
+
+        const { error: updErr } = await query;
+        if (updErr) throw updErr;
+
+        return `✅ Cobro de **${type}** para ${client.name} revertido a PENDIENTE en Supabase. Baku.`;
+    } catch (error: any) {
+        console.error("Error reverting payment:", error);
+        return "Error al revertir pago: " + error.message;
+    }
+}
+/**
+ * Scans the database for SRI credential health. Baku.
+ */
+export async function getCredentialStatus() {
+    console.log(`🔍 Scanning SRI credentials in Supabase...`);
+    try {
+        const { data: clients, error } = await supabase.from('clients').select('*').eq('is_deleted', false);
+        if (error) throw error;
+        if (!clients || clients.length === 0) return "No hay clientes registrados.";
+
+        const weakPasswords = ["123456", "sri123", "contraseña", "password", "sri2024", "sri2025"];
+        
+        const issues = clients.map((c: any) => {
+            const problems: string[] = [];
+            const pass = (c.sri_password || "").trim();
+            
+            if (!pass) {
+                problems.push("❌ CLAVE FALTANTE");
+            } else if (pass.length < 6) {
+                problems.push("⚠️ CLAVE MUY CORTA");
+            } else if (weakPasswords.includes(pass.toLowerCase())) {
+                problems.push("⚠️ CLAVE GENÉRICA/DÉBIL");
+            }
+
+            if (c.signature_expiration) {
+                const expDate = new Date(c.signature_expiration);
+                const diffDays = Math.ceil((expDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays < 0) problems.push("🚫 FIRMA CADUCADA");
+                else if (diffDays < 30) problems.push(`⏳ FIRMA POR CADUCAR (${diffDays} días)`);
+            }
+
+            return { name: c.name, ruc: c.ruc, problems };
+        }).filter((item: any) => item.problems.length > 0);
+
+        if (issues.length === 0) return "✅ Credenciales SRI OK. Baku.";
+
+        let response = `🦅 *REPORTE DE SRI HUNTER (CREDENCIALES):*\n\n`;
+        issues.slice(0, 15).forEach(issue => {
+            response += `👤 *${issue.name}* (\`${issue.ruc}\`)\n`;
+            issue.problems.forEach(p => response += `   ${p}\n`);
+            response += `\n`;
+        });
+
+        if (issues.length > 15) response += `_...y ${issues.length - 15} clientes más con observaciones._`;
+
+        return response;
+    } catch (error: any) {
+        console.error("Error scanning credentials:", error);
+        return "Error al escanear credenciales: " + error.message;
+    }
+}
+
+/**
+ * Updates VIP status for multiple clients or all clients. Baku.
+ */
+export async function bulkUpdateVipStatus(isVip: boolean, rucs?: string[]) {
+    console.log(`🌟 Bulk updating VIP status in Supabase...`);
+    try {
+        let query = supabase.from('clients').update({ is_vip: isVip, updated_at: new Date().toISOString() });
+        if (rucs && rucs.length > 0) {
+            query = query.in('ruc', rucs);
+        } else {
+            query = query.neq('id', '00000000-0000-0000-0000-000000000000');
+        }
+
+        const { error, count } = await query.select('id', { count: 'exact' });
+        if (error) throw error;
+        
+        return `✅ Estado VIP actualizado para ${count || 0} clientes en Supabase. Baku.`;
+    } catch (error: any) {
+        console.error("Error in bulk VIP update:", error);
+        return "Error al actualizar estados VIP: " + error.message;
+    }
+}
+
+/**
+ * Analyzes the database for inconsistencies and risks (Escudo Fiscal). Baku.
+ */
+export async function detectTaxInconsistencies() {
+    console.log(`🛡️ Running Escudo Fiscal analysis in Supabase...`);
+    try {
+        const { data: clients, error } = await supabase.from('clients').select('*, declarations(*)').eq('is_deleted', false);
+        if (error) throw error;
+        if (!clients || clients.length === 0) return "La base de datos está vacía.";
+        
+        const insights: string[] = [];
+
+        clients.forEach((c: any) => {
+            const problems: string[] = [];
+            
+            // 1. Missing SRI Password
+            if (!c.sri_password) problems.push("Falta clave SRI");
+            
+            // 2. Missing Contact Info
+            if (!c.email && (!c.phones || c.phones.length === 0)) problems.push("Sin datos de contacto");
+            
+            // 3. Regime/Frequency Mismatch or Missing Regime
+            const regime = c.regime || "";
+            const freq = c.tax_profile?.ivaFrequency || "";
+            if (!regime) problems.push("⚠️ Régimen no definido");
+            if (regime === 'Régimen General' && freq === 'Semestral') problems.push("⚠️ General con frecuencia Semestral");
+            if (regime.includes('Rimpe') && freq === 'Mensual') problems.push("⚠️ Rimpe con frecuencia Mensual");
+
+            // 4. RUC Validation (Emergency check)
+            if (c.ruc && c.ruc.length !== 13) problems.push("❌ RUC inválido (no tiene 13 dígitos)");
+
+            // 5. Critical Pending (SRI)
+            const pendingDecs = c.declarations?.filter((d: any) => d.status === 'Pendiente').length || 0;
+            if (pendingDecs > 6) problems.push(`🔥 ${pendingDecs} declaraciones pendientes`);
+
+            if (problems.length > 0) {
+                insights.push(`👤 *${c.name.split(' ')[0]}* (${c.ruc}): ${problems.join(', ')}`);
+            }
+        });
+
+        if (insights.length === 0) return "✅ Escudo Fiscal: No se detectaron inconsistencias críticas en la base de datos. Baku.";
+
+        let response = `🛡️ *REPORTE DE ESCUDO FISCAL:*
+He detectado ${insights.length} expedientes con inconsistencias o riesgos potenciales:
+
+${insights.slice(0, 12).join('\n')}
+
+${insights.length > 12 ? `_...y ${insights.length - 12} más._` : ''}
+
+Santiago, ¿quieres que te ayude a proponer correcciones para estos clientes? Baku.`;
+
+        return response;
+    } catch (error: any) {
+        return "Error en Escudo Fiscal: " + error.message;
+    }
+}
+
+/**
+ * Deletes a client from the database. REQUIRES EXPLICIT CONFIRMATION. Baku.
+ */
+export async function deleteClient(ruc: string, confirmed: boolean) {
+    console.log(`🛑 Attempting to delete client ${ruc} from Supabase...`);
+    if (!confirmed) return `⚠️ **SEGURIDAD:** Santiago debe confirmar explícitamente el borrado de RUC ${ruc}.`;
+
+    try {
+        const { error } = await supabase.from('clients').update({ is_deleted: true, updated_at: new Date().toISOString() }).eq('ruc', ruc);
+        if (error) throw error;
+        return `✅ **BORRADO EXITOSO:** RUC ${ruc} marcado como eliminado en Supabase. Baku.`;
+    } catch (error: any) {
+        return "Error al eliminar cliente: " + error.message;
+    }
+}
+
+/**
+ * Creates a new task in the global tasks list. Baku.
+ */
+export async function createTask(title: string, description: string, dueDate: string) {
+    console.log(`📝 Creating task in Supabase: ${title}`);
+    try {
+        const newTask = {
+            title,
+            description,
+            due_date: dueDate,
+            status: 'Pendiente'
+        };
+
+        const { error } = await supabase.from('tasks').insert(newTask);
+        if (error) throw error;
+
+        return `✅ Tarea "**${title}**" creada para el **${dueDate}** en Supabase. Baku.`;
+    } catch (error: any) {
+        console.error("Error creating task:", error);
+        return "Error al crear la tarea: " + error.message;
+    }
+}
+
+export async function clearTasks() {
+    console.log(`🗑️ Clearing all tasks in Supabase...`);
+    try {
+        const { error } = await supabase.from('tasks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        if (error) throw error;
+        return "✅ **PODER DE LIMPIEZA:** Todas las tareas eliminadas de Supabase. Baku.";
+    } catch (error: any) {
+        return "Error al vaciar tareas: " + error.message;
+    }
+}
+

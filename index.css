@@ -1,0 +1,147 @@
+
+
+/* Elegant minimalist variations for Client Portal */
+.glass-morphism {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark-glass {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-elite {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+.text-gradient-teal {
+    background: linear-gradient(135deg, #0f172a 0%, #00A896 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.text-shimmer-elite {
+    background: linear-gradient(90deg, #ffffff 0%, #00A896 50%, #ffffff 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 8s linear infinite;
+}
+
+.vault-card-hover {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vault-card-hover:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 40px 60px -15px rgba(0, 168, 150, 0.15), 0 20px 25px -10px rgba(0, 0, 0, 0.05);
+}
+
+.shadow-premium {
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08), 0 0 20px rgba(0, 168, 150, 0.05);
+}
+
+@keyframes float-premium {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    33% { transform: translateY(-12px) rotate(1deg); }
+    66% { transform: translateY(-6px) rotate(-1deg); }
+}
+
+.animate-float-premium {
+    animation: float-premium 8s ease-in-out infinite;
+}
+@keyframes scan-line-slow {
+    0% { transform: translateY(-100%); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateY(800%); opacity: 0; }
+}
+
+.animate-scan-line-slow {
+    animation: scan-line-slow 4s linear infinite;
+}
+
+@keyframes radar-pulse {
+    0% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 0; }
+}
+
+.animate-radar-pulse {
+    position: relative;
+}
+
+.animate-radar-pulse::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: #38bdf8;
+    animation: radar-pulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    pointer-events: none;
+}
+
+/* Premium Tactical UI Classes */
+.glass-tactical {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+.tech-font {
+    font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+    letter-spacing: -0.05em;
+}
+
+.aurora-premium {
+    background: radial-gradient(circle at 20% 30%, rgba(0, 168, 150, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(14, 165, 233, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 60%);
+}
+
+.neon-text-teal {
+    color: #00A896;
+    text-shadow: 0 0 10px rgba(0, 168, 150, 0.4);
+}
+
+.neon-border-teal {
+    border-color: rgba(0, 168, 150, 0.3);
+    box-shadow: 0 0 15px rgba(0, 168, 150, 0.1);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+@keyframes heartbeat-pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); }
+    50% { transform: scale(1.02); box-shadow: 0 0 15px 5px rgba(14, 165, 233, 0.2); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+}
+
+.animate-heartbeat {
+    animation: heartbeat-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes scan {
+    0% { top: 0; opacity: 0; }
+    50% { opacity: 0.5; }
+    100% { top: 100%; opacity: 0; }
+}
+
+.animate-scan {
+    animation: scan 2s linear infinite;
+}

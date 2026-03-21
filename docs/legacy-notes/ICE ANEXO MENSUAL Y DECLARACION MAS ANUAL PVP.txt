@@ -1,0 +1,24 @@
+Declaración y pago
+ 
+
+Los contribuyentes del ICE declararán el impuesto de las operaciones que realicen mensualmente dentro del mes siguiente de realizadas. En el caso de ventas a crédito con plazo mayor a un (1) mes, se establece un mes adicional para el pago, bajo las siguientes consideraciones:
+
+1. El crédito otorgado en las ventas deberá ser mayor a un mes. Por tanto, el ICE generado en ventas a crédito menores a un mes no podrá ser diferido; el mismo deberá liquidarse obligatoriamente al mes siguiente.
+
+2. Para determinar el valor del ICE a liquidar en un mes establecido, el contribuyente deberá tomar en cuenta lo siguiente:
+
+- El valor total del ICE causado en el periodo a declararse.
+
+- El tipo de venta y condiciones de pago otorgado (porcentaje de ventas a crédito y contado).
+
+- Los valores, por separado de ICE a contado y a crédito menores a un mes, y de crédito mayor a un mes.
+
+ 
+
+Detalle de obligaciones	Fecha de cumplimiento 
+Formulario ICE	Al mes siguiente según su noveno digito del RUC.
+Anexo ICE	
+Al mes siguiente según su noveno digito del RUC. No aplica para contribuyentes del ICE a las fundas plásticas y vehículos. 
+
+Anexo de Precios de Venta al Público 	
+Los cinco primeros días de enero y cada vez que exista un cambio en los precios o cuando exista un nuevo bien o servicio. No aplica para contribuyentes del ICE a las fundas plásticas y vehículos.

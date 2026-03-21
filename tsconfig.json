@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "module": "ESNext",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "skipLibCheck": true,
+    "types": [
+      "node"
+    ],
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "exclude": [
+    "node_modules",
+    "santiagocordova-main",
+    "GestionesTributariasPRO-main",
+    "respaldo"
+  ],
+  "include": [
+    "index.tsx",
+    "App.tsx",
+    "Logo.tsx",
+    "types.ts",
+    "screens",
+    "components",
+    "services",
+    "hooks",
+    "store",
+    "context",
+    "constants"
+  ]
+}
