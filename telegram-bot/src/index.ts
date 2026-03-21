@@ -7,10 +7,11 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData } from './firestore';
+import { updateClientData } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
+import { startCronJobs, triggerProactiveReport } from './cron';
 
 
 const pendingPdfs = new Map<string, { buffer: Buffer, data: ValidatedPDF }>();
@@ -112,6 +113,11 @@ bot.command('status', async (ctx) => {
     statusMsg += `🧠 Groq: ✅ Activo\n`;
     statusMsg += "\nBaku.";
     await ctx.reply(statusMsg, { parse_mode: 'Markdown' });
+});
+
+bot.command('testcron', async (ctx) => {
+    await ctx.reply('⏳ Forzando la generación del reporte proactivo matutino. Por favor espera...');
+    await triggerProactiveReport(bot);
 });
 
 // Handle all incoming text messages
@@ -364,4 +370,7 @@ app.listen(PORT, () => {
       .then(() => console.log('🔄 Anti-sleep ping successful'))
       .catch((err) => console.log('⚠️ Anti-sleep ping failed:', err.message));
   }, 14 * 60 * 1000); // 14 minutes
+  
+  // Initialize Active Assistant (Cron Jobs)
+  startCronJobs(bot);
 });

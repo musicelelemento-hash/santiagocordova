@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { Client, TaxRegime, RentaCategory } from '../types/client';
 import { Task, TaskStatus } from '../types/task';
+import { AuditLog } from '../types';
 
 /**
  * Service to handle data operations with Supabase.
@@ -60,6 +61,35 @@ export const SupabaseService = {
       .from('tasks')
       .upsert(dbTask);
     if (error) throw error;
+  },
+
+  // --- Audit Logs ---
+  async getAuditLogs(limit: number = 200): Promise<AuditLog[]> {
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(limit);
+      
+    if (error) {
+      console.warn("Failed to fetch audit logs", error);
+      return [];
+    }
+    return (data || []) as AuditLog[];
+  },
+
+  async addAuditLog(log: AuditLog): Promise<void> {
+    const { error } = await supabase
+      .from('audit_logs')
+      .insert({
+        id: log.id,
+        timestamp: log.timestamp,
+        action: log.action,
+        details: log.details,
+        type: log.type,
+        severity: log.severity
+      });
+    if (error) console.error("Error inserting audit log:", error);
   },
 
   // --- Real-time Sync ---

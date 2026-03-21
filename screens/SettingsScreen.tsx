@@ -9,7 +9,7 @@ import { Modal } from '../components/ui/Modal';
 import { isPast } from 'date-fns';
 import { getDueDateForPeriod, formatPeriodForDisplay, getIdentifierSortKey, validateRuc, safeFormat } from '../services/sri';
 import { v4 as uuidv4 } from 'uuid';
-import { getBackendUrl } from '../services/sheetApi';
+import { getBackendUrl, syncDataToSheet } from '../services/sheetApi';
 import { extractDataFromSriPdf } from '../services/pdfExtraction';
 import { MigrationUtility } from '../services/migrationUtility';
 
@@ -1100,22 +1100,39 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     <LucideIcons.ShieldCheck size={14} className="text-emerald-500" />
                                     Blindaje y Backups
                                 </h4>
-                                <div className="p-5 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                                <div className="p-5 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-2xl border border-emerald-500/20 space-y-3">
                                     <div className="flex gap-2">
                                         <button 
                                             onClick={handleExportJSON} 
-                                            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                                            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all"
                                         >
                                             <LucideIcons.Download size={16} /> RESPALDO JSON
                                         </button>
                                         <input type="file" ref={jsonFileInputRef} onChange={handleImportJSON} accept=".json" className="hidden" />
                                         <button 
                                             onClick={handleImportJSONClick} 
-                                            className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-slate-600"
+                                            className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-slate-600 transition-all"
                                         >
                                             <LucideIcons.Upload size={16} /> RESTAURAR
                                         </button>
                                     </div>
+                                    <button 
+                                        onClick={async () => {
+                                            try {
+                                                if(clients.length > 0) {
+                                                    await syncDataToSheet({ clients, serviceFees, reminderConfig, webOrders, sriCredentials });
+                                                    alert("Copia de seguridad enviada a Google Sheets exitosamente.");
+                                                } else {
+                                                    alert("No hay clientes para respaldar.");
+                                                }
+                                            } catch (e) {
+                                                alert("Error al respaldar en Sheets. Verifica la consola.");
+                                            }
+                                        }} 
+                                        className="w-full py-3 bg-[#0f9d58] hover:bg-[#0b8043] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#0f9d58]/20 transition-all"
+                                    >
+                                        <LucideIcons.DatabaseBackup size={16} /> FORZAR RESPALDO GOOGLE SHEETS
+                                    </button>
                                 </div>
                             </div>
 

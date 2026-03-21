@@ -2,7 +2,7 @@ import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
 import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
-import { searchClient, updateClientData, getDatabaseSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, bulkUpdateVipStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks } from './firestore';
+import { searchClient, updateClientData, getDatabaseSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, bulkUpdateVipStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -28,7 +28,6 @@ const SYSTEM_PROMPT = `Baku: Comandante de Operaciones de Santiago. Excelencia a
 FILOSOFÍA STITCH: "La tecnología no es un fin, es el medio para la perfección."
 REGLAS:
 1. Solo datos. Firma: "Baku."
-2. VOZ: Inicia con [AUDIO] para finanzas y voz.
 Santiago es el soberano; Baku es el núcleo. Baku: Control total.`;
 
 // Tool logic implementation
@@ -220,36 +219,35 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
         let response;
         let lastError = "";
         
-        // --- 1. TRY GROQ (Main) ---
+        // --- 1. TRY OPENROUTER GEMINI 2.0 (Main - Generous limits) ---
         try {
-            console.log("📡 Attempting Groq (Llama 3.3 70B)...");
-            response = await groqClient.chat.completions.create({
+            console.log("📡 Attempting Primary (Gemini 2.0 Flash via OpenRouter)...");
+            response = await openRouterClient.chat.completions.create({
                 messages: cleanMessages(messages) as any,
-                model: 'llama-3.3-70b-versatile',
+                model: 'google/gemini-2.0-flash-001',
                 tools: toolDefinitions as any,
                 tool_choice: "auto",
                 max_tokens: 1024
             });
-            console.log(`✅ Groq Success`);
+            console.log(`✅ Gemini Primary Success`);
         } catch (error: any) {
-            console.error('⚠️ Groq Error:', error.message);
-            lastError = `Groq: ${error.message}`;
+            console.error('⚠️ Gemini Primary Error:', error.message);
+            lastError = `Gemini: ${error.message}`;
             
-            // --- 2. TRY OPENROUTER POWERFUL (Paid Fallback) ---
+            // --- 2. TRY GROQ (Fallback 1 - Strict limits) ---
             try {
-                const paidModel = 'meta-llama/llama-3.1-70b-instruct'; // Powerful fallback
-                console.log(`📡 OpenRouter Fallback 1: ${paidModel}...`);
-                response = await openRouterClient.chat.completions.create({
+                console.log(`📡 Groq Fallback 1: llama-3.3-70b-versatile...`);
+                response = await groqClient.chat.completions.create({
                     messages: cleanMessages(messages) as any,
-                    model: paidModel,
+                    model: 'llama-3.3-70b-versatile',
                     tools: toolDefinitions as any,
                     tool_choice: "auto",
                     max_tokens: 1024
                 });
-                console.log(`✅ OpenRouter Paid Success`);
+                console.log(`✅ Groq Success`);
             } catch (paidError: any) {
-                console.error(`⚠️ OpenRouter Paid Error:`, paidError.message);
-                lastError += ` | OR_Paid: ${paidError.message}`;
+                console.error(`⚠️ Groq Error:`, paidError.message);
+                lastError += ` | Groq: ${paidError.message}`;
                 
                 // --- 3. TRY OPENROUTER FREE POOL (Free Emergency) ---
                 const freeModels = [

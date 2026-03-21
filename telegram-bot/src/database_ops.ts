@@ -1,6 +1,21 @@
 import { supabase } from './supabase';
 import crypto from 'crypto';
 
+async function logAuditAction(action: string, details: string, type: string, severity: string) {
+    try {
+        await supabase.from('audit_logs').insert({
+            id: crypto.randomUUID(),
+            timestamp: new Date().toISOString(),
+            action,
+            details,
+            type,
+            severity
+        });
+    } catch (e) {
+        console.error("Failed to log audit action:", e);
+    }
+}
+
 /**
  * Searches for a client by RUC or Name in the 'sc_pro_backup' collection
  */
@@ -259,6 +274,7 @@ export async function updateClientData(ruc: string, updates: any) {
 
         if (error) throw error;
 
+        await logAuditAction('Actualización por Bot', `Expediente RUC ${ruc}`, 'client', 'info');
         return `✅ Expediente de RUC ${ruc} actualizado correctamente en PostgreSQL.`;
     } catch (error: any) {
         console.error("Error updating Supabase:", error);
@@ -280,6 +296,7 @@ export async function completeTask(taskId: string, action: 'complete' | 'delete'
             if (error) throw error;
         }
 
+        await logAuditAction(action === 'delete' ? 'Borrado de Tarea' : 'Completado de Tarea', `ID: ${taskId}`, 'task', action === 'delete' ? 'warning' : 'info');
         return `✅ Tarea ${action === 'delete' ? 'eliminada' : 'marcada como completada'} con éxito en Supabase.`;
     } catch (error: any) {
         return "Error al gestionar la tarea: " + error.message;
@@ -406,6 +423,7 @@ export async function createClient(data: {
         const { error } = await supabase.from('clients').insert(newClient);
         if (error) throw error;
 
+        await logAuditAction('Nuevo Cliente (Bot)', `${data.name} - RUC: ${data.ruc}`, 'client', 'info');
         return `✅ Cliente **${data.name}** creado exitosamente en Supabase. Baku.`;
     } catch (error: any) {
         console.error("Error creating client:", error);
@@ -436,6 +454,7 @@ export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HO
                 .eq('period', periodToMark);
 
             if (updErr) throw updErr;
+            await logAuditAction('Cobro Registrado (Bot)', `Renta ${periodToMark} - RUC: ${ruc}`, 'finance', 'info');
             return `✅ Cobro de **Renta Anual (${periodToMark})** para ${client.name} marcado como pagado en Supabase. Baku.`;
         }
 
@@ -457,6 +476,7 @@ export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HO
 
             const { error: updErr } = await query;
             if (updErr) throw updErr;
+            await logAuditAction('Cobro Registrado (Bot)', `${type} ${period || 'antiguo'} - RUC: ${ruc}`, 'finance', 'info');
             return `✅ Cobro de **${type}** para ${client.name} actualizado en Supabase. Baku.`;
         }
 
@@ -486,6 +506,7 @@ export async function markPaymentAsUnpaid(ruc: string, type: 'IVA' | 'RENTA' | '
         const { error: updErr } = await query;
         if (updErr) throw updErr;
 
+        await logAuditAction('Reversión de Cobro (Bot)', `${type} ${period || 'antiguo'} - RUC: ${ruc}`, 'finance', 'warning');
         return `✅ Cobro de **${type}** para ${client.name} revertido a PENDIENTE en Supabase. Baku.`;
     } catch (error: any) {
         console.error("Error reverting payment:", error);
@@ -557,10 +578,10 @@ export async function bulkUpdateVipStatus(isVip: boolean, rucs?: string[]) {
             query = query.neq('id', '00000000-0000-0000-0000-000000000000');
         }
 
-        const { error, count } = await query.select('id', { count: 'exact' });
+        const { data, error } = await query.select('id');
         if (error) throw error;
         
-        return `✅ Estado VIP actualizado para ${count || 0} clientes en Supabase. Baku.`;
+        return `✅ Estado VIP actualizado para ${data ? data.length : 0} clientes en Supabase. Baku.`;
     } catch (error: any) {
         console.error("Error in bulk VIP update:", error);
         return "Error al actualizar estados VIP: " + error.message;
@@ -634,6 +655,7 @@ export async function deleteClient(ruc: string, confirmed: boolean) {
     try {
         const { error } = await supabase.from('clients').update({ is_deleted: true, updated_at: new Date().toISOString() }).eq('ruc', ruc);
         if (error) throw error;
+        await logAuditAction('Borrado de Cliente (Bot)', `RUC: ${ruc}`, 'client', 'warning');
         return `✅ **BORRADO EXITOSO:** RUC ${ruc} marcado como eliminado en Supabase. Baku.`;
     } catch (error: any) {
         return "Error al eliminar cliente: " + error.message;

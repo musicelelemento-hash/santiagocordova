@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { Client, Task, AnalysisType, TaxRegime } from "../types";
+import { Client, Task, AnalysisType, TaxRegime, Message } from "../types";
 
 // Inicialización del cliente AI
 const getAIClient = () => {
@@ -162,42 +162,39 @@ export const runStrategicAnalysis = async (clients: Client[], tasks: Task[], typ
   }
 };
 
-export const getAssistantResponse = async (userMessage: string, clients: Client[], tasks: Task[]): Promise<string> => {
+export const getAssistantResponse = async (messages: Message[], clients: Client[], tasks: Task[]): Promise<string> => {
   try {
     const ai = getAIClient();
     if (!ai) return "Lo siento, para asistirte necesito mi 'cerebro' conectado (falta API Key). Pero envíame tu duda y trataré de responderte con mi lógica base por ahora.";
 
-    // Preparamos un contexto resumido pero útil
-    const contextData = clients.map(c => ({
-      nombre: c.name,
-      ruc: c.ruc,
-      regimen: c.regime,
-      frecuencia: c.taxProfile?.ivaFrequency || 'No definido',
-      tareas_pendientes: tasks.filter(t => t.clientId === c.id && t.status !== 'Completada' && t.status !== 'Pagada').map(t => t.title),
-      deudas: tasks.filter(t => t.clientId === c.id && t.status === 'Pendiente' && (t.cost || 0) > 0).reduce((sum, t) => sum + (t.cost || 0), 0)
-    })).slice(0, 50); // Limitamos a 50 para no exceder tokens básicos
-
+    // System prompt como instrucción inicial o embebido en el historial
     const prompt = `
-      Eres la Secretaria Ejecutiva de Santiago Córdova, una experta en gestión tributaria en Ecuador.
-      Tu tono es profesional, impecable, eficiente y muy amable. Tu misión es conocer al detalle a los clientes, sus pagos y sus obligaciones.
+      Eres la Recepcionista Virtual del Ing. Santiago Córdova, un reconocido experto en gestión tributaria y contable en Ecuador.
+      Tu MISION PRINCIPAL y ÚNICA es filtrar prospectos o dudas iniciales y DERIVARLOS lo más rápido posible al WhatsApp privado de Santiago.
       
-      CONTEXTO DE NUESTROS CLIENTE:
-      ${JSON.stringify(contextData)}
-      
-      INSTRUCCIONES:
-      1. Responde SIEMPRE basándote en la información de nuestros clientes si es posible.
-      2. Si te preguntan por pagos, revisa las 'deudas' y 'tareas_pendientes'.
-      3. Si te preguntan por un cliente específico, búscalo por nombre o RUC en el contexto.
-      4. Si no sabes algo, responde con elegancia de secretaria: "Permítame verificar esa información en nuestros registros, no lo tengo a la mano ahora mismo".
-      5. Sé concisa y ejecutiva. Usa viñetas si es necesario.
-      6. No te desvíes del contexto contable y de gestión de este estudio.
-      
-      MENSAJE DEL COMANDANTE O CLIENTE: "${userMessage}"
+      REGLAS DE ORO:
+      1. NO brindar asesorías fiscales largas, profundas o detalladas. Eres recepcionista, no el contador titular.
+      2. Si alguien pregunta por sus deudas, estados de cuenta, liquidaciones del SRI o trámites avanzados, responde: "Por motivos de confidencialidad y para brindarle una atención 100% personalizada, esos temas los maneja directamente el Ing. Santiago. Escríbale ahora mismo a su WhatsApp."
+      3. Mantén respuestas sumamente amables, persuasivas y MUY CORTAS (1 o 2 líneas máximo).
+      4. Invítalos SIEMPRE a usar el botón flotante de WhatsApp de la página o a escribir directamente ("Puede contactarlo dando clic al ícono de WhatsApp").
     `;
+
+    // Convertimos nuestros mensajes al formato de Gemini
+    const geminiHistory = messages.map(m => ({
+      role: m.role === 'model' ? 'model' : 'user',
+      parts: [{ text: m.text }]
+    }));
+
+    // Nos aseguramos de inyectar el prompt de sistema
+    const contents = [
+      { role: 'user', parts: [{ text: prompt }] },
+      { role: 'model', parts: [{ text: 'Entendido. Seré una recepcionista amable, breve, y derivaré toda consulta técnica o de clientes al WhatsApp del Ing. Santiago Córdova.' }]},
+      ...geminiHistory
+    ];
 
     const result = await ai.models.generateContent({
       model: 'gemini-1.5-flash',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      contents: contents,
     });
 
     return result.text || "Disculpe, tuve un pequeño lapsus en mis registros. ¿Podría repetirme la consulta?";

@@ -520,7 +520,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                             <label className="text-[9px] font-black text-slate-400 mb-4 block uppercase tracking-widest pl-1">Bóveda de Obligaciones</label>
                             <div className="space-y-3">
                                 {[
-                                    { id: 'renta', label: 'Impuesto Renta Anual', checked: requiresAnnualRenta || clientData.regime === TaxRegime.RimpeEmprendedor || clientData.regime === TaxRegime.RimpeNegocioPopular, disabled: clientData.regime === TaxRegime.RimpeEmprendedor || clientData.regime === TaxRegime.RimpeNegocioPopular, color: 'emerald', icon: Calendar, sub: 'Operación Marzo', alert: (clientData.regime === TaxRegime.RimpeEmprendedor || clientData.regime === TaxRegime.RimpeNegocioPopular) ? 'Régimen' : '' },
+                                    { id: 'renta', label: 'Impuesto Renta Anual (Obligatorio este año)', checked: requiresAnnualRenta, onChange: (v: boolean) => setRequiresAnnualRenta(v), disabled: false, color: 'emerald', icon: Calendar, sub: 'Operación Marzo' },
                                     { id: 'anexo', label: 'Anexo Gastos Pers.', checked: requiresAnexosGastos, onChange: (v: boolean) => setRequiresAnexosGastos(v), color: 'sky', icon: FileText, sub: 'Febrero' },
                                     { id: 'dev', label: 'Retorno Devolución', checked: hasActiveDevolucionIva, onChange: (v: boolean) => setHasActiveDevolucionIva(v), color: 'purple', icon: DollarSign, sub: 'SRI Tercera Edad' },
                                 ].map(mod => (

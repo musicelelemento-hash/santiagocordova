@@ -20,11 +20,14 @@ export const ChatBot: React.FC = () => {
       text
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const currentMessages = [...messages, userMsg];
+    setMessages(currentMessages);
     setIsProcessing(true);
 
     try {
-      const response = await getAssistantResponse(text, clients, tasks);
+      // Envía el historial de la conversación, limitándolo a los últimos 6 mensajes para ahorrar
+      const historyToSend = currentMessages.slice(-6);
+      const response = await getAssistantResponse(historyToSend, clients, tasks);
       const botMsg: Message = {
         id: uuidv4(),
         role: 'model',

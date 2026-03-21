@@ -6,6 +6,7 @@ import { Client, Task, WebOrder, ServiceFeesConfig, ReminderConfig, WhatsAppTemp
 import { mockClients, mockTasks, INITIAL_SERVICE_FEES } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { ClientSchema } from '../services/schemas/clientSchema';
+import { SupabaseService } from '../services/supabaseClientService';
 
 const sanitizeSingleClient = (c: any): Client => {
   const client = {
@@ -421,7 +422,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set(state => ({
       auditLogs: [newLog, ...state.auditLogs].slice(0, 1000) // Keep last 1000
     }));
-    db.set('audit_logs', get().auditLogs);
+    db.setLocal('audit_logs', get().auditLogs);
+    
+    // Cloud Sync
+    SupabaseService.addAuditLog(newLog).catch(err => console.error("Supabase audit log error:", err));
   },
 
   bulkAddClients: async (newClientsList) => {
@@ -681,13 +685,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   loadFromDB: async () => {
     try {
       // 1. Cargar lo que esté en IndexedDB primero (Urgente para UI)
-      const [localClients, tasks, webOrders, sriCredentials, serviceFees, reminderConfig] = await Promise.all([
+      const [localClients, tasks, webOrders, sriCredentials, serviceFees, reminderConfig, cloudAuditLogs] = await Promise.all([
         db.getLocal('clients'),
         db.get<Task[]>('tasks'),
         db.get<WebOrder[]>('webOrders'),
         db.get<Record<string, string>>('sriCredentials'),
         db.get<ServiceFeesConfig>('serviceFees'),
-        db.get<ReminderConfig>('reminderConfig')
+        db.get<ReminderConfig>('reminderConfig'),
+        SupabaseService.getAuditLogs(200).catch(() => [])
       ]);
 
       // 2. Intentar ráfaga inicial de Firebase Granular (Prioridad Nube para Cyber-café)
@@ -730,6 +735,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         webOrders: webOrders || [],
         serviceFees: serviceFees ? { ...INITIAL_SERVICE_FEES, ...serviceFees, ivaSemestral: (serviceFees.ivaSemestral === 5 ? 10 : serviceFees.ivaSemestral) } : INITIAL_SERVICE_FEES,
         reminderConfig: sanitizeReminderConfig(reminderConfig),
+        auditLogs: cloudAuditLogs || [],
         isLoaded: true
       });
 
