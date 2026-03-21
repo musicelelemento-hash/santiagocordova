@@ -145,14 +145,27 @@ function cleanMessages(messages: any[]): any[] {
         }
 
         if (m.tool_calls && Array.isArray(m.tool_calls)) {
-            clean.tool_calls = m.tool_calls.map((tc: any) => ({
-                id: tc.id,
-                type: tc.type || 'function',
-                function: {
-                    name: tc.function.name,
-                    arguments: tc.function.arguments
+            clean.tool_calls = m.tool_calls.map((tc: any) => {
+                let safeName = tc.function?.name || 'unknown_tool';
+                
+                // Fix LLM hallucinations where JSON arguments are put into the tool name
+                if (safeName.includes('{')) {
+                    safeName = safeName.split('{')[0].trim();
                 }
-            }));
+                
+                // Ensure name conforms to standard regex ^[a-zA-Z0-9_-]{1,64}$
+                safeName = safeName.replace(/[^a-zA-Z0-9_-]/g, '').substring(0, 64);
+                if (!safeName) safeName = 'unknown_tool';
+
+                return {
+                    id: tc.id,
+                    type: tc.type || 'function',
+                    function: {
+                        name: safeName,
+                        arguments: tc.function?.arguments || '{}'
+                    }
+                };
+            });
         }
         
         if (m.tool_call_id) clean.tool_call_id = m.tool_call_id;
