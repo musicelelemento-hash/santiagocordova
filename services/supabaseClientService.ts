@@ -21,12 +21,20 @@ export const SupabaseService = {
   },
 
   async upsertClient(client: Client): Promise<void> {
-    const dbClient = this.mapClientToDb(client);
+    const mappedClient = this.mapClientToDb(client);
+    
+    // Diagnostic: Log size of the payload for PDF debugging
+    const payloadSize = JSON.stringify(mappedClient).length;
+    console.log(`[Supabase] Upserting client ${client.ruc}. Payload size: ${(payloadSize / 1024).toFixed(2)} KB`);
+
     const { error } = await supabase
       .from('clients')
-      .upsert(dbClient);
+      .upsert(mappedClient, { onConflict: 'ruc' });
 
-    if (error) throw error;
+    if (error) {
+      console.error(`[Supabase Error] FAILED upsert for client ${client.ruc}:`, error);
+      throw error;
+    }
   },
 
   async bulkUpsertClients(clients: Client[]): Promise<void> {

@@ -128,19 +128,19 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 passwordToUse = sriCredentials[extracted.ruc];
                 toast.success("¡Clave encontrada en Bóveda!");
             }
-            // If the PDF is a RUC certificate, store it separately
+
+            let certFile: StoredFile | undefined = undefined;
             if (extracted.isCertificate) {
                 const b64 = await fileToBase64(file);
-                const certFile: StoredFile = {
+                certFile = {
                     name: file.name,
                     type: file.type,
                     size: file.size,
                     lastModified: file.lastModified,
                     content: b64
                 };
-                setClientData(prev => ({ ...prev, rucCertificate: certFile }));
             }
-            // Preserve existing VIP status if client already exists; otherwise default to false
+
             // Everyone is VIP now
             setIsVip(true);
 
@@ -155,6 +155,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     phones: extracted.contacto.celular ? [extracted.contacto.celular] : baseClient.phones,
                     regime: extracted.regimen || baseClient.regime,
                     sriPassword: passwordToUse,
+                    rucCertificate: certFile || baseClient.rucCertificate,
                     // Preserve existing fee_structure; only set defaults for new clients
                     fee_structure: exists ? baseClient.fee_structure: {
                         monthly: 5,

@@ -365,6 +365,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 setMismatchData({ ruc: extracted.ruc, name: extracted.apellidos_nombres });
                 return;
             }
+            const b64 = await fileToBase64(file);
             setEditedClient(prev => {
                 const updatedData: Partial<Client> = {
                     name: extracted.apellidos_nombres || prev.name,
@@ -376,8 +377,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         name: file.name,
                         type: file.type,
                         size: file.size,
-                        lastModified: file.lastModified
-                    } as any;
+                        lastModified: file.lastModified,
+                        content: b64
+                    };
                 }
                 return { ...prev, ...updatedData };
             });
