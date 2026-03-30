@@ -665,7 +665,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                             <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Protocolo Renta</p>
                                             <div className="px-3 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[8px] font-medium rounded-lg uppercase tracking-widest">MISIÓN CRÍTICA</div>
                                         </div>
-                                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                                        <div className="flex gap-2 flex-wrap pb-2">
                                             {[
                                                 { id: 'Solicitado', label: 'Inicio', icon: Send },
                                                 { id: 'Esperando Confirmación', label: 'SRI Web', icon: Clock },
@@ -687,10 +687,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                                             if (step.id === 'Confirmado') handleRentaRefundAction('confirm');
                                                             if (step.id === 'Completado') handleRentaRefundAction('complete');
                                                         }}
-                                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all whitespace-nowrap ${isActive ? 'bg-primary text-slate-950 border-primary shadow-primary' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-white/5 text-slate-600 border-white/5 hover:border-white/10')}`}
+                                                        className={`flex items-center gap-3 px-5 py-3 rounded-2xl border transition-all whitespace-nowrap flex-shrink-0 ${isActive ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-slate-950 text-slate-600 border-white/5 hover:border-white/10')}`}
                                                     >
                                                         <step.icon size={14} />
-                                                        <span className="text-[9px] font-medium uppercase tracking-widest">{step.label}</span>
+                                                        <span className="text-[9px] font-black uppercase tracking-[0.1em]">{step.label}</span>
                                                     </button>
                                                 );
                                             })}
@@ -721,7 +721,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                             <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Protocolo Devolución (T. Edad)</p>
                                         </div>
 
-                                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                                        <div className="flex gap-2 flex-wrap pb-2">
                                             {[
                                                 { id: 'Pendiente', label: 'Inicio', icon: Send, action: 'start' },
                                                 { id: 'En Proceso', label: 'En Proceso', icon: Clock, action: 'process' },
@@ -737,10 +737,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                                     <button
                                                         key={step.id}
                                                         onClick={() => handleElderlyRefundAction(step.action as any)}
-                                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all whitespace-nowrap ${isActive ? 'bg-primary text-slate-950 border-primary shadow-primary' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-white/5 text-slate-600 border-white/5 hover:border-white/10')}`}
+                                                        className={`flex items-center gap-3 px-5 py-3 rounded-2xl border transition-all whitespace-nowrap flex-shrink-0 ${isActive ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-slate-950 text-slate-600 border-white/5 hover:border-white/10')}`}
                                                     >
                                                         <step.icon size={14} />
-                                                        <span className="text-[9px] font-medium uppercase tracking-widest">{step.label}</span>
+                                                        <span className="text-[9px] font-black uppercase tracking-[0.1em]">{step.label}</span>
                                                     </button>
                                                 );
                                             })}

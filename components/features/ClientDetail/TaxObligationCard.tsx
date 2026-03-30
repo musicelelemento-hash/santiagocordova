@@ -80,9 +80,9 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                     <div className="flex items-center gap-3">
                         <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isDeclared ? 'bg-primary shadow-primary scale-110' : (overdueStatus ? 'bg-rose-500 animate-ping' : 'bg-slate-800')}`}></div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-medium text-slate-300 uppercase tracking-widest">Declaración SRI</span>
-                            <span className={`text-[8px] font-medium uppercase tracking-widest mt-0.5 ${overdueStatus && !isDeclared ? 'text-rose-400' : 'text-slate-500'}`}>
-                                {overdueStatus && !isDeclared ? 'Plazo Excedido' : 'Sincronizado'}
+                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest leading-none">SRI:<br/><span className="text-white mt-1 block">DECLARACIÓN</span></span>
+                            <span className={`text-[7px] font-black uppercase tracking-[0.2em] mt-1 ${overdueStatus && !isDeclared ? 'text-rose-400' : 'text-slate-500'}`}>
+                                {overdueStatus && !isDeclared ? 'PLAZO EXCEDIDO' : 'LOGÍSTICA FISCAL'}
                             </span>
                         </div>
                     </div>
@@ -94,8 +94,9 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                             </div>
                         </div>
                     ) : (
-                        <button onClick={onDeclare} className={`px-4 py-2 border rounded-lg text-[10px] font-medium uppercase tracking-widest transition-all ${overdueStatus ? 'bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border-rose-500/20' : 'bg-primary/10 hover:bg-primary text-primary hover:text-slate-950 border-primary/20'}`}>
-                            {overdueStatus ? 'Urgente' : 'Declarar'}
+                        <button onClick={onDeclare} className={`flex items-center gap-2 px-4 py-2 border rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex-shrink-0 ${overdueStatus ? 'bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.15)]' : 'bg-primary/10 hover:bg-primary text-primary hover:text-slate-950 border-primary/20 shadow-[0_0_15px_rgba(56,189,248,0.1)]'}`}>
+                            {overdueStatus ? 'URGENTE' : 'INICIAR'}
+                            <Send size={12} className="opacity-70" />
                         </button>
                     )}
                 </div>
@@ -105,8 +106,8 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                     <div className="flex items-center gap-3">
                         <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isPaid ? 'bg-emerald-400 shadow-primary scale-110' : 'bg-slate-800'}`}></div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-medium text-slate-300 uppercase tracking-widest">Honorarios</span>
-                            <span className="text-[8px] font-medium text-slate-500 uppercase tracking-widest mt-0.5">Contabilidad</span>
+                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-widest leading-none">CONTABLE:<br/><span className="text-white mt-1 block">HONORARIOS</span></span>
+                            <span className="text-[7px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">LIQUIDACIÓN</span>
                         </div>
                     </div>
                     {isPaid ? (
@@ -132,8 +133,8 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                                     <MessageCircle size={16} />
                                 </button>
                             )}
-                            <button onClick={onPay} className="px-4 py-2 bg-emerald-400/10 hover:bg-emerald-400 text-emerald-400 hover:text-slate-950 border border-emerald-400/20 rounded-lg text-[10px] font-medium uppercase tracking-widest transition-all">
-                                Cobrar
+                            <button onClick={onPay} className="px-5 py-2 bg-emerald-400/10 hover:bg-emerald-400 text-emerald-400 hover:text-slate-950 border border-emerald-400/20 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all flex-shrink-0 shadow-[0_0_15px_rgba(52,211,153,0.1)]">
+                                REGISTRAR
                             </button>
                         </div>
                     )}
@@ -142,10 +143,10 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
 
             {!isPaid && (
                 <div className="mt-8 flex gap-3 relative z-10">
-                    <button onClick={onDeclare} className="flex-grow py-4 bg-primary text-slate-950 hover:bg-white rounded-xl text-[11px] font-medium uppercase tracking-widest transition-all shadow-primary active:scale-95">
-                        Gestionar Trámite
+                    <button onClick={onDeclare} className="flex-grow py-4 bg-white text-slate-950 hover:bg-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] active:scale-95 text-center">
+                        GESTIONAR EXPEDIENTE
                     </button>
-                    <button onClick={onUpload} className="p-4 bg-white/5 border border-white/10 rounded-xl text-slate-500 hover:text-primary hover:border-primary/50 transition-all active:scale-95">
+                    <button onClick={onUpload} className="p-4 bg-white/5 border border-white/10 rounded-2xl text-slate-400 hover:text-white hover:border-white/30 transition-all active:scale-95 flex-shrink-0">
                         <UploadCloud size={20} />
                     </button>
                 </div>
