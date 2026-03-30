@@ -636,6 +636,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 status={complianceStats?.iva.isDeclared ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente}
                                 isPaid={complianceStats?.iva.is_paid}
                                 amount={client.fee_structure?.monthly || 5}
+                                dueDate={getDueDateForPeriod(editedClient, complianceStats?.iva.period || '') || undefined}
                                 onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats?.iva.period || '' })}
                                 onPay={() => handleQuickPay(complianceStats?.iva.period || '')}
                                 onUpload={() => { setUploadingTarget({ type: 'iva', period: complianceStats?.iva.period }); proofInputRef.current?.click(); }}
@@ -703,6 +704,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                             }
                                             isPaid={!!editedClient.rentaRefundPaid}
                                             amount={10.00}
+                                            dueDate={getDueDateForPeriod(editedClient, complianceStats?.renta.period || '') || undefined}
                                             onDeclare={() => handleRentaRefundAction('start')}
                                             onPay={() => handleRentaRefundAction('pay')}
                                             onUpload={() => { setUploadingTarget({ type: 'devolucionRenta', period: complianceStats?.renta.period }); proofInputRef.current?.click(); }}

@@ -16,6 +16,8 @@ interface TaxObligationCardProps {
     onWhatsApp?: () => void;
     declarationDate?: string;
     onRevertPayment?: () => void;
+    dueDate?: Date;
+    isOverdue?: boolean;
 }
 
 export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
@@ -30,13 +32,17 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
     onUpload,
     onWhatsApp,
     declarationDate,
-    onRevertPayment
+    onRevertPayment,
+    dueDate,
+    isOverdue
 }) => {
     const isDeclared = status === DeclarationStatus.Enviada || status === DeclarationStatus.Pagada;
     const isCompleted = isDeclared && isPaid;
+    const overdueStatus = isOverdue ?? (dueDate ? (new Date() > dueDate) : false);
 
     let nextStep = "";
-    if (!isDeclared) nextStep = "REQUERIDO: DECLARACIÓN";
+    if (overdueStatus && !isDeclared) nextStep = "OBLIGACIÓN VENCIDA";
+    else if (!isDeclared) nextStep = "REQUERIDO: DECLARACIÓN";
     else if (!isPaid) nextStep = "REQUERIDO: COBRO HONORARIOS";
     else nextStep = "ESTADO: OPERATIVO";
 
@@ -56,26 +62,28 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                         </div>
                     </div>
                 </div>
-                <div className={`px-4 py-1.5 rounded-lg text-[9px] font-medium uppercase tracking-widest border self-start ${isCompleted ? 'bg-emerald-400/10 border-emerald-400/20 text-emerald-400' : (isDeclared ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-amber-400/10 border-amber-400/20 text-amber-400 animate-pulse')}`}>
-                    {isCompleted ? 'Completado' : (isDeclared ? 'Pendiente Pago' : 'Pendiente Trámite')}
+                <div className={`px-4 py-1.5 rounded-lg text-[9px] font-medium uppercase tracking-widest border self-start ${isCompleted ? 'bg-emerald-400/10 border-emerald-400/20 text-emerald-400' : (isDeclared ? 'bg-primary/10 border-primary/20 text-primary' : (overdueStatus ? 'bg-rose-400/10 border-rose-400/20 text-rose-400 animate-pulse' : 'bg-amber-400/10 border-amber-400/20 text-amber-400 animate-pulse'))}`}>
+                    {isCompleted ? 'Completado' : (isDeclared ? 'Pendiente Pago' : (overdueStatus ? 'Vencida' : 'Pendiente Trámite'))}
                 </div>
             </div>
 
             <div className="flex items-center gap-3 mb-8 relative z-10">
-                <div className={`px-4 py-2 rounded-xl text-[9px] font-medium uppercase tracking-widest border flex items-center gap-2 ${isCompleted ? 'bg-emerald-400/5 border-emerald-400/10 text-emerald-400/70' : 'bg-slate-900/60 border-white/5 text-slate-400'}`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${isCompleted ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></div>
+                <div className={`px-4 py-2 rounded-xl text-[9px] font-medium uppercase tracking-widest border flex items-center gap-2 ${isCompleted ? 'bg-emerald-400/5 border-emerald-400/10 text-emerald-400/70' : (overdueStatus && !isDeclared ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : 'bg-slate-900/60 border-white/5 text-slate-400')}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${isCompleted ? 'bg-emerald-400' : (overdueStatus && !isDeclared ? 'bg-rose-500 animate-pulse' : 'bg-amber-400 animate-pulse')}`}></div>
                     {nextStep.replace('REQUERIDO: ', '').replace('ESTADO: ', '')}
                 </div>
             </div>
 
             <div className="space-y-4 relative z-10">
                 {/* Step: Declaration */}
-                <div className="flex items-center justify-between p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-primary/20 transition-all group/step">
+                <div className={`flex items-center justify-between p-5 rounded-2xl bg-white/5 border border-white/5 transition-all group/step ${overdueStatus && !isDeclared ? 'hover:border-rose-400/30 shadow-[0_0_15px_rgba(244,63,94,0.1)]' : 'hover:border-primary/20'}`}>
                     <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isDeclared ? 'bg-primary shadow-primary scale-110' : 'bg-slate-800'}`}></div>
+                        <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isDeclared ? 'bg-primary shadow-primary scale-110' : (overdueStatus ? 'bg-rose-500 animate-ping' : 'bg-slate-800')}`}></div>
                         <div className="flex flex-col">
                             <span className="text-[10px] font-medium text-slate-300 uppercase tracking-widest">Declaración SRI</span>
-                            <span className="text-[8px] font-medium text-slate-500 uppercase tracking-widest mt-0.5">Sincronizado</span>
+                            <span className={`text-[8px] font-medium uppercase tracking-widest mt-0.5 ${overdueStatus && !isDeclared ? 'text-rose-400' : 'text-slate-500'}`}>
+                                {overdueStatus && !isDeclared ? 'Plazo Excedido' : 'Sincronizado'}
+                            </span>
                         </div>
                     </div>
                     {isDeclared ? (
@@ -86,8 +94,8 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                             </div>
                         </div>
                     ) : (
-                        <button onClick={onDeclare} className="px-4 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-slate-950 border border-primary/20 rounded-lg text-[10px] font-medium uppercase tracking-widest transition-all">
-                            Declarar
+                        <button onClick={onDeclare} className={`px-4 py-2 border rounded-lg text-[10px] font-medium uppercase tracking-widest transition-all ${overdueStatus ? 'bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border-rose-500/20' : 'bg-primary/10 hover:bg-primary text-primary hover:text-slate-950 border-primary/20'}`}>
+                            {overdueStatus ? 'Urgente' : 'Declarar'}
                         </button>
                     )}
                 </div>

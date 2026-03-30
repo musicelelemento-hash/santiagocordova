@@ -51,6 +51,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [passwordVisible, setPasswordVisible] = useState(false);
+    const [p12PasswordVisible, setP12PasswordVisible] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [modalFeedback, setModalFeedback] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -492,6 +493,24 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 </div>
                             </div>
                         </div>
+                        
+                        <div className="relative">
+                            <label className="text-[10px] font-medium text-slate-500 mb-1 block uppercase tracking-wider">Clave Firma Electrónica (.p12)</label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                <input
+                                    type={p12PasswordVisible ? "text" : "password"}
+                                    value={clientData.electronicSignaturePassword || ''}
+                                    onChange={e => setClientData({ ...clientData, electronicSignaturePassword: e.target.value })}
+                                    className="w-full pl-10 pr-10 p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono font-medium"
+                                    placeholder="••••••••"
+                                    autoComplete="new-password"
+                                />
+                                <button onClick={() => setP12PasswordVisible(!p12PasswordVisible)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                    {p12PasswordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+                        </div>
 
                         <div>
                             <label className="text-[10px] font-medium text-slate-500 mb-2 block uppercase tracking-wider">Frecuencia Declaración IVA</label>
@@ -519,9 +538,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                             <label className="text-[9px] font-semibold text-slate-400 mb-4 block uppercase tracking-widest pl-1">Bóveda de Obligaciones</label>
                             <div className="space-y-3">
                                 {[
-                                    { id: 'renta', label: 'Impuesto Renta Anual (Obligatorio este año)', checked: requiresAnnualRenta, onChange: (v: boolean) => setRequiresAnnualRenta(v), disabled: false, color: 'emerald', icon: Calendar, sub: 'Operación Marzo' },
+                                    { id: 'renta', label: 'Impuesto Renta Anual (Obligatorio)', checked: requiresAnnualRenta, onChange: (v: boolean) => setRequiresAnnualRenta(v), disabled: false, color: 'emerald', icon: Calendar, sub: 'Marzo/Abril' },
                                     { id: 'anexo', label: 'Anexo Gastos Pers.', checked: requiresAnexosGastos, onChange: (v: boolean) => setRequiresAnexosGastos(v), color: 'sky', icon: FileText, sub: 'Febrero' },
-                                    { id: 'dev', label: 'Retorno Devolución', checked: hasActiveDevolucionIva, onChange: (v: boolean) => setHasActiveDevolucionIva(v), color: 'purple', icon: DollarSign, sub: 'SRI Tercera Edad' },
+                                    { id: 'devRenta', label: 'Devolución de Renta ($10 trámite)', checked: clientData.hasRentaRefund || false, onChange: (v: boolean) => setClientData({...clientData, hasRentaRefund: v}), color: 'indigo', icon: Coins, sub: 'Post-Declaración' },
+                                    { id: 'devIva', label: 'Devolución IVA 3ra Edad ($5/mes)', checked: clientData.hasElderlyDevolucionIva || false, onChange: (v: boolean) => setClientData({...clientData, hasElderlyDevolucionIva: v}), color: 'purple', icon: DollarSign, sub: 'Mensual (Cédula 001)' },
                                 ].map(mod => (
                                     <label key={mod.id} className={`flex items-center p-4 rounded-2xl border transition-all duration-300 ${mod.disabled ? 'opacity-70 cursor-not-allowed bg-slate-100/10' : 'cursor-pointer'} ${mod.checked ? `border-${mod.color}-500/50 bg-${mod.color}-500/5 shadow-[0_0_15px_rgba(0,0,0,0.05)] scale-[1.02]` : 'border-white/10 hover:border-white/20'}`}>
                                         <input type="checkbox" checked={mod.checked} disabled={mod.disabled} onChange={e => mod.onChange && mod.onChange(e.target.checked)} className={`mr-4 h-5 w-5 rounded-lg border-white/20 bg-transparent text-${mod.color}-500 focus:ring-0`} />
