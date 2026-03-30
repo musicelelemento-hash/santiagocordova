@@ -49,21 +49,21 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
     return (
         <div className="glass-card p-8 sm:p-12 transition-all group overflow-hidden relative">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-6 mb-8 relative z-10">
-                <div className="flex items-center gap-5">
-                    <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center transition-all duration-500 ${isCompleted ? 'bg-emerald-400/5 border-emerald-400/20 text-emerald-400 shadow-primary' : 'bg-white/5 border-white/5 text-slate-500 group-hover:text-primary group-hover:border-primary/30'}`}>
+                <div className="flex items-center gap-5 min-w-0 flex-1 pr-4">
+                    <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center flex-shrink-0 transition-all duration-500 ${isCompleted ? 'bg-emerald-400/5 border-emerald-400/20 text-emerald-400 shadow-primary' : 'bg-white/5 border-white/5 text-slate-500 group-hover:text-primary group-hover:border-primary/30'}`}>
                         <Calendar size={20} className={isCompleted ? 'animate-pulse' : ''} />
                     </div>
-                    <div>
-                        <h4 className="font-medium text-white text-base sm:text-lg tracking-tight leading-none transition-colors">{title}</h4>
+                    <div className="min-w-0 flex-1">
+                        <h4 className="font-medium text-white text-base sm:text-lg tracking-tight leading-none transition-colors truncate">{title}</h4>
                         <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-widest bg-white/5 py-1 px-3 rounded-lg border border-white/5">
+                            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-widest bg-white/5 py-1 px-3 rounded-lg border border-white/5 whitespace-nowrap">
                                 {formatPeriodForDisplay(period)}
                             </span>
                         </div>
                     </div>
                 </div>
-                <div className={`px-4 py-1.5 rounded-lg text-[9px] font-medium uppercase tracking-widest border self-start ${isCompleted ? 'bg-emerald-400/10 border-emerald-400/20 text-emerald-400' : (isDeclared ? 'bg-primary/10 border-primary/20 text-primary' : (overdueStatus ? 'bg-rose-400/10 border-rose-400/20 text-rose-400 animate-pulse' : 'bg-amber-400/10 border-amber-400/20 text-amber-400 animate-pulse'))}`}>
-                    {isCompleted ? 'Completado' : (isDeclared ? 'Pendiente Pago' : (overdueStatus ? 'Vencida' : 'Pendiente Trámite'))}
+                <div className={`flex-shrink-0 self-start ${isCompleted ? 'px-4 py-1.5 rounded-lg text-[9px] font-medium uppercase tracking-widest border bg-emerald-400/10 border-emerald-400/20 text-emerald-400' : (isDeclared ? 'px-4 py-1.5 rounded-lg text-[9px] font-medium uppercase tracking-widest border bg-primary/10 border-primary/20 text-primary' : (overdueStatus ? 'px-4 py-1.5 rounded-lg text-[9px] font-medium uppercase tracking-widest border bg-rose-400/10 border-rose-400/20 text-rose-400 animate-pulse' : 'px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.25em] border bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.2)] animate-pulse'))}`}>
+                    {isCompleted ? 'Completado' : (isDeclared ? 'Pendiente Pago' : (overdueStatus ? 'Vencida' : 'FASE: TRÁMITE'))}
                 </div>
             </div>
 
