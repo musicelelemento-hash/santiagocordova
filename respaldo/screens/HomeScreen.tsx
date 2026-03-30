@@ -147,7 +147,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
             onClick={() => navigate(item.navigation.screen, item.navigation.options)}
             style={{ animationDelay: `${index * 80}ms`, opacity: 0 }}
           >
-            {item.highlight && <div className="absolute top-0 right-0 bg-gold text-black text-[10px] font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Nuevo</div>}
+            {item.highlight && <div className="absolute top-0 right-0 bg-gold text-black text-xs font-bold px-2 py-1 rounded-bl-lg uppercase tracking-wider">Nuevo</div>}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className={`p-3 rounded-full ${item.title === 'Nuevo Cliente' ? 'bg-gold text-black' : item.highlight ? 'bg-gold/20 text-gold' : 'bg-gold/10 text-gold'}`}>

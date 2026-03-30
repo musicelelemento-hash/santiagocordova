@@ -71,12 +71,12 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                 <div className="flex-1 min-w-0 pr-2">
                     <div className="flex items-center space-x-2">
                         <h3 className="font-bold text-slate-800 dark:text-white truncate">{client.name}</h3>
-                        {client.isActive === false && <span className="text-[10px] bg-red-100 text-red-600 font-bold px-1.5 rounded uppercase">Inactivo</span>}
+                        {client.isActive === false && <span className="text-xs bg-red-100 text-red-600 font-bold px-1.5 rounded uppercase">Inactivo</span>}
                         {isVip && <Crown size={12} className="text-amber-500 fill-current"/>}
                     </div>
                     <p className="text-xs text-slate-500 font-mono flex items-center gap-1 mt-0.5">
                         {client.ruc}
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700">{client.regime}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700">{client.regime}</span>
                     </p>
                 </div>
 
@@ -85,7 +85,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                         <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg"><ShieldCheck size={12}/> Al Día</span>
                     ) : (
                         <div className="flex flex-col items-end">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">{formatPeriodForDisplay(currentPeriod).split(' ')[0]}</span>
+                            <span className="text-xs font-bold text-slate-400 uppercase">{formatPeriodForDisplay(currentPeriod).split(' ')[0]}</span>
                             <span className={`text-xs font-bold ${isOverdue ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>
                                 {dueDate ? format(dueDate, 'dd MMM', { locale: es }) : 'N/A'}
                             </span>

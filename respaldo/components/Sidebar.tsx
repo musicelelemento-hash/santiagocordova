@@ -112,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <div className="relative flex-shrink-0">
                             <Icon className={`w-5 h-5 transition-transform ${activeScreen === screen ? 'scale-110' : ''}`} />
                             {count !== undefined && count > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full animate-pulse shadow-sm border border-white dark:border-slate-900">{count}</span>
+                                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold h-4 w-4 flex items-center justify-center rounded-full animate-pulse shadow-sm border border-white dark:border-slate-900">{count}</span>
                             )}
                         </div>
                         <span className={`ml-3 text-sm whitespace-nowrap overflow-hidden transition-all duration-200 ${isExpanded ? 'opacity-100 w-auto' : 'opacity-0 w-0'}`}>{label}</span>

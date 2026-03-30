@@ -33,7 +33,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                     <h3 className="font-semibold text-white flex items-center gap-3 text-lg sm:text-xl uppercase tracking-tight">
                         <FileCheck size={20} className="text-cyan-400 sm:w-6 sm:h-6" /> Historial
                     </h3>
-                    <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium uppercase tracking-[0.2em] mt-1 ml-6 sm:ml-9">Registros y Estados SRI</p>
+                    <p className="text-[11px] sm:text-xs text-slate-500 font-medium uppercase tracking-[0.2em] mt-1 ml-6 sm:ml-9">Registros y Estados SRI</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="px-4 py-2 bg-slate-900 border border-white/5 rounded-xl">
@@ -46,10 +46,10 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="border-b border-white/5 bg-slate-900/30">
-                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Sector</th>
-                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Estado</th>
-                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Financiero</th>
-                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em] text-right">Acción</th>
+                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Sector</th>
+                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Estado</th>
+                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Financiero</th>
+                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em] text-right">Acción</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -64,13 +64,13 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                             <p className="font-semibold text-white text-xs sm:text-base uppercase tracking-tight">{formatPeriodForDisplay(decl.period)}</p>
                                             <div className="flex items-center gap-2 mt-1">
                                                 <div className="w-1 h-1 rounded-full bg-cyan-500/40"></div>
-                                                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">ACTUALIZADO: {safeFormat(decl.updatedAt, 'dd MMM').toUpperCase()}</p>
+                                                <p className="text-xs text-slate-500 font-semibold uppercase tracking-widest">ACTUALIZADO: {safeFormat(decl.updatedAt, 'dd MMM').toUpperCase()}</p>
                                             </div>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-8 py-6">
-                                    <div className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-xl text-[10px] font-semibold uppercase tracking-[0.2em] border shadow-2xl ${
+                                    <div className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-xl text-xs font-semibold uppercase tracking-[0.2em] border shadow-2xl ${
                                         decl.status === DeclarationStatus.Pagada ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20 shadow-emerald-400/5' :
                                         decl.status === DeclarationStatus.Enviada ? 'bg-sky-400/10 text-sky-400 border-sky-400/20 shadow-sky-400/5' : 
                                         'bg-amber-400/10 text-amber-400 border-amber-400/20 shadow-amber-400/5'
@@ -101,7 +101,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                             )}
                                         </div>
                                         {decl.paidAt && (
-                                            <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-[0.2em] font-mono ml-4">
+                                            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-[0.2em] font-mono ml-4">
                                                 ID: {safeFormat(decl.paidAt, 'ddMMyy-HHmm').toUpperCase()}
                                             </span>
                                         )}

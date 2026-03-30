@@ -105,9 +105,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ clients, nav
                     <div className="p-4 bg-white/5 dark:bg-slate-900/50 border-b border-white/10 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <div className="w-2 h-2 bg-sky-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(56,189,248,0.5)]"></div>
-                            <h4 className="font-semibold text-[10px] uppercase tracking-[0.3em] text-white">TACTICAL FEED: ALPHA-1</h4>
+                            <h4 className="font-semibold text-xs uppercase tracking-[0.3em] text-white">TACTICAL FEED: ALPHA-1</h4>
                         </div>
-                        <span className="text-[9px] font-medium text-slate-500 uppercase tracking-widest">Estado: En línea</span>
+                        <span className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Estado: En línea</span>
                     </div>
 
                     <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
@@ -130,7 +130,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ clients, nav
                                                 <h5 className={`text-[11px] font-semibold uppercase tracking-wider mb-0.5 ${alert.type === 'danger' ? 'text-rose-400' : 'text-amber-400'}`}>
                                                     {alert.title}
                                                 </h5>
-                                                <p className="text-[10px] text-slate-400 leading-relaxed capitalize">
+                                                <p className="text-xs text-slate-400 leading-relaxed capitalize">
                                                     {alert.description}
                                                 </p>
                                             </div>
@@ -145,14 +145,14 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ clients, nav
                                     <div className="absolute inset-0 border border-sky-400/20 rounded-full animate-ping"></div>
                                 </div>
                                 <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-1">Sin Comunicaciones</p>
-                                <p className="text-[9px] font-medium text-slate-500 uppercase tracking-widest">Escaneando sectores de red...</p>
+                                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Escaneando sectores de red...</p>
                             </div>
                         )}
                     </div>
 
                     <div className="p-4 bg-white/5 border-t border-white/10">
                         <button 
-                            className="w-full py-2 bg-slate-800/80 hover:bg-slate-700/80 text-[9px] font-semibold text-slate-400 uppercase tracking-[0.2em] rounded-xl transition-all border border-white/5"
+                            className="w-full py-2 bg-slate-800/80 hover:bg-slate-700/80 text-[11px] font-semibold text-slate-400 uppercase tracking-[0.2em] rounded-xl transition-all border border-white/5"
                             onClick={() => setIsOpen(false)}
                         >
                             {alerts.length > 0 ? 'MARCAR TODOS COMO LEÍDOS' : 'SILENCIAR CANALES'}

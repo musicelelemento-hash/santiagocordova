@@ -98,13 +98,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                         <div className="grid grid-cols-2 gap-2 bg-black/20 p-1.5 rounded-2xl mb-8 border border-white/5">
                             <button
                                 onClick={() => { setLoginType('client'); setError(''); }}
-                                className={`py-3 text-[10px] font-semibold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'client' ? 'bg-[#00A896] text-white shadow-lg shadow-teal-900/50' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                                className={`py-3 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'client' ? 'bg-[#00A896] text-white shadow-lg shadow-teal-900/50' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
                             >
                                 <LucideIcons.Briefcase size={14} /> Clientes
                             </button>
                             <button
                                 onClick={() => { setLoginType('admin'); setError(''); }}
-                                className={`py-3 text-[10px] font-semibold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'admin' ? 'bg-white text-[#0B2149] shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                                className={`py-3 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'admin' ? 'bg-white text-[#0B2149] shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
                             >
                                 <LucideIcons.Lock size={14} /> Admin
                             </button>
@@ -113,7 +113,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                         {/* Form */}
                         <form onSubmit={handleLogin} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[9px] font-semibold text-[#00A896] uppercase tracking-[0.2em] ml-2">
+                                <label className="text-[11px] font-semibold text-[#00A896] uppercase tracking-[0.2em] ml-2">
                                     {loginType === 'client' ? 'Identificación (RUC)' : 'ID Usuario'}
                                 </label>
                                 <div className="group relative">
@@ -134,7 +134,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[9px] font-semibold text-[#00A896] uppercase tracking-[0.2em] ml-2">
+                                <label className="text-[11px] font-semibold text-[#00A896] uppercase tracking-[0.2em] ml-2">
                                     {loginType === 'client' ? 'Contraseña SRI' : 'Clave de Acceso'}
                                 </label>
                                 <div className="group relative">
@@ -183,7 +183,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
 
                     {/* Footer Info */}
                     <div className="bg-[#020617]/40 p-4 text-center border-t border-white/5 backdrop-blur-md">
-                        <p className="text-[10px] text-slate-500 font-medium">
+                        <p className="text-xs text-slate-500 font-medium">
                             Protegido por reCAPTCHA Enterprise. <br />
                             <span className="opacity-50">v2.5.0 Stable Build</span>
                         </p>

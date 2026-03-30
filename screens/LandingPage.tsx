@@ -59,7 +59,7 @@ const AnimatedStat = ({ end, label, prefix = "", suffix = "" }: { end: number, l
             <div className="text-5xl md:text-7xl font-display font-semibold text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-500 tracking-tighter mb-2 group-hover:from-[#00A896] group-hover:to-teal-200 transition-all duration-500">
                 {prefix}{count}{suffix}
             </div>
-            <div className="text-[10px] font-medium text-[#00A896] uppercase tracking-[0.3em]">{label}</div>
+            <div className="text-xs font-medium text-[#00A896] uppercase tracking-[0.3em]">{label}</div>
         </div>
     );
 };
@@ -169,7 +169,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         </div>
                         <div className={`hidden sm:flex flex-col transition-all duration-700 ${scrolled ? 'opacity-80 scale-95 origin-left' : ''}`}>
                             <span className="text-sm font-display font-semibold tracking-tight leading-none text-white whitespace-nowrap">SANTIAGO CORDOVA</span>
-                            <span className="text-[9px] font-medium text-[#00A896] tracking-[0.2em] uppercase glow-text">Elite Tax Services</span>
+                            <span className="text-[11px] font-medium text-[#00A896] tracking-[0.2em] uppercase glow-text">Elite Tax Services</span>
                         </div>
                     </div>
 
@@ -191,7 +191,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <div className="flex items-center gap-3">
                         <button
                             onClick={onAdminAccess}
-                            className="hidden md:block text-[10px] font-medium text-slate-400 hover:text-white transition-colors uppercase tracking-wider px-3 hover:scale-105"
+                            className="hidden md:block text-xs font-medium text-slate-400 hover:text-white transition-colors uppercase tracking-wider px-3 hover:scale-105"
                         >
                             Acceso
                         </button>
@@ -212,12 +212,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform active:scale-90">
                         <LucideIcons.Home size={22} className={scrolled ? 'text-[#00A896]' : ''} />
-                        <span className="text-[9px] font-medium mt-1 uppercase tracking-tighter">Inicio</span>
+                        <span className="text-[11px] font-medium mt-1 uppercase tracking-tighter">Inicio</span>
                     </button>
 
                     <button onClick={onNavigateToServices} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform active:scale-90">
                         <LucideIcons.Grid size={22} />
-                        <span className="text-[9px] font-medium mt-1 uppercase tracking-tighter">Servicios</span>
+                        <span className="text-[11px] font-medium mt-1 uppercase tracking-tighter">Servicios</span>
                     </button>
 
                     {/* Elite Floating Action Button */}
@@ -235,12 +235,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                     <button onClick={() => scrollToSection('recursos')} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform active:scale-90">
                         <LucideIcons.BookOpen size={22} />
-                        <span className="text-[9px] font-medium mt-1 uppercase tracking-tighter">Wiki</span>
+                        <span className="text-[11px] font-medium mt-1 uppercase tracking-tighter">Wiki</span>
                     </button>
 
                     <button onClick={onAdminAccess} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform active:scale-90">
                         <LucideIcons.ShieldCheck size={22} />
-                        <span className="text-[9px] font-medium mt-1 uppercase tracking-tighter">Admin</span>
+                        <span className="text-[11px] font-medium mt-1 uppercase tracking-tighter">Admin</span>
                     </button>
                 </div>
             </div>
@@ -440,7 +440,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <div key={i} className="group bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-6 transition-all cursor-pointer">
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-4">
-                                        <span className="text-[10px] font-medium bg-[#00A896]/20 text-[#00A896] px-2 py-1 rounded-md uppercase tracking-wider shadow-[0_0_10px_rgba(0,168,150,0.1)]">{item.category}</span>
+                                        <span className="text-xs font-medium bg-[#00A896]/20 text-[#00A896] px-2 py-1 rounded-md uppercase tracking-wider shadow-[0_0_10px_rgba(0,168,150,0.1)]">{item.category}</span>
                                         <h3 className="text-lg font-medium text-white group-hover:text-[#00A896] transition-colors">{item.title}</h3>
                                     </div>
                                     <LucideIcons.ChevronDown className="text-slate-500 group-hover:text-white transition-transform group-hover:rotate-180" />
@@ -504,7 +504,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         <a href="#" className="hover:text-[#00A896] transition-colors">Términos</a>
                         <button onClick={onAdminAccess} className="hover:text-white transition-colors">Admin</button>
                     </div>
-                    <div className="text-slate-600 text-[10px] font-medium tracking-widest uppercase">
+                    <div className="text-slate-600 text-xs font-medium tracking-widest uppercase">
                         © 2026. Design by <span className="text-[#00A896]">Supra Music Inc.</span>
                     </div>
                 </div>

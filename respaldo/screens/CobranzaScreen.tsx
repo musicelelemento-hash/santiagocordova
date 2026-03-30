@@ -178,11 +178,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({ clients, setClie
                 </div>
                 <div className="flex gap-4 w-full md:w-auto">
                     <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border-l-4 border-red-500 shadow-sm flex-1 min-w-[140px]">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Por Cobrar</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase mb-1">Por Cobrar</p>
                         <p className="text-xl font-black text-red-600">${financialData.receivable.reduce((s,i) => s+i.amount, 0).toFixed(2)}</p>
                     </div>
                     <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border-l-4 border-emerald-500 shadow-sm flex-1 min-w-[140px]">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Recaudado (Mes)</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase mb-1">Recaudado (Mes)</p>
                         <p className="text-xl font-black text-emerald-600">${financialData.collected.reduce((s,i) => s+i.amount, 0).toFixed(2)}</p>
                     </div>
                 </div>
@@ -247,12 +247,12 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({ clients, setClie
                                         </div>
                                         <div>
                                             <p className="font-bold text-sm text-slate-800 dark:text-white">{item.clientName}</p>
-                                            <p className="text-[10px] text-slate-400 font-mono">{formatPeriodForDisplay(item.period)} • {item.ruc}</p>
+                                            <p className="text-xs text-slate-400 font-mono">{formatPeriodForDisplay(item.period)} • {item.ruc}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="font-black text-sm text-slate-900 dark:text-white">${item.amount.toFixed(2)}</p>
-                                        <p className={`text-[9px] font-bold uppercase tracking-widest ${item.daysDiff && item.daysDiff > 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                                        <p className={`text-[11px] font-bold uppercase tracking-widest ${item.daysDiff && item.daysDiff > 0 ? 'text-red-500' : 'text-slate-400'}`}>
                                             {item.status === 'Pagada' ? 'Pagado' : item.daysDiff && item.daysDiff > 0 ? `Vencido hace ${item.daysDiff}d` : 'Por vencer'}
                                         </p>
                                     </div>

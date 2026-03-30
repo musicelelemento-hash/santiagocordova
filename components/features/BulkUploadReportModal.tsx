@@ -77,7 +77,7 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
                 <div className="p-6 bg-white/5 dark:bg-slate-900/50 border-b border-white/10 grid grid-cols-3 gap-4 relative z-10">
                     <div className="p-4 glass-elite border-emerald-400/30 text-center relative overflow-hidden group">
                         <div className="absolute inset-0 bg-emerald-400/5 group-hover:bg-emerald-400/10 transition-colors"></div>
-                        <p className="text-[10px] font-semibold text-emerald-400 uppercase tracking-widest mb-1 relative z-10">PROCESADOS</p>
+                        <p className="text-xs font-semibold text-emerald-400 uppercase tracking-widest mb-1 relative z-10">PROCESADOS</p>
                         <p className="text-3xl font-semibold text-white drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] relative z-10">{successCount}</p>
                         <div className="absolute -bottom-1 -right-1 opacity-10 group-hover:opacity-20 transition-opacity whitespace-nowrap">
                             <CheckCircle2 size={40} />
@@ -85,7 +85,7 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
                     </div>
                     <div className="p-4 glass-elite border-amber-400/30 text-center relative overflow-hidden group">
                         <div className="absolute inset-0 bg-amber-400/5 group-hover:bg-amber-400/10 transition-colors"></div>
-                        <p className="text-[10px] font-semibold text-amber-400 uppercase tracking-widest mb-1 relative z-10">DUPLICADOS</p>
+                        <p className="text-xs font-semibold text-amber-400 uppercase tracking-widest mb-1 relative z-10">DUPLICADOS</p>
                         <p className="text-3xl font-semibold text-white drop-shadow-[0_0_10px_rgba(245,158,11,0.5)] relative z-10">{duplicateCount}</p>
                         <div className="absolute -bottom-1 -right-1 opacity-10 group-hover:opacity-20 transition-opacity whitespace-nowrap">
                             <Copy size={40} />
@@ -93,7 +93,7 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
                     </div>
                     <div className="p-4 glass-elite border-rose-400/30 text-center relative overflow-hidden group">
                         <div className="absolute inset-0 bg-rose-400/5 group-hover:bg-rose-400/10 transition-colors"></div>
-                        <p className="text-[10px] font-semibold text-red-400 uppercase tracking-widest mb-1 relative z-10">FALLIDOS</p>
+                        <p className="text-xs font-semibold text-red-400 uppercase tracking-widest mb-1 relative z-10">FALLIDOS</p>
                         <p className="text-3xl font-semibold text-white drop-shadow-[0_0_10px_rgba(239,68,68,0.5)] relative z-10">{errorCount}</p>
                         <div className="absolute -bottom-1 -right-1 opacity-10 group-hover:opacity-20 transition-opacity whitespace-nowrap">
                             <FileWarning size={40} />
@@ -105,19 +105,19 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
                 <div className="flex p-1.5 gap-1.5 glass-elite mx-6 mt-6 rounded-2xl border-white/5">
                     <button
                         onClick={() => setActiveTab('success')}
-                        className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-semibold uppercase tracking-widest transition-all relative overflow-hidden ${activeTab === 'success' ? 'bg-white dark:bg-sky-400 text-slate-900 dark:text-white shadow-[0_0_20px_rgba(56,189,248,0.3)] scale-[1.02]' : 'text-slate-400 hover:text-slate-200'}`}
+                        className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all relative overflow-hidden ${activeTab === 'success' ? 'bg-white dark:bg-sky-400 text-slate-900 dark:text-white shadow-[0_0_20px_rgba(56,189,248,0.3)] scale-[1.02]' : 'text-slate-400 hover:text-slate-200'}`}
                     >
                         <span className="relative z-10">EXITOSOS</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('duplicate')}
-                        className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-semibold uppercase tracking-widest transition-all relative overflow-hidden ${activeTab === 'duplicate' ? 'bg-white dark:bg-amber-400 text-slate-900 dark:text-white shadow-[0_0_20px_rgba(245,158,11,0.3)] scale-[1.02]' : 'text-slate-400 hover:text-slate-200'}`}
+                        className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all relative overflow-hidden ${activeTab === 'duplicate' ? 'bg-white dark:bg-amber-400 text-slate-900 dark:text-white shadow-[0_0_20px_rgba(245,158,11,0.3)] scale-[1.02]' : 'text-slate-400 hover:text-slate-200'}`}
                     >
                         <span className="relative z-10">OMITIDOS</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('error')}
-                        className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-semibold uppercase tracking-widest transition-all relative overflow-hidden ${activeTab === 'error' ? 'bg-white dark:bg-rose-400 text-slate-900 dark:text-white shadow-[0_0_20px_rgba(239,68,68,0.3)] scale-[1.02]' : 'text-slate-400 hover:text-slate-200'}`}
+                        className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all relative overflow-hidden ${activeTab === 'error' ? 'bg-white dark:bg-rose-400 text-slate-900 dark:text-white shadow-[0_0_20px_rgba(239,68,68,0.3)] scale-[1.02]' : 'text-slate-400 hover:text-slate-200'}`}
                     >
                         <span className="relative z-10">ERRORES</span>
                     </button>
@@ -140,7 +140,7 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
                                     <div className="flex items-center gap-3 flex-wrap">
                                         <h4 className="font-semibold text-white text-base tracking-tight truncate group-hover:text-sky-300 transition-colors uppercase">{res.clientName || res.fileName}</h4>
                                         {(res.status === 'success' || res.status === 'new_client') && (
-                                            <span className={`px-3 py-1 rounded-md text-[9px] font-semibold uppercase tracking-widest shadow-lg ${
+                                            <span className={`px-3 py-1 rounded-md text-[11px] font-semibold uppercase tracking-widest shadow-lg ${
                                                 res.status === 'new_client' ? 'bg-sky-400 text-white animate-pulse' :
                                                 res.is_paid ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
                                                 }`}>
@@ -150,20 +150,20 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
                                     </div>
 
                                     <div className="flex items-center gap-3 mt-2">
-                                        <span className="text-[10px] font-semibold text-slate-400 font-mono tracking-widest bg-slate-800/50 px-2 py-0.5 rounded border border-white/5">{res.ruc || '0000000000000'}</span>
+                                        <span className="text-xs font-semibold text-slate-400 font-mono tracking-widest bg-slate-800/50 px-2 py-0.5 rounded border border-white/5">{res.ruc || '0000000000000'}</span>
                                         <div className="h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.5)]"></div>
-                                        <span className="text-[10px] font-semibold text-sky-400 uppercase tracking-widest font-mono">
+                                        <span className="text-xs font-semibold text-sky-400 uppercase tracking-widest font-mono">
                                             {res.type || 'DATA'} // {res.period || 'N/A'}
                                         </span>
                                         {res.amount !== undefined && (
                                             <>
                                                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                                                <span className="text-[10px] font-semibold text-emerald-400 font-mono tracking-tighter">${res.amount.toFixed(2)}</span>
+                                                <span className="text-xs font-semibold text-emerald-400 font-mono tracking-tighter">${res.amount.toFixed(2)}</span>
                                             </>
                                         )}
                                     </div>
 
-                                    {res.error && <p className="text-[10px] font-semibold text-red-400 italic mt-3 flex items-center gap-2 bg-red-900/20 p-2 rounded-lg border border-rose-400/20">
+                                    {res.error && <p className="text-xs font-semibold text-red-400 italic mt-3 flex items-center gap-2 bg-red-900/20 p-2 rounded-lg border border-rose-400/20">
                                         <AlertCircle size={12} /> <span className="uppercase tracking-tight">ERROR DETECTADO:</span> {res.error}
                                     </p>}
                                 </div>
@@ -230,19 +230,19 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
                             <h3 className="text-xl font-semibold text-white uppercase tracking-tight mb-6">Radar Táctico</h3>
                             <div className="space-y-6 flex-1">
                                 <div>
-                                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">FORMA TRIBUTARIA</p>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">FORMA TRIBUTARIA</p>
                                     <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-sm font-semibold text-white uppercase tracking-wider font-mono">
                                         {previewPdf.metadata?.formType || 'DESCONOCIDO'}
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">PERIODO FISCAL</p>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">PERIODO FISCAL</p>
                                     <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-sky-400 text-lg font-semibold uppercase tracking-wider font-mono">
                                         {previewPdf.metadata?.period || 'N/A'}
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2">Monto Valido</p>
+                                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Monto Valido</p>
                                     <div className="p-4 bg-emerald-400/10 border border-emerald-400/20 rounded-xl text-emerald-400 text-2xl font-semibold uppercase tracking-tighter font-mono">
                                         ${(previewPdf.metadata?.amount || 0).toFixed(2)}
                                     </div>

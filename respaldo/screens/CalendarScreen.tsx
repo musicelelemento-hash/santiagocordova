@@ -145,7 +145,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
         {/* Weekday Headers */}
         <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
           {weekDays.map(day => (
-            <div key={day} className="text-center font-black text-[10px] uppercase tracking-widest py-4 text-slate-400 dark:text-slate-500">
+            <div key={day} className="text-center font-black text-xs uppercase tracking-widest py-4 text-slate-400 dark:text-slate-500">
               {day}
             </div>
           ))}
@@ -173,7 +173,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
                         {format(day, 'd')}
                     </span>
                     {sriDigit !== null && isCurrentMonth && (
-                        <span className="text-[9px] font-black text-red-400 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded border border-red-100 dark:border-red-900/30" title={`Vence 9no dígito: ${sriDigit}`}>
+                        <span className="text-[11px] font-black text-red-400 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded border border-red-100 dark:border-red-900/30" title={`Vence 9no dígito: ${sriDigit}`}>
                             Dígito {sriDigit}
                         </span>
                     )}
@@ -191,7 +191,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
                       }
                     >
                         <div className="font-bold truncate leading-tight">{event.clientName}</div>
-                        <div className="truncate opacity-80 text-[10px]">{event.type === 'task' ? 'Tarea' : 'Declaración'}</div>
+                        <div className="truncate opacity-80 text-xs">{event.type === 'task' ? 'Tarea' : 'Declaración'}</div>
                     </div>
                   ))}
                 </div>

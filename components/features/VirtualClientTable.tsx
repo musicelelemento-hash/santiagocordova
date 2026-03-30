@@ -96,54 +96,53 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
     };
 
     return (
-        <div style={style} className={`flex border-b border-slate-100 dark:border-white/5 hover:bg-sky-400/[0.02] dark:hover:bg-sky-400/[0.05] transition-all items-center px-4 group/row hover:shadow-[inset_4px_0_0_0_#0ea5e9] ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-inset ring-sky-400/50' : ''}`}>
-            {/* Medalla Elite */}
+        <div style={style} className={`flex border-b border-slate-100 dark:border-white/5 hover:bg-primary/[0.03] dark:hover:bg-primary/[0.08] transition-all items-center px-4 group/row hover:shadow-[inset_4px_0_0_0_theme(colors.primary.DEFAULT)] ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-inset ring-primary/30' : ''}`}>
+            {/* Estatus Zen */}
             <div className="w-16 shrink-0 flex flex-col items-center group cursor-help relative" title={merit.label}>
-                <div className={`p-2 rounded-xl bg-opacity-10 ${merit.rank === 1 ? 'bg-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : (merit.rank === 2 ? 'bg-slate-400' : 'bg-orange-600')} transition-transform group-hover/row:scale-110`}>
-                    <merit.icon size={22} className={`${merit.color}`} strokeWidth={merit.rank === 1 ? 3 : 2} />
+                <div className={`p-2 rounded-xl bg-opacity-10 ${merit.rank === 1 ? 'bg-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : (merit.rank === 2 ? 'bg-slate-400' : 'bg-orange-600')} transition-transform group-hover/row:scale-110`}>
+                    <merit.icon size={20} className={`${merit.color}`} strokeWidth={2} />
                 </div>
-                <span className={`text-[7px] font-semibold uppercase mt-1.5 px-1.5 py-0.5 rounded border ${merit.color} ${merit.rank === 1 ? 'border-amber-400/30' : 'border-slate-500/20'}`}>{merit.label.split(' - ')[0]}</span>
+                <span className={`text-[11px] font-bold uppercase mt-1.5 px-1.5 py-0.5 rounded-md border ${merit.color} ${merit.rank === 1 ? 'border-amber-400/30' : 'border-slate-500/20'}`}>{merit.label.split(' - ')[0]}</span>
             </div>
 
-            {/* Cliente Detail - Unit Identity */}
             <div className="flex-1 min-w-0 px-4">
                 <div className="flex items-center gap-2">
                     {hasMissingHistoryPdf && (
-                        <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)] shrink-0" title="Falta documentación histórica" />
+                        <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.4)] shrink-0" title="Pendiente: Documentación histórica" />
                     )}
                     <span 
-                        className="font-semibold text-slate-800 dark:text-white text-[13px] truncate group-hover/row:text-sky-500 transition-colors uppercase tracking-tight" 
+                        className="font-semibold text-slate-800 dark:text-white text-[13.5px] truncate group-hover/row:text-primary transition-colors tracking-tight" 
                         title={client.name}
                     >
                         {client.tradeName || client.name}
                     </span>
                     {client.isActive === false && (
-                        <span className="text-[7px] font-semibold bg-rose-400 text-white px-1.5 py-0.5 rounded-full uppercase flex items-center gap-1">
-                            <LucideIcons.UserX size={8} strokeWidth={4} />
-                            Desactivado
+                        <span className="text-[11px] font-bold bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-md uppercase flex items-center gap-1">
+                            <LucideIcons.UserX size={8} strokeWidth={3} />
+                            Inactivo
                         </span>
                     )}
                     {true && (
-                        <div className="flex items-center gap-1 text-[7px] font-semibold bg-amber-400 text-white px-2 py-0.5 rounded-full uppercase tracking-tighter ring-2 ring-amber-400/20">
-                            <LucideIcons.Crown size={8} fill="currentColor" />
-                            VIP UNIT
+                        <div className="flex items-center gap-1 text-[11px] font-bold bg-amber-50 text-amber-600 border border-amber-200/50 px-2 py-0.5 rounded-md uppercase tracking-tighter shadow-sm">
+                            <LucideIcons.Crown size={8} className="fill-current" />
+                            Protocolo VIP
                         </div>
                     )}
                     {(client.hasElderlyDevolucionIva || (client as any).hasElderlyIvaRefund) && (
-                        <div className="flex items-center gap-1 text-[7px] font-semibold bg-emerald-400 text-white px-2 py-0.5 rounded-full uppercase tracking-tighter ring-2 ring-emerald-400/20">
-                            <LucideIcons.Heart size={8} fill="currentColor" />
+                        <div className="flex items-center gap-1 text-[11px] font-bold bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-tighter shadow-sm">
+                            <LucideIcons.Heart size={8} className="fill-current" />
                             T. EDAD
                         </div>
                     )}
                 </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 truncate uppercase tracking-wider" title={client.name}>
+                <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate tracking-wide" title={client.name}>
                         {client.tradeName ? client.name : client.ruc}
                     </span>
                     {client.tradeName && (
                         <button 
                             onClick={handleCopyRuc}
-                            className={`font-mono text-[8px] px-1.5 py-0.5 rounded border transition-colors flex items-center gap-1 uppercase tracking-widest ${copied ? 'bg-emerald-400 text-white border-emerald-400' : 'text-slate-400 bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-sky-400 hover:text-sky-400'}`}
+                            className={`font-mono text-xs px-2 py-0.5 rounded-md border transition-all flex items-center gap-1.5 uppercase tracking-widest ${copied ? 'bg-primary text-white border-primary' : 'text-slate-400 bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-primary/50 hover:text-primary'}`}
                             title="Copiar RUC"
                         >
                             {client.ruc}
@@ -153,13 +152,13 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                     {!client.tradeName && (
                          <button 
                             onClick={handleCopyRuc}
-                            className={`font-mono text-[8px] px-1.5 py-0.5 rounded border transition-colors flex items-center gap-1 uppercase tracking-widest ${copied ? 'bg-emerald-400 text-white border-emerald-400' : 'text-slate-400 border-transparent hover:border-sky-400 hover:text-sky-400'}`}
+                            className={`font-mono text-xs px-2 py-0.5 rounded-md border transition-all flex items-center gap-1.5 uppercase tracking-widest ${copied ? 'bg-primary text-white border-primary' : 'text-slate-400 border-transparent hover:border-primary/50 hover:text-primary'}`}
                             title="Copiar RUC"
                         >
                             <LucideIcons.Copy size={8} />
                         </button>
                     )}
-                    <span className="text-[8px] font-semibold text-sky-500/70 uppercase tracking-wider font-mono">{client.regime}</span>
+                    <span className="text-xs font-bold text-primary/70 uppercase tracking-widest font-mono opacity-80">{client.regime}</span>
                 </div>
             </div>
 
@@ -169,19 +168,19 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                     {needsIva && (
                         <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${isCampaignDone ? 'bg-emerald-400/10 border-emerald-400/20 text-emerald-500' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400'}`}>
                             {isCampaignDone ? <LucideIcons.ShieldCheck size={10} strokeWidth={3} /> : <LucideIcons.Loader2 size={10} className="animate-spin" />}
-                            <span className="text-[9px] font-semibold uppercase tracking-widest">{frequencyText.replace('IVA ', '')}</span>
+                            <span className="text-[11px] font-semibold uppercase tracking-widest">{frequencyText.replace('IVA ', '')}</span>
                         </div>
                     )}
                     {needsRenta && (
                         <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${isRentaDeclared ? 'bg-emerald-400/10 border-emerald-400/20 text-emerald-500' : 'bg-orange-500/10 border-orange-500/20 text-orange-600'}`}>
                             {isRentaDeclared ? <LucideIcons.Award size={10} strokeWidth={3} /> : <LucideIcons.Target size={10} />}
-                            <span className="text-[9px] font-semibold uppercase tracking-widest text-inherit">RENTA</span>
+                            <span className="text-[11px] font-semibold uppercase tracking-widest text-inherit">RENTA</span>
                         </div>
                     )}
                     {client.hasRentaRefund && (
                         <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${client.rentaRefundStatus === 'Completado' ? 'bg-sky-400/10 border-sky-400/20 text-sky-500' : 'bg-rose-400/10 border-rose-400/20 text-rose-400 animate-pulse'}`}>
                             <LucideIcons.HandCoins size={10} />
-                            <span className="text-[9px] font-semibold uppercase tracking-widest">DEV. RENTA</span>
+                            <span className="text-[11px] font-semibold uppercase tracking-widest">DEV. RENTA</span>
                         </div>
                     )}
                 </div>
@@ -194,10 +193,10 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                         <LucideIcons.Clock size={16} />
                     </div>
                     <div className="flex flex-col">
-                        <span className={`text-[10px] font-semibold uppercase tracking-tighter ${(needsIva ? isCampaignDone : isRentaDeclared) ? 'text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                        <span className={`text-xs font-semibold uppercase tracking-tighter ${(needsIva ? isCampaignDone : isRentaDeclared) ? 'text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
                             {formatPeriodForDisplay(needsIva ? period : rentaPeriod)}
                         </span>
-                        <span className={`text-[8px] font-semibold font-mono tracking-widest ${(needsIva ? isCampaignDone : isRentaDeclared) ? ((((needsIva ? campaignDecl : rentaDecl)?.proof_file) || (needsIva ? decl : rentaDecl)?.proof_file) ? 'text-emerald-400/70' : 'text-rose-400 animate-pulse') : (needsIva && ivaDueDate && isPast(ivaDueDate) ? 'text-rose-400/70' : 'text-sky-400/70')}`}>
+                        <span className={`text-xs font-semibold font-mono tracking-widest ${(needsIva ? isCampaignDone : isRentaDeclared) ? ((((needsIva ? campaignDecl : rentaDecl)?.proof_file) || (needsIva ? decl : rentaDecl)?.proof_file) ? 'text-emerald-400/70' : 'text-rose-400 animate-pulse') : (needsIva && ivaDueDate && isPast(ivaDueDate) ? 'text-rose-400/70' : 'text-sky-400/70')}`}>
                             {(needsIva ? isCampaignDone : isRentaDeclared) ? 
                                 ((((needsIva ? campaignDecl : rentaDecl)?.proof_file) || (needsIva ? decl : rentaDecl)?.proof_file) ? 'TARGET OK' : 'FALTA PDF') 
                                 : (needsIva ? (ivaDueDate ? safeFormat(ivaDueDate, 'dd MMM') : 'N/A') : (rentaDueDate ? safeFormat(rentaDueDate, 'dd MMM') : 'N/A'))}
@@ -228,25 +227,25 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
             {/* Logistics - Fee */}
             <div className="w-28 shrink-0 px-4 border-l border-slate-100 dark:border-white/5 h-full flex flex-col justify-center">
                 <span className="font-semibold text-emerald-500 dark:text-emerald-400 text-base font-mono leading-none tracking-tighter">${fee.toFixed(2)}</span>
-                <span className="text-[8px] text-slate-400 font-semibold uppercase tracking-widest mt-1">Recurrencia</span>
+                <span className="text-xs text-slate-400 font-semibold uppercase tracking-widest mt-1">Recurrencia</span>
             </div>
 
-            {/* Operaciones Críticas */}
+            {/* Operaciones Zen */}
             <div className="w-52 shrink-0 px-4 border-l border-slate-100 dark:border-white/5 h-full flex flex-col justify-center gap-1.5">
                 <button
                     onClick={(e) => { e.stopPropagation(); onView(client); }}
-                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-all border
-                    ${isCampaignPaid ? 'bg-emerald-400 text-white border-emerald-400 shadow-lg shadow-emerald-400/20' : 'bg-[#0B2149] text-white border-white/10 hover:bg-sky-900 active:scale-95'}`}>
-                    <span>{isCampaignPaid ? 'LOGÍSTICA OK' : 'REGISTRAR PAGO'}</span>
-                    {isCampaignPaid ? <LucideIcons.ShieldCheck size={12} /> : <LucideIcons.Zap size={12} />}
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all border
+                    ${isCampaignPaid ? 'bg-primary/20 text-primary border-primary/30 shadow-none' : 'bg-slate-800 text-white border-white/10 hover:bg-slate-700 active:scale-95'}`}>
+                    <span>{isCampaignPaid ? 'LOGÍSTICA COMPLETA' : 'GESTIONAR PAGO'}</span>
+                    {isCampaignPaid ? <LucideIcons.ShieldCheck size={12} /> : <LucideIcons.ChevronRight size={12} />}
                 </button>
                 
                 <button 
                     onClick={(e) => { e.stopPropagation(); onUploadReceipt(client, period); }}
-                    className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[9px] font-semibold uppercase tracking-widest transition-all border
-                    ${isCampaignDone ? 'bg-slate-100 dark:bg-white/5 text-slate-400 border-slate-200 dark:border-white/10' : 'bg-sky-400 text-white border-sky-400 hover:bg-sky-500 shadow-lg shadow-sky-400/20'}`}>
-                    {isCampaignDone ? <LucideIcons.Target size={12} strokeWidth={3} /> : <LucideIcons.Upload size={12} />}
-                    {isCampaignDone ? 'MISIÓN CUMPLIDA' : 'DESPLEGAR SRI'}
+                    className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all border
+                    ${isCampaignDone ? 'bg-slate-50 dark:bg-white/5 text-slate-400 border-slate-200 dark:border-white/10' : 'bg-primary text-white border-primary hover:scale-[1.02] shadow-lg shadow-primary/20'}`}>
+                    {isCampaignDone ? <LucideIcons.Check size={12} strokeWidth={3} /> : <LucideIcons.Upload size={12} />}
+                    {isCampaignDone ? 'GESTIÓN FINALIZADA' : 'INICIAR TRÁMITE'}
                 </button>
             </div>
 
@@ -254,7 +253,7 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
             <div className="w-32 shrink-0 px-4 flex items-center justify-end gap-2">
                 <button 
                     onClick={() => onView(client)}
-                    className="flex items-center justify-center gap-2 text-white font-semibold text-[10px] bg-slate-800 dark:bg-white/5 hover:bg-sky-400 dark:hover:bg-sky-400 px-4 py-2.5 rounded-xl transition-all border border-white/5 uppercase tracking-widest"
+                    className="flex items-center justify-center gap-2 text-white font-semibold text-xs bg-slate-800 dark:bg-white/5 hover:bg-sky-400 dark:hover:bg-sky-400 px-4 py-2.5 rounded-xl transition-all border border-white/5 uppercase tracking-widest"
                 >
                     Ficha
                     <LucideIcons.ArrowRight size={14} />
@@ -274,15 +273,15 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
 
 export const VirtualClientTable: React.FC<VirtualClientTableProps> = (props) => {
     return (
-        <div className="bg-white/40 dark:bg-slate-900/60 backdrop-blur-xl rounded-[24px] shadow-2xl border border-slate-200 dark:border-white/5 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 420px)', minHeight: '550px' }}>
-            <div className="flex bg-slate-100/50 dark:bg-black/20 text-[10px] font-semibold uppercase text-slate-500 py-4 px-4 border-b border-slate-200 dark:border-white/5 active:select-none tracking-widest">
-                <div className="w-16 shrink-0 text-center">Rank</div>
-                <div className="flex-1 px-4">Identificador de Unidad</div>
-                <div className="w-40 shrink-0 px-4">Perfil Táctico</div>
-                <div className="w-44 shrink-0 px-4">Fase SRI</div>
-                <div className="w-28 shrink-0 px-4">Logística</div>
-                <div className="w-52 shrink-0 px-4">Operaciones</div>
-                <div className="w-32 shrink-0 text-right pr-4">Acciones</div>
+        <div className="bg-white/40 dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200 dark:border-white/5 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 425px)', minHeight: '550px' }}>
+            <div className="flex bg-slate-50 dark:bg-white/5 text-[11px] font-bold uppercase text-slate-500 py-4 px-4 border-b border-slate-200 dark:border-white/5 active:select-none tracking-[0.2em]">
+                <div className="w-16 shrink-0 text-center">Protocolo</div>
+                <div className="flex-1 px-4">Titular / RUC</div>
+                <div className="w-40 shrink-0 px-4">Configuración Fiscal</div>
+                <div className="w-44 shrink-0 px-4">Estado SRI</div>
+                <div className="w-28 shrink-0 px-4">Honorarios</div>
+                <div className="w-52 shrink-0 px-4">Acciones de Gestión</div>
+                <div className="w-32 shrink-0 text-right pr-4">Opciones</div>
             </div>
             <div className="flex-1">
                 <AutoSizer>

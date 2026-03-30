@@ -48,7 +48,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ tasks, clien
             <button onClick={() => setIsOpen(prev => !prev)} className="relative p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                 <Bell className="w-5 h-5" />
                 {activeNotifications.length > 0 && (
-                    <span className="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-bold animate-pulse">
+                    <span className="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold animate-pulse">
                         {activeNotifications.length}
                     </span>
                 )}
@@ -70,8 +70,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ tasks, clien
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{task.title}</p>
-                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{getClientNameForTask(task)}</p>
-                                                <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-2 font-bold uppercase">
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{getClientNameForTask(task)}</p>
+                                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-bold uppercase">
                                                     Vence {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true, locale: es })}
                                                 </p>
                                             </div>

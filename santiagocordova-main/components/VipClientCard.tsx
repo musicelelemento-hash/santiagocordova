@@ -93,10 +93,10 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                             </div>
                             <div>
                                 <h3 className="font-bold text-slate-800 dark:text-white leading-tight line-clamp-1">{mainName}</h3>
-                                {subName && <p className="text-[10px] text-slate-400 font-medium truncate">{subName}</p>}
+                                {subName && <p className="text-xs text-slate-400 font-medium truncate">{subName}</p>}
                                 <div className="flex items-center gap-1 mt-0.5">
                                     <Star size={10} className="text-purple-500" fill="currentColor"/>
-                                    <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+                                    <span className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wide">
                                         Negocio Popular
                                     </span>
                                 </div>
@@ -109,7 +109,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
 
                     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex items-center justify-between">
                          <div>
-                             <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Renta {year - 1}</p>
+                             <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Renta {year - 1}</p>
                              <div className="flex items-center gap-2">
                                  {isAnnualDone ? (
                                      <span className="flex items-center text-emerald-600 font-bold text-xs"><CheckCircle size={14} className="mr-1"/> Listo</span>
@@ -119,7 +119,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                              </div>
                          </div>
                          <div className="text-right">
-                             <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Cuota</p>
+                             <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Cuota</p>
                              <p className="text-sm font-mono font-bold text-purple-600 dark:text-purple-400">$60.00</p>
                          </div>
                     </div>
@@ -162,16 +162,16 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                             </div>
                             <div>
                                 <h3 className="font-bold text-slate-800 dark:text-white leading-tight line-clamp-1">{mainName}</h3>
-                                {subName && <p className="text-[10px] text-slate-400 font-medium truncate">{subName}</p>}
+                                {subName && <p className="text-xs text-slate-400 font-medium truncate">{subName}</p>}
                                 {isVip && (
-                                    <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1 mt-0.5">
+                                    <span className="text-xs font-bold text-amber-600 flex items-center gap-1 mt-0.5">
                                         <Crown size={10} fill="currentColor"/> VIP Semestral
                                     </span>
                                 )}
                             </div>
                         </div>
                         
-                        <div className={`px-2 py-1 rounded-lg border text-[10px] font-bold flex flex-col items-center ${statusConfig.color}`}>
+                        <div className={`px-2 py-1 rounded-lg border text-xs font-bold flex flex-col items-center ${statusConfig.color}`}>
                             <StatusIcon size={12} className="mb-0.5"/>
                             {statusConfig.text}
                         </div>
@@ -179,11 +179,11 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
 
                     <div className="grid grid-cols-2 gap-2">
                         <div className={`rounded-lg p-2 border flex flex-col items-center justify-center ${getSemStyle(s1Decl)}`}>
-                            <span className="text-[9px] font-bold uppercase tracking-wide">Ene - Jun</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wide">Ene - Jun</span>
                             <span className="text-xs font-bold">{s1Decl?.status === 'Pagada' ? 'Al Día' : (s1Decl?.status || '-')}</span>
                         </div>
                          <div className={`rounded-lg p-2 border flex flex-col items-center justify-center ${getSemStyle(s2Decl)}`}>
-                            <span className="text-[9px] font-bold uppercase tracking-wide">Jul - Dic</span>
+                            <span className="text-[11px] font-bold uppercase tracking-wide">Jul - Dic</span>
                             <span className="text-xs font-bold">{s2Decl?.status === 'Pagada' ? 'Al Día' : (s2Decl?.status || '-')}</span>
                         </div>
                     </div>
@@ -229,7 +229,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                                 {mainName}
                                 {client.tradeName && <Store size={12} className="text-slate-400"/>}
                             </h3>
-                            {subName && <p className="text-[10px] text-slate-400 font-medium truncate mb-0.5">{subName}</p>}
+                            {subName && <p className="text-xs text-slate-400 font-medium truncate mb-0.5">{subName}</p>}
                             <button 
                                 onClick={handleCopyRuc}
                                 className="text-[11px] text-slate-400 hover:text-brand-teal flex items-center gap-1 transition-colors font-mono"
@@ -240,7 +240,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                     </div>
                     
                     {/* Status Badge */}
-                    <div className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border flex flex-col items-center justify-center min-w-[70px] ${statusConfig.color}`}>
+                    <div className={`px-3 py-1.5 rounded-xl text-xs font-bold border flex flex-col items-center justify-center min-w-[70px] ${statusConfig.color}`}>
                         <StatusIcon size={14} className="mb-0.5"/>
                         {statusConfig.text}
                     </div>
@@ -249,19 +249,19 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                 {/* Info Grid */}
                 <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 mb-4 grid grid-cols-2 gap-y-2 border border-slate-100 dark:border-slate-700/50">
                     <div>
-                        <p className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Periodo</p>
+                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">Periodo</p>
                         <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{formatPeriodForDisplay(currentPeriod).split(' ')[0]}</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Honorarios</p>
+                        <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">Honorarios</p>
                         <p className="text-xs font-mono font-bold text-slate-900 dark:text-white">${fee.toFixed(2)}</p>
                     </div>
                     {dueDate && (
                         <div className="col-span-2 border-t border-slate-200 dark:border-slate-700/50 pt-2 mt-1 flex justify-between items-center">
-                             <p className="text-[9px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1">
+                             <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider flex items-center gap-1">
                                 <Calendar size={10}/> Vencimiento
                              </p>
-                             <p className={`text-[10px] font-bold ${isOverdue ? 'text-red-500' : 'text-slate-600 dark:text-slate-400'}`}>
+                             <p className={`text-xs font-bold ${isOverdue ? 'text-red-500' : 'text-slate-600 dark:text-slate-400'}`}>
                                 {format(dueDate, 'EEEE, d MMMM', { locale: es })}
                              </p>
                         </div>

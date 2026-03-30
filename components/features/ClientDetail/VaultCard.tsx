@@ -40,7 +40,7 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
                                     {file.name}
                                 </p>
                             ) : (
-                                <p className="text-[10px] sm:text-[11px] font-semibold text-slate-700 uppercase tracking-widest italic">No Sincronizado</p>
+                                <p className="text-xs sm:text-[11px] font-semibold text-slate-700 uppercase tracking-widest italic">No Sincronizado</p>
                             )}
                         </div>
                     </div>
@@ -86,10 +86,10 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 px-3 py-1 bg-emerald-400/10 rounded-lg border border-emerald-400/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                         <ShieldCheck size={12} className="text-emerald-400" />
-                        <span className="text-[9px] font-semibold text-emerald-400 uppercase tracking-[0.2em]">Verificado por Sistema</span>
+                        <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-[0.2em]">Verificado por Sistema</span>
                     </div>
                     {file && (
-                        <span className="text-[9px] font-semibold text-slate-600 uppercase tracking-widest font-mono">
+                        <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-widest font-mono">
                             DATA: {(file.size / 1024).toFixed(1)} KB
                         </span>
                     )}

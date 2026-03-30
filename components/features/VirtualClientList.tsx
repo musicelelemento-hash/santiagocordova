@@ -73,13 +73,13 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
     // Visual Styles
     const isVip = true;
     
-    // Elite Tactical Card Styles
+    // Zenith Card Styles
     const cardBaseStyles = `
-        relative overflow-hidden rounded-[24px] border transition-all duration-300
+        relative overflow-hidden rounded-3xl border transition-all duration-500
         ${isVip 
-            ? 'bg-gradient-to-br from-sky-400/10 to-indigo-500/5 border-sky-400/30 shadow-[0_8px_32px_rgba(14,165,233,0.1)]' 
-            : 'bg-white/80 dark:bg-slate-900/80 border-slate-100 dark:border-white/10 shadow-sm'}
-        ${client.isActive === false ? 'opacity-50 grayscale' : ''}
+            ? 'glass-zen border-primary/20 shadow-sm' 
+            : 'bg-white/90 dark:bg-slate-900/90 border-slate-100 dark:border-white/5 shadow-sm'}
+        ${client.isActive === false ? 'opacity-60 grayscale' : ''}
     `;
 
     const itemStyle = {
@@ -102,14 +102,14 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                 onClick={() => onView(client)} 
                 className={`${cardBaseStyles} p-4 flex flex-col justify-between h-full backdrop-blur-md active:scale-[0.98]`}
             >
-                {/* Tactical Header Background Deco */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sky-400/5 to-transparent -mr-8 -mt-8 rounded-full blur-2xl pointer-events-none" />
+                {/* Zenith Ambient Deco */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none" />
                 
                 <div className="flex justify-between items-start relative z-10">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="relative shrink-0">
-                            <div className={`p-2 rounded-xl bg-${merit.rank === 1 ? 'amber' : (merit.rank === 2 ? 'slate' : 'orange')}-500/10`}>
-                                <merit.icon size={20} className={merit.color} strokeWidth={2.5} />
+                            <div className={`p-2.5 rounded-2xl bg-opacity-10 ${merit.rank === 1 ? 'bg-amber-400' : (merit.rank === 2 ? 'bg-slate-400' : 'bg-orange-600')}`}>
+                                <merit.icon size={20} className={merit.color} strokeWidth={2} />
                             </div>
                             {true && (
                                 <div className="absolute -top-1 -right-1 bg-amber-400 text-white p-0.5 rounded-full ring-2 ring-white dark:ring-slate-900 shadow-lg">
@@ -119,9 +119,9 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                         </div>
                         
                         <div className="min-w-0 flex-1">
-                            <h3 className="font-semibold text-slate-800 dark:text-white text-[14px] uppercase tracking-tight mb-1 leading-tight flex items-center gap-2">
+                            <h3 className="font-bold text-slate-800 dark:text-white text-[15px] tracking-tight mb-1 leading-tight flex items-center gap-2">
                                 {hasMissingHistoryPdf && (
-                                    <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)] shrink-0" title="Falta documentación histórica" />
+                                    <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.4)] shrink-0" title="Pendiente: Documentación histórica" />
                                 )}
                                 <span className="truncate">{client.name}</span>
                                 {true && <LucideIcons.Crown size={12} className="text-amber-400 shrink-0" />}
@@ -129,24 +129,24 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                             
                             <div className="flex flex-wrap items-center gap-1.5 mb-2">
                                 {client.isActive === false && (
-                                    <span className="text-[7px] font-semibold bg-rose-400 text-white px-1.5 py-0.5 rounded-md uppercase tracking-tighter shadow-sm bg-opacity-90">Offline</span>
+                                    <span className="text-xs font-bold bg-slate-200 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-widest">Inactivo</span>
                                 )}
                                 {client.hasElderlyDevolucionIva && (
-                                    <span className="text-[7px] font-semibold bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 px-1.5 py-0.5 rounded-md uppercase tracking-tighter flex items-center gap-0.5">
-                                        <LucideIcons.Heart size={6} strokeWidth={3} /> T.EDAD
+                                    <span className="text-xs font-bold bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-tight flex items-center gap-1">
+                                        <LucideIcons.Heart size={8} strokeWidth={3} /> T.EDAD
                                     </span>
                                 )}
-                                <span className="text-[8px] font-semibold text-sky-400 bg-sky-400/5 px-1.5 py-0.5 rounded border border-sky-400/10 uppercase tracking-tighter truncate max-w-[100px]">
+                                <span className="text-xs font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10 uppercase tracking-tight truncate max-w-[120px]">
                                     {client.regime}
                                 </span>
                             </div>
 
                             <div className="flex items-center gap-2">
-                                <span className="text-[9px] text-slate-400 font-mono uppercase tracking-tighter">
+                                <span className="text-[11px] text-slate-400 font-mono uppercase tracking-tighter">
                                     {client.ruc}
                                 </span>
                                 <span className="h-1 w-1 bg-slate-300 dark:bg-white/20 rounded-full shrink-0" />
-                                <span className="text-[10px] font-semibold text-emerald-500 dark:text-emerald-400 font-mono">
+                                <span className="text-xs font-semibold text-emerald-500 dark:text-emerald-400 font-mono">
                                     ${fee.toFixed(2)}
                                 </span>
                             </div>
@@ -154,36 +154,36 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                     </div>
 
                     <div className="shrink-0 flex flex-col items-end">
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5">
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10">
                             <LucideIcons.Calendar size={10} className="text-slate-400" />
-                            <span className="text-[9px] font-semibold text-slate-600 dark:text-slate-400 uppercase font-mono">
+                            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase font-mono">
                                 {formatPeriodForDisplay(period)}
                             </span>
                         </div>
-                        <div className={`mt-1.5 text-[11px] font-semibold flex items-center gap-1 ${isPast(ivaDueDate || today) && !isCampaignDone ? 'text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                            {isPast(ivaDueDate || today) && !isCampaignDone && <LucideIcons.AlertCircle size={10} className="animate-pulse" />}
+                        <div className={`mt-2 text-[12px] font-bold flex items-center gap-1 ${isPast(ivaDueDate || today) && !isCampaignDone ? 'text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                            {isPast(ivaDueDate || today) && !isCampaignDone && <LucideIcons.AlertCircle size={12} className="animate-pulse" />}
                             {ivaDueDate ? safeFormat(ivaDueDate, 'dd MMM') : 'N/A'}
                         </div>
                     </div>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex justify-between items-center relative z-10">
+                <div className="mt-5 pt-4 border-t border-slate-100 dark:border-white/5 flex justify-between items-center relative z-10">
                     <div className="flex flex-col">
-                        <span className="text-[8px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Estatus Tributario</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] leading-none mb-2">Estado SRI</span>
                         <div className="flex items-center gap-1.5">
                             {hasCurrentProof ? (
-                                <div className="flex items-center gap-1 text-[8px] font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md border border-emerald-400/20 uppercase tracking-tighter">
-                                    <LucideIcons.Check size={10} /> PROBANTE OK
+                                <div className="flex items-center gap-1 text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 uppercase tracking-tight">
+                                    <LucideIcons.Check size={10} strokeWidth={3} /> GESTIÓN OK
                                 </div>
                             ) : (
                                 isDeclared && (
-                                    <div className="flex items-center gap-1 text-[8px] font-semibold text-rose-400 bg-rose-400/10 px-2 py-1 rounded-md border border-rose-400/20 animate-pulse uppercase tracking-tighter shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                                    <div className="flex items-center gap-1 text-[11px] font-bold text-rose-500 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 animate-pulse uppercase tracking-tight">
                                         <LucideIcons.FileWarning size={10} /> FALTA PDF
                                     </div>
                                 )
                             )}
                             {!isDeclared && (
-                                <div className="text-[8px] font-semibold text-slate-400 bg-slate-100 dark:bg-white/5 px-2 py-1 rounded-md border border-slate-200 dark:border-white/10 uppercase tracking-tighter">
+                                <div className="text-[11px] font-bold text-slate-400 bg-slate-50 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/10 uppercase tracking-tight">
                                     PENDIENTE
                                 </div>
                             )}
@@ -193,26 +193,26 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                     <div className="flex gap-2">
                         <button
                             onClick={(e) => { e.stopPropagation(); onUploadReceipt(client, period); }}
-                            className={`w-10 h-10 flex items-center justify-center rounded-xl border transition-all active:scale-90 shadow-sm
+                            className={`w-11 h-11 flex items-center justify-center rounded-2xl border transition-all active:scale-95 shadow-sm
                                 ${hasCurrentProof 
-                                    ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/30' 
-                                    : 'bg-sky-400/10 text-sky-400 border-sky-400/30 hover:bg-sky-400 hover:text-white'}`}
+                                    ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20' 
+                                    : 'bg-slate-800 text-white border-white/10 hover:bg-slate-700 shadow-lg shadow-slate-900/20'}`}
                         >
                             <LucideIcons.UploadCloud size={20} />
                         </button>
 
                         <button
                             onClick={(e) => { e.stopPropagation(); onView(client); }}
-                            className="h-10 px-4 rounded-xl flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest transition-all active:scale-90 shadow-lg bg-slate-900 dark:bg-sky-500 text-white shadow-slate-900/20 dark:shadow-sky-500/30 border-slate-800 dark:border-sky-400"
+                            className="h-11 px-5 rounded-2xl flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] transition-all active:scale-95 bg-primary text-white shadow-xl shadow-primary/20 border border-primary/30"
                         >
-                            <LucideIcons.FileText size={14} />
-                            FICHA
+                            <LucideIcons.Compass size={14} />
+                            Ficha
                         </button>
                     </div>
                 </div>
 
-                {/* Rank Badge Indicator */}
-                <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-transparent via-sky-400/50 to-transparent w-full opacity-50" />
+                {/* Zenith Growth Line */}
+                <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent w-full opacity-40" />
             </div>
         </div>
     );

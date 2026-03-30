@@ -36,7 +36,7 @@ const MetricCard: React.FC<{ title: string; value: string; description: string; 
                     <Icon size={24} className="text-white" />
                 </div>
                 {trend && (
-                    <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full flex items-center shadow-sm backdrop-blur-md">
+                    <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-full flex items-center shadow-sm backdrop-blur-md">
                         <TrendingUp size={10} className="mr-1"/> {trend}
                     </span>
                 )}
@@ -351,7 +351,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ clients, tasks, se
                     {/* Center Text */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] text-center pointer-events-none">
                         <span className="text-3xl font-black text-brand-navy dark:text-white">{clients.length}</span>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase">Total</p>
+                        <p className="text-xs text-slate-400 font-bold uppercase">Total</p>
                     </div>
                 </div>
             </div>
@@ -399,7 +399,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ clients, tasks, se
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="font-bold text-sm text-slate-700 dark:text-slate-200">{debtor.name}</span>
-                                    <button className="text-[10px] text-red-400 font-bold uppercase cursor-pointer hover:underline text-left" onClick={() => navigate('clients', { clientIdToView: debtor.id })}>
+                                    <button className="text-xs text-red-400 font-bold uppercase cursor-pointer hover:underline text-left" onClick={() => navigate('clients', { clientIdToView: debtor.id })}>
                                         Ver Perfil
                                     </button>
                                 </div>
@@ -433,7 +433,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ clients, tasks, se
                      </div>
                  </div>
                  <div className="bg-white/5 rounded-2xl p-6 border border-white/10 backdrop-blur-sm">
-                     <p className="text-[10px] font-bold text-brand-teal uppercase tracking-widest mb-3">Recomendación Rápida</p>
+                     <p className="text-xs font-bold text-brand-teal uppercase tracking-widest mb-3">Recomendación Rápida</p>
                      <p className="text-sm font-medium leading-relaxed italic">
                          "Basado en los datos actuales, su tasa de recuperación de cartera es del {metrics.potentialIncome > 0 ? Math.round((metrics.totalPaid / metrics.potentialIncome) * 100) : 0}%. Se recomienda enfocar esfuerzos de cobranza en los 5 clientes críticos listados abajo para mejorar la liquidez inmediata."
                      </p>

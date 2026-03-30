@@ -64,7 +64,7 @@ const AnimatedStat = ({ end, label, prefix = "", suffix = "" }: { end: number, l
             <div className="text-5xl md:text-7xl font-display font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-500 tracking-tighter mb-2 group-hover:from-[#00A896] group-hover:to-teal-200 transition-all duration-500">
                 {prefix}{count}{suffix}
             </div>
-            <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.3em]">{label}</div>
+            <div className="text-xs font-bold text-[#00A896] uppercase tracking-[0.3em]">{label}</div>
         </div>
     );
 };
@@ -100,7 +100,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         </div>
                         <div className="hidden sm:flex flex-col">
                             <span className="text-sm font-display font-black tracking-tight leading-none text-white">SANTIAGO CORDOVA</span>
-                            <span className="text-[9px] font-bold text-[#00A896] tracking-[0.2em] uppercase glow-text">Elite Tax Services</span>
+                            <span className="text-[11px] font-bold text-[#00A896] tracking-[0.2em] uppercase glow-text">Elite Tax Services</span>
                         </div>
                     </div>
 
@@ -121,7 +121,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <div className="flex items-center gap-3">
                          <button 
                             onClick={onAdminAccess}
-                            className="hidden md:block text-[10px] font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-wider px-3"
+                            className="hidden md:block text-xs font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-wider px-3"
                         >
                             Acceso
                         </button>
@@ -141,11 +141,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 <div className="bg-[#0B2149]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-2 shadow-2xl flex justify-between items-center px-4">
                     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-colors">
                         <Home size={20} />
-                        <span className="text-[9px] font-bold mt-1">Inicio</span>
+                        <span className="text-[11px] font-bold mt-1">Inicio</span>
                     </button>
                     <button onClick={onNavigateToServices} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-colors">
                         <Grid size={20} />
-                        <span className="text-[9px] font-bold mt-1">Servicios</span>
+                        <span className="text-[11px] font-bold mt-1">Servicios</span>
                     </button>
                     {/* Floating Action Button within Dock */}
                     <a href={`https://wa.me/${phoneNumber}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-12 h-12 bg-[#00A896] rounded-full text-white shadow-[0_0_20px_rgba(0,168,150,0.5)] -mt-8 border-4 border-[#020617]">
@@ -153,11 +153,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     </a>
                     <button onClick={() => scrollToSection('recursos')} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-colors">
                         <BookOpen size={20} />
-                        <span className="text-[9px] font-bold mt-1">Wiki</span>
+                        <span className="text-[11px] font-bold mt-1">Wiki</span>
                     </button>
                     <button onClick={onAdminAccess} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-colors">
                         <ShieldCheck size={20} />
-                        <span className="text-[9px] font-bold mt-1">Admin</span>
+                        <span className="text-[11px] font-bold mt-1">Admin</span>
                     </button>
                 </div>
             </div>
@@ -175,7 +175,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 <div className="relative z-10 max-w-7xl mx-auto px-6 text-center mt-20 md:mt-0">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8 animate-fade-in-down hover:bg-white/10 transition-colors cursor-default shadow-[0_0_30px_rgba(0,168,150,0.1)]">
                         <span className="w-2 h-2 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_10px_#00A896]"></span>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Normativa 2026 Actualizada</span>
+                        <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Normativa 2026 Actualizada</span>
                     </div>
                     
                     <h1 className="text-5xl sm:text-7xl md:text-9xl font-display font-black tracking-tighter leading-[0.9] mb-8">
@@ -342,7 +342,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <div key={i} className="group bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl p-6 transition-all cursor-pointer">
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-4">
-                                        <span className="text-[10px] font-bold bg-[#00A896]/20 text-[#00A896] px-2 py-1 rounded-md uppercase tracking-wider shadow-[0_0_10px_rgba(0,168,150,0.1)]">{item.category}</span>
+                                        <span className="text-xs font-bold bg-[#00A896]/20 text-[#00A896] px-2 py-1 rounded-md uppercase tracking-wider shadow-[0_0_10px_rgba(0,168,150,0.1)]">{item.category}</span>
                                         <h3 className="text-lg font-bold text-white group-hover:text-[#00A896] transition-colors">{item.title}</h3>
                                     </div>
                                     <ChevronDown className="text-slate-500 group-hover:text-white transition-transform group-hover:rotate-180"/>

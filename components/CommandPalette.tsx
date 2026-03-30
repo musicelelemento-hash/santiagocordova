@@ -136,7 +136,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                         placeholder={placeholders[placeholderIndex]}
                         className="flex-1 bg-transparent border-none outline-none text-white text-xl font-medium placeholder:text-white/10"
                     />
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 text-white/30 text-[10px] uppercase tracking-[0.2em] font-medium border border-white/5">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 text-white/30 text-xs uppercase tracking-[0.2em] font-medium border border-white/5">
                         <Command size={10} />
                         <span>K</span>
                     </div>
@@ -177,7 +177,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                                     </div>
                                     {idx === selectedIndex && (
                                         <div className="flex items-center gap-2 text-primary/60 animate-in fade-in slide-in-from-right-2 duration-300">
-                                            <span className="text-[9px] font-medium uppercase tracking-[0.2em]">Ejecutar</span>
+                                            <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Ejecutar</span>
                                             <ChevronRight size={14} />
                                         </div>
                                     )}
@@ -195,7 +195,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 bg-white/[0.02] flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.15em] text-slate-500 border-t border-white/5">
+                <div className="p-4 bg-white/[0.02] flex items-center justify-between text-xs font-medium uppercase tracking-[0.15em] text-slate-500 border-t border-white/5">
                     <div className="flex gap-6">
                         <span className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
                             <span className="bg-white/5 px-2 py-0.5 rounded border border-white/5">↑↓</span> Navegar

@@ -44,7 +44,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
             </div>
             <div>
                 <h3 className="text-sm font-bold font-display leading-tight uppercase tracking-wide">Asistente Tributario</h3>
-                <p className="text-[10px] text-slate-300 font-medium">Potenciado por Gemini 2.0</p>
+                <p className="text-xs text-slate-300 font-medium">Potenciado por Gemini 2.0</p>
             </div>
         </div>
         {onClose && (
@@ -104,7 +104,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
                     href={source.uri}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-1 text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded-full hover:bg-slate-300 transition-colors"
+                    className="flex items-center space-x-1 text-xs bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-1 rounded-full hover:bg-slate-300 transition-colors"
                   >
                     <FileText size={10} />
                     <span className="truncate max-w-[100px]">{source.title}</span>
@@ -145,7 +145,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
             <Send size={16} />
           </button>
         </div>
-        <div className="text-[10px] text-center text-slate-400 mt-2 font-medium">
+        <div className="text-xs text-center text-slate-400 mt-2 font-medium">
             La IA puede cometer errores. Verifica la normativa vigente.
         </div>
       </form>

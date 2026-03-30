@@ -41,7 +41,7 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({ navItems, activeScre
                         <div className={`p-2 rounded-2xl transition-all ${activeScreen === item.screen ? 'bg-brand-teal/10' : ''}`}>
                             <item.icon size={22} strokeWidth={activeScreen === item.screen ? 2.5 : 2} />
                         </div>
-                        <span className={`text-[10px] font-black uppercase tracking-tighter mt-1 ${activeScreen === item.screen ? 'opacity-100' : 'opacity-60'}`}>
+                        <span className={`text-xs font-black uppercase tracking-tighter mt-1 ${activeScreen === item.screen ? 'opacity-100' : 'opacity-60'}`}>
                             {item.label}
                         </span>
                         

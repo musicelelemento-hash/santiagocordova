@@ -338,7 +338,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 <div className="mb-6 p-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl text-white shadow-lg animate-fade-in-down flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="bg-white/20 text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md">Producto Destacado</span>
+                            <span className="bg-white/20 text-white text-xs font-black uppercase tracking-widest px-2 py-1 rounded-md">Producto Destacado</span>
                             <span className="text-xl font-bold">Combo Devolución Renta</span>
                         </div>
                         <p className="text-emerald-100 text-sm max-w-md">

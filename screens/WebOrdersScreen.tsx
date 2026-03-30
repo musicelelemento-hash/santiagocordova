@@ -69,9 +69,9 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                     <div className="flex items-center justify-between sm:justify-start gap-3 mb-3">
                         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-brand-teal/10 border border-brand-teal/20 backdrop-blur-md">
                             <div className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.8)]"></div>
-                            <span className="text-[10px] font-semibold text-brand-teal uppercase tracking-[0.2em]">Inbound Lead Protocol</span>
+                            <span className="text-xs font-semibold text-brand-teal uppercase tracking-[0.2em]">Inbound Lead Protocol</span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-40 sm:block hidden">• Santiago Cordova Protocol v2.5</span>
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-40 sm:block hidden">• Santiago Cordova Protocol v2.5</span>
                     </div>
                     <div className="relative">
                         <h2 className="text-4xl sm:text-6xl font-display font-semibold text-slate-900 dark:text-white leading-none tracking-tighter mb-3">
@@ -94,7 +94,7 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                                 <Activity size={80} className="text-brand-teal" />
                             </div>
                             <div className="flex flex-col items-end relative z-10">
-                                <p className="text-[10px] uppercase font-semibold text-brand-teal tracking-[0.3em] mb-1">Incoming Stream</p>
+                                <p className="text-xs uppercase font-semibold text-brand-teal tracking-[0.3em] mb-1">Incoming Stream</p>
                                 <p className="text-4xl font-display font-semibold text-slate-900 dark:text-white leading-none tracking-tighter">
                                     {safeOrders.filter(o => o.status === 'pending').length}
                                 </p>
@@ -124,12 +124,12 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                                         <h3 className="font-semibold text-[11px] uppercase tracking-[0.4em] text-slate-500 dark:text-slate-400 leading-none mb-1.5">{col.title}</h3>
                                         <div className="flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: col.color }}></div>
-                                            <p className="text-[9px] font-semibold text-slate-400/60 uppercase tracking-widest">{col.badge}</p>
+                                            <p className="text-[11px] font-semibold text-slate-400/60 uppercase tracking-widest">{col.badge}</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="text-[10px] font-semibold bg-slate-100 dark:bg-white/5 px-4 py-1.5 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 shadow-lg">
+                                    <span className="text-xs font-semibold bg-slate-100 dark:bg-white/5 px-4 py-1.5 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 shadow-lg">
                                         {colOrders.length}
                                     </span>
                                 </div>
@@ -149,7 +149,7 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                                                 <h4 className="font-semibold text-lg text-slate-900 dark:text-white group-hover/card:text-brand-teal transition-colors uppercase tracking-tighter leading-none">{order.clientName}</h4>
                                                 <div className="flex items-center gap-2 mt-2">
                                                     <Calendar size={12} className="text-brand-teal/60" />
-                                                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">REG: {safeFormat(order.createdAt, 'dd MMM yyyy • HH:mm')}</p>
+                                                    <p className="text-xs text-slate-500 font-semibold uppercase tracking-widest">REG: {safeFormat(order.createdAt, 'dd MMM yyyy • HH:mm')}</p>
                                                 </div>
                                             </div>
                                             <div className="p-2.5 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-100 dark:border-white/5 group-hover/card:border-brand-teal/30 transition-colors">
@@ -178,9 +178,9 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                                             <div className="flex items-center justify-between mb-5">
                                                 <div className="flex items-center gap-2">
                                                     <ShoppingCart size={14} className="text-brand-teal" />
-                                                    <p className="text-[10px] font-semibold text-brand-teal uppercase tracking-[0.3em]">Servicios Pack</p>
+                                                    <p className="text-xs font-semibold text-brand-teal uppercase tracking-[0.3em]">Servicios Pack</p>
                                                 </div>
-                                                <span className="text-[9px] font-semibold bg-brand-teal/10 text-brand-teal px-3 py-1 rounded-full border border-brand-teal/20 uppercase tracking-widest">{order.items.length} ITEMS</span>
+                                                <span className="text-[11px] font-semibold bg-brand-teal/10 text-brand-teal px-3 py-1 rounded-full border border-brand-teal/20 uppercase tracking-widest">{order.items.length} ITEMS</span>
                                             </div>
                                             <ul className="space-y-3 mb-5">
                                                 {order.items.map((item, idx) => (
@@ -191,7 +191,7 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                                                 ))}
                                             </ul>
                                             <div className="flex justify-between items-center mt-5 pt-5 border-t border-slate-200 dark:border-white/10">
-                                                <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-[0.3em]">Total Inversión</span>
+                                                <span className="text-xs uppercase font-semibold text-slate-400 tracking-[0.3em]">Total Inversión</span>
                                                 <span className="text-3xl font-display font-semibold text-slate-900 dark:text-white tracking-tighter">${order.total.toFixed(2)}</span>
                                             </div>
                                         </div>
@@ -201,7 +201,7 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                                             {order.status === 'pending' && (
                                                 <button 
                                                     onClick={() => handleWhatsAppContact(order)} 
-                                                    className="flex-1 py-4.5 bg-brand-teal text-white rounded-[1.25rem] text-[10px] font-semibold uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-brand-teal/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                                    className="flex-1 py-4.5 bg-brand-teal text-white rounded-[1.25rem] text-xs font-semibold uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl shadow-brand-teal/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                                                 >
                                                     <MessageSquare size={16} /> CONTACTAR
                                                 </button>
@@ -211,7 +211,7 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                                                 <button 
                                                     onClick={() => handleConvertToTask(order)} 
                                                     className={`
-                                                        flex-1 py-4.5 rounded-[1.25rem] text-[10px] font-semibold uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] border
+                                                        flex-1 py-4.5 rounded-[1.25rem] text-xs font-semibold uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98] border
                                                         ${order.status === 'contacted' 
                                                             ? 'bg-brand-navy text-white shadow-xl shadow-brand-navy/20 border-brand-navy' 
                                                             : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl shadow-black/10 border-slate-900 dark:border-white'}
@@ -235,7 +235,7 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                                             <col.icon size={40} className="text-slate-400" />
                                         </div>
                                         <p className="text-[11px] font-semibold tracking-[0.5em] uppercase text-slate-500">Sector Limpio</p>
-                                        <p className="text-[9px] font-medium text-slate-400 mt-2 uppercase tracking-widest">Protocolo de Silencio Activo</p>
+                                        <p className="text-[11px] font-medium text-slate-400 mt-2 uppercase tracking-widest">Protocolo de Silencio Activo</p>
                                     </div>
                                 )}
                             </div>
@@ -249,7 +249,7 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
                 <div className="flex items-center gap-6">
                     <div className="text-right">
                         <p className="text-[14px] font-semibold tracking-[0.5em] text-slate-400 uppercase">Operational Pipeline</p>
-                        <p className="text-[10px] font-semibold text-brand-teal tracking-[0.3em] uppercase opacity-60">Encrypted Node • Santiago Cordova Protocol</p>
+                        <p className="text-xs font-semibold text-brand-teal tracking-[0.3em] uppercase opacity-60">Encrypted Node • Santiago Cordova Protocol</p>
                     </div>
                     <div className="p-4 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-3xl shadow-2xl">
                         <Target size={32} className="text-brand-teal animate-pulse" />

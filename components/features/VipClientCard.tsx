@@ -146,7 +146,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                 {/* Purple Accent for Popular */}
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500"></div>
                 {hasWorkOrder && (
-                    <div className="absolute top-0 right-0 bg-amber-400 text-white text-[9px] font-semibold px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
+                    <div className="absolute top-0 right-0 bg-amber-400 text-white text-[11px] font-semibold px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
                         <Sparkles size={8} className="animate-spin-slow" /> DINERO EN MANO
                     </div>
                 )}
@@ -167,11 +167,11 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                             </div>
                             <div>
                                 <h3 className="font-medium text-slate-800 dark:text-white leading-tight line-clamp-1">{mainName}</h3>
-                                {subName && <p className="text-[10px] text-slate-400 font-medium truncate">{subName}</p>}
+                                {subName && <p className="text-xs text-slate-400 font-medium truncate">{subName}</p>}
                                 <div className="flex items-center gap-2 mt-1">
                                     <button 
                                         onClick={handleCopyRuc}
-                                        className={`font-mono text-[9px] px-1.5 py-0.5 rounded border transition-all flex items-center gap-1 uppercase tracking-widest ${copied ? 'bg-emerald-400 text-white border-emerald-400' : 'text-slate-400 bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-purple-500 hover:text-purple-600'}`}
+                                        className={`font-mono text-[11px] px-1.5 py-0.5 rounded border transition-all flex items-center gap-1 uppercase tracking-widest ${copied ? 'bg-emerald-400 text-white border-emerald-400' : 'text-slate-400 bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-purple-500 hover:text-purple-600'}`}
                                         title="Copiar RUC"
                                     >
                                         {client.ruc}
@@ -179,7 +179,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                                     </button>
                                     <div className="flex items-center gap-1">
                                         <Star size={10} className="text-purple-500" fill="currentColor" />
-                                        <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+                                        <span className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">
                                             Negocio Popular
                                         </span>
                                     </div>
@@ -193,7 +193,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
 
                     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex items-center justify-between">
                         <div>
-                            <p className="text-[10px] text-slate-400 uppercase font-medium tracking-wider mb-1">Renta {year - 1}</p>
+                            <p className="text-xs text-slate-400 uppercase font-medium tracking-wider mb-1">Renta {year - 1}</p>
                             <div className="flex items-center gap-2">
                                 {isAnnualDone ? (
                                     <span className={`flex items-center ${isAnnualPaid ? 'text-emerald-500' : 'text-sky-400'} font-medium text-xs`}>
@@ -205,7 +205,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] text-slate-400 uppercase font-medium tracking-wider mb-1">Cuota</p>
+                            <p className="text-xs text-slate-400 uppercase font-medium tracking-wider mb-1">Cuota</p>
                             <p className="text-sm font-mono font-medium text-purple-600 dark:text-purple-400">$60.00</p>
                         </div>
                     </div>
@@ -238,7 +238,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                 {/* Accent Line */}
                 <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-400`}></div>
                 {hasWorkOrder && (
-                    <div className="absolute top-0 right-0 bg-amber-400 text-white text-[9px] font-semibold px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
+                    <div className="absolute top-0 right-0 bg-amber-400 text-white text-[11px] font-semibold px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
                         <Sparkles size={8} className="animate-spin-slow" /> DINERO EN MANO
                     </div>
                 )}
@@ -251,32 +251,32 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                             </div>
                             <div>
                                 <h3 className="font-medium text-slate-800 dark:text-white leading-tight line-clamp-1">{mainName}</h3>
-                                {subName && <p className="text-[10px] text-slate-400 font-medium truncate">{subName}</p>}
+                                {subName && <p className="text-xs text-slate-400 font-medium truncate">{subName}</p>}
                                 <div className="flex flex-col gap-1 mt-1">
                                     <button 
                                         onClick={handleCopyRuc}
-                                        className={`w-fit font-mono text-[9px] px-1.5 py-0.5 rounded border transition-all flex items-center gap-1 uppercase tracking-widest ${copied ? 'bg-emerald-400 text-white border-emerald-400' : 'text-slate-400 bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-amber-400 hover:text-amber-500'}`}
+                                        className={`w-fit font-mono text-[11px] px-1.5 py-0.5 rounded border transition-all flex items-center gap-1 uppercase tracking-widest ${copied ? 'bg-emerald-400 text-white border-emerald-400' : 'text-slate-400 bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-amber-400 hover:text-amber-500'}`}
                                         title="Copiar RUC"
                                     >
                                         {client.ruc}
                                         {copied ? <CheckCircle size={10} /> : <Copy size={10} />}
                                     </button>
                                     <div className="flex flex-wrap gap-1">
-                                        <span className="font-medium text-[9px] border border-sky-400/20 text-sky-500 px-1 rounded bg-sky-400/5">
+                                        <span className="font-medium text-[11px] border border-sky-400/20 text-sky-500 px-1 rounded bg-sky-400/5">
                                             {client.regime} • Semestral
                                         </span>
-                                        {client.taxProfile?.requiresAnnualRenta && <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Renta</span>}
-                                        {client.taxProfile?.requiresAnexosGastos && <span className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Anexo</span>}
-                                        {client.taxProfile?.hasActiveDevolucionIva && <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Devolución</span>}
+                                        {client.taxProfile?.requiresAnnualRenta && <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Renta</span>}
+                                        {client.taxProfile?.requiresAnexosGastos && <span className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 text-xs px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Anexo</span>}
+                                        {client.taxProfile?.hasActiveDevolucionIva && <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-xs px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Devolución</span>}
                                     </div>
                                 </div>
-                                <span className="text-[10px] font-medium text-amber-500 flex items-center gap-1 mt-0.5">
+                                <span className="text-xs font-medium text-amber-500 flex items-center gap-1 mt-0.5">
                                     <Crown size={10} fill="currentColor" /> VIP Semestral
                                 </span>
                             </div>
                         </div>
 
-                        <div className={`px-2 py-1 rounded-lg border text-[10px] font-medium flex flex-col items-center ${statusConfig.color}`}>
+                        <div className={`px-2 py-1 rounded-lg border text-xs font-medium flex flex-col items-center ${statusConfig.color}`}>
                             <StatusIcon size={12} className="mb-0.5" />
                             {statusConfig.text}
                         </div>
@@ -284,11 +284,11 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
 
                     <div className="grid grid-cols-2 gap-2">
                         <div className={`rounded-lg p-2 border flex flex-col items-center justify-center ${getSemStyle(s1Decl)}`}>
-                            <span className="text-[9px] font-medium uppercase tracking-wide">Ene - Jun</span>
+                            <span className="text-[11px] font-medium uppercase tracking-wide">Ene - Jun</span>
                             <span className="text-xs font-medium">{s1Decl?.status === 'Pagada' ? 'Al Día' : (s1Decl?.status || '-')}</span>
                         </div>
                         <div className={`rounded-lg p-2 border flex flex-col items-center justify-center ${getSemStyle(s2Decl)}`}>
-                            <span className="text-[9px] font-medium uppercase tracking-wide">Jul - Dic</span>
+                            <span className="text-[11px] font-medium uppercase tracking-wide">Jul - Dic</span>
                             <span className="text-xs font-medium">{s2Decl?.status === 'Pagada' ? 'Al Día' : (s2Decl?.status || '-')}</span>
                         </div>
                     </div>
@@ -315,7 +315,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
             {/* Top Accent Line */}
             <div className={`absolute top-0 left-0 w-full ${topAccent}`}></div>
             {hasWorkOrder && (
-                <div className="absolute top-0 right-0 bg-amber-400 text-white text-[9px] font-semibold px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
+                <div className="absolute top-0 right-0 bg-amber-400 text-white text-[11px] font-semibold px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
                     <Sparkles size={8} className="animate-spin-slow" /> DINERO EN MANO
                 </div>
             )}
@@ -340,21 +340,21 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                                 {needsRenta && isRentaFullyDone && (
                                     <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-400/10 text-emerald-500 dark:text-emerald-400 rounded-full border border-emerald-400/20" title={`Renta ${rentaPeriod} al día`}>
                                         <ShieldCheck size={10} />
-                                        <span className="text-[8px] font-semibold">{rentaPeriod}</span>
+                                        <span className="text-xs font-semibold">{rentaPeriod}</span>
                                     </div>
                                 )}
                                 {client.tradeName && <Store size={12} className="text-slate-400" />}
                             </h3>
-                            {subName && <p className="text-[10px] text-slate-400 font-medium truncate mb-0.5">{subName}</p>}
+                            {subName && <p className="text-xs text-slate-400 font-medium truncate mb-0.5">{subName}</p>}
                             <div className="flex flex-wrap gap-1 mb-1 mt-0.5">
-                                <span className="font-medium text-[9px] border border-brand-teal/20 text-brand-teal px-1 rounded bg-brand-teal/5">
+                                <span className="font-medium text-[11px] border border-brand-teal/20 text-brand-teal px-1 rounded bg-brand-teal/5">
                                     {client.regime} • {(client.regime === TaxRegime.RimpeEmprendedor || (client.taxProfile?.ivaFrequency as string) === 'Semestral') ? 'Sem. (E/J)' : 'Mensual'}
                                 </span>
-                                {client.taxProfile?.requiresAnnualRenta && <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Renta</span>}
-                                {client.taxProfile?.requiresAnexosGastos && <span className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Anexo</span>}
-                                {client.taxProfile?.requiresIce && <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">ICE</span>}
-                                {client.taxProfile?.requiresAnexoPvp && <span className="bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">PVP</span>}
-                                {client.taxProfile?.hasActiveDevolucionIva && <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Devolución</span>}
+                                {client.taxProfile?.requiresAnnualRenta && <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-xs px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Renta</span>}
+                                {client.taxProfile?.requiresAnexosGastos && <span className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 text-xs px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Anexo</span>}
+                                {client.taxProfile?.requiresIce && <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-xs px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">ICE</span>}
+                                {client.taxProfile?.requiresAnexoPvp && <span className="bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400 text-xs px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">PVP</span>}
+                                {client.taxProfile?.hasActiveDevolucionIva && <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-xs px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Devolución</span>}
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
@@ -362,7 +362,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                                     className={`group/ruc flex items-center gap-2 px-2 py-1 rounded-xl border transition-all shadow-sm relative overflow-hidden ${copied ? 'bg-emerald-400 border-emerald-400 text-white' : 'bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 hover:border-amber-400 hover:shadow-md hover:translate-y-[-1px] active:scale-95'}`}
                                     title="Copiar RUC al portapapeles"
                                 >
-                                    <span className={`font-mono text-[10px] font-semibold tracking-widest ${copied ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>
+                                    <span className={`font-mono text-xs font-semibold tracking-widest ${copied ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>
                                         {client.ruc}
                                     </span>
                                     {copied ? (
@@ -387,7 +387,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                     </div>
 
                     {/* Status Badge */}
-                    <div className={`px-3 py-1.5 rounded-xl text-[10px] font-medium border flex flex-col items-center justify-center min-w-[70px] ${statusConfig.color}`}>
+                    <div className={`px-3 py-1.5 rounded-xl text-xs font-medium border flex flex-col items-center justify-center min-w-[70px] ${statusConfig.color}`}>
                         <StatusIcon size={14} className="mb-0.5" />
                         {statusConfig.text}
                     </div>
@@ -405,11 +405,11 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                                     <ShieldCheck size={28} className="text-emerald-400" />
                                 </div>
                                 <h4 className="text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-[0.2em] mb-1">Estatus Premium</h4>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mb-4 italic">"Excelencia en cumplimiento tributario"</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-4 italic">"Excelencia en cumplimiento tributario"</p>
 
                                 <div className="py-1.5 px-4 bg-emerald-400 text-white rounded-full shadow-md flex items-center gap-2 border border-emerald-400">
                                     <Clock size={12} />
-                                    <span className="text-[9px] font-semibold uppercase tracking-wider text-emerald-50">
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-50">
                                         Próximo Hito: {dueDate ? safeFormat(dueDate, 'dd MMM') : 'Por definir'}
                                     </span>
                                 </div>
@@ -419,14 +419,14 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                         <div className="bg-slate-50 dark:bg-slate-900/60 rounded-xl p-3 mb-4 space-y-2 border border-slate-100 dark:border-slate-700/50">
                             {/* IVA Info Cluster - Refined to focus on declared status */}
                             <div className={`flex flex-col gap-1 p-2 rounded-lg border ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'bg-emerald-50/30 border-emerald-100/30' : 'bg-white/50 border-white/20'}`}>
-                                <div className="flex justify-between items-center text-[10px]">
+                                <div className="flex justify-between items-center text-xs">
                                     <p className="text-slate-400 uppercase font-semibold tracking-wider flex items-center gap-1">
                                         <div className={`w-1.5 h-1.5 rounded-full ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></div>
                                         IVA {formatPeriodForDisplay(currentPeriod)}
                                     </p>
                                     <p className={`font-semibold ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'text-emerald-400' : 'text-slate-500'}`}>{declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'DECLARADO' : 'PENDIENTE'}</p>
                                 </div>
-                                <div className="flex justify-between items-center text-[10px]">
+                                <div className="flex justify-between items-center text-xs">
                                     <p className="font-medium text-slate-400">Vence:</p>
                                     <p className={`font-semibold ${!declaration && isOverdue ? 'text-rose-400' : 'text-slate-600'}`}>
                                         {dueDate ? safeFormat(dueDate, 'dd MMM') : 'N/A'}

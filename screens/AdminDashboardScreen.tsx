@@ -309,18 +309,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     }, [tacticalInfo, urgentPriorities, expiringSignatures, activeRentaRefunds]);
 
     return (
-        <div className="space-y-8 animate-fade-in pb-20 relative aurora-premium min-h-screen">
+        <div className="space-y-8 animate-fade-in pb-20 relative aurora-zen min-h-screen">
             {/* Stitch Design Suggestion Hub - Elite Tactical Refinement */}
             {stitchSuggestions.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in relative z-30 px-4 sm:px-0">
                     {stitchSuggestions.map((s, idx) => (
-                        <div key={idx} onClick={s.action} className="group relative overflow-hidden glass-card p-6 cursor-pointer">
-                            <div className={`absolute top-0 right-0 w-32 h-32 blur-[80px] rounded-full -mr-16 -mt-16 transition-all duration-700 group-hover:scale-150 ${s.priority === 'high' ? 'bg-rose-400/10' : s.priority === 'medium' ? 'bg-amber-400/10' : 'bg-sky-400/10'}`}></div>
+                        <div key={idx} onClick={s.action} className="group relative overflow-hidden glass-zen p-6 cursor-pointer hover:shadow-lg transition-all">
+                            <div className={`absolute top-0 right-0 w-32 h-32 blur-[80px] rounded-full -mr-16 -mt-16 transition-all duration-700 group-hover:scale-150 ${s.priority === 'high' ? 'bg-rose-400/5' : s.priority === 'medium' ? 'bg-amber-400/5' : 'bg-primary/5'}`}></div>
                             <div className="flex flex-col relative z-10">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <div className={`w-2 h-2 rounded-full animate-pulse ${s.priority === 'high' ? 'bg-rose-400' : s.priority === 'medium' ? 'bg-amber-400' : 'bg-sky-400'}`}></div>
-                                    <span className={`text-[10px] font-semibold uppercase tracking-[0.3em] ${s.priority === 'high' ? 'text-rose-400' : s.priority === 'medium' ? 'text-amber-400' : 'text-sky-400'}`}>
-                                        {s.priority === 'high' ? 'CRITICAL ANALYTICS' : s.priority === 'medium' ? 'SYSTEM ADVISORY' : 'CORE OPTIMIZATION'}
+                                    <div className={`w-1.5 h-1.5 rounded-full ${s.priority === 'high' ? 'bg-rose-400' : s.priority === 'medium' ? 'bg-amber-400' : 'bg-primary'}`}></div>
+                                    <span className={`text-[11px] font-bold uppercase tracking-[0.2em] ${s.priority === 'high' ? 'text-rose-400' : s.priority === 'medium' ? 'text-amber-400' : 'text-primary'}`}>
+                                        {s.priority === 'high' ? 'Atención Crítica' : s.priority === 'medium' ? 'Aviso del Sistema' : 'Optimización'}
                                     </span>
                                 </div>
                                 <h4 className="text-base font-semibold text-slate-900 dark:text-white mb-2 leading-tight tracking-tight">{s.title}</h4>
@@ -334,10 +334,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 </div>
             )}
 
-            {/* Tactical Warning Banner: Compact for Mobile */}
+            {/* Tactical Warning Banner: Zen Mode */}
             {isTacticalVisible && tacticalInfo.todayDigit !== null && (
                 <div className="relative z-30 sm:mb-8 mb-4 animate-fade-in-down px-4 sm:px-0 group/tactical">
-                    <div className="glass-elite rounded-[2rem] p-4 sm:p-6 flex items-center justify-between border-rose-400/30">
+                    <div className="glass-zen rounded-[2rem] p-4 sm:p-6 flex items-center justify-between border-rose-200/50 dark:border-rose-400/20">
                         <div className="flex items-center gap-4 sm:gap-6">
                             <div className="relative">
                                 <div className="bg-rose-500 p-3 sm:p-4 rounded-full text-white shadow-2xl shadow-rose-500/40 relative z-10">
@@ -346,9 +346,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <div className="absolute inset-0 bg-rose-400 rounded-full animate-ping opacity-25"></div>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[8px] sm:text-[10px] font-semibold text-emerald-400 uppercase tracking-[0.4em] mb-0.5 sm:mb-1">RADAR ALPHA-1</span>
+                                <span className="text-xs sm:text-xs font-semibold text-emerald-400 uppercase tracking-[0.4em] mb-0.5 sm:mb-1">ALERTA DEL SISTEMA</span>
                                 <div className="flex items-center gap-2 sm:gap-3">
-                                    <p className="text-[10px] sm:text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-tighter">DÍGITO CRÍTICO HOY:</p>
+                                    <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-tighter">DÍGITO CRÍTICO HOY:</p>
                                     <span className="text-2xl sm:text-4xl text-rose-400 font-display font-semibold tracking-tighter drop-shadow-[0_0_10px_rgba(244,63,94,0.3)]">{tacticalInfo.todayDigit}</span>
                                 </div>
                             </div>
@@ -357,7 +357,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <div className="text-right flex items-center gap-3 relative z-10 hidden sm:flex">
                                 <div className="px-3 sm:px-5 py-1.5 sm:py-2 bg-slate-900/50 dark:bg-black/40 rounded-xl sm:rounded-2xl border border-white/5 backdrop-blur-md">
                                     <div className="flex items-center justify-end gap-2 sm:gap-3">
-                                        <span className="text-[9px] sm:text-[12px] font-semibold tech-font text-rose-400">{urgentPriorities.length} PENDIENTES</span>
+                                        <span className="text-[11px] sm:text-[12px] font-semibold tech-font text-rose-400">{urgentPriorities.length} PENDIENTES</span>
                                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-rose-400 animate-pulse"></div>
                                     </div>
                                 </div>
@@ -377,9 +377,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             <div className="absolute top-0 right-0 w-[1000px] h-[1000px] bg-sky-400/5 dark:bg-sky-400/5 blur-[160px] rounded-full pointer-events-none"></div>
             <div className="absolute top-1/2 left-0 w-[800px] h-[800px] bg-emerald-400/5 dark:bg-emerald-400/5 blur-[140px] rounded-full pointer-events-none"></div>
 
-            {/* MANDO CENTRAL: Compact Mobile Hub */}
+            {/* MANDO CENTRAL: Zen Hub */}
             <div className="relative z-20 sm:space-y-6 space-y-4 px-4 sm:px-0">
-                <div className="glass-elite rounded-[2.5rem] p-5 sm:p-8 relative overflow-hidden group">
+                <div className="glass-zen rounded-[2.5rem] p-5 sm:p-8 relative overflow-hidden group">
                     {/* Animated grid overlay */}
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none group-hover:opacity-[0.05] transition-opacity"></div>
                     
@@ -389,18 +389,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <div className="flex flex-col min-w-0">
                                 <div className="flex items-center gap-2 mb-1 sm:mb-2">
                                     <div className="w-3 h-1 bg-emerald-400 rounded-full"></div>
-                                    <span className="text-[8px] sm:text-[10px] font-semibold text-emerald-400 uppercase tracking-[0.4em]">ALPHA CORE</span>
+                                    <span className="text-xs sm:text-xs font-medium text-emerald-400 uppercase tracking-[0.4em]">ADMINISTRACIÓN CENTRAL</span>
                                 </div>
-                                <h1 className="text-xl sm:text-5xl font-premium font-semibold text-slate-900 dark:text-white tracking-tighter leading-tight mb-1 truncate">
-                                    Tablero <span className="text-gradient-teal">Tributario</span>
+                                <h1 className="text-xl sm:text-5xl font-sans font-semibold text-slate-900 dark:text-white tracking-tighter leading-tight mb-1 truncate">
+                                    Gestión <span className="text-primary italic font-light">Tributaria</span>
                                 </h1>
-                                <p className="text-[8px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <LucideIcons.Shield size={10} /> HQ-V2.5
+                                <p className="text-xs sm:text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <LucideIcons.Shield size={10} /> SISTEMA v2.5
                                 </p>
                             </div>
                             <div className="h-10 w-[1px] bg-slate-200 dark:bg-white/10 hidden sm:block shrink-0"></div>
                             <div className="flex-col hidden sm:flex shrink-0">
-                                <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-1.5 opacity-60">Status de Red</span>
+                                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-1.5 opacity-60">Status de Red</span>
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2 group-hover:scale-110 transition-transform">
                                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.8)] animate-pulse"></div>
@@ -409,7 +409,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <div className="h-4 w-[1px] bg-white/10"></div>
                                     <div className="flex items-center gap-2">
                                         <LucideIcons.Clock size={14} className="text-slate-500" />
-                                        <span className="text-[10px] font-semibold text-slate-500 tech-font">14MS</span>
+                                        <span className="text-xs font-semibold text-slate-500 tech-font">14MS</span>
                                     </div>
                                 </div>
                             </div>
@@ -423,13 +423,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder="FILTRAR LEGIÓN..."
+                                    placeholder="BUSCAR CLIENTE..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-black/20 dark:bg-black/40 border border-white/5 dark:border-white/10 rounded-xl sm:rounded-2xl py-3.5 sm:py-4 pl-12 sm:pl-14 pr-4 text-[11px] sm:text-sm font-semibold tech-font text-slate-900 dark:text-white placeholder-slate-500 focus:neon-border-teal focus:bg-black/30 transition-all outline-none"
+                                    className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl sm:rounded-2xl py-3.5 sm:py-4 pl-12 sm:pl-14 pr-4 text-[11px] sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-400 focus:bg-white dark:focus:bg-black/30 transition-all outline-none"
                                 />
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 sm:group-focus-within:opacity-100 transition-opacity hidden sm:block">
-                                    <span className="text-[9px] font-semibold text-slate-500 bg-black/40 px-2 py-1 rounded border border-white/10 uppercase tracking-widest">Type to Search</span>
+                                    <span className="text-[11px] font-semibold text-slate-500 bg-black/40 px-2 py-1 rounded border border-white/10 uppercase tracking-widest">Type to Search</span>
                                 </div>
                             </div>
                             <input
@@ -443,86 +443,81 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <button 
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isProcessing}
-                                className="w-full md:w-auto flex items-center justify-center gap-3 sm:gap-4 bg-emerald-400 dark:bg-white text-white dark:text-slate-900 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] hover:scale-[1.03] active:scale-95 transition-all shadow-2xl shadow-emerald-400/20 dark:shadow-white/5 disabled:opacity-50 relative overflow-hidden group/btn"
+                                className="w-full md:w-auto flex items-center justify-center gap-3 sm:gap-4 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-400 dark:hover:bg-emerald-500 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-[11px] font-medium uppercase tracking-[0.2em] hover:scale-[1.03] active:scale-95 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 relative overflow-hidden group/btn"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
                                 {isProcessing ? (
                                     <LucideIcons.Loader2 size={16} className="animate-spin" />
                                 ) : (
-                                    <LucideIcons.Zap size={16} fill="currentColor" />
+                                    <LucideIcons.Upload size={16} fill="currentColor" />
                                 )}
-                                ESCUADRÓN RÁPIDO
+                                CARGA RÁPIDA
                             </button>
                         </div>
                     </div>
 
                     {/* METRICS DOCK: High-Density Swiper on Mobile */}
-                    <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-6 mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-white/5 overflow-x-auto sm:overflow-x-visible no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0 snap-x snap-mandatory pb-4 sm:pb-0">
-                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-card group" onClick={() => setFilter('all')}>
-                            <div className="p-3 sm:p-4 bg-sky-400/10 text-sky-400 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all shadow-lg shadow-sky-400/10 border border-sky-400/20 shrink-0">
-                                <LucideIcons.Users size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2.5} />
+                    <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-6 mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-slate-100 dark:border-white/5 overflow-x-auto sm:overflow-x-visible no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0 snap-x snap-mandatory pb-4 sm:pb-0">
+                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen group cursor-pointer" onClick={() => setFilter('all')}>
+                            <div className="p-3 sm:p-4 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all shadow-sm border border-slate-200 dark:border-white/5 shrink-0">
+                                <LucideIcons.Users size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[7px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em] mb-0.5">TOTAL LEGIÓN</p>
-                                <p className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white tech-font tracking-tighter leading-none">{kpis.total}</p>
+                                <p className="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5">Cartera Total</p>
+                                <p className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tighter leading-none">{kpis.total}</p>
                             </div>
                         </div>
-                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-card group" onClick={() => setFilter('overdue')}>
-                            <div className={`p-3 sm:p-4 rounded-2xl transition-all shadow-lg border shrink-0 ${kpis.overdue > 0 ? 'bg-rose-400/10 text-rose-400 border-rose-400/20 group-hover:bg-rose-400 group-hover:text-white' : 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20'}`}>
-                                <LucideIcons.ShieldAlert size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2.5} />
+                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen group cursor-pointer" onClick={() => setFilter('overdue')}>
+                            <div className={`p-3 sm:p-4 rounded-2xl transition-all shadow-sm border shrink-0 ${kpis.overdue > 0 ? 'bg-rose-50 text-rose-400 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/20' : 'bg-primary/10 text-primary border-primary/20'}`}>
+                                <LucideIcons.ShieldAlert size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[7px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em] mb-0.5">FALLOS CRÍTICOS</p>
-                                <p className={`text-xl sm:text-3xl font-semibold tech-font tracking-tighter leading-none ${kpis.overdue > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{kpis.overdue}</p>
+                                <p className="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5">Pendientes Críticos</p>
+                                <p className={`text-xl sm:text-3xl font-semibold tracking-tighter leading-none ${kpis.overdue > 0 ? 'text-rose-400' : 'text-primary'}`}>{kpis.overdue}</p>
                             </div>
                         </div>
-                        <div className="flex-none w-[85%] sm:w-auto snap-center flex items-center gap-5 p-4 glass-card group" onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true, title: 'Auditoría de Bóveda' } })}>
-                            <div className={`p-3.5 sm:p-4 rounded-2xl transition-all shadow-lg border shrink-0 ${clients.filter(c => 
+                        <div className="flex-none w-[85%] sm:w-auto snap-center flex items-center gap-5 p-4 glass-zen group cursor-pointer" onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true, title: 'Auditoría de Bóveda' } })}>
+                            <div className={`p-3.5 sm:p-4 rounded-2xl transition-all shadow-sm border shrink-0 ${clients.filter(c => 
                                     c.declarations?.some(d => 
                                         (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
                                     )
-                                ).length > 0 ? 'bg-amber-400 text-white border-amber-400/20' : 'bg-amber-400/10 text-amber-400 border-amber-400/20 group-hover:bg-amber-400 group-hover:text-white'}`}>
-                                <LucideIcons.Vault size={22} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2.5} />
+                                ).length > 0 ? 'bg-amber-50 text-amber-500 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800/20' : 'bg-slate-50 text-slate-400 border-slate-100 dark:bg-slate-800 dark:border-white/5'}`}>
+                                <LucideIcons.Vault size={22} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[8px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em] mb-1">BOVEDA PENDIENTE</p>
-                                <p className={`text-2xl sm:text-3xl font-semibold tech-font tracking-tighter leading-none ${clients.filter(c => 
+                                <p className="text-xs sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-1">Archivo Digital</p>
+                                <p className={`text-2xl sm:text-3xl font-semibold tracking-tighter leading-none ${clients.filter(c => 
                                     c.declarations?.some(d => 
                                         (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
                                     )
-                                ).length > 0 ? 'text-amber-400' : 'text-slate-400'}`}>{clients.filter(c => 
+                                ).length > 0 ? 'text-amber-500' : 'text-slate-400'}`}>{clients.filter(c => 
                                     c.declarations?.some(d => 
                                         (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
                                     )
                                 ).length}</p>
                             </div>
                         </div>
-                        <div className="flex-none w-[90%] sm:w-auto sm:col-span-1 snap-center flex flex-col justify-center p-4 sm:p-5 glass-card relative overflow-hidden group/progress">
+                        <div className="flex-none w-[90%] sm:w-auto sm:col-span-1 snap-center flex flex-col justify-center p-4 sm:p-5 glass-zen relative overflow-hidden group/progress">
                              <div className="relative z-10 w-full">
                                 <div className="flex justify-between items-end mb-2 sm:mb-3">
                                     <div className="flex flex-col">
-                                        <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em] mb-0.5 sm:mb-1">INTEGRIDAD</span>
+                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-[0.2em] mb-0.5 sm:mb-1">CONSOLIDADO</span>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xl sm:text-2xl font-semibold text-emerald-400 tech-font">{Math.round((completados.length / (allResults.length || 1)) * 100)}%</span>
-                                            <span className="text-[8px] sm:text-[10px] font-medium text-slate-500 dark:text-slate-500 uppercase tracking-widest hidden sm:inline">CONSOLIDADO</span>
+                                            <span className="text-xl sm:text-2xl font-semibold text-primary">{Math.round((completados.length / (allResults.length || 1)) * 100)}%</span>
+                                            <span className="text-xs sm:text-xs font-medium text-slate-400 uppercase tracking-widest hidden sm:inline">Eficiencia</span>
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end">
-                                        <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase mb-0.5 sm:mb-1">{completados.length} / {allResults.length}</span>
-                                        <LucideIcons.TrendingUp size={14} className="text-emerald-400" />
+                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase mb-0.5 sm:mb-1">{completados.length} / {allResults.length}</span>
+                                        <LucideIcons.CheckCircle2 size={14} className="text-primary" />
                                     </div>
                                 </div>
-                                <div className="w-full h-2 sm:h-3 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                                <div className="w-full h-1.5 bg-slate-100 dark:bg-black/20 rounded-full overflow-hidden">
                                     <div 
-                                        className="h-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-sky-400 transition-all duration-1000 ease-out shadow-[0_0_20px_rgba(16,185,129,0.4)] relative"
+                                        className="h-full bg-primary transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(134,167,137,0.3)]"
                                         style={{ width: `${(completados.length / (allResults.length || 1)) * 100}%` }}
-                                    >
-                                        <div className="absolute top-0 right-0 bottom-0 w-1 bg-white opacity-50 animate-pulse"></div>
-                                    </div>
+                                    ></div>
                                 </div>
-                             </div>
-                             <div className="absolute right-[-10px] bottom-[-10px] opacity-[0.05] group-hover/progress:scale-125 transition-transform">
-                                <LucideIcons.Activity size={80} className="text-emerald-400 sm:w-[100px] sm:h-[100px]" />
                              </div>
                         </div>
                     </div>
@@ -533,11 +528,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             <div className="flex items-center gap-4 px-6">
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{completados.length} Declarados</span>
+                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{completados.length} Declarados</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
-                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">{pendientes.length} Pendientes</span>
+                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{pendientes.length} Pendientes</span>
                 </div>
             </div>
 
@@ -556,7 +551,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-amber-900 dark:text-amber-300 text-lg">Trámites Devolución Renta</h3>
-                                        <p className="text-amber-500/70 dark:text-amber-400/60 text-[10px] font-semibold uppercase tracking-widest">{activeRentaRefunds.length} en seguimiento intensivo</p>
+                                        <p className="text-amber-500/70 dark:text-amber-400/60 text-xs font-semibold uppercase tracking-widest">{activeRentaRefunds.length} en seguimiento intensivo</p>
                                     </div>
                                 </div>
                                 <LucideIcons.Clock className="text-amber-400 animate-spin-slow" size={20} />
@@ -570,11 +565,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         <div key={c.id} className={`group/item flex justify-between items-center bg-white dark:bg-slate-800/50 p-3.5 rounded-2xl border transition-all ${isCritical ? 'border-red-300 dark:border-red-800/50 hover:border-rose-400' : 'border-amber-100 dark:border-amber-900/30 hover:border-amber-400'}`}>
                                             <div className="flex flex-col min-w-0 pr-2">
                                                 <span className="font-medium text-slate-800 dark:text-slate-200 text-sm truncate">{c.name}</span>
-                                                <span className={`text-[10px] font-semibold uppercase tracking-wider mt-0.5 ${isCritical ? 'text-rose-400' : 'text-amber-500 dark:text-amber-400'}`}>
+                                                <span className={`text-xs font-semibold uppercase tracking-wider mt-0.5 ${isCritical ? 'text-rose-400' : 'text-amber-500 dark:text-amber-400'}`}>
                                                     Tiempo Transcurrido: {hoursPassed.toFixed(1)}h
                                                 </span>
                                             </div>
-                                            <button onClick={() => navigate('clients', { clientIdToView: c.id })} className={`shrink-0 px-4 py-1.5 text-[10px] font-semibold rounded-xl transition-all uppercase ${isCritical ? 'bg-red-50 text-rose-400 hover:bg-rose-400 hover:text-white dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                            <button onClick={() => navigate('clients', { clientIdToView: c.id })} className={`shrink-0 px-4 py-1.5 text-xs font-semibold rounded-xl transition-all uppercase ${isCritical ? 'bg-red-50 text-rose-400 hover:bg-rose-400 hover:text-white dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white dark:bg-amber-900/30 dark:text-amber-400'}`}>
                                                 Revisar
                                             </button>
                                         </div>
@@ -593,7 +588,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     </div>
                                     <div>
                                         <h3 className="font-semibold text-red-900 dark:text-red-300 text-lg">Firmas por Caducar</h3>
-                                        <p className="text-rose-400/70 dark:text-red-400/60 text-[10px] font-semibold uppercase tracking-widest">{expiringSignatures.length} Clientes en riesgo</p>
+                                        <p className="text-rose-400/70 dark:text-red-400/60 text-xs font-semibold uppercase tracking-widest">{expiringSignatures.length} Clientes en riesgo</p>
                                     </div>
                                 </div>
                                 <LucideIcons.ChevronRight className="text-red-300" size={20} />
@@ -603,9 +598,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <div key={c.id} className="group/item flex justify-between items-center bg-white dark:bg-slate-800/50 p-3.5 rounded-2xl border border-red-100 dark:border-red-900/30 hover:border-red-400 transition-all">
                                         <div className="flex flex-col">
                                             <span className="font-medium text-slate-800 dark:text-slate-200 text-sm">{c.name}</span>
-                                            <span className="text-[10px] text-rose-400 font-medium flex items-center gap-1 mt-0.5"><LucideIcons.Calendar size={12} /> Expira: {c.signatureExpirationDate}</span>
+                                            <span className="text-xs text-rose-400 font-medium flex items-center gap-1 mt-0.5"><LucideIcons.Calendar size={12} /> Expira: {c.signatureExpirationDate}</span>
                                         </div>
-                                        <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="px-4 py-1.5 bg-red-50 dark:bg-red-900/30 text-rose-400 dark:text-red-400 text-[10px] font-semibold rounded-xl hover:bg-rose-400 hover:text-white transition-all uppercase">Ver Detalle</button>
+                                        <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="px-4 py-1.5 bg-red-50 dark:bg-red-900/30 text-rose-400 dark:text-red-400 text-xs font-semibold rounded-xl hover:bg-rose-400 hover:text-white transition-all uppercase">Ver Detalle</button>
                                     </div>
                                 ))}
                             </div>
@@ -619,7 +614,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] sm:relative sm:bottom-0 sm:left-0 sm:translate-x-0 w-[95%] sm:w-auto max-w-4xl">
                 <div className="glass-tactical-dock rounded-full p-2 flex items-center gap-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 dark:bg-black/60 backdrop-blur-3xl no-scrollbar overflow-x-auto">
                     {[
-                        { id: 'all', label: 'Legión', icon: LucideIcons.Briefcase },
+                        { id: 'all', label: 'Directorio', icon: LucideIcons.Users },
                         { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.Calendar },
                         { id: 'semestral', label: 'IVA Semestral', icon: LucideIcons.Clock },
                         { id: 'renta', label: 'Renta Anual', icon: LucideIcons.ShieldCheck },
@@ -633,7 +628,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 key={tab.id}
                                 onClick={() => setFilter(tab.id as any)}
                                 className={`
-                                    relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider transition-all duration-500 whitespace-nowrap group/tab
+                                    relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all duration-500 whitespace-nowrap group/tab
                                     ${isActive
                                         ? 'bg-emerald-400 text-white shadow-[0_0_30px_rgba(16,185,129,0.5)] scale-105 sm:scale-110 z-10'
                                         : 'text-slate-400 hover:text-white hover:bg-white/10'
@@ -664,10 +659,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <LucideIcons.Flashlight size={18} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
                             </div>
                             <div className="flex flex-col items-start translate-y-[1px]">
-                                <span className="text-[7px] sm:text-[10px] font-semibold tech-font text-emerald-400 uppercase tracking-widest mb-0.5">PENDIENTES</span>
+                                <span className="text-[11px] sm:text-xs font-semibold tech-font text-emerald-400 uppercase tracking-widest mb-0.5">PENDIENTES</span>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm sm:text-xl font-premium font-semibold text-slate-900 dark:text-white uppercase tracking-tight">Deploy</span>
-                                    <span className="px-1.5 py-0.5 bg-rose-400/20 text-rose-400 text-[8px] sm:text-[10px] font-semibold rounded tech-font">{pendientes.length}</span>
+                                    <span className="px-1.5 py-0.5 bg-rose-400/20 text-rose-400 text-xs sm:text-xs font-semibold rounded tech-font">{pendientes.length}</span>
                                 </div>
                             </div>
                         </button>
@@ -680,10 +675,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <LucideIcons.ShieldCheck size={18} className="sm:w-[22px] sm:h-[22px]" strokeWidth={2.5} />
                             </div>
                             <div className="flex flex-col items-start translate-y-[1px]">
-                                <span className="text-[7px] sm:text-[10px] font-semibold tech-font text-sky-400 uppercase tracking-widest mb-0.5">COMPLETADOS</span>
+                                <span className="text-[11px] sm:text-xs font-semibold tech-font text-sky-400 uppercase tracking-widest mb-0.5">COMPLETADOS</span>
                                 <div className="flex items-center gap-2">
                                     <span className="text-sm sm:text-xl font-premium font-semibold text-slate-900 dark:text-white uppercase tracking-tight">Docs</span>
-                                    <span className="px-1.5 py-0.5 bg-emerald-400/20 text-emerald-400 text-[8px] sm:text-[10px] font-semibold rounded tech-font">{completados.length}</span>
+                                    <span className="px-1.5 py-0.5 bg-emerald-400/20 text-emerald-400 text-xs sm:text-xs font-semibold rounded tech-font">{completados.length}</span>
                                 </div>
                             </div>
                         </button>
@@ -691,7 +686,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     
                     <div className="ml-auto hidden sm:flex items-center gap-3">
                         <div className="h-4 w-[1px] bg-white/10 mx-4"></div>
-                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Operación: {formatPeriodForDisplay(getPeriod({ ruc: '0000000000001' } as any, new Date())).split(' ')[0]}</span>
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Operación: {formatPeriodForDisplay(getPeriod({ ruc: '0000000000001' } as any, new Date())).split(' ')[0]}</span>
                     </div>
                 </div>
             )}
@@ -703,11 +698,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     </div>
                     <div className="flex flex-col">
                         <span className="text-lg tracking-tight">Mostrando resultados para <span className="text-emerald-400 font-semibold">"{searchTerm}"</span></span>
-                        <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-[0.2em] mt-1">{activeList.length} clientes en el radar</span>
+                        <span className="text-xs text-slate-400 font-semibold uppercase tracking-[0.2em] mt-1">{activeList.length} clientes en el radar</span>
                     </div>
                     <button
                         onClick={() => setSearchTerm('')}
-                        className="ml-auto px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-semibold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl"
+                        className="ml-auto px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-xs font-semibold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl"
                     >
                         Resetear Búsqueda
                     </button>
@@ -775,7 +770,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     >
                         <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         <LucideIcons.HandCoins size={24} className="relative z-10" />
-                        <span className="font-semibold text-[10px] tracking-widest uppercase relative z-10 pr-2">
+                        <span className="font-semibold text-xs tracking-widest uppercase relative z-10 pr-2">
                             {activeRentaRefunds.length} Refund{activeRentaRefunds.length > 1 ? 's' : ''}
                         </span>
                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-rose-400 rounded-full border-2 border-white flex items-center justify-center">

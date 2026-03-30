@@ -67,7 +67,7 @@ export const AuditLogScreen: React.FC = () => {
                             <div className="p-2 bg-[#00A896]/10 rounded-lg border border-[#00A896]/20">
                                 <History className="w-5 h-5 text-[#00A896]" />
                             </div>
-                            <span className="text-[10px] font-semibold text-[#00A896] uppercase tracking-[0.3em]">System Monitoring</span>
+                            <span className="text-xs font-semibold text-[#00A896] uppercase tracking-[0.3em]">System Monitoring</span>
                         </div>
                         <h1 className="text-4xl lg:text-5xl font-semibold tracking-tight">TACTICAL AUDIT LOG</h1>
                     </div>
@@ -118,10 +118,10 @@ export const AuditLogScreen: React.FC = () => {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-white/5 bg-white/[0.02]">
-                                    <th className="p-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Timestamp</th>
-                                    <th className="p-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Evento</th>
-                                    <th className="p-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Detalles</th>
-                                    <th className="p-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Severidad</th>
+                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Timestamp</th>
+                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Evento</th>
+                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Detalles</th>
+                                    <th className="p-6 text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Severidad</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -141,7 +141,7 @@ export const AuditLogScreen: React.FC = () => {
                                                     </div>
                                                     <div>
                                                         <p className="font-medium text-sm tracking-tight">{log.action}</p>
-                                                        <p className="text-[10px] font-semibold text-white/20 uppercase tracking-widest">{log.type}</p>
+                                                        <p className="text-xs font-semibold text-white/20 uppercase tracking-widest">{log.type}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -149,7 +149,7 @@ export const AuditLogScreen: React.FC = () => {
                                                 <p className="text-sm text-white/60 leading-relaxed max-w-md">{log.details}</p>
                                             </td>
                                             <td className="p-6">
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-widest border ${getSeverityStyles(log.severity)}`}>
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest border ${getSeverityStyles(log.severity)}`}>
                                                     {log.severity}
                                                 </span>
                                             </td>
@@ -171,7 +171,7 @@ export const AuditLogScreen: React.FC = () => {
                 </div>
 
                 {/* Footer Info */}
-                <div className="mt-8 flex items-center justify-between text-[10px] font-medium text-white/20 uppercase tracking-[0.2em]">
+                <div className="mt-8 flex items-center justify-between text-xs font-medium text-white/20 uppercase tracking-[0.2em]">
                     <div className="flex items-center gap-2">
                         <Shield className="w-4 h-4" />
                         Capa de Seguridad Estándar Stitch v3.0

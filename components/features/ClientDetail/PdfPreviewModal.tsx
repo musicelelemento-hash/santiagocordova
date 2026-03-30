@@ -58,7 +58,7 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
                         <div>
                             <div className="flex items-center gap-2 mb-2">
                                 <ShieldCheck size={18} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-[0.3em]">VALIDADO POR ESCUADRÓN</span>
+                                <span className="text-xs font-semibold text-emerald-400 uppercase tracking-[0.3em]">VALIDADO POR ESCUADRÓN</span>
                             </div>
                             <h3 className="text-2xl font-semibold text-white tracking-tight uppercase">Radar Táctico</h3>
                         </div>
@@ -78,21 +78,21 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
                             <CheckCircle2 size={40} className="text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)] relative z-10" />
                             <div className="relative z-10">
                                 <h4 className="font-semibold text-emerald-400 text-base uppercase tracking-wider">Integridad Confirmada</h4>
-                                <p className="text-[10px] text-emerald-400/70 font-medium uppercase tracking-[0.2em] mt-1">Firma SRI Detectada</p>
+                                <p className="text-xs text-emerald-400/70 font-medium uppercase tracking-[0.2em] mt-1">Firma SRI Detectada</p>
                             </div>
                         </div>
 
                         {/* Extracted Data Blocks */}
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Info size={12}/> FORMA TRIBUTARIA</span>
+                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Info size={12}/> FORMA TRIBUTARIA</span>
                                 <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-sm font-semibold text-white uppercase tracking-widest font-mono shadow-inner">
                                     {pdfData.metadata?.formType || 'DESCONOCIDO'}
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">PERIODO FISCAL</span>
+                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">PERIODO FISCAL</span>
                                 <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-cyan-400 text-xl font-semibold uppercase tracking-wider font-mono shadow-inner flex items-center justify-between">
                                     <span>{pdfData.metadata?.period || 'N/A'}</span>
                                     <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></div>
@@ -101,7 +101,7 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
 
                             {pdfData.metadata?.amount !== undefined && (
                                 <div className="space-y-2">
-                                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">MONTO LIQUIDADO</span>
+                                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">MONTO LIQUIDADO</span>
                                     <div className="p-5 bg-emerald-400/10 border border-emerald-400/20 rounded-2xl text-emerald-400 text-3xl font-semibold uppercase tracking-tighter font-mono flex items-center justify-between shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]">
                                         <span className="opacity-50">$</span>
                                         <span>{pdfData.metadata.amount.toFixed(2)}</span>
@@ -110,14 +110,14 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
                             )}
 
                             <div className="space-y-2">
-                                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">ID VERIFICACIÓN (SRI)</span>
+                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">ID VERIFICACIÓN (SRI)</span>
                                 <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-xs font-semibold text-slate-400 font-mono tracking-[0.2em] break-all shadow-inner">
                                     {pdfData.metadata?.sriId || 'N/A'}
                                 </div>
                             </div>
 
                             <div className="space-y-2 pt-4 border-t border-white/5">
-                                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">RUC VINCULADO</span>
+                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">RUC VINCULADO</span>
                                 <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-sm font-semibold text-white uppercase tracking-widest font-mono shadow-inner">
                                     {client.ruc}
                                 </div>

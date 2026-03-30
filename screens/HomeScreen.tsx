@@ -140,9 +140,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
               <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/20">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                      <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-widest">Command Center Online</span>
+                      <span className="text-xs font-semibold text-emerald-400 uppercase tracking-widest">Command Center Online</span>
                   </div>
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• HQ Terminal v3.0</span>
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• HQ Terminal v3.0</span>
               </div>
               <h2 className="text-3xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-[0.85] tracking-tighter mb-2 italic">
                   Menú <span className="text-gradient-sky">Principal</span>
@@ -166,7 +166,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
             <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full -mr-16 -mt-16 transition-all duration-700 group-hover:scale-150 opacity-10 ${item.highlight ? 'bg-sky-400' : 'bg-slate-500'}`}></div>
             
             {item.highlight && (
-                <div className="absolute top-0 right-0 bg-sky-500 text-white text-[9px] font-semibold px-4 py-1.5 rounded-bl-[1.5rem] uppercase tracking-widest shadow-xl z-20">
+                <div className="absolute top-0 right-0 bg-sky-500 text-white text-[11px] font-semibold px-4 py-1.5 rounded-bl-[1.5rem] uppercase tracking-widest shadow-xl z-20">
                     OFERTA ALPHA
                 </div>
             )}
@@ -188,7 +188,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
                 </div>
 
                 <div className="flex items-center justify-between pt-6 border-t border-white/5 transition-all group-hover:border-sky-400/20">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest hidden sm:inline">EJECUTAR PROTOCOLO</span>
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest hidden sm:inline">EJECUTAR PROTOCOLO</span>
                     <div className="p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:border-sky-400/30 transition-all">
                         <ArrowRight size={20} className="text-slate-400 group-hover:text-sky-400 group-hover:translate-x-1 transition-all" />
                     </div>

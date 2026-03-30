@@ -120,7 +120,7 @@ export const GeminiScreen: React.FC<GeminiScreenProps> = ({ navigate }) => {
             </h1>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
-              <span className="text-[10px] font-medium text-[#00A896] uppercase tracking-[0.2em]">Cerebro Activo</span>
+              <span className="text-xs font-medium text-[#00A896] uppercase tracking-[0.2em]">Cerebro Activo</span>
             </div>
           </div>
         </div>
@@ -157,7 +157,7 @@ export const GeminiScreen: React.FC<GeminiScreenProps> = ({ navigate }) => {
                 `}>
                   {message.content}
                 </div>
-                <div className={`text-[10px] mt-2 opacity-30 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
+                <div className={`text-xs mt-2 opacity-30 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
@@ -235,7 +235,7 @@ export const GeminiScreen: React.FC<GeminiScreenProps> = ({ navigate }) => {
             </div>
           </form>
           
-          <p className="text-center text-[10px] text-white/20 mt-4 font-medium tracking-widest uppercase">
+          <p className="text-center text-xs text-white/20 mt-4 font-medium tracking-widest uppercase">
             Powered by Gemini 1.5 Pro & Santiago Cordova Engine
           </p>
         </div>

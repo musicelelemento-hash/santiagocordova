@@ -345,7 +345,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 onClick={() => handleFrequencyChange('MENSUAL')}
                                 className={`p-3 rounded-xl border text-left transition-all ${frequency === 'MENSUAL' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                             >
-                                <span className={`text-[10px] font-bold uppercase block mb-1 ${frequency === 'MENSUAL' ? 'text-blue-600' : 'text-slate-400'}`}>Estándar</span>
+                                <span className={`text-xs font-bold uppercase block mb-1 ${frequency === 'MENSUAL' ? 'text-blue-600' : 'text-slate-400'}`}>Estándar</span>
                                 <span className={`font-bold text-sm ${frequency === 'MENSUAL' ? 'text-blue-800 dark:text-blue-300' : 'text-slate-700 dark:text-slate-300'}`}>IVA Mensual + Renta</span>
                             </button>
 
@@ -353,7 +353,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 onClick={() => handleFrequencyChange('SEMESTRAL')}
                                 className={`p-3 rounded-xl border text-left transition-all ${frequency === 'SEMESTRAL' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                             >
-                                <span className={`text-[10px] font-bold uppercase block mb-1 ${frequency === 'SEMESTRAL' ? 'text-purple-600' : 'text-slate-400'}`}>Semestral</span>
+                                <span className={`text-xs font-bold uppercase block mb-1 ${frequency === 'SEMESTRAL' ? 'text-purple-600' : 'text-slate-400'}`}>Semestral</span>
                                 <span className={`font-bold text-sm ${frequency === 'SEMESTRAL' ? 'text-purple-800 dark:text-purple-300' : 'text-slate-700 dark:text-slate-300'}`}>IVA Semestral + Renta</span>
                             </button>
 
@@ -361,7 +361,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 onClick={() => handleFrequencyChange('ANUAL_RENTA')}
                                 className={`p-3 rounded-xl border text-left transition-all ${frequency === 'ANUAL_RENTA' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                             >
-                                <span className={`text-[10px] font-bold uppercase block mb-1 ${frequency === 'ANUAL_RENTA' ? 'text-orange-600' : 'text-slate-400'}`}>Negocio Popular</span>
+                                <span className={`text-xs font-bold uppercase block mb-1 ${frequency === 'ANUAL_RENTA' ? 'text-orange-600' : 'text-slate-400'}`}>Negocio Popular</span>
                                 <span className={`font-bold text-sm ${frequency === 'ANUAL_RENTA' ? 'text-orange-800 dark:text-orange-300' : 'text-slate-700 dark:text-slate-300'}`}>Solo Impuesto Renta</span>
                             </button>
 
@@ -369,7 +369,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 onClick={() => handleFrequencyChange('DEVOLUCION')}
                                 className={`p-3 rounded-xl border text-left transition-all ${frequency === 'DEVOLUCION' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}
                             >
-                                <span className={`text-[10px] font-bold uppercase block mb-1 ${frequency === 'DEVOLUCION' ? 'text-emerald-600' : 'text-slate-400'}`}>Tercera Edad</span>
+                                <span className={`text-xs font-bold uppercase block mb-1 ${frequency === 'DEVOLUCION' ? 'text-emerald-600' : 'text-slate-400'}`}>Tercera Edad</span>
                                 <span className={`font-bold text-sm ${frequency === 'DEVOLUCION' ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-700 dark:text-slate-300'}`}>Devolución IVA</span>
                             </button>
                          </div>
@@ -384,14 +384,14 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                     <input type="checkbox" checked={hasAnexo} onChange={e => setHasAnexo(e.target.checked)} className="mr-3 h-4 w-4 text-sky-600"/>
                                     <div>
                                         <span className="block text-sm font-bold text-slate-700 dark:text-slate-200">Anexo Gastos Personales</span>
-                                        <span className="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1"><Calendar size={10}/> Febrero</span>
+                                        <span className="text-xs text-slate-400 uppercase font-bold flex items-center gap-1"><Calendar size={10}/> Febrero</span>
                                     </div>
                                 </label>
                                 <label className={`flex items-center p-3 rounded-xl border cursor-pointer transition-all ${hasDevolucion ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50'}`}>
                                     <input type="checkbox" checked={hasDevolucion} onChange={e => setHasDevolucion(e.target.checked)} className="mr-3 h-4 w-4 text-indigo-600"/>
                                     <div>
                                         <span className="block text-sm font-bold text-slate-700 dark:text-slate-200">Devolución Retenciones</span>
-                                        <span className="text-[10px] text-slate-400 uppercase font-bold flex items-center gap-1"><DollarSign size={10}/> Saldo a Favor</span>
+                                        <span className="text-xs text-slate-400 uppercase font-bold flex items-center gap-1"><DollarSign size={10}/> Saldo a Favor</span>
                                     </div>
                                 </label>
                              </div>
@@ -437,7 +437,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                             <div className="flex justify-between mb-1.5">
                                 <label className="text-xs font-semibold">Clave SRI</label>
                                 {sriCredentials && clientData.ruc && sriCredentials[clientData.ruc] && (
-                                    <span className="text-[10px] bg-green-100 text-green-700 px-2 rounded-full font-bold flex items-center gap-1 animate-fade-in">
+                                    <span className="text-xs bg-green-100 text-green-700 px-2 rounded-full font-bold flex items-center gap-1 animate-fade-in">
                                         <CheckCircle size={10}/> Encontrada
                                     </span>
                                 )}
@@ -472,7 +472,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                     {signaturePasswordVisible ? <EyeOff size={16}/> : <Eye size={16}/>}
                                 </button>
                             </div>
-                            <p className="text-[10px] text-slate-400 mt-1 italic">* Suba el archivo en Detalles del Cliente.</p>
+                            <p className="text-xs text-slate-400 mt-1 italic">* Suba el archivo en Detalles del Cliente.</p>
                         </div>
                     </div>
                     

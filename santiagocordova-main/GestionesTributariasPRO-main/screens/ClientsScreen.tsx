@@ -276,23 +276,23 @@ const PasswordCriteriaDisplay: React.FC<{ password: string, visible: boolean }> 
     return (
         <div className={`transition-all duration-500 ease-in-out overflow-hidden ${visible ? 'max-h-24 opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}`}>
             <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-100 dark:border-slate-700 grid grid-cols-2 gap-x-4 gap-y-1.5">
-                <div className={`flex items-center space-x-1.5 text-[10px] ${criteria.length ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-400'}`}>
+                <div className={`flex items-center space-x-1.5 text-xs ${criteria.length ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-400'}`}>
                     {criteria.length ? <CheckCircle size={10} /> : <div className="w-2.5 h-2.5 rounded-full border border-slate-300"></div>}
                     <span>Mínimo 10 caracteres</span>
                 </div>
-                <div className={`flex items-center space-x-1.5 text-[10px] ${criteria.uppercase ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-400'}`}>
+                <div className={`flex items-center space-x-1.5 text-xs ${criteria.uppercase ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-400'}`}>
                     {criteria.uppercase ? <CheckCircle size={10} /> : <div className="w-2.5 h-2.5 rounded-full border border-slate-300"></div>}
                     <span>Mayúscula (A-Z)</span>
                 </div>
-                <div className={`flex items-center space-x-1.5 text-[10px] ${criteria.lowercase ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-400'}`}>
+                <div className={`flex items-center space-x-1.5 text-xs ${criteria.lowercase ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-400'}`}>
                     {criteria.lowercase ? <CheckCircle size={10} /> : <div className="w-2.5 h-2.5 rounded-full border border-slate-300"></div>}
                     <span>Minúscula (a-z)</span>
                 </div>
-                <div className={`flex items-center space-x-1.5 text-[10px] ${criteria.number ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-400'}`}>
+                <div className={`flex items-center space-x-1.5 text-xs ${criteria.number ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-400'}`}>
                     {criteria.number ? <CheckCircle size={10} /> : <div className="w-2.5 h-2.5 rounded-full border border-slate-300"></div>}
                     <span>Número (0-9)</span>
                 </div>
-                <div className={`flex items-center space-x-1.5 text-[10px] ${criteria.special ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-400'}`}>
+                <div className={`flex items-center space-x-1.5 text-xs ${criteria.special ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-400'}`}>
                     {criteria.special ? <CheckCircle size={10} /> : <div className="w-2.5 h-2.5 rounded-full border border-slate-300"></div>}
                     <span>Especial (!@#...)</span>
                 </div>
@@ -552,7 +552,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                                     
                                     {/* Indicador de Base de Datos Local */}
                                     {sriCredentials && sriCredentials[editedClient.ruc] === editedClient.sriPassword && (
-                                        <div className="absolute -top-6 right-0 flex items-center text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100 animate-fade-in">
+                                        <div className="absolute -top-6 right-0 flex items-center text-xs font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100 animate-fade-in">
                                             <Key size={10} className="mr-1"/> Respaldo en DB
                                         </div>
                                     )}
@@ -1203,15 +1203,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                <div className="flex-1 min-w-0">
                                     <div className="flex items-center space-x-2 mb-1">
                                         <h3 className="font-bold text-slate-800 dark:text-white truncate text-lg group-hover:text-sky-600 transition-colors">{client.name}</h3>
-                                        {client.isActive === false && <span className="text-[10px] bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Inactivo</span>}
+                                        {client.isActive === false && <span className="text-xs bg-red-100 text-red-600 font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">Inactivo</span>}
                                     </div>
                                     <div className="flex items-center space-x-3 text-sm text-slate-500 dark:text-gray-400 mb-2">
                                         <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-xs">{client.ruc}</span>
                                         <button className="hover:text-sky-500 transition-colors" onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(client.ruc); alert('RUC copiado!'); }}><Copy size={14} /></button>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        <span className="text-[10px] px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500">{client.regime}</span>
-                                        <span className="text-[10px] px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500">{client.category}</span>
+                                        <span className="text-xs px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500">{client.regime}</span>
+                                        <span className="text-xs px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500">{client.category}</span>
                                     </div>
                                </div>
                                <div className="flex-shrink-0 ml-2">
@@ -1297,7 +1297,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 block flex justify-between">
                                     <span>Clave SRI</span>
                                     {sriCredentials && newClient.ruc && sriCredentials[newClient.ruc] && (
-                                        <span className="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full flex items-center font-bold animate-fade-in">
+                                        <span className="text-xs bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full flex items-center font-bold animate-fade-in">
                                             <Key size={10} className="mr-1"/> Clave Encontrada
                                         </span>
                                     )}

@@ -42,7 +42,7 @@ export const MusicPage: React.FC<MusicPageProps> = ({ onBack }) => {
                         <Music className="w-6 h-6 text-white" />
                     </div>
                     <span className="text-xl font-semibold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-white/40">
-                        SANTIAGO CORDOVA <span className="text-[#00A896] ml-2 font-light tracking-[0.3em] text-[10px]">ART</span>
+                        SANTIAGO CORDOVA <span className="text-[#00A896] ml-2 font-light tracking-[0.3em] text-xs">ART</span>
                     </span>
                 </div>
                 <button
@@ -59,7 +59,7 @@ export const MusicPage: React.FC<MusicPageProps> = ({ onBack }) => {
                 <div className="lg:col-span-7 space-y-8 animate-in fade-in slide-in-from-left duration-1000">
                     <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-[#00A896]/10 border border-[#00A896]/20">
                         <Mic2 className="w-4 h-4 text-[#00A896]" />
-                        <span className="text-[10px] font-semibold text-[#00A896] uppercase tracking-[0.3em]">Compositor Multidimensional</span>
+                        <span className="text-xs font-semibold text-[#00A896] uppercase tracking-[0.3em]">Compositor Multidimensional</span>
                     </div>
                     
                     <h1 className="text-6xl lg:text-9xl font-semibold mb-6 leading-[0.8] tracking-tight">
@@ -98,7 +98,7 @@ export const MusicPage: React.FC<MusicPageProps> = ({ onBack }) => {
                         <div className="absolute inset-x-8 bottom-10 p-8 rounded-[2.5rem] bg-white/5 border border-white/10 backdrop-blur-2xl shadow-2xl">
                             <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <span className="text-[10px] font-semibold text-[#00A896] uppercase tracking-[0.2em] mb-1 block">{playlist[activeTrack].tag}</span>
+                                    <span className="text-xs font-semibold text-[#00A896] uppercase tracking-[0.2em] mb-1 block">{playlist[activeTrack].tag}</span>
                                     <h3 className="font-semibold text-2xl tracking-tight text-white">{playlist[activeTrack].title}</h3>
                                     <p className="text-xs text-white/40 font-medium uppercase tracking-widest">{playlist[activeTrack].artist}</p>
                                 </div>
@@ -111,7 +111,7 @@ export const MusicPage: React.FC<MusicPageProps> = ({ onBack }) => {
                                 <div className="w-full h-1.5 bg-white/5 rounded-full relative overflow-hidden group/progress cursor-pointer">
                                     <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-[#00A896] to-[#8B5CF6] rounded-full shadow-[0_0_10px_rgba(0,168,150,0.5)]" />
                                 </div>
-                                <div className="flex justify-between text-[10px] font-medium text-white/30 tracking-widest">
+                                <div className="flex justify-between text-xs font-medium text-white/30 tracking-widest">
                                     <span>01:45</span>
                                     <span>{playlist[activeTrack].duration}</span>
                                 </div>
@@ -163,7 +163,7 @@ export const MusicPage: React.FC<MusicPageProps> = ({ onBack }) => {
                                 <stat.icon className="w-8 h-8 text-[#00A896]" />
                             </div>
                             <p className="text-5xl font-semibold mb-2 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/30">{stat.value}</p>
-                            <p className="text-[10px] font-semibold text-white/30 uppercase tracking-[0.3em]">{stat.label}</p>
+                            <p className="text-xs font-semibold text-white/30 uppercase tracking-[0.3em]">{stat.label}</p>
                         </div>
                     ))}
                 </div>
@@ -205,10 +205,10 @@ export const MusicPage: React.FC<MusicPageProps> = ({ onBack }) => {
             <footer className="relative z-10 py-16 px-6 border-t border-white/5 text-center bg-black/40 backdrop-blur-md">
                 <div className="flex flex-col items-center gap-4 opacity-40 grayscale group hover:grayscale-0 transition-all">
                     <Logo className="w-8 h-8 invert" />
-                    <span className="text-[10px] tracking-[0.4em] font-semibold uppercase">SANTIAGO CORDOVA • ART ENGINE v3.0</span>
+                    <span className="text-xs tracking-[0.4em] font-semibold uppercase">SANTIAGO CORDOVA • ART ENGINE v3.0</span>
                     <div className="h-1 w-20 bg-gradient-to-r from-transparent via-[#00A896] to-transparent" />
                 </div>
-                <p className="text-white/20 text-[9px] tracking-[0.2em] uppercase mt-10 font-medium italic">© 2026 Santiago Cordova Art. Precision and Creation.</p>
+                <p className="text-white/20 text-[11px] tracking-[0.2em] uppercase mt-10 font-medium italic">© 2026 Santiago Cordova Art. Precision and Creation.</p>
             </footer>
 
             <style>{`

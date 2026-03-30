@@ -108,14 +108,14 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ orders, setOrd
                                             </div>
 
                                             <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg mb-3">
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Pedido</p>
+                                                <p className="text-xs font-bold text-gray-400 uppercase mb-1">Pedido</p>
                                                 <ul className="text-xs space-y-1">
                                                     {order.items.map((item, idx) => (
                                                         <li key={idx} className="flex justify-between">
                                                             <span className="truncate">{item.title}</span>
                                                         </li>
                                                     ))}
-                                                    {order.items.length > 2 && <li className="text-[10px] italic">+ {order.items.length - 2} más...</li>}
+                                                    {order.items.length > 2 && <li className="text-xs italic">+ {order.items.length - 2} más...</li>}
                                                 </ul>
                                                 <div className="mt-2 pt-1 border-t border-gray-200 dark:border-gray-600 flex justify-between font-bold text-sm">
                                                     <span>Total</span>

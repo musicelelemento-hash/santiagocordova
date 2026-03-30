@@ -12,7 +12,7 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
     return (
         <div className="space-y-8">
             <div className="space-y-4">
-                <label className="text-[10px] font-semibold text-slate-500 block uppercase tracking-[0.3em] ml-1">Protocolos Anuales / Trámites Especiales</label>
+                <label className="text-xs font-semibold text-slate-500 block uppercase tracking-[0.3em] ml-1">Protocolos Anuales / Trámites Especiales</label>
                 <div className="grid grid-cols-1 gap-3">
                     <label className={`flex items-center p-5 rounded-2xl border transition-all duration-500 ${editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'cursor-not-allowed bg-slate-900/40 opacity-60 border-white/5' : 'cursor-pointer'} ${editedClient.taxProfile?.requiresAnnualRenta || editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'border-cyan-500/50 bg-cyan-500/5 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'border-white/5 bg-slate-950/40 hover:border-white/20'}`}>
                         <div className="relative flex items-center justify-center mr-4">
@@ -28,7 +28,7 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                         <div className="flex-1 flex justify-between items-center">
                             <span className={`text-[11px] font-semibold uppercase tracking-widest ${editedClient.taxProfile?.requiresAnnualRenta || editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'text-white' : 'text-slate-500'}`}>Impuesto a la Renta Corporativa/Personal</span>
                             {(editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular) && (
-                                <span className="text-[9px] text-amber-400 font-semibold bg-amber-400/10 border border-amber-400/20 px-3 py-1 rounded-full ml-2 uppercase tracking-tighter">Obligatorio: {editedClient.regime}</span>
+                                <span className="text-[11px] text-amber-400 font-semibold bg-amber-400/10 border border-amber-400/20 px-3 py-1 rounded-full ml-2 uppercase tracking-tighter">Obligatorio: {editedClient.regime}</span>
                             )}
                         </div>
                     </label>
@@ -86,7 +86,7 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
             </div>
 
             <div className="pt-8 border-t border-white/10">
-                <label className="text-[10px] font-semibold text-slate-500 block uppercase tracking-[0.3em] mb-4 ml-1">Vigilancia ICE / PVP (Control de Consumo)</label>
+                <label className="text-xs font-semibold text-slate-500 block uppercase tracking-[0.3em] mb-4 ml-1">Vigilancia ICE / PVP (Control de Consumo)</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <label className={`flex items-center p-5 rounded-2xl border cursor-pointer transition-all duration-500 ${editedClient.taxProfile?.requiresIce ? 'border-amber-400/50 bg-amber-400/5 shadow-[0_0_20px_rgba(245,158,11,0.1)]' : 'border-white/5 bg-slate-950/40 hover:border-white/20'}`}>
                         <div className="relative flex items-center justify-center mr-4">
@@ -99,7 +99,7 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                             />
                             {editedClient.taxProfile?.requiresIce && <Check size={14} className="absolute text-white pointer-events-none" strokeWidth={4} />}
                         </div>
-                        <span className={`text-[10px] font-semibold uppercase tracking-widest ${editedClient.taxProfile?.requiresIce ? 'text-white' : 'text-slate-500'}`}>Vector ICE (Intermitente)</span>
+                        <span className={`text-xs font-semibold uppercase tracking-widest ${editedClient.taxProfile?.requiresIce ? 'text-white' : 'text-slate-500'}`}>Vector ICE (Intermitente)</span>
                     </label>
                     <label className={`flex items-center p-5 rounded-2xl border cursor-pointer transition-all duration-500 ${editedClient.taxProfile?.requiresAnexoPvp ? 'border-rose-400/50 bg-rose-400/5 shadow-[0_0_20px_rgba(244,63,94,0.1)]' : 'border-white/5 bg-slate-950/40 hover:border-white/20'}`}>
                         <div className="relative flex items-center justify-center mr-4">
@@ -112,7 +112,7 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                             />
                             {editedClient.taxProfile?.requiresAnexoPvp && <Check size={14} className="absolute text-white pointer-events-none" strokeWidth={4} />}
                         </div>
-                        <span className={`text-[10px] font-semibold uppercase tracking-widest ${editedClient.taxProfile?.requiresAnexoPvp ? 'text-white' : 'text-slate-500'}`}>Módulo PVP (Anual Externo)</span>
+                        <span className={`text-xs font-semibold uppercase tracking-widest ${editedClient.taxProfile?.requiresAnexoPvp ? 'text-white' : 'text-slate-500'}`}>Módulo PVP (Anual Externo)</span>
                     </label>
                 </div>
             </div>

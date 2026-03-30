@@ -139,7 +139,7 @@ const CopyButton: React.FC<{ text: string, label?: string, obscured?: boolean, o
             className={`group relative flex items-center justify-between w-full p-3 rounded-xl border transition-all duration-200 ${copied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-teal/50 hover:shadow-sm'}`}
         >
             <div className="flex flex-col items-start truncate pr-2">
-                {label && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</span>}
+                {label && <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</span>}
                 <span className={`font-mono text-sm font-bold truncate w-full text-left ${copied ? 'text-green-700' : 'text-slate-700 dark:text-slate-200'}`}>
                     {obscured ? '••••••••' : text}
                 </span>
@@ -187,7 +187,7 @@ const RentaSeasonCard: React.FC<{ client: Client, onAction: (type: 'declare_simp
         <div className={`bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-xl border border-slate-200 dark:border-slate-700 relative overflow-hidden animate-fade-in-up`}>
             <div className={`absolute top-0 left-0 w-full h-2 ${urgencyColor}`}></div>
             <div className="relative z-10">
-                <div className="flex justify-between items-start mb-8"><div><h3 className="text-3xl font-display font-black text-slate-800 dark:text-white">Declaración Renta {fiscalYear}</h3><p className="text-slate-500 font-medium text-sm mt-1">Gestione la obligación anual obligatoria.</p></div><div className="hidden sm:flex flex-col items-center justify-center w-24 h-24 rounded-full border-4 border-slate-50 bg-slate-100 shadow-inner"><span className="text-3xl font-black text-slate-700">{daysLeft > 0 ? daysLeft : 0}</span><span className="text-[9px] font-bold text-slate-400 uppercase">Días</span></div></div>
+                <div className="flex justify-between items-start mb-8"><div><h3 className="text-3xl font-display font-black text-slate-800 dark:text-white">Declaración Renta {fiscalYear}</h3><p className="text-slate-500 font-medium text-sm mt-1">Gestione la obligación anual obligatoria.</p></div><div className="hidden sm:flex flex-col items-center justify-center w-24 h-24 rounded-full border-4 border-slate-50 bg-slate-100 shadow-inner"><span className="text-3xl font-black text-slate-700">{daysLeft > 0 ? daysLeft : 0}</span><span className="text-[11px] font-bold text-slate-400 uppercase">Días</span></div></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6"><button onClick={() => onAction('declare_simple')} className="flex items-center p-4 rounded-2xl border border-slate-200 hover:bg-slate-50 transition-all group text-left"><div className="p-3 bg-slate-100 rounded-xl mr-4 group-hover:bg-white"><FileText size={24} className="text-slate-600"/></div><div><span className="block text-sm font-bold text-slate-700">Solo Declarar</span></div><div className="ml-auto text-xl font-black text-slate-700">$10</div></button><button onClick={() => onAction('declare_combo')} className="relative flex items-center p-1 rounded-2xl bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 shadow-lg group text-left overflow-hidden transform hover:scale-[1.02] transition-all"><div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div><div className="flex-1 flex items-center p-3 bg-white rounded-xl h-full relative z-10"><div className="p-3 bg-amber-100 text-amber-600 rounded-xl mr-4"><Gift size={24} strokeWidth={2.5}/></div><div><span className="block text-sm font-black text-brand-navy uppercase">Activar Combo</span></div><div className="ml-auto text-xl font-black text-amber-600">$25</div></div></button></div>
             </div>
         </div>
@@ -399,7 +399,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                                 <Key size={14} className="text-brand-teal"/> Clave SRI
                                             </span>
                                             {sriCredentials && sriCredentials[client.ruc] === editedClient.sriPassword && (
-                                                <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                                                     <CheckCircle size={10}/> Sincronizada
                                                 </span>
                                             )}
@@ -438,7 +438,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                             <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
                                                 <FileKey size={14} className="text-purple-500"/> Firma Electrónica (.p12)
                                             </span>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${editedClient.signatureFile ? 'bg-purple-100 text-purple-700' : 'bg-slate-200 text-slate-500'}`}>
+                                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${editedClient.signatureFile ? 'bg-purple-100 text-purple-700' : 'bg-slate-200 text-slate-500'}`}>
                                                 {editedClient.signatureFile ? 'Activa' : 'Pendiente'}
                                             </span>
                                         </div>
@@ -476,7 +476,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                                 <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase flex items-center gap-2">
                                                     <Server size={14}/> Sistema de Facturación
                                                 </span>
-                                                {editedClient.billingSystemName && <span className="text-[10px] font-bold text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-100">{editedClient.billingSystemName}</span>}
+                                                {editedClient.billingSystemName && <span className="text-xs font-bold text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-100">{editedClient.billingSystemName}</span>}
                                             </div>
 
                                             {isEditing ? (
@@ -492,7 +492,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                                 <div className="space-y-3">
                                                     <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-blue-100 dark:border-blue-900/50 flex items-center justify-between">
                                                         <div className="flex flex-col">
-                                                            <span className="text-[10px] text-slate-400 font-bold uppercase">Acceso</span>
+                                                            <span className="text-xs text-slate-400 font-bold uppercase">Acceso</span>
                                                             <span className="text-sm font-bold text-slate-700 dark:text-white">{editedClient.billingSystemUser || 'N/A'}</span>
                                                         </div>
                                                         <div className="flex gap-2">

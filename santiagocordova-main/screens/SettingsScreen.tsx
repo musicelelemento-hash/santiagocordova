@@ -592,7 +592,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                     Guardar
                 </button>
             </div>
-            <p className="text-[10px] text-slate-400 mt-2 italic">
+            <p className="text-xs text-slate-400 mt-2 italic">
                 Nota: Esta configuración se guarda en este navegador. Si cambia de dispositivo, deberá ingresarla nuevamente.
             </p>
         </div>

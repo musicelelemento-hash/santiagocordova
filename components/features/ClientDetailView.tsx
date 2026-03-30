@@ -568,13 +568,13 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
                 <div className={`p-8 rounded-[2.5rem] ${isWorkOrder ? 'bg-amber-400/10 border-amber-400/20 shadow-primary' : (isFullyAlDia ? 'bg-emerald-400/10 border-emerald-400/20 shadow-primary' : 'glass-elite')} relative overflow-hidden group transition-all duration-700`}>
                     <div className="relative z-10">
-                        <p className={`text-[10px] font-medium uppercase tracking-widest mb-3 ${isWorkOrder ? 'text-amber-400' : (isFullyAlDia ? 'text-emerald-400' : 'text-slate-500')}`}>DIRECTIVA OPERATIVA</p>
+                        <p className={`text-xs font-medium uppercase tracking-widest mb-3 ${isWorkOrder ? 'text-amber-400' : (isFullyAlDia ? 'text-emerald-400' : 'text-slate-500')}`}>DIRECTIVA OPERATIVA</p>
                         <h4 className="text-xl sm:text-2xl font-medium leading-tight tracking-tight uppercase text-white">
                             {isFullyAlDia ? 'ÓPTIMA' : 'INTERVENCIÓN REQUERIDA'}
                         </h4>
                         <div className="mt-6 flex items-center gap-3">
                             <div className={`w-2 h-2 rounded-full animate-ping ${isFullyAlDia ? 'bg-emerald-400' : 'bg-amber-400'}`}></div>
-                            <span className="text-[9px] font-medium text-slate-500 uppercase tracking-widest">Sincronización Activa</span>
+                            <span className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Sincronización Activa</span>
                         </div>
                     </div>
                 </div>
@@ -585,7 +585,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             <Zap size={28} className="animate-pulse" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-medium uppercase tracking-widest text-primary mb-1">VECTOR DE ATAQUE</p>
+                            <p className="text-xs font-medium uppercase tracking-widest text-primary mb-1">VECTOR DE ATAQUE</p>
                             <p className="text-sm font-medium text-white uppercase tracking-tight">DECLARAR OBLIGACIÓN</p>
                         </div>
                     </div>
@@ -597,7 +597,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             <DollarSign size={28} />
                         </div>
                         <div>
-                            <p className="text-[9px] font-black uppercase text-amber-400 tracking-[0.2em] mb-1">FASE: LIQUIDACIÓN</p>
+                            <p className="text-[11px] font-black uppercase text-amber-400 tracking-[0.2em] mb-1">FASE: LIQUIDACIÓN</p>
                             <p className="text-sm font-black text-white uppercase tracking-tight">RECURSOS COMPROMETIDOS</p>
                         </div>
                     </div>
@@ -609,7 +609,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             <RefreshCcw size={28} className="animate-spin" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-medium uppercase tracking-widest text-indigo-400 mb-1">Sincronización</p>
+                            <p className="text-xs font-medium uppercase tracking-widest text-indigo-400 mb-1">Sincronización</p>
                             <p className="text-sm font-medium text-white uppercase tracking-tight">Actualizando Nube</p>
                         </div>
                     </div>
@@ -625,7 +625,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                     <Activity className="text-primary" size={24} />
                                     PANEL DE INTELIGENCIA FISCAL
                                 </h3>
-                                <p className="text-[9px] font-medium text-slate-500 uppercase tracking-widest mt-3">MÉTRICAS DE CUMPLIMIENTO Y OBLIGACIONES CRÍTICAS</p>
+                                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest mt-3">MÉTRICAS DE CUMPLIMIENTO Y OBLIGACIONES CRÍTICAS</p>
                             </div>
                         </div>
 
@@ -647,14 +647,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
                             <div className="space-y-8">
                                 <div className="p-8 glass-card rounded-[2.5rem] relative overflow-hidden group/card shadow-2xl border border-white/5">
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Arquitectura Tributaria</p>
+                                    <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Arquitectura Tributaria</p>
                                     <div className="flex items-center gap-5">
                                         <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-primary shadow-inner group-hover/card:scale-110 transition-transform">
                                             <ShieldCheck size={28} />
                                         </div>
                                         <div>
                                             <p className="text-base font-medium text-white leading-tight uppercase tracking-tight">{client.regime}</p>
-                                            <p className="text-[9px] font-black text-emerald-400 mt-1 uppercase tracking-[0.2em]">VALIDADO & ACTIVO</p>
+                                            <p className="text-[11px] font-black text-emerald-400 mt-1 uppercase tracking-[0.2em]">VALIDADO & ACTIVO</p>
                                         </div>
                                     </div>
                                 </div>
@@ -662,8 +662,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 {client.taxProfile?.requiresAnnualRenta && editedClient.rentaRefundStatus !== 'Completado' && (
                                     <div className="p-8 glass-card rounded-[2.5rem] space-y-8 relative overflow-hidden group/renta shadow-2xl border border-white/5">
                                         <div className="flex items-center justify-between mb-2">
-                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Protocolo Renta</p>
-                                            <div className="px-3 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[8px] font-black rounded-lg uppercase tracking-[0.2em]">MISIÓN CRÍTICA</div>
+                                            <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Protocolo Renta</p>
+                                            <div className="px-3 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-xs font-black rounded-lg uppercase tracking-[0.2em]">MISIÓN CRÍTICA</div>
                                         </div>
                                         <div className="flex gap-3 flex-wrap pb-6">
                                             {[
@@ -690,7 +690,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                                         className={`flex-1 min-w-[110px] flex justify-center items-center gap-2 px-4 py-3 rounded-2xl border transition-all whitespace-nowrap ${isActive ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-slate-950 text-slate-600 border-white/5 hover:border-white/10')}`}
                                                     >
                                                         <step.icon size={14} className="flex-shrink-0" />
-                                                        <span className="text-[9px] font-black uppercase tracking-[0.1em]">{step.label}</span>
+                                                        <span className="text-[11px] font-black uppercase tracking-[0.1em]">{step.label}</span>
                                                     </button>
                                                 );
                                             })}
@@ -718,7 +718,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 {client.hasElderlyDevolucionIva && editedClient.elderlyDevolucionIvaStatus !== 'Completado' && (
                                     <div className="p-8 glass-card rounded-[2.5rem] space-y-8 relative overflow-hidden group/elderly shadow-2xl border border-white/5">
                                         <div className="flex items-center justify-between mb-2">
-                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Protocolo Devolución (T. Edad)</p>
+                                            <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Protocolo Devolución (T. Edad)</p>
                                         </div>
 
                                         <div className="flex gap-3 flex-wrap pb-6">
@@ -740,7 +740,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                                         className={`flex-1 min-w-[110px] flex justify-center items-center gap-2 px-4 py-3 rounded-2xl border transition-all whitespace-nowrap ${isActive ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-slate-950 text-slate-600 border-white/5 hover:border-white/10')}`}
                                                     >
                                                         <step.icon size={14} className="flex-shrink-0" />
-                                                        <span className="text-[9px] font-black uppercase tracking-[0.1em]">{step.label}</span>
+                                                        <span className="text-[11px] font-black uppercase tracking-[0.1em]">{step.label}</span>
                                                     </button>
                                                 );
                                             })}
@@ -785,7 +785,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                     <Mail size={24} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-[0.2em] mb-1">Enlace Email</p>
+                                    <p className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em] mb-1">Enlace Email</p>
                                     <p className="text-sm font-medium text-white truncate pr-4">{client.email || 'SIN ASIGNAR'}</p>
                                 </div>
                             </div>
@@ -795,7 +795,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                     <Phone size={24} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-[0.2em] mb-1">Enlace Móvil</p>
+                                    <p className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em] mb-1">Enlace Móvil</p>
                                     <p className="text-sm font-medium text-white truncate pr-4">{(client.phones && client.phones.length > 0) ? client.phones[0] : 'SIN ASIGNAR'}</p>
                                 </div>
                             </div>
@@ -804,11 +804,11 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         <div className="grid grid-cols-2 gap-4 mt-12 pt-10 border-t border-white/5">
                             <button onClick={handleOpenSRI} className="flex flex-col items-center gap-3 p-5 bg-white/5 hover:bg-primary/10 border border-white/5 hover:border-primary/20 rounded-[2rem] transition-all group/btn">
                                 <Globe size={20} className="text-primary group-hover/btn:scale-110 transition-all duration-500" />
-                                <span className="text-[9px] font-black text-slate-500 group-hover/btn:text-primary uppercase tracking-[0.2em]">PORTAL SRI</span>
+                                <span className="text-[11px] font-black text-slate-500 group-hover/btn:text-primary uppercase tracking-[0.2em]">PORTAL SRI</span>
                             </button>
                             <button onClick={handleWhatsApp} className="flex flex-col items-center gap-3 p-5 bg-white/5 hover:bg-emerald-400/10 border border-white/5 hover:border-emerald-400/20 rounded-[2rem] transition-all group/btn">
                                 <MessageCircle size={20} className="text-emerald-400 group-hover/btn:scale-110 transition-all duration-500" />
-                                <span className="text-[9px] font-black text-slate-500 group-hover/btn:text-emerald-400 uppercase tracking-[0.2em]">WHATSAPP</span>
+                                <span className="text-[11px] font-black text-slate-500 group-hover/btn:text-emerald-400 uppercase tracking-[0.2em]">WHATSAPP</span>
                             </button>
                         </div>
                     </div>
@@ -843,7 +843,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             <Activity className="text-primary" size={24} />
                             REGISTRO OPERATIVO
                         </h3>
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mt-3">TRAZABILIDAD DE ACCIONES Y VALIDACIONES</p>
+                        <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mt-3">TRAZABILIDAD DE ACCIONES Y VALIDACIONES</p>
                     </div>
                 </div>
 
@@ -899,10 +899,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             <Store className="text-primary" size={24} />
                             Repositorio de Documentos
                         </h3>
-                        <p className="text-[9px] font-medium text-slate-500 uppercase tracking-widest mt-3">Gestión centralizada de archivos y comprobantes</p>
+                        <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest mt-3">Gestión centralizada de archivos y comprobantes</p>
                     </div>
                     <div className="flex gap-4">
-                        <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/5 text-[10px] font-medium text-emerald-400 flex items-center gap-3 shadow-inner uppercase tracking-widest">
+                        <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/5 text-xs font-medium text-emerald-400 flex items-center gap-3 shadow-inner uppercase tracking-widest">
                             <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
                             {(client.declarations || []).filter(d => d.proof_file).length} Archivos Protegidos
                         </div>
@@ -917,7 +917,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xl relative z-10">
                             <Plus className="text-slate-500 group-hover:text-primary" size={32} />
                         </div>
-                        <span className="text-[10px] font-medium uppercase text-slate-500 group-hover:text-primary tracking-widest relative z-10">Subir Documento</span>
+                        <span className="text-xs font-medium uppercase text-slate-500 group-hover:text-primary tracking-widest relative z-10">Subir Documento</span>
                     </button>
 
                     {[...(client.declarations || [])]
@@ -928,7 +928,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 <div className="aspect-[4/3] rounded-2xl bg-white/5 mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-white/10 transition-colors">
                                     <FileText className="text-slate-700 group-hover:text-primary group-hover:scale-110 transition-all duration-500" size={48} />
                                     {decl.proof_file?.metadata?.formType && (
-                                        <div className="absolute top-3 left-3 px-3 py-1 bg-primary text-slate-950 text-[8px] font-medium rounded-lg uppercase tracking-widest shadow-lg">
+                                        <div className="absolute top-3 left-3 px-3 py-1 bg-primary text-slate-950 text-xs font-medium rounded-lg uppercase tracking-widest shadow-lg">
                                             {decl.proof_file.metadata.formType}
                                         </div>
                                     )}
@@ -940,7 +940,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                     <div className="flex items-center justify-between">
                                         <div className="flex flex-col">
                                             <span className="text-[11px] font-medium text-emerald-400 tracking-tighter">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
-                                            <span className="text-[8px] text-slate-500 font-medium uppercase tracking-widest mt-1">{formatPeriodForDisplay(decl.period)}</span>
+                                            <span className="text-xs text-slate-500 font-medium uppercase tracking-widest mt-1">{formatPeriodForDisplay(decl.period)}</span>
                                         </div>
                                         <button className="p-2.5 hover:bg-white/10 rounded-xl text-slate-600 hover:text-primary transition-colors">
                                             <Download size={14} />
@@ -966,7 +966,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     
                     <div className="space-y-8">
                         <div className="space-y-4">
-                            <label className="text-[10px] font-medium text-slate-500 uppercase tracking-widest ml-1">
+                            <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">
                                 Honorario {editedClient.taxProfile?.ivaFrequency === 'Semestral' ? 'Semestral' : 'Mensual'}
                             </label>
                             <div className="relative group/input">
@@ -982,7 +982,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         </div>
 
                         <div className="space-y-4">
-                            <label className="text-[10px] font-medium text-slate-500 uppercase tracking-widest ml-1">Asesoría Anual (Renta)</label>
+                            <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Asesoría Anual (Renta)</label>
                             <div className="relative group/input">
                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 text-amber-400 font-medium">$</div>
                                 <input
@@ -1005,7 +1005,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
                     <div className="space-y-8">
                         <div className="space-y-4">
-                            <label className="text-[10px] font-medium text-slate-500 uppercase tracking-widest ml-1">Régimen Tributario</label>
+                            <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Régimen Tributario</label>
                             <select
                                 value={editedClient.regime}
                                 onChange={(e) => setEditedClient({ ...editedClient, regime: e.target.value as TaxRegime })}
@@ -1029,7 +1029,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                        <label className="text-[10px] font-medium text-slate-500 uppercase tracking-widest ml-1">Correo Electrónico</label>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Correo Electrónico</label>
                         <input
                             type="email"
                             value={editedClient.email || ''}
@@ -1040,7 +1040,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         />
                     </div>
                     <div className="space-y-4">
-                        <label className="text-[10px] font-medium text-slate-500 uppercase tracking-widest ml-1">Teléfono de Contacto</label>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Teléfono de Contacto</label>
                         <input
                             type="text"
                             value={editedClient.phones && editedClient.phones.length > 0 ? editedClient.phones[0] : ''}
@@ -1054,7 +1054,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
                     <div className="space-y-4">
-                        <label className="text-[10px] font-medium text-slate-500 uppercase tracking-widest ml-1">Frecuencia IVA</label>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Frecuencia IVA</label>
                         <select
                             value={editedClient.taxProfile?.ivaFrequency || 'Mensual'}
                             onChange={(e) => setEditedClient({
@@ -1073,7 +1073,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         </select>
                     </div>
                     <div className="space-y-4">
-                        <label className="text-[10px] font-medium text-slate-500 uppercase tracking-widest ml-1">Clave SRI</label>
+                        <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Clave SRI</label>
                         <div className="relative">
                             <input
                                 type={passwordVisible ? "text" : "password"}
@@ -1092,7 +1092,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </div>
 
                 <div className="mt-8 space-y-4">
-                    <label className="text-[10px] font-medium text-slate-500 uppercase tracking-widest ml-1">Dirección Principal</label>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Dirección Principal</label>
                     <input
                         type="text"
                         value={editedClient.address || ''}
@@ -1104,7 +1104,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </div>
 
                 <div className="mt-8 space-y-4">
-                    <label className="text-[10px] font-medium text-slate-500 uppercase tracking-widest ml-1">Detalle de Actividad</label>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Detalle de Actividad</label>
                     <textarea
                         value={editedClient.economicActivity || ''}
                         onChange={(e) => setEditedClient({ ...editedClient, economicActivity: e.target.value })}
@@ -1164,7 +1164,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-6 sm:px-10 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative rounded-[1.5rem] whitespace-nowrap ${activeTab === tab ? 'text-slate-950 bg-primary shadow-primary' : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'}`}
+                                    className={`px-6 sm:px-10 py-3 text-xs font-black uppercase tracking-[0.2em] transition-all relative rounded-[1.5rem] whitespace-nowrap ${activeTab === tab ? 'text-slate-950 bg-primary shadow-primary' : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'}`}
                                 >
                                     <span className="relative z-10 flex items-center gap-3">
                                         {tab === 'profile' && <LayoutDashboard size={16} />}
@@ -1193,15 +1193,15 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     <div className="flex gap-4">
                         {isEditing ? (
                             <>
-                                <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-5 py-3.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl border border-primary/20 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all">
+                                <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-5 py-3.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl border border-primary/20 text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all">
                                     {isAnalyzingPdf ? <Loader size={12} className="animate-spin" /> : <ScanLine size={14} />}
                                     <span>MÓDULO SCANNER</span>
                                 </button>
-                                <button onClick={() => setIsEditing(false)} className="px-6 py-3.5 bg-white/5 border border-white/5 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:text-slate-300 transition-all">CANCELAR</button>
-                                <button onClick={handleSave} className="px-8 py-3.5 bg-primary text-slate-950 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-primary transition-all active:scale-95">GUARDAR CAMBIOS</button>
+                                <button onClick={() => setIsEditing(false)} className="px-6 py-3.5 bg-white/5 border border-white/5 text-slate-500 rounded-xl text-xs font-black uppercase tracking-[0.2em] hover:text-slate-300 transition-all">CANCELAR</button>
+                                <button onClick={handleSave} className="px-8 py-3.5 bg-primary text-slate-950 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-primary transition-all active:scale-95">GUARDAR CAMBIOS</button>
                             </>
                         ) : (
-                            <button onClick={() => setIsEditing(true)} className="flex items-center justify-center w-full sm:w-auto px-10 py-3.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:bg-cyan-500/20 hover:border-cyan-500/60 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] transition-all backdrop-blur-md transform hover:-translate-y-1 active:scale-95">
+                            <button onClick={() => setIsEditing(true)} className="flex items-center justify-center w-full sm:w-auto px-10 py-3.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:bg-cyan-500/20 hover:border-cyan-500/60 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] transition-all backdrop-blur-md transform hover:-translate-y-1 active:scale-95">
                                 MÓDULO DE EDICIÓN
                             </button>
                         )}
@@ -1221,7 +1221,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 <Modal isOpen={!!confirmation} onClose={() => setConfirmation(null)} title="Confirmar Acción">
                     <div className="p-6 text-center">
                         <p className="mb-6">¿Proceder con {confirmation?.action === 'declare' ? 'declaración' : 'pago'} de {confirmation ? formatPeriodForDisplay(confirmation.period) : ''}?</p>
-                        <button onClick={() => handleConfirmAction(false)} className="w-full py-4 bg-brand-navy text-white font-semibold rounded-2xl text-[10px] uppercase tracking-widest">Confirmar</button>
+                        <button onClick={() => handleConfirmAction(false)} className="w-full py-4 bg-brand-navy text-white font-semibold rounded-2xl text-xs uppercase tracking-widest">Confirmar</button>
                     </div>
                 </Modal>
                 <Modal isOpen={isReceiptModalOpen} onClose={() => setIsReceiptModalOpen(false)} title="Recibo">

@@ -131,7 +131,7 @@ const CopyButton: React.FC<{ text: string, label?: string, obscured?: boolean, o
             className={`group relative flex items-center justify-between w-full p-3 rounded-xl border transition-all duration-200 ${copied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-teal/50 hover:shadow-sm'}`}
         >
             <div className="flex flex-col items-start truncate pr-2">
-                {label && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</span>}
+                {label && <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</span>}
                 <span className={`font-mono text-sm font-bold truncate w-full text-left ${copied ? 'text-green-700' : 'text-slate-700 dark:text-slate-200'}`}>
                     {obscured ? '••••••••' : (text || 'N/A')}
                 </span>
@@ -572,11 +572,11 @@ Nota: Este enlace es personal y seguro.`;
 
                         <div className="flex gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                             <div className={`flex flex-col p-3 rounded-2xl border min-w-[120px] ${totalDebt > 0 ? 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-900/50' : 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-900/50'}`}>
-                                <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${totalDebt > 0 ? 'text-red-500' : 'text-emerald-500'}`}>Deuda Total</span>
+                                <span className={`text-xs font-bold uppercase tracking-wider mb-1 ${totalDebt > 0 ? 'text-red-500' : 'text-emerald-500'}`}>Deuda Total</span>
                                 <span className={`text-xl font-mono font-bold ${totalDebt > 0 ? 'text-red-700 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>${totalDebt.toFixed(2)}</span>
                             </div>
                             <div className="flex flex-col p-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 min-w-[140px]">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Próx. Vencimiento</span>
+                                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Próx. Vencimiento</span>
                                 <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
                                     <CalendarIcon size={14} className="text-brand-teal"/> 
                                     {nextDeadline ? format(nextDeadline, 'dd MMM', { locale: es }) : 'N/A'}
@@ -639,7 +639,7 @@ Nota: Este enlace es personal y seguro.`;
                                             {/* Step 2 */}
                                             <div className={`flex gap-4 ${headerIsDeclared ? 'opacity-50 grayscale' : ''}`}>
                                                 <div className="flex-shrink-0 flex flex-col items-center"><div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg ring-4 z-10 ${headerIsDeclared ? 'bg-slate-700 ring-slate-800 text-slate-400' : 'bg-brand-teal text-white ring-slate-800'}`}>2</div><div className="h-full w-0.5 bg-slate-700/50 my-1"></div></div>
-                                                <div className="flex-1 pb-4"><h4 className="font-bold text-slate-200 mb-2">Acceder al Portal</h4><button onClick={handleOpenSRI} className="w-full flex items-center justify-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all shadow-md group"><Globe size={24} className="text-brand-teal group-hover:scale-110 transition-transform"/><div className="text-left"><span className="block font-bold text-sm">Abrir SRI en Línea</span><span className="text-[10px] text-slate-400">srienlinea.sri.gob.ec</span></div><ExternalLink size={14} className="ml-auto text-slate-500"/></button></div>
+                                                <div className="flex-1 pb-4"><h4 className="font-bold text-slate-200 mb-2">Acceder al Portal</h4><button onClick={handleOpenSRI} className="w-full flex items-center justify-center gap-2 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-2xl transition-all shadow-md group"><Globe size={24} className="text-brand-teal group-hover:scale-110 transition-transform"/><div className="text-left"><span className="block font-bold text-sm">Abrir SRI en Línea</span><span className="text-xs text-slate-400">srienlinea.sri.gob.ec</span></div><ExternalLink size={14} className="ml-auto text-slate-500"/></button></div>
                                             </div>
                                             {/* Step 3 */}
                                             <div className="flex gap-4">
@@ -687,7 +687,7 @@ Nota: Este enlace es personal y seguro.`;
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                                     {/* 1. REGIMEN */}
                                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Régimen</p>
+                                        <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Régimen</p>
                                         {isEditing ? (
                                             <select 
                                                 value={editedClient.regime} 
@@ -708,11 +708,11 @@ Nota: Este enlace es personal y seguro.`;
 
                                     {/* 2. IVA FREQUENCY */}
                                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Declaración IVA</p>
+                                        <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Declaración IVA</p>
                                         {isEditing ? (
                                             <div className="flex gap-2">
-                                                <button onClick={() => setObligation('Mensual')} className={`flex-1 px-2 py-1.5 text-[10px] font-bold rounded border ${obligation === 'Mensual' ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-500'}`}>Mes</button>
-                                                <button onClick={() => setObligation('Semestral')} className={`flex-1 px-2 py-1.5 text-[10px] font-bold rounded border ${obligation === 'Semestral' ? 'bg-purple-100 border-purple-300 text-purple-700' : 'bg-white border-slate-200 text-slate-500'}`}>Sem</button>
+                                                <button onClick={() => setObligation('Mensual')} className={`flex-1 px-2 py-1.5 text-xs font-bold rounded border ${obligation === 'Mensual' ? 'bg-blue-100 border-blue-300 text-blue-700' : 'bg-white border-slate-200 text-slate-500'}`}>Mes</button>
+                                                <button onClick={() => setObligation('Semestral')} className={`flex-1 px-2 py-1.5 text-xs font-bold rounded border ${obligation === 'Semestral' ? 'bg-purple-100 border-purple-300 text-purple-700' : 'bg-white border-slate-200 text-slate-500'}`}>Sem</button>
                                             </div>
                                         ) : (
                                             <p className="font-bold text-slate-800 dark:text-white text-xs flex items-center gap-2">
@@ -724,8 +724,8 @@ Nota: Este enlace es personal y seguro.`;
 
                                     {/* 3. RENTA ANUAL */}
                                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2">Impuesto Renta</p>
-                                        <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-lg border text-[10px] font-bold ${annualTaxColor === 'text-purple-600 bg-purple-50' ? 'border-purple-100' : 'border-orange-100'} ${annualTaxColor} w-full`}>
+                                        <p className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2">Impuesto Renta</p>
+                                        <div className={`inline-flex items-center gap-2 px-2 py-1 rounded-lg border text-xs font-bold ${annualTaxColor === 'text-purple-600 bg-purple-50' ? 'border-purple-100' : 'border-orange-100'} ${annualTaxColor} w-full`}>
                                             <CalendarIcon size={12}/> {annualTaxMonth} {getYear(new Date())}
                                         </div>
                                     </div>
@@ -739,7 +739,7 @@ Nota: Este enlace es personal y seguro.`;
                                     
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="p-4 rounded-2xl bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Tarifa Mes / Semestre</label>
+                                            <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Tarifa Mes / Semestre</label>
                                             {isEditing ? (
                                                 <div className="relative flex items-center">
                                                     <DollarSign size={14} className="absolute left-3 text-slate-400"/>
@@ -759,7 +759,7 @@ Nota: Este enlace es personal y seguro.`;
                                         </div>
 
                                         <div className="p-4 rounded-2xl bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30">
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2 block">Tarifa Renta Anual</label>
+                                            <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-2 block">Tarifa Renta Anual</label>
                                             {isEditing ? (
                                                 <div className="relative flex items-center">
                                                     <DollarSign size={14} className="absolute left-3 text-slate-400"/>
@@ -847,14 +847,14 @@ Nota: Este enlace es personal y seguro.`;
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Phone size={16}/></div>
                                                 <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Celular</p>
+                                                    <p className="text-xs font-bold text-slate-400 uppercase">Celular</p>
                                                     <p className="text-sm font-bold text-slate-800 dark:text-white">{(editedClient.phones || [])[0] || 'N/A'}</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-slate-100 rounded-lg text-slate-500"><Mail size={16}/></div>
                                                 <div>
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Email</p>
+                                                    <p className="text-xs font-bold text-slate-400 uppercase">Email</p>
                                                     <p className="text-sm font-bold text-slate-800 dark:text-white truncate max-w-[180px]">{editedClient.email || 'N/A'}</p>
                                                 </div>
                                             </div>
@@ -903,7 +903,7 @@ Nota: Este enlace es personal y seguro.`;
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <span className="font-bold text-slate-800 dark:text-white text-sm">{formatPeriodForDisplay(decl.period)}</span>
-                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isPaid ? 'bg-emerald-100 text-emerald-700' : (isPending ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')}`}>
+                                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${isPaid ? 'bg-emerald-100 text-emerald-700' : (isPending ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')}`}>
                                                                 {decl.status}
                                                             </span>
                                                         </div>
@@ -949,7 +949,7 @@ Nota: Este enlace es personal y seguro.`;
                                                 <Key size={14} className="text-brand-teal"/> Clave SRI
                                             </span>
                                             {sriCredentials && sriCredentials[client.ruc] === editedClient.sriPassword && (
-                                                <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                                                     <CheckCircle size={10}/> Sincronizada
                                                 </span>
                                             )}
@@ -1070,11 +1070,11 @@ Nota: Este enlace es personal y seguro.`;
                             <p className="text-slate-500 text-xs uppercase tracking-widest mb-4">Santiago Cordova</p>
                             <div className="flex justify-between items-center text-left bg-slate-50 p-3 rounded-lg border border-slate-100">
                                 <div>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Cliente</p>
+                                    <p className="text-xs text-slate-400 font-bold uppercase">Cliente</p>
                                     <p className="font-bold text-slate-800">{receiptData.clientName}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase">RUC</p>
+                                    <p className="text-xs text-slate-400 font-bold uppercase">RUC</p>
                                     <p className="font-mono text-slate-600">{receiptData.clientRuc}</p>
                                 </div>
                             </div>

@@ -221,7 +221,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                     
                     <div className="space-y-4">
                         <div className="relative">
-                            <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">RUC contribuyente</label>
+                            <label className="text-xs font-bold text-slate-500 mb-1 block uppercase tracking-wider">RUC contribuyente</label>
                             <div className="relative">
                                 <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                 <input 
@@ -239,7 +239,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         </div>
 
                         <div className="relative">
-                            <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Razón Social</label>
+                            <label className="text-xs font-bold text-slate-500 mb-1 block uppercase tracking-wider">Razón Social</label>
                             <input 
                                 type="text" 
                                 value={clientData.name || ''} 
@@ -251,7 +251,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
 
                         <div className="grid grid-cols-2 gap-4">
                              <div>
-                                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">WhatsApp</label>
+                                <label className="text-xs font-bold text-slate-500 mb-1 block uppercase tracking-wider">WhatsApp</label>
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                                     <input 
@@ -264,7 +264,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 </div>
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Email</label>
+                                <label className="text-xs font-bold text-slate-500 mb-1 block uppercase tracking-wider">Email</label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                                     <input 
@@ -288,7 +288,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
 
                     <div className="space-y-5">
                         <div className="relative">
-                            <label className="text-[10px] font-bold text-slate-500 mb-1 block uppercase tracking-wider">Clave SRI</label>
+                            <label className="text-xs font-bold text-slate-500 mb-1 block uppercase tracking-wider">Clave SRI</label>
                             <div className="relative">
                                 <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
                                 <input 
@@ -305,7 +305,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         </div>
 
                         <div>
-                             <label className="text-[10px] font-bold text-slate-500 mb-2 block uppercase tracking-wider">Obligación Actual</label>
+                             <label className="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-wider">Obligación Actual</label>
                              <div className="grid grid-cols-2 gap-2">
                                  {[
                                      {id: 'MENSUAL', label: 'IVA MENSUAL'},
@@ -316,7 +316,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                     <button 
                                         key={opt.id}
                                         onClick={() => setFrequency(opt.id as any)} 
-                                        className={`p-2.5 rounded-xl text-[10px] font-bold border transition-all ${frequency === opt.id ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'}`}
+                                        className={`p-2.5 rounded-xl text-xs font-bold border transition-all ${frequency === opt.id ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'}`}
                                     >
                                         {opt.label}
                                     </button>
@@ -329,8 +329,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                  <div className="flex justify-between items-center gap-4">
                                      <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 pl-3 pr-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex-1 justify-between">
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Cliente VIP</span>
-                                            <span className={`text-[10px] font-bold ${isVip ? 'text-amber-500' : 'text-slate-300'}`}>{isVip ? 'Suscrito' : 'Normal'}</span>
+                                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Cliente VIP</span>
+                                            <span className={`text-xs font-bold ${isVip ? 'text-amber-500' : 'text-slate-300'}`}>{isVip ? 'Suscrito' : 'Normal'}</span>
                                         </div>
                                         <button onClick={() => setIsVip(!isVip)} className={`transition-colors ${isVip ? 'text-amber-500' : 'text-slate-300'}`}>
                                             {isVip ? <ToggleRight size={28}/> : <ToggleLeft size={28}/>}
@@ -339,8 +339,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
 
                                      <div className="flex items-center gap-3 bg-white dark:bg-slate-800 p-2 pl-3 pr-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex-1 justify-between">
                                         <div className="flex flex-col">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Estado</span>
-                                            <span className={`text-[10px] font-bold ${isActive ? 'text-emerald-500' : 'text-slate-300'}`}>{isActive ? 'Activo' : 'Inactivo'}</span>
+                                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Estado</span>
+                                            <span className={`text-xs font-bold ${isActive ? 'text-emerald-500' : 'text-slate-300'}`}>{isActive ? 'Activo' : 'Inactivo'}</span>
                                         </div>
                                         <button onClick={() => setIsActive(!isActive)} className={`transition-colors ${isActive ? 'text-emerald-500' : 'text-slate-300'}`}>
                                             {isActive ? <ToggleRight size={28}/> : <ToggleLeft size={28}/>}
@@ -350,14 +350,14 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                  
                                  <div className="grid grid-cols-2 gap-3">
                                     <div className="relative">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider absolute -top-2 left-2 bg-slate-50 dark:bg-slate-900 px-1 z-10">Honorario Mes</label>
+                                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider absolute -top-2 left-2 bg-slate-50 dark:bg-slate-900 px-1 z-10">Honorario Mes</label>
                                         <div className="relative">
                                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
                                             <input type="number" value={monthlyFee} onChange={e => setMonthlyFee(e.target.value)} className="w-full pl-6 p-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" placeholder="5.00"/>
                                         </div>
                                     </div>
                                     <div className="relative">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider absolute -top-2 left-2 bg-slate-50 dark:bg-slate-900 px-1 z-10">Honorario Renta</label>
+                                        <label className="text-[11px] font-black text-slate-400 uppercase tracking-wider absolute -top-2 left-2 bg-slate-50 dark:bg-slate-900 px-1 z-10">Honorario Renta</label>
                                         <div className="relative">
                                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">$</span>
                                             <input type="number" value={annualFee} onChange={e => setAnnualFee(e.target.value)} className="w-full pl-6 p-2.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold" placeholder="10.00"/>

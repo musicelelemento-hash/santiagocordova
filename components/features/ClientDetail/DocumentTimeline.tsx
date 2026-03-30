@@ -47,19 +47,19 @@ export const DocumentTimeline: React.FC<DocumentTimelineProps> = ({ client, onVi
                                         {doc.proof_file?.metadata?.formType || 'DECLARACIÓN'} {formatPeriodForDisplay(doc.period)}
                                     </h4>
                                     <div className="flex items-center gap-3 mt-1">
-                                        <div className="flex items-center gap-1 text-[10px] font-medium text-sky-500 dark:text-sky-400 uppercase">
+                                        <div className="flex items-center gap-1 text-xs font-medium text-sky-500 dark:text-sky-400 uppercase">
                                             📎 {safeFormat(doc.proof_file?.metadata?.uploadedAt || doc.updatedAt, 'EEE/MMM/yy').toUpperCase()}
                                         </div>
                                         {doc.declaredAt && (
                                             <>
                                                 <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700" />
-                                                <div className="flex items-center gap-1 text-[10px] font-medium text-emerald-500 uppercase">
+                                                <div className="flex items-center gap-1 text-xs font-medium text-emerald-500 uppercase">
                                                     SRI: {safeFormat(doc.declaredAt, 'dd/MMM/yy').toUpperCase()}
                                                 </div>
                                             </>
                                         )}
                                         <div className="w-1 h-1 rounded-full bg-slate-200 dark:bg-slate-700" />
-                                        <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400 uppercase">
+                                        <div className="flex items-center gap-1 text-xs font-medium text-slate-400 uppercase">
                                             <Clock size={12} />
                                             Hora: {safeFormat(doc.proof_file?.metadata?.uploadedAt || doc.updatedAt, 'HH:mm')}
                                         </div>
@@ -79,7 +79,7 @@ export const DocumentTimeline: React.FC<DocumentTimelineProps> = ({ client, onVi
                                 )}
                                 <button
                                     onClick={() => onViewPreview(doc)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-brand-teal hover:text-white text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-semibold uppercase tracking-widest transition-all"
+                                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-brand-teal hover:text-white text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all"
                                 >
                                     <Eye size={14} /> Vista Previa
                                 </button>
@@ -93,7 +93,7 @@ export const DocumentTimeline: React.FC<DocumentTimelineProps> = ({ client, onVi
                         </div>
 
                         {doc.proof_file?.metadata?.previewText && (
-                            <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800/50 italic text-[10px] text-slate-500 line-clamp-2">
+                            <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800/50 italic text-xs text-slate-500 line-clamp-2">
                                 "{doc.proof_file.metadata.previewText.substring(0, 200)}..."
                             </div>
                         )}

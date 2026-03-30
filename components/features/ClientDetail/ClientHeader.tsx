@@ -45,7 +45,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                 <div className="flex items-center gap-4">
                     <button
                         onClick={onBack}
-                        className="group flex items-center gap-3 px-5 py-2.5 bg-slate-900/40 backdrop-blur-xl rounded-xl border border-white/5 text-slate-400 font-medium text-[10px] uppercase tracking-widest hover:border-primary/50 hover:text-white transition-all active:scale-95 whitespace-nowrap"
+                        className="group flex items-center gap-3 px-5 py-2.5 bg-slate-900/40 backdrop-blur-xl rounded-xl border border-white/5 text-slate-400 font-medium text-xs uppercase tracking-widest hover:border-primary/50 hover:text-white transition-all active:scale-95 whitespace-nowrap"
                     >
                         <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
                         Volver
@@ -56,7 +56,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                     <div className="flex items-center gap-2">
                         <button
                             onClick={onToggleEdit}
-                            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all text-[10px] font-medium uppercase tracking-widest active:scale-95 ${isEditing ? 'bg-primary text-slate-950 border-primary' : 'bg-slate-900/40 text-slate-400 border-white/5 hover:border-white/10'}`}
+                            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all text-xs font-medium uppercase tracking-widest active:scale-95 ${isEditing ? 'bg-primary text-slate-950 border-primary' : 'bg-slate-900/40 text-slate-400 border-white/5 hover:border-white/10'}`}
                         >
                             {isEditing ? <Save size={14} /> : <Edit size={14} />}
                             {isEditing ? 'Guardar' : 'Editar'}
@@ -92,11 +92,11 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                     <div className="relative group/vip">
                         <div className="relative flex items-center gap-2.5 px-5 py-2.5 bg-slate-900/60 backdrop-blur-xl text-primary rounded-xl border border-primary/20">
                             <Crown size={14} fill="currentColor" />
-                            <span className="text-[10px] font-medium uppercase tracking-[0.2em]">Socio Exclusive</span>
+                            <span className="text-xs font-medium uppercase tracking-[0.2em]">Socio Exclusive</span>
                         </div>
                     </div>
                     
-                    <div className="px-5 py-2.5 bg-white/5 backdrop-blur-xl text-slate-500 rounded-xl border border-white/5 text-[9px] font-medium uppercase tracking-widest">
+                    <div className="px-5 py-2.5 bg-white/5 backdrop-blur-xl text-slate-500 rounded-xl border border-white/5 text-[11px] font-medium uppercase tracking-widest">
                         RUC: <span className="text-primary font-mono ml-1">{client.ruc}</span>
                     </div>
                 </div>
@@ -124,7 +124,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                         {isEditing && editedClient && setEditedClient ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-medium text-slate-500 uppercase tracking-widest ml-1">Razón Social</label>
+                                    <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest ml-1">Razón Social</label>
                                     <input
                                         type="text"
                                         value={editedClient.name}
@@ -133,7 +133,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-medium text-slate-500 uppercase tracking-widest ml-1">RUC / ID</label>
+                                    <label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest ml-1">RUC / ID</label>
                                     <div className="relative">
                                         <input
                                             type="text"
@@ -154,10 +154,10 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                                 <div className="flex flex-wrap items-center gap-3 mb-4">
                                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 text-slate-400 rounded-lg border border-white/5">
                                         <Landmark size={12} />
-                                        <span className="text-[8px] font-medium uppercase tracking-widest">{client.regime?.replace('Rimpe', 'R.')}</span>
+                                        <span className="text-xs font-medium uppercase tracking-widest">{client.regime?.replace('Rimpe', 'R.')}</span>
                                     </div>
                                     <div className="w-1 h-1 bg-slate-800 rounded-full"></div>
-                                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Consolidado Fiscal</span>
+                                    <span className="text-xs font-medium text-slate-500 uppercase tracking-widest">Consolidado Fiscal</span>
                                 </div>
                                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-light text-slate-200 mb-6 tracking-wide leading-relaxed max-w-3xl break-words">
                                     {client.name}
@@ -168,28 +168,28 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                         {/* Minimalist KPI Grid */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-8 border-t border-white/5">
                             <div className="space-y-1">
-                                <p className="text-[8px] font-medium text-slate-500 uppercase tracking-widest">Próxima Fecha</p>
+                                <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Próxima Fecha</p>
                                 <p className="text-xs font-medium text-white uppercase tracking-tight">
                                     {nextDeadline ? safeFormat(nextDeadline, 'dd MMM, YY') : '-- / -- / --'}
                                 </p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[8px] font-medium text-slate-500 uppercase tracking-widest">Estado SRI</p>
+                                <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Estado SRI</p>
                                 <div className="flex items-center gap-2">
                                     <div className={`w-1.5 h-1.5 rounded-full ${isFullyDeclared ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></div>
-                                    <p className={`text-[9px] font-medium uppercase tracking-widest ${isFullyDeclared ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                    <p className={`text-[11px] font-medium uppercase tracking-widest ${isFullyDeclared ? 'text-emerald-400' : 'text-amber-400'}`}>
                                         {isFullyDeclared ? 'Al Día' : 'Pendiente'}
                                     </p>
                                 </div>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[8px] font-medium text-slate-500 uppercase tracking-widest">Actividad</p>
+                                <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Actividad</p>
                                 <p className="text-xs font-medium text-white uppercase tracking-tight">
                                     {complianceStats?.iva.lastDate ? safeFormat(complianceStats.iva.lastDate, 'dd/MM/yy') : '--/--/--'}
                                 </p>
                             </div>
                             <div className="space-y-1 lg:border-l lg:border-white/5 lg:pl-6">
-                                <p className="text-[8px] font-medium text-slate-500 uppercase tracking-widest">Pasivo Pendiente</p>
+                                <p className="text-xs font-medium text-slate-500 uppercase tracking-widest">Pasivo Pendiente</p>
                                 <p className={`text-xl font-medium font-mono tracking-wide ${totalDebt > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
                                     ${totalDebt.toFixed(2)}
                                 </p>

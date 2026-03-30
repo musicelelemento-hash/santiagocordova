@@ -1,19 +1,35 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono&display=swap');
 
 :root {
-    --primary: 36 33% 69%; /* #d4b58c - Warm Champagne/Gold */
-    --primary-foreground: 240 10% 4%;
-    --secondary: 240 6% 15%; /* #242426 - Warm dark charcoal */
-    --secondary-foreground: 40 20% 98%;
-    --accent: 199 43% 48%; /* #0ea5e9 - Muted Slate Blue */
+    --primary: 110 16% 59%; /* #86a789 - Sage Green (Zenith Primary) */
+    --primary-foreground: 110 30% 10%;
+    --secondary: 215 17% 35%; /* #4a5568 - Soft Slate (Zenith Secondary) */
+    --secondary-foreground: 210 20% 98%;
+    --accent: 147 43% 53%; /* #4ade80 - Soft Emerald */
     --accent-foreground: 0 0% 100%;
-    --background: 240 6% 10%; /* #1a1a1c - Deep Neutral Warm Gray */
-    --foreground: 40 20% 98%;
-    --card: 240 6% 12%;
-    --card-foreground: 40 20% 98%;
-    --border: 240 6% 18%;
-    --ring: 36 33% 69%;
-    --radius: 1.5rem;
+    --background: 40 14% 98%; /* #fdfcfb - Warm Zen Off-White */
+    --foreground: 215 25% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+    --border: 215 15% 90%;
+    --ring: 110 16% 59%;
+    --radius: 1.25rem;
+
+    /* Zenith Specific Tokens */
+    --zen-sage: #86A789;
+    --zen-slate: #4A5568;
+    --zen-bg-light: #FDFCFB;
+    --zen-bg-dark: #1A1F26;
+    --zen-shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.04);
+    --zen-shadow-deep: 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+    --background: 215 18% 12%; /* #1a1f26 - Deep Zen Charcoal */
+    --foreground: 210 20% 98%;
+    --card: 215 18% 14%;
+    --card-foreground: 210 20% 98%;
+    --border: 215 15% 20%;
 }
 
 body {
@@ -156,10 +172,41 @@ h1, h2, h3, h4 {
     letter-spacing: -0.05em;
 }
 
-.aurora-premium {
-    background: radial-gradient(circle at 20% 30%, rgba(0, 168, 150, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(14, 165, 233, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 60%);
+.aurora-zen {
+    background: radial-gradient(circle at 10% 20%, rgba(134, 167, 137, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(74, 85, 104, 0.05) 0%, transparent 40%);
+}
+
+.glass-zen {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px) saturate(120%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: var(--zen-shadow-soft);
+}
+
+.dark .glass-zen {
+    background: rgba(26, 31, 38, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.zen-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    border: 1px solid var(--border);
+    box-shadow: var(--zen-shadow-soft);
+}
+
+.dark .zen-card {
+    background: rgba(26, 31, 38, 0.4);
+}
+
+.zen-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--zen-shadow-deep);
+    border-color: hsla(var(--primary), 0.2);
 }
 
 .neon-text-teal {

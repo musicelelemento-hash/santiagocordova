@@ -94,7 +94,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                         <h3 className={`font-bold text-sm leading-tight line-clamp-1 ${titleColor}`}>
                             {client.tradeName || client.name}
                         </h3>
-                        <div className={`flex items-center gap-1 text-[10px] font-medium ${textColor}`}>
+                        <div className={`flex items-center gap-1 text-xs font-medium ${textColor}`}>
                             <span className="font-mono">{client.ruc}</span>
                             <button onClick={handleCopy} className="hover:text-amber-400 transition-colors">
                                 {copied ? <CheckCircle2 size={10}/> : <Copy size={10}/>}
@@ -103,7 +103,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     </div>
                 </div>
                 
-                <div className={`px-2 py-1 rounded-lg flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${statusBadge.color}`}>
+                <div className={`px-2 py-1 rounded-lg flex items-center gap-1 text-xs font-bold uppercase tracking-wide ${statusBadge.color}`}>
                     <statusBadge.icon size={12}/>
                     {statusBadge.text}
                 </div>
@@ -112,7 +112,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
             {/* Info Body */}
             <div className={`rounded-xl p-3 mb-3 flex justify-between items-center ${isVip ? 'bg-white/10 border border-white/10' : 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700'}`}>
                 <div>
-                    <p className={`text-[9px] uppercase font-bold tracking-wider mb-0.5 ${isVip ? 'text-slate-300' : 'text-slate-400'}`}>
+                    <p className={`text-[11px] uppercase font-bold tracking-wider mb-0.5 ${isVip ? 'text-slate-300' : 'text-slate-400'}`}>
                         Próxima Obligación
                     </p>
                     <p className={`text-xs font-bold ${titleColor} flex items-center gap-1`}>
@@ -121,7 +121,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     </p>
                 </div>
                 <div className="text-right">
-                    <p className={`text-[9px] uppercase font-bold tracking-wider mb-0.5 ${isVip ? 'text-slate-300' : 'text-slate-400'}`}>
+                    <p className={`text-[11px] uppercase font-bold tracking-wider mb-0.5 ${isVip ? 'text-slate-300' : 'text-slate-400'}`}>
                         Vencimiento
                     </p>
                     <p className={`text-xs font-bold ${isOverdue ? 'text-red-500' : (isUrgent ? 'text-amber-500' : titleColor)}`}>
@@ -132,7 +132,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
 
             {/* Footer / Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-white/10 dark:border-slate-700/50">
-                <div className={`text-[10px] font-medium flex items-center gap-1 ${textColor}`}>
+                <div className={`text-xs font-medium flex items-center gap-1 ${textColor}`}>
                     {client.category}
                 </div>
                 

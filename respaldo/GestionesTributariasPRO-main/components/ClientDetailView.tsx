@@ -132,7 +132,7 @@ const CopyButton: React.FC<{ text: string, label?: string, obscured?: boolean, o
             className={`group relative flex items-center justify-between w-full p-3 rounded-xl border transition-all duration-200 ${copied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-teal/50 hover:shadow-sm'}`}
         >
             <div className="flex flex-col items-start truncate pr-2">
-                {label && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</span>}
+                {label && <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-0.5">{label}</span>}
                 <span className={`font-mono text-sm font-bold truncate w-full text-left ${copied ? 'text-green-700' : 'text-slate-700 dark:text-slate-200'}`}>
                     {obscured ? '••••••••' : text}
                 </span>
@@ -454,11 +454,11 @@ Nota: Este enlace es personal y seguro.`;
                         {/* Quick Stats */}
                         <div className="flex gap-4 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                             <div className={`flex flex-col p-3 rounded-2xl border min-w-[120px] ${totalDebt > 0 ? 'bg-red-50 border-red-100 dark:bg-red-900/20 dark:border-red-900/50' : 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-900/50'}`}>
-                                <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${totalDebt > 0 ? 'text-red-500' : 'text-emerald-500'}`}>Deuda Total</span>
+                                <span className={`text-xs font-bold uppercase tracking-wider mb-1 ${totalDebt > 0 ? 'text-red-500' : 'text-emerald-500'}`}>Deuda Total</span>
                                 <span className={`text-xl font-mono font-bold ${totalDebt > 0 ? 'text-red-700 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>${totalDebt.toFixed(2)}</span>
                             </div>
                             <div className="flex flex-col p-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 min-w-[140px]">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Próx. Vencimiento</span>
+                                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Próx. Vencimiento</span>
                                 <span className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
                                     <CalendarIcon size={14} className="text-brand-teal"/> 
                                     {nextDeadline ? format(nextDeadline, 'dd MMM', { locale: es }) : 'N/A'}
@@ -545,7 +545,7 @@ Nota: Este enlace es personal y seguro.`;
                                                         <Globe size={24} className="text-brand-teal group-hover:scale-110 transition-transform"/>
                                                         <div className="text-left">
                                                             <span className="block font-bold text-sm">Abrir SRI en Línea</span>
-                                                            <span className="text-[10px] text-slate-400">srienlinea.sri.gob.ec</span>
+                                                            <span className="text-xs text-slate-400">srienlinea.sri.gob.ec</span>
                                                         </div>
                                                         <ExternalLink size={14} className="ml-auto text-slate-500"/>
                                                     </button>
@@ -748,7 +748,7 @@ Nota: Este enlace es personal y seguro.`;
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <span className="font-bold text-slate-800 dark:text-white text-sm">{formatPeriodForDisplay(decl.period)}</span>
-                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isPaid ? 'bg-emerald-100 text-emerald-700' : (isPending ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')}`}>
+                                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${isPaid ? 'bg-emerald-100 text-emerald-700' : (isPending ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700')}`}>
                                                                 {decl.status}
                                                             </span>
                                                         </div>
@@ -800,7 +800,7 @@ Nota: Este enlace es personal y seguro.`;
                                                 <Key size={14} className="text-brand-teal"/> Clave SRI
                                             </span>
                                             {sriCredentials && sriCredentials[client.ruc] === editedClient.sriPassword && (
-                                                <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                                                     <CheckCircle size={10}/> Sincronizada
                                                 </span>
                                             )}
@@ -845,7 +845,7 @@ Nota: Este enlace es personal y seguro.`;
                                             <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
                                                 <FileKey size={14} className="text-purple-500"/> Firma Electrónica (.p12)
                                             </span>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${editedClient.signatureFile ? 'bg-purple-100 text-purple-700' : 'bg-slate-200 text-slate-500'}`}>
+                                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${editedClient.signatureFile ? 'bg-purple-100 text-purple-700' : 'bg-slate-200 text-slate-500'}`}>
                                                 {editedClient.signatureFile ? 'Activa' : 'Pendiente'}
                                             </span>
                                         </div>
@@ -891,8 +891,8 @@ Nota: Este enlace es personal y seguro.`;
                                                             {editedClient.signatureFile ? editedClient.signatureFile.name : 'Sin archivo'}
                                                         </p>
                                                         <div className="flex items-center gap-1 mt-0.5">
-                                                            <span className="text-[10px] text-slate-400">Clave:</span>
-                                                            <span className="text-[10px] font-mono font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 rounded">
+                                                            <span className="text-xs text-slate-400">Clave:</span>
+                                                            <span className="text-xs font-mono font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 rounded">
                                                                 {editedClient.electronicSignaturePassword ? (signaturePasswordVisible ? editedClient.electronicSignaturePassword : '••••') : 'N/A'}
                                                             </span>
                                                              {editedClient.electronicSignaturePassword && (
@@ -913,7 +913,7 @@ Nota: Este enlace es personal y seguro.`;
                                             <span className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
                                                 <FileText size={14} className="text-blue-500"/> RUC Digital
                                             </span>
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${editedClient.rucPdf ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'}`}>
+                                            <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${editedClient.rucPdf ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-500'}`}>
                                                 {editedClient.rucPdf ? 'Disponible' : 'Faltante'}
                                             </span>
                                         </div>
@@ -940,7 +940,7 @@ Nota: Este enlace es personal y seguro.`;
                                                         <p className="text-xs font-bold text-slate-800 dark:text-white">
                                                             {editedClient.rucPdf ? editedClient.rucPdf.name : 'Documento no cargado'}
                                                         </p>
-                                                        {editedClient.rucPdf && <p className="text-[10px] text-slate-400">PDF • {Math.round(editedClient.rucPdf.size / 1024)} KB</p>}
+                                                        {editedClient.rucPdf && <p className="text-xs text-slate-400">PDF • {Math.round(editedClient.rucPdf.size / 1024)} KB</p>}
                                                     </div>
                                                 </div>
                                                 {editedClient.rucPdf && (
@@ -966,7 +966,7 @@ Nota: Este enlace es personal y seguro.`;
                                 {editedClient.sharedAccessKey ? (
                                     <div className="relative z-10 space-y-3">
                                         <div className="bg-white/10 p-3 rounded-xl border border-white/10 backdrop-blur-sm">
-                                            <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Enlace Privado</p>
+                                            <p className="text-xs text-slate-400 uppercase font-bold mb-1">Enlace Privado</p>
                                             <p className="text-xs font-mono truncate text-brand-teal">portal.santiagocordova.com/client/...</p>
                                         </div>
                                         <button onClick={handleShareViaWhatsApp} className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
@@ -1044,11 +1044,11 @@ Nota: Este enlace es personal y seguro.`;
                             <p className="text-xs text-slate-400">{receiptData.paymentDate}</p>
                             <div className="flex justify-between items-center text-left bg-slate-50 p-3 rounded-lg border border-slate-100">
                                 <div>
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase">Cliente</p>
+                                    <p className="text-xs text-slate-400 font-bold uppercase">Cliente</p>
                                     <p className="font-bold text-slate-800">{receiptData.clientName}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] text-slate-400 font-bold uppercase">RUC</p>
+                                    <p className="text-xs text-slate-400 font-bold uppercase">RUC</p>
                                     <p className="font-mono text-slate-600">{receiptData.clientRuc}</p>
                                 </div>
                             </div>

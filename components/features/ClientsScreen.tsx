@@ -186,7 +186,7 @@ const PaymentHistoryChart: React.FC<{ client: Client }> = ({ client }) => {
                                         <div className="p-3 bg-slate-900/95 text-white rounded-xl text-xs shadow-2xl border border-slate-700/50 backdrop-blur-xl">
                                             <p className="font-semibold mb-2 text-slate-300 border-b border-slate-700/50 pb-2 flex items-center gap-2">
                                                 {label}
-                                                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                                <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
                                                     {dataPoint.score}%
                                                 </span>
                                             </p>

@@ -20,16 +20,16 @@ const StatCard = ({ title, value, status, icon: Icon, colorClass }: any) => (
         <div className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-10 -mr-10 -mt-10 ${colorClass}`}></div>
         <div className="flex justify-between items-start mb-4 relative z-10">
             <div>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
                 <h3 className="text-2xl font-semibold text-slate-800">{value}</h3>
             </div>
             <div className={`p-3 rounded-2xl ${status === 'good' ? 'bg-emerald-50 text-emerald-500' : status === 'warning' ? 'bg-amber-50 text-amber-500' : 'bg-red-50 text-rose-400'}`}>
                 <Icon size={24} />
             </div>
         </div>
-        {status === 'good' && <div className="inline-flex items-center gap-1.5 text-[10px] font-medium text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg w-max"><LucideIcons.CheckCircle2 size={12} /> Al Día</div>}
-        {status === 'warning' && <div className="inline-flex items-center gap-1.5 text-[10px] font-medium text-amber-500 bg-amber-50 px-2 py-1 rounded-lg w-max"><LucideIcons.Clock size={12} /> Próximo</div>}
-        {status === 'bad' && <div className="inline-flex items-center gap-1.5 text-[10px] font-medium text-rose-400 bg-red-50 px-2 py-1 rounded-lg w-max"><LucideIcons.AlertTriangle size={12} /> Pendiente</div>}
+        {status === 'good' && <div className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg w-max"><LucideIcons.CheckCircle2 size={12} /> Al Día</div>}
+        {status === 'warning' && <div className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-500 bg-amber-50 px-2 py-1 rounded-lg w-max"><LucideIcons.Clock size={12} /> Próximo</div>}
+        {status === 'bad' && <div className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-400 bg-red-50 px-2 py-1 rounded-lg w-max"><LucideIcons.AlertTriangle size={12} /> Pendiente</div>}
     </div>
 );
 
@@ -59,7 +59,7 @@ const BankInfoCard = () => {
                 </div>
 
                 <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-medium tracking-widest">Cuenta Ahorros</p>
+                    <p className="text-xs text-slate-400 uppercase font-medium tracking-widest">Cuenta Ahorros</p>
                     <div className="flex items-center gap-3">
                         <span className="font-mono text-2xl tracking-widest text-white shadow-sm">220XXXXXXX</span>
                         <button onClick={handleCopy} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white">
@@ -166,14 +166,14 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                         </div>
                         <div>
                             <h1 className="text-xs font-semibold text-slate-900 uppercase tracking-[0.2em] leading-none mb-1">Bóveda Privada</h1>
-                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Santiago Cordova</p>
+                            <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">Santiago Cordova</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-6">
                         <div className="text-right hidden sm:block">
                             <p className="text-sm font-medium text-slate-900 tracking-tight">{client.name}</p>
-                            <p className="text-[10px] font-mono font-medium text-slate-400">{client.ruc}</p>
+                            <p className="text-xs font-mono font-medium text-slate-400">{client.ruc}</p>
                         </div>
                         <button 
                             onClick={onLogout} 
@@ -218,7 +218,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                              <div className="absolute top-0 right-0 w-64 h-64 bg-[#00A896]/5 rounded-full blur-[100px] -mr-32 -mt-32"></div>
                              <div className="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
                                 <div>
-                                    <span className="inline-block px-4 py-1.5 bg-slate-50 text-slate-500 rounded-full text-[9px] font-semibold uppercase tracking-[0.2em] mb-6 border border-slate-100">
+                                    <span className="inline-block px-4 py-1.5 bg-slate-50 text-slate-500 rounded-full text-[11px] font-semibold uppercase tracking-[0.2em] mb-6 border border-slate-100">
                                         {client.regime} • {client.taxProfile?.ivaFrequency || 'Especial'}
                                     </span>
                                     <h2 className="text-4xl sm:text-5xl font-display font-semibold text-slate-900 tracking-tight leading-tight mb-4">
@@ -230,11 +230,11 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50 text-emerald-700 min-w-[160px]">
-                                        <p className="text-[10px] font-semibold uppercase tracking-widest mb-1 opacity-60">Estado</p>
+                                        <p className="text-xs font-semibold uppercase tracking-widest mb-1 opacity-60">Estado</p>
                                         <p className="text-xl font-semibold">{isPaid ? "AL DÍA" : "CONTROLADO"}</p>
                                     </div>
                                     <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 text-slate-900 min-w-[160px]">
-                                        <p className="text-[10px] font-semibold uppercase tracking-widest mb-1 opacity-40">Pendiente</p>
+                                        <p className="text-xs font-semibold uppercase tracking-widest mb-1 opacity-40">Pendiente</p>
                                         <p className="text-xl font-semibold">${totalDebt.toFixed(2)}</p>
                                     </div>
                                 </div>
@@ -273,7 +273,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                         <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-3">
                                             <LucideIcons.FolderOpen size={20} className="text-[#00A896]" /> Galería de Comprobantes
                                         </h3>
-                                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mt-1">Total {client.declarations.length} documentos encontrados</p>
+                                        <p className="text-xs text-slate-400 font-medium uppercase tracking-widest mt-1">Total {client.declarations.length} documentos encontrados</p>
                                     </div>
                                 </div>
 
@@ -287,10 +287,10 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                                 <div>
                                                     <p className="font-medium text-slate-900">{formatPeriodForDisplay(decl.period)}</p>
                                                     <div className="flex items-center gap-3 mt-1">
-                                                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${decl.status === 'Pagada' ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-50 text-slate-400'}`}>
+                                                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${decl.status === 'Pagada' ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-50 text-slate-400'}`}>
                                                             {decl.status}
                                                         </span>
-                                                        <span className="text-[10px] text-slate-300 font-mono">
+                                                        <span className="text-xs text-slate-300 font-mono">
                                                             {safeFormat(decl.updatedAt, 'dd/MM/yyyy')}
                                                         </span>
                                                     </div>
@@ -301,7 +301,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                                 <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0">
                                                     <button 
                                                         onClick={() => handleOpenInNewTab(decl)}
-                                                        className="h-11 px-6 bg-slate-900 text-white rounded-xl text-[10px] font-semibold uppercase tracking-widest hover:bg-[#00A896] transition-all active:scale-95 flex items-center gap-2"
+                                                        className="h-11 px-6 bg-slate-900 text-white rounded-xl text-xs font-semibold uppercase tracking-widest hover:bg-[#00A896] transition-all active:scale-95 flex items-center gap-2"
                                                     >
                                                         <LucideIcons.ExternalLink size={14} /> Abrir
                                                     </button>
@@ -342,15 +342,15 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     <LucideIcons.Verified size={24} />
                                 </div>
                                 <h4 className="font-semibold text-slate-900 uppercase tracking-widest text-xs mb-1">RUC Certificado</h4>
-                                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">{client.rucCertificate ? 'VIGENTE' : (client.rucPdf ? 'DIGITAL' : 'PENDIENTE')}</p>
+                                <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">{client.rucCertificate ? 'VIGENTE' : (client.rucPdf ? 'DIGITAL' : 'PENDIENTE')}</p>
                                 {(client.rucPdf || client.rucCertificate) && (
-                                    <span className="mt-4 text-[9px] font-semibold text-[#00A896] opacity-0 group-hover:opacity-100 transition-opacity">CLIC PARA VER EN LÍNEA</span>
+                                    <span className="mt-4 text-[11px] font-semibold text-[#00A896] opacity-0 group-hover:opacity-100 transition-opacity">CLIC PARA VER EN LÍNEA</span>
                                 )}
                             </div>
 
                             <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl"></div>
-                                <h4 className="font-semibold uppercase tracking-[0.2em] text-[10px] text-teal-400 mb-8 border-b border-white/5 pb-4">Credenciales Digitales</h4>
+                                <h4 className="font-semibold uppercase tracking-[0.2em] text-xs text-teal-400 mb-8 border-b border-white/5 pb-4">Credenciales Digitales</h4>
                                 <div className="space-y-8">
                                     {[
                                         { id: 'sri', label: 'Acceso SRI', value: client.sriPassword },
@@ -358,7 +358,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     ].map(cred => (
                                         <div key={cred.id} className="relative">
                                             <div className="flex justify-between items-center mb-3">
-                                                <span className="text-[9px] font-semibold uppercase text-slate-500 tracking-widest">{cred.label}</span>
+                                                <span className="text-[11px] font-semibold uppercase text-slate-500 tracking-widest">{cred.label}</span>
                                                 <button onClick={() => toggleKeyVisibility(cred.id)} className="text-slate-500 hover:text-white transition-colors">
                                                     {visibleKeys[cred.id] ? <LucideIcons.EyeOff size={14} /> : <LucideIcons.Eye size={14} />}
                                                 </button>
@@ -392,12 +392,12 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     return (
                                         <article key={offset} className="flex items-center gap-8 p-6 rounded-[2rem] bg-slate-50/50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-100 transition-all group">
                                             <div className="w-16 h-16 bg-white rounded-2x border border-slate-100 flex flex-col items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-                                                <span className="text-[9px] font-semibold text-slate-300 uppercase">{monthName.slice(0, 3)}</span>
+                                                <span className="text-[11px] font-semibold text-slate-300 uppercase">{monthName.slice(0, 3)}</span>
                                                 <span className="text-xl font-semibold text-slate-900">{day}</span>
                                             </div>
                                             <div>
                                                 <p className="font-semibold text-slate-900 text-lg">Declaración de IVA</p>
-                                                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Periodo Mensual • {monthName}</p>
+                                                <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">Periodo Mensual • {monthName}</p>
                                             </div>
                                             <div className="ml-auto opacity-20 group-hover:opacity-100 transition-opacity">
                                                 <LucideIcons.CalendarCheck size={24} className="text-[#00A896]" />
@@ -409,7 +409,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
 
                             <footer className="mt-12 p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
                                 <LucideIcons.Info size={20} className="text-slate-400" />
-                                <p className="text-[10px] text-slate-500 font-medium leading-relaxed uppercase tracking-wider">
+                                <p className="text-xs text-slate-500 font-medium leading-relaxed uppercase tracking-wider">
                                     Las fechas presentadas son referenciales basadas en el calendario general del SRI.
                                 </p>
                             </footer>

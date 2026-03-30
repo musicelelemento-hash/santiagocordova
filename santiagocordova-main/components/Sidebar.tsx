@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className={`p-3 transition-all duration-500 ${isExpanded ? 'pt-6' : 'pt-4 flex justify-center'}`}>
                 <button 
                     onClick={onQuickManagement} 
-                    className={`flex items-center justify-center gap-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-2xl shadow-lg shadow-orange-500/20 hover:scale-[1.02] active:scale-95 transition-all font-black uppercase tracking-widest ${isExpanded ? 'w-full py-4 text-[10px]' : 'w-12 h-12 p-0'}`}
+                    className={`flex items-center justify-center gap-3 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-2xl shadow-lg shadow-orange-500/20 hover:scale-[1.02] active:scale-95 transition-all font-black uppercase tracking-widest ${isExpanded ? 'w-full py-4 text-xs' : 'w-12 h-12 p-0'}`}
                 >
                     <Zap size={20} className={isExpanded ? "" : "flex-shrink-0"} />
                     {isExpanded && <span>Gestión Rápida</span>}
@@ -105,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             <div className="relative flex-shrink-0">
                                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={`transition-transform duration-500 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
                                 {count !== undefined && count > 0 && (
-                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black h-4 w-4 flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 animate-pulse">{count}</span>
+                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[11px] font-black h-4 w-4 flex items-center justify-center rounded-full border-2 border-white dark:border-slate-900 animate-pulse">{count}</span>
                                 )}
                             </div>
                             {isExpanded && <span className="ml-4 text-xs font-bold uppercase tracking-wider truncate animate-fade-in">{label}</span>}
@@ -121,7 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Footer Controls */}
             <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
-                 <div className={`flex items-center gap-3 ${isExpanded ? 'px-2' : 'justify-center'} text-[10px] font-bold text-slate-400 uppercase tracking-widest`}>
+                 <div className={`flex items-center gap-3 ${isExpanded ? 'px-2' : 'justify-center'} text-xs font-bold text-slate-400 uppercase tracking-widest`}>
                     <div className="p-1.5 bg-slate-50 dark:bg-slate-800 rounded-lg">{getCloudStatusIcon()}</div>
                     {isExpanded && <span className="animate-fade-in">Sincronizado</span>}
                  </div>

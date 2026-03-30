@@ -161,11 +161,11 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
         return (
             <div className={`grid grid-cols-2 gap-2 text-xs p-3 rounded-xl border ${isDiff ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' : 'bg-slate-50 border-slate-100 dark:bg-slate-800 dark:border-slate-700'}`}>
                 <div className="text-slate-500 truncate">
-                    <span className="block font-bold text-[9px] uppercase opacity-70 mb-1">{label} (Actual)</span>
+                    <span className="block font-bold text-[11px] uppercase opacity-70 mb-1">{label} (Actual)</span>
                     <span className={isDiff ? "line-through opacity-60 italic" : ""}>{oldVal || 'Vacío'}</span>
                 </div>
                 <div className="text-slate-800 dark:text-white font-bold truncate">
-                     <span className="block font-bold text-[9px] uppercase text-brand-teal mb-1">{label} (Escaneado)</span>
+                     <span className="block font-bold text-[11px] uppercase text-brand-teal mb-1">{label} (Escaneado)</span>
                     {newVal || 'No detectado'}
                     {isDiff && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
                 </div>
@@ -253,7 +253,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                 </div>
                                 <div className="flex items-center gap-2 bg-brand-navy/5 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-brand-navy/10 dark:border-slate-700">
                                     <Coins size={14} className="text-amber-500"/>
-                                    <span className="text-[10px] font-black text-brand-navy dark:text-amber-500 uppercase">Tarifas Pro Aplicadas</span>
+                                    <span className="text-xs font-black text-brand-navy dark:text-amber-500 uppercase">Tarifas Pro Aplicadas</span>
                                 </div>
                             </div>
 
@@ -261,7 +261,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                 {/* Comparación si el cliente ya existe */}
                                 {existingClient && (
                                     <div className="space-y-2 p-4 bg-amber-50/30 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/50">
-                                        <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest ml-1 mb-2">Comparativa de cambios</h4>
+                                        <h4 className="text-xs font-black text-amber-600 uppercase tracking-widest ml-1 mb-2">Comparativa de cambios</h4>
                                         <ComparisonRow label="Razón Social" oldVal={existingClient.name} newVal={extractedData.name} />
                                         <ComparisonRow label="Dirección" oldVal={existingClient.address} newVal={extractedData.address} />
                                     </div>
@@ -269,14 +269,14 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">RUC</label>
+                                        <label className="text-xs font-black text-slate-400 uppercase tracking-wider ml-1">RUC</label>
                                         <div className="relative">
                                             <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
                                             <input value={extractedData.ruc || ''} readOnly className="w-full pl-10 p-3 bg-slate-100 dark:bg-slate-900 rounded-xl font-mono font-bold text-slate-500 border border-slate-200 dark:border-slate-800 text-sm" />
                                         </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">WhatsApp de contacto</label>
+                                        <label className="text-xs font-black text-slate-400 uppercase tracking-wider ml-1">WhatsApp de contacto</label>
                                         <div className="relative">
                                             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
                                             <input 
@@ -289,7 +289,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Dirección Detectada</label>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-wider ml-1">Dirección Detectada</label>
                                     <textarea 
                                         rows={2}
                                         value={extractedData.address || ''} 
@@ -302,14 +302,14 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-400"><Coins size={18}/></div>
                                         <div>
-                                            <p className="text-[10px] font-bold text-emerald-600 uppercase">Honorarios Sugeridos</p>
+                                            <p className="text-xs font-bold text-emerald-600 uppercase">Honorarios Sugeridos</p>
                                             <div className="flex gap-4">
                                                 <div className="flex flex-col">
-                                                    <span className="text-[9px] text-slate-400 font-bold uppercase">Mensual</span>
+                                                    <span className="text-[11px] text-slate-400 font-bold uppercase">Mensual</span>
                                                     <span className="text-sm font-black text-emerald-800 dark:text-emerald-200">$5.00</span>
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-[9px] text-slate-400 font-bold uppercase">Anual</span>
+                                                    <span className="text-[11px] text-slate-400 font-bold uppercase">Anual</span>
                                                     <span className="text-sm font-black text-emerald-800 dark:text-emerald-200">$10.00</span>
                                                 </div>
                                             </div>

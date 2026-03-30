@@ -375,7 +375,7 @@ const App: React.FC = () => {
                     <div className="relative">
                         <Icon className={`w-5 h-5 transition-transform ${activeScreen === screen ? 'scale-110' : ''}`} />
                         {count !== undefined && count > 0 && (
-                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full animate-pulse shadow-sm border border-white dark:border-slate-900">
+                            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs font-bold h-4 w-4 flex items-center justify-center rounded-full animate-pulse shadow-sm border border-white dark:border-slate-900">
                                 {count}
                             </span>
                         )}
@@ -452,12 +452,12 @@ const App: React.FC = () => {
                 <div className="relative">
                     <Icon className={`w-6 h-6 mb-0.5 ${activeScreen === screen ? 'scale-110' : ''}`} />
                     {count !== undefined && count > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-3.5 h-3.5 flex items-center justify-center rounded-full">
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-3.5 h-3.5 flex items-center justify-center rounded-full">
                             {count}
                         </span>
                     )}
                 </div>
-                <span className="text-[9px] font-medium tracking-wide truncate w-full text-center">{label}</span>
+                <span className="text-[11px] font-medium tracking-wide truncate w-full text-center">{label}</span>
             </button>
             ))}
         </nav>

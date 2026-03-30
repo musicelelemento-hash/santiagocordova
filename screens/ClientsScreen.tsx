@@ -573,7 +573,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         address: '',
                         notes: `COMPLETAR CON RUC DATOS DE CLIENTE EXTRAIDOS DE COMPROBANTES (Serie: ${data.id})`,
                         needsVerification: true,
-                        verificationReason: 'Registrado automáticamente por Escuadrón Rápido',
+                        verificationReason: 'Registrado automáticamente por Carga Rápida',
                         taxProfile: {
                             ivaFrequency: data.frequency,
                             requiresAnnualRenta: true,
@@ -705,130 +705,129 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
     return (
         <div>
-            {/* FINANCIAL INTELLIGENCE COMMAND - ELITE HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 relative z-10 px-1 sm:px-0 mb-6 sm:mb-8 animate-fade-in">
+            {/* ZENITH CLIENT MANAGEMENT - PEACEFUL HEADER */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 relative z-10 px-1 sm:px-0 mb-6 sm:mb-10 animate-fade-in">
                 <div className="animate-fade-in-left w-full sm:w-auto">
-                    <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-400/10 border border-sky-400/20">
-                            <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
-                            <span className="text-[9px] sm:text-[10px] font-semibold text-sky-400 uppercase tracking-widest">Client Sync Protocol</span>
+                    <div className="flex items-center justify-between sm:justify-start gap-2 mb-3">
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(134,167,137,0.5)]"></div>
+                            <span className="text-[11px] sm:text-xs font-bold text-primary uppercase tracking-[0.2em]">Protocolo de Orden</span>
                         </div>
-                        <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Elite Access</span>
+                        <span className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Acceso Zenith</span>
                     </div>
-                    <h2 className="text-3xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-[0.85] tracking-tighter mb-2">
-                        Intelligence <span className="text-gradient-sky">Command</span>
+                    <h2 className="text-3xl sm:text-5xl font-sans font-semibold text-slate-900 dark:text-white leading-tight tracking-tighter mb-2">
+                        Directorio <span className="text-primary italic font-light">Tributario</span>
                     </h2>
-                    <div className="flex items-center gap-2 text-slate-500 text-[9px] sm:text-[11px] font-medium uppercase tracking-widest">
-                        <LucideIcons.Shield size={10} className="text-sky-400" />
-                        <span>Gestión de Activos Tributarios</span>
-                        <span className="ml-2 px-2 py-0.5 bg-sky-400 text-white rounded-lg text-[9px]">{sortedClients.length} UNITS</span>
+                    <div className="flex items-center gap-2 text-slate-500 text-[11px] sm:text-[11px] font-medium uppercase tracking-widest">
+                        <LucideIcons.Shield size={12} className="text-primary" />
+                        <span>Gestión de Activos Financieros</span>
+                        <span className="ml-3 px-2.5 py-0.5 bg-slate-100 dark:bg-white/5 text-slate-500 rounded-full text-[11px] font-bold border border-slate-200 dark:border-white/5">{sortedClients.length} CLIENTES</span>
                     </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto animate-fade-in-right">
                     <button
                         onClick={handleBulkUpload}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/50 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-sm"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl glass-zen text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-xs sm:text-[11px] font-bold uppercase tracking-widest transition-all duration-500 hover:scale-[1.02]"
                     >
                         <LucideIcons.UploadCloud size={16} />
-                        ESCUADRÓN
+                        Carga Masiva
                     </button>
                     
                     <button onClick={() => setIsModalOpen(true)}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gradient-to-r from-sky-500 to-sky-400 text-white shadow-xl shadow-sky-400/30 font-semibold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border border-white/10"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-primary text-white shadow-xl shadow-primary/20 font-bold text-xs sm:text-[11px] uppercase tracking-widest transition-all duration-500 hover:scale-[1.05]"
                     >
-                        <LucideIcons.PlusCircle size={16} strokeWidth={3} />
-                        RECLUTAR
+                        <LucideIcons.PlusCircle size={16} strokeWidth={2} />
+                        Añadir Cliente
                     </button>
-
                     <a href="https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT" target="_blank" rel="noopener noreferrer"
-                        className="p-4 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/5 hover:text-sky-400 transition-colors hidden sm:block"
+                        className="p-4 rounded-2xl glass-zen text-slate-500 border border-slate-200 dark:border-white/5 hover:text-primary transition-colors hidden sm:block"
                     >
                         <LucideIcons.ExternalLink size={20} />
                     </a>
                 </div>
             </div>
 
-            {/* ACTIVE FILTER BANNER */}
+            {/* ACTIVE FILTER BANNER - Zen Mode */}
             {initialFilter && (
                 <div className="mb-6 animate-in slide-in-from-top-2 duration-500">
-                    <div className="flex items-center justify-between p-4 rounded-2xl bg-sky-400/10 border border-sky-400/20 backdrop-blur-md">
+                    <div className="flex items-center justify-between p-4 rounded-2xl glass-zen border-primary/20">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-sky-400 text-white shadow-lg shadow-sky-400/20">
+                            <div className="p-2 rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
                                 <LucideIcons.Filter size={18} />
                             </div>
                             <div>
-                                <h4 className="text-xs font-semibold text-sky-500 dark:text-sky-400 uppercase tracking-widest">
-                                    Filtro de Inteligencia Activo
+                                <h4 className="text-xs font-bold text-primary uppercase tracking-widest">
+                                    Filtro Dinámico Activo
                                 </h4>
-                                <p className="text-[10px] font-medium text-slate-500 uppercase">
-                                    {initialFilter.title || 'Vista Personalizada'} • Mostrando {sortedClients.length} resultados
+                                <p className="text-xs font-medium text-slate-500 uppercase">
+                                    {initialFilter.title || 'Vista Personalizada'} • {sortedClients.length} Resultados
                                 </p>
                             </div>
                         </div>
                         <button 
                             onClick={() => navigate('clients', { initialFilter: null })}
-                            className="px-4 py-2 rounded-xl bg-white dark:bg-white/5 text-[10px] font-semibold uppercase tracking-widest text-slate-500 hover:text-rose-400 border border-slate-200 dark:border-white/5 transition-all"
+                            className="px-4 py-2 rounded-xl bg-white dark:bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-rose-400 border border-slate-200 dark:border-white/10 transition-all"
                         >
-                            Limpiar Filtro
+                            Limpiar
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* TACTICAL SEARCH & FILTERS - MOBILE LUXURY */}
-            <div className="glass-tactical p-3 sm:p-2 rounded-[2rem] sm:rounded-3xl shadow-2xl border border-white/10 flex flex-col lg:flex-row gap-4 lg:gap-4 items-center mb-6 mx-1 sm:mx-0">
-                <div className="flex p-1 bg-slate-900/5 dark:bg-black/40 rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar">
+            {/* ZENITH SEARCH & FILTERS - MINIMALIST CONTROL */}
+            <div className="glass-zen p-3 rounded-[2rem] border border-slate-200 dark:border-white/10 flex flex-col lg:flex-row gap-4 items-center mb-6 mx-1 sm:mx-0">
+                <div className="flex p-1 bg-slate-100 dark:bg-black/20 rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar">
                     <button 
                         onClick={() => {
                             setIsWorkspaceView(!isWorkspaceView);
                             if (!isWorkspaceView) setIsCobrosView(false);
                         }}
-                        className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest transition-all duration-300 shrink-0
+                        className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-widest transition-all duration-500 shrink-0
                             ${isWorkspaceView 
-                                ? 'bg-amber-400 text-white shadow-xl shadow-amber-400/20 ring-1 ring-amber-400/50' 
-                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30' 
+                                : 'text-slate-400 hover:text-slate-600'}`}
                     >
-                        <LucideIcons.ShieldAlert size={14} className={isWorkspaceView ? 'animate-pulse' : ''} />
-                        MESA OPS
+                        <LucideIcons.ShieldAlert size={14} />
+                        Centro de Alertas
                     </button>
                     <button 
                         onClick={() => {
                             setIsCobrosView(!isCobrosView);
                             if (!isCobrosView) setIsWorkspaceView(false);
                         }}
-                        className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest transition-all duration-300 shrink-0
+                        className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-widest transition-all duration-500 shrink-0
                             ${isCobrosView 
-                                ? 'bg-emerald-400 text-white shadow-xl shadow-emerald-400/20 ring-1 ring-emerald-400/50' 
-                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+                                ? 'bg-primary/20 text-primary ring-1 ring-primary/30' 
+                                : 'text-slate-400 hover:text-slate-600'}`}
                     >
                         <LucideIcons.DollarSign size={14} />
-                        COBROS
+                        Tesorería
                     </button>
                 </div>
 
                 <div className="relative flex-grow w-full px-1">
-                    <LucideIcons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-400/50 pointer-events-none" size={16} />
+                    <LucideIcons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 pointer-events-none" size={16} />
                     <input 
                         type="text" 
-                        placeholder="TACTICAL SEARCH / IDENTIFICADOR" 
+                        placeholder="BUSCAR CLIENTE O IDENTIFICADOR..." 
                         value={searchTerm} 
                         onChange={e => setSearchTerm(e.target.value)} 
-                        className="w-full pl-11 pr-5 py-3 sm:py-4 bg-white/30 dark:bg-slate-950/30 border border-slate-200/50 dark:border-white/5 rounded-2xl text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest placeholder:text-slate-400/60 focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all font-mono" 
+                        className="w-full pl-11 pr-5 py-3 sm:py-4 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-xs sm:text-[11px] font-medium uppercase tracking-widest placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" 
                     />
                 </div>
 
                 <div className="flex items-center gap-2 w-full lg:w-auto px-1">
-                    <div className="flex p-1 bg-slate-900/5 dark:bg-black/40 rounded-2xl flex-grow lg:flex-grow-0">
+                    <div className="flex p-1 bg-slate-100 dark:bg-black/20 rounded-2xl flex-grow lg:flex-grow-0">
                         <button 
                             onClick={() => setViewMode('cards')}
-                            className={`flex-1 p-3 rounded-xl transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-900 text-sky-400 shadow-lg' : 'text-slate-400'}`}
+                            className={`flex-1 p-3 rounded-xl transition-all duration-500 ${viewMode === 'cards' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
                         >
                             <LucideIcons.LayoutGrid size={16} />
                         </button>
                         <button 
                             onClick={() => setViewMode('list')}
-                            className={`flex-1 p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-900 text-sky-400 shadow-lg' : 'text-slate-400'}`}
+                            className={`flex-1 p-3 rounded-xl transition-all duration-500 ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
                         >
                             <LucideIcons.List size={16} />
                         </button>
@@ -837,91 +836,101 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <div className="relative" ref={sortMenuRef}>
                         <button 
                             onClick={() => setIsSortMenuOpen(!isSortMenuOpen)} 
-                            className="p-4 bg-slate-100 dark:bg-white/5 text-slate-500 rounded-2xl border border-slate-200 dark:border-white/5 hover:text-sky-400 transition-all active:scale-95"
+                            className="p-4 bg-white/50 dark:bg-white/5 text-slate-500 rounded-2xl border border-slate-200 dark:border-white/5 hover:text-primary transition-all active:scale-95 shadow-sm"
                         >
                             <LucideIcons.SlidersHorizontal size={18} />
                         </button>
                         {isSortMenuOpen && (
-                            <div className="absolute right-0 mt-3 w-64 glass-tactical border border-white/10 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in-down">
-                                <p className="text-[10px] font-semibold text-slate-400 px-3 pb-2 uppercase tracking-[0.2em]">Visual Priority</p>
+                            <div className="absolute right-0 mt-3 w-64 glass-zen border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in-down">
+                                <p className="text-xs font-bold text-slate-400 px-3 pb-2 uppercase tracking-[0.2em]">Prioridad de Orden</p>
                                 <div className="space-y-1">
-                                    <button onClick={() => { setSortOption('pending_obligations'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest rounded-xl transition-all ${sortOption === 'pending_obligations' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Obligaciones</button>
-                                    <button onClick={() => { setSortOption('pending_payments'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest rounded-xl transition-all ${sortOption === 'pending_payments' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Cobros</button>
-                                    <button onClick={() => { setSortOption('9th_digit'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest rounded-xl transition-all ${sortOption === '9th_digit' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Vencimiento (SRI)</button>
-                                    <button onClick={() => { setSortOption('name'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest rounded-xl transition-all ${sortOption === 'name' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Alfabético</button>
+                                    {[
+                                        { id: 'pending_obligations', label: 'Obligaciones' },
+                                        { id: 'pending_payments', label: 'Cobros' },
+                                        { id: '9th_digit', label: 'Vencimiento' },
+                                        { id: 'name', label: 'Alfabético' }
+                                    ].map(opt => (
+                                        <button 
+                                            key={opt.id}
+                                            onClick={() => { setSortOption(opt.id as any); setIsSortMenuOpen(false); }} 
+                                            className={`w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${sortOption === opt.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5'}`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
-            {/* STATUS SPHERE (FINANCIAL INTELLIGENCE HUB) */}
+            {/* ZENITH GROWTH HUB - SILENT ANALYSIS */}
             <div className="mb-8 relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-sky-400/20 via-emerald-400/10 to-transparent rounded-[1.5rem] sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 via-slate-400/5 to-transparent rounded-[2rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
                 
                 <button 
                     onClick={() => setIsAnalysisExpanded(!isAnalysisExpanded)}
-                    className="relative w-full glass-tactical p-4 sm:p-8 rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden text-left transition-all duration-500 hover:border-white/20"
+                    className="relative w-full glass-zen p-4 sm:p-8 rounded-[2rem] border border-slate-200 dark:border-white/10 overflow-hidden text-left transition-all duration-700 hover:border-primary/20"
                 >
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-8 relative z-10">
-                        <div className="flex items-center gap-4 sm:gap-6">
+                        <div className="flex items-center gap-6">
                             <div className="relative shrink-0">
-                                <div className="absolute -inset-2 bg-sky-400/15 rounded-full blur-xl animate-pulse"></div>
-                                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-2 sm:border-4 border-slate-800 dark:border-white/5 flex items-center justify-center relative bg-slate-900/40 backdrop-blur-xl">
+                                <div className="absolute -inset-2 bg-primary/10 rounded-full blur-xl"></div>
+                                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-4 border-slate-100 dark:border-white/5 flex items-center justify-center relative bg-white/50 dark:bg-black/20 backdrop-blur-xl">
                                     <svg className="w-full h-full -rotate-90">
                                         <circle
                                             cx="50%" cy="50%" r="42%"
-                                            stroke="currentColor" strokeWidth="3" fill="transparent"
-                                            className="text-slate-800 dark:text-white/5"
+                                            stroke="currentColor" strokeWidth="4" fill="transparent"
+                                            className="text-slate-100 dark:text-white/5"
                                         />
                                         <circle
                                             cx="50%" cy="50%" r="42%"
-                                            stroke="currentColor" strokeWidth="3" fill="transparent"
+                                            stroke="currentColor" strokeWidth="4" fill="transparent"
                                             strokeDasharray="264"
                                             strokeDashoffset={264 - (264 * (globalStats.elite / (globalStats.total || 1)))}
-                                            className="text-sky-400 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(14,165,233,0.5)]"
+                                            className="text-primary transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(134,167,137,0.3)]"
                                             strokeLinecap="round"
                                         />
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-sm sm:text-2xl font-semibold text-sky-400 leading-none">
+                                        <span className="text-sm sm:text-2xl font-bold text-primary leading-none">
                                             {Math.round((globalStats.elite / (globalStats.total || 1)) * 100)}%
                                         </span>
-                                        <span className="text-[6px] sm:text-[8px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5 sm:mt-1">ELITE</span>
+                                        <span className="text-[6px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">ORDEN</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="min-w-0">
-                                <span className="text-[8px] sm:text-[10px] font-semibold text-sky-400 uppercase tracking-[0.2em] mb-0.5 sm:mb-1 block">Operational Status v3.0</span>
-                                <h3 className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white leading-[0.9] tracking-tighter mb-1 sm:mb-2 text-balance uppercase">
-                                    Cumplimiento <br className="hidden sm:block" /> Global de Cartera
+                                <span className="text-xs sm:text-xs font-bold text-primary uppercase tracking-[0.2em] mb-1 block">Indicador de Salud Fiscal</span>
+                                <h3 className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white leading-tight tracking-tighter mb-2 text-balance">
+                                    Armonía <span className="text-primary italic font-light">Global</span> de Cartera
                                 </h3>
                                 <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-emerald-400/10 border border-emerald-400/20">
-                                        <LucideIcons.BarChart3 size={10} className="text-emerald-400" />
-                                        <span className="text-[8px] sm:text-[10px] font-semibold text-emerald-400 uppercase tracking-widest">Analytics Online</span>
+                                    <div className="flex items-center gap-1.5 py-1 px-3 rounded-full bg-primary/10 border border-primary/20">
+                                        <LucideIcons.BarChart3 size={12} className="text-primary" />
+                                        <span className="text-xs sm:text-xs font-semibold text-emerald-400 uppercase tracking-widest">Analytics Online</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 bg-black/5 dark:bg-white/2 p-3 sm:p-0 rounded-2xl sm:bg-transparent">
-                            <div className="flex items-center gap-4 sm:gap-6">
+                        <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 bg-slate-100/50 dark:bg-white/2 p-3 sm:p-0 rounded-2xl sm:bg-transparent">
+                            <div className="flex items-center gap-6">
                                 <div className="flex flex-col items-start sm:items-end">
-                                    <span className="text-[8px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Alerts</span>
-                                    <span className="text-sm sm:text-xl font-semibold text-rose-400 font-mono">
+                                    <span className="text-xs sm:text-xs font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Alertas</span>
+                                    <span className="text-sm sm:text-xl font-bold text-rose-400 font-mono">
                                         {globalStats.vencidos}
                                     </span>
                                 </div>
                                 <div className="w-px h-6 sm:h-8 bg-slate-200 dark:bg-white/10"></div>
                                 <div className="flex flex-col items-start sm:items-end">
-                                    <span className="text-[8px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Processed</span>
-                                    <span className="text-sm sm:text-xl font-semibold text-emerald-400 font-mono">
+                                    <span className="text-xs sm:text-xs font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Gestionados</span>
+                                    <span className="text-sm sm:text-xl font-bold text-primary font-mono">
                                         {globalStats.elite}
                                     </span>
                                 </div>
                             </div>
-                            <div className={`p-1.5 sm:p-2 rounded-xl transition-all ${isAnalysisExpanded ? 'rotate-180 bg-sky-400 text-white shadow-lg' : 'bg-slate-200/50 dark:bg-white/5 text-slate-400'}`}>
+                            <div className={`p-2 rounded-xl transition-all duration-500 ${isAnalysisExpanded ? 'rotate-180 bg-primary text-white shadow-lg' : 'bg-white/50 dark:bg-white/5 text-slate-400'}`}>
                                 <LucideIcons.ChevronDown size={18} />
                             </div>
                         </div>
@@ -929,54 +938,54 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 </button>
             
                 {isAnalysisExpanded && (
-                    <div className="p-6 sm:p-8 border-t border-slate-100 dark:border-white/5 bg-slate-50/30 dark:bg-black/20 animate-fade-in-down">
+                    <div className="p-6 sm:p-10 border-t border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-black/20 animate-fade-in-down">
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                            {/* Compliance Radar */}
-                            <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 rounded-[20px] border border-slate-100 dark:border-white/5 shadow-inner">
+                            {/* Compliance Radar - Zen Mode */}
+                            <div className="flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-white/5 shadow-sm">
                                 <div className="relative">
                                     <svg className="w-32 h-32 transform -rotate-90">
-                                        <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-100 dark:text-slate-800" />
-                                        <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="8" fill="transparent"
+                                        <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-50 dark:text-slate-800" />
+                                        <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="6" fill="transparent"
                                             strokeDasharray={364}
                                             strokeDashoffset={364 - (364 * (globalStats.elite / (globalStats.total || 1)))}
                                             strokeLinecap="round"
-                                            className="text-emerald-400 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                                            className="text-primary transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(134,167,137,0.3)]"
                                         />
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                                        <span className="text-2xl font-semibold text-slate-800 dark:text-white font-mono">{Math.round((globalStats.elite / (globalStats.total || 1)) * 100)}%</span>
-                                        <span className="text-[8px] font-semibold uppercase text-slate-400 tracking-tighter">Elite Score</span>
+                                        <span className="text-2xl font-bold text-slate-800 dark:text-white font-mono">{Math.round((globalStats.elite / (globalStats.total || 1)) * 100)}%</span>
+                                        <span className="text-xs font-bold uppercase text-slate-400 tracking-widest mt-1">Nivel Zen</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Tactical Breakdown Grid */}
+                            {/* Client Distribution Grid */}
                             <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-4">
                                 {[
-                                    { id: 'mensual', label: 'Mensuales', value: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual').length, icon: LucideIcons.Calendar, color: 'sky' },
-                                    { id: 'semestral', label: 'Semestrales', value: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Semestral').length, icon: LucideIcons.Clock, color: 'amber' },
-                                    { id: 'vencidos', label: 'Vencidos (Alerta)', value: globalStats.vencidos, icon: LucideIcons.AlertTriangle, color: 'rose' },
-                                    { id: 'ordenes', label: 'Órdenes Trabajo', value: globalStats.ordenes, icon: LucideIcons.Zap, color: 'amber' },
-                                    { id: 'cobros', label: 'Pendiente Caja', value: globalStats.cobros, icon: LucideIcons.DollarSign, color: 'emerald' },
-                                    { id: 'al-dia', label: 'Status Elite', value: globalStats.elite, icon: LucideIcons.ShieldCheck, color: 'indigo' }
+                                    { id: 'mensual', label: 'Mensuales', value: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual').length, icon: LucideIcons.Calendar, color: 'primary' },
+                                    { id: 'semestral', label: 'Semestrales', value: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Semestral').length, icon: LucideIcons.Clock, color: 'slate' },
+                                    { id: 'vencidos', label: 'Alertas', value: globalStats.vencidos, icon: LucideIcons.AlertTriangle, color: 'rose' },
+                                    { id: 'ordenes', label: 'Pendientes', value: globalStats.ordenes, icon: LucideIcons.Zap, color: 'amber' },
+                                    { id: 'cobros', label: 'Tesorería', value: globalStats.cobros, icon: LucideIcons.DollarSign, color: 'primary' },
+                                    { id: 'al-dia', label: 'En Orden', value: globalStats.elite, icon: LucideIcons.ShieldCheck, color: 'primary' }
                                 ].map(stat => (
                                     <button 
                                         key={stat.id}
                                         onClick={(e) => { e.stopPropagation(); setActiveGroupTab(stat.id as any); }}
-                                        className={`group flex flex-col p-4 rounded-2xl border transition-all relative overflow-hidden ${activeGroupTab === stat.id ? `bg-${stat.color}-500/10 border-${stat.color}-500/30 ring-1 ring-${stat.color}-500/20` : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-white/5 hover:border-sky-400/30 dark:hover:border-sky-400/20'}`}
+                                        className={`group flex flex-col p-5 rounded-2xl border transition-all duration-500 relative overflow-hidden ${activeGroupTab === stat.id ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/10' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-white/5 hover:border-primary/20'}`}
                                     >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className={`p-2 rounded-xl bg-${stat.color}-500/10 text-${stat.color}-500 group-hover:scale-110 transition-transform`}>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className={`p-2 rounded-xl ${activeGroupTab === stat.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-slate-100 dark:bg-white/5 text-slate-400'} transition-all`}>
                                                 <stat.icon size={16} />
                                             </div>
-                                            <span className={`text-[9px] font-semibold uppercase tracking-widest ${activeGroupTab === stat.id ? `text-${stat.color}-500` : 'text-slate-400'}`}>{stat.label}</span>
+                                            <span className={`text-[11px] font-bold uppercase tracking-widest ${activeGroupTab === stat.id ? 'text-primary' : 'text-slate-400'}`}>{stat.label}</span>
                                         </div>
                                         <div className="flex items-baseline gap-1">
-                                            <span className={`text-2xl font-semibold font-mono ${activeGroupTab === stat.id ? `text-${stat.color}-600 dark:text-${stat.color}-400` : 'text-slate-700 dark:text-slate-300'}`}>{stat.value}</span>
-                                            <span className="text-[10px] font-medium text-slate-400">UNITS</span>
+                                            <span className={`text-2xl font-bold font-mono ${activeGroupTab === stat.id ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}`}>{stat.value}</span>
+                                            <span className="text-xs font-medium text-slate-400 uppercase">Fichas</span>
                                         </div>
                                         {activeGroupTab === stat.id && (
-                                            <div className={`absolute bottom-0 left-0 h-1 bg-${stat.color}-500 w-full shadow-[0_-4px_10px_rgba(0,0,0,0.1)]`}></div>
+                                            <div className="absolute bottom-0 left-0 h-1 bg-primary w-full"></div>
                                         )}
                                     </button>
                                 ))}
@@ -985,54 +994,50 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     </div>
                 )}
             </div>
-            {/* PRODUCTIVIDAD TABS (Elite Tactical) */}
-            <div className="mb-6 flex overflow-x-auto no-scrollbar gap-1.5 p-1 bg-slate-100 dark:bg-black/40 rounded-xl border border-slate-200 dark:border-white/5 shadow-inner">
+            {/* PRODUCTIVIDAD TABS (Zen Flow) */}
+            <div className="mb-6 flex overflow-x-auto no-scrollbar gap-1.5 p-1 bg-slate-100 dark:bg-black/40 rounded-2xl border border-slate-200 dark:border-white/5">
                 {[
-                    { id: 'all', label: 'Todos', count: clients.length, icon: LucideIcons.Users },
-                    { id: 'mensual', label: 'Mes', count: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual').length, icon: LucideIcons.Calendar },
-                    { id: 'semestral', label: 'Sem', count: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Semestral').length, icon: LucideIcons.Clock },
-                    { id: 'vencidos', label: 'Venc (Alerta)', count: globalStats.vencidos, icon: LucideIcons.AlertCircle },
-                    { id: 'ordenes', label: 'Ord (Trabajo)', count: globalStats.ordenes, icon: LucideIcons.Zap },
-                    { id: 'cobros', label: 'Cob', count: globalStats.cobros, icon: LucideIcons.DollarSign },
-                    { id: 'al-dia', label: 'Elite', count: globalStats.elite, icon: LucideIcons.ShieldCheck }
+                    { id: 'all', label: 'Legión', count: clients.length, icon: LucideIcons.Users },
+                    { id: 'mensual', label: 'Mensual', count: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual').length, icon: LucideIcons.Calendar },
+                    { id: 'semestral', label: 'Semestral', count: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Semestral').length, icon: LucideIcons.Clock },
+                    { id: 'vencidos', label: 'Deterioro', count: globalStats.vencidos, icon: LucideIcons.AlertCircle },
+                    { id: 'ordenes', label: 'Órdenes', count: globalStats.ordenes, icon: LucideIcons.Zap },
+                    { id: 'cobros', label: 'Caja', count: globalStats.cobros, icon: LucideIcons.DollarSign },
+                    { id: 'al-dia', label: 'Orden', count: globalStats.elite, icon: LucideIcons.ShieldCheck }
                 ].map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveGroupTab(tab.id as any)}
-                        className={`group relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-2xl text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 shrink-0
+                        className={`group relative flex items-center gap-2 px-6 py-3 rounded-xl text-xs sm:text-[11px] font-bold uppercase tracking-widest transition-all duration-500 shrink-0
                             ${activeGroupTab === tab.id 
-                                ? 'bg-white dark:bg-slate-900 text-sky-500 shadow-xl shadow-sky-400/10 ring-1 ring-sky-400/20' 
-                                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/5'}`}
+                                ? 'bg-white dark:bg-slate-800 text-primary shadow-sm ring-1 ring-primary/20' 
+                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'}`}
                     >
-                        <tab.icon size={tab.id === activeGroupTab ? 16 : 14} className={activeGroupTab === tab.id ? 'text-sky-400' : 'text-slate-400 group-hover:text-sky-400 transition-colors'} />
-                        <span className="hidden sm:inline">{tab.label}</span>
-                        <span className="sm:hidden">{tab.label}</span>
-                        <span className={`px-1 rounded-md text-[8px] sm:text-[9px] font-mono ${activeGroupTab === tab.id ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/30' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
+                        <tab.icon size={14} className={activeGroupTab === tab.id ? 'text-primary' : 'text-slate-400 transition-colors'} />
+                        <span className="inline">{tab.label}</span>
+                        <span className={`px-1.5 py-0.5 rounded-md text-[11px] font-mono ${activeGroupTab === tab.id ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
                             {tab.count}
                         </span>
-                        {activeGroupTab === tab.id && (
-                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-[2px] sm:h-1 bg-sky-400 rounded-full shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
-                        )}
                     </button>
                 ))}
             </div>
 
-            {/* IVA MENSUAL PROGRESS WORKFLOW */}
+            {/* IVA MENSUAL PROGRESS WORKFLOW - Zen Mode */}
             {
                 activeGroupTab === 'mensual' && (
-                    <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 animate-fade-in">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="mb-6 p-6 glass-zen rounded-3xl border border-primary/10 animate-fade-in shadow-sm">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="flex-1">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Progreso Declaraciones {safeFormat(new Date(), 'MMMM')}</span>
-                                    <span className="text-xs font-semibold text-sky-500">{sortedClients.filter(c => {
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">Ritmo de Gestión Tributaria • {safeFormat(new Date(), 'MMMM')}</span>
+                                    <span className="text-xs font-bold text-primary">{sortedClients.filter(c => {
                                         const d = c.declarations.find(dh => dh.period === getPeriod(c, new Date()));
                                         return !!d?.proof_file || d?.status === DeclarationStatus.Enviada;
-                                    }).length} de {sortedClients.length}</span>
+                                    }).length} / {sortedClients.length}</span>
                                 </div>
-                                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200/50 dark:border-white/5">
                                     <div
-                                        className="h-full bg-sky-400 transition-all duration-1000"
+                                        className="h-full bg-primary transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(134,167,137,0.4)]"
                                         style={{
                                             width: `${(sortedClients.filter(c => {
                                                 const d = c.declarations.find(dh => dh.period === getPeriod(c, new Date()));
@@ -1045,15 +1050,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setSortOption('9th_digit')}
-                                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-medium transition-all ${sortOption === '9th_digit' ? 'bg-sky-500 text-white border-sky-500 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${sortOption === '9th_digit' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white dark:bg-white/5 text-slate-400 border border-slate-200 dark:border-white/5 hover:bg-slate-50'}`}
                                 >
                                     Calendario SRI
                                 </button>
                                 <button
                                     onClick={() => setSortOption('name')}
-                                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-medium transition-all ${sortOption === 'name' ? 'bg-sky-500 text-white border-sky-500 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${sortOption === 'name' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white dark:bg-white/5 text-slate-400 border border-slate-200 dark:border-white/5 hover:bg-slate-50'}`}
                                 >
-                                    Alfabético
+                                    A - Z
                                 </button>
                             </div>
                         </div>
@@ -1061,24 +1066,25 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 )
             }
 
-            {/* --- COMBO BUTTON SECTION --- */}
+            {/* ZENITH COMBO BANNER - WARM GROWTH */}
             {
                 activeGroupTab === 'renta' && (
-                    <div className="mb-6 p-6 bg-gradient-to-r from-emerald-400 to-teal-600 rounded-2xl text-white shadow-lg animate-fade-in-down flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="bg-white/20 text-white text-[10px] font-semibold uppercase tracking-widest px-2 py-1 rounded-md">Producto Destacado</span>
-                                <span className="text-xl font-medium">Combo Devolución Renta</span>
+                    <div className="mb-8 p-6 sm:p-8 glass-zen rounded-3xl border border-primary/20 animate-fade-in-down flex flex-col sm:flex-row justify-between items-center gap-6 shadow-sm overflow-hidden relative">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="bg-primary/10 text-primary text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-primary/20">Protocolo de Crecimiento</span>
+                                <span className="text-2xl font-premium font-semibold text-slate-800 dark:text-white">Combo <span className="text-primary italic font-light">Devolución</span></span>
                             </div>
-                            <p className="text-emerald-100 text-sm max-w-md">
-                                Incluye: Declaración de Renta + Anexo Gastos Personales + Solicitud de Devolución de Retenciones.
+                            <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm max-w-md leading-relaxed">
+                                Reduzca la carga fiscal: Declaración de Renta + Anexo de Gastos + Gestión de Devolución. Todo en un solo flujo.
                             </p>
                         </div>
                         <button
                             onClick={() => setIsComboModalOpen(true)}
-                            className="px-6 py-3 bg-white text-emerald-700 font-semibold rounded-xl shadow-lg hover:bg-emerald-50 transition-transform transform hover:scale-105 flex items-center gap-2"
+                            className="w-full sm:w-auto px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all duration-500 flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest"
                         >
-                            <LucideIcons.Plus size={20} strokeWidth={3} /> Vender Combo $25.00
+                            <LucideIcons.Sparkles size={18} /> Iniciar Gestión $25.00
                         </button>
                     </div>
                 )
@@ -1089,20 +1095,24 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 isWorkspaceView ? (
                     <div className="space-y-8 pb-20">
                         {/* SECCIÓN POR DECLARAR (ÓRDENES DE TRABAJO) */}
-                        <section className="animate-fade-in">
-                            <div className="flex items-center gap-2 mb-4 px-2">
-                                <LucideIcons.Clock className="text-amber-400" size={18} />
-                                <h3 className="text-sm font-semibold text-slate-700 dark:text-white uppercase tracking-widest">
-                                    Órdenes de Trabajo (Por Declarar)
-                                    <span className="ml-2 text-[10px] bg-amber-100 text-amber-500 px-2 py-0.5 rounded-full">
-                                        {sortedClients.filter(c => {
-                                            const today = new Date();
-                                            const period = getPeriod(c, today);
-                                            const decl = c.declarations.find(d => d.period === period);
-                                            return !!decl?.is_paid && !decl?.proof_file;
-                                        }).length}
-                                    </span>
-                                </h3>
+                        <section className="animate-fade-in px-1">
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                                        <LucideIcons.Clock size={18} />
+                                    </div>
+                                    <h3 className="text-[11px] font-bold text-slate-700 dark:text-white uppercase tracking-[0.2em]">
+                                        Órdenes de Trabajo <span className="text-slate-400 font-medium ml-1">· POR DECLARAR</span>
+                                    </h3>
+                                </div>
+                                <span className="text-xs font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-500/20 shadow-sm">
+                                    {sortedClients.filter(c => {
+                                        const today = new Date();
+                                        const period = getPeriod(c, today);
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        return !!decl?.is_paid && !decl?.proof_file;
+                                    }).length} PENDIENTES
+                                </span>
                             </div>
                             {viewMode === 'list' ? (
                                 <VirtualClientTable
@@ -1144,20 +1154,24 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         </section>
 
                         {/* SECCIÓN DECLARADOS */}
-                        <section className="animate-fade-in">
-                            <div className="flex items-center gap-2 mb-4 px-2">
-                                <LucideIcons.CheckCircle2 className="text-emerald-400" size={18} />
-                                <h3 className="text-sm font-semibold text-slate-700 dark:text-white uppercase tracking-widest">
-                                    Declarados (Completados)
-                                    <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-500 px-2 py-0.5 rounded-full">
-                                        {sortedClients.filter(c => {
-                                            const today = new Date();
-                                            const period = getPeriod(c, today);
-                                            const decl = c.declarations.find(d => d.period === period);
-                                            return !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                        }).length}
-                                    </span>
-                                </h3>
+                        <section className="animate-fade-in px-1">
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                                        <LucideIcons.CheckCircle2 size={18} />
+                                    </div>
+                                    <h3 className="text-[11px] font-bold text-slate-700 dark:text-white uppercase tracking-[0.2em]">
+                                        Flujo de Cumplimiento <span className="text-slate-400 font-medium ml-1">· COMPLETADOS</span>
+                                    </h3>
+                                </div>
+                                <span className="text-xs font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20 shadow-sm">
+                                    {sortedClients.filter(c => {
+                                        const today = new Date();
+                                        const period = getPeriod(c, today);
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        return !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
+                                    }).length} FINALIZADOS
+                                </span>
                             </div>
                             {viewMode === 'list' ? (
                                 <VirtualClientTable
@@ -1188,23 +1202,27 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             )}
                         </section>
 
-                        {/* RESTANTES */}
-                        <section className="animate-fade-in">
-                            <div className="flex items-center gap-2 mb-4 px-2">
-                                <LucideIcons.CircleDashed className="text-slate-400" size={18} />
-                                <h3 className="text-sm font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-widest">
-                                    Pendiente de Gestión Inicial
-                                    <span className="ml-2 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
-                                        {sortedClients.filter(c => {
-                                            const today = new Date();
-                                            const period = getPeriod(c, today);
-                                            const decl = c.declarations.find(d => d.period === period);
-                                            const isWorkOrder = !!decl?.is_paid && !decl?.proof_file;
-                                            const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                            return !isWorkOrder && !isDeclared;
-                                        }).length}
-                                    </span>
-                                </h3>
+                        {/* RESTANTES - PENDIENTE DE GESTIÓN INICIAL */}
+                        <section className="animate-fade-in px-1">
+                            <div className="flex items-center justify-between mb-5 opacity-80">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
+                                        <LucideIcons.CircleDashed size={18} />
+                                    </div>
+                                    <h3 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
+                                        Protocolo Base <span className="text-slate-400 font-medium ml-1">· GESTIÓN PENDIENTE</span>
+                                    </h3>
+                                </div>
+                                <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
+                                    {sortedClients.filter(c => {
+                                        const today = new Date();
+                                        const period = getPeriod(c, today);
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        const isWorkOrder = !!decl?.is_paid && !decl?.proof_file;
+                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
+                                        return !isWorkOrder && !isDeclared;
+                                    }).length} EN ESPERA
+                                </span>
                             </div>
                             {viewMode === 'list' ? (
                                 <VirtualClientTable
@@ -1242,21 +1260,25 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 ) : isCobrosView ? (
                     <div className="space-y-8 pb-20">
                         {/* SECCIÓN COBRO PENDIENTE */}
-                        <section className="animate-fade-in">
-                            <div className="flex items-center gap-2 mb-4 px-2">
-                                <LucideIcons.DollarSign className="text-sky-400" size={18} />
-                                <h3 className="text-sm font-semibold text-slate-700 dark:text-white uppercase tracking-widest">
-                                    Cobros Pendientes (Declarados)
-                                    <span className="ml-2 text-[10px] bg-sky-100 text-sky-500 px-2 py-0.5 rounded-full">
-                                        {sortedClients.filter(c => {
-                                            const today = new Date();
-                                            const period = getPeriod(c, today);
-                                            const decl = c.declarations.find(d => d.period === period);
-                                            const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                            return isDeclared && !decl?.is_paid;
-                                        }).length}
-                                    </span>
-                                </h3>
+                        <section className="animate-fade-in px-1">
+                            <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-xl bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400">
+                                        <LucideIcons.DollarSign size={18} />
+                                    </div>
+                                    <h3 className="text-[11px] font-bold text-slate-700 dark:text-white uppercase tracking-[0.2em]">
+                                        Recaudación <span className="text-slate-400 font-medium ml-1">· COBROS PENDIENTES</span>
+                                    </h3>
+                                </div>
+                                <span className="text-xs font-bold bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full border border-orange-200 dark:border-orange-500/20 shadow-sm">
+                                    {sortedClients.filter(c => {
+                                        const today = new Date();
+                                        const period = getPeriod(c, today);
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
+                                        return isDeclared && !decl?.is_paid;
+                                    }).length} POR RECAUDAR
+                                </span>
                             </div>
                             {viewMode === 'list' ? (
                                 <VirtualClientTable
@@ -1306,7 +1328,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 <LucideIcons.ShieldCheck className="text-emerald-400" size={18} />
                                 <h3 className="text-sm font-semibold text-slate-700 dark:text-white uppercase tracking-widest">
                                     Elite / Al Día
-                                    <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-500 px-2 py-0.5 rounded-full">
+                                    <span className="ml-2 text-xs bg-emerald-100 text-emerald-500 px-2 py-0.5 rounded-full">
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
@@ -1351,7 +1373,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 <LucideIcons.Clock className="text-slate-400" size={18} />
                                 <h3 className="text-sm font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-widest">
                                     En Proceso / Pendientes
-                                    <span className="ml-2 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
+                                    <span className="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);

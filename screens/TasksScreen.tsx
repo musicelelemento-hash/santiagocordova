@@ -207,9 +207,9 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                     <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/20">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                            <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-widest">Active Operations</span>
+                            <span className="text-xs font-semibold text-emerald-400 uppercase tracking-widest">Active Operations</span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Internal Node v3.0</span>
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Internal Node v3.0</span>
                     </div>
                     <h2 className="text-4xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-tight sm:leading-[0.85] tracking-tighter mb-2">
                         Tactical <span className="text-gradient-sky">Tasks</span>
@@ -224,22 +224,22 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                     <div className="flex bg-white/5 backdrop-blur-xl p-1.5 rounded-[1.5rem] border border-white/10 shadow-lg">
                         <button 
                             onClick={() => setActiveTab('all')} 
-                            className={`px-6 py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-all ${activeTab === 'all' ? 'bg-sky-500 text-white shadow-xl shadow-sky-500/30' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-6 py-3 rounded-2xl text-xs font-semibold uppercase tracking-widest transition-all ${activeTab === 'all' ? 'bg-sky-500 text-white shadow-xl shadow-sky-500/30' : 'text-slate-400 hover:text-slate-200'}`}
                         >
                             General
                         </button>
                         <button 
                             onClick={() => setActiveTab('orders')} 
-                            className={`px-6 py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-widest transition-all relative ${activeTab === 'orders' ? 'bg-sky-500 text-white shadow-xl shadow-sky-500/30' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-6 py-3 rounded-2xl text-xs font-semibold uppercase tracking-widest transition-all relative ${activeTab === 'orders' ? 'bg-sky-500 text-white shadow-xl shadow-sky-500/30' : 'text-slate-400 hover:text-slate-200'}`}
                         >
                             Work Orders
-                            {stats.orders > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white rounded-full flex items-center justify-center text-[9px] font-semibold border-2 border-slate-950 shadow-xl shadow-orange-500/40">{stats.orders}</span>}
+                            {stats.orders > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white rounded-full flex items-center justify-center text-[11px] font-semibold border-2 border-slate-950 shadow-xl shadow-orange-500/40">{stats.orders}</span>}
                         </button>
                     </div>
                     
                     <button 
                         onClick={() => openAndPrepareModal()} 
-                        className="flex items-center gap-2 bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-8 py-4 rounded-[1.5rem] shadow-2xl hover:scale-105 active:scale-95 transition-all text-[10px] font-semibold uppercase tracking-[0.2em]"
+                        className="flex items-center gap-2 bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-8 py-4 rounded-[1.5rem] shadow-2xl hover:scale-105 active:scale-95 transition-all text-xs font-semibold uppercase tracking-[0.2em]"
                     >
                         <Plus size={18} />
                         NUEVA TAREA
@@ -263,7 +263,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                 <stat.icon size={24} className={`text-${stat.color}-500 ${stat.pulse ? 'animate-pulse' : ''}`} />
                             </div>
                             <div>
-                                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
+                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
                                 <p className={`text-4xl font-display font-semibold text-slate-900 dark:text-white leading-none`}>
                                     {stat.value}
                                 </p>
@@ -289,7 +289,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
             {taskFilter?.clientId && (
                 <button 
                     onClick={clearTaskFilter} 
-                    className="flex items-center gap-2 px-6 py-2 bg-rose-400/10 text-rose-400 border border-rose-400/20 rounded-full text-[10px] font-semibold uppercase tracking-widest hover:bg-rose-400/20 transition-all w-fit"
+                    className="flex items-center gap-2 px-6 py-2 bg-rose-400/10 text-rose-400 border border-rose-400/20 rounded-full text-xs font-semibold uppercase tracking-widest hover:bg-rose-400/20 transition-all w-fit"
                 > 
                     <X size={14} /> REMOVE CLIENT SECTOR LOCK
                 </button>
@@ -352,10 +352,10 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
 
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <span className={`text-[9px] font-semibold px-3 py-1 rounded-full text-white uppercase tracking-widest shadow-lg ${statusColor} ${glowColor}`}>
+                                            <span className={`text-[11px] font-semibold px-3 py-1 rounded-full text-white uppercase tracking-widest shadow-lg ${statusColor} ${glowColor}`}>
                                                 {statusLabel}
                                             </span>
-                                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest opacity-50">NODE • {task.id.substring(0, 8)}</span>
+                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest opacity-50">NODE • {task.id.substring(0, 8)}</span>
                                         </div>
                                         <h3 className="text-xl sm:text-2xl font-display font-semibold text-slate-900 dark:text-white tracking-tight truncate group-hover:text-sky-400 transition-colors uppercase">
                                             {task.title}
@@ -374,7 +374,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                             {client?.phones && client.phones.length > 0 && (
                                                 <button 
                                                     onClick={(e) => { e.stopPropagation(); window.open(getWhatsAppUrl(client.phones![0]), '_blank'); }} 
-                                                    className="group/wa flex items-center gap-2 text-[10px] font-semibold text-emerald-400 uppercase tracking-[0.2em] px-4 py-2 rounded-xl bg-emerald-400/5 hover:bg-emerald-400/10 border border-emerald-400/10 transition-all"
+                                                    className="group/wa flex items-center gap-2 text-xs font-semibold text-emerald-400 uppercase tracking-[0.2em] px-4 py-2 rounded-xl bg-emerald-400/5 hover:bg-emerald-400/10 border border-emerald-400/10 transition-all"
                                                 >
                                                     <MessageSquare size={14} className="group-hover/wa:scale-110 transition-transform" /> 
                                                     DIRECT COMMS
@@ -386,7 +386,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
 
                                 <div className="flex md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-6 shrink-0">
                                     <div className="flex flex-col items-end px-6 py-3 rounded-2xl bg-white/5 border border-white/5 group-hover:border-sky-400/20 transition-all">
-                                        <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-[0.3em] mb-1">DEADLINE</span>
+                                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3em] mb-1">DEADLINE</span>
                                         <div className="flex items-center gap-2">
                                             <Clock size={12} className={daysUntilDue < 0 && task.status !== TaskStatus.Completada ? 'text-rose-400' : 'text-slate-500'} />
                                             <span className={`text-sm font-semibold tracking-tight ${daysUntilDue < 0 && task.status !== TaskStatus.Completada ? 'text-rose-400' : 'text-slate-900 dark:text-white'}`}>
@@ -399,7 +399,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                         {isAuto && (
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); setSelectedTask(task); }} 
-                                                className="flex items-center gap-3 px-8 py-3.5 bg-sky-500 text-white text-[10px] font-semibold uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-sky-500/40 hover:scale-105 hover:bg-sky-400 active:scale-95 transition-all"
+                                                className="flex items-center gap-3 px-8 py-3.5 bg-sky-500 text-white text-xs font-semibold uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-sky-500/40 hover:scale-105 hover:bg-sky-400 active:scale-95 transition-all"
                                             >
                                                 <UploadCloud size={16} /> DECLARAR
                                             </button>
@@ -426,7 +426,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="TACTICAL PROTOCOL: NEW TASK" disableBackdropClick={true}>
                 <div className="space-y-6 pt-4">
                     <div className="group">
-                        <label className="text-[10px] font-semibold text-sky-400 uppercase tracking-widest mb-2 block">Objective Description</label>
+                        <label className="text-xs font-semibold text-sky-400 uppercase tracking-widest mb-2 block">Objective Description</label>
                         <input 
                             type="text" 
                             value={newTask.title || ''} 
@@ -438,7 +438,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="text-[10px] font-semibold text-sky-400 uppercase tracking-widest mb-2 block">Deployment Date</label>
+                            <label className="text-xs font-semibold text-sky-400 uppercase tracking-widest mb-2 block">Deployment Date</label>
                             <input 
                                 type="date" 
                                 value={newTask.dueDate ? safeFormat(newTask.dueDate, 'yyyy-MM-dd') : ''} 
@@ -447,7 +447,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                             />
                         </div>
                         <div>
-                            <label className="text-[10px] font-semibold text-sky-400 uppercase tracking-widest mb-2 block">Sector Targeting</label>
+                            <label className="text-xs font-semibold text-sky-400 uppercase tracking-widest mb-2 block">Sector Targeting</label>
                             <select 
                                 value={isNonClient ? 'non-client' : (newTask.clientId || '')} 
                                 onChange={handleClientSelectionChange} 
@@ -464,7 +464,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                         <div className="space-y-4 p-6 bg-sky-400/5 rounded-[1.5rem] border border-sky-400/20 animate-in fade-in zoom-in-95">
                             <div className="flex items-center gap-2 mb-2">
                                 <User size={14} className="text-sky-400" />
-                                <span className="text-[10px] font-semibold text-sky-400 uppercase tracking-widest">External Data Profile</span>
+                                <span className="text-xs font-semibold text-sky-400 uppercase tracking-widest">External Data Profile</span>
                             </div>
                             <input type="text" placeholder="Full Name" value={newTask.nonClientName || ''} onChange={e => setNewTask({ ...newTask, nonClientName: e.target.value })} className="w-full h-14 px-6 bg-black/30 border border-white/5 rounded-2xl text-sm font-medium text-white outline-none" />
                             <input type="text" placeholder="RUC / ID Number" value={newTask.nonClientRuc || ''} onChange={e => setNewTask({ ...newTask, nonClientRuc: e.target.value })} className="w-full h-14 px-6 bg-black/30 border border-white/5 rounded-2xl text-sm font-medium text-white outline-none" />
@@ -473,13 +473,13 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="p-5 rounded-2xl bg-slate-900/50 border border-white/5">
-                            <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1 block">Expected ROI</span>
+                            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-1 block">Expected ROI</span>
                             <div className="flex items-center gap-2">
                                 <p className="text-xl font-display font-semibold text-white">${(newTask.cost || 0).toFixed(2)}</p>
                             </div>
                         </div>
                         <div className="p-5 rounded-2xl bg-slate-900/50 border border-white/5">
-                            <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest mb-1 block">Advance Credit</span>
+                            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-1 block">Advance Credit</span>
                             <div className="flex items-center gap-2">
                                 <p className="text-xl font-display font-semibold text-emerald-400">${(newTask.advancePayment || 0).toFixed(2)}</p>
                             </div>
@@ -500,7 +500,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                 <div className="flex items-center gap-4">
                     <div className="text-right">
                         <p className="text-[12px] font-semibold tracking-[0.5em] text-slate-400 uppercase">Strategic Grid</p>
-                        <p className="text-[10px] font-semibold text-sky-400 tracking-widest uppercase">Encryption Node • SC-OPS</p>
+                        <p className="text-xs font-semibold text-sky-400 tracking-widest uppercase">Encryption Node • SC-OPS</p>
                     </div>
                     <Target size={40} className="text-slate-500" />
                 </div>

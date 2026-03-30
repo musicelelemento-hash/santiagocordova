@@ -55,7 +55,7 @@ export const PublicVaultScreen: React.FC<PublicVaultScreenProps> = ({ client }) 
                 </h1>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/20 text-[#D4AF37]">
                     <ShieldCheck size={12} strokeWidth={3} />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Acceso Seguro Verificado</span>
+                    <span className="text-xs font-black uppercase tracking-[0.2em]">Acceso Seguro Verificado</span>
                 </div>
             </header>
 
@@ -80,7 +80,7 @@ export const PublicVaultScreen: React.FC<PublicVaultScreenProps> = ({ client }) 
                     <div className="p-6 space-y-6">
                         {/* RUC Field */}
                         <div className="group">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Número RUC</label>
+                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Número RUC</label>
                             <button 
                                 onClick={() => handleCopy(client.ruc, 'ruc')}
                                 className="w-full flex items-center justify-between p-4 bg-black/40 border border-white/10 rounded-2xl hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 transition-all group active:scale-[0.98]"
@@ -94,7 +94,7 @@ export const PublicVaultScreen: React.FC<PublicVaultScreenProps> = ({ client }) 
 
                         {/* Password Field */}
                         <div className="group">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Contraseña</label>
+                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Contraseña</label>
                             <div className="flex gap-2">
                                 <div className="flex-1 flex items-center justify-between p-4 bg-black/40 border border-white/10 rounded-2xl">
                                     <span className="font-mono text-lg font-bold tracking-widest text-white">
@@ -135,7 +135,7 @@ export const PublicVaultScreen: React.FC<PublicVaultScreenProps> = ({ client }) 
                             <span className="font-bold text-sm text-white">Firma Electrónica</span>
                         </div>
                         {client.signatureExpirationDate && (
-                            <span className="text-[10px] font-bold bg-white/10 text-slate-300 px-2 py-1 rounded-lg">
+                            <span className="text-xs font-bold bg-white/10 text-slate-300 px-2 py-1 rounded-lg">
                                 Expira: {client.signatureExpirationDate.split('T')[0]}
                             </span>
                         )}
@@ -154,7 +154,7 @@ export const PublicVaultScreen: React.FC<PublicVaultScreenProps> = ({ client }) 
                                     </div>
                                     <div className="text-left">
                                         <span className="block text-xs font-bold text-white group-hover:text-[#D4AF37] transition-colors">Descargar Archivo .P12</span>
-                                        <span className="text-[10px] text-slate-400">{client.signatureFile.name}</span>
+                                        <span className="text-xs text-slate-400">{client.signatureFile.name}</span>
                                     </div>
                                 </div>
                                 <Download size={20} className="text-slate-500 group-hover:text-white"/>
@@ -167,7 +167,7 @@ export const PublicVaultScreen: React.FC<PublicVaultScreenProps> = ({ client }) 
 
                         {/* Signature Password */}
                          <div className="group">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Clave de Firma</label>
+                            <label className="text-xs font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Clave de Firma</label>
                             <div className="flex gap-2">
                                 <div className="flex-1 flex items-center justify-between p-4 bg-black/40 border border-white/10 rounded-2xl">
                                     <span className="font-mono text-lg font-bold tracking-widest text-white">
@@ -191,7 +191,7 @@ export const PublicVaultScreen: React.FC<PublicVaultScreenProps> = ({ client }) 
 
                 {/* Footer Message */}
                 <div className="text-center pt-8 pb-4 opacity-50">
-                    <p className="text-[10px] font-medium text-slate-500">
+                    <p className="text-xs font-medium text-slate-500">
                         Este enlace es seguro y privado. <br/>
                         Generado por Santiago Cordova - Asesoría Tributaria.
                     </p>

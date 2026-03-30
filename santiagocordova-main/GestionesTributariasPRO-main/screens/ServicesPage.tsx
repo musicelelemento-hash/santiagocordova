@@ -163,7 +163,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                         <button onClick={() => setIsCartOpen(true)} className="relative text-white hover:text-gold transition-colors flex items-center gap-1 text-sm font-medium">
                             <ShoppingCart size={18} /> Carrito
                             {cart.length > 0 && (
-                                <span className="ml-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                                <span className="ml-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
                                     {cart.length}
                                 </span>
                             )}
@@ -405,7 +405,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                         <Logo className="w-8 h-8 opacity-80" />
                         <div>
                             <span className="text-lg font-display font-bold text-slate-300 block leading-none">Gestiones Tributarias</span>
-                            <span className="text-[10px] text-slate-500 uppercase tracking-widest">Santiago Cordova</span>
+                            <span className="text-xs text-slate-500 uppercase tracking-widest">Santiago Cordova</span>
                         </div>
                     </div>
                     <div className="text-slate-500 text-sm text-center md:text-right">

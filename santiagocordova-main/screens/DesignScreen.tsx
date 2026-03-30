@@ -159,21 +159,21 @@ export const DesignScreen: React.FC<{ navigate: (screen: Screen, options?: any) 
 
                             <div className="space-y-4 flex-1">
                                 <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Régimen Detectado</p>
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Régimen Detectado</p>
                                     <p className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                                         <Briefcase size={14} className="text-brand-teal"/> {data.regime}
                                     </p>
                                 </div>
                                 <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Dirección Registrada</p>
+                                    <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Dirección Registrada</p>
                                     <p className="text-xs font-medium text-slate-600 dark:text-slate-300 leading-relaxed italic">
                                         "{data.address}"
                                     </p>
                                 </div>
                                 <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800/50 flex justify-between items-center">
                                     <div>
-                                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Costo Proyectado</p>
-                                        <p className="text-lg font-black text-emerald-700 dark:text-emerald-400">${data.feeStructure?.monthly?.toFixed(2)} <span className="text-[10px] font-bold opacity-50">/ MES</span></p>
+                                        <p className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-1">Costo Proyectado</p>
+                                        <p className="text-lg font-black text-emerald-700 dark:text-emerald-400">${data.feeStructure?.monthly?.toFixed(2)} <span className="text-xs font-bold opacity-50">/ MES</span></p>
                                     </div>
                                     <Coins className="text-emerald-500" size={24}/>
                                 </div>
@@ -227,11 +227,11 @@ export const DesignScreen: React.FC<{ navigate: (screen: Screen, options?: any) 
                             <div className="flex gap-4">
                                 <div className="px-4 py-2 bg-white/10 rounded-xl border border-white/10 flex items-center gap-2">
                                     <CheckCircle size={14} className="text-brand-teal"/>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Razón Social</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest">Razón Social</span>
                                 </div>
                                 <div className="px-4 py-2 bg-white/10 rounded-xl border border-white/10 flex items-center gap-2">
                                     <CheckCircle size={14} className="text-brand-teal"/>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Actividades</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest">Actividades</span>
                                 </div>
                             </div>
                          </div>

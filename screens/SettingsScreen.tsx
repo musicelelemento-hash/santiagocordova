@@ -465,22 +465,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
     return (
         <div className="space-y-6 pb-24 animate-fade-in relative pt-4 sm:pt-0">
-            {/* ELITE TACTICAL HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10 px-1 sm:px-0 mb-8">
+            {/* ZENITH CONTROL HEADER */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10 px-1 sm:px-0 mb-12">
                 <div className="animate-fade-in-left w-full sm:w-auto">
-                    <div className="flex items-center justify-between sm:justify-start gap-2 mb-2 text-center sm:text-left">
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-400/10 border border-sky-400/20">
-                            <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
-                            <span className="text-[10px] font-semibold text-sky-400 uppercase tracking-widest">System Protocols v5.0</span>
+                    <div className="flex items-center justify-between sm:justify-start gap-3 mb-4 text-center sm:text-left">
+                        <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-xl">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                            <span className="text-xs font-bold text-primary uppercase tracking-[0.3em]">Protocolo Maestro Zenith</span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Advanced Core</span>
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.25em] opacity-60 sm:block hidden">• Arquitectura de Paz</span>
                     </div>
-                    <h2 className="text-4xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-tight sm:leading-[0.85] tracking-tighter mb-2">
-                        System <span className="text-gradient-sky">Command</span>
+                    <h2 className="text-4xl sm:text-6xl font-display font-extrabold text-slate-900 dark:text-white leading-[0.9] tracking-tighter mb-4">
+                        Centro de <span className="text-primary italic font-serif opacity-90">Control</span>
                     </h2>
-                    <div className="flex items-center gap-2 text-slate-500 text-[11px] font-medium uppercase tracking-widest">
-                        <LucideIcons.Settings size={12} className="text-sky-400" />
-                        <span>Ajustes Generales y Seguridad</span>
+                    <div className="flex items-center gap-3 text-slate-400 text-xs font-bold uppercase tracking-[0.2em] ml-1">
+                        <div className="w-8 h-[1px] bg-primary/30"></div>
+                        <span>Gestión de Infraestructura y Bóveda</span>
                     </div>
                 </div>
             </div>
@@ -488,19 +488,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
             <div className="space-y-6">
 
                      {/* --- MÓDULO: CONEXIÓN ESTRATÉGICA --- */}
-                <div className="p-6 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden relative group transition-all duration-500 hover:shadow-sky-400/10 hover:border-sky-400/30">
-                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-sky-400/5 rounded-full blur-[80px] group-hover:bg-sky-400/10 transition-all duration-700" />
+                <div className="p-8 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-white/5 overflow-hidden relative group transition-all duration-700 hover:shadow-primary/5 hover:border-primary/20">
+                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-[80px] group-hover:bg-primary/10 transition-all duration-700" />
                     
                     <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-3 bg-sky-400/10 rounded-2xl border border-sky-400/20 shadow-inner">
-                                <LucideIcons.Cloud className="text-sky-400" size={24} />
+                        <div className="flex items-center gap-5 mb-8">
+                            <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20 shadow-inner text-primary">
+                                <LucideIcons.Cloud size={28} strokeWidth={1.5} />
                             </div>
                             <div>
-                                <h3 className="font-display font-semibold text-xl text-slate-900 dark:text-white tracking-tight">Enlace de Inteligencia (Cloud)</h3>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="w-2 h-2 bg-sky-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-400/80">Google Workspace Sync v4.2</p>
+                                <h3 className="font-display font-bold text-2xl text-slate-900 dark:text-white tracking-tight">Sincronización Maestra</h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
+                                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary/70">Google Workspace Sync v5.0</p>
                                 </div>
                             </div>
                         </div>
@@ -525,15 +525,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                             <button
                                 onClick={handleSaveBackendUrl}
                                 disabled={isSavingUrl}
-                                className="px-6 py-3.5 bg-sky-500 text-white font-semibold uppercase tracking-widest text-[10px] rounded-2xl hover:bg-sky-700 shadow-xl shadow-sky-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                className="px-8 py-4 bg-primary text-white font-bold uppercase tracking-[0.2em] text-xs rounded-2xl hover:bg-primary-dark shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3 border border-primary/20"
                             >
-                                {isSavingUrl ? <LucideIcons.Loader2 className="animate-spin" size={16} /> : <LucideIcons.Zap size={16} />}
-                                <span>Activar Enlace</span>
+                                {isSavingUrl ? <LucideIcons.Loader2 className="animate-spin" size={16} /> : <LucideIcons.Zap size={16} strokeWidth={2.5} />}
+                                <span>Activar Enlace Zenith</span>
                             </button>
                         </div>
 
                         <div className="mt-8 pt-8 border-t border-slate-100 dark:border-white/5">
-                            <h4 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+                            <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                                 <LucideIcons.History size={14} className="text-amber-400/70" />
                                 Protocolos de Recuperación (Legacy)
                             </h4>
@@ -554,7 +554,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         }
                                     }
                                 }}
-                                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-amber-400/10 hover:text-amber-500 dark:hover:text-amber-400 transition-all font-semibold text-[10px] uppercase tracking-widest border border-transparent hover:border-amber-400/30"
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-amber-400/10 hover:text-amber-500 dark:hover:text-amber-400 transition-all font-semibold text-xs uppercase tracking-widest border border-transparent hover:border-amber-400/30"
                             >
                                 <LucideIcons.RotateCw size={14} />
                                 Recuperación Forzada (Sheets)
@@ -563,20 +563,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                     </div>
                 </div>
 
-                {/* --- SUPABASE MIGRATION CARD --- */}
-                <div className="p-6 bg-gradient-to-br from-slate-900 to-brand-navy rounded-[2rem] shadow-2xl border border-brand-teal/30 overflow-hidden relative group">
-                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-brand-teal/10 rounded-full blur-[80px] group-hover:bg-brand-teal/20 transition-all duration-700" />
+                {/* --- ZENITH DATA MIGRATION --- */}
+                <div className="p-8 bg-slate-900/80 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl border border-white/5 overflow-hidden relative group">
+                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] group-hover:bg-emerald-500/10 transition-all duration-700" />
                     
                     <div className="relative z-10">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-3 bg-brand-teal/20 rounded-2xl border border-brand-teal/40">
-                                <LucideIcons.Database className="text-brand-teal" size={24} />
+                        <div className="flex items-center gap-5 mb-8">
+                            <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 text-emerald-400">
+                                <LucideIcons.Database size={28} strokeWidth={1.5} />
                             </div>
                             <div>
-                                <h3 className="font-display font-semibold text-xl text-white tracking-tight">Migración a Supabase v2</h3>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="w-2 h-2 bg-brand-teal rounded-full animate-pulse" />
-                                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-teal/80">Operación Postgres</p>
+                                <h3 className="font-display font-bold text-2xl text-white tracking-tight">Estructura Documental (SQL)</h3>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                    <p className="text-xs font-bold uppercase tracking-[0.25em] text-emerald-500/70">Protocolo Postgres v2.0</p>
                                 </div>
                             </div>
                         </div>
@@ -613,8 +613,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     </>
                                 ) : (
                                     <>
-                                        <LucideIcons.Zap size={20} />
-                                        <span>INICIAR SALTO SQL</span>
+                                        <LucideIcons.Zap size={20} strokeWidth={2.5} />
+                                        <span>Iniciar Protocolo SQL</span>
                                     </>
                                 )}
                             </button>
@@ -622,7 +622,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                             <div className="p-4 bg-emerald-400/10 border border-emerald-400/30 rounded-2xl text-center">
                                 <LucideIcons.CheckCircle className="text-emerald-400 mx-auto mb-2" size={32} />
                                 <p className="text-white font-semibold text-sm uppercase mb-1">Migración Completada</p>
-                                <p className="text-emerald-400 text-[10px] font-medium">
+                                <p className="text-emerald-400 text-xs font-medium">
                                     {migrationResult.clients} Clientes y {migrationResult.tasks} Tareas transferidas exitosamente.
                                 </p>
                             </div>
@@ -630,32 +630,32 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                         
                         <div className="mt-4 flex items-center gap-2 justify-center">
                             <LucideIcons.ShieldCheck size={14} className="text-slate-500" />
-                            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Cifrado de Extremo a Extremo Activo</p>
+                            <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Cifrado de Extremo a Extremo Activo</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="p-6 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden relative group transition-all duration-500 hover:shadow-gold/10 hover:border-gold/30">
-                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-gold/5 rounded-full blur-[80px] group-hover:bg-gold/10 transition-all duration-700" />
+                <div className="p-8 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-white/5 overflow-hidden relative group transition-all duration-700 hover:shadow-primary/5 hover:border-primary/20">
+                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-[80px] group-hover:bg-primary/10 transition-all duration-700" />
                     
                     <div className="relative z-10">
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 bg-gold/10 rounded-2xl border border-gold/20 shadow-inner">
-                                    <LucideIcons.DollarSign className="text-gold" size={24} />
+                        <div className="flex justify-between items-center mb-8">
+                            <div className="flex items-center gap-5">
+                                <div className="p-4 bg-primary/10 rounded-2xl border border-primary/20 shadow-inner text-primary">
+                                    <LucideIcons.DollarSign size={28} strokeWidth={1.5} />
                                 </div>
                                 <div>
-                                    <h3 className="font-display font-semibold text-xl text-slate-900 dark:text-white tracking-tight">Arquitectura de Tarifas</h3>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="w-2 h-2 bg-gold rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.8)]" />
-                                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/80">Protocolo Financiero v5.0 Elite</p>
+                                    <h3 className="font-display font-bold text-2xl text-slate-900 dark:text-white tracking-tight">Arquitectura de Honorarios</h3>
+                                    <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" />
+                                        <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary/70">Protocolo de Inversión v5.0 Professional</p>
                                     </div>
                                 </div>
                             </div>
                             {!isEditingFees && (
                                 <button 
                                     onClick={() => setIsEditingFees(true)} 
-                                    className="flex items-center gap-2 px-6 py-2 text-[10px] font-semibold uppercase tracking-widest rounded-xl bg-gold text-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-gold/20"
+                                    className="flex items-center gap-2 px-6 py-2 text-xs font-semibold uppercase tracking-widest rounded-xl bg-gold text-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-gold/20"
                                 >
                                     <LucideIcons.Edit3 size={12} />
                                     <span>Personalizar</span>
@@ -674,7 +674,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                                     <LucideIcons.Calendar size={80} className="text-gold" />
                                 </div>
-                                <h4 className="font-semibold text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
+                                <h4 className="font-semibold text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
                                     <div className="w-1 h-3 bg-gold/50 rounded-full" />
                                     Declaraciones Sistemáticas
                                 </h4>
@@ -688,7 +688,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                                 </Tooltip>
                                             </label>
                                             <div className="relative w-32 group/input">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400 dark:text-slate-600 transition-colors group-focus-within/input:text-gold">$</span>
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-slate-600 transition-colors group-focus-within/input:text-gold">$</span>
                                                 <input
                                                     type="number"
                                                     readOnly={!isEditingFees}
@@ -706,7 +706,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                                     <LucideIcons.Briefcase size={80} className="text-sky-400" />
                                 </div>
-                                <h4 className="font-semibold text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
+                                <h4 className="font-semibold text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
                                     <div className="w-1 h-3 bg-sky-400/50 rounded-full" />
                                     Operaciones Especiales
                                 </h4>
@@ -720,7 +720,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                                 </Tooltip>
                                             </label>
                                             <div className="relative w-32 group/input">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400 dark:text-slate-600 transition-colors group-focus-within/input:text-sky-400">$</span>
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 dark:text-slate-600 transition-colors group-focus-within/input:text-sky-400">$</span>
                                                 <input
                                                     type="number"
                                                     readOnly={!isEditingFees}
@@ -737,7 +737,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                         {/* --- DYNAMIC SERVICES CATALOG --- */}
                         <div className="p-6 bg-white/40 dark:bg-black/20 rounded-[1.5rem] border border-slate-100 dark:border-white/5">
-                            <h4 className="font-semibold text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center justify-between px-1">
+                            <h4 className="font-semibold text-xs uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center justify-between px-1">
                                 <div className="flex items-center gap-2">
                                     <div className="w-1 h-3 bg-brand-teal rounded-full" />
                                     Catálogo de Inteligencia Adicional
@@ -745,7 +745,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 {isEditingFees && (
                                     <button 
                                         onClick={handleAddService} 
-                                        className="text-[9px] font-semibold px-4 py-2 bg-brand-teal text-white rounded-xl hover:scale-105 transition-all shadow-lg shadow-brand-teal/20 flex items-center gap-1.5"
+                                        className="text-[11px] font-semibold px-4 py-2 bg-brand-teal text-white rounded-xl hover:scale-105 transition-all shadow-lg shadow-brand-teal/20 flex items-center gap-1.5"
                                     >
                                         <LucideIcons.Plus size={12} />
                                         NUEVO SERVICIO
@@ -757,7 +757,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 {(fees.customPunctualServices || []).map(service => (
                                     <div key={service.id} className="flex flex-col p-4 bg-white/60 dark:bg-slate-900/40 border border-slate-200/50 dark:border-white/5 rounded-2xl hover:border-brand-teal/30 transition-all group/service relative overflow-hidden">
                                         <div className="flex justify-between items-start mb-3">
-                                            <span className="text-[9px] font-semibold uppercase text-brand-teal/80 bg-brand-teal/10 px-2 py-0.5 rounded-lg tracking-wider">Servicio</span>
+                                            <span className="text-[11px] font-semibold uppercase text-brand-teal/80 bg-brand-teal/10 px-2 py-0.5 rounded-lg tracking-wider">Servicio</span>
                                             {isEditingFees && (
                                                 <div className="flex items-center gap-1 opacity-0 group-hover/service:opacity-100 transition-opacity">
                                                     <button onClick={() => handleEditService(service)} className="p-1.5 text-sky-400 hover:bg-sky-400/10 rounded-lg transition-all"><LucideIcons.Edit size={12} /></button>
@@ -767,9 +767,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         </div>
                                         <span className="text-sm font-medium text-slate-800 dark:text-slate-100 mb-4 line-clamp-1">{service.name}</span>
                                         <div className="flex items-baseline gap-1 mt-auto">
-                                            <span className="text-[10px] font-semibold text-slate-400">$</span>
+                                            <span className="text-xs font-semibold text-slate-400">$</span>
                                             <span className="text-xl font-display font-semibold text-slate-900 dark:text-white leading-none">{service.price.toFixed(2)}</span>
-                                            <span className="text-[10px] font-medium text-slate-400 ml-auto uppercase tracking-tighter">Costo Base</span>
+                                            <span className="text-xs font-medium text-slate-400 ml-auto uppercase tracking-tighter">Costo Base</span>
                                         </div>
                                     </div>
                                 ))}
@@ -845,7 +845,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                             </div>
                             
                             {!isEditingFees && (
-                                <span className="text-[10px] font-medium text-amber-400/70 uppercase tracking-tighter flex items-center gap-1">
+                                <span className="text-xs font-medium text-amber-400/70 uppercase tracking-tighter flex items-center gap-1">
                                     <LucideIcons.Lock size={10} /> Editar en Precios
                                 </span>
                             )}
@@ -867,7 +867,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
                                     localReminderConfig?.isEnabled 
                                     ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' 
                                     : 'bg-slate-500/10 text-slate-500 border-slate-500/20'
@@ -898,7 +898,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         onChange={e => setLocalReminderConfig(c => c ? ({ ...c, daysBefore: parseInt(e.target.value) || 0 }) : c)}
                                         className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium focus:ring-2 focus:ring-brand-teal/50"
                                     />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400">DÍAS ANTES</span>
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">DÍAS ANTES</span>
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -913,7 +913,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         onChange={e => setLocalReminderConfig(c => c ? ({ ...c, overdueInterval: parseInt(e.target.value) || 0 }) : c)}
                                         className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium focus:ring-2 focus:ring-rose-400/50"
                                     />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400">CADA X DÍAS</span>
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">CADA X DÍAS</span>
                                 </div>
                             </div>
                         </div>
@@ -935,7 +935,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 </label>
                                 <div className="flex gap-1">
                                     {['{clientName}', '{period}', '{amount}', '{dueDate}'].map(tag => (
-                                        <span key={tag} className="text-[10px] font-mono bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400">{tag}</span>
+                                        <span key={tag} className="text-xs font-mono bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400">{tag}</span>
                                     ))}
                                 </div>
                             </div>

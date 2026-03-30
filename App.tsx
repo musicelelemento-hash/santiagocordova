@@ -365,20 +365,20 @@ const App: React.FC = () => {
               <div className="h-6 w-[1px] bg-white/10"></div>
               <div className="flex items-center gap-3 group">
                 <div className="relative">
-                  <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.8)]"></div>
-                  <div className="absolute inset-0 w-3 h-3 bg-emerald-400 rounded-full animate-ping opacity-75"></div>
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.3)]"></div>
+                  <div className="absolute inset-0 w-3 h-3 bg-emerald-400 rounded-full opacity-50"></div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500 dark:text-emerald-400">Estado Operativo</span>
-                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">EXCELLENCE CORE v1.0</span>
+                  <span className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Estado Operativo</span>
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">SISTEMA INTEGRAL v1.0</span>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center space-x-6">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/50 border border-white/5 mx-4">
-                <LucideIcons.ShieldCheck size={14} className="text-emerald-500" />
-                <span className="text-[10px] font-bold text-slate-300">Stitch Security Active</span>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 mx-4">
+                <LucideIcons.ShieldCheck size={14} className="text-emerald-600 dark:text-emerald-500" />
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Conexión Segura Activa</span>
               </div>
 
               <NotificationBell clients={clients} navigate={navigate} />
@@ -396,11 +396,11 @@ const App: React.FC = () => {
 
               <div className="flex items-center gap-4 pl-2">
                 <div className="flex flex-col items-end">
-                  <span className="text-sm font-black text-slate-900 dark:text-white leading-none tracking-tight text-shimmer-elite">Santiago Bot</span>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-white leading-none tracking-tight">Santiago Cordova</span>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">COMANDANTE ELITE</span>
+                    <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-500/20">ADMINISTRADOR</span>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-emerald-400 font-black rounded-lg border border-white/10 shadow-inner">AQ.Ab8RN</span>
+                      <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium rounded-lg border border-slate-200 dark:border-white/10 shadow-sm">AQ.Ab8RN</span>
                     </div>
                   </div>
                 </div>
@@ -418,12 +418,12 @@ const App: React.FC = () => {
           </header>
 
           {/* Mobile Ultra-Premium Header */}
-          <header className="flex md:hidden fixed top-0 w-full z-50 items-center justify-between px-5 py-3 glass-elite border-b border-white/5 shadow-2xl">
+          <header className="flex md:hidden fixed top-0 w-full z-50 items-center justify-between px-5 py-3 glass-zen border-b border-white/20 shadow-xl">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-600 to-emerald-500 flex items-center justify-center shadow-lg pointer-events-none">
-                <Logo className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 rounded-xl bg-slate-800 dark:bg-white flex items-center justify-center shadow-md pointer-events-none">
+                <Logo className="w-5 h-5 text-white dark:text-slate-900" />
               </div>
-              <span className="font-display font-black text-white text-sm uppercase tracking-widest">Legión</span>
+              <span className="font-sans font-medium text-slate-800 dark:text-white text-sm tracking-wide">Directorio</span>
             </div>
             
             <div className="flex items-center gap-4">

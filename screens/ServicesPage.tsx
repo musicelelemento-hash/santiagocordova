@@ -222,7 +222,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                         <button onClick={() => setIsCartOpen(true)} className={`relative flex items-center gap-2 text-sm font-medium transition-colors group ${scrolled ? 'text-slate-700 hover:text-[#00A896]' : 'text-white hover:text-[#00A896]'}`}>
                             <div className="relative">
                                 <LucideIcons.ShoppingCart size={20} className="group-hover:scale-110 transition-transform" />
-                                {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-[#00A896] text-white text-[9px] font-semibold w-4 h-4 flex items-center justify-center rounded-full shadow-[0_0_10px_#00A896]">{cart.length}</span>}
+                                {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-[#00A896] text-white text-[11px] font-semibold w-4 h-4 flex items-center justify-center rounded-full shadow-[0_0_10px_#00A896]">{cart.length}</span>}
                             </div>
                             <span>Carrito</span>
                         </button>
@@ -253,7 +253,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 <div className="absolute top-[-100px] right-[-100px] w-[600px] h-[600px] bg-[#00A896]/20 rounded-full blur-[120px]"></div>
 
                 <div className="relative z-10 max-w-4xl mx-auto">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/10 text-white text-[10px] font-semibold uppercase tracking-widest mb-6 backdrop-blur-md">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/10 text-white text-xs font-semibold uppercase tracking-widest mb-6 backdrop-blur-md">
                         <LucideIcons.Globe size={12} /> Servicios Digitales 2026
                     </div>
                     <h1 className="text-4xl md:text-7xl font-display font-semibold text-white mb-6 tracking-tight leading-[1.1]">
@@ -280,7 +280,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             className={`group bg-white rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden border relative ${plan.popular ? 'border-[#00A896] ring-4 ring-[#00A896]/10' : 'border-slate-100'}`}
                         >
                             {plan.popular && (
-                                <div className="absolute top-0 right-0 bg-[#00A896] text-white text-[9px] font-semibold px-4 py-1.5 rounded-bl-2xl uppercase tracking-widest z-10">
+                                <div className="absolute top-0 right-0 bg-[#00A896] text-white text-[11px] font-semibold px-4 py-1.5 rounded-bl-2xl uppercase tracking-widest z-10">
                                     Popular
                                 </div>
                             )}
@@ -299,7 +299,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                     {plan.originalPrice && (
                                         <div className="flex flex-col mb-1.5">
                                             <span className="text-xs font-medium text-slate-400 line-through">${plan.originalPrice}</span>
-                                            <span className="text-[9px] font-semibold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded">AHORRA ${plan.save}</span>
+                                            <span className="text-[11px] font-semibold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded">AHORRA ${plan.save}</span>
                                         </div>
                                     )}
                                 </div>
@@ -336,7 +336,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 animate-slide-up-fade">
                     <div className="bg-[#0B2149] text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center border border-white/10 backdrop-blur-xl">
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-slate-300 font-medium uppercase tracking-wider">{cart.length} Servicio{cart.length > 1 ? 's' : ''}</span>
+                            <span className="text-xs text-slate-300 font-medium uppercase tracking-wider">{cart.length} Servicio{cart.length > 1 ? 's' : ''}</span>
                             <span className="text-xl font-semibold">${cartTotal.toFixed(2)}</span>
                         </div>
                         <button
@@ -422,7 +422,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             {/* Resumen Glassmorphic */}
                             <div className="p-6 bg-slate-900 rounded-3xl text-white relative overflow-hidden shadow-2xl">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#00A896]/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                                <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-[#00A896]"></div> Resumen de Compra
                                 </h4>
                                 <div className="space-y-3 mb-6">
@@ -442,7 +442,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             {/* Campos de Datos */}
                             <div className="space-y-4">
                                 <div className="group">
-                                    <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-2 ml-4">Nombre Destinatario</label>
+                                    <label className="block text-xs font-semibold text-slate-400 uppercase mb-2 ml-4">Nombre Destinatario</label>
                                     <div className="relative group-focus-within:scale-[1.01] transition-transform">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             <LucideIcons.User className="text-slate-300 group-focus-within:text-[#00A896] transition-colors" size={20} />
@@ -461,7 +461,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="group">
-                                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-2 ml-4">WhatsApp de Contacto</label>
+                                        <label className="block text-xs font-semibold text-slate-400 uppercase mb-2 ml-4">WhatsApp de Contacto</label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                                 <LucideIcons.Phone className="text-slate-300 group-focus-within:text-[#00A896] transition-colors" size={20} />
@@ -477,7 +477,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                         </div>
                                     </div>
                                     <div className="group">
-                                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-2 ml-4">RUC / Cédula (Opcional)</label>
+                                        <label className="block text-xs font-semibold text-slate-400 uppercase mb-2 ml-4">RUC / Cédula (Opcional)</label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                                 <LucideIcons.CreditCard className="text-slate-300 group-focus-within:text-[#00A896] transition-colors" size={20} />
@@ -505,7 +505,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                 </span>
                             </button>
                             
-                            <p className="text-[10px] text-center text-slate-400 font-medium uppercase tracking-widest flex items-center justify-center gap-2">
+                            <p className="text-xs text-center text-slate-400 font-medium uppercase tracking-widest flex items-center justify-center gap-2">
                                 <LucideIcons.Lock size={12} /> Conexión Segura & Encriptada
                             </p>
                         </form>
@@ -520,7 +520,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                         <Logo className="w-8 h-8" />
                         <span className="font-display font-medium text-lg tracking-tight text-[#0B2149]">GESTIONES TRIBUTARIAS</span>
                     </div>
-                    <div className="flex gap-8 text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
+                    <div className="flex gap-8 text-xs font-semibold text-slate-400 uppercase tracking-widest">
                         <a href="#" className="hover:text-[#00A896] transition-colors">Privacidad</a>
                         <a href="#" className="hover:text-[#00A896] transition-colors">Términos</a>
                         <button onClick={onAdminAccess} className="hover:text-[#0B2149] transition-colors">Administración</button>

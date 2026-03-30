@@ -33,15 +33,15 @@ const MetricCard: React.FC<{ title: string; value: string; description: string; 
                     <Icon size={20} className="text-sky-400 sm:w-6 sm:h-6 transition-colors group-hover:text-sky-400" />
                 </div>
                 {trend && (
-                    <span className="text-[8px] sm:text-[9px] font-semibold bg-emerald-400/10 text-emerald-400 px-2 sm:px-3 py-1 rounded-full flex items-center border border-emerald-400/20 uppercase tracking-[0.1em] shadow-lg shadow-emerald-400/10">
+                    <span className="text-xs sm:text-[11px] font-semibold bg-emerald-400/10 text-emerald-400 px-2 sm:px-3 py-1 rounded-full flex items-center border border-emerald-400/20 uppercase tracking-[0.1em] shadow-lg shadow-emerald-400/10">
                         <TrendingUp size={10} className="mr-1.5" /> {trend}
                     </span>
                 )}
             </div>
-            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400 mb-1 group-hover:text-sky-400 transition-colors duration-500">{title}</p>
+            <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400 mb-1 group-hover:text-sky-400 transition-colors duration-500">{title}</p>
             <h3 className="text-3xl sm:text-4xl font-display font-semibold text-slate-900 dark:text-white tracking-tighter leading-none mb-1 sm:mb-2 group-hover:tracking-tight transition-all duration-500">{value}</h3>
             <div className="flex items-center gap-2 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/5 group-hover:border-sky-400/20 transition-colors duration-500">
-                <p className="text-[8px] sm:text-[9px] font-semibold text-slate-500 uppercase tracking-widest opacity-70 group-hover:opacity-100 transition-opacity whitespace-pre-wrap">{description}</p>
+                <p className="text-xs sm:text-[11px] font-semibold text-slate-500 uppercase tracking-widest opacity-70 group-hover:opacity-100 transition-opacity whitespace-pre-wrap">{description}</p>
             </div>
         </div>
     </div>
@@ -220,9 +220,9 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                     <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
                         <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-400/10 border border-sky-400/20 shadow-lg shadow-sky-400/5">
                             <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
-                            <span className="text-[10px] font-semibold text-sky-400 uppercase tracking-widest">Global Analytics Intelligence</span>
+                            <span className="text-xs font-semibold text-sky-400 uppercase tracking-widest">Global Analytics Intelligence</span>
                         </div>
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Dashboard v4.5</span>
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Dashboard v4.5</span>
                     </div>
                     <h2 className="text-3xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-[0.85] tracking-tighter mb-2 italic">
                         Strategic <span className="text-gradient-sky">Reports</span>
@@ -245,11 +245,11 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                     <div className="flex p-1 bg-white/5 dark:bg-white/5 rounded-2xl border border-white/10 backdrop-blur-xl">
                         <button 
                             onClick={() => setTimeRange('month')}
-                            className={`px-5 py-2.5 rounded-xl text-[10px] font-semibold uppercase tracking-[0.15em] transition-all duration-500 ${timeRange === 'month' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/20' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-[0.15em] transition-all duration-500 ${timeRange === 'month' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/20' : 'text-slate-500 hover:text-slate-300'}`}
                         >MES</button>
                         <button 
                             onClick={() => setTimeRange('year')}
-                            className={`px-5 py-2.5 rounded-xl text-[10px] font-semibold uppercase tracking-[0.15em] transition-all duration-500 ${timeRange === 'year' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/20' : 'text-slate-500 hover:text-slate-300'}`}
+                            className={`px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-[0.15em] transition-all duration-500 ${timeRange === 'year' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/20' : 'text-slate-500 hover:text-slate-300'}`}
                         >AÑO</button>
                     </div>
                 </div>
@@ -293,7 +293,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                     <div className="flex items-center justify-between mb-8 relative z-10">
                         <div>
                             <h3 className="text-xl font-display font-semibold text-slate-900 dark:text-white uppercase tracking-tighter group-hover:text-sky-400 transition-colors">Evolución Operativa</h3>
-                            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mt-1">Histórico de Ingresos (6 Ciclos)</p>
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-1">Histórico de Ingresos (6 Ciclos)</p>
                         </div>
                         <div className="p-4 bg-sky-400/10 rounded-2xl border border-sky-400/20 shadow-inner group-hover:rotate-12 transition-transform duration-500">
                             <Activity className="text-sky-400" size={20} />
@@ -327,7 +327,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                 <div className="p-8 glass-tactical rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden group hover:border-sky-400/20 transition-all duration-500">
                     <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-violet-500/5 blur-[100px] rounded-full -mr-32 -mb-32 pointer-events-none opacity-50 group-hover:opacity-100"></div>
                     <h3 className="text-xl font-display font-semibold text-slate-900 dark:text-white uppercase tracking-tighter self-start mb-2 group-hover:text-sky-400 transition-colors">Estructura Regime</h3>
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest self-start mb-8 tracking-[0.2em]">Composición de Cartera</p>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest self-start mb-8 tracking-[0.2em]">Composición de Cartera</p>
                     
                     <div className="flex-1 w-full min-h-[250px] relative">
                         <ResponsiveContainer width="100%" height="100%">
@@ -354,7 +354,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                         </ResponsiveContainer>
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] text-center group-hover:scale-110 transition-transform duration-500">
                             <span className="text-5xl font-semibold text-slate-900 dark:text-white leading-none tracking-tighter italic">{clients.length}</span>
-                            <p className="text-[10px] font-semibold text-sky-400 uppercase tracking-[0.2em] mt-2">Activos</p>
+                            <p className="text-xs font-semibold text-sky-400 uppercase tracking-[0.2em] mt-2">Activos</p>
                         </div>
                     </div>
                 </div>
@@ -369,7 +369,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                             </div>
                             <h3 className="text-2xl font-display font-semibold text-slate-900 dark:text-white uppercase tracking-tighter group-hover:text-emerald-400 transition-colors">Elite Partners</h3>
                         </div>
-                        <span className="text-[9px] font-semibold text-emerald-400/60 bg-emerald-400/5 px-3 py-1.5 rounded-full border border-emerald-400/10 uppercase tracking-widest italic font-mono">Performance: HIGH</span>
+                        <span className="text-[11px] font-semibold text-emerald-400/60 bg-emerald-400/5 px-3 py-1.5 rounded-full border border-emerald-400/10 uppercase tracking-widest italic font-mono">Performance: HIGH</span>
                     </div>
 
                     <div className="space-y-4 relative z-10">
@@ -381,16 +381,16 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="font-semibold text-[13px] text-slate-800 dark:text-slate-100 uppercase tracking-tight mb-0.5">{client.name}</span>
-                                        <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-widest opacity-60 italic">Vip Transaction Node</span>
+                                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest opacity-60 italic">Vip Transaction Node</span>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <span className="text-lg font-semibold text-emerald-400 tracking-tighter block">${client.Ingresos.toFixed(2)}</span>
-                                    <span className="text-[8px] font-semibold text-emerald-400/40 uppercase tracking-widest">Liquidated</span>
+                                    <span className="text-xs font-semibold text-emerald-400/40 uppercase tracking-widest">Liquidated</span>
                                 </div>
                             </div>
                         )) : (
-                            <div className="text-center py-16 text-slate-500 font-semibold text-[10px] uppercase tracking-[0.3em] opacity-30">Stream Offline</div>
+                            <div className="text-center py-16 text-slate-500 font-semibold text-xs uppercase tracking-[0.3em] opacity-30">Stream Offline</div>
                         )}
                     </div>
                 </div>
@@ -403,7 +403,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                             </div>
                             <h3 className="text-2xl font-display font-semibold text-slate-900 dark:text-white uppercase tracking-tighter group-hover:text-rose-400 transition-colors">Risk Perimeter</h3>
                         </div>
-                        <span className="text-[9px] font-semibold text-rose-400/60 bg-rose-400/5 px-3 py-1.5 rounded-full border border-rose-400/10 uppercase tracking-widest italic font-mono">Cartera: CRITICAL</span>
+                        <span className="text-[11px] font-semibold text-rose-400/60 bg-rose-400/5 px-3 py-1.5 rounded-full border border-rose-400/10 uppercase tracking-widest italic font-mono">Cartera: CRITICAL</span>
                     </div>
 
                     <div className="space-y-4 relative z-10">
@@ -417,7 +417,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                                         <span className="font-semibold text-[12px] sm:text-[13px] text-slate-800 dark:text-slate-100 uppercase tracking-tight mb-0.5 truncate max-w-[120px] sm:max-w-none">{debtor.name}</span>
                                         <button 
                                             onClick={() => navigate('clients', { clientIdToView: debtor.id })}
-                                            className="group/btn flex items-center gap-2 text-[8px] sm:text-[9px] text-sky-400 font-semibold uppercase tracking-widest text-left transition-all"
+                                            className="group/btn flex items-center gap-2 text-xs sm:text-[11px] text-sky-400 font-semibold uppercase tracking-widest text-left transition-all"
                                         >
                                             Interceptar <span className="hidden sm:inline">Perfil</span>
                                             <ChevronRight size={10} className="group-hover/btn:translate-x-1 transition-transform" />
@@ -426,13 +426,13 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                                 </div>
                                 <div className="text-right shrink-0">
                                     <span className="text-base sm:text-lg font-semibold text-rose-400 tracking-tighter block">${debtor.amount.toFixed(2)}</span>
-                                    <span className="text-[8px] font-semibold text-rose-400/40 uppercase tracking-widest">Unsettled</span>
+                                    <span className="text-xs font-semibold text-rose-400/40 uppercase tracking-widest">Unsettled</span>
                                 </div>
                             </div>
                         )) : (
                             <div className="text-center py-16 flex flex-col items-center justify-center overflow-hidden">
                                 <Shield size={48} className="text-emerald-400 opacity-20 mb-4 animate-pulse" />
-                                <p className="text-[10px] font-semibold text-emerald-400 uppercase tracking-[0.25em] italic">No Risks Detected in Sector</p>
+                                <p className="text-xs font-semibold text-emerald-400 uppercase tracking-[0.25em] italic">No Risks Detected in Sector</p>
                             </div>
                         )}
                     </div>
@@ -449,7 +449,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                                     <div className="absolute inset-x-0 bottom-0 top-0 left-0 bg-sky-400/20 blur-xl animate-pulse rounded-full"></div>
                                 </div>
                                 <p className="text-3xl font-display font-semibold text-slate-900 dark:text-white uppercase tracking-tighter mb-2 italic">Neural Processing...</p>
-                                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.2em] max-w-xs leading-loose">Decodificando flujos de capital e indicadores estratégicos mediante protocolo avanzado</p>
+                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-[0.2em] max-w-xs leading-loose">Decodificando flujos de capital e indicadores estratégicos mediante protocolo avanzado</p>
                             </div>
                         )}
                         {analysisError && (

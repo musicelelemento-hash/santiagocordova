@@ -26,16 +26,16 @@ const StatCard = ({ title, value, status, icon: Icon, colorClass }: any) => (
         <div className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-10 -mr-10 -mt-10 ${colorClass}`}></div>
         <div className="flex justify-between items-start mb-4 relative z-10">
             <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
                 <h3 className="text-2xl font-black text-slate-800">{value}</h3>
             </div>
             <div className={`p-3 rounded-2xl ${status === 'good' ? 'bg-emerald-50 text-emerald-600' : status === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
                 <Icon size={24} />
             </div>
         </div>
-        {status === 'good' && <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg w-max"><CheckCircle2 size={12}/> Al Día</div>}
-        {status === 'warning' && <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg w-max"><Clock size={12}/> Próximo</div>}
-        {status === 'bad' && <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg w-max"><AlertTriangle size={12}/> Pendiente</div>}
+        {status === 'good' && <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg w-max"><CheckCircle2 size={12}/> Al Día</div>}
+        {status === 'warning' && <div className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg w-max"><Clock size={12}/> Próximo</div>}
+        {status === 'bad' && <div className="inline-flex items-center gap-1.5 text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg w-max"><AlertTriangle size={12}/> Pendiente</div>}
     </div>
 );
 
@@ -65,7 +65,7 @@ const BankInfoCard = () => {
                 </div>
 
                 <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Cuenta Ahorros</p>
+                    <p className="text-xs text-slate-400 uppercase font-bold tracking-widest">Cuenta Ahorros</p>
                     <div className="flex items-center gap-3">
                         <span className="font-mono text-2xl tracking-widest text-white shadow-sm">220XXXXXXX</span>
                         <button onClick={handleCopy} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white">
@@ -117,14 +117,14 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                         </div>
                         <div className="hidden sm:block">
                             <h1 className="text-sm font-black text-[#0B2149] uppercase tracking-wide leading-none">Portal Privado</h1>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-0.5">Santiago Cordova</p>
+                            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-0.5">Santiago Cordova</p>
                         </div>
                     </div>
                     
                     <div className="flex items-center gap-4">
                         <div className="text-right hidden sm:block">
                             <p className="text-xs font-bold text-slate-700">{client.name}</p>
-                            <p className="text-[10px] font-mono text-slate-400">{client.ruc}</p>
+                            <p className="text-xs font-mono text-slate-400">{client.ruc}</p>
                         </div>
                         <button onClick={onLogout} className="p-2.5 rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors">
                             <LogOut size={18}/>
@@ -167,7 +167,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                             <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-10 opacity-[0.03]"><Briefcase size={200}/></div>
                                 <div className="relative z-10">
-                                    <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
+                                    <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest mb-4">
                                         {client.category}
                                     </span>
                                     <h2 className="text-3xl sm:text-4xl font-display font-black text-[#0B2149] mb-2">
@@ -302,7 +302,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-sm text-[#0B2149]">{formatPeriodForDisplay(decl.period)}</p>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{decl.status}</p>
+                                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{decl.status}</p>
                                                 </div>
                                             </div>
                                             
@@ -311,7 +311,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                                     <Download size={14}/> PDF
                                                 </button>
                                             ) : (
-                                                <span className="text-[10px] font-bold text-slate-300 italic">No disponible</span>
+                                                <span className="text-xs font-bold text-slate-300 italic">No disponible</span>
                                             )}
                                         </div>
                                     )) : (
@@ -331,7 +331,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     </div>
                                     <div>
                                         <p className="font-bold text-sm text-[#0B2149]">RUC Digital</p>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{client.rucPdf ? 'PDF Disponible' : 'No cargado'}</p>
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{client.rucPdf ? 'PDF Disponible' : 'No cargado'}</p>
                                     </div>
                                 </div>
                                 <div className="bg-white p-5 rounded-[2rem] border border-slate-100 flex items-center gap-4">
@@ -340,7 +340,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     </div>
                                     <div>
                                         <p className="font-bold text-sm text-[#0B2149]">Firma Elec.</p>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{client.signatureFile ? 'Archivo .P12' : 'No cargado'}</p>
+                                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{client.signatureFile ? 'Archivo .P12' : 'No cargado'}</p>
                                     </div>
                                 </div>
                             </div>

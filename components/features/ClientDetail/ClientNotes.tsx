@@ -67,7 +67,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
             <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">
               PANEL DE INTELIGENCIA FISCAL
             </h3>
-            <p className="text-[9px] font-black text-sky-400 uppercase tracking-[0.2em] mt-1">NÚCLEO DE ASESORÍA Y PREGUNTAS ABIERTAS</p>
+            <p className="text-[11px] font-black text-sky-400 uppercase tracking-[0.2em] mt-1">NÚCLEO DE ASESORÍA Y PREGUNTAS ABIERTAS</p>
           </div>
         </div>
         
@@ -92,7 +92,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
                     key={cat}
                     type="button"
                     onClick={() => setCategory(cat)}
-                    className={`px-3 sm:px-4 py-2 rounded-xl text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider border transition-all flex items-center justify-center sm:justify-start gap-2 ${
+                    className={`px-3 sm:px-4 py-2 rounded-xl text-[11px] sm:text-xs font-semibold uppercase tracking-wider border transition-all flex items-center justify-center sm:justify-start gap-2 ${
                       category === cat 
                         ? CATEGORY_STYLES[cat] + ' shadow-lg scale-[1.02] sm:scale-105' 
                         : 'bg-white dark:bg-white/5 text-slate-400 border-slate-100 dark:border-white/5 hover:border-sky-400/30'
@@ -135,10 +135,10 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
             <div className="p-4 rounded-full border border-white/5 bg-slate-100/50 dark:bg-white/5 text-slate-500 mb-4 shadow-inner">
               <StickyNote size={20} strokeWidth={1.5} />
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">SIN REGISTROS ACTIVOS</p>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">SIN REGISTROS ACTIVOS</p>
             <div className="flex items-center justify-center gap-2 mt-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-600 animate-pulse"></span>
-                <p className="text-[8px] uppercase font-medium tracking-[0.3em] text-slate-500">STATE: IDLE</p>
+                <p className="text-xs uppercase font-medium tracking-[0.3em] text-slate-500">STATE: IDLE</p>
             </div>
           </div>
         )}
@@ -154,7 +154,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
               style={{ animationDelay: `${idx * 50}ms` }}
             >
               <div className="flex items-start justify-between mb-2">
-                <div className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-widest border flex items-center gap-1 shadow-sm ${style}`}>
+                <div className={`px-2 py-0.5 rounded-full text-xs font-semibold uppercase tracking-widest border flex items-center gap-1 shadow-sm ${style}`}>
                   <Icon size={10} />
                   {note.category}
                 </div>
@@ -174,7 +174,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-                  <span className="text-[10px] font-medium text-slate-400">
+                  <span className="text-xs font-medium text-slate-400">
                     {new Date(note.createdAt).toLocaleDateString('es-ES', { 
                       day: 'numeric', 
                       month: 'short', 
@@ -185,7 +185,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
                   </span>
                 </div>
                 <div className="h-px bg-slate-200 dark:bg-white/5 flex-1 mx-3" />
-                <span className="text-[9px] font-semibold text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em] group-hover:text-sky-400/50 transition-colors">
+                <span className="text-[11px] font-semibold text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em] group-hover:text-sky-400/50 transition-colors">
                   Encrypted Log
                 </span>
               </div>

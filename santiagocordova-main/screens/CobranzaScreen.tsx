@@ -192,9 +192,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     <div className="flex items-center gap-2 mb-2">
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Live Financial Sync</span>
+                            <span className="text-xs font-black text-emerald-500 uppercase tracking-widest">Live Financial Sync</span>
                         </div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-50">• Santiago Cordova</span>
+                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest opacity-50">• Santiago Cordova</span>
                     </div>
                     <h2 className="text-4xl sm:text-5xl font-display font-black text-slate-900 dark:text-white leading-[0.9] tracking-tighter mb-2">
                         Financial <span className="text-gradient-sky">Command</span>
@@ -255,19 +255,19 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         <span className="text-xl sm:text-2xl font-black text-sky-500 leading-none">
                                             {Math.round((financialData.collected.reduce((s, i) => s + i.amount, 0) / (financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0) || 1)) * 100)}%
                                         </span>
-                                        <span className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">META</span>
+                                        <span className="text-[11px] sm:text-xs font-black text-slate-400 uppercase tracking-widest mt-1">META</span>
                                     </div>
                                 </div>
                             </div>
                             <div>
-                                <span className="text-[10px] font-black text-sky-500 uppercase tracking-[0.3em] mb-1 block">Centro de Inteligencia</span>
+                                <span className="text-xs font-black text-sky-500 uppercase tracking-[0.3em] mb-1 block">Centro de Inteligencia</span>
                                 <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-none tracking-tighter mb-2">
                                     RECAUDACIÓN Y <br className="hidden sm:block" /> RENDIMIENTO
                                 </h3>
                                 <div className="flex items-center gap-3">
                                     <div className="flex items-center gap-1.5 py-1 px-3 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                                         <BarChart3 size={12} className="text-emerald-500" />
-                                        <span className="text-[10px] font-bold text-slate-500 dark:text-white/60 uppercase">Estatus: Optimizado</span>
+                                        <span className="text-xs font-bold text-slate-500 dark:text-white/60 uppercase">Estatus: Optimizado</span>
                                     </div>
                                 </div>
                             </div>
@@ -277,14 +277,14 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             {!isAnalysisExpanded && (
                                 <div className="flex items-center gap-4 sm:gap-6">
                                     <div className="flex flex-col items-end">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Por Cobrar</span>
+                                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Por Cobrar</span>
                                         <span className="text-lg sm:text-xl font-black text-rose-500">
                                             ${financialData.receivable.reduce((s, i) => s + i.amount, 0).toFixed(2)}
                                         </span>
                                     </div>
                                     <div className="w-px h-8 bg-slate-200 dark:bg-white/10"></div>
                                     <div className="flex flex-col items-end">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Recaudado</span>
+                                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Recaudado</span>
                                         <span className="text-lg sm:text-xl font-black text-emerald-500">
                                             ${financialData.collected.reduce((s, i) => s + i.amount, 0).toFixed(2)}
                                         </span>
@@ -310,7 +310,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         <button 
                             key={tab.id} 
                             onClick={() => setActiveTab(tab.id as any)} 
-                            className={`flex flex-1 lg:flex-none items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 shrink-0
+                            className={`flex flex-1 lg:flex-none items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 shrink-0
                                 ${activeTab === tab.id 
                                     ? 'bg-white dark:bg-slate-900 text-sky-500 shadow-xl shadow-sky-500/10 ring-1 ring-sky-500/20' 
                                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
@@ -318,7 +318,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             <tab.icon size={14} className={activeTab === tab.id ? 'text-sky-500' : 'text-slate-400'} />
                             {tab.label}
                             {tab.id === 'receivable' && financialData.receivable.length > 0 && (
-                                <span className={`px-1.5 rounded-md text-[8px] font-mono ${activeTab === tab.id ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
+                                <span className={`px-1.5 rounded-md text-xs font-mono ${activeTab === tab.id ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
                                     {financialData.receivable.length}
                                 </span>
                             )}
@@ -349,7 +349,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 <div className="lg:col-span-1 glass-tactical rounded-[2rem] p-6 border border-white/5 h-fit relative overflow-hidden group">
                     <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-32 h-32 bg-sky-500/10 blur-[80px] rounded-full"></div>
                     <div className="relative z-10">
-                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
                             <ShieldAlert size={12} className="text-sky-500" />
                             Análisis de Cartera
                         </h3>
@@ -377,7 +377,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 <span className="text-lg font-black text-slate-900 dark:text-white leading-none">
                                     ${(financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0)).toFixed(0)}
                                 </span>
-                                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">TOTAL</span>
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-tighter">TOTAL</span>
                             </div>
                         </div>
                         
@@ -386,7 +386,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-slate-900/5 dark:bg-white/2">
                                     <div className="flex items-center gap-2">
                                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }}></div>
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{d.name}</span>
+                                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">{d.name}</span>
                                     </div>
                                     <span className="text-xs font-black text-slate-900 dark:text-white font-mono">${d.value.toFixed(2)}</span>
                                 </div>
@@ -401,14 +401,14 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         <button onClick={() => {
                             if (selectedItems.size === currentList.length) setSelectedItems(new Set());
                             else setSelectedItems(new Set(currentList.map(i => `${i.clientId}-${i.period}`)));
-                        }} className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-sky-500 transition-all">
+                        }} className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-xs font-black uppercase tracking-widest text-slate-500 hover:text-sky-500 transition-all">
                             {selectedItems.size === currentList.length ? <CheckSquare size={16} className="text-sky-500" /> : <Square size={16} />}
                             {selectedItems.size === currentList.length ? 'DESELECCIONAR' : 'SELECCIONAR TODO'}
                         </button>
                         <div className="flex items-center gap-4">
                             <div className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
                                 <Layers size={12} className="text-sky-500" />
-                                <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest">{currentList.length} OPERACIONES</span>
+                                <span className="text-xs font-black text-sky-500 uppercase tracking-widest">{currentList.length} OPERACIONES</span>
                             </div>
                         </div>
                     </div>
@@ -441,13 +441,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                 <div className="flex flex-wrap items-center gap-2 mb-0.5">
                                                     <p className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-tight truncate max-w-[150px] sm:max-w-none">{item.clientName}</p>
                                                     {item.daysDiff && item.daysDiff > 0 && (
-                                                        <span className="px-1.5 py-0.5 rounded-md bg-rose-500 text-[8px] font-black text-white shadow-lg shadow-rose-500/30 shrink-0">VIP ALERT</span>
+                                                        <span className="px-1.5 py-0.5 rounded-md bg-rose-500 text-xs font-black text-white shadow-lg shadow-rose-500/30 shrink-0">VIP ALERT</span>
                                                     )}
                                                 </div>
                                                 <div className="flex items-center gap-3">
-                                                    <span className="text-[9px] sm:text-[10px] font-black text-sky-500/60 font-mono tracking-widest uppercase">{item.ruc}</span>
-                                                    <span className="text-slate-300 dark:text-white/10 text-[10px]">•</span>
-                                                    <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{formatPeriodForDisplay(item.period)}</span>
+                                                    <span className="text-[11px] sm:text-xs font-black text-sky-500/60 font-mono tracking-widest uppercase">{item.ruc}</span>
+                                                    <span className="text-slate-300 dark:text-white/10 text-xs">•</span>
+                                                    <span className="text-[11px] sm:text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{formatPeriodForDisplay(item.period)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -455,7 +455,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                             <p className={`text-lg sm:text-xl font-black transition-colors duration-300 ${isSelected ? 'text-sky-500' : 'text-slate-900 dark:text-white'}`}>
                                                 ${item.amount.toFixed(2)}
                                             </p>
-                                            <p className={`text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-lg inline-block
+                                            <p className={`text-xs sm:text-[11px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-lg inline-block
                                                 ${item.status === 'Pagada' 
                                                     ? 'bg-emerald-500/10 text-emerald-500' 
                                                     : item.daysDiff && item.daysDiff > 0 
@@ -480,13 +480,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     <div className="relative group">
                         <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-sky-500 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
                         <div className="relative bg-slate-50 dark:bg-slate-900 border border-white/5 p-8 rounded-2xl text-center">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Total a Liquidar</p>
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-3">Total a Liquidar</p>
                             <p className="text-5xl font-black text-slate-900 dark:text-white mb-2">
                                 ${Array.from(selectedItems).reduce<number>((sum: number, key) => sum + (currentList.find(i => `${i.clientId}-${i.period}` === key)?.amount || 0), 0).toFixed(2)}
                             </p>
                             <div className="flex items-center justify-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                                <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Procedencia Verificada</span>
+                                <span className="text-xs font-black text-emerald-500 uppercase tracking-widest">Procedencia Verificada</span>
                             </div>
                         </div>
                     </div>
@@ -503,7 +503,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             </span>
                             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </button>
-                        <p className="text-center text-[8px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">
+                        <p className="text-center text-xs font-black text-slate-500 uppercase tracking-widest leading-relaxed">
                             Al confirmar, se generará un asiento contable <br />y se actualizará el historial del contribuyente.
                         </p>
                     </div>
@@ -522,31 +522,31 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 
                                 <div className="text-center mb-8 border-b border-dashed border-slate-200 dark:border-white/10 pb-6">
                                     <p className="font-black text-base uppercase tracking-widest mb-1 text-slate-900 dark:text-white">{defaultBusinessProfile.businessName}</p>
-                                    <p className="text-[10px] text-slate-400">{defaultBusinessProfile.address}</p>
-                                    <p className="text-[10px] text-slate-400 font-bold mt-1">SISTEMA ELITE • RUC: {defaultBusinessProfile.ruc}</p>
-                                    <div className="inline-block mt-4 px-3 py-1 bg-sky-500 text-white rounded-full font-black text-[9px] uppercase tracking-widest">
+                                    <p className="text-xs text-slate-400">{defaultBusinessProfile.address}</p>
+                                    <p className="text-xs text-slate-400 font-bold mt-1">SISTEMA ELITE • RUC: {defaultBusinessProfile.ruc}</p>
+                                    <div className="inline-block mt-4 px-3 py-1 bg-sky-500 text-white rounded-full font-black text-[11px] uppercase tracking-widest">
                                         ID: {receiptData.transactionId}
                                     </div>
                                 </div>
 
                                 <div className="space-y-2 mb-8 bg-slate-50 dark:bg-white/2 p-4 rounded-xl border border-slate-100 dark:border-white/5">
                                     <div className="flex justify-between">
-                                        <span className="text-slate-400 uppercase font-black text-[9px]">Contribuyente</span>
+                                        <span className="text-slate-400 uppercase font-black text-[11px]">Contribuyente</span>
                                         <span className="text-right font-black uppercase text-slate-900 dark:text-white">{receiptData.clientName}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-slate-400 uppercase font-black text-[9px]">Identificación</span>
+                                        <span className="text-slate-400 uppercase font-black text-[11px]">Identificación</span>
                                         <span className="text-right font-black text-sky-500">{receiptData.clientRuc}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-slate-400 uppercase font-black text-[9px]">Timestamp</span>
+                                        <span className="text-slate-400 uppercase font-black text-[11px]">Timestamp</span>
                                         <span className="text-right font-black">{receiptData.paymentDate}</span>
                                     </div>
                                 </div>
 
                                 <div className="mb-8">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-dashed border-slate-200 dark:border-white/10 pb-1">Desglose de Operaciones</p>
-                                    <table className="w-full text-[10px]">
+                                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3 border-b border-dashed border-slate-200 dark:border-white/10 pb-1">Desglose de Operaciones</p>
+                                    <table className="w-full text-xs">
                                         <tbody>
                                             {receiptData.paidPeriods.map((p, i) => (
                                                 <tr key={i} className="border-b border-slate-50 dark:border-white/2">
@@ -559,7 +559,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 </div>
 
                                 <div className="bg-slate-900 dark:bg-sky-500 p-5 rounded-2xl flex justify-between items-center text-white">
-                                    <span className="font-black text-[10px] uppercase tracking-widest">Total Transado</span>
+                                    <span className="font-black text-xs uppercase tracking-widest">Total Transado</span>
                                     <span className="text-2xl font-black font-display tracking-tighter">${receiptData.totalAmount.toFixed(2)}</span>
                                 </div>
                             </div>

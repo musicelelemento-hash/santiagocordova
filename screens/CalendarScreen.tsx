@@ -117,9 +117,9 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
           <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-400/10 border border-sky-400/20 shadow-lg shadow-sky-400/5">
               <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
-              <span className="text-[10px] font-semibold text-sky-400 uppercase tracking-widest">Temporal Intelligence</span>
+              <span className="text-xs font-semibold text-sky-400 uppercase tracking-widest">Temporal Intelligence</span>
             </div>
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Scheduler v4.0 Alpha</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Scheduler v4.0 Alpha</span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-[0.85] tracking-tighter mb-2 italic">
             {safeFormat(currentMonth, 'MMMM').toUpperCase()} <span className="text-gradient-sky font-semibold italic">{safeFormat(currentMonth, 'yyyy')}</span>
@@ -133,7 +133,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
         <div className="flex items-center gap-3 w-full md:w-auto animate-fade-in-right">
           <button
             onClick={() => setCurrentMonth(new Date())}
-            className="flex-1 sm:flex-none px-10 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl text-[10px] font-semibold uppercase tracking-[0.2em] transition-all hover:scale-[1.05] active:scale-[0.95] shadow-xl hover:shadow-sky-400/10 italic"
+            className="flex-1 sm:flex-none px-10 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl text-xs font-semibold uppercase tracking-[0.2em] transition-all hover:scale-[1.05] active:scale-[0.95] shadow-xl hover:shadow-sky-400/10 italic"
           >
             Sincronizar Hoy
           </button>
@@ -154,7 +154,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
         {/* Weekday Headers */}
         <div className="grid grid-cols-7 border-b border-white/5 bg-white/5 backdrop-blur-md relative z-10">
           {weekDays.map(day => (
-            <div key={day} className="text-center font-semibold text-[10px] uppercase tracking-[0.3em] py-5 text-slate-500 dark:text-slate-400 italic">
+            <div key={day} className="text-center font-semibold text-xs uppercase tracking-[0.3em] py-5 text-slate-500 dark:text-slate-400 italic">
               {day}
             </div>
           ))}
@@ -188,7 +188,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
                   </span>
                   {sriDigit !== null && isCurrentMonth && (
                     <div className="flex flex-col items-end">
-                      <span className="text-[8px] font-semibold text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded-full border border-rose-400/20 uppercase tracking-[0.1em] shadow-lg shadow-rose-400/5 animate-fade-in" title={`Vence 9no dígito: ${sriDigit}`}>
+                      <span className="text-xs font-semibold text-rose-400 bg-rose-400/10 px-2 py-0.5 rounded-full border border-rose-400/20 uppercase tracking-[0.1em] shadow-lg shadow-rose-400/5 animate-fade-in" title={`Vence 9no dígito: ${sriDigit}`}>
                         DÍGITO {sriDigit}
                       </span>
                     </div>
@@ -200,14 +200,14 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
                     <div
                       key={`${event.id}-${index}`}
                       onClick={(e) => { e.stopPropagation(); handleEventClick(event); }}
-                      className={`group/item relative p-2.5 rounded-xl text-[10px] cursor-pointer border-l-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl active:scale-95
+                      className={`group/item relative p-2.5 rounded-xl text-xs cursor-pointer border-l-4 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl active:scale-95
                         ${event.type === 'task'
                           ? 'bg-sky-400/10 border-sky-400 text-slate-800 dark:text-sky-100 hover:bg-sky-400/20'
                           : 'bg-emerald-400/10 border-emerald-400 text-slate-800 dark:text-emerald-100 hover:bg-emerald-400/20'}`
                       }
                     >
                       <div className="font-semibold truncate uppercase tracking-tight mb-0.5 group-hover/item:text-sky-400 transition-colors">{event.clientName}</div>
-                      <div className="flex items-center gap-1.5 opacity-60 font-medium uppercase tracking-widest text-[8px]">
+                      <div className="flex items-center gap-1.5 opacity-60 font-medium uppercase tracking-widest text-xs">
                         <div className={`w-1 h-1 rounded-full ${event.type === 'task' ? 'bg-sky-400' : 'bg-emerald-400'}`}></div>
                         {event.type === 'task' ? 'OPERATIVO' : 'SRI PROTOCOL'}
                       </div>
@@ -230,15 +230,15 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
       <div className="flex flex-wrap items-center gap-6 px-8 py-4 glass-tactical border border-white/5 rounded-[2rem] w-fit mx-auto animate-slide-up-fade">
          <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(14,165,233,0.6)]"></div>
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Tareas Operativas</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Tareas Operativas</span>
          </div>
          <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Protocolos Fiscales</span>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Protocolos Fiscales</span>
          </div>
          <div className="flex items-center gap-3 border-l border-white/10 pl-6 ml-2">
             <Info size={14} className="text-rose-400" />
-            <span className="text-[10px] font-semibold text-rose-400/70 uppercase tracking-widest italic">Alertas SRI Automatizadas</span>
+            <span className="text-xs font-semibold text-rose-400/70 uppercase tracking-widest italic">Alertas SRI Automatizadas</span>
          </div>
       </div>
     </div>

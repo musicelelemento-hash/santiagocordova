@@ -178,12 +178,12 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                         
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
-                                <span className={`text-[9px] px-2 py-0.5 rounded-lg font-medium tracking-widest uppercase border ${true && !client.isDeleted ? 'bg-white/5 text-slate-400 border-white/10' : 'bg-white/5 text-slate-500 border-white/5'}`}>
+                                <span className={`text-[11px] px-2 py-0.5 rounded-lg font-medium tracking-widest uppercase border ${true && !client.isDeleted ? 'bg-white/5 text-slate-400 border-white/10' : 'bg-white/5 text-slate-500 border-white/5'}`}>
                                     {client.taxProfile?.ivaFrequency || 'Mensual'}
                                 </span>
-                                {true && !client.isDeleted && <span className="text-[9px] px-2 py-0.5 bg-primary/15 text-primary rounded-lg font-medium tracking-widest border border-primary/20">Activo</span>}
+                                {true && !client.isDeleted && <span className="text-[11px] px-2 py-0.5 bg-primary/15 text-primary rounded-lg font-medium tracking-widest border border-primary/20">Activo</span>}
                                 {client.hasElderlyDevolucionIva && (
-                                    <span className="text-[9px] px-2 py-0.5 bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 rounded-lg font-medium tracking-widest flex items-center gap-1">
+                                    <span className="text-[11px] px-2 py-0.5 bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 rounded-lg font-medium tracking-widest flex items-center gap-1">
                                         <LucideIcons.Heart size={8} /> 3ra Edad
                                     </span>
                                 )}
@@ -192,13 +192,13 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                     {client.tradeName || client.name}
                                 </h3>
                                 {client.tradeName && (
-                                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate uppercase mt-0.5" title={client.name}>
+                                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500 truncate uppercase mt-0.5" title={client.name}>
                                         {client.name}
                                     </p>
                                 )}
                             <div className="flex items-center gap-2 mt-1">
                                 <button onClick={handleCopy} className={`group/ruc flex items-center gap-2 px-2 py-1 rounded-lg border transition-all ${copied ? 'bg-emerald-400 border-emerald-400 text-white' : 'bg-slate-50/50 dark:bg-white/5 border-slate-100 dark:border-white/5 hover:border-sky-400'}`}>
-                                    <span className="font-mono text-[10px] font-semibold tracking-widest">{client.ruc}</span>
+                                    <span className="font-mono text-xs font-semibold tracking-widest">{client.ruc}</span>
                                     {copied ? <LucideIcons.Check size={10} strokeWidth={3} /> : <LucideIcons.Copy size={10} className="text-slate-400 group-hover/ruc:text-sky-400" />}
                                 </button>
                                 {client.declarations && client.declarations.find(d => d.period === currentPeriod && !!d.proof_file) && (
@@ -218,7 +218,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     </div>
 
                     <div className="flex flex-col items-end gap-2">
-                        <div className={`px-3 py-1.5 rounded-xl border text-[9px] font-medium tracking-widest flex items-center gap-2 ${statusBadge.color}`}>
+                        <div className={`px-3 py-1.5 rounded-xl border text-[11px] font-medium tracking-widest flex items-center gap-2 ${statusBadge.color}`}>
                             <statusBadge.icon size={12} strokeWidth={2} />
                             {statusBadge.text}
                         </div>
@@ -236,7 +236,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                         <div className={`w-2 h-2 rounded-full ${isPaid ? 'bg-emerald-400' : (isOverdue ? 'bg-rose-400' : 'bg-slate-400')}`}></div>
                                         <span className="text-xs font-semibold tracking-tighter uppercase">IVA {dueDate ? safeFormat(dueDate, 'dd MMM') : 'N/A'}</span>
                                     </div>
-                                    <span className={`text-[10px] font-semibold ${isPaid ? 'text-emerald-400' : 'text-slate-400'}`}>{isPaid ? 'CONFIRMED' : 'DUE'}</span>
+                                    <span className={`text-xs font-semibold ${isPaid ? 'text-emerald-400' : 'text-slate-400'}`}>{isPaid ? 'CONFIRMED' : 'DUE'}</span>
                                 </div>
                             )}
                             {needsRenta && !isRentaFullyDone && (
@@ -245,7 +245,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                         <div className={`w-2 h-2 rounded-full ${isRentaPaid ? 'bg-emerald-400' : 'bg-violet-500'}`}></div>
                                         <span className="text-xs font-semibold tracking-tighter uppercase">RENTA {rentaPeriod}</span>
                                     </div>
-                                    <span className={`text-[10px] font-semibold ${isRentaPaid ? 'text-emerald-400' : 'text-violet-500'}`}>{isRentaPaid ? 'CONFIRMED' : 'PENDING'}</span>
+                                    <span className={`text-xs font-semibold ${isRentaPaid ? 'text-emerald-400' : 'text-violet-500'}`}>{isRentaPaid ? 'CONFIRMED' : 'PENDING'}</span>
                                 </div>
                             )}
                         </div>
@@ -254,7 +254,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
 
                 <div className={`flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/50 mt-1 transition-all`}>
                     {!compact && (
-                        <div className={`text-[9px] font-semibold uppercase tracking-wider ${textColor} opacity-60`}>
+                        <div className={`text-[11px] font-semibold uppercase tracking-wider ${textColor} opacity-60`}>
                             {client.taxProfile?.ivaFrequency || 'Sin IVA'}
                         </div>
                     )}
@@ -263,14 +263,14 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                         <div className={`flex gap-1.5 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
                             <button
                                 onClick={(e) => !isDeclared && handleAction(e, 'declare')}
-                                className={`flex items-center justify-center gap-1 rounded-lg transition-all font-medium border px-2.5 py-1.5 text-[10px] ${isDeclared ? 'bg-blue-50 text-blue-700 border-blue-200 cursor-default' : 'bg-white text-slate-400 border-slate-200 hover:bg-blue-100 hover:text-blue-700 active:scale-95'}`}
+                                className={`flex items-center justify-center gap-1 rounded-lg transition-all font-medium border px-2.5 py-1.5 text-xs ${isDeclared ? 'bg-blue-50 text-blue-700 border-blue-200 cursor-default' : 'bg-white text-slate-400 border-slate-200 hover:bg-blue-100 hover:text-blue-700 active:scale-95'}`}
                             >
                                 <LucideIcons.Send size={12} /> {compact ? 'DECLARAR' : 'SRI'}
                             </button>
                             {/* Cobrar Button removed from main list per Phase 4 plan */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
-                                className={`flex items-center justify-center gap-1.5 rounded-xl transition-all font-semibold border px-3 py-1.5 text-[9px] uppercase ${activeDecl?.proof_file ? 'bg-emerald-50 text-emerald-500 border-emerald-200' : 'bg-sky-50 text-sky-500 border-sky-200'} shadow-sm active:scale-95`}
+                                className={`flex items-center justify-center gap-1.5 rounded-xl transition-all font-semibold border px-3 py-1.5 text-[11px] uppercase ${activeDecl?.proof_file ? 'bg-emerald-50 text-emerald-500 border-emerald-200' : 'bg-sky-50 text-sky-500 border-sky-200'} shadow-sm active:scale-95`}
                             >
                                 <LucideIcons.UploadCloud size={13} /> {activeDecl?.proof_file ? 'PDF OK' : 'IVA PDF'}
                             </button>
@@ -304,13 +304,13 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                         <div className="flex gap-1.5 animate-in slide-in-from-right-2">
                             <button
                                 onClick={(e) => handleAction(e, 'restore')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-400 text-white rounded-xl text-[10px] font-semibold hover:bg-emerald-500 active:scale-95"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-400 text-white rounded-xl text-xs font-semibold hover:bg-emerald-500 active:scale-95"
                             >
                                 <LucideIcons.RotateCcw size={12} /> RESTAURAR
                             </button>
                             <button
                                 onClick={(e) => handleAction(e, 'purge')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-400 text-white rounded-xl text-[10px] font-semibold hover:bg-rose-500 active:scale-95"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-400 text-white rounded-xl text-xs font-semibold hover:bg-rose-500 active:scale-95"
                             >
                                 <LucideIcons.Trash2 size={12} /> ELIMINAR
                             </button>
