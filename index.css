@@ -1,35 +1,43 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap');
 
 :root {
-    --primary: 110 16% 59%; /* #86a789 - Sage Green (Zenith Primary) */
-    --primary-foreground: 110 30% 10%;
-    --secondary: 215 17% 35%; /* #4a5568 - Soft Slate (Zenith Secondary) */
-    --secondary-foreground: 210 20% 98%;
-    --accent: 147 43% 53%; /* #4ade80 - Soft Emerald */
-    --accent-foreground: 0 0% 100%;
-    --background: 40 14% 98%; /* #fdfcfb - Warm Zen Off-White */
-    --foreground: 215 25% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
-    --border: 215 15% 90%;
-    --ring: 110 16% 59%;
-    --radius: 1.25rem;
+    /* The Analytical Architect - Color Tokens */
+    --primary: 231 48% 48%; /* #3F51B5 - Deep Indigo */
+    --primary-dark: 230 63% 38%; /* #24389C */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 200 10% 38%; /* #546067 */
+    --secondary-foreground: 0 0% 100%;
 
-    /* Zenith Specific Tokens */
-    --zen-sage: #86A789;
-    --zen-slate: #4A5568;
-    --zen-bg-light: #FDFCFB;
-    --zen-bg-dark: #1A1F26;
-    --zen-shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.04);
-    --zen-shadow-deep: 0 20px 60px rgba(0, 0, 0, 0.08);
+    --accent: 154 60% 50%; /* #5debaf - Emerald tint for highlights */
+    --accent-foreground: 160 100% 6%;
+
+    /* Surfaces - Apilado de Papel */
+    --background: 210 25% 98%; /* #f7f9fb - Base */
+    --foreground: 204 9% 11%; /* #191c1e - On-Surface */
+    
+    --card: 0 0% 100%; /* #ffffff - Highest priority info */
+    --card-foreground: 204 9% 11%;
+    
+    --surface-low: 210 16% 96%; /* #f2f4f6 - Minor widgets */
+    
+    /* Ghost Borders - Barely visible */
+    --border: 240 14% 80%; /* #c5c5d4 */
+    --ring: 231 48% 48%;
+    
+    --radius: 0.5rem; /* 8px for Analytical Architect */
+
+    /* Custom Gradients & Shadows */
+    --architect-shadow: 0 32px 64px -12px rgba(25, 28, 30, 0.06);
+    --architect-gradient: linear-gradient(135deg, #24389c 0%, #3f51b5 100%);
 }
 
 .dark {
-    --background: 215 18% 12%; /* #1a1f26 - Deep Zen Charcoal */
+    --background: 210 10% 18%; /* Dark theme adaptation */
     --foreground: 210 20% 98%;
-    --card: 215 18% 14%;
+    --card: 210 10% 22%;
     --card-foreground: 210 20% 98%;
-    --border: 215 15% 20%;
+    --border: 210 10% 30%;
 }
 
 body {
@@ -40,51 +48,53 @@ body {
 }
 
 h1, h2, h3, h4 {
-    font-family: 'Outfit', sans-serif;
-    letter-spacing: 0.02em; 
-    font-weight: 300; /* Reducimos el peso para una apariencia más zen y controlada */
+    font-family: 'Manrope', sans-serif;
+    letter-spacing: -0.01em; 
+    font-weight: 600; /* Editorial presence */
 }
 
 .font-premium {
-    font-family: 'Outfit', sans-serif;
-    letter-spacing: 0.01em;
+    font-family: 'Manrope', sans-serif;
+    letter-spacing: -0.01em;
+    font-weight: 700;
 }
 
 .font-premium-elegant {
-    font-family: 'Outfit', sans-serif;
-    letter-spacing: 0.08em; /* Aumentamos el tracking para que las mayúsculas respiren */
+    font-family: 'Manrope', sans-serif;
+    letter-spacing: 0.02em; 
     text-transform: uppercase;
-    font-weight: 400;
+    font-weight: 600;
 }
 
 /* Elegant minimalist variations for Client Portal */
 .glass-morphism {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
+    background: hsla(210, 25%, 98%, 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid hsla(240, 14%, 80%, 0.15); /* 15% opacity ghost border */
+    box-shadow: var(--architect-shadow);
 }
 
 .glass-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+    background: var(--card);
     backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: none; /* No lines rule */
     border-radius: var(--radius);
-    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: var(--architect-shadow);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
-    border-color: hsla(var(--primary), 0.3);
-    background: hsla(var(--primary), 0.02);
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+    background: hsla(210, 16%, 96%, 1); /* Shift to low container on hover */
+    box-shadow: 0 40px 80px -15px rgba(25, 28, 30, 0.1);
     transform: translateY(-2px);
 }
 
 .glass-elite {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(32px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.25);
+    background: var(--architect-gradient);
+    backdrop-filter: blur(32px);
+    border: none;
+    box-shadow: var(--architect-shadow);
+    color: white;
 }
 
 .shadow-primary {
@@ -173,40 +183,40 @@ h1, h2, h3, h4 {
 }
 
 .aurora-zen {
-    background: radial-gradient(circle at 10% 20%, rgba(134, 167, 137, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(74, 85, 104, 0.05) 0%, transparent 40%);
+    background: radial-gradient(circle at 10% 20%, rgba(63, 81, 181, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(93, 235, 175, 0.05) 0%, transparent 40%);
 }
 
 .glass-zen {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(20px) saturate(120%);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: var(--zen-shadow-soft);
+    background: hsla(210, 25%, 98%, 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid hsla(240, 14%, 80%, 0.15); /* Ghost Border */
+    box-shadow: var(--architect-shadow);
 }
 
 .dark .glass-zen {
-    background: rgba(26, 31, 38, 0.6);
+    background: rgba(45, 49, 51, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--architect-shadow);
 }
 
 .zen-card {
-    background: white;
+    background: var(--card);
     border-radius: var(--radius);
     padding: 1.5rem;
-    transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-    border: 1px solid var(--border);
-    box-shadow: var(--zen-shadow-soft);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none; /* No lines rule */
+    box-shadow: var(--architect-shadow);
 }
 
 .dark .zen-card {
-    background: rgba(26, 31, 38, 0.4);
+    background: rgba(45, 49, 51, 1);
 }
 
 .zen-card:hover {
     transform: translateY(-4px);
-    box-shadow: var(--zen-shadow-deep);
-    border-color: hsla(var(--primary), 0.2);
+    background: hsla(210, 16%, 96%, 1);
+    box-shadow: 0 40px 80px -15px rgba(25, 28, 30, 0.1);
 }
 
 .neon-text-teal {
