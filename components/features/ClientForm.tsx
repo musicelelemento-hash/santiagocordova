@@ -416,7 +416,6 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 />
                             </div>
                         </div>
-                    </div>
                 </div>
 
                 <div className="space-y-8 bg-white/40 dark:bg-slate-900/40 p-8 rounded-[2.5rem] border border-slate-200 dark:border-white/5 backdrop-blur-xl">
@@ -464,7 +463,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         <div className="grid grid-cols-2 gap-4">
                             <div className="relative">
                                 <label className="text-xs font-medium text-slate-500 mb-1 block uppercase tracking-wider">Clave SRI</label>
-                                <div className="relative">
+                                <div className="relative group">
                                     <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                     <input
                                         type={passwordVisible ? "text" : "password"}
@@ -495,7 +494,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         
                         <div className="relative">
                             <label className="text-xs font-medium text-slate-500 mb-1 block uppercase tracking-wider">Clave Firma Electrónica (.p12)</label>
-                            <div className="relative">
+                            <div className="relative group">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                                 <input
                                     type={p12PasswordVisible ? "text" : "password"}
@@ -532,6 +531,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                      </button>
                                 ))}
                             </div>
+                        </div>
                               {/* Módulos Extra (Tax Profile) */}
                         <div className="bg-slate-950/5 dark:bg-white/5 rounded-3xl p-5 border border-white/10 shadow-inner mb-4 backdrop-blur-3xl">
                             <label className="text-[11px] font-semibold text-slate-400 mb-4 block uppercase tracking-widest pl-1">Bóveda de Obligaciones</label>

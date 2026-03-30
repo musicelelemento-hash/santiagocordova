@@ -42,3 +42,4 @@ commit_files.txt
 debug-*.js
 test-pdf.js
 *.pdf
+.env*.local
