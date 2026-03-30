@@ -568,9 +568,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
                 <div className={`p-8 rounded-[2.5rem] ${isWorkOrder ? 'bg-amber-400/10 border-amber-400/20 shadow-primary' : (isFullyAlDia ? 'bg-emerald-400/10 border-emerald-400/20 shadow-primary' : 'glass-elite')} relative overflow-hidden group transition-all duration-700`}>
                     <div className="relative z-10">
-                        <p className={`text-[10px] font-medium uppercase tracking-widest mb-3 ${isWorkOrder ? 'text-amber-400' : (isFullyAlDia ? 'text-emerald-400' : 'text-slate-500')}`}>Estado del Portafolio</p>
+                        <p className={`text-[10px] font-medium uppercase tracking-widest mb-3 ${isWorkOrder ? 'text-amber-400' : (isFullyAlDia ? 'text-emerald-400' : 'text-slate-500')}`}>DIRECTIVA OPERATIVA</p>
                         <h4 className="text-xl sm:text-2xl font-medium leading-tight tracking-tight uppercase text-white">
-                            {isFullyAlDia ? 'Al Día' : (isWorkOrder ? 'Acción Requerida' : 'Pendiente')}
+                            {isFullyAlDia ? 'ÓPTIMA' : 'INTERVENCIÓN REQUERIDA'}
                         </h4>
                         <div className="mt-6 flex items-center gap-3">
                             <div className={`w-2 h-2 rounded-full animate-ping ${isFullyAlDia ? 'bg-emerald-400' : 'bg-amber-400'}`}></div>
@@ -585,8 +585,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             <Zap size={28} className="animate-pulse" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-medium uppercase tracking-widest text-primary mb-1">Próxima Acción</p>
-                            <p className="text-sm font-medium text-white uppercase tracking-tight">Declarar Obligación</p>
+                            <p className="text-[10px] font-medium uppercase tracking-widest text-primary mb-1">VECTOR DE ATAQUE</p>
+                            <p className="text-sm font-medium text-white uppercase tracking-tight">DECLARAR OBLIGACIÓN</p>
                         </div>
                     </div>
                 )}
@@ -623,9 +623,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             <div>
                                 <h3 className="text-xl font-medium text-white tracking-tight uppercase flex items-center gap-4">
                                     <Activity className="text-primary" size={24} />
-                                    Resumen Consolidado
+                                    PANEL DE INTELIGENCIA FISCAL
                                 </h3>
-                                <p className="text-[9px] font-medium text-slate-500 uppercase tracking-widest mt-3">Análisis de cumplimiento y pasivos</p>
+                                <p className="text-[9px] font-medium text-slate-500 uppercase tracking-widest mt-3">MÉTRICAS DE CUMPLIMIENTO Y OBLIGACIONES CRÍTICAS</p>
                             </div>
                         </div>
 
@@ -647,14 +647,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
                             <div className="space-y-8">
                                 <div className="p-8 glass-card rounded-[2.5rem] relative overflow-hidden group/card shadow-2xl border border-white/5">
-                                    <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest mb-4">Perfil Impositivo</p>
+                                    <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest mb-4">Arquitectura Tributaria</p>
                                     <div className="flex items-center gap-5">
                                         <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-primary shadow-inner group-hover/card:scale-110 transition-transform">
                                             <ShieldCheck size={28} />
                                         </div>
                                         <div>
                                             <p className="text-base font-medium text-white leading-tight uppercase tracking-tight">{client.regime}</p>
-                                            <p className="text-[9px] font-medium text-emerald-400 mt-1 uppercase tracking-widest">Validado SRI</p>
+                                            <p className="text-[9px] font-medium text-emerald-400 mt-1 uppercase tracking-widest">VALIDADO & ACTIVO</p>
                                         </div>
                                     </div>
                                 </div>
@@ -662,8 +662,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 {client.taxProfile?.requiresAnnualRenta && editedClient.rentaRefundStatus !== 'Completado' && (
                                     <div className="p-8 glass-card rounded-[2.5rem] space-y-8 relative overflow-hidden group/renta shadow-2xl border border-white/5">
                                         <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Trámite Renta</p>
-                                            <div className="px-3 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[8px] font-medium rounded-lg uppercase tracking-widest">Misión Prioritaria</div>
+                                            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Protocolo Renta</p>
+                                            <div className="px-3 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[8px] font-medium rounded-lg uppercase tracking-widest">MISIÓN CRÍTICA</div>
                                         </div>
                                         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                                             {[

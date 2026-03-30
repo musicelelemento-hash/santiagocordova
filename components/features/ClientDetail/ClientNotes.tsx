@@ -65,9 +65,9 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
           </div>
           <div>
             <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white uppercase tracking-tight">
-              Tactical Notes
+              PREGUNTAS ABIERTAS
             </h3>
-            <p className="text-[10px] font-medium text-slate-400">Observaciones y Claves</p>
+            <p className="text-[10px] font-medium text-slate-400">Esperando Revisión</p>
           </div>
         </div>
         
