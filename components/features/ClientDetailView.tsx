@@ -687,9 +687,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                                             if (step.id === 'Confirmado') handleRentaRefundAction('confirm');
                                                             if (step.id === 'Completado') handleRentaRefundAction('complete');
                                                         }}
-                                                        className={`flex items-center gap-3 px-5 py-3 rounded-2xl border transition-all whitespace-nowrap flex-shrink-0 ${isActive ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-slate-950 text-slate-600 border-white/5 hover:border-white/10')}`}
+                                                        className={`flex-1 min-w-[110px] flex justify-center items-center gap-2 px-4 py-3 rounded-2xl border transition-all whitespace-nowrap ${isActive ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-slate-950 text-slate-600 border-white/5 hover:border-white/10')}`}
                                                     >
-                                                        <step.icon size={14} />
+                                                        <step.icon size={14} className="flex-shrink-0" />
                                                         <span className="text-[9px] font-black uppercase tracking-[0.1em]">{step.label}</span>
                                                     </button>
                                                 );
@@ -737,9 +737,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                                     <button
                                                         key={step.id}
                                                         onClick={() => handleElderlyRefundAction(step.action as any)}
-                                                        className={`flex items-center gap-3 px-5 py-3 rounded-2xl border transition-all whitespace-nowrap flex-shrink-0 ${isActive ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-slate-950 text-slate-600 border-white/5 hover:border-white/10')}`}
+                                                        className={`flex-1 min-w-[110px] flex justify-center items-center gap-2 px-4 py-3 rounded-2xl border transition-all whitespace-nowrap ${isActive ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-slate-950 text-slate-600 border-white/5 hover:border-white/10')}`}
                                                     >
-                                                        <step.icon size={14} />
+                                                        <step.icon size={14} className="flex-shrink-0" />
                                                         <span className="text-[9px] font-black uppercase tracking-[0.1em]">{step.label}</span>
                                                     </button>
                                                 );
@@ -1201,7 +1201,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 <button onClick={handleSave} className="px-8 py-3.5 bg-primary text-slate-950 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-primary transition-all active:scale-95">GUARDAR CAMBIOS</button>
                             </>
                         ) : (
-                            <button onClick={() => setIsEditing(true)} className="w-full sm:w-auto px-10 py-3.5 bg-white text-slate-950 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:bg-primary transition-all transform hover:-translate-y-1 active:scale-95">MÓDULO ADMINISTRATIVO</button>
+                            <button onClick={() => setIsEditing(true)} className="flex items-center justify-center w-full sm:w-auto px-10 py-3.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:bg-cyan-500/20 hover:border-cyan-500/60 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] transition-all backdrop-blur-md transform hover:-translate-y-1 active:scale-95">
+                                MÓDULO DE EDICIÓN
+                            </button>
                         )}
                     </div>
                 </div>
