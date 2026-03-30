@@ -597,8 +597,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             <DollarSign size={28} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-medium uppercase tracking-widest text-amber-400 mb-1">Gestión de Cobro</p>
-                            <p className="text-sm font-medium text-white uppercase tracking-tight">Registrar Pago</p>
+                            <p className="text-[9px] font-black uppercase text-amber-400 tracking-[0.2em] mb-1">FASE: LIQUIDACIÓN</p>
+                            <p className="text-sm font-black text-white uppercase tracking-tight">RECURSOS COMPROMETIDOS</p>
                         </div>
                     </div>
                 )}
@@ -647,25 +647,25 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
                             <div className="space-y-8">
                                 <div className="p-8 glass-card rounded-[2.5rem] relative overflow-hidden group/card shadow-2xl border border-white/5">
-                                    <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest mb-4">Arquitectura Tributaria</p>
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Arquitectura Tributaria</p>
                                     <div className="flex items-center gap-5">
                                         <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-primary shadow-inner group-hover/card:scale-110 transition-transform">
                                             <ShieldCheck size={28} />
                                         </div>
                                         <div>
                                             <p className="text-base font-medium text-white leading-tight uppercase tracking-tight">{client.regime}</p>
-                                            <p className="text-[9px] font-medium text-emerald-400 mt-1 uppercase tracking-widest">VALIDADO & ACTIVO</p>
+                                            <p className="text-[9px] font-black text-emerald-400 mt-1 uppercase tracking-[0.2em]">VALIDADO & ACTIVO</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {client.taxProfile?.requiresAnnualRenta && editedClient.rentaRefundStatus !== 'Completado' && (
                                     <div className="p-8 glass-card rounded-[2.5rem] space-y-8 relative overflow-hidden group/renta shadow-2xl border border-white/5">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Protocolo Renta</p>
-                                            <div className="px-3 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[8px] font-medium rounded-lg uppercase tracking-widest">MISIÓN CRÍTICA</div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Protocolo Renta</p>
+                                            <div className="px-3 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[8px] font-black rounded-lg uppercase tracking-[0.2em]">MISIÓN CRÍTICA</div>
                                         </div>
-                                        <div className="flex gap-2 flex-wrap pb-2">
+                                        <div className="flex gap-3 flex-wrap pb-6">
                                             {[
                                                 { id: 'Solicitado', label: 'Inicio', icon: Send },
                                                 { id: 'Esperando Confirmación', label: 'SRI Web', icon: Clock },
@@ -717,11 +717,11 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
                                 {client.hasElderlyDevolucionIva && editedClient.elderlyDevolucionIvaStatus !== 'Completado' && (
                                     <div className="p-8 glass-card rounded-[2.5rem] space-y-8 relative overflow-hidden group/elderly shadow-2xl border border-white/5">
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Protocolo Devolución (T. Edad)</p>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Protocolo Devolución (T. Edad)</p>
                                         </div>
 
-                                        <div className="flex gap-2 flex-wrap pb-2">
+                                        <div className="flex gap-3 flex-wrap pb-6">
                                             {[
                                                 { id: 'Pendiente', label: 'Inicio', icon: Send, action: 'start' },
                                                 { id: 'En Proceso', label: 'En Proceso', icon: Clock, action: 'process' },
@@ -785,7 +785,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                     <Mail size={24} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[9px] font-medium uppercase text-slate-500 tracking-widest mb-1">Contacto Email</p>
+                                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-[0.2em] mb-1">Enlace Email</p>
                                     <p className="text-sm font-medium text-white truncate pr-4">{client.email || 'SIN ASIGNAR'}</p>
                                 </div>
                             </div>
@@ -795,7 +795,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                     <Phone size={24} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[9px] font-medium uppercase text-slate-500 tracking-widest mb-1">Contacto Móvil</p>
+                                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-[0.2em] mb-1">Enlace Móvil</p>
                                     <p className="text-sm font-medium text-white truncate pr-4">{(client.phones && client.phones.length > 0) ? client.phones[0] : 'SIN ASIGNAR'}</p>
                                 </div>
                             </div>
@@ -804,11 +804,11 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         <div className="grid grid-cols-2 gap-4 mt-12 pt-10 border-t border-white/5">
                             <button onClick={handleOpenSRI} className="flex flex-col items-center gap-3 p-5 bg-white/5 hover:bg-primary/10 border border-white/5 hover:border-primary/20 rounded-[2rem] transition-all group/btn">
                                 <Globe size={20} className="text-primary group-hover/btn:scale-110 transition-all duration-500" />
-                                <span className="text-[8px] font-medium text-slate-500 group-hover/btn:text-primary uppercase tracking-widest">SRI Web</span>
+                                <span className="text-[9px] font-black text-slate-500 group-hover/btn:text-primary uppercase tracking-[0.2em]">PORTAL SRI</span>
                             </button>
                             <button onClick={handleWhatsApp} className="flex flex-col items-center gap-3 p-5 bg-white/5 hover:bg-emerald-400/10 border border-white/5 hover:border-emerald-400/20 rounded-[2rem] transition-all group/btn">
                                 <MessageCircle size={20} className="text-emerald-400 group-hover/btn:scale-110 transition-all duration-500" />
-                                <span className="text-[8px] font-medium text-slate-500 group-hover/btn:text-emerald-400 uppercase tracking-widest">WhatsApp</span>
+                                <span className="text-[9px] font-black text-slate-500 group-hover/btn:text-emerald-400 uppercase tracking-[0.2em]">WHATSAPP</span>
                             </button>
                         </div>
                     </div>
@@ -841,9 +841,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     <div>
                         <h3 className="text-xl font-medium text-white tracking-tight uppercase flex items-center gap-4">
                             <Activity className="text-primary" size={24} />
-                            Historial de Actividad
+                            REGISTRO OPERATIVO
                         </h3>
-                        <p className="text-[9px] font-medium text-slate-500 uppercase tracking-widest mt-3">Registro histórico de gestiones y validaciones</p>
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mt-3">TRAZABILIDAD DE ACCIONES Y VALIDACIONES</p>
                     </div>
                 </div>
 
@@ -998,9 +998,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </div>
 
                 <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
-                    <h3 className="text-sm font-medium text-slate-500 uppercase tracking-widest mb-10 flex items-center gap-4">
+                    <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-10 flex items-center gap-4">
                         <MapPin size={20} className="text-emerald-400" />
-                        Perfil del Contribuyente
+                        PERFIL DEL CONTRIBUYENTE
                     </h3>
 
                     <div className="space-y-8">
@@ -1022,9 +1022,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             </div>
 
             <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
-                <h3 className="text-sm font-medium text-slate-500 uppercase tracking-widest mb-10 flex items-center gap-4">
+                <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-10 flex items-center gap-4">
                     <Building size={20} className="text-indigo-400" />
-                    Información de Contacto
+                    INFORMACIÓN DE CONTACTO
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1117,9 +1117,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             </div>
 
             <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
-                <h3 className="text-sm font-medium text-slate-500 uppercase tracking-widest mb-10 flex items-center gap-4">
+                <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-10 flex items-center gap-4">
                     <ShieldCheck size={20} className="text-emerald-400" />
-                    Protocolos Fiscales Avanzados
+                    PROTOCOLOS FISCALES AVANZADOS
                 </h3>
                 <ExtraObligationsCheckboxes
                     editedClient={editedClient}
@@ -1164,14 +1164,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-6 sm:px-10 py-3 text-[10px] font-medium uppercase tracking-widest transition-all relative rounded-[1.5rem] whitespace-nowrap ${activeTab === tab ? 'text-slate-950 bg-primary shadow-primary' : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'}`}
+                                    className={`px-6 sm:px-10 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative rounded-[1.5rem] whitespace-nowrap ${activeTab === tab ? 'text-slate-950 bg-primary shadow-primary' : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'}`}
                                 >
                                     <span className="relative z-10 flex items-center gap-3">
                                         {tab === 'profile' && <LayoutDashboard size={16} />}
                                         {tab === 'history' && <Activity size={16} />}
                                         {tab === 'vault' && <Lock size={16} />}
                                         {tab === 'settings' && <Settings size={16} />}
-                                        {tab === 'profile' ? 'Estrategia' : tab === 'history' ? 'Operativas' : tab === 'vault' ? 'Bóveda' : 'Sistemas'}
+                                        {tab === 'profile' ? 'ESTRATEGIA' : tab === 'history' ? 'OPERATIVAS' : tab === 'vault' ? 'DATA BÓVEDA' : 'SISTEMAS'}
                                     </span>
                                 </button>
                             ))}
@@ -1193,15 +1193,15 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     <div className="flex gap-4">
                         {isEditing ? (
                             <>
-                                <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-5 py-3.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl border border-primary/20 text-[10px] font-medium uppercase tracking-widest flex items-center gap-2 transition-all">
+                                <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-5 py-3.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl border border-primary/20 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all">
                                     {isAnalyzingPdf ? <Loader size={12} className="animate-spin" /> : <ScanLine size={14} />}
-                                    <span>Módulo Scanner</span>
+                                    <span>MÓDULO SCANNER</span>
                                 </button>
-                                <button onClick={() => setIsEditing(false)} className="px-6 py-3.5 bg-white/5 border border-white/5 text-slate-500 rounded-xl text-[10px] font-medium uppercase tracking-widest hover:text-slate-300 transition-all">Cancelar</button>
-                                <button onClick={handleSave} className="px-8 py-3.5 bg-primary text-slate-950 rounded-xl text-[10px] font-medium uppercase tracking-widest shadow-primary transition-all active:scale-95">Guardar Cambios</button>
+                                <button onClick={() => setIsEditing(false)} className="px-6 py-3.5 bg-white/5 border border-white/5 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:text-slate-300 transition-all">CANCELAR</button>
+                                <button onClick={handleSave} className="px-8 py-3.5 bg-primary text-slate-950 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-primary transition-all active:scale-95">GUARDAR CAMBIOS</button>
                             </>
                         ) : (
-                            <button onClick={() => setIsEditing(true)} className="w-full sm:w-auto px-10 py-3.5 bg-white text-slate-950 rounded-[1.5rem] text-[10px] font-medium uppercase tracking-widest shadow-xl hover:bg-primary transition-all transform hover:-translate-y-1 active:scale-95">Módulo Administrativo</button>
+                            <button onClick={() => setIsEditing(true)} className="w-full sm:w-auto px-10 py-3.5 bg-white text-slate-950 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-[0_0_30px_rgba(255,255,255,0.1)] hover:bg-primary transition-all transform hover:-translate-y-1 active:scale-95">MÓDULO ADMINISTRATIVO</button>
                         )}
                     </div>
                 </div>

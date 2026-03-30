@@ -64,10 +64,10 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
             <StickyNote size={18} className="sm:w-5 sm:h-5" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white uppercase tracking-tight">
-              PREGUNTAS ABIERTAS
+            <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">
+              PANEL DE INTELIGENCIA FISCAL
             </h3>
-            <p className="text-[10px] font-medium text-slate-400">Esperando Revisión</p>
+            <p className="text-[9px] font-black text-sky-400 uppercase tracking-[0.2em] mt-1">NÚCLEO DE ASESORÍA Y PREGUNTAS ABIERTAS</p>
           </div>
         </div>
         
@@ -135,8 +135,8 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
             <div className="p-4 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 mb-3 grayscale">
               <StickyNote size={32} />
             </div>
-            <p className="text-sm font-medium text-slate-500">No hay notas registradas.</p>
-            <p className="text-[10px] uppercase font-semibold tracking-widest mt-1">Status: Empty</p>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">SIN REGISTROS ACTIVOS</p>
+            <p className="text-[8px] uppercase font-black tracking-[0.3em] mt-2 text-slate-600">STATE: IDLE</p>
           </div>
         )}
 
