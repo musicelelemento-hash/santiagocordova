@@ -63,7 +63,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
     const isAllPaid = isCampaignPaid && (!needsRenta || isRentaPaid);
 
     if (isAllDeclared && isAllPaid) {
-        merit = { label: 'Oro - Al Día', color: 'text-amber-500', icon: LucideIcons.Trophy, rank: 1 };
+        merit = { label: 'Oro - Al Día', color: 'text-amber-400', icon: LucideIcons.Trophy, rank: 1 };
     } else if (isAllDeclared && !isAllPaid) {
         merit = { label: 'Plata - Pago Pend.', color: 'text-slate-400', icon: LucideIcons.Award, rank: 2 };
     } else if ((isIvaWorkable && !isCampaignDone) || (isRentaWorkable && !isRentaDeclared)) {
@@ -77,7 +77,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
     const cardBaseStyles = `
         relative overflow-hidden rounded-[24px] border transition-all duration-300
         ${isVip 
-            ? 'bg-gradient-to-br from-sky-500/10 to-indigo-500/5 border-sky-400/30 shadow-[0_8px_32px_rgba(14,165,233,0.1)]' 
+            ? 'bg-gradient-to-br from-sky-400/10 to-indigo-500/5 border-sky-400/30 shadow-[0_8px_32px_rgba(14,165,233,0.1)]' 
             : 'bg-white/80 dark:bg-slate-900/80 border-slate-100 dark:border-white/10 shadow-sm'}
         ${client.isActive === false ? 'opacity-50 grayscale' : ''}
     `;
@@ -103,7 +103,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                 className={`${cardBaseStyles} p-4 flex flex-col justify-between h-full backdrop-blur-md active:scale-[0.98]`}
             >
                 {/* Tactical Header Background Deco */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sky-500/5 to-transparent -mr-8 -mt-8 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-sky-400/5 to-transparent -mr-8 -mt-8 rounded-full blur-2xl pointer-events-none" />
                 
                 <div className="flex justify-between items-start relative z-10">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -112,31 +112,31 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                                 <merit.icon size={20} className={merit.color} strokeWidth={2.5} />
                             </div>
                             {true && (
-                                <div className="absolute -top-1 -right-1 bg-amber-500 text-white p-0.5 rounded-full ring-2 ring-white dark:ring-slate-900 shadow-lg">
+                                <div className="absolute -top-1 -right-1 bg-amber-400 text-white p-0.5 rounded-full ring-2 ring-white dark:ring-slate-900 shadow-lg">
                                     <LucideIcons.Crown size={8} className="fill-current" />
                                 </div>
                             )}
                         </div>
                         
                         <div className="min-w-0 flex-1">
-                            <h3 className="font-black text-slate-800 dark:text-white text-[14px] uppercase tracking-tight mb-1 leading-tight flex items-center gap-2">
+                            <h3 className="font-semibold text-slate-800 dark:text-white text-[14px] uppercase tracking-tight mb-1 leading-tight flex items-center gap-2">
                                 {hasMissingHistoryPdf && (
-                                    <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)] shrink-0" title="Falta documentación histórica" />
+                                    <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)] shrink-0" title="Falta documentación histórica" />
                                 )}
                                 <span className="truncate">{client.name}</span>
-                                {true && <LucideIcons.Crown size={12} className="text-amber-500 shrink-0" />}
+                                {true && <LucideIcons.Crown size={12} className="text-amber-400 shrink-0" />}
                             </h3>
                             
                             <div className="flex flex-wrap items-center gap-1.5 mb-2">
                                 {client.isActive === false && (
-                                    <span className="text-[7px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded-md uppercase tracking-tighter shadow-sm bg-opacity-90">Offline</span>
+                                    <span className="text-[7px] font-semibold bg-rose-400 text-white px-1.5 py-0.5 rounded-md uppercase tracking-tighter shadow-sm bg-opacity-90">Offline</span>
                                 )}
                                 {client.hasElderlyDevolucionIva && (
-                                    <span className="text-[7px] font-black bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-1.5 py-0.5 rounded-md uppercase tracking-tighter flex items-center gap-0.5">
+                                    <span className="text-[7px] font-semibold bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 px-1.5 py-0.5 rounded-md uppercase tracking-tighter flex items-center gap-0.5">
                                         <LucideIcons.Heart size={6} strokeWidth={3} /> T.EDAD
                                     </span>
                                 )}
-                                <span className="text-[8px] font-black text-sky-500 bg-sky-500/5 px-1.5 py-0.5 rounded border border-sky-500/10 uppercase tracking-tighter truncate max-w-[100px]">
+                                <span className="text-[8px] font-semibold text-sky-400 bg-sky-400/5 px-1.5 py-0.5 rounded border border-sky-400/10 uppercase tracking-tighter truncate max-w-[100px]">
                                     {client.regime}
                                 </span>
                             </div>
@@ -146,7 +146,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                                     {client.ruc}
                                 </span>
                                 <span className="h-1 w-1 bg-slate-300 dark:bg-white/20 rounded-full shrink-0" />
-                                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                                <span className="text-[10px] font-semibold text-emerald-500 dark:text-emerald-400 font-mono">
                                     ${fee.toFixed(2)}
                                 </span>
                             </div>
@@ -156,11 +156,11 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                     <div className="shrink-0 flex flex-col items-end">
                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5">
                             <LucideIcons.Calendar size={10} className="text-slate-400" />
-                            <span className="text-[9px] font-black text-slate-600 dark:text-slate-400 uppercase font-mono">
+                            <span className="text-[9px] font-semibold text-slate-600 dark:text-slate-400 uppercase font-mono">
                                 {formatPeriodForDisplay(period)}
                             </span>
                         </div>
-                        <div className={`mt-1.5 text-[11px] font-black flex items-center gap-1 ${isPast(ivaDueDate || today) && !isCampaignDone ? 'text-rose-500' : 'text-slate-700 dark:text-slate-300'}`}>
+                        <div className={`mt-1.5 text-[11px] font-semibold flex items-center gap-1 ${isPast(ivaDueDate || today) && !isCampaignDone ? 'text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>
                             {isPast(ivaDueDate || today) && !isCampaignDone && <LucideIcons.AlertCircle size={10} className="animate-pulse" />}
                             {ivaDueDate ? safeFormat(ivaDueDate, 'dd MMM') : 'N/A'}
                         </div>
@@ -169,21 +169,21 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
 
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex justify-between items-center relative z-10">
                     <div className="flex flex-col">
-                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Estatus Tributario</span>
+                        <span className="text-[8px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Estatus Tributario</span>
                         <div className="flex items-center gap-1.5">
                             {hasCurrentProof ? (
-                                <div className="flex items-center gap-1 text-[8px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20 uppercase tracking-tighter">
+                                <div className="flex items-center gap-1 text-[8px] font-semibold text-emerald-400 bg-emerald-400/10 px-2 py-1 rounded-md border border-emerald-400/20 uppercase tracking-tighter">
                                     <LucideIcons.Check size={10} /> PROBANTE OK
                                 </div>
                             ) : (
                                 isDeclared && (
-                                    <div className="flex items-center gap-1 text-[8px] font-black text-rose-500 bg-rose-500/10 px-2 py-1 rounded-md border border-rose-500/20 animate-pulse uppercase tracking-tighter shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+                                    <div className="flex items-center gap-1 text-[8px] font-semibold text-rose-400 bg-rose-400/10 px-2 py-1 rounded-md border border-rose-400/20 animate-pulse uppercase tracking-tighter shadow-[0_0_10px_rgba(239,68,68,0.2)]">
                                         <LucideIcons.FileWarning size={10} /> FALTA PDF
                                     </div>
                                 )
                             )}
                             {!isDeclared && (
-                                <div className="text-[8px] font-black text-slate-400 bg-slate-100 dark:bg-white/5 px-2 py-1 rounded-md border border-slate-200 dark:border-white/10 uppercase tracking-tighter">
+                                <div className="text-[8px] font-semibold text-slate-400 bg-slate-100 dark:bg-white/5 px-2 py-1 rounded-md border border-slate-200 dark:border-white/10 uppercase tracking-tighter">
                                     PENDIENTE
                                 </div>
                             )}
@@ -195,15 +195,15 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                             onClick={(e) => { e.stopPropagation(); onUploadReceipt(client, period); }}
                             className={`w-10 h-10 flex items-center justify-center rounded-xl border transition-all active:scale-90 shadow-sm
                                 ${hasCurrentProof 
-                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' 
-                                    : 'bg-sky-500/10 text-sky-500 border-sky-500/30 hover:bg-sky-500 hover:text-white'}`}
+                                    ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/30' 
+                                    : 'bg-sky-400/10 text-sky-400 border-sky-400/30 hover:bg-sky-400 hover:text-white'}`}
                         >
                             <LucideIcons.UploadCloud size={20} />
                         </button>
 
                         <button
                             onClick={(e) => { e.stopPropagation(); onView(client); }}
-                            className="h-10 px-4 rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all active:scale-90 shadow-lg bg-slate-900 dark:bg-sky-600 text-white shadow-slate-900/20 dark:shadow-sky-600/30 border-slate-800 dark:border-sky-500"
+                            className="h-10 px-4 rounded-xl flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest transition-all active:scale-90 shadow-lg bg-slate-900 dark:bg-sky-500 text-white shadow-slate-900/20 dark:shadow-sky-500/30 border-slate-800 dark:border-sky-400"
                         >
                             <LucideIcons.FileText size={14} />
                             FICHA
@@ -212,7 +212,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                 </div>
 
                 {/* Rank Badge Indicator */}
-                <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-transparent via-sky-500/50 to-transparent w-full opacity-50" />
+                <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-transparent via-sky-400/50 to-transparent w-full opacity-50" />
             </div>
         </div>
     );

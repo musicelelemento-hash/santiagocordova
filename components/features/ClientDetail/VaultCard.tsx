@@ -29,18 +29,18 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
                         <Icon size={22} className="sm:w-6 sm:h-6" />
                     </div>
                     <div>
-                        <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.3em]">{label}</p>
+                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3em]">{label}</p>
                         <div className="mt-2 min-h-[1.75rem] flex items-center">
                             {isPassword ? (
-                                <p className={`text-xs sm:text-sm font-black tracking-[0.1em] sm:tracking-[0.2em] font-mono ${showPassword ? 'text-white' : 'text-slate-700'}`}>
+                                <p className={`text-xs sm:text-sm font-semibold tracking-[0.1em] sm:tracking-[0.2em] font-mono ${showPassword ? 'text-white' : 'text-slate-700'}`}>
                                     {showPassword ? value : '••••••••••••'}
                                 </p>
                             ) : file ? (
-                                <p className="text-xs sm:text-sm font-black text-white truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[160px] pr-2 uppercase tracking-tighter">
+                                <p className="text-xs sm:text-sm font-semibold text-white truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[160px] pr-2 uppercase tracking-tighter">
                                     {file.name}
                                 </p>
                             ) : (
-                                <p className="text-[10px] sm:text-[11px] font-black text-slate-700 uppercase tracking-widest italic">No Sincronizado</p>
+                                <p className="text-[10px] sm:text-[11px] font-semibold text-slate-700 uppercase tracking-widest italic">No Sincronizado</p>
                             )}
                         </div>
                     </div>
@@ -56,7 +56,7 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
                             >
                                 <Download size={18} />
                             </button>
-                            <button className="p-3 bg-slate-900 hover:bg-red-500 text-slate-500 hover:text-white rounded-xl transition-all border border-white/5 shadow-2xl hover:shadow-red-500/40 active:scale-95" title="Eliminar">
+                            <button className="p-3 bg-slate-900 hover:bg-rose-400 text-slate-500 hover:text-white rounded-xl transition-all border border-white/5 shadow-2xl hover:shadow-rose-400/40 active:scale-95" title="Eliminar">
                                 <Trash2 size={18} />
                             </button>
                         </>
@@ -84,12 +84,12 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
 
             {hasData && (
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-lg border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-400/10 rounded-lg border border-emerald-400/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                         <ShieldCheck size={12} className="text-emerald-400" />
-                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.2em]">Verificado por Sistema</span>
+                        <span className="text-[9px] font-semibold text-emerald-400 uppercase tracking-[0.2em]">Verificado por Sistema</span>
                     </div>
                     {file && (
-                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest font-mono">
+                        <span className="text-[9px] font-semibold text-slate-600 uppercase tracking-widest font-mono">
                             DATA: {(file.size / 1024).toFixed(1)} KB
                         </span>
                     )}

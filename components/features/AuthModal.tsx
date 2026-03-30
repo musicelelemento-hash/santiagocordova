@@ -50,7 +50,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
 
                 {step === 'initial' ? (
                     <>
-                        <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-white mb-2">Bienvenido</h3>
+                        <h3 className="text-2xl font-display font-medium text-slate-900 dark:text-white mb-2">Bienvenido</h3>
                         <p className="text-slate-500 mb-8 text-sm">Inicia sesión para gestionar tus pedidos y servicios.</p>
 
                         <div className="space-y-4">
@@ -85,7 +85,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
                                         className="w-full pl-10 p-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-gold outline-none text-slate-900 dark:text-white"
                                     />
                                 </div>
-                                <button type="submit" className="w-full p-3 bg-gold text-black font-bold rounded-xl hover:bg-yellow-500 transition-colors flex items-center justify-center gap-2">
+                                <button type="submit" className="w-full p-3 bg-gold text-black font-medium rounded-xl hover:bg-amber-400 transition-colors flex items-center justify-center gap-2">
                                     <span>Ingresar con Email</span>
                                     <ArrowRight size={18} />
                                 </button>
@@ -94,10 +94,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }
                     </>
                 ) : (
                     <div className="py-8 animate-fade-in-up">
-                        <div className="mx-auto w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
+                        <div className="mx-auto w-16 h-16 bg-green-100 text-emerald-400 rounded-full flex items-center justify-center mb-4">
                             <CheckCircle size={32} />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">¡Enlace Enviado!</h3>
+                        <h3 className="text-xl font-medium text-slate-900 dark:text-white mb-2">¡Enlace Enviado!</h3>
                         <p className="text-slate-500 text-sm">Hemos enviado un enlace de acceso mágico a <strong>{email}</strong>.</p>
                         <p className="text-xs text-slate-400 mt-4">(Simulación: Iniciando sesión automáticamente...)</p>
                     </div>

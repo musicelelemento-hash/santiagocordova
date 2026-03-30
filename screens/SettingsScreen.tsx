@@ -95,7 +95,7 @@ const CollapsibleGuide: React.FC<{ title: string; icon: React.ElementType; child
     return (
         <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-all duration-300">
             <button onClick={() => setIsOpen(!isOpen)} className="w-full flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors">
-                <h4 className="font-bold text-gray-800 dark:text-gold flex items-center text-md">
+                <h4 className="font-medium text-gray-800 dark:text-gold flex items-center text-md">
                     <Icon size={18} className="mr-3 text-gold" />
                     <span>{title}</span>
                 </h4>
@@ -469,17 +469,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10 px-1 sm:px-0 mb-8">
                 <div className="animate-fade-in-left w-full sm:w-auto">
                     <div className="flex items-center justify-between sm:justify-start gap-2 mb-2 text-center sm:text-left">
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20">
-                            <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
-                            <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest">System Protocols v5.0</span>
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-400/10 border border-sky-400/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
+                            <span className="text-[10px] font-semibold text-sky-400 uppercase tracking-widest">System Protocols v5.0</span>
                         </div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Advanced Core</span>
+                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Advanced Core</span>
                     </div>
-                    <h2 className="text-4xl sm:text-5xl font-display font-black text-slate-900 dark:text-white leading-tight sm:leading-[0.85] tracking-tighter mb-2">
+                    <h2 className="text-4xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-tight sm:leading-[0.85] tracking-tighter mb-2">
                         System <span className="text-gradient-sky">Command</span>
                     </h2>
-                    <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-widest">
-                        <LucideIcons.Settings size={12} className="text-sky-500" />
+                    <div className="flex items-center gap-2 text-slate-500 text-[11px] font-medium uppercase tracking-widest">
+                        <LucideIcons.Settings size={12} className="text-sky-400" />
                         <span>Ajustes Generales y Seguridad</span>
                     </div>
                 </div>
@@ -488,19 +488,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
             <div className="space-y-6">
 
                      {/* --- MÓDULO: CONEXIÓN ESTRATÉGICA --- */}
-                <div className="p-6 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden relative group transition-all duration-500 hover:shadow-sky-500/10 hover:border-sky-500/30">
-                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-sky-500/5 rounded-full blur-[80px] group-hover:bg-sky-500/10 transition-all duration-700" />
+                <div className="p-6 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2rem] shadow-2xl border border-slate-200 dark:border-white/10 overflow-hidden relative group transition-all duration-500 hover:shadow-sky-400/10 hover:border-sky-400/30">
+                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-sky-400/5 rounded-full blur-[80px] group-hover:bg-sky-400/10 transition-all duration-700" />
                     
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="p-3 bg-sky-500/10 rounded-2xl border border-sky-500/20 shadow-inner">
-                                <LucideIcons.Cloud className="text-sky-500" size={24} />
+                            <div className="p-3 bg-sky-400/10 rounded-2xl border border-sky-400/20 shadow-inner">
+                                <LucideIcons.Cloud className="text-sky-400" size={24} />
                             </div>
                             <div>
-                                <h3 className="font-display font-black text-xl text-slate-900 dark:text-white tracking-tight">Enlace de Inteligencia (Cloud)</h3>
+                                <h3 className="font-display font-semibold text-xl text-slate-900 dark:text-white tracking-tight">Enlace de Inteligencia (Cloud)</h3>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="w-2 h-2 bg-sky-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-sky-500/80">Google Workspace Sync v4.2</p>
+                                    <span className="w-2 h-2 bg-sky-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-400/80">Google Workspace Sync v4.2</p>
                                 </div>
                             </div>
                         </div>
@@ -511,7 +511,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                         <div className="flex flex-col sm:flex-row gap-3">
                             <div className="relative flex-grow group/input">
-                                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-sky-500 transition-colors">
+                                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/input:text-sky-400 transition-colors">
                                     <LucideIcons.Link size={16} />
                                 </div>
                                 <input
@@ -519,13 +519,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     value={backendUrl}
                                     onChange={(e) => setBackendUrl(e.target.value)}
                                     placeholder="https://script.google.com/macros/s/..."
-                                    className="w-full pl-10 p-3.5 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl text-xs font-mono focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500/40 transition-all outline-none"
+                                    className="w-full pl-10 p-3.5 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl text-xs font-mono focus:ring-4 focus:ring-sky-400/10 focus:border-sky-400/40 transition-all outline-none"
                                 />
                             </div>
                             <button
                                 onClick={handleSaveBackendUrl}
                                 disabled={isSavingUrl}
-                                className="px-6 py-3.5 bg-sky-600 text-white font-black uppercase tracking-widest text-[10px] rounded-2xl hover:bg-sky-700 shadow-xl shadow-sky-600/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                className="px-6 py-3.5 bg-sky-500 text-white font-semibold uppercase tracking-widest text-[10px] rounded-2xl hover:bg-sky-700 shadow-xl shadow-sky-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                             >
                                 {isSavingUrl ? <LucideIcons.Loader2 className="animate-spin" size={16} /> : <LucideIcons.Zap size={16} />}
                                 <span>Activar Enlace</span>
@@ -533,12 +533,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                         </div>
 
                         <div className="mt-8 pt-8 border-t border-slate-100 dark:border-white/5">
-                            <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
-                                <LucideIcons.History size={14} className="text-amber-500/70" />
+                            <h4 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
+                                <LucideIcons.History size={14} className="text-amber-400/70" />
                                 Protocolos de Recuperación (Legacy)
                             </h4>
-                            <div className="p-4 bg-amber-500/5 dark:bg-amber-500/5 border border-amber-500/20 rounded-2xl mb-4 group/alert">
-                                <p className="text-[11px] text-amber-700 dark:text-amber-400/80 leading-relaxed font-bold italic">
+                            <div className="p-4 bg-amber-400/5 dark:bg-amber-400/5 border border-amber-400/20 rounded-2xl mb-4 group/alert">
+                                <p className="text-[11px] text-amber-700 dark:text-amber-400/80 leading-relaxed font-medium italic">
                                     Si migró desde Google Sheets y detecta anomalías, ejecute una recuperación forzada para restaurar la coherencia de los registros transaccionales.
                                 </p>
                             </div>
@@ -554,7 +554,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         }
                                     }
                                 }}
-                                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 transition-all font-black text-[10px] uppercase tracking-widest border border-transparent hover:border-amber-500/30"
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-xl hover:bg-amber-400/10 hover:text-amber-500 dark:hover:text-amber-400 transition-all font-semibold text-[10px] uppercase tracking-widest border border-transparent hover:border-amber-400/30"
                             >
                                 <LucideIcons.RotateCw size={14} />
                                 Recuperación Forzada (Sheets)
@@ -573,16 +573,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 <LucideIcons.Database className="text-brand-teal" size={24} />
                             </div>
                             <div>
-                                <h3 className="font-display font-black text-xl text-white tracking-tight">Migración a Supabase v2</h3>
+                                <h3 className="font-display font-semibold text-xl text-white tracking-tight">Migración a Supabase v2</h3>
                                 <div className="flex items-center gap-1.5">
                                     <span className="w-2 h-2 bg-brand-teal rounded-full animate-pulse" />
-                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal/80">Operación Postgres</p>
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-teal/80">Operación Postgres</p>
                                 </div>
                             </div>
                         </div>
 
                         <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-                            Transfiera toda su infraestructura de datos de <span className="text-white font-bold">Firebase (NoSQL)</span> a <span className="text-brand-teal font-bold">Supabase (SQL)</span>. 
+                            Transfiera toda su infraestructura de datos de <span className="text-white font-medium">Firebase (NoSQL)</span> a <span className="text-brand-teal font-medium">Supabase (SQL)</span>. 
                             Esta acción migrará clientes y tareas manteniendo la integridad relacional.
                         </p>
 
@@ -604,7 +604,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     }
                                 }}
                                 disabled={isMigrating}
-                                className="w-full flex items-center justify-center gap-3 py-4 bg-brand-teal text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-teal/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
+                                className="w-full flex items-center justify-center gap-3 py-4 bg-brand-teal text-white font-semibold uppercase tracking-widest rounded-2xl shadow-xl shadow-brand-teal/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
                             >
                                 {isMigrating ? (
                                     <>
@@ -619,10 +619,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 )}
                             </button>
                         ) : (
-                            <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center">
-                                <LucideIcons.CheckCircle className="text-emerald-500 mx-auto mb-2" size={32} />
-                                <p className="text-white font-black text-sm uppercase mb-1">Migración Completada</p>
-                                <p className="text-emerald-400 text-[10px] font-bold">
+                            <div className="p-4 bg-emerald-400/10 border border-emerald-400/30 rounded-2xl text-center">
+                                <LucideIcons.CheckCircle className="text-emerald-400 mx-auto mb-2" size={32} />
+                                <p className="text-white font-semibold text-sm uppercase mb-1">Migración Completada</p>
+                                <p className="text-emerald-400 text-[10px] font-medium">
                                     {migrationResult.clients} Clientes y {migrationResult.tasks} Tareas transferidas exitosamente.
                                 </p>
                             </div>
@@ -630,7 +630,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                         
                         <div className="mt-4 flex items-center gap-2 justify-center">
                             <LucideIcons.ShieldCheck size={14} className="text-slate-500" />
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Cifrado de Extremo a Extremo Activo</p>
+                            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Cifrado de Extremo a Extremo Activo</p>
                         </div>
                     </div>
                 </div>
@@ -645,17 +645,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     <LucideIcons.DollarSign className="text-gold" size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="font-display font-black text-xl text-slate-900 dark:text-white tracking-tight">Arquitectura de Tarifas</h3>
+                                    <h3 className="font-display font-semibold text-xl text-slate-900 dark:text-white tracking-tight">Arquitectura de Tarifas</h3>
                                     <div className="flex items-center gap-1.5">
                                         <span className="w-2 h-2 bg-gold rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.8)]" />
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gold/80">Protocolo Financiero v5.0 Elite</p>
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold/80">Protocolo Financiero v5.0 Elite</p>
                                     </div>
                                 </div>
                             </div>
                             {!isEditingFees && (
                                 <button 
                                     onClick={() => setIsEditingFees(true)} 
-                                    className="flex items-center gap-2 px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl bg-gold text-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-gold/20"
+                                    className="flex items-center gap-2 px-6 py-2 text-[10px] font-semibold uppercase tracking-widest rounded-xl bg-gold text-black hover:scale-105 active:scale-95 transition-all shadow-lg shadow-gold/20"
                                 >
                                     <LucideIcons.Edit3 size={12} />
                                     <span>Personalizar</span>
@@ -674,27 +674,27 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
                                     <LucideIcons.Calendar size={80} className="text-gold" />
                                 </div>
-                                <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
+                                <h4 className="font-semibold text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
                                     <div className="w-1 h-3 bg-gold/50 rounded-full" />
                                     Declaraciones Sistemáticas
                                 </h4>
                                 <div className="space-y-5 relative z-10">
                                     {feeFields.declarations.map(item => (
                                         <div key={item.key} className="flex items-center justify-between group/item">
-                                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-2 transition-colors group-hover/item:text-slate-900 dark:group-hover/item:text-white">
+                                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2 transition-colors group-hover/item:text-slate-900 dark:group-hover/item:text-white">
                                                 {item.label}
                                                 <Tooltip text={item.tooltip}>
                                                     <LucideIcons.Info size={12} className="text-slate-300 dark:text-slate-600 cursor-help hover:text-gold transition-colors" />
                                                 </Tooltip>
                                             </label>
                                             <div className="relative w-32 group/input">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 dark:text-slate-600 transition-colors group-focus-within/input:text-gold">$</span>
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400 dark:text-slate-600 transition-colors group-focus-within/input:text-gold">$</span>
                                                 <input
                                                     type="number"
                                                     readOnly={!isEditingFees}
                                                     value={fees[item.key]}
                                                     onChange={(e) => handleFeeChange(item.key, e.target.value)}
-                                                    className={`w-full p-2.5 pl-7 bg-white dark:bg-slate-900/60 border text-xs font-mono font-black text-right rounded-xl transition-all ${isEditingFees ? 'border-gold/30 focus:border-gold focus:ring-4 focus:ring-gold/10' : 'border-slate-100 dark:border-white/5 opacity-80 cursor-not-allowed text-slate-500'}`}
+                                                    className={`w-full p-2.5 pl-7 bg-white dark:bg-slate-900/60 border text-xs font-mono font-semibold text-right rounded-xl transition-all ${isEditingFees ? 'border-gold/30 focus:border-gold focus:ring-4 focus:ring-gold/10' : 'border-slate-100 dark:border-white/5 opacity-80 cursor-not-allowed text-slate-500'}`}
                                                 />
                                             </div>
                                         </div>
@@ -704,29 +704,29 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                             <div className="p-6 bg-slate-50/50 dark:bg-black/20 rounded-[1.5rem] border border-slate-200 dark:border-white/5 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                                    <LucideIcons.Briefcase size={80} className="text-sky-500" />
+                                    <LucideIcons.Briefcase size={80} className="text-sky-400" />
                                 </div>
-                                <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
-                                    <div className="w-1 h-3 bg-sky-500/50 rounded-full" />
+                                <h4 className="font-semibold text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center gap-2">
+                                    <div className="w-1 h-3 bg-sky-400/50 rounded-full" />
                                     Operaciones Especiales
                                 </h4>
                                 <div className="space-y-5 relative z-10">
                                     {feeFields.tasks.map(item => (
                                         <div key={item.key} className="flex items-center justify-between group/item">
-                                            <label className="text-xs font-bold text-slate-600 dark:text-slate-400 flex items-center gap-2 transition-colors group-hover/item:text-slate-900 dark:group-hover/item:text-white">
+                                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-2 transition-colors group-hover/item:text-slate-900 dark:group-hover/item:text-white">
                                                 {item.label}
                                                 <Tooltip text={item.tooltip}>
-                                                    <LucideIcons.Info size={12} className="text-slate-300 dark:text-slate-600 cursor-help hover:text-sky-500 transition-colors" />
+                                                    <LucideIcons.Info size={12} className="text-slate-300 dark:text-slate-600 cursor-help hover:text-sky-400 transition-colors" />
                                                 </Tooltip>
                                             </label>
                                             <div className="relative w-32 group/input">
-                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 dark:text-slate-600 transition-colors group-focus-within/input:text-sky-500">$</span>
+                                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400 dark:text-slate-600 transition-colors group-focus-within/input:text-sky-400">$</span>
                                                 <input
                                                     type="number"
                                                     readOnly={!isEditingFees}
                                                     value={fees[item.key]}
                                                     onChange={(e) => handleFeeChange(item.key, e.target.value)}
-                                                    className={`w-full p-2.5 pl-7 bg-white dark:bg-slate-900/60 border text-xs font-mono font-black text-right rounded-xl transition-all ${isEditingFees ? 'border-sky-500/30 focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10' : 'border-slate-100 dark:border-white/5 opacity-80 cursor-not-allowed text-slate-500'}`}
+                                                    className={`w-full p-2.5 pl-7 bg-white dark:bg-slate-900/60 border text-xs font-mono font-semibold text-right rounded-xl transition-all ${isEditingFees ? 'border-sky-400/30 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10' : 'border-slate-100 dark:border-white/5 opacity-80 cursor-not-allowed text-slate-500'}`}
                                                 />
                                             </div>
                                         </div>
@@ -737,7 +737,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                         {/* --- DYNAMIC SERVICES CATALOG --- */}
                         <div className="p-6 bg-white/40 dark:bg-black/20 rounded-[1.5rem] border border-slate-100 dark:border-white/5">
-                            <h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center justify-between px-1">
+                            <h4 className="font-semibold text-[10px] uppercase tracking-[0.3em] text-slate-400 dark:text-slate-500 mb-6 flex items-center justify-between px-1">
                                 <div className="flex items-center gap-2">
                                     <div className="w-1 h-3 bg-brand-teal rounded-full" />
                                     Catálogo de Inteligencia Adicional
@@ -745,7 +745,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 {isEditingFees && (
                                     <button 
                                         onClick={handleAddService} 
-                                        className="text-[9px] font-black px-4 py-2 bg-brand-teal text-white rounded-xl hover:scale-105 transition-all shadow-lg shadow-brand-teal/20 flex items-center gap-1.5"
+                                        className="text-[9px] font-semibold px-4 py-2 bg-brand-teal text-white rounded-xl hover:scale-105 transition-all shadow-lg shadow-brand-teal/20 flex items-center gap-1.5"
                                     >
                                         <LucideIcons.Plus size={12} />
                                         NUEVO SERVICIO
@@ -757,19 +757,19 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 {(fees.customPunctualServices || []).map(service => (
                                     <div key={service.id} className="flex flex-col p-4 bg-white/60 dark:bg-slate-900/40 border border-slate-200/50 dark:border-white/5 rounded-2xl hover:border-brand-teal/30 transition-all group/service relative overflow-hidden">
                                         <div className="flex justify-between items-start mb-3">
-                                            <span className="text-[9px] font-black uppercase text-brand-teal/80 bg-brand-teal/10 px-2 py-0.5 rounded-lg tracking-wider">Servicio</span>
+                                            <span className="text-[9px] font-semibold uppercase text-brand-teal/80 bg-brand-teal/10 px-2 py-0.5 rounded-lg tracking-wider">Servicio</span>
                                             {isEditingFees && (
                                                 <div className="flex items-center gap-1 opacity-0 group-hover/service:opacity-100 transition-opacity">
-                                                    <button onClick={() => handleEditService(service)} className="p-1.5 text-sky-500 hover:bg-sky-500/10 rounded-lg transition-all"><LucideIcons.Edit size={12} /></button>
-                                                    <button onClick={() => handleDeleteService(service.id)} className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-all"><LucideIcons.Trash2 size={12} /></button>
+                                                    <button onClick={() => handleEditService(service)} className="p-1.5 text-sky-400 hover:bg-sky-400/10 rounded-lg transition-all"><LucideIcons.Edit size={12} /></button>
+                                                    <button onClick={() => handleDeleteService(service.id)} className="p-1.5 text-rose-400 hover:bg-rose-400/10 rounded-lg transition-all"><LucideIcons.Trash2 size={12} /></button>
                                                 </div>
                                             )}
                                         </div>
-                                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-4 line-clamp-1">{service.name}</span>
+                                        <span className="text-sm font-medium text-slate-800 dark:text-slate-100 mb-4 line-clamp-1">{service.name}</span>
                                         <div className="flex items-baseline gap-1 mt-auto">
-                                            <span className="text-[10px] font-black text-slate-400">$</span>
-                                            <span className="text-xl font-display font-black text-slate-900 dark:text-white leading-none">{service.price.toFixed(2)}</span>
-                                            <span className="text-[10px] font-bold text-slate-400 ml-auto uppercase tracking-tighter">Costo Base</span>
+                                            <span className="text-[10px] font-semibold text-slate-400">$</span>
+                                            <span className="text-xl font-display font-semibold text-slate-900 dark:text-white leading-none">{service.price.toFixed(2)}</span>
+                                            <span className="text-[10px] font-medium text-slate-400 ml-auto uppercase tracking-tighter">Costo Base</span>
                                         </div>
                                     </div>
                                 ))}
@@ -780,14 +780,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                             <div className="flex flex-col sm:flex-row gap-4 animate-slide-up-fade pt-4 px-1">
                                 <button 
                                     onClick={handleSaveFees} 
-                                    className="flex-grow p-4 bg-emerald-500 text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    className="flex-grow p-4 bg-emerald-400 text-white font-semibold uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-emerald-400/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                                 >
                                     <LucideIcons.Save size={18} />
                                     <span>Consolidar Tarifas</span>
                                 </button>
                                 <button 
                                     onClick={handleCancelEditFees} 
-                                    className="px-8 p-4 bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-black uppercase tracking-widest text-xs rounded-2xl hover:scale-[1.02] active:scale-95 transition-all border border-transparent hover:border-slate-300 dark:hover:border-white/10"
+                                    className="px-8 p-4 bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-widest text-xs rounded-2xl hover:scale-[1.02] active:scale-95 transition-all border border-transparent hover:border-slate-300 dark:hover:border-white/10"
                                 >
                                     Descartar
                                 </button>
@@ -808,17 +808,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 <LucideIcons.CalendarClock className="text-gold" size={24} />
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold dark:text-white leading-tight">Control de Visibilidad <span className="text-gold">Renta</span></h3>
+                                <h3 className="text-xl font-medium dark:text-white leading-tight">Control de Visibilidad <span className="text-gold">Renta</span></h3>
                                 <p className="text-xs text-slate-500 font-mono tracking-widest uppercase mt-0.5">Tax Visibility Protocol v2.0</p>
                             </div>
                         </div>
 
                         <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm leading-relaxed max-w-2xl">
-                            Especifique el umbral temporal para la activación de controles tácticos. Los botones de <span className="text-gold font-bold">"Declarar Renta"</span> y <span className="text-gold font-bold">"Pagar Renta"</span> se habilitarán automáticamente en las tarjetas de cliente a partir del mes seleccionado.
+                            Especifique el umbral temporal para la activación de controles tácticos. Los botones de <span className="text-gold font-medium">"Declarar Renta"</span> y <span className="text-gold font-medium">"Pagar Renta"</span> se habilitarán automáticamente en las tarjetas de cliente a partir del mes seleccionado.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center gap-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800/50">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                 <LucideIcons.Target size={16} className="text-gold" />
                                 Mes de Despliegue:
                             </label>
@@ -827,7 +827,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     value={fees.rentaButtonsStartMonth || 1}
                                     onChange={(e) => handleFeeChange('rentaButtonsStartMonth' as any, e.target.value)}
                                     disabled={!isEditingFees}
-                                    className={`w-full p-3 rounded-xl border appearance-none font-bold transition-all ${
+                                    className={`w-full p-3 rounded-xl border appearance-none font-medium transition-all ${
                                         isEditingFees 
                                         ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-gold/50 cursor-pointer' 
                                         : 'bg-slate-100 dark:bg-slate-900 border-transparent text-slate-400 cursor-not-allowed'
@@ -845,7 +845,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                             </div>
                             
                             {!isEditingFees && (
-                                <span className="text-[10px] font-bold text-amber-500/70 uppercase tracking-tighter flex items-center gap-1">
+                                <span className="text-[10px] font-medium text-amber-400/70 uppercase tracking-tighter flex items-center gap-1">
                                     <LucideIcons.Lock size={10} /> Editar en Precios
                                 </span>
                             )}
@@ -862,14 +862,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     <LucideIcons.MessageSquare className="text-brand-teal" size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold dark:text-white">Alertas de <span className="text-brand-teal">Cobranza</span></h3>
+                                    <h3 className="text-xl font-medium dark:text-white">Alertas de <span className="text-brand-teal">Cobranza</span></h3>
                                     <p className="text-xs text-slate-500 font-mono tracking-widest uppercase mt-0.5">Automated Intelligence Reminders</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
                                     localReminderConfig?.isEnabled 
-                                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                                    ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' 
                                     : 'bg-slate-500/10 text-slate-500 border-slate-500/20'
                                 }`}>
                                     {localReminderConfig?.isEnabled ? 'SISTEMA ACTIVO' : 'SISTEMA STANDBY'}
@@ -887,7 +887,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                     <div className={`p-6 space-y-6 transition-all duration-500 ${!(localReminderConfig?.isEnabled ?? true) ? 'grayscale opacity-40 pointer-events-none' : ''}`}>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
                                     <LucideIcons.BellRing size={14} className="text-brand-teal" />
                                     Ventana de Pre-Vencimiento
                                 </label>
@@ -896,14 +896,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         type="number"
                                         value={localReminderConfig?.daysBefore ?? 3}
                                         onChange={e => setLocalReminderConfig(c => c ? ({ ...c, daysBefore: parseInt(e.target.value) || 0 }) : c)}
-                                        className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold focus:ring-2 focus:ring-brand-teal/50"
+                                        className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium focus:ring-2 focus:ring-brand-teal/50"
                                     />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">DÍAS ANTES</span>
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400">DÍAS ANTES</span>
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                                    <LucideIcons.Clock size={14} className="text-red-500" />
+                                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                    <LucideIcons.Clock size={14} className="text-rose-400" />
                                     Intervalo en Mora (Recurrencia)
                                 </label>
                                 <div className="relative">
@@ -911,9 +911,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         type="number"
                                         value={localReminderConfig?.overdueInterval ?? 7}
                                         onChange={e => setLocalReminderConfig(c => c ? ({ ...c, overdueInterval: parseInt(e.target.value) || 0 }) : c)}
-                                        className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold focus:ring-2 focus:ring-red-500/50"
+                                        className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium focus:ring-2 focus:ring-rose-400/50"
                                     />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">CADA X DÍAS</span>
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400">CADA X DÍAS</span>
                                 </div>
                             </div>
                         </div>
@@ -929,7 +929,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
                                     <LucideIcons.FileEdit size={14} className="text-brand-teal" />
                                     Protocolo de Comunicación (Template)
                                 </label>
@@ -950,7 +950,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                         <button 
                             onClick={handleSaveReminderConfig} 
-                            className="w-full p-4 bg-brand-teal hover:bg-brand-teal/90 text-white font-black rounded-xl shadow-[0_4px_20px_rgba(20,184,166,0.3)] transition-all flex items-center justify-center gap-3 group active:scale-[0.98]"
+                            className="w-full p-4 bg-brand-teal hover:bg-brand-teal/90 text-white font-semibold rounded-xl shadow-[0_4px_20px_rgba(20,184,166,0.3)] transition-all flex items-center justify-center gap-3 group active:scale-[0.98]"
                         >
                             <LucideIcons.Save size={20} className="group-hover:rotate-12 transition-transform" />
                             ACTUALIZAR PROTOCOLO DE RECORDATORIOS
@@ -966,7 +966,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                             <LucideIcons.Database className="text-brand-teal" size={24} />
                         </div>
                         <div>
-                            <h3 className="text-xl font-bold dark:text-white leading-tight">Gestión de <span className="text-brand-teal">Inteligencia</span></h3>
+                            <h3 className="text-xl font-medium dark:text-white leading-tight">Gestión de <span className="text-brand-teal">Inteligencia</span></h3>
                             <p className="text-xs text-slate-500 font-mono tracking-widest uppercase mt-0.5">Data Logistics & Support Protocol</p>
                         </div>
                     </div>
@@ -974,21 +974,21 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                     <div className="space-y-6">
                         {/* LEGEND MODULE */}
                         <div className="space-y-4">
-                            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <h4 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                 <LucideIcons.Palette size={14} className="text-brand-teal" />
                                 Protocolo Visual (Leyenda)
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="p-4 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50">
-                                    <p className="text-xs font-bold mb-3 dark:text-slate-300 uppercase letter-spacing-wider">Segmentación por Borde</p>
+                                    <p className="text-xs font-medium mb-3 dark:text-slate-300 uppercase letter-spacing-wider">Segmentación por Borde</p>
                                     <div className="space-y-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-1.5 h-6 bg-red-500 rounded-full"></div>
-                                            <span className="text-xs font-semibold dark:text-slate-400"><strong className="text-red-500">OPERACIÓN VENCIDA:</strong> Acción correctiva inmediata</span>
+                                            <div className="w-1.5 h-6 bg-rose-400 rounded-full"></div>
+                                            <span className="text-xs font-semibold dark:text-slate-400"><strong className="text-rose-400">OPERACIÓN VENCIDA:</strong> Acción correctiva inmediata</span>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className="w-1.5 h-6 bg-yellow-500 rounded-full"></div>
-                                            <span className="text-xs font-semibold dark:text-slate-400"><strong className="text-yellow-500">CERCA DEL LÍMITE:</strong> En ventana de cumplimiento</span>
+                                            <div className="w-1.5 h-6 bg-amber-400 rounded-full"></div>
+                                            <span className="text-xs font-semibold dark:text-slate-400"><strong className="text-amber-400">CERCA DEL LÍMITE:</strong> En ventana de cumplimiento</span>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <div className="w-1.5 h-6 bg-slate-400 dark:bg-slate-600 rounded-full"></div>
@@ -997,15 +997,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     </div>
                                 </div>
                                 <div className="p-4 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50">
-                                    <p className="text-xs font-bold mb-3 dark:text-slate-300 uppercase letter-spacing-wider">Capas de Fondo</p>
+                                    <p className="text-xs font-medium mb-3 dark:text-slate-300 uppercase letter-spacing-wider">Capas de Fondo</p>
                                     <div className="space-y-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20"></div>
-                                            <span className="text-xs font-semibold dark:text-slate-400"><strong className="text-emerald-500">ACTIVO TOTAL:</strong> Cliente con todas las obligaciones OK</span>
+                                            <div className="w-6 h-6 rounded-lg bg-emerald-400/10 border border-emerald-400/20"></div>
+                                            <span className="text-xs font-semibold dark:text-slate-400"><strong className="text-emerald-400">ACTIVO TOTAL:</strong> Cliente con todas las obligaciones OK</span>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/20"></div>
-                                            <span className="text-xs font-semibold dark:text-slate-400"><strong className="text-amber-500">PROCESANDO:</strong> Trámites pendientes en curso</span>
+                                            <div className="w-6 h-6 rounded-lg bg-amber-400/10 border border-amber-400/20"></div>
+                                            <span className="text-xs font-semibold dark:text-slate-400"><strong className="text-amber-400">PROCESANDO:</strong> Trámites pendientes en curso</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1014,7 +1014,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                         {/* IMPORT/EXPORT TOOLBOX */}
                         <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800/50">
-                            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <h4 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                 <LucideIcons.Share2 size={14} className="text-brand-teal" />
                                 Logística de Transferencia
                             </h4>
@@ -1022,13 +1022,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" className="hidden" />
                                 <button 
                                     onClick={handleImportClick} 
-                                    className="px-6 py-3 bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg"
+                                    className="px-6 py-3 bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white font-medium rounded-xl transition-all flex items-center gap-2 shadow-lg"
                                 >
                                     <LucideIcons.UploadCloud size={18} /> Importar CSV
                                 </button>
                                 <button 
                                     onClick={handleExport} 
-                                    className="px-6 py-3 bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg"
+                                    className="px-6 py-3 bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 text-white font-medium rounded-xl transition-all flex items-center gap-2 shadow-lg"
                                 >
                                     <LucideIcons.Download size={18} /> Exportar CSV
                                 </button>
@@ -1040,7 +1040,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                             alert('Protocolo VIP aplicado a todos los registros.');
                                         }
                                     }}
-                                    className="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-black font-black rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                                    className="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-700 text-black font-semibold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-amber-400/20"
                                 >
                                     <LucideIcons.Crown size={18} /> ASCENSIÓN MASIVA VIP
                                 </button>
@@ -1051,7 +1051,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-800/50">
                             {/* BROWSER KEYS */}
                             <div className="space-y-3">
-                                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <h4 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                     <LucideIcons.Key size={14} className="text-brand-teal" />
                                     Base de Credenciales SRI
                                 </h4>
@@ -1062,7 +1062,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     <input type="file" ref={passwordFileInputRef} onChange={handlePasswordFileChange} accept=".csv" className="hidden" />
                                     <button 
                                         onClick={handlePasswordImportClick} 
-                                        className="w-full py-2.5 bg-brand-teal/10 hover:bg-brand-teal/20 text-brand-teal font-bold rounded-lg border border-brand-teal/20 transition-all text-xs"
+                                        className="w-full py-2.5 bg-brand-teal/10 hover:bg-brand-teal/20 text-brand-teal font-medium rounded-lg border border-brand-teal/20 transition-all text-xs"
                                     >
                                         SINCRONIZAR CLAVES DEL NAVEGADOR
                                     </button>
@@ -1071,7 +1071,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                             {/* PDF EXTRACTION */}
                             <div className="space-y-3">
-                                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <h4 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                     <LucideIcons.FileSearch size={14} className="text-brand-teal" />
                                     Extracción Masiva PDF
                                 </h4>
@@ -1083,7 +1083,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     <button 
                                         onClick={handleBulkPdfClick} 
                                         disabled={isUploadingPdfs}
-                                        className="w-full py-2.5 bg-brand-teal text-white font-bold rounded-lg shadow-md hover:bg-brand-teal/90 transition-all text-xs flex items-center justify-center gap-2"
+                                        className="w-full py-2.5 bg-brand-teal text-white font-medium rounded-lg shadow-md hover:bg-brand-teal/90 transition-all text-xs flex items-center justify-center gap-2"
                                     >
                                         {isUploadingPdfs ? <LucideIcons.Loader className="animate-spin" size={14} /> : <LucideIcons.Zap size={14} />}
                                         {isUploadingPdfs ? 'EXTRAYENDO...' : 'SUBIR LOTE PDF RUC'}
@@ -1096,22 +1096,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-800/50">
                             {/* BACKUP */}
                             <div className="space-y-3">
-                                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    <LucideIcons.ShieldCheck size={14} className="text-emerald-500" />
+                                <h4 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <LucideIcons.ShieldCheck size={14} className="text-emerald-400" />
                                     Blindaje y Backups
                                 </h4>
-                                <div className="p-5 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-2xl border border-emerald-500/20 space-y-3">
+                                <div className="p-5 bg-emerald-400/5 dark:bg-emerald-400/10 rounded-2xl border border-emerald-400/20 space-y-3">
                                     <div className="flex gap-2">
                                         <button 
                                             onClick={handleExportJSON} 
-                                            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all"
+                                            className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-700 text-white font-medium rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-400/20 transition-all"
                                         >
                                             <LucideIcons.Download size={16} /> RESPALDO JSON
                                         </button>
                                         <input type="file" ref={jsonFileInputRef} onChange={handleImportJSON} accept=".json" className="hidden" />
                                         <button 
                                             onClick={handleImportJSONClick} 
-                                            className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 border border-slate-600 transition-all"
+                                            className="flex-1 py-3 bg-slate-700 hover:bg-slate-800 text-white font-medium rounded-xl text-xs flex items-center justify-center gap-2 border border-slate-600 transition-all"
                                         >
                                             <LucideIcons.Upload size={16} /> RESTAURAR
                                         </button>
@@ -1129,7 +1129,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                                 alert("Error al respaldar en Sheets. Verifica la consola.");
                                             }
                                         }} 
-                                        className="w-full py-3 bg-[#0f9d58] hover:bg-[#0b8043] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#0f9d58]/20 transition-all"
+                                        className="w-full py-3 bg-[#0f9d58] hover:bg-[#0b8043] text-white font-medium rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#0f9d58]/20 transition-all"
                                     >
                                         <LucideIcons.DatabaseBackup size={16} /> FORZAR RESPALDO GOOGLE SHEETS
                                     </button>
@@ -1138,8 +1138,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                             {/* ARCHIVE */}
                             <div className="space-y-3">
-                                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    <LucideIcons.UserX size={14} className="text-red-500" />
+                                <h4 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <LucideIcons.UserX size={14} className="text-rose-400" />
                                     Clientes Desactivados
                                 </h4>
                                 <div className="max-h-[120px] overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50 custom-scrollbar">
@@ -1149,10 +1149,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         <div className="space-y-2">
                                             {clients.filter(c => !c.isActive).map(client => (
                                                 <div key={client.id} className="flex items-center justify-between p-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
-                                                    <span className="text-xs font-bold dark:text-slate-300 truncate pr-2">{client.name}</span>
+                                                    <span className="text-xs font-medium dark:text-slate-300 truncate pr-2">{client.name}</span>
                                                     <div className="flex gap-1">
-                                                        <button onClick={() => updateClient(client.id, { isActive: true })} className="p-1 text-emerald-500 hover:bg-emerald-500/10 rounded"><LucideIcons.CheckCircle size={14} /></button>
-                                                        <button onClick={() => window.confirm(`Eliminar ${client.name}?`) && removeClient(client.id)} className="p-1 text-red-500 hover:bg-red-500/10 rounded"><LucideIcons.Trash2 size={14} /></button>
+                                                        <button onClick={() => updateClient(client.id, { isActive: true })} className="p-1 text-emerald-400 hover:bg-emerald-400/10 rounded"><LucideIcons.CheckCircle size={14} /></button>
+                                                        <button onClick={() => window.confirm(`Eliminar ${client.name}?`) && removeClient(client.id)} className="p-1 text-rose-400 hover:bg-rose-400/10 rounded"><LucideIcons.Trash2 size={14} /></button>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1164,14 +1164,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
 
                         {/* MAINTENANCE MODULE */}
                         <div className="pt-6 border-t-2 border-dashed border-slate-200 dark:border-slate-800">
-                            <div className="bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 p-5 rounded-2xl flex flex-col sm:flex-row items-center gap-5">
-                                <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-amber-500/20">
-                                    <LucideIcons.Wrench className="text-amber-500" size={32} />
+                            <div className="bg-amber-400/5 dark:bg-amber-400/10 border border-amber-400/20 p-5 rounded-2xl flex flex-col sm:flex-row items-center gap-5">
+                                <div className="p-4 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-amber-400/20">
+                                    <LucideIcons.Wrench className="text-amber-400" size={32} />
                                 </div>
                                 <div className="flex-1 text-center sm:text-left">
-                                    <h5 className="font-black text-amber-800 dark:text-amber-500 text-sm mb-1 uppercase tracking-wider">Mantenimiento de Sincronización</h5>
+                                    <h5 className="font-semibold text-amber-800 dark:text-amber-400 text-sm mb-1 uppercase tracking-wider">Mantenimiento de Sincronización</h5>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-0 leading-relaxed">
-                                        Si detecta inconsistencias críticas, ejecute una <span className="text-amber-600 font-bold">Limpieza Profunda</span>. Los datos se reconstruirán desde la nube.
+                                        Si detecta inconsistencias críticas, ejecute una <span className="text-amber-500 font-medium">Limpieza Profunda</span>. Los datos se reconstruirán desde la nube.
                                     </p>
                                 </div>
                                 <button
@@ -1180,7 +1180,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                             await resetApp();
                                         }
                                     }}
-                                    className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 text-xs"
+                                    className="px-6 py-3 bg-amber-400 hover:bg-amber-500 text-white font-semibold rounded-xl shadow-lg shadow-amber-400/20 transition-all flex items-center gap-2 text-xs"
                                 >
                                     <LucideIcons.RefreshCw size={16} className="animate-spin-slow" />
                                     FORZAR RECONSTRUCCIÓN
@@ -1234,7 +1234,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                             {serviceModalFeedback.message}
                         </div>
                     )}
-                    <button onClick={handleSaveService} className="w-full mt-2 p-3 bg-gold text-black font-bold rounded-lg hover:bg-gold-dark transition-colors">
+                    <button onClick={handleSaveService} className="w-full mt-2 p-3 bg-gold text-black font-medium rounded-lg hover:bg-gold-dark transition-colors">
                         Guardar Servicio
                     </button>
                 </div>

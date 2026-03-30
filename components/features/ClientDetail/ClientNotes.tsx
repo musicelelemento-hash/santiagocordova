@@ -21,10 +21,10 @@ interface ClientNotesProps {
 }
 
 const CATEGORY_STYLES = {
-  [NoteCategory.Important]: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
-  [NoteCategory.Note]: 'bg-sky-500/10 text-sky-500 border-sky-500/20',
-  [NoteCategory.Suggestion]: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  [NoteCategory.Key]: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+  [NoteCategory.Important]: 'bg-rose-400/10 text-rose-400 border-rose-400/20',
+  [NoteCategory.Note]: 'bg-sky-400/10 text-sky-400 border-sky-400/20',
+  [NoteCategory.Suggestion]: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20',
+  [NoteCategory.Key]: 'bg-amber-400/10 text-amber-400 border-amber-400/20',
   [NoteCategory.Other]: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
 };
 
@@ -60,11 +60,11 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
     <div className="glass-card p-6 rounded-3xl border border-slate-200/50 dark:border-white/5 h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 sm:p-2.5 rounded-xl bg-sky-500/10 text-sky-500 border border-sky-500/20">
+          <div className="p-2 sm:p-2.5 rounded-xl bg-sky-400/10 text-sky-400 border border-sky-400/20">
             <StickyNote size={18} className="sm:w-5 sm:h-5" />
           </div>
           <div>
-            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
+            <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white uppercase tracking-tight">
               Tactical Notes
             </h3>
             <p className="text-[10px] font-medium text-slate-400">Observaciones y Claves</p>
@@ -74,7 +74,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-sky-500 hover:text-white transition-all border border-transparent hover:border-sky-500/30"
+            className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 hover:bg-sky-400 hover:text-white transition-all border border-transparent hover:border-sky-400/30"
           >
             <Plus size={18} />
           </button>
@@ -92,10 +92,10 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
                     key={cat}
                     type="button"
                     onClick={() => setCategory(cat)}
-                    className={`px-3 sm:px-4 py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider border transition-all flex items-center justify-center sm:justify-start gap-2 ${
+                    className={`px-3 sm:px-4 py-2 rounded-xl text-[9px] sm:text-[10px] font-semibold uppercase tracking-wider border transition-all flex items-center justify-center sm:justify-start gap-2 ${
                       category === cat 
                         ? CATEGORY_STYLES[cat] + ' shadow-lg scale-[1.02] sm:scale-105' 
-                        : 'bg-white dark:bg-white/5 text-slate-400 border-slate-100 dark:border-white/5 hover:border-sky-500/30'
+                        : 'bg-white dark:bg-white/5 text-slate-400 border-slate-100 dark:border-white/5 hover:border-sky-400/30'
                     }`}
                   >
                     <Icon size={12} />
@@ -115,14 +115,14 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
               <button
                 type="button"
                 onClick={() => setIsAdding(false)}
-                className="px-4 py-2 rounded-xl text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-all uppercase tracking-wider"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-all uppercase tracking-wider"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={!content.trim()}
-                className="px-4 py-2 rounded-xl bg-sky-500 text-white text-xs font-black hover:bg-sky-600 transition-all disabled:opacity-50 uppercase tracking-wider shadow-lg shadow-sky-500/20"
+                className="px-4 py-2 rounded-xl bg-sky-400 text-white text-xs font-semibold hover:bg-sky-500 transition-all disabled:opacity-50 uppercase tracking-wider shadow-lg shadow-sky-400/20"
               >
                 Guardar Nota
               </button>
@@ -136,7 +136,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
               <StickyNote size={32} />
             </div>
             <p className="text-sm font-medium text-slate-500">No hay notas registradas.</p>
-            <p className="text-[10px] uppercase font-black tracking-widest mt-1">Status: Empty</p>
+            <p className="text-[10px] uppercase font-semibold tracking-widest mt-1">Status: Empty</p>
           </div>
         )}
 
@@ -147,18 +147,18 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
           return (
             <div 
               key={note.id}
-              className="group relative p-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 hover:border-sky-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-sky-500/5 animate-in fade-in slide-in-from-bottom-2"
+              className="group relative p-4 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 hover:border-sky-400/30 transition-all duration-300 hover:shadow-xl hover:shadow-sky-400/5 animate-in fade-in slide-in-from-bottom-2"
               style={{ animationDelay: `${idx * 50}ms` }}
             >
               <div className="flex items-start justify-between mb-2">
-                <div className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border flex items-center gap-1 shadow-sm ${style}`}>
+                <div className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-widest border flex items-center gap-1 shadow-sm ${style}`}>
                   <Icon size={10} />
                   {note.category}
                 </div>
                 <div className="flex gap-1">
                   <button
                     onClick={() => removeClientNote(clientId, note.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-all active:scale-95"
+                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-rose-400 hover:bg-rose-400/10 transition-all active:scale-95"
                     title="Eliminar Nota"
                   >
                     <Trash2 size={14} />
@@ -171,7 +171,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-                  <span className="text-[10px] font-bold text-slate-400">
+                  <span className="text-[10px] font-medium text-slate-400">
                     {new Date(note.createdAt).toLocaleDateString('es-ES', { 
                       day: 'numeric', 
                       month: 'short', 
@@ -182,7 +182,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
                   </span>
                 </div>
                 <div className="h-px bg-slate-200 dark:bg-white/5 flex-1 mx-3" />
-                <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em] group-hover:text-sky-500/50 transition-colors">
+                <span className="text-[9px] font-semibold text-slate-300 dark:text-slate-600 uppercase tracking-[0.2em] group-hover:text-sky-400/50 transition-colors">
                   Encrypted Log
                 </span>
               </div>

@@ -199,14 +199,14 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     <div className="flex items-center justify-between sm:justify-start gap-2 mb-2 sm:mb-2 text-center sm:text-left">
                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-teal/10 border border-brand-teal/20">
                             <div className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.8)]"></div>
-                            <span className="text-[10px] sm:text-[10px] font-black text-brand-teal uppercase tracking-widest">Financial Grid Alpha</span>
+                            <span className="text-[10px] sm:text-[10px] font-semibold text-brand-teal uppercase tracking-widest">Financial Grid Alpha</span>
                         </div>
-                        <span className="text-[10px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Santiago Cordova Protocol</span>
+                        <span className="text-[10px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Santiago Cordova Protocol</span>
                     </div>
-                    <h2 className="text-4xl sm:text-5xl font-display font-black text-slate-900 dark:text-white leading-tight sm:leading-[0.85] tracking-tighter mb-2">
+                    <h2 className="text-4xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-tight sm:leading-[0.85] tracking-tighter mb-2">
                         Financial <span className="text-brand-teal">Command</span>
                     </h2>
-                    <div className="flex items-center gap-2 text-slate-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-widest">
+                    <div className="flex items-center gap-2 text-slate-500 text-[9px] sm:text-[11px] font-medium uppercase tracking-widest">
                         <LucideIcons.ShieldCheck size={12} className="text-brand-teal" />
                         <span>Gestión de Cobranzas de Alto Nivel</span>
                     </div>
@@ -216,7 +216,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     <button 
                         onClick={() => setIsPaymentModalOpen(true)}
                         disabled={selectedItems.size === 0}
-                        className={`group relative overflow-hidden flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500 w-full sm:w-auto
+                        className={`group relative overflow-hidden flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-500 w-full sm:w-auto
                             ${selectedItems.size > 0 
                                 ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl shadow-brand-teal/20 hover:scale-[1.05] active:scale-[0.95]' 
                                 : 'bg-slate-100 dark:bg-slate-900/40 text-slate-400 cursor-not-allowed border border-slate-200 dark:border-slate-800'}`}
@@ -265,30 +265,30 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         </defs>
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-lg sm:text-3xl font-black text-slate-900 dark:text-brand-teal leading-none tracking-tighter">
+                                        <span className="text-lg sm:text-3xl font-semibold text-slate-900 dark:text-brand-teal leading-none tracking-tighter">
                                             {Math.round((financialData.collected.reduce((s, i) => s + i.amount, 0) / (financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0) || 1)) * 100)}%
                                         </span>
-                                        <span className="text-[7px] sm:text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mt-1 sm:mt-2">REVENUE</span>
+                                        <span className="text-[7px] sm:text-[9px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mt-1 sm:mt-2">REVENUE</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="w-8 h-1 bg-brand-teal rounded-full" />
-                                    <span className="text-[9px] sm:text-[11px] font-black text-brand-teal uppercase tracking-[0.3em]">Tactical Intelligence Hub</span>
+                                    <span className="text-[9px] sm:text-[11px] font-semibold text-brand-teal uppercase tracking-[0.3em]">Tactical Intelligence Hub</span>
                                 </div>
-                                <h3 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white leading-[0.9] tracking-tighter mb-2 sm:mb-4">
+                                <h3 className="text-2xl sm:text-4xl font-semibold text-slate-900 dark:text-white leading-[0.9] tracking-tighter mb-2 sm:mb-4">
                                     BALANCE DE <br className="hidden sm:block" /> RENDIMIENTO <span className="text-brand-teal opacity-50 font-display">Elite</span>
                                 </h3>
                                 <div className="flex gap-4">
                                     <div className="flex flex-col">
-                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Target Monthly</span>
-                                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">$ {(financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0)).toFixed(0)}</span>
+                                        <span className="text-[8px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Target Monthly</span>
+                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">$ {(financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0)).toFixed(0)}</span>
                                     </div>
                                     <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
                                     <div className="flex flex-col">
-                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Health Score</span>
-                                        <span className="text-sm font-bold text-emerald-500">OPTIMAL</span>
+                                        <span className="text-[8px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Health Score</span>
+                                        <span className="text-sm font-medium text-emerald-400">OPTIMAL</span>
                                     </div>
                                 </div>
                             </div>
@@ -297,15 +297,15 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         <div className="flex items-center justify-between sm:justify-end gap-6 sm:gap-12 bg-slate-50 dark:bg-black/20 p-5 sm:p-0 rounded-3xl sm:bg-transparent border border-slate-100 dark:border-transparent">
                             <div className="flex items-center gap-6 sm:gap-10">
                                 <div className="flex flex-col items-start sm:items-end">
-                                    <span className="text-[9px] sm:text-[11px] font-black text-slate-500/60 uppercase tracking-widest leading-none mb-2">Por Recaudar</span>
-                                    <span className="text-lg sm:text-3xl font-black text-red-500 font-display tracking-tight">
+                                    <span className="text-[9px] sm:text-[11px] font-semibold text-slate-500/60 uppercase tracking-widest leading-none mb-2">Por Recaudar</span>
+                                    <span className="text-lg sm:text-3xl font-semibold text-rose-400 font-display tracking-tight">
                                         ${financialData.receivable.reduce((s, i) => s + i.amount, 0).toFixed(2)}
                                     </span>
                                 </div>
                                 <div className="w-px h-10 sm:h-16 bg-slate-200 dark:bg-slate-800" />
                                 <div className="flex flex-col items-start sm:items-end">
-                                    <span className="text-[9px] sm:text-[11px] font-black text-slate-500/60 uppercase tracking-widest leading-none mb-2">Total Cobrado</span>
-                                    <span className="text-lg sm:text-3xl font-black text-brand-teal font-display tracking-tight">
+                                    <span className="text-[9px] sm:text-[11px] font-semibold text-slate-500/60 uppercase tracking-widest leading-none mb-2">Total Cobrado</span>
+                                    <span className="text-lg sm:text-3xl font-semibold text-brand-teal font-display tracking-tight">
                                         ${financialData.collected.reduce((s, i) => s + i.amount, 0).toFixed(2)}
                                     </span>
                                 </div>
@@ -322,14 +322,14 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             <div className="glass-tactical p-2 rounded-[1.8rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row gap-4 items-center">
                 <div className="flex p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar border border-slate-200 dark:border-slate-800">
                     {[
-                        { id: 'receivable', label: 'Pendientes', icon: LucideIcons.AlertTriangle, color: 'text-red-500' },
-                        { id: 'projected', label: 'Proyectado', icon: LucideIcons.Timer, color: 'text-amber-500' },
+                        { id: 'receivable', label: 'Pendientes', icon: LucideIcons.AlertTriangle, color: 'text-rose-400' },
+                        { id: 'projected', label: 'Proyectado', icon: LucideIcons.Timer, color: 'text-amber-400' },
                         { id: 'collected', label: 'Efectivo', icon: LucideIcons.CheckCircle, color: 'text-brand-teal' }
                     ].map(tab => (
                         <button 
                             key={tab.id} 
                             onClick={() => setActiveTab(tab.id as any)} 
-                            className={`flex flex-1 lg:flex-none items-center justify-center gap-3 px-6 py-4 rounded-xl text-[11px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300 shrink-0
+                            className={`flex flex-1 lg:flex-none items-center justify-center gap-3 px-6 py-4 rounded-xl text-[11px] sm:text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 shrink-0
                                 ${activeTab === tab.id 
                                     ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xl shadow-brand-teal/10 ring-1 ring-brand-teal/30 scale-105 z-10' 
                                     : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
@@ -337,7 +337,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             <tab.icon size={14} className={activeTab === tab.id ? tab.color : 'text-slate-400'} />
                             <span className="whitespace-nowrap">{tab.label}</span>
                             {tab.id === 'receivable' && financialData.receivable.length > 0 && (
-                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black font-mono ml-1 ${activeTab === tab.id ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
+                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-semibold font-mono ml-1 ${activeTab === tab.id ? 'bg-rose-400 text-white shadow-lg shadow-rose-400/30' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
                                     {financialData.receivable.length}
                                 </span>
                             )}
@@ -351,7 +351,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         placeholder="IDENTIFICADOR / RUC / PROTOCOLO" 
                         value={searchTerm} 
                         onChange={e => setSearchTerm(e.target.value)} 
-                        className="w-full pl-14 pr-6 py-4 sm:py-5 bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl text-[11px] font-black uppercase tracking-widest placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-teal/10 focus:border-brand-teal/30 transition-all text-slate-900 dark:text-white" 
+                        className="w-full pl-14 pr-6 py-4 sm:py-5 bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl text-[11px] font-semibold uppercase tracking-widest placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-teal/10 focus:border-brand-teal/30 transition-all text-slate-900 dark:text-white" 
                     />
                 </div>
                 <div className="flex items-center gap-3 sm:px-2 w-full lg:w-auto">
@@ -368,7 +368,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 <div className="lg:col-span-1 glass-tactical rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 h-fit relative overflow-hidden group">
                     <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-48 h-48 bg-brand-teal/10 blur-[100px] rounded-full"></div>
                     <div className="relative z-10">
-                        <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
+                        <h3 className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
                             <LucideIcons.ShieldAlert size={14} className="text-brand-teal" />
                             Security Analysis
                         </h3>
@@ -395,10 +395,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 </PieChart>
                             </ResponsiveContainer>
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pt-2">
-                                <span className="text-2xl font-black text-slate-900 dark:text-white leading-none tracking-tighter">
+                                <span className="text-2xl font-semibold text-slate-900 dark:text-white leading-none tracking-tighter">
                                     ${(financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0)).toFixed(0)}
                                 </span>
-                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">ESTIMATED</span>
+                                <span className="text-[8px] font-semibold text-slate-500 uppercase tracking-[0.2em] mt-1">ESTIMATED</span>
                             </div>
                         </div>
                         
@@ -407,9 +407,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/50">
                                     <div className="flex items-center gap-3">
                                         <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]" style={{ backgroundColor: d.color }}></div>
-                                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{d.name}</span>
+                                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{d.name}</span>
                                     </div>
-                                    <span className="text-sm font-black text-slate-900 dark:text-white font-mono">${d.value.toFixed(2)}</span>
+                                    <span className="text-sm font-semibold text-slate-900 dark:text-white font-mono">${d.value.toFixed(2)}</span>
                                 </div>
                             ))}
                         </div>
@@ -422,13 +422,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             <button onClick={() => {
                                 if (selectedItems.size === currentList.length) setSelectedItems(new Set());
                                 else setSelectedItems(new Set(currentList.map(i => `${i.clientId}-${i.period}`)));
-                            }} className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 hover:text-brand-teal dark:hover:text-brand-teal transition-all active:scale-95 shadow-sm">
+                            }} className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 hover:text-brand-teal dark:hover:text-brand-teal transition-all active:scale-95 shadow-sm">
                                 {selectedItems.size === currentList.length ? <LucideIcons.CheckSquare size={16} className="text-brand-teal" /> : <LucideIcons.Square size={16} />}
                                 SELECT ALL ENTRIES
                             </button>
                             <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-brand-teal/10 border border-brand-teal/20 shadow-inner">
                                 <LucideIcons.Layers size={14} className="text-brand-teal" />
-                                <span className="text-[10px] sm:text-[11px] font-black text-brand-teal uppercase tracking-widest">{currentList.length} OPERACIONES</span>
+                                <span className="text-[10px] sm:text-[11px] font-semibold text-brand-teal uppercase tracking-widest">{currentList.length} OPERACIONES</span>
                             </div>
                         </div>
 
@@ -438,7 +438,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     <div className="p-8 rounded-full bg-slate-50 dark:bg-slate-900/40 mb-6 border border-slate-100 dark:border-slate-800">
                                         <LucideIcons.ShieldCheck size={64} className="text-slate-200 dark:text-slate-800" />
                                     </div>
-                                    <p className="text-[11px] font-black uppercase tracking-[0.4em] text-slate-500">No Operations Found</p>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-500">No Operations Found</p>
                                 </div>
                             ) : (
                                 currentList.map(item => {
@@ -462,37 +462,37 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                 </div>
                                                 <div className="flex-grow min-w-0">
                                                     <div className="flex items-center gap-3 mb-1">
-                                                        <p className="font-black text-sm sm:text-base text-slate-900 dark:text-white uppercase tracking-tight truncate max-w-[200px] sm:max-w-none">{item.clientName}</p>
+                                                        <p className="font-semibold text-sm sm:text-base text-slate-900 dark:text-white uppercase tracking-tight truncate max-w-[200px] sm:max-w-none">{item.clientName}</p>
                                                         {item.daysDiff && item.daysDiff > 0 && (
-                                                            <div className="px-2 py-0.5 rounded-lg bg-red-500/10 border border-red-500/20">
-                                                                <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">URGENT</span>
+                                                            <div className="px-2 py-0.5 rounded-lg bg-rose-400/10 border border-rose-400/20">
+                                                                <span className="text-[8px] font-semibold text-rose-400 uppercase tracking-widest">URGENT</span>
                                                             </div>
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-3">
                                                         <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-slate-100 dark:bg-slate-800/80">
                                                             <LucideIcons.Activity size={10} className="text-slate-400" />
-                                                            <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 font-mono tracking-widest uppercase">{item.ruc}</span>
+                                                            <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 font-mono tracking-widest uppercase">{item.ruc}</span>
                                                         </div>
                                                         <span className="text-slate-200 dark:text-slate-800 text-xs">•</span>
-                                                        <span className="text-[10px] font-black text-brand-teal uppercase tracking-widest">{formatPeriodForDisplay(item.period)}</span>
+                                                        <span className="text-[10px] font-semibold text-brand-teal uppercase tracking-widest">{formatPeriodForDisplay(item.period)}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="mt-5 sm:mt-0 flex sm:flex-col justify-between items-end sm:items-end relative z-10 w-full sm:w-auto bg-white/50 dark:bg-black/20 sm:bg-transparent p-4 sm:p-0 rounded-2xl border border-slate-100 dark:border-slate-800/50 sm:border-transparent">
                                                 <div className="flex flex-col sm:items-end">
-                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 sm:hidden">Transaction Sum</span>
-                                                    <p className={`text-xl sm:text-2xl font-black font-display tracking-tight transition-colors duration-300 ${isSelected ? 'text-brand-teal' : 'text-slate-900 dark:text-white'}`}>
+                                                    <span className="text-[8px] font-semibold text-slate-400 uppercase tracking-[0.2em] mb-1 sm:hidden">Transaction Sum</span>
+                                                    <p className={`text-xl sm:text-2xl font-semibold font-display tracking-tight transition-colors duration-300 ${isSelected ? 'text-brand-teal' : 'text-slate-900 dark:text-white'}`}>
                                                         ${item.amount.toFixed(2)}
                                                     </p>
                                                 </div>
                                                 <div className={`mt-2 flex items-center gap-2 px-3 py-1 rounded-full border
                                                     ${item.status === 'Pagada' 
-                                                        ? 'bg-emerald-500/20 text-emerald-500' 
+                                                        ? 'bg-emerald-400/20 text-emerald-400' 
                                                         : item.daysDiff && item.daysDiff > 0 
-                                                            ? 'bg-rose-500/20 text-rose-500' 
+                                                            ? 'bg-rose-400/20 text-rose-400' 
                                                             : 'bg-slate-200/50 dark:bg-white/10 text-slate-400'}`}>
-                                                    <span className="text-[9px] font-black uppercase tracking-widest">
+                                                    <span className="text-[9px] font-semibold uppercase tracking-widest">
                                                         {item.status === 'Pagada' ? 'EXECUTED' : item.daysDiff && item.daysDiff > 0 ? `DELAYED ${item.daysDiff}D` : 'PENDING'}
                                                     </span>
                                                 </div>
@@ -519,13 +519,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     <LucideIcons.ShieldCheck size={32} />
                                 </div>
                             </div>
-                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4">Monto de Liquidación Total</p>
-                            <p className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white mb-4 tracking-tighter">
+                            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.4em] mb-4">Monto de Liquidación Total</p>
+                            <p className="text-5xl sm:text-6xl font-semibold text-slate-900 dark:text-white mb-4 tracking-tighter">
                                 ${Array.from(selectedItems).reduce<number>((sum: number, key) => sum + (currentList.find(i => `${i.clientId}-${i.period}` === key)?.amount || 0), 0).toFixed(2)}
                             </p>
                             <div className="flex items-center justify-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-brand-teal animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.8)]"></div>
-                                <span className="text-[10px] font-black text-brand-teal uppercase tracking-widest">Protocolo de Procedencia Verificado</span>
+                                <span className="text-[10px] font-semibold text-brand-teal uppercase tracking-widest">Protocolo de Procedencia Verificado</span>
                             </div>
                         </div>
                     </div>
@@ -534,7 +534,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         <button 
                             onClick={handleProcessPayment} 
                             disabled={isProcessing} 
-                            className="group relative w-full overflow-hidden py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                            className="group relative w-full overflow-hidden py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-semibold text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                         >
                             <span className="relative z-10 flex items-center justify-center gap-3">
                                 {isProcessing ? <LucideIcons.RefreshCw className="animate-spin text-brand-teal" size={20} /> : <LucideIcons.ShieldAlert size={20} className="text-brand-teal" />}
@@ -542,7 +542,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             </span>
                             <div className="absolute inset-0 bg-brand-teal/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </button>
-                        <p className="text-center text-[9px] font-black text-slate-400 uppercase tracking-widest leading-relaxed opacity-50">
+                        <p className="text-center text-[9px] font-semibold text-slate-400 uppercase tracking-widest leading-relaxed opacity-50">
                             Al confirmar, se generará un asiento contable digital <br />y se actualizará el historial del contribuyente en el Grid.
                         </p>
                     </div>
@@ -560,36 +560,36 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 </div>
                                 
                                 <div className="text-center mb-10 border-b border-dashed border-slate-200 dark:border-slate-800 pb-8 relative z-10">
-                                    <p className="font-black text-lg uppercase tracking-[0.2em] mb-2 text-slate-900 dark:text-white">{defaultBusinessProfile.businessName}</p>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest leading-tight text-slate-400">{defaultBusinessProfile.tradeName}</p>
+                                    <p className="font-semibold text-lg uppercase tracking-[0.2em] mb-2 text-slate-900 dark:text-white">{defaultBusinessProfile.businessName}</p>
+                                    <p className="text-[10px] font-medium uppercase tracking-widest leading-tight text-slate-400">{defaultBusinessProfile.tradeName}</p>
                                     <p className="text-[10px] text-slate-500 mt-2">{defaultBusinessProfile.address}</p>
-                                    <div className="inline-block mt-6 px-4 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full font-black text-[9px] uppercase tracking-widest shadow-lg">
+                                    <div className="inline-block mt-6 px-4 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full font-semibold text-[9px] uppercase tracking-widest shadow-lg">
                                         TX-AUTH: {receiptData.transactionId}
                                     </div>
                                 </div>
 
                                 <div className="space-y-4 mb-10 bg-slate-50 dark:bg-slate-800/40 p-6 rounded-3xl border border-slate-100 dark:border-slate-800/50 relative z-10">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 uppercase font-black text-[9px] tracking-widest">Contribuyente</span>
-                                        <span className="text-right font-black uppercase text-slate-900 dark:text-white tracking-tight">{receiptData.clientName}</span>
+                                        <span className="text-slate-400 uppercase font-semibold text-[9px] tracking-widest">Contribuyente</span>
+                                        <span className="text-right font-semibold uppercase text-slate-900 dark:text-white tracking-tight">{receiptData.clientName}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 uppercase font-black text-[9px] tracking-widest">Identificación</span>
-                                        <span className="text-right font-black text-brand-teal">{receiptData.clientRuc}</span>
+                                        <span className="text-slate-400 uppercase font-semibold text-[9px] tracking-widest">Identificación</span>
+                                        <span className="text-right font-semibold text-brand-teal">{receiptData.clientRuc}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 uppercase font-black text-[9px] tracking-widest">Digital Timestamp</span>
-                                        <span className="text-right font-black opacity-80">{receiptData.paymentDate}</span>
+                                        <span className="text-slate-400 uppercase font-semibold text-[9px] tracking-widest">Digital Timestamp</span>
+                                        <span className="text-right font-semibold opacity-80">{receiptData.paymentDate}</span>
                                     </div>
                                 </div>
 
                                 <div className="mb-10 relative z-10">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 border-b border-dashed border-slate-200 dark:border-slate-800 pb-2">Desglose de Cargo</p>
+                                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.3em] mb-4 border-b border-dashed border-slate-200 dark:border-slate-800 pb-2">Desglose de Cargo</p>
                                     <div className="space-y-3">
                                         {receiptData.paidPeriods.map((p, i) => (
                                             <div key={i} className="flex justify-between items-center py-1">
-                                                <span className="font-bold uppercase text-slate-600 dark:text-slate-400">Honorarios Profesionales {p.period}</span>
-                                                <span className="font-black text-slate-900 dark:text-white tracking-tighter">${p.amount.toFixed(2)}</span>
+                                                <span className="font-medium uppercase text-slate-600 dark:text-slate-400">Honorarios Profesionales {p.period}</span>
+                                                <span className="font-semibold text-slate-900 dark:text-white tracking-tighter">${p.amount.toFixed(2)}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -597,10 +597,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
                                 <div className="bg-brand-teal p-6 rounded-[2rem] flex justify-between items-center text-white shadow-xl shadow-brand-teal/20 relative z-10">
                                     <div className="flex flex-col">
-                                        <span className="font-black text-[9px] uppercase tracking-[0.3em] opacity-80">Total Transado</span>
-                                        <span className="text-[10px] font-bold opacity-60">PAGO CONFIRMADO</span>
+                                        <span className="font-semibold text-[9px] uppercase tracking-[0.3em] opacity-80">Total Transado</span>
+                                        <span className="text-[10px] font-medium opacity-60">PAGO CONFIRMADO</span>
                                     </div>
-                                    <span className="text-3xl font-black font-display tracking-tighter">${receiptData.totalAmount.toFixed(2)}</span>
+                                    <span className="text-3xl font-semibold font-display tracking-tighter">${receiptData.totalAmount.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
@@ -608,13 +608,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         <div className="flex flex-col sm:flex-row gap-4">
                             <button 
                                 onClick={() => printSalesNote(receiptData, defaultBusinessProfile)} 
-                                className="flex-1 py-5 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] transition-all"
+                                className="flex-1 py-5 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-semibold text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] transition-all"
                             >
                                 <LucideIcons.Printer size={20} className="text-brand-teal" /> GENERAR TICKET FÍSICO
                             </button>
                             <button 
                                 onClick={() => setIsReceiptOpen(false)} 
-                                className="flex-1 py-5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                className="flex-1 py-5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-semibold text-[11px] uppercase tracking-[0.2em] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
                             >
                                 CERRAR PROTOCOLO
                             </button>

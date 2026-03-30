@@ -66,7 +66,7 @@ export const CompareSlider: React.FC<CompareSliderProps> = ({ beforeImage, after
         alt="After" 
         className="absolute top-0 left-0 w-full h-full object-cover"
       />
-      <div className="absolute top-4 right-4 bg-black/60 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm z-10">
+      <div className="absolute top-4 right-4 bg-black/60 text-white px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm z-10">
         Propuesta IA
       </div>
 
@@ -81,7 +81,7 @@ export const CompareSlider: React.FC<CompareSliderProps> = ({ beforeImage, after
           className="absolute top-0 left-0 max-w-none h-full object-cover"
           style={{ width: containerRef.current?.offsetWidth || '100%' }} 
         />
-        <div className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm">
+        <div className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-xs font-medium backdrop-blur-sm">
             Original
         </div>
       </div>

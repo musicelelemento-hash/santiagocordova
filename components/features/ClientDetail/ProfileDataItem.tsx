@@ -14,9 +14,9 @@ export const ProfileDataItem: React.FC<ProfileDataItemProps> = ({ icon: Icon, la
             <Icon size={20} />
         </div>
         <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
             <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-sm font-bold text-slate-900 dark:text-white truncate tracking-tight">{value}</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white truncate tracking-tight">{value}</p>
                 {onCopy && (
                     <button
                         onClick={() => onCopy(value)}

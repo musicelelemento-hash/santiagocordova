@@ -30,14 +30,14 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
         <div className="bg-slate-950/60 backdrop-blur-2xl rounded-3xl sm:rounded-[2.5rem] border border-white/10 shadow-[0_30px_70px_rgba(0,0,0,0.6)] overflow-hidden relative aura-premium">
             <div className="p-6 sm:p-8 border-b border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 bg-slate-950/40">
                 <div>
-                    <h3 className="font-black text-white flex items-center gap-3 text-lg sm:text-xl uppercase tracking-tight">
+                    <h3 className="font-semibold text-white flex items-center gap-3 text-lg sm:text-xl uppercase tracking-tight">
                         <FileCheck size={20} className="text-cyan-400 sm:w-6 sm:h-6" /> Historial
                     </h3>
-                    <p className="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1 ml-6 sm:ml-9">Registros y Estados SRI</p>
+                    <p className="text-[9px] sm:text-[10px] text-slate-500 font-medium uppercase tracking-[0.2em] mt-1 ml-6 sm:ml-9">Registros y Estados SRI</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="px-4 py-2 bg-slate-900 border border-white/5 rounded-xl">
-                        <span className="text-[11px] font-black text-cyan-500 uppercase tracking-widest">{sortedHistory.length} ENTIDADES</span>
+                        <span className="text-[11px] font-semibold text-cyan-500 uppercase tracking-widest">{sortedHistory.length} ENTIDADES</span>
                     </div>
                 </div>
             </div>
@@ -46,10 +46,10 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="border-b border-white/5 bg-slate-900/30">
-                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Sector</th>
-                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Estado</th>
-                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Financiero</th>
-                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em] text-right">Acción</th>
+                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Sector</th>
+                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Estado</th>
+                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em]">Financiero</th>
+                            <th className="px-5 sm:px-8 py-4 sm:py-5 text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em] sm:tracking-[0.3em] text-right">Acción</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -61,19 +61,19 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                             <Calendar size={14} className="sm:w-[18px] sm:h-[18px]" />
                                         </div>
                                         <div>
-                                            <p className="font-black text-white text-xs sm:text-base uppercase tracking-tight">{formatPeriodForDisplay(decl.period)}</p>
+                                            <p className="font-semibold text-white text-xs sm:text-base uppercase tracking-tight">{formatPeriodForDisplay(decl.period)}</p>
                                             <div className="flex items-center gap-2 mt-1">
                                                 <div className="w-1 h-1 rounded-full bg-cyan-500/40"></div>
-                                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">ACTUALIZADO: {safeFormat(decl.updatedAt, 'dd MMM').toUpperCase()}</p>
+                                                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">ACTUALIZADO: {safeFormat(decl.updatedAt, 'dd MMM').toUpperCase()}</p>
                                             </div>
                                         </div>
                                     </div>
                                 </td>
                                 <td className="px-8 py-6">
-                                    <div className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] border shadow-2xl ${
-                                        decl.status === DeclarationStatus.Pagada ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/5' :
-                                        decl.status === DeclarationStatus.Enviada ? 'bg-sky-500/10 text-sky-400 border-sky-500/20 shadow-sky-500/5' : 
-                                        'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-500/5'
+                                    <div className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-xl text-[10px] font-semibold uppercase tracking-[0.2em] border shadow-2xl ${
+                                        decl.status === DeclarationStatus.Pagada ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20 shadow-emerald-400/5' :
+                                        decl.status === DeclarationStatus.Enviada ? 'bg-sky-400/10 text-sky-400 border-sky-400/20 shadow-sky-400/5' : 
+                                        'bg-amber-400/10 text-amber-400 border-amber-400/20 shadow-amber-400/5'
                                     }`}>
                                         <div className={`w-2 h-2 rounded-full animate-pulse ${
                                             decl.status === DeclarationStatus.Pagada ? 'bg-emerald-400' :
@@ -81,7 +81,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                         }`} />
                                         {decl.status}
                                         {!decl.proof_file && (decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pagada) && (
-                                            <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)] animate-pulse" title="Falta Comprobante PDF" />
+                                            <div className="w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.6)] animate-pulse" title="Falta Comprobante PDF" />
                                         )}
                                     </div>
                                 </td>
@@ -91,17 +91,17 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                             {decl.is_paid ? (
                                                 <div className="flex items-center gap-1.5 text-emerald-400">
                                                     <DollarSign size={12} strokeWidth={3} />
-                                                    <span className="text-[11px] font-black uppercase tracking-widest">Liquidado</span>
+                                                    <span className="text-[11px] font-semibold uppercase tracking-widest">Liquidado</span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center gap-1.5 text-slate-600">
                                                     <RotateCcw size={12} className="opacity-50" />
-                                                    <span className="text-[11px] font-black uppercase tracking-widest">Pendiente</span>
+                                                    <span className="text-[11px] font-semibold uppercase tracking-widest">Pendiente</span>
                                                 </div>
                                             )}
                                         </div>
                                         {decl.paidAt && (
-                                            <span className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em] font-mono ml-4">
+                                            <span className="text-[9px] text-slate-500 font-semibold uppercase tracking-[0.2em] font-mono ml-4">
                                                 ID: {safeFormat(decl.paidAt, 'ddMMyy-HHmm').toUpperCase()}
                                             </span>
                                         )}
@@ -114,7 +114,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                                 {(decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pagada) && onWhatsApp && (
                                                     <button 
                                                         onClick={() => onWhatsApp(decl.period)} 
-                                                        className="p-3 bg-slate-900 border border-white/5 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-xl transition-all shadow-xl active:scale-95" 
+                                                        className="p-3 bg-slate-900 border border-white/5 text-emerald-400 hover:bg-emerald-400 hover:text-white rounded-xl transition-all shadow-xl active:scale-95" 
                                                         title="Solicitar Pago WhatsApp"
                                                     >
                                                         <MessageCircle size={18} />
@@ -122,7 +122,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                                 )}
                                                 <button 
                                                     onClick={() => onPay(decl.period)} 
-                                                    className="p-3 bg-slate-900 border border-white/5 text-slate-400 hover:bg-emerald-500 hover:text-white transition-all rounded-xl shadow-xl active:scale-95" 
+                                                    className="p-3 bg-slate-900 border border-white/5 text-slate-400 hover:bg-emerald-400 hover:text-white transition-all rounded-xl shadow-xl active:scale-95" 
                                                     title="Registrar Pago"
                                                 >
                                                     <DollarSign size={18} />
@@ -139,7 +139,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                                 </button>
                                                 <button 
                                                     onClick={() => onRevertPayment(decl.period)} 
-                                                    className="p-3 bg-slate-900 border border-white/5 text-slate-400 hover:bg-amber-500 hover:text-white transition-all rounded-xl shadow-xl active:scale-95" 
+                                                    className="p-3 bg-slate-900 border border-white/5 text-slate-400 hover:bg-amber-400 hover:text-white transition-all rounded-xl shadow-xl active:scale-95" 
                                                     title="Revertir Pago"
                                                 >
                                                     <RotateCcw size={18} />
@@ -149,7 +149,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                         {decl.status === DeclarationStatus.Pendiente && (
                                             <button 
                                                 onClick={() => onDeclare(decl.period)} 
-                                                className="p-3 bg-slate-900 border border-white/5 text-slate-400 hover:bg-sky-500 hover:text-white transition-all rounded-xl shadow-xl active:scale-95" 
+                                                className="p-3 bg-slate-900 border border-white/5 text-slate-400 hover:bg-sky-400 hover:text-white transition-all rounded-xl shadow-xl active:scale-95" 
                                                 title="Marcar Declarado"
                                             >
                                                 <Send size={18} />
@@ -172,7 +172,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                         <div className="w-16 h-16 rounded-full bg-slate-900 border border-white/5 flex items-center justify-center text-slate-800">
                                             <Search size={32} />
                                         </div>
-                                        <p className="text-[11px] font-black text-slate-600 uppercase tracking-[0.3em] font-mono">
+                                        <p className="text-[11px] font-semibold text-slate-600 uppercase tracking-[0.3em] font-mono">
                                             Vector de Datos Vacío / No se encontraron registros
                                         </p>
                                     </div>

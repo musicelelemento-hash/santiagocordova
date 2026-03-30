@@ -52,7 +52,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                     placeholder={uiText.global.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full p-3 pl-10 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-sky-500 focus:outline-none transition-all shadow-sm"
+                    className="w-full p-3 pl-10 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-sky-400 focus:outline-none transition-all shadow-sm"
                 />
             </div>
 
@@ -65,30 +65,30 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                         className={`
                             flex items-center space-x-2 px-4 py-2 rounded-xl border transition-all whitespace-nowrap
                             ${declarationStatusFilter === tab.id
-                                ? `border-transparent shadow-md ring-2 ring-offset-1 ring-sky-500 ${tab.color.replace('bg-slate-100', 'bg-slate-200').replace('text-slate-600', 'text-slate-800')}`
+                                ? `border-transparent shadow-md ring-2 ring-offset-1 ring-sky-400 ${tab.color.replace('bg-slate-100', 'bg-slate-200').replace('text-slate-600', 'text-slate-800')}`
                                 : `border-transparent hover:bg-white dark:hover:bg-gray-700 ${tab.color} opacity-70 hover:opacity-100`
                             }
                         `}
                     >
                         <tab.icon size={16} />
-                        <span className="text-sm font-bold">{tab.label}</span>
+                        <span className="text-sm font-medium">{tab.label}</span>
                     </button>
                 ))}
 
                 {/* Advanced Filters Toggle */}
                 <div className="relative ml-auto" ref={sortMenuRef}>
-                    <button onClick={() => setIsSortMenuOpen(!isSortMenuOpen)} className={`h-full px-4 flex items-center justify-center space-x-2 bg-white dark:bg-gray-800 border ${categoryFilter !== 'all' || regimeFilter !== 'all' ? 'border-sky-500 text-sky-600' : 'border-slate-200 dark:border-gray-700 text-slate-500'} rounded-xl hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors shadow-sm`}>
+                    <button onClick={() => setIsSortMenuOpen(!isSortMenuOpen)} className={`h-full px-4 flex items-center justify-center space-x-2 bg-white dark:bg-gray-800 border ${categoryFilter !== 'all' || regimeFilter !== 'all' ? 'border-sky-400 text-sky-500' : 'border-slate-200 dark:border-gray-700 text-slate-500'} rounded-xl hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors shadow-sm`}>
                         <SlidersHorizontal size={18} />
                     </button>
                     {isSortMenuOpen && (
                         <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-xl z-20 border border-slate-100 dark:border-gray-700 p-2 animate-fade-in-down">
-                            <p className="text-xs font-bold text-slate-400 px-2 pb-1 uppercase tracking-wider">{uiText.clients.filters.status}</p>
+                            <p className="text-xs font-medium text-slate-400 px-2 pb-1 uppercase tracking-wider">{uiText.clients.filters.status}</p>
                             <div className="flex space-x-1 mb-3">
                                 {[{ id: 'active', label: uiText.clients.filters.active, icon: UserCheck }, { id: 'inactive', label: uiText.clients.filters.inactive, icon: UserX }, { id: 'all', label: uiText.clients.filters.all, icon: Users }].map(item => (
-                                    <button key={item.id} onClick={() => setFilterOption(item.id as any)} className={`flex-1 p-2 text-xs font-bold rounded-lg flex items-center justify-center space-x-1 transition-all ${filterOption === item.id ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300' : 'hover:bg-slate-100 dark:hover:bg-gray-700 text-slate-500'}`}><item.icon size={14} /><span>{item.label}</span></button>
+                                    <button key={item.id} onClick={() => setFilterOption(item.id as any)} className={`flex-1 p-2 text-xs font-medium rounded-lg flex items-center justify-center space-x-1 transition-all ${filterOption === item.id ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300' : 'hover:bg-slate-100 dark:hover:bg-gray-700 text-slate-500'}`}><item.icon size={14} /><span>{item.label}</span></button>
                                 ))}
                             </div>
-                            <p className="text-xs font-bold text-slate-400 px-2 pb-1 uppercase tracking-wider">{uiText.clients.filters.obligation}</p>
+                            <p className="text-xs font-medium text-slate-400 px-2 pb-1 uppercase tracking-wider">{uiText.clients.filters.obligation}</p>
                             <select
                                 value={categoryFilter}
                                 onChange={(e) => setCategoryFilter(e.target.value as any)}
@@ -99,7 +99,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                                 <option value="Semestral">Semestral</option>
                                 <option value="Ninguno">Ninguno</option>
                             </select>
-                            <p className="text-xs font-bold text-slate-400 px-2 pb-1 uppercase tracking-wider">{uiText.clients.filters.regime}</p>
+                            <p className="text-xs font-medium text-slate-400 px-2 pb-1 uppercase tracking-wider">{uiText.clients.filters.regime}</p>
                             <select
                                 value={regimeFilter}
                                 onChange={(e) => setRegimeFilter(e.target.value as any)}

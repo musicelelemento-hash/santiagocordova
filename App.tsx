@@ -23,10 +23,12 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { GlobalUploadModal } from './components/features/GlobalUploadModal';
 import { Client, Task, Screen, Theme, ClientFilter, PublicUser } from './types';
 import { loadDataFromSheet, syncDataToSheet } from './services/sheetApi';
+import { CommandPalette } from './components/CommandPalette';
 import { Modal } from './components/ui/Modal';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useAppStore } from './store/useAppStore';
+import { ChatBot } from './components/features/ChatBot';
 
 type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music';
 
@@ -104,6 +106,7 @@ const App: React.FC = () => {
   const [loggedClient, setLoggedClient] = useState<Client | null>(null);
   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'light');
   const [activeScreen, setActiveScreen] = useState<Screen>('home');
+  const [previousScreen, setPreviousScreen] = useState<Screen | null>(null);
   const [showSplash, setShowSplash] = useState(true);
 
   const [clientFilter, setClientFilter] = useState<ClientFilter | null>(null);
@@ -112,6 +115,7 @@ const App: React.FC = () => {
   const [initialTaskData, setInitialTaskData] = useState<Partial<Task> | null>(null);
   const [clientToView, setClientToView] = useState<Client | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline'>('idle');
@@ -196,12 +200,46 @@ const App: React.FC = () => {
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleCommandAction = (action: string, payload?: any) => {
+    if (action === 'view_client') {
+      setClientToView(payload);
+      setActiveScreen('clients');
+    } else if (action === 'sync') {
+      handleManualSave();
+    } else if (action === 'new_client') {
+      setInitialClientData({});
+      setActiveScreen('clients');
+    } else if (action === 'logout') {
+      setShowLogoutConfirm(true);
+    }
+  };
+
   const navigate = (screen: Screen, options: any = {}) => {
+    // Si estamos navegando a un cliente específico desde otra pantalla, guardamos la actual como "previous"
+    if (options.clientIdToView && activeScreen !== screen) {
+      setPreviousScreen(activeScreen);
+    } else if (!options.clientIdToView) {
+      // Si es una navegación normal de menú, limpiamos el historial de "atrás" específico
+      setPreviousScreen(null);
+    }
+
     setActiveScreen(screen);
     setClientFilter(options.clientFilter || null);
     setTaskFilter(options.taskFilter || null);
     setInitialClientData(options.initialClientData || null);
     setInitialTaskData(options.initialTaskData || null);
+    
     if (options.clientIdToView) {
       const client = clients.find(c => c.id === options.clientIdToView);
       setClientToView(client || null);
@@ -231,7 +269,22 @@ const App: React.FC = () => {
   const renderScreen = () => {
     switch (activeScreen) {
       case 'home': return <AdminDashboardScreen navigate={navigate} />;
-      case 'clients': return <ClientsScreen initialFilter={clientFilter} navigate={navigate} initialClientData={initialClientData} clearInitialClientData={() => setInitialClientData(null)} clientToView={clientToView} clearClientToView={() => setClientToView(null)} />;
+      case 'clients': return (
+        <ClientsScreen 
+          initialFilter={clientFilter} 
+          navigate={navigate} 
+          initialClientData={initialClientData} 
+          clearInitialClientData={() => setInitialClientData(null)} 
+          clientToView={clientToView} 
+          clearClientToView={() => {
+            setClientToView(null);
+            if (previousScreen) {
+              setActiveScreen(previousScreen);
+              setPreviousScreen(null);
+            }
+          }} 
+        />
+      );
       case 'calendar': return <CalendarScreen navigate={navigate} />;
       case 'reports': return <ReportsScreen navigate={navigate} />;
       case 'cobranza': return <CobranzaScreen />;
@@ -390,7 +443,7 @@ const App: React.FC = () => {
 
           <main className="flex-grow px-4 pt-24 pb-32 sm:pt-6 sm:p-6 sm:px-10 sm:pb-32 overflow-y-auto w-full relative no-scrollbar">
             <ErrorBoundary>
-              <div className="max-w-[1600px] mx-auto">
+              <div key={activeScreen} className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700">
                 {renderScreen()}
               </div>
             </ErrorBoundary>
@@ -420,6 +473,17 @@ const App: React.FC = () => {
           isOpen={isUploadModalOpen}
           onClose={() => setIsUploadModalOpen(false)}
         />
+
+        <CommandPalette 
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          clients={clients}
+          onNavigate={(screen) => navigate(screen as Screen)}
+          onAction={handleCommandAction}
+        />
+        
+        {/* Elite AI Assistant */}
+        <ChatBot />
       </div>
     </ToastProvider>
   );

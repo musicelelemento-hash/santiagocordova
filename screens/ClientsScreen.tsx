@@ -27,7 +27,7 @@ const OBLIGATION_GROUPS = [
     { id: 'al-dia', label: 'Elite / Al Día', icon: LucideIcons.ShieldCheck, color: 'text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/50 ring-emerald-300' },
     { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.Clock, color: 'text-slate-600 bg-slate-50 dark:text-slate-300 dark:bg-slate-900/50 ring-slate-200' },
     { id: 'semestral', label: 'IVA Semestral', icon: LucideIcons.Briefcase, color: 'text-slate-600 bg-slate-50 dark:text-slate-300 dark:bg-slate-900/50 ring-slate-200' },
-    { id: 'trash', label: 'Papelera', icon: LucideIcons.Trash2, color: 'text-rose-600 bg-rose-50 dark:text-rose-300 dark:bg-rose-900/50 ring-rose-200' },
+    { id: 'trash', label: 'Papelera', icon: LucideIcons.Trash2, color: 'text-rose-500 bg-rose-50 dark:text-rose-300 dark:bg-rose-900/50 ring-rose-200' },
 ];
 
 import { useAppStore } from '../store/useAppStore';
@@ -54,16 +54,16 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const { clients, setClients, updateClient, addClient, serviceFees, sriCredentials: storeCredentials } = useAppStore();
     const sriCredentials = sriCredentialsProp || storeCredentials;
     const { toast } = useToast();
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('clients_search') || '');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isClientDetailsOpen, setIsClientDetailsOpen] = useState(false);
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
     const sortMenuRef = useRef<HTMLDivElement>(null);
-    const [sortOption, setSortOption] = useState<'9th_digit' | 'name' | 'status' | 'pending_obligations' | 'pending_payments'>('9th_digit');
+    const [sortOption, setSortOption] = useState<'9th_digit' | 'name' | 'status' | 'pending_obligations' | 'pending_payments'>(() => (sessionStorage.getItem('clients_sort') as any) || '9th_digit');
     const [filterOption, setFilterOption] = useState<'active' | 'inactive' | 'all'>('active');
     const [isComboModalOpen, setIsComboModalOpen] = useState(false);
-    const [viewMode, setViewMode] = useState<'cards' | 'list'>('list');
+    const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => (sessionStorage.getItem('clients_view_mode') as any) || 'list');
     const receiptFileInputRef = useRef<HTMLInputElement>(null);
     const bulkFileInputRef = useRef<HTMLInputElement>(null);
     const [receiptUploadState, setReceiptUploadState] = useState<{ client: Client, period?: string } | null>(null);
@@ -75,14 +75,49 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
     // Smart Tabs Logic
     const getInitialGroupTab = () => {
+        const saved = sessionStorage.getItem('clients_group_tab');
+        if (saved) return saved;
         if (!initialFilter) return 'all';
-        // This is a legacy helper while transitioning, it should check profile eventually
         return 'all';
     };
 
     const [activeGroupTab, setActiveGroupTab] = useState(getInitialGroupTab());
     const [specificCategoryFilter, setSpecificCategoryFilter] = useState<any | null>(null);
     const [regimeFilter, setRegimeFilter] = useState<TaxRegime | 'all'>('all');
+
+    // Search Persistence Effect
+    useEffect(() => {
+        sessionStorage.setItem('clients_search', searchTerm);
+    }, [searchTerm]);
+
+    useEffect(() => {
+        sessionStorage.setItem('clients_group_tab', activeGroupTab);
+    }, [activeGroupTab]);
+
+    useEffect(() => {
+        sessionStorage.setItem('clients_sort', sortOption);
+    }, [sortOption]);
+
+    useEffect(() => {
+        sessionStorage.setItem('clients_view_mode', viewMode);
+    }, [viewMode]);
+
+    // Scroll Persistence
+    useEffect(() => {
+        const savedScroll = sessionStorage.getItem('clients_scroll');
+        if (savedScroll) {
+            setTimeout(() => {
+                window.scrollTo(0, parseInt(savedScroll, 10));
+            }, 100);
+        }
+
+        const handleScroll = () => {
+            sessionStorage.setItem('clients_scroll', window.scrollY.toString());
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -666,13 +701,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         setIsComboModalOpen(false);
     };
 
-    if (selectedClient) {
-        return (
-            <div className={`fixed inset-0 z-30 h-full overflow-y-auto bg-white dark:bg-gray-900 transform transition-transform duration-500 ${isClientDetailsOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                <ClientDetailView client={selectedClient} onSave={handleUpdateClient} onBack={handleCloseClientDetails} serviceFees={serviceFees} sriCredentials={sriCredentials} />
-            </div>
-        );
-    }
+    // El detalle ahora se renderiza como un overlay al final para no desmontar la lista y preservar scroll/estado
 
     return (
         <div>
@@ -680,40 +709,40 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 relative z-10 px-1 sm:px-0 mb-6 sm:mb-8 animate-fade-in">
                 <div className="animate-fade-in-left w-full sm:w-auto">
                     <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/20">
-                            <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
-                            <span className="text-[9px] sm:text-[10px] font-black text-sky-500 uppercase tracking-widest">Client Sync Protocol</span>
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-400/10 border border-sky-400/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
+                            <span className="text-[9px] sm:text-[10px] font-semibold text-sky-400 uppercase tracking-widest">Client Sync Protocol</span>
                         </div>
-                        <span className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Elite Access</span>
+                        <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Elite Access</span>
                     </div>
-                    <h2 className="text-3xl sm:text-5xl font-display font-black text-slate-900 dark:text-white leading-[0.85] tracking-tighter mb-2">
+                    <h2 className="text-3xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-[0.85] tracking-tighter mb-2">
                         Intelligence <span className="text-gradient-sky">Command</span>
                     </h2>
-                    <div className="flex items-center gap-2 text-slate-500 text-[9px] sm:text-[11px] font-bold uppercase tracking-widest">
-                        <LucideIcons.Shield size={10} className="text-sky-500" />
+                    <div className="flex items-center gap-2 text-slate-500 text-[9px] sm:text-[11px] font-medium uppercase tracking-widest">
+                        <LucideIcons.Shield size={10} className="text-sky-400" />
                         <span>Gestión de Activos Tributarios</span>
-                        <span className="ml-2 px-2 py-0.5 bg-sky-500 text-white rounded-lg text-[9px]">{sortedClients.length} UNITS</span>
+                        <span className="ml-2 px-2 py-0.5 bg-sky-400 text-white rounded-lg text-[9px]">{sortedClients.length} UNITS</span>
                     </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto animate-fade-in-right">
                     <button
                         onClick={handleBulkUpload}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/50 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-sm"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/50 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-sm"
                     >
                         <LucideIcons.UploadCloud size={16} />
                         ESCUADRÓN
                     </button>
                     
                     <button onClick={() => setIsModalOpen(true)}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gradient-to-r from-sky-600 to-sky-500 text-white shadow-xl shadow-sky-500/30 font-black text-[10px] sm:text-[11px] uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border border-white/10"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gradient-to-r from-sky-500 to-sky-400 text-white shadow-xl shadow-sky-400/30 font-semibold text-[10px] sm:text-[11px] uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] border border-white/10"
                     >
                         <LucideIcons.PlusCircle size={16} strokeWidth={3} />
                         RECLUTAR
                     </button>
 
                     <a href="https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT" target="_blank" rel="noopener noreferrer"
-                        className="p-4 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/5 hover:text-sky-500 transition-colors hidden sm:block"
+                        className="p-4 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/5 hover:text-sky-400 transition-colors hidden sm:block"
                     >
                         <LucideIcons.ExternalLink size={20} />
                     </a>
@@ -723,23 +752,23 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             {/* ACTIVE FILTER BANNER */}
             {initialFilter && (
                 <div className="mb-6 animate-in slide-in-from-top-2 duration-500">
-                    <div className="flex items-center justify-between p-4 rounded-2xl bg-sky-500/10 border border-sky-500/20 backdrop-blur-md">
+                    <div className="flex items-center justify-between p-4 rounded-2xl bg-sky-400/10 border border-sky-400/20 backdrop-blur-md">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-sky-500 text-white shadow-lg shadow-sky-500/20">
+                            <div className="p-2 rounded-xl bg-sky-400 text-white shadow-lg shadow-sky-400/20">
                                 <LucideIcons.Filter size={18} />
                             </div>
                             <div>
-                                <h4 className="text-xs font-black text-sky-600 dark:text-sky-400 uppercase tracking-widest">
+                                <h4 className="text-xs font-semibold text-sky-500 dark:text-sky-400 uppercase tracking-widest">
                                     Filtro de Inteligencia Activo
                                 </h4>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase">
+                                <p className="text-[10px] font-medium text-slate-500 uppercase">
                                     {initialFilter.title || 'Vista Personalizada'} • Mostrando {sortedClients.length} resultados
                                 </p>
                             </div>
                         </div>
                         <button 
                             onClick={() => navigate('clients', { initialFilter: null })}
-                            className="px-4 py-2 rounded-xl bg-white dark:bg-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-rose-500 border border-slate-200 dark:border-white/5 transition-all"
+                            className="px-4 py-2 rounded-xl bg-white dark:bg-white/5 text-[10px] font-semibold uppercase tracking-widest text-slate-500 hover:text-rose-400 border border-slate-200 dark:border-white/5 transition-all"
                         >
                             Limpiar Filtro
                         </button>
@@ -755,9 +784,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             setIsWorkspaceView(!isWorkspaceView);
                             if (!isWorkspaceView) setIsCobrosView(false);
                         }}
-                        className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-300 shrink-0
+                        className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest transition-all duration-300 shrink-0
                             ${isWorkspaceView 
-                                ? 'bg-amber-500 text-white shadow-xl shadow-amber-500/20 ring-1 ring-amber-400/50' 
+                                ? 'bg-amber-400 text-white shadow-xl shadow-amber-400/20 ring-1 ring-amber-400/50' 
                                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
                     >
                         <LucideIcons.ShieldAlert size={14} className={isWorkspaceView ? 'animate-pulse' : ''} />
@@ -768,9 +797,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             setIsCobrosView(!isCobrosView);
                             if (!isCobrosView) setIsWorkspaceView(false);
                         }}
-                        className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all duration-300 shrink-0
+                        className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-3 rounded-xl text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest transition-all duration-300 shrink-0
                             ${isCobrosView 
-                                ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20 ring-1 ring-emerald-400/50' 
+                                ? 'bg-emerald-400 text-white shadow-xl shadow-emerald-400/20 ring-1 ring-emerald-400/50' 
                                 : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
                     >
                         <LucideIcons.DollarSign size={14} />
@@ -779,13 +808,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 </div>
 
                 <div className="relative flex-grow w-full px-1">
-                    <LucideIcons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-500/50 pointer-events-none" size={16} />
+                    <LucideIcons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-400/50 pointer-events-none" size={16} />
                     <input 
                         type="text" 
                         placeholder="TACTICAL SEARCH / IDENTIFICADOR" 
                         value={searchTerm} 
                         onChange={e => setSearchTerm(e.target.value)} 
-                        className="w-full pl-11 pr-5 py-3 sm:py-4 bg-white/30 dark:bg-slate-950/30 border border-slate-200/50 dark:border-white/5 rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest placeholder:text-slate-400/60 focus:outline-none focus:ring-2 focus:ring-sky-500/20 transition-all font-mono" 
+                        className="w-full pl-11 pr-5 py-3 sm:py-4 bg-white/30 dark:bg-slate-950/30 border border-slate-200/50 dark:border-white/5 rounded-2xl text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest placeholder:text-slate-400/60 focus:outline-none focus:ring-2 focus:ring-sky-400/20 transition-all font-mono" 
                     />
                 </div>
 
@@ -793,13 +822,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <div className="flex p-1 bg-slate-900/5 dark:bg-black/40 rounded-2xl flex-grow lg:flex-grow-0">
                         <button 
                             onClick={() => setViewMode('cards')}
-                            className={`flex-1 p-3 rounded-xl transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-900 text-sky-500 shadow-lg' : 'text-slate-400'}`}
+                            className={`flex-1 p-3 rounded-xl transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-900 text-sky-400 shadow-lg' : 'text-slate-400'}`}
                         >
                             <LucideIcons.LayoutGrid size={16} />
                         </button>
                         <button 
                             onClick={() => setViewMode('list')}
-                            className={`flex-1 p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-900 text-sky-500 shadow-lg' : 'text-slate-400'}`}
+                            className={`flex-1 p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-900 text-sky-400 shadow-lg' : 'text-slate-400'}`}
                         >
                             <LucideIcons.List size={16} />
                         </button>
@@ -808,18 +837,18 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <div className="relative" ref={sortMenuRef}>
                         <button 
                             onClick={() => setIsSortMenuOpen(!isSortMenuOpen)} 
-                            className="p-4 bg-slate-100 dark:bg-white/5 text-slate-500 rounded-2xl border border-slate-200 dark:border-white/5 hover:text-sky-500 transition-all active:scale-95"
+                            className="p-4 bg-slate-100 dark:bg-white/5 text-slate-500 rounded-2xl border border-slate-200 dark:border-white/5 hover:text-sky-400 transition-all active:scale-95"
                         >
                             <LucideIcons.SlidersHorizontal size={18} />
                         </button>
                         {isSortMenuOpen && (
                             <div className="absolute right-0 mt-3 w-64 glass-tactical border border-white/10 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in-down">
-                                <p className="text-[10px] font-black text-slate-400 px-3 pb-2 uppercase tracking-[0.2em]">Visual Priority</p>
+                                <p className="text-[10px] font-semibold text-slate-400 px-3 pb-2 uppercase tracking-[0.2em]">Visual Priority</p>
                                 <div className="space-y-1">
-                                    <button onClick={() => { setSortOption('pending_obligations'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${sortOption === 'pending_obligations' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Obligaciones</button>
-                                    <button onClick={() => { setSortOption('pending_payments'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${sortOption === 'pending_payments' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Cobros</button>
-                                    <button onClick={() => { setSortOption('9th_digit'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${sortOption === '9th_digit' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Vencimiento (SRI)</button>
-                                    <button onClick={() => { setSortOption('name'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${sortOption === 'name' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Alfabético</button>
+                                    <button onClick={() => { setSortOption('pending_obligations'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest rounded-xl transition-all ${sortOption === 'pending_obligations' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Obligaciones</button>
+                                    <button onClick={() => { setSortOption('pending_payments'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest rounded-xl transition-all ${sortOption === 'pending_payments' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Cobros</button>
+                                    <button onClick={() => { setSortOption('9th_digit'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest rounded-xl transition-all ${sortOption === '9th_digit' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Vencimiento (SRI)</button>
+                                    <button onClick={() => { setSortOption('name'); setIsSortMenuOpen(false); }} className={`w-full text-left px-4 py-3 text-[10px] font-semibold uppercase tracking-widest rounded-xl transition-all ${sortOption === 'name' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/30' : 'text-slate-500 hover:bg-white/5 dark:hover:bg-white/5'}`}>Alfabético</button>
                                 </div>
                             </div>
                         )}
@@ -828,7 +857,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             </div>
             {/* STATUS SPHERE (FINANCIAL INTELLIGENCE HUB) */}
             <div className="mb-8 relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-sky-500/20 via-emerald-500/10 to-transparent rounded-[1.5rem] sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-sky-400/20 via-emerald-400/10 to-transparent rounded-[1.5rem] sm:rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
                 
                 <button 
                     onClick={() => setIsAnalysisExpanded(!isAnalysisExpanded)}
@@ -837,7 +866,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-8 relative z-10">
                         <div className="flex items-center gap-4 sm:gap-6">
                             <div className="relative shrink-0">
-                                <div className="absolute -inset-2 bg-sky-500/15 rounded-full blur-xl animate-pulse"></div>
+                                <div className="absolute -inset-2 bg-sky-400/15 rounded-full blur-xl animate-pulse"></div>
                                 <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-2 sm:border-4 border-slate-800 dark:border-white/5 flex items-center justify-center relative bg-slate-900/40 backdrop-blur-xl">
                                     <svg className="w-full h-full -rotate-90">
                                         <circle
@@ -850,27 +879,27 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                             stroke="currentColor" strokeWidth="3" fill="transparent"
                                             strokeDasharray="264"
                                             strokeDashoffset={264 - (264 * (globalStats.elite / (globalStats.total || 1)))}
-                                            className="text-sky-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(14,165,233,0.5)]"
+                                            className="text-sky-400 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(14,165,233,0.5)]"
                                             strokeLinecap="round"
                                         />
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-sm sm:text-2xl font-black text-sky-500 leading-none">
+                                        <span className="text-sm sm:text-2xl font-semibold text-sky-400 leading-none">
                                             {Math.round((globalStats.elite / (globalStats.total || 1)) * 100)}%
                                         </span>
-                                        <span className="text-[6px] sm:text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5 sm:mt-1">ELITE</span>
+                                        <span className="text-[6px] sm:text-[8px] font-semibold text-slate-400 uppercase tracking-widest mt-0.5 sm:mt-1">ELITE</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="min-w-0">
-                                <span className="text-[8px] sm:text-[10px] font-black text-sky-500 uppercase tracking-[0.2em] mb-0.5 sm:mb-1 block">Operational Status v3.0</span>
-                                <h3 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white leading-[0.9] tracking-tighter mb-1 sm:mb-2 text-balance uppercase">
+                                <span className="text-[8px] sm:text-[10px] font-semibold text-sky-400 uppercase tracking-[0.2em] mb-0.5 sm:mb-1 block">Operational Status v3.0</span>
+                                <h3 className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white leading-[0.9] tracking-tighter mb-1 sm:mb-2 text-balance uppercase">
                                     Cumplimiento <br className="hidden sm:block" /> Global de Cartera
                                 </h3>
                                 <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                                        <LucideIcons.BarChart3 size={10} className="text-emerald-500" />
-                                        <span className="text-[8px] sm:text-[10px] font-black text-emerald-500 uppercase tracking-widest">Analytics Online</span>
+                                    <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-full bg-emerald-400/10 border border-emerald-400/20">
+                                        <LucideIcons.BarChart3 size={10} className="text-emerald-400" />
+                                        <span className="text-[8px] sm:text-[10px] font-semibold text-emerald-400 uppercase tracking-widest">Analytics Online</span>
                                     </div>
                                 </div>
                             </div>
@@ -879,20 +908,20 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 bg-black/5 dark:bg-white/2 p-3 sm:p-0 rounded-2xl sm:bg-transparent">
                             <div className="flex items-center gap-4 sm:gap-6">
                                 <div className="flex flex-col items-start sm:items-end">
-                                    <span className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Alerts</span>
-                                    <span className="text-sm sm:text-xl font-black text-rose-500 font-mono">
+                                    <span className="text-[8px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Alerts</span>
+                                    <span className="text-sm sm:text-xl font-semibold text-rose-400 font-mono">
                                         {globalStats.vencidos}
                                     </span>
                                 </div>
                                 <div className="w-px h-6 sm:h-8 bg-slate-200 dark:bg-white/10"></div>
                                 <div className="flex flex-col items-start sm:items-end">
-                                    <span className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Processed</span>
-                                    <span className="text-sm sm:text-xl font-black text-emerald-500 font-mono">
+                                    <span className="text-[8px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-widest leading-none mb-1">Processed</span>
+                                    <span className="text-sm sm:text-xl font-semibold text-emerald-400 font-mono">
                                         {globalStats.elite}
                                     </span>
                                 </div>
                             </div>
-                            <div className={`p-1.5 sm:p-2 rounded-xl transition-all ${isAnalysisExpanded ? 'rotate-180 bg-sky-500 text-white shadow-lg' : 'bg-slate-200/50 dark:bg-white/5 text-slate-400'}`}>
+                            <div className={`p-1.5 sm:p-2 rounded-xl transition-all ${isAnalysisExpanded ? 'rotate-180 bg-sky-400 text-white shadow-lg' : 'bg-slate-200/50 dark:bg-white/5 text-slate-400'}`}>
                                 <LucideIcons.ChevronDown size={18} />
                             </div>
                         </div>
@@ -911,12 +940,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                             strokeDasharray={364}
                                             strokeDashoffset={364 - (364 * (globalStats.elite / (globalStats.total || 1)))}
                                             strokeLinecap="round"
-                                            className="text-emerald-500 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                                            className="text-emerald-400 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(16,185,129,0.3)]"
                                         />
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                                        <span className="text-2xl font-black text-slate-800 dark:text-white font-mono">{Math.round((globalStats.elite / (globalStats.total || 1)) * 100)}%</span>
-                                        <span className="text-[8px] font-black uppercase text-slate-400 tracking-tighter">Elite Score</span>
+                                        <span className="text-2xl font-semibold text-slate-800 dark:text-white font-mono">{Math.round((globalStats.elite / (globalStats.total || 1)) * 100)}%</span>
+                                        <span className="text-[8px] font-semibold uppercase text-slate-400 tracking-tighter">Elite Score</span>
                                     </div>
                                 </div>
                             </div>
@@ -934,17 +963,17 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     <button 
                                         key={stat.id}
                                         onClick={(e) => { e.stopPropagation(); setActiveGroupTab(stat.id as any); }}
-                                        className={`group flex flex-col p-4 rounded-2xl border transition-all relative overflow-hidden ${activeGroupTab === stat.id ? `bg-${stat.color}-500/10 border-${stat.color}-500/30 ring-1 ring-${stat.color}-500/20` : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-white/5 hover:border-sky-500/30 dark:hover:border-sky-500/20'}`}
+                                        className={`group flex flex-col p-4 rounded-2xl border transition-all relative overflow-hidden ${activeGroupTab === stat.id ? `bg-${stat.color}-500/10 border-${stat.color}-500/30 ring-1 ring-${stat.color}-500/20` : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-white/5 hover:border-sky-400/30 dark:hover:border-sky-400/20'}`}
                                     >
                                         <div className="flex items-center justify-between mb-2">
                                             <div className={`p-2 rounded-xl bg-${stat.color}-500/10 text-${stat.color}-500 group-hover:scale-110 transition-transform`}>
                                                 <stat.icon size={16} />
                                             </div>
-                                            <span className={`text-[9px] font-black uppercase tracking-widest ${activeGroupTab === stat.id ? `text-${stat.color}-500` : 'text-slate-400'}`}>{stat.label}</span>
+                                            <span className={`text-[9px] font-semibold uppercase tracking-widest ${activeGroupTab === stat.id ? `text-${stat.color}-500` : 'text-slate-400'}`}>{stat.label}</span>
                                         </div>
                                         <div className="flex items-baseline gap-1">
-                                            <span className={`text-2xl font-black font-mono ${activeGroupTab === stat.id ? `text-${stat.color}-600 dark:text-${stat.color}-400` : 'text-slate-700 dark:text-slate-300'}`}>{stat.value}</span>
-                                            <span className="text-[10px] font-bold text-slate-400">UNITS</span>
+                                            <span className={`text-2xl font-semibold font-mono ${activeGroupTab === stat.id ? `text-${stat.color}-600 dark:text-${stat.color}-400` : 'text-slate-700 dark:text-slate-300'}`}>{stat.value}</span>
+                                            <span className="text-[10px] font-medium text-slate-400">UNITS</span>
                                         </div>
                                         {activeGroupTab === stat.id && (
                                             <div className={`absolute bottom-0 left-0 h-1 bg-${stat.color}-500 w-full shadow-[0_-4px_10px_rgba(0,0,0,0.1)]`}></div>
@@ -970,19 +999,19 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <button
                         key={tab.id}
                         onClick={() => setActiveGroupTab(tab.id as any)}
-                        className={`group relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300 shrink-0
+                        className={`group relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-2xl text-[10px] sm:text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 shrink-0
                             ${activeGroupTab === tab.id 
-                                ? 'bg-white dark:bg-slate-900 text-sky-600 shadow-xl shadow-sky-500/10 ring-1 ring-sky-500/20' 
+                                ? 'bg-white dark:bg-slate-900 text-sky-500 shadow-xl shadow-sky-400/10 ring-1 ring-sky-400/20' 
                                 : 'text-slate-500 hover:text-slate-900 dark:hover:text-white dark:text-slate-400 hover:bg-white/50 dark:hover:bg-white/5'}`}
                     >
-                        <tab.icon size={tab.id === activeGroupTab ? 16 : 14} className={activeGroupTab === tab.id ? 'text-sky-500' : 'text-slate-400 group-hover:text-sky-400 transition-colors'} />
+                        <tab.icon size={tab.id === activeGroupTab ? 16 : 14} className={activeGroupTab === tab.id ? 'text-sky-400' : 'text-slate-400 group-hover:text-sky-400 transition-colors'} />
                         <span className="hidden sm:inline">{tab.label}</span>
                         <span className="sm:hidden">{tab.label}</span>
-                        <span className={`px-1 rounded-md text-[8px] sm:text-[9px] font-mono ${activeGroupTab === tab.id ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
+                        <span className={`px-1 rounded-md text-[8px] sm:text-[9px] font-mono ${activeGroupTab === tab.id ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/30' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
                             {tab.count}
                         </span>
                         {activeGroupTab === tab.id && (
-                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-[2px] sm:h-1 bg-sky-500 rounded-full shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-[2px] sm:h-1 bg-sky-400 rounded-full shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
                         )}
                     </button>
                 ))}
@@ -995,15 +1024,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div className="flex-1">
                                 <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Progreso Declaraciones {safeFormat(new Date(), 'MMMM')}</span>
-                                    <span className="text-xs font-black text-sky-600">{sortedClients.filter(c => {
+                                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Progreso Declaraciones {safeFormat(new Date(), 'MMMM')}</span>
+                                    <span className="text-xs font-semibold text-sky-500">{sortedClients.filter(c => {
                                         const d = c.declarations.find(dh => dh.period === getPeriod(c, new Date()));
                                         return !!d?.proof_file || d?.status === DeclarationStatus.Enviada;
                                     }).length} de {sortedClients.length}</span>
                                 </div>
                                 <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                                     <div
-                                        className="h-full bg-sky-500 transition-all duration-1000"
+                                        className="h-full bg-sky-400 transition-all duration-1000"
                                         style={{
                                             width: `${(sortedClients.filter(c => {
                                                 const d = c.declarations.find(dh => dh.period === getPeriod(c, new Date()));
@@ -1016,13 +1045,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => setSortOption('9th_digit')}
-                                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${sortOption === '9th_digit' ? 'bg-sky-600 text-white border-sky-600 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-medium transition-all ${sortOption === '9th_digit' ? 'bg-sky-500 text-white border-sky-500 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
                                 >
                                     Calendario SRI
                                 </button>
                                 <button
                                     onClick={() => setSortOption('name')}
-                                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${sortOption === 'name' ? 'bg-sky-600 text-white border-sky-600 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
+                                    className={`px-3 py-1.5 rounded-lg border text-[10px] font-medium transition-all ${sortOption === 'name' ? 'bg-sky-500 text-white border-sky-500 shadow-sm' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}`}
                                 >
                                     Alfabético
                                 </button>
@@ -1035,11 +1064,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             {/* --- COMBO BUTTON SECTION --- */}
             {
                 activeGroupTab === 'renta' && (
-                    <div className="mb-6 p-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl text-white shadow-lg animate-fade-in-down flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="mb-6 p-6 bg-gradient-to-r from-emerald-400 to-teal-600 rounded-2xl text-white shadow-lg animate-fade-in-down flex flex-col sm:flex-row justify-between items-center gap-4">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                                <span className="bg-white/20 text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md">Producto Destacado</span>
-                                <span className="text-xl font-bold">Combo Devolución Renta</span>
+                                <span className="bg-white/20 text-white text-[10px] font-semibold uppercase tracking-widest px-2 py-1 rounded-md">Producto Destacado</span>
+                                <span className="text-xl font-medium">Combo Devolución Renta</span>
                             </div>
                             <p className="text-emerald-100 text-sm max-w-md">
                                 Incluye: Declaración de Renta + Anexo Gastos Personales + Solicitud de Devolución de Retenciones.
@@ -1047,7 +1076,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         </div>
                         <button
                             onClick={() => setIsComboModalOpen(true)}
-                            className="px-6 py-3 bg-white text-emerald-700 font-black rounded-xl shadow-lg hover:bg-emerald-50 transition-transform transform hover:scale-105 flex items-center gap-2"
+                            className="px-6 py-3 bg-white text-emerald-700 font-semibold rounded-xl shadow-lg hover:bg-emerald-50 transition-transform transform hover:scale-105 flex items-center gap-2"
                         >
                             <LucideIcons.Plus size={20} strokeWidth={3} /> Vender Combo $25.00
                         </button>
@@ -1062,10 +1091,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         {/* SECCIÓN POR DECLARAR (ÓRDENES DE TRABAJO) */}
                         <section className="animate-fade-in">
                             <div className="flex items-center gap-2 mb-4 px-2">
-                                <LucideIcons.Clock className="text-amber-500" size={18} />
-                                <h3 className="text-sm font-black text-slate-700 dark:text-white uppercase tracking-widest">
+                                <LucideIcons.Clock className="text-amber-400" size={18} />
+                                <h3 className="text-sm font-semibold text-slate-700 dark:text-white uppercase tracking-widest">
                                     Órdenes de Trabajo (Por Declarar)
-                                    <span className="ml-2 text-[10px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">
+                                    <span className="ml-2 text-[10px] bg-amber-100 text-amber-500 px-2 py-0.5 rounded-full">
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
@@ -1109,7 +1138,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 return !!decl?.is_paid && !decl?.proof_file;
                             }).length === 0 && (
                                 <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-                                    <p className="text-slate-400 text-xs font-bold uppercase">No hay órdenes de trabajo pendientes</p>
+                                    <p className="text-slate-400 text-xs font-medium uppercase">No hay órdenes de trabajo pendientes</p>
                                 </div>
                             )}
                         </section>
@@ -1117,10 +1146,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         {/* SECCIÓN DECLARADOS */}
                         <section className="animate-fade-in">
                             <div className="flex items-center gap-2 mb-4 px-2">
-                                <LucideIcons.CheckCircle2 className="text-emerald-500" size={18} />
-                                <h3 className="text-sm font-black text-slate-700 dark:text-white uppercase tracking-widest">
+                                <LucideIcons.CheckCircle2 className="text-emerald-400" size={18} />
+                                <h3 className="text-sm font-semibold text-slate-700 dark:text-white uppercase tracking-widest">
                                     Declarados (Completados)
-                                    <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">
+                                    <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-500 px-2 py-0.5 rounded-full">
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
@@ -1163,7 +1192,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         <section className="animate-fade-in">
                             <div className="flex items-center gap-2 mb-4 px-2">
                                 <LucideIcons.CircleDashed className="text-slate-400" size={18} />
-                                <h3 className="text-sm font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">
+                                <h3 className="text-sm font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-widest">
                                     Pendiente de Gestión Inicial
                                     <span className="ml-2 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
                                         {sortedClients.filter(c => {
@@ -1215,10 +1244,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         {/* SECCIÓN COBRO PENDIENTE */}
                         <section className="animate-fade-in">
                             <div className="flex items-center gap-2 mb-4 px-2">
-                                <LucideIcons.DollarSign className="text-sky-500" size={18} />
-                                <h3 className="text-sm font-black text-slate-700 dark:text-white uppercase tracking-widest">
+                                <LucideIcons.DollarSign className="text-sky-400" size={18} />
+                                <h3 className="text-sm font-semibold text-slate-700 dark:text-white uppercase tracking-widest">
                                     Cobros Pendientes (Declarados)
-                                    <span className="ml-2 text-[10px] bg-sky-100 text-sky-600 px-2 py-0.5 rounded-full">
+                                    <span className="ml-2 text-[10px] bg-sky-100 text-sky-500 px-2 py-0.5 rounded-full">
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
@@ -1266,7 +1295,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 return isDeclared && !decl?.is_paid;
                             }).length === 0 && (
                                 <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-                                    <p className="text-slate-400 text-xs font-bold uppercase">No hay cobros pendientes</p>
+                                    <p className="text-slate-400 text-xs font-medium uppercase">No hay cobros pendientes</p>
                                 </div>
                             )}
                         </section>
@@ -1274,10 +1303,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         {/* SECCIÓN AL DÍA (ELITE) */}
                         <section className="animate-fade-in">
                             <div className="flex items-center gap-2 mb-4 px-2">
-                                <LucideIcons.ShieldCheck className="text-emerald-500" size={18} />
-                                <h3 className="text-sm font-black text-slate-700 dark:text-white uppercase tracking-widest">
+                                <LucideIcons.ShieldCheck className="text-emerald-400" size={18} />
+                                <h3 className="text-sm font-semibold text-slate-700 dark:text-white uppercase tracking-widest">
                                     Elite / Al Día
-                                    <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">
+                                    <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-500 px-2 py-0.5 rounded-full">
                                         {sortedClients.filter(c => {
                                             const today = new Date();
                                             const period = getPeriod(c, today);
@@ -1320,7 +1349,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         <section className="animate-fade-in">
                             <div className="flex items-center gap-2 mb-4 px-2">
                                 <LucideIcons.Clock className="text-slate-400" size={18} />
-                                <h3 className="text-sm font-black text-slate-400 dark:text-gray-500 uppercase tracking-widest">
+                                <h3 className="text-sm font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-widest">
                                     En Proceso / Pendientes
                                     <span className="ml-2 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
                                         {sortedClients.filter(c => {
@@ -1456,10 +1485,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-slate-200 dark:border-slate-700 rounded-xl transition-colors group text-left"
                             >
                                 <div>
-                                    <p className="font-bold text-slate-800 dark:text-white text-sm">{c.name}</p>
+                                    <p className="font-medium text-slate-800 dark:text-white text-sm">{c.name}</p>
                                     <p className="text-xs text-slate-500">{c.ruc}</p>
                                 </div>
-                                <span className="text-emerald-600 opacity-0 group-hover:opacity-100 font-bold text-xs">Seleccionar →</span>
+                                <span className="text-emerald-500 opacity-0 group-hover:opacity-100 font-medium text-xs">Seleccionar →</span>
                             </button>
                         ))}
                     </div>
@@ -1467,7 +1496,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <div className="border-t border-slate-200 pt-4 mt-2">
                         <button
                             onClick={() => { setIsComboModalOpen(false); setIsModalOpen(true); }}
-                            className="w-full py-3 bg-brand-navy text-white font-bold rounded-xl flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-brand-navy text-white font-medium rounded-xl flex items-center justify-center gap-2"
                         >
                             <LucideIcons.Plus size={18} /> Crear Nuevo Cliente con Tarifa Pro
                         </button>
@@ -1480,6 +1509,19 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 onClose={() => setIsBulkReportOpen(false)}
                 results={bulkResults}
             />
+
+            {/* OVERLAY DE DETALLE DE CLIENTE: Preserva el estado de la lista al no desmontarla */}
+            {selectedClient && (
+                <div className={`fixed inset-0 z-50 h-full overflow-y-auto bg-white dark:bg-gray-900 transform transition-transform duration-500 ${isClientDetailsOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <ClientDetailView 
+                        client={selectedClient} 
+                        onSave={handleUpdateClient} 
+                        onBack={handleCloseClientDetails} 
+                        serviceFees={serviceFees} 
+                        sriCredentials={sriCredentials} 
+                    />
+                </div>
+            )}
         </div >
     );
 };

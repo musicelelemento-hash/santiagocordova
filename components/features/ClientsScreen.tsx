@@ -13,10 +13,10 @@ import { AreaChart as RechartsAreaChart, Area, XAxis, YAxis, Tooltip, Responsive
 
 const declarationStatusColors: { [key in DeclarationStatus]: string } = {
     [DeclarationStatus.Pendiente]: 'bg-gray-400/20 text-gray-500 dark:text-gray-400',
-    [DeclarationStatus.Enviada]: 'bg-blue-500/20 text-blue-500',
-    [DeclarationStatus.Pagada]: 'bg-green-500/20 text-green-500',
-    [DeclarationStatus.Cancelada]: 'bg-red-500/20 text-red-500',
-    [DeclarationStatus.Vencida]: 'bg-red-500/20 text-red-600',
+    [DeclarationStatus.Enviada]: 'bg-sky-400/20 text-sky-400',
+    [DeclarationStatus.Pagada]: 'bg-emerald-400/20 text-emerald-400',
+    [DeclarationStatus.Cancelada]: 'bg-rose-400/20 text-rose-400',
+    [DeclarationStatus.Vencida]: 'bg-rose-400/20 text-rose-400',
 };
 
 const IVA_FREQUENCIES = ['Mensual', 'Semestral', 'Ninguno'];
@@ -91,14 +91,14 @@ const DeclarationProgressBar: React.FC<{ client: Client }> = ({ client }) => {
                 const status = historyMap.get(period);
                 let colorClass = 'bg-gray-300 dark:bg-gray-600';
 
-                if (status === DeclarationStatus.Pagada) colorClass = 'bg-green-500';
-                else if (status === DeclarationStatus.Enviada) colorClass = 'bg-blue-500';
+                if (status === DeclarationStatus.Pagada) colorClass = 'bg-emerald-400';
+                else if (status === DeclarationStatus.Enviada) colorClass = 'bg-sky-400';
                 else if (status === DeclarationStatus.Pendiente) {
                     const dueDate = getDueDateForPeriod(client, period);
                     if (dueDate && isPast(dueDate)) {
-                        colorClass = 'bg-red-500';
+                        colorClass = 'bg-rose-400';
                     } else {
-                        colorClass = 'bg-yellow-500';
+                        colorClass = 'bg-amber-400';
                     }
                 }
 
@@ -108,7 +108,7 @@ const DeclarationProgressBar: React.FC<{ client: Client }> = ({ client }) => {
                     <div key={period} className="h-full flex-1 group relative cursor-pointer">
                         <div className={`h-full w-full ${colorClass}`}></div>
                         <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-max p-2 text-xs text-white bg-gray-900 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none">
-                            {displayPeriod}: <span className="font-bold">{status || 'No Generado'}</span>
+                            {displayPeriod}: <span className="font-medium">{status || 'No Generado'}</span>
                         </div>
                     </div>
                 );
@@ -157,7 +157,7 @@ const PaymentHistoryChart: React.FC<{ client: Client }> = ({ client }) => {
 
     return (
         <div className="pt-4 relative overflow-hidden">
-            <h4 className="text-[11px] font-black text-gray-500 dark:text-gray-400 mb-6 uppercase tracking-widest flex items-center gap-2">
+            <h4 className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-6 uppercase tracking-widest flex items-center gap-2">
                 <TrendingUp size={16} className="text-brand-teal" /> Resumen de Cumplimiento
             </h4>
             <div style={{ width: '100%', height: 160 }}>
@@ -184,15 +184,15 @@ const PaymentHistoryChart: React.FC<{ client: Client }> = ({ client }) => {
                                     const dataPoint = (payload[0] as any).payload;
                                     return (
                                         <div className="p-3 bg-slate-900/95 text-white rounded-xl text-xs shadow-2xl border border-slate-700/50 backdrop-blur-xl">
-                                            <p className="font-black mb-2 text-slate-300 border-b border-slate-700/50 pb-2 flex items-center gap-2">
+                                            <p className="font-semibold mb-2 text-slate-300 border-b border-slate-700/50 pb-2 flex items-center gap-2">
                                                 {label}
-                                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
                                                     {dataPoint.score}%
                                                 </span>
                                             </p>
                                             <div className="flex items-center gap-2 mt-2">
                                                 <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: statusColors[dataPoint.status] }}></div>
-                                                <span className="font-bold text-white tracking-wide">{dataPoint.status}</span>
+                                                <span className="font-medium text-white tracking-wide">{dataPoint.status}</span>
                                             </div>
                                         </div>
                                     );
@@ -235,7 +235,7 @@ const DynamicStatusIndicator: React.FC<{ client: Client, declaration: Declaratio
 
         return (
             <div className="text-xs text-right flex-shrink-0 ml-2">
-                <div className="flex items-center justify-end space-x-1 text-green-500 font-bold">
+                <div className="flex items-center justify-end space-x-1 text-emerald-400 font-medium">
                     <ShieldCheck size={14} />
                     <span>Al día con el SRI</span>
                 </div>
@@ -257,7 +257,7 @@ const DynamicStatusIndicator: React.FC<{ client: Client, declaration: Declaratio
 
     if (daysUntilDue !== null && daysUntilDue < 0) {
         return (
-            <div className="text-xs text-right text-red-500 font-semibold flex-shrink-0 ml-2">
+            <div className="text-xs text-right text-rose-400 font-semibold flex-shrink-0 ml-2">
                 <div>Venció hace {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? 'día' : 'días'}</div>
                 <div className="text-red-400/80">{frequency} {periodDisplay} - {dueDate ? format(dueDate, 'dd MMM/yy', { locale: es }) : ''}</div>
             </div>
@@ -268,13 +268,13 @@ const DynamicStatusIndicator: React.FC<{ client: Client, declaration: Declaratio
         if (daysUntilDue !== null) {
             if (daysUntilDue > 1) {
                 countdownText = `en ${daysUntilDue} días`;
-                colorClass = daysUntilDue <= 7 ? 'text-yellow-500' : 'text-gray-400';
+                colorClass = daysUntilDue <= 7 ? 'text-amber-400' : 'text-gray-400';
             } else if (daysUntilDue === 1) {
                 countdownText = 'mañana';
-                colorClass = 'text-yellow-500 font-semibold';
+                colorClass = 'text-amber-400 font-semibold';
             } else if (daysUntilDue === 0) {
                 countdownText = 'hoy';
-                colorClass = 'text-orange-500 font-bold';
+                colorClass = 'text-orange-500 font-medium';
             }
         }
 
@@ -413,7 +413,7 @@ const ClientDetailView: React.FC<{ client: Client, onSave: (updatedClient: Clien
             const printWindow = window.open('', '_blank', 'height=600,width=800');
             if (printWindow) {
                 printWindow.document.write('<html><head><title>Comprobante</title>');
-                printWindow.document.write('<style>body { font-family: sans-serif; margin: 20px; color: #111; } table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; } th, td { padding: 10px; border: 1px solid #ccc; text-align: left; } th { background-color: #f2f2f2; } .text-center { text-align: center; } .font-bold { font-weight: bold; } .mb-4 { margin-bottom: 1rem; } .pb-2 { padding-bottom: 0.5rem; } .border-b { border-bottom: 1px solid #ccc; } .text-right { text-align: right; } .mt-4 { margin-top: 1rem; } .pt-2 { padding-top: 0.5rem; } .border-t-2 { border-top: 2px solid #aaa; } </style>');
+                printWindow.document.write('<style>body { font-family: sans-serif; margin: 20px; color: #111; } table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; } th, td { padding: 10px; border: 1px solid #ccc; text-align: left; } th { background-color: #f2f2f2; } .text-center { text-align: center; } .font-medium { font-weight: bold; } .mb-4 { margin-bottom: 1rem; } .pb-2 { padding-bottom: 0.5rem; } .border-b { border-bottom: 1px solid #ccc; } .text-right { text-align: right; } .mt-4 { margin-top: 1rem; } .pt-2 { padding-top: 0.5rem; } .border-t-2 { border-top: 2px solid #aaa; } </style>');
                 printWindow.document.write('</head><body>');
                 printWindow.document.write(receiptEl.innerHTML);
                 printWindow.document.write('</body></html>');
@@ -460,7 +460,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                     </button>
                     {isMenuOpen && (
                         <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border dark:border-gray-700 animate-fade-in-down">
-                            <button onClick={() => { onSave({ ...editedClient, isActive: !(editedClient.isActive ?? true) }); setIsMenuOpen(false); }} className={`w-full text-left flex items-center space-x-2 px-3 py-2 text-sm rounded-t-md transition-colors ${(editedClient.isActive ?? true) ? 'text-red-500 hover:bg-red-500/10' : 'text-green-500 hover:bg-green-500/10'}`}>
+                            <button onClick={() => { onSave({ ...editedClient, isActive: !(editedClient.isActive ?? true) }); setIsMenuOpen(false); }} className={`w-full text-left flex items-center space-x-2 px-3 py-2 text-sm rounded-t-md transition-colors ${(editedClient.isActive ?? true) ? 'text-rose-400 hover:bg-rose-400/10' : 'text-emerald-400 hover:bg-emerald-400/10'}`}>
                                 {(editedClient.isActive ?? true) ? <UserX size={16} /> : <UserCheck2 size={16} />}
                                 <span>{(editedClient.isActive ?? true) ? 'Desactivar Cliente' : 'Activar Cliente'}</span>
                             </button>
@@ -492,7 +492,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                     regime: 'Régimen', sriPassword: 'Clave SRI', email: 'Email', customServiceFee: 'Tarifa'
                 }).map(([key, label]) => (
                     <div key={key}>
-                        <label className="text-sm font-bold text-gray-500">{label}</label>
+                        <label className="text-sm font-medium text-gray-500">{label}</label>
                         {isEditing ? (
                             key === 'regime' ? (
                                 <select
@@ -527,7 +527,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                     </div>
                 ))}
                 <div>
-                    <label className="text-sm font-bold text-gray-500">Teléfonos</label>
+                    <label className="text-sm font-medium text-gray-500">Teléfonos</label>
                     {isEditing ? (
                         <div className="space-y-2">
                             {(editedClient.phones || ['']).map((phone, index) => (
@@ -545,12 +545,12 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                                     <button onClick={() => {
                                         const newPhones = (editedClient.phones || []).filter((_, i) => i !== index);
                                         setEditedClient(p => ({ ...p, phones: newPhones }));
-                                    }} className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900 rounded-full">
+                                    }} className="p-2 text-rose-400 hover:bg-red-100 dark:hover:bg-red-900 rounded-full">
                                         <X size={16} />
                                     </button>
                                 </div>
                             ))}
-                            <button onClick={() => setEditedClient(p => ({ ...p, phones: [...(p.phones || []), ''] }))} className="text-sm text-blue-500 hover:underline mt-2">+ Agregar otro teléfono</button>
+                            <button onClick={() => setEditedClient(p => ({ ...p, phones: [...(p.phones || []), ''] }))} className="text-sm text-sky-400 hover:underline mt-2">+ Agregar otro teléfono</button>
                         </div>
                     ) : (
                         <div className="mt-1">
@@ -562,7 +562,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                     )}
                 </div>
                 <div>
-                    <label className="text-sm font-bold text-gray-500">Notas</label>
+                    <label className="text-sm font-medium text-gray-500">Notas</label>
                     {isEditing ? (
                         <div className="relative">
                             <textarea
@@ -581,14 +581,14 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                 </div>
                 {summary && (
                     <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-                        <h5 className="font-bold text-blue-800 dark:text-blue-300 mb-1 flex items-center"><BrainCircuit size={16} className="mr-2" /> Resumen IA</h5>
+                        <h5 className="font-medium text-blue-800 dark:text-blue-300 mb-1 flex items-center"><BrainCircuit size={16} className="mr-2" /> Resumen IA</h5>
                         <p className="text-sm text-blue-700 dark:text-blue-200">{summary}</p>
                     </div>
                 )}
             </div>
             {isEditing && (
                 <div className="mt-6">
-                    <button onClick={handleSave} className="w-full p-3 bg-gold text-black font-bold rounded-lg hover:bg-gold-dark transition-colors">
+                    <button onClick={handleSave} className="w-full p-3 bg-gold text-black font-medium rounded-lg hover:bg-gold-dark transition-colors">
                         Guardar Cambios
                     </button>
                 </div>
@@ -597,7 +597,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
             <PaymentHistoryChart client={client} />
 
             <div className="mt-6">
-                <h4 className="text-lg font-bold text-gray-600 dark:text-gray-300 mb-4">Historial de Declaraciones</h4>
+                <h4 className="text-lg font-medium text-gray-600 dark:text-gray-300 mb-4">Historial de Declaraciones</h4>
                 <div className="space-y-2 max-h-96 overflow-y-auto pr-2 -ml-2 pl-2">
                     <div className="relative pl-8">
                         <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
@@ -608,12 +608,12 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                                 const isOverdue = dueDate && isPast(dueDate) && (declaration.status === DeclarationStatus.Pendiente || declaration.status === DeclarationStatus.Enviada);
                                 let statusInfo: { text: string; icon: React.ReactNode; color: string; bgColor: string };
                                 if (isOverdue) {
-                                    statusInfo = { text: 'Vencido', icon: <AlertTriangle size={14} />, color: 'text-red-500', bgColor: 'bg-red-500' };
+                                    statusInfo = { text: 'Vencido', icon: <AlertTriangle size={14} />, color: 'text-rose-400', bgColor: 'bg-rose-400' };
                                 } else {
                                     switch (declaration.status) {
-                                        case DeclarationStatus.Pagada: statusInfo = { text: 'Pagada', icon: <CheckCircle size={14} />, color: 'text-green-500', bgColor: 'bg-green-500' }; break;
-                                        case DeclarationStatus.Enviada: statusInfo = { text: 'Declarada', icon: <Send size={14} />, color: 'text-blue-500', bgColor: 'bg-blue-500' }; break;
-                                        default: statusInfo = { text: 'Pendiente', icon: <Clock size={14} />, color: 'text-yellow-500', bgColor: 'bg-yellow-500' }; break;
+                                        case DeclarationStatus.Pagada: statusInfo = { text: 'Pagada', icon: <CheckCircle size={14} />, color: 'text-emerald-400', bgColor: 'bg-emerald-400' }; break;
+                                        case DeclarationStatus.Enviada: statusInfo = { text: 'Declarada', icon: <Send size={14} />, color: 'text-sky-400', bgColor: 'bg-sky-400' }; break;
+                                        default: statusInfo = { text: 'Pendiente', icon: <Clock size={14} />, color: 'text-amber-400', bgColor: 'bg-amber-400' }; break;
                                     }
                                 }
                                 return (
@@ -625,7 +625,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                                             <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                                                 <div className="flex justify-between items-start">
                                                     <div>
-                                                        <p className="font-bold dark:text-white">{formatPeriodForDisplay(declaration.period)}</p>
+                                                        <p className="font-medium dark:text-white">{formatPeriodForDisplay(declaration.period)}</p>
                                                         <p className={`text-sm font-semibold ${statusInfo.color}`}>{statusInfo.text}</p>
                                                     </div>
                                                     <div className="text-right text-xs text-gray-500 dark:text-gray-400">
@@ -634,11 +634,11 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                                                         {dueDate && (declaration.status === DeclarationStatus.Pendiente || declaration.status === DeclarationStatus.Enviada) && <p>Vence: {format(dueDate, 'dd MMM yyyy', { locale: es })}</p>}
                                                     </div>
                                                 </div>
-                                                {(declaration.amount || declaration.status === DeclarationStatus.Pagada) && (<p className="mt-2 text-lg font-bold text-gold">${(declaration.amount ?? getClientServiceFee(editedClient, serviceFees)).toFixed(2)}</p>)}
+                                                {(declaration.amount || declaration.status === DeclarationStatus.Pagada) && (<p className="mt-2 text-lg font-medium text-gold">${(declaration.amount ?? getClientServiceFee(editedClient, serviceFees)).toFixed(2)}</p>)}
                                                 {declaration.status === DeclarationStatus.Pagada && (
                                                     <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                                                         <button onClick={() => handleRevertPayment(declaration.period)} className="flex-1 flex items-center justify-center space-x-2 px-3 py-1.5 text-sm rounded-md bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"><RotateCcw size={14} /><span>Revertir Pago</span></button>
-                                                        <button onClick={() => handleShowReceipt(declaration)} className="flex-1 flex items-center justify-center space-x-2 px-3 py-1.5 text-sm rounded-md bg-blue-500/20 text-blue-500 hover:bg-blue-500/30 transition-colors"><FileText size={14} /><span>Ver Comprobante</span></button>
+                                                        <button onClick={() => handleShowReceipt(declaration)} className="flex-1 flex items-center justify-center space-x-2 px-3 py-1.5 text-sm rounded-md bg-sky-400/20 text-sky-400 hover:bg-sky-400/30 transition-colors"><FileText size={14} /><span>Ver Comprobante</span></button>
                                                     </div>
                                                 )}
                                             </div>
@@ -651,7 +651,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
             </div>
 
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
-                <h4 className="text-lg font-bold text-center text-gray-600 dark:text-gray-300 mb-2">
+                <h4 className="text-lg font-medium text-center text-gray-600 dark:text-gray-300 mb-2">
                     Acciones Rápidas
                     {latestDeclarationForAction && ` para ${formatPeriodForDisplay(latestDeclarationForAction.period)}`}
                 </h4>
@@ -659,8 +659,8 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                     <div className="p-3 my-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-lg flex items-center space-x-3 text-sm"><Info size={20} /><span>Complete el RUC y la Clave SRI para habilitar las acciones.</span></div>
                 ) : latestDeclarationForAction ? (
                     <div className="flex space-x-2">
-                        {latestDeclarationForAction.status === DeclarationStatus.Pendiente && (<button onClick={() => setConfirmation({ action: 'declare', period: latestDeclarationForAction.period })} className="w-full p-3 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2"><Send size={16} /><span>Declarar</span></button>)}
-                        {latestDeclarationForAction.status === DeclarationStatus.Enviada && (<button onClick={() => setConfirmation({ action: 'pay', period: latestDeclarationForAction.period })} className="w-full p-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center space-x-2"><DollarSign size={16} /><span>Registrar Pago</span></button>)}
+                        {latestDeclarationForAction.status === DeclarationStatus.Pendiente && (<button onClick={() => setConfirmation({ action: 'declare', period: latestDeclarationForAction.period })} className="w-full p-3 bg-sky-400 text-white font-medium rounded-lg hover:bg-sky-400 transition-colors flex items-center justify-center space-x-2"><Send size={16} /><span>Declarar</span></button>)}
+                        {latestDeclarationForAction.status === DeclarationStatus.Enviada && (<button onClick={() => setConfirmation({ action: 'pay', period: latestDeclarationForAction.period })} className="w-full p-3 bg-emerald-400 text-white font-medium rounded-lg hover:bg-emerald-400 transition-colors flex items-center justify-center space-x-2"><DollarSign size={16} /><span>Registrar Pago</span></button>)}
                     </div>
                 ) : (
                     <div className="p-3 my-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-lg flex items-center space-x-3 text-sm"><CheckCircle size={20} /><span>¡Cliente al día! No hay acciones pendientes.</span></div>
@@ -670,11 +670,11 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
             {confirmation && (
                 <Modal isOpen={!!confirmation} onClose={() => setConfirmation(null)} title="Confirmar Acción">
                     <div className="text-center">
-                        <p className="dark:text-gray-300">¿Está seguro de que desea marcar el período <span className="font-bold text-gold">{formatPeriodForDisplay(confirmation.period)}</span> como <span className="font-bold">{confirmation.action === 'declare' ? 'Declarado' : 'Pagado'}</span>?</p>
+                        <p className="dark:text-gray-300">¿Está seguro de que desea marcar el período <span className="font-medium text-gold">{formatPeriodForDisplay(confirmation.period)}</span> como <span className="font-medium">{confirmation.action === 'declare' ? 'Declarado' : 'Pagado'}</span>?</p>
                         <div className="mt-6 space-y-2">
-                            <button onClick={() => handleConfirmAction()} disabled={isProcessingAction} className="w-full p-3 bg-gold text-black font-bold rounded-lg hover:bg-gold-dark disabled:bg-gray-400">{isProcessingAction ? <Loader size={20} className="animate-spin mx-auto" /> : 'Sí, confirmar'}</button>
-                            {confirmation.action === 'declare' && (<button onClick={() => handleConfirmAction(true)} disabled={isProcessingAction} className="w-full p-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:bg-gray-400 flex items-center justify-center space-x-2"><MessageCircle size={18} /><span>Confirmar y Notificar por WhatsApp</span></button>)}
-                            <button onClick={() => setConfirmation(null)} className="w-full p-3 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">Cancelar</button>
+                            <button onClick={() => handleConfirmAction()} disabled={isProcessingAction} className="w-full p-3 bg-gold text-black font-medium rounded-lg hover:bg-gold-dark disabled:bg-gray-400">{isProcessingAction ? <Loader size={20} className="animate-spin mx-auto" /> : 'Sí, confirmar'}</button>
+                            {confirmation.action === 'declare' && (<button onClick={() => handleConfirmAction(true)} disabled={isProcessingAction} className="w-full p-3 bg-emerald-400 text-white font-medium rounded-lg hover:bg-green-700 disabled:bg-gray-400 flex items-center justify-center space-x-2"><MessageCircle size={18} /><span>Confirmar y Notificar por WhatsApp</span></button>)}
+                            <button onClick={() => setConfirmation(null)} className="w-full p-3 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">Cancelar</button>
                         </div>
                     </div>
                 </Modal>
@@ -684,8 +684,8 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                     <div>
                         <div ref={receiptRef} className="p-4 text-sm text-gray-800 dark:text-white bg-white dark:bg-gray-900 rounded-lg">
                             <div className="text-center mb-4">
-                                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-2" />
-                                <h3 className="font-display text-xl font-bold">Comprobante de Pago</h3>
+                                <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-2" />
+                                <h3 className="font-display text-xl font-medium">Comprobante de Pago</h3>
                                 <p className="text-gray-500 dark:text-gray-400">Soluciones Contables Pro</p>
                             </div>
                             <div className="mb-4 pb-2 border-b border-gray-300 dark:border-gray-600 space-y-1">
@@ -694,7 +694,7 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                                 <p><span className="font-semibold">Cliente:</span> {receiptData.clientName}</p>
                                 <p><span className="font-semibold">RUC:</span> {receiptData.clientRuc}</p>
                             </div>
-                            <h4 className="font-bold text-lg text-center mb-2">Detalle de Pago</h4>
+                            <h4 className="font-medium text-lg text-center mb-2">Detalle de Pago</h4>
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="border-b dark:border-gray-600">
@@ -706,12 +706,12 @@ TOTAL PAGADO: $${receiptData.totalAmount.toFixed(2)}
                                     {receiptData.paidPeriods.map(({ period, amount }) => (<tr key={period} className="border-b dark:border-gray-700"><td className="py-2">{formatPeriodForDisplay(period)}</td><td className="py-2 text-right">${amount.toFixed(2)}</td></tr>))}
                                 </tbody>
                                 <tfoot>
-                                    <tr className="font-bold border-t-2 border-gray-300 dark:border-gray-600"><td className="py-2 pt-4 text-right">Total Pagado</td><td className="py-2 pt-4 text-right">${receiptData.totalAmount.toFixed(2)}</td></tr>
+                                    <tr className="font-medium border-t-2 border-gray-300 dark:border-gray-600"><td className="py-2 pt-4 text-right">Total Pagado</td><td className="py-2 pt-4 text-right">${receiptData.totalAmount.toFixed(2)}</td></tr>
                                 </tfoot>
                             </table>
                         </div>
                         <div className="flex space-x-2 mt-4">
-                            <button onClick={handlePrintReceipt} className="flex-1 p-2 bg-blue-500 text-white rounded">Imprimir</button>
+                            <button onClick={handlePrintReceipt} className="flex-1 p-2 bg-sky-400 text-white rounded">Imprimir</button>
                             <button onClick={copyReceiptToClipboard} className="flex-1 p-2 bg-gray-500 text-white rounded">Copiar</button>
                         </div>
                     </div>

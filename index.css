@@ -1,22 +1,20 @@
-
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono&display=swap');
 
 :root {
-    --primary: 172 100% 33%; /* #00A896 */
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%; /* #1e293b */
-    --secondary-foreground: 210 40% 98%;
-    --accent: 199 89% 48%; /* #0ea5e9 */
+    --primary: 36 33% 69%; /* #d4b58c - Warm Champagne/Gold */
+    --primary-foreground: 240 10% 4%;
+    --secondary: 240 6% 15%; /* #242426 - Warm dark charcoal */
+    --secondary-foreground: 40 20% 98%;
+    --accent: 199 43% 48%; /* #0ea5e9 - Muted Slate Blue */
     --accent-foreground: 0 0% 100%;
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 12%;
-    --card-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --ring: 172 100% 33%;
-    --radius: 0.75rem;
+    --background: 240 6% 10%; /* #1a1a1c - Deep Neutral Warm Gray */
+    --foreground: 40 20% 98%;
+    --card: 240 6% 12%;
+    --card-foreground: 40 20% 98%;
+    --border: 240 6% 18%;
+    --ring: 36 33% 69%;
+    --radius: 1.5rem;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono&display=swap');
 
 body {
     background-color: hsl(var(--background));
@@ -25,38 +23,56 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, .font-premium {
+h1, h2, h3, h4 {
     font-family: 'Outfit', sans-serif;
+    letter-spacing: 0.02em; 
+    font-weight: 300; /* Reducimos el peso para una apariencia más zen y controlada */
+}
+
+.font-premium {
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: 0.01em;
+}
+
+.font-premium-elegant {
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: 0.08em; /* Aumentamos el tracking para que las mayúsculas respiren */
+    text-transform: uppercase;
+    font-weight: 400;
 }
 
 /* Elegant minimalist variations for Client Portal */
 .glass-morphism {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(16px) saturate(120%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
 }
 
 .glass-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .glass-card:hover {
-    border-color: rgba(0, 168, 150, 0.3);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
-    transform: translateY(-4px);
+    border-color: hsla(var(--primary), 0.3);
+    background: hsla(var(--primary), 0.02);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
 }
 
 .glass-elite {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-    backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    backdrop-filter: blur(32px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.25);
+}
+
+.shadow-primary {
+    box-shadow: 0 0 30px -5px hsla(var(--primary), 0.15);
 }
 
 .text-gradient-teal {
@@ -183,4 +199,37 @@ h1, h2, h3, h4, .font-premium {
 
 .animate-scan {
     animation: scan 2s linear infinite;
+}
+
+/* Base Animations */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slide-in-from-bottom {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-in {
+    animation-duration: 500ms;
+    animation-fill-mode: forwards;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-in {
+    animation-name: fade-in;
+}
+
+.slide-in-from-bottom-5 {
+    animation-name: slide-in-from-bottom;
+}
+
+.duration-700 {
+    animation-duration: 700ms;
+}
+
+.duration-1000 {
+    animation-duration: 1000ms;
 }

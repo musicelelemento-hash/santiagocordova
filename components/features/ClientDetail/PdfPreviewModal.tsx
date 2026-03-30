@@ -41,7 +41,7 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
                     <div className="absolute top-6 left-6 right-6 flex justify-between items-center pointer-events-none">
                         <div className="glass-tactical px-5 py-3 rounded-2xl flex items-center gap-3 border border-white/10 pointer-events-auto shadow-2xl backdrop-blur-md">
                             <FileText size={18} className="text-cyan-400" />
-                            <span className="text-[11px] font-black tracking-widest text-white truncate max-w-[200px] uppercase">{pdfData.name}</span>
+                            <span className="text-[11px] font-semibold tracking-widest text-white truncate max-w-[200px] uppercase">{pdfData.name}</span>
                         </div>
                     </div>
                 </div>
@@ -57,10 +57,10 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
                     <div className="p-8 border-b border-white/5 flex justify-between items-start relative z-10 bg-black/20">
                         <div>
                             <div className="flex items-center gap-2 mb-2">
-                                <ShieldCheck size={18} className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">VALIDADO POR ESCUADRÓN</span>
+                                <ShieldCheck size={18} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-[0.3em]">VALIDADO POR ESCUADRÓN</span>
                             </div>
-                            <h3 className="text-2xl font-black text-white tracking-tight uppercase">Radar Táctico</h3>
+                            <h3 className="text-2xl font-semibold text-white tracking-tight uppercase">Radar Táctico</h3>
                         </div>
                         <button 
                             onClick={onClose}
@@ -73,27 +73,27 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
                     {/* Metadata Content */}
                     <div className="p-8 flex-1 overflow-y-auto space-y-8 relative z-10 custom-scrollbar">
                         {/* Status Check */}
-                        <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center justify-center text-center gap-3 shadow-[0_0_30px_rgba(16,185,129,0.15)] relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-emerald-500/5 group-hover:bg-emerald-500/10 transition-colors"></div>
-                            <CheckCircle2 size={40} className="text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)] relative z-10" />
+                        <div className="p-6 rounded-3xl bg-emerald-400/10 border border-emerald-400/20 flex flex-col items-center justify-center text-center gap-3 shadow-[0_0_30px_rgba(16,185,129,0.15)] relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-emerald-400/5 group-hover:bg-emerald-400/10 transition-colors"></div>
+                            <CheckCircle2 size={40} className="text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.5)] relative z-10" />
                             <div className="relative z-10">
-                                <h4 className="font-black text-emerald-400 text-base uppercase tracking-wider">Integridad Confirmada</h4>
-                                <p className="text-[10px] text-emerald-500/70 font-bold uppercase tracking-[0.2em] mt-1">Firma SRI Detectada</p>
+                                <h4 className="font-semibold text-emerald-400 text-base uppercase tracking-wider">Integridad Confirmada</h4>
+                                <p className="text-[10px] text-emerald-400/70 font-medium uppercase tracking-[0.2em] mt-1">Firma SRI Detectada</p>
                             </div>
                         </div>
 
                         {/* Extracted Data Blocks */}
                         <div className="space-y-6">
                             <div className="space-y-2">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2"><Info size={12}/> FORMA TRIBUTARIA</span>
-                                <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-sm font-black text-white uppercase tracking-widest font-mono shadow-inner">
+                                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-2"><Info size={12}/> FORMA TRIBUTARIA</span>
+                                <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-sm font-semibold text-white uppercase tracking-widest font-mono shadow-inner">
                                     {pdfData.metadata?.formType || 'DESCONOCIDO'}
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">PERIODO FISCAL</span>
-                                <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-cyan-400 text-xl font-black uppercase tracking-wider font-mono shadow-inner flex items-center justify-between">
+                                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">PERIODO FISCAL</span>
+                                <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-cyan-400 text-xl font-semibold uppercase tracking-wider font-mono shadow-inner flex items-center justify-between">
                                     <span>{pdfData.metadata?.period || 'N/A'}</span>
                                     <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse"></div>
                                 </div>
@@ -101,8 +101,8 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
 
                             {pdfData.metadata?.amount !== undefined && (
                                 <div className="space-y-2">
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">MONTO LIQUIDADO</span>
-                                    <div className="p-5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-3xl font-black uppercase tracking-tighter font-mono flex items-center justify-between shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]">
+                                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">MONTO LIQUIDADO</span>
+                                    <div className="p-5 bg-emerald-400/10 border border-emerald-400/20 rounded-2xl text-emerald-400 text-3xl font-semibold uppercase tracking-tighter font-mono flex items-center justify-between shadow-[inset_0_0_20px_rgba(16,185,129,0.1)]">
                                         <span className="opacity-50">$</span>
                                         <span>{pdfData.metadata.amount.toFixed(2)}</span>
                                     </div>
@@ -110,15 +110,15 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
                             )}
 
                             <div className="space-y-2">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">ID VERIFICACIÓN (SRI)</span>
-                                <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-xs font-black text-slate-400 font-mono tracking-[0.2em] break-all shadow-inner">
+                                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">ID VERIFICACIÓN (SRI)</span>
+                                <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-xs font-semibold text-slate-400 font-mono tracking-[0.2em] break-all shadow-inner">
                                     {pdfData.metadata?.sriId || 'N/A'}
                                 </div>
                             </div>
 
                             <div className="space-y-2 pt-4 border-t border-white/5">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">RUC VINCULADO</span>
-                                <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-sm font-black text-white uppercase tracking-widest font-mono shadow-inner">
+                                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">RUC VINCULADO</span>
+                                <div className="p-4 bg-slate-950/50 border border-white/5 rounded-2xl text-sm font-semibold text-white uppercase tracking-widest font-mono shadow-inner">
                                     {client.ruc}
                                 </div>
                             </div>
@@ -129,7 +129,7 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
                     <div className="p-8 border-t border-white/5 bg-black/20 relative z-10 space-y-4">
                         <button 
                             onClick={onDownload}
-                            className="w-full flex items-center justify-center gap-3 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-cyan-500/50 active:scale-95 border border-cyan-400/50"
+                            className="w-full flex items-center justify-center gap-3 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-2xl font-semibold text-xs uppercase tracking-[0.2em] transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-cyan-500/50 active:scale-95 border border-cyan-400/50"
                         >
                             <Download size={18} strokeWidth={2.5} /> Extraer Original
                         </button>

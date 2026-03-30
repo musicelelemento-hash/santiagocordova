@@ -175,12 +175,12 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                         {isProcessing ? <Loader2 className="text-brand-teal animate-spin" size={28} /> : <UploadCloud className="text-brand-teal" size={28} />}
                     </div>
 
-                    <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">Carga Masiva de Comprobantes</h3>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white uppercase tracking-tight">Carga Masiva de Comprobantes</h3>
                     <p className="text-xs text-slate-500 font-medium mt-1 max-w-sm">Suelta aquí tus PDFs. El sistema los leerá, validará el RUC y marcará la obligación como pagada.</p>
 
                     <button
                         onClick={() => inputRef.current?.click()}
-                        className="mt-6 px-6 py-2.5 bg-brand-navy dark:bg-brand-teal text-white font-black rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all text-[10px] uppercase tracking-widest"
+                        className="mt-6 px-6 py-2.5 bg-brand-navy dark:bg-brand-teal text-white font-semibold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all text-[10px] uppercase tracking-widest"
                     >
                         Seleccionar PDFs
                     </button>
@@ -189,35 +189,35 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                 {results.length > 0 && (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actividad Reciente</h4>
-                            <button onClick={() => setResults([])} className="text-[9px] font-black text-red-500 hover:text-red-600 uppercase tracking-tighter">Limpiar Log</button>
+                            <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">Actividad Reciente</h4>
+                            <button onClick={() => setResults([])} className="text-[9px] font-semibold text-rose-400 hover:text-rose-400 uppercase tracking-tighter">Limpiar Log</button>
                         </div>
 
                         <div className="max-h-[350px] overflow-y-auto pr-1 space-y-2 thin-scrollbar">
                             {results.map((res, i) => (
                                 <div key={i} className={`p-3 rounded-2xl border flex items-center gap-3 transition-all
-                                    ${res.status === 'success' ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/20' :
-                                        res.status === 'not_found' ? 'bg-amber-50/50 dark:bg-amber-500/5 border-amber-100 dark:border-amber-500/20' :
-                                            'bg-red-50/50 dark:bg-red-500/5 border-red-100 dark:border-red-500/20'}`}>
+                                    ${res.status === 'success' ? 'bg-emerald-50/50 dark:bg-emerald-400/5 border-emerald-100 dark:border-emerald-400/20' :
+                                        res.status === 'not_found' ? 'bg-amber-50/50 dark:bg-amber-400/5 border-amber-100 dark:border-amber-400/20' :
+                                            'bg-red-50/50 dark:bg-rose-400/5 border-red-100 dark:border-rose-400/20'}`}>
 
                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-                                        ${res.status === 'success' ? 'bg-emerald-100 text-emerald-600' :
-                                            res.status === 'not_found' ? 'bg-amber-100 text-amber-600' :
-                                                'bg-red-100 text-red-600'}`}>
+                                        ${res.status === 'success' ? 'bg-emerald-100 text-emerald-500' :
+                                            res.status === 'not_found' ? 'bg-amber-100 text-amber-500' :
+                                                'bg-red-100 text-rose-400'}`}>
                                         {res.status === 'success' ? <CheckCircle2 size={16} /> :
                                             res.status === 'not_found' ? <User size={16} /> : <AlertCircle size={16} />}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <p className="text-[10px] font-black text-slate-900 dark:text-white truncate uppercase">{res.fileName}</p>
+                                            <p className="text-[10px] font-semibold text-slate-900 dark:text-white truncate uppercase">{res.fileName}</p>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                                            <p className="text-[9px] font-bold text-slate-500">
-                                                {res.status === 'success' ? <span className="text-emerald-600 uppercase">ASIGNADO A {res.clientName}</span> : res.message}
+                                            <p className="text-[9px] font-medium text-slate-500">
+                                                {res.status === 'success' ? <span className="text-emerald-500 uppercase">ASIGNADO A {res.clientName}</span> : res.message}
                                             </p>
                                             {res.amount !== undefined && (
-                                                <span className="text-[9px] font-black text-brand-navy dark:text-brand-teal px-1.5 py-0.5 rounded-md bg-white dark:bg-white/5 shadow-sm">
+                                                <span className="text-[9px] font-semibold text-brand-navy dark:text-brand-teal px-1.5 py-0.5 rounded-md bg-white dark:bg-white/5 shadow-sm">
                                                     ${res.amount.toFixed(2)}
                                                 </span>
                                             )}
@@ -226,7 +226,7 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
 
                                     {res.status === 'success' && (
                                         <div className="shrink-0">
-                                            <div className="w-6 h-6 rounded-md bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                            <div className="w-6 h-6 rounded-md bg-emerald-400/10 flex items-center justify-center text-emerald-400">
                                                 <CheckCircle2 size={12} />
                                             </div>
                                         </div>

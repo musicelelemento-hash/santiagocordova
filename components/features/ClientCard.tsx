@@ -65,16 +65,16 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     // Elite Tactical Design System
     const cardThemes = {
         elite: {
-            bg: 'bg-emerald-50/50 dark:bg-emerald-500/5',
-            border: 'border-emerald-200/50 dark:border-emerald-500/20',
+            bg: 'bg-emerald-50/50 dark:bg-emerald-400/5',
+            border: 'border-emerald-200/50 dark:border-emerald-400/20',
             glow: 'shadow-[0_0_20px_rgba(16,185,129,0.1)]',
-            icon: 'text-emerald-500',
+            icon: 'text-emerald-400',
             text: 'text-emerald-700 dark:text-emerald-400',
             title: 'text-slate-800 dark:text-emerald-400'
         },
         vip: {
-            bg: 'bg-gradient-to-br from-[#0B2149] to-[#122A5A] text-white outline outline-amber-500/20',
-            border: 'border-amber-500/30',
+            bg: 'bg-gradient-to-br from-[#0B2149] to-[#122A5A] text-white outline outline-amber-400/20',
+            border: 'border-amber-400/30',
             glow: 'shadow-[0_0_25px_rgba(245,158,11,0.15)]',
             icon: 'text-amber-400',
             text: 'text-slate-200',
@@ -82,9 +82,9 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
         },
         alert: {
             bg: 'bg-rose-50/50 dark:bg-rose-900/10',
-            border: 'border-rose-200/50 dark:border-rose-500/20',
+            border: 'border-rose-200/50 dark:border-rose-400/20',
             glow: 'shadow-[0_0_20px_rgba(239,68,68,0.1)]',
-            icon: 'text-rose-500',
+            icon: 'text-rose-400',
             text: 'text-rose-700 dark:text-rose-400',
             title: 'text-slate-900 dark:text-rose-300'
         },
@@ -92,7 +92,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
             bg: 'bg-white dark:bg-slate-900',
             border: 'border-slate-200 dark:border-white/5',
             glow: 'shadow-sm',
-            icon: 'text-sky-500',
+            icon: 'text-sky-400',
             text: 'text-slate-500 dark:text-slate-400',
             title: 'text-slate-800 dark:text-white'
         },
@@ -111,14 +111,14 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     const textColor = theme.text;
 
     // Indicador de Estado (Semáforo Táctico)
-    let statusBadge = { color: 'bg-slate-100 text-slate-500 border-slate-200', text: 'PENDING', icon: LucideIcons.Clock };
-    if (client.isDeleted) statusBadge = { color: 'bg-slate-200 text-slate-600 border-slate-300', text: 'IN TRASH', icon: LucideIcons.Trash2 };
-    else if (!client.isActive) statusBadge = { color: 'bg-slate-100 text-slate-400 border-slate-200', text: 'INACTIVE', icon: LucideIcons.Lock };
-    else if (isFullyAlDia) statusBadge = { color: 'bg-emerald-500 text-white border-emerald-400', text: 'ELITE STATUS', icon: LucideIcons.ShieldCheck };
-    else if (hasWorkOrder) statusBadge = { color: 'bg-amber-500 text-white border-amber-400 animate-pulse', text: 'WORK ORDER', icon: LucideIcons.Zap };
-    else if (isOverdue) statusBadge = { color: 'bg-rose-600 text-white border-rose-500', text: 'URGENT ALERT', icon: LucideIcons.AlertTriangle };
-    else if (isDeclared && !isPaid) statusBadge = { color: 'bg-emerald-50 text-emerald-600 border-emerald-200', text: 'POR COBRAR', icon: LucideIcons.Timer }; // Less "noisy" than blue PENDING CAJA
-    else if (isUrgent) statusBadge = { color: 'bg-amber-100 text-amber-700 border-amber-200', text: 'DUE SOON', icon: LucideIcons.Timer };
+    let statusBadge = { color: 'bg-white/5 text-slate-500 border-white/10', text: 'Pendiente', icon: LucideIcons.Clock };
+    if (client.isDeleted) statusBadge = { color: 'bg-white/5 text-slate-500 border-white/10', text: 'Archivado', icon: LucideIcons.Trash2 };
+    else if (!client.isActive) statusBadge = { color: 'bg-white/5 text-slate-400 border-white/5', text: 'Inactivo', icon: LucideIcons.Lock };
+    else if (isFullyAlDia) statusBadge = { color: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', text: 'Al Día', icon: LucideIcons.ShieldCheck };
+    else if (hasWorkOrder) statusBadge = { color: 'bg-primary/10 text-primary border-primary/20', text: 'En Proceso', icon: LucideIcons.Zap };
+    else if (isOverdue) statusBadge = { color: 'bg-rose-400/10 text-rose-400 border-rose-400/20', text: 'Vencido', icon: LucideIcons.AlertTriangle };
+    else if (isDeclared && !isPaid) statusBadge = { color: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', text: 'Por Cobrar', icon: LucideIcons.Timer };
+    else if (isUrgent) statusBadge = { color: 'bg-amber-400/10 text-amber-400 border-amber-400/20', text: 'Vence Pronto', icon: LucideIcons.Timer };
 
     // ALERTA DE PDF FALTANTE
     const isMissingPdf = isDeclared && !activeDecl?.proof_file;
@@ -155,7 +155,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                 relative rounded-[2rem] transition-all duration-500 cursor-pointer overflow-hidden group
                 ${isHovered ? 'glass-elite -translate-y-1.5' : 'glass-card'}
                 ${hasWorkOrder ? 'ring-2 ring-amber-400/50' : ''}
-                ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-sky-500/50' : ''}
+                ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-sky-400/50' : ''}
             `}
         >
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
@@ -170,36 +170,36 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                 <div className={`flex justify-between items-start ${compact ? 'mb-4' : 'mb-6'}`}>
                     <div className="flex items-center gap-4">
                         <div className={`relative group/avatar`}>
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm transition-all duration-500 ${true && !client.isDeleted ? 'bg-amber-500 text-slate-900 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300'}`}>
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-medium text-sm transition-all duration-500 ${true && !client.isDeleted ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-white/5 text-slate-400 border border-white/5'}`}>
                                 {client.name.substring(0, 2).toUpperCase()}
                             </div>
-                            {isFullyAlDia && !client.isDeleted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center"><LucideIcons.Check size={10} className="text-white" /></div>}
+                            {isFullyAlDia && !client.isDeleted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center"><LucideIcons.Check size={10} className="text-white" /></div>}
                         </div>
                         
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
-                                <span className={`text-[9px] px-2 py-0.5 rounded-lg font-black tracking-widest uppercase border ${true && !client.isDeleted ? 'bg-amber-500/20 text-amber-500 border-amber-500/30' : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/5'}`}>
-                                    {client.taxProfile?.ivaFrequency || 'MENSUAL'}
+                                <span className={`text-[9px] px-2 py-0.5 rounded-lg font-medium tracking-widest uppercase border ${true && !client.isDeleted ? 'bg-white/5 text-slate-400 border-white/10' : 'bg-white/5 text-slate-500 border-white/5'}`}>
+                                    {client.taxProfile?.ivaFrequency || 'Mensual'}
                                 </span>
-                                {true && !client.isDeleted && <span className="text-[9px] px-2 py-0.5 bg-amber-500 text-slate-900 rounded-lg font-black tracking-widest shadow-sm">VIP</span>}
+                                {true && !client.isDeleted && <span className="text-[9px] px-2 py-0.5 bg-primary/15 text-primary rounded-lg font-medium tracking-widest border border-primary/20">Activo</span>}
                                 {client.hasElderlyDevolucionIva && (
-                                    <span className="text-[9px] px-2 py-0.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-lg font-black tracking-widest flex items-center gap-1">
-                                        <LucideIcons.Heart size={8} /> T. EDAD
+                                    <span className="text-[9px] px-2 py-0.5 bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 rounded-lg font-medium tracking-widest flex items-center gap-1">
+                                        <LucideIcons.Heart size={8} /> 3ra Edad
                                     </span>
                                 )}
                             </div>
-                                <h3 className={`font-premium font-black text-lg line-clamp-1 leading-tight uppercase tracking-tight text-white dark:text-white`} title={client.name}>
+                                <h3 className={`font-premium font-medium text-base line-clamp-1 leading-tight text-white`} title={client.name}>
                                     {client.tradeName || client.name}
                                 </h3>
                                 {client.tradeName && (
-                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate uppercase mt-0.5" title={client.name}>
+                                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate uppercase mt-0.5" title={client.name}>
                                         {client.name}
                                     </p>
                                 )}
                             <div className="flex items-center gap-2 mt-1">
-                                <button onClick={handleCopy} className={`group/ruc flex items-center gap-2 px-2 py-1 rounded-lg border transition-all ${copied ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50/50 dark:bg-white/5 border-slate-100 dark:border-white/5 hover:border-sky-500'}`}>
-                                    <span className="font-mono text-[10px] font-black tracking-widest">{client.ruc}</span>
-                                    {copied ? <LucideIcons.Check size={10} strokeWidth={3} /> : <LucideIcons.Copy size={10} className="text-slate-400 group-hover/ruc:text-sky-500" />}
+                                <button onClick={handleCopy} className={`group/ruc flex items-center gap-2 px-2 py-1 rounded-lg border transition-all ${copied ? 'bg-emerald-400 border-emerald-400 text-white' : 'bg-slate-50/50 dark:bg-white/5 border-slate-100 dark:border-white/5 hover:border-sky-400'}`}>
+                                    <span className="font-mono text-[10px] font-semibold tracking-widest">{client.ruc}</span>
+                                    {copied ? <LucideIcons.Check size={10} strokeWidth={3} /> : <LucideIcons.Copy size={10} className="text-slate-400 group-hover/ruc:text-sky-400" />}
                                 </button>
                                 {client.declarations && client.declarations.find(d => d.period === currentPeriod && !!d.proof_file) && (
                                     <button 
@@ -207,7 +207,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                             e.stopPropagation();
                                             onView(client, 'operative'); // Trigger view in operative tab for pdf
                                         }}
-                                        className="p-1 px-2.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 rounded-lg border border-sky-500/20 transition-all group/pdf"
+                                        className="p-1 px-2.5 bg-sky-400/10 hover:bg-sky-400/20 text-sky-400 rounded-lg border border-sky-400/20 transition-all group/pdf"
                                         title="Ver Comprobante Actual"
                                     >
                                         <LucideIcons.FileText size={10} className="group-hover/pdf:scale-110 transition-transform" />
@@ -218,8 +218,8 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     </div>
 
                     <div className="flex flex-col items-end gap-2">
-                        <div className={`px-3 py-1.5 rounded-xl border text-[9px] font-black tracking-widest flex items-center gap-2 shadow-sm ${statusBadge.color}`}>
-                            <statusBadge.icon size={12} strokeWidth={3} />
+                        <div className={`px-3 py-1.5 rounded-xl border text-[9px] font-medium tracking-widest flex items-center gap-2 ${statusBadge.color}`}>
+                            <statusBadge.icon size={12} strokeWidth={2} />
                             {statusBadge.text}
                         </div>
                         
@@ -231,21 +231,21 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     <div className="flex-1 flex flex-col justify-center px-1 mb-4 mt-2">
                         <div className="flex flex-col gap-2">
                             {activeDecl && (
-                                <div className={`flex items-center justify-between p-3 rounded-2xl border ${isPaid ? 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/10' : (isOverdue ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/5')}`}>
+                                <div className={`flex items-center justify-between p-3 rounded-2xl border ${isPaid ? 'bg-emerald-50 dark:bg-emerald-400/5 border-emerald-100 dark:border-emerald-400/10' : (isOverdue ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/5')}`}>
                                     <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${isPaid ? 'bg-emerald-500' : (isOverdue ? 'bg-rose-500' : 'bg-slate-400')}`}></div>
-                                        <span className="text-xs font-black tracking-tighter uppercase">IVA {dueDate ? safeFormat(dueDate, 'dd MMM') : 'N/A'}</span>
+                                        <div className={`w-2 h-2 rounded-full ${isPaid ? 'bg-emerald-400' : (isOverdue ? 'bg-rose-400' : 'bg-slate-400')}`}></div>
+                                        <span className="text-xs font-semibold tracking-tighter uppercase">IVA {dueDate ? safeFormat(dueDate, 'dd MMM') : 'N/A'}</span>
                                     </div>
-                                    <span className={`text-[10px] font-black ${isPaid ? 'text-emerald-500' : 'text-slate-400'}`}>{isPaid ? 'CONFIRMED' : 'DUE'}</span>
+                                    <span className={`text-[10px] font-semibold ${isPaid ? 'text-emerald-400' : 'text-slate-400'}`}>{isPaid ? 'CONFIRMED' : 'DUE'}</span>
                                 </div>
                             )}
                             {needsRenta && !isRentaFullyDone && (
                                 <div className="flex items-center justify-between p-3 rounded-2xl border bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/5">
                                     <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${isRentaPaid ? 'bg-emerald-500' : 'bg-violet-500'}`}></div>
-                                        <span className="text-xs font-black tracking-tighter uppercase">RENTA {rentaPeriod}</span>
+                                        <div className={`w-2 h-2 rounded-full ${isRentaPaid ? 'bg-emerald-400' : 'bg-violet-500'}`}></div>
+                                        <span className="text-xs font-semibold tracking-tighter uppercase">RENTA {rentaPeriod}</span>
                                     </div>
-                                    <span className={`text-[10px] font-black ${isRentaPaid ? 'text-emerald-500' : 'text-violet-500'}`}>{isRentaPaid ? 'CONFIRMED' : 'PENDING'}</span>
+                                    <span className={`text-[10px] font-semibold ${isRentaPaid ? 'text-emerald-400' : 'text-violet-500'}`}>{isRentaPaid ? 'CONFIRMED' : 'PENDING'}</span>
                                 </div>
                             )}
                         </div>
@@ -254,7 +254,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
 
                 <div className={`flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/50 mt-1 transition-all`}>
                     {!compact && (
-                        <div className={`text-[9px] font-black uppercase tracking-wider ${textColor} opacity-60`}>
+                        <div className={`text-[9px] font-semibold uppercase tracking-wider ${textColor} opacity-60`}>
                             {client.taxProfile?.ivaFrequency || 'Sin IVA'}
                         </div>
                     )}
@@ -263,14 +263,14 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                         <div className={`flex gap-1.5 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
                             <button
                                 onClick={(e) => !isDeclared && handleAction(e, 'declare')}
-                                className={`flex items-center justify-center gap-1 rounded-lg transition-all font-bold border px-2.5 py-1.5 text-[10px] ${isDeclared ? 'bg-blue-50 text-blue-700 border-blue-200 cursor-default' : 'bg-white text-slate-400 border-slate-200 hover:bg-blue-100 hover:text-blue-700 active:scale-95'}`}
+                                className={`flex items-center justify-center gap-1 rounded-lg transition-all font-medium border px-2.5 py-1.5 text-[10px] ${isDeclared ? 'bg-blue-50 text-blue-700 border-blue-200 cursor-default' : 'bg-white text-slate-400 border-slate-200 hover:bg-blue-100 hover:text-blue-700 active:scale-95'}`}
                             >
                                 <LucideIcons.Send size={12} /> {compact ? 'DECLARAR' : 'SRI'}
                             </button>
                             {/* Cobrar Button removed from main list per Phase 4 plan */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
-                                className={`flex items-center justify-center gap-1.5 rounded-xl transition-all font-black border px-3 py-1.5 text-[9px] uppercase ${activeDecl?.proof_file ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-sky-50 text-sky-600 border-sky-200'} shadow-sm active:scale-95`}
+                                className={`flex items-center justify-center gap-1.5 rounded-xl transition-all font-semibold border px-3 py-1.5 text-[9px] uppercase ${activeDecl?.proof_file ? 'bg-emerald-50 text-emerald-500 border-emerald-200' : 'bg-sky-50 text-sky-500 border-sky-200'} shadow-sm active:scale-95`}
                             >
                                 <LucideIcons.UploadCloud size={13} /> {activeDecl?.proof_file ? 'PDF OK' : 'IVA PDF'}
                             </button>
@@ -286,14 +286,14 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                             window.open(URL.createObjectURL(blob), '_blank');
                                         }
                                     }}
-                                    className="p-1.5 rounded-xl bg-slate-100 border border-slate-200 hover:bg-sky-500/10 transition-all active:scale-90"
+                                    className="p-1.5 rounded-xl bg-slate-100 border border-slate-200 hover:bg-sky-400/10 transition-all active:scale-90"
                                 >
-                                    <LucideIcons.Eye size={14} className="text-sky-500" />
+                                    <LucideIcons.Eye size={14} className="text-sky-400" />
                                 </button>
                             )}
 
                             {(isMissingPdf || isRentaMissingPdf) && (
-                                <div className="p-1.5 rounded-xl bg-rose-500 text-white border border-rose-400 animate-pulse shrink-0 shadow-[0_0_10px_rgba(239,68,68,0.5)]" title="PDF de declaración faltante">
+                                <div className="p-1.5 rounded-xl bg-rose-400 text-white border border-rose-400 animate-pulse shrink-0 shadow-[0_0_10px_rgba(239,68,68,0.5)]" title="PDF de declaración faltante">
                                     <LucideIcons.FileWarning size={14} strokeWidth={3} />
                                 </div>
                             )}
@@ -304,13 +304,13 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                         <div className="flex gap-1.5 animate-in slide-in-from-right-2">
                             <button
                                 onClick={(e) => handleAction(e, 'restore')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-xl text-[10px] font-black hover:bg-emerald-600 active:scale-95"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-400 text-white rounded-xl text-[10px] font-semibold hover:bg-emerald-500 active:scale-95"
                             >
                                 <LucideIcons.RotateCcw size={12} /> RESTAURAR
                             </button>
                             <button
                                 onClick={(e) => handleAction(e, 'purge')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500 text-white rounded-xl text-[10px] font-black hover:bg-rose-600 active:scale-95"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-400 text-white rounded-xl text-[10px] font-semibold hover:bg-rose-500 active:scale-95"
                             >
                                 <LucideIcons.Trash2 size={12} /> ELIMINAR
                             </button>

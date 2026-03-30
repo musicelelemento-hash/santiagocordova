@@ -67,15 +67,15 @@ export const AuditLogScreen: React.FC = () => {
                             <div className="p-2 bg-[#00A896]/10 rounded-lg border border-[#00A896]/20">
                                 <History className="w-5 h-5 text-[#00A896]" />
                             </div>
-                            <span className="text-[10px] font-black text-[#00A896] uppercase tracking-[0.3em]">System Monitoring</span>
+                            <span className="text-[10px] font-semibold text-[#00A896] uppercase tracking-[0.3em]">System Monitoring</span>
                         </div>
-                        <h1 className="text-4xl lg:text-5xl font-black tracking-tight">TACTICAL AUDIT LOG</h1>
+                        <h1 className="text-4xl lg:text-5xl font-semibold tracking-tight">TACTICAL AUDIT LOG</h1>
                     </div>
 
                     <div className="flex items-center gap-4">
                         <button 
                             onClick={exportLogs}
-                            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest"
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all font-medium text-xs uppercase tracking-widest"
                         >
                             <Download className="w-4 h-4" />
                             Exportar JSON
@@ -100,7 +100,7 @@ export const AuditLogScreen: React.FC = () => {
                         <select 
                             value={filterType}
                             onChange={(e) => setFilterType(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-xs font-bold uppercase tracking-widest focus:outline-none focus:border-[#00A896]/50"
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-xs font-medium uppercase tracking-widest focus:outline-none focus:border-[#00A896]/50"
                         >
                             <option value="all">TODOS LOS EVENTOS</option>
                             <option value="client">CLIENTES</option>
@@ -118,10 +118,10 @@ export const AuditLogScreen: React.FC = () => {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-white/5 bg-white/[0.02]">
-                                    <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Timestamp</th>
-                                    <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Evento</th>
-                                    <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Detalles</th>
-                                    <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Severidad</th>
+                                    <th className="p-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Timestamp</th>
+                                    <th className="p-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Evento</th>
+                                    <th className="p-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Detalles</th>
+                                    <th className="p-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/40">Severidad</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
@@ -140,8 +140,8 @@ export const AuditLogScreen: React.FC = () => {
                                                         <Icon className="w-4 h-4 text-[#00A896]" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-sm tracking-tight">{log.action}</p>
-                                                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">{log.type}</p>
+                                                        <p className="font-medium text-sm tracking-tight">{log.action}</p>
+                                                        <p className="text-[10px] font-semibold text-white/20 uppercase tracking-widest">{log.type}</p>
                                                     </div>
                                                 </div>
                                             </td>
@@ -149,7 +149,7 @@ export const AuditLogScreen: React.FC = () => {
                                                 <p className="text-sm text-white/60 leading-relaxed max-w-md">{log.details}</p>
                                             </td>
                                             <td className="p-6">
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getSeverityStyles(log.severity)}`}>
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-widest border ${getSeverityStyles(log.severity)}`}>
                                                     {log.severity}
                                                 </span>
                                             </td>
@@ -160,7 +160,7 @@ export const AuditLogScreen: React.FC = () => {
                                         <td colSpan={4} className="p-20 text-center">
                                             <div className="flex flex-col items-center gap-4 opacity-20">
                                                 <Terminal className="w-12 h-12" />
-                                                <p className="text-xs font-black uppercase tracking-[0.3em]">Sin eventos registrados para esta búsqueda</p>
+                                                <p className="text-xs font-semibold uppercase tracking-[0.3em]">Sin eventos registrados para esta búsqueda</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -171,7 +171,7 @@ export const AuditLogScreen: React.FC = () => {
                 </div>
 
                 {/* Footer Info */}
-                <div className="mt-8 flex items-center justify-between text-[10px] font-bold text-white/20 uppercase tracking-[0.2em]">
+                <div className="mt-8 flex items-center justify-between text-[10px] font-medium text-white/20 uppercase tracking-[0.2em]">
                     <div className="flex items-center gap-2">
                         <Shield className="w-4 h-4" />
                         Capa de Seguridad Estándar Stitch v3.0

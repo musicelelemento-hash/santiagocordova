@@ -13,6 +13,6 @@ export const QuickActionBtn: React.FC<QuickActionBtnProps> = ({ icon: Icon, labe
         className={`flex flex-col items-center justify-center p-4 rounded-3xl ${color} hover:scale-105 active:scale-95 transition-all shadow-sm group/btn`}
     >
         <Icon size={20} className="mb-2 group-hover/btn:rotate-12 transition-transform" />
-        <span className="text-[10px] font-black uppercase tracking-widest opacity-80">{label}</span>
+        <span className="text-[10px] font-semibold uppercase tracking-widest opacity-80">{label}</span>
     </button>
 );

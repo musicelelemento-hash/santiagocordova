@@ -314,6 +314,76 @@ export async function completeTask(taskId: string, action: 'complete' | 'delete'
 /**
  * Clears ALL tasks from the internal agenda. Baku.
  */
+/**
+ * High-level financial summary matching the Elite Web Assistant.
+ * Calculates total revenue collected in the current month.
+ */
+export async function getFinancialSummary() {
+    console.log(`📊 Generating Elite Financial Summary from Supabase...`);
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('*, declarations(*)');
+
+        if (error) throw error;
+        if (!clients) return "No hay datos de clientes para analizar. Baku.";
+
+        const now = new Date();
+        const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+        let totalRevenue = 0;
+        let pendingCollections = 0;
+        let declarationsDoneThisMonth = 0;
+
+        clients.forEach(c => {
+            const declarations = c.declarations || [];
+            
+            // 1. Calculate Revenue (Actually Paid this month)
+            const paidThisMonth = declarations.filter((d: any) => 
+                d.is_paid && d.paid_at && d.paid_at.startsWith(currentMonthStr)
+            );
+            
+            paidThisMonth.forEach((d: any) => {
+                const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
+                const fee = d.type === 'RENTA' 
+                    ? (c.fee_structure?.annual || 10) 
+                    : (c.fee_structure?.[ivaFreq.toLowerCase()] || (ivaFreq === 'Semestral' ? 10 : 5));
+                totalRevenue += fee;
+            });
+
+            // 2. Pending Collections (Enviada but not paid)
+            const pending = declarations.filter((d: any) => 
+                !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)
+            );
+            
+            pending.forEach((d: any) => {
+                const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
+                const fee = d.type === 'RENTA' 
+                    ? (c.fee_structure?.annual || 10) 
+                    : (c.fee_structure?.[ivaFreq.toLowerCase()] || (ivaFreq === 'Semestral' ? 10 : 5));
+                pendingCollections += fee;
+            });
+
+            // 3. Declarations done this month
+            declarationsDoneThisMonth += declarations.filter((d: any) => 
+                d.status !== 'Pendiente' && d.updated_at && d.updated_at.startsWith(currentMonthStr)
+            ).length;
+        });
+
+        return `📊 *ESTADO FINANCIERO ELITE (${currentMonthStr})*
+----------------------------------
+💰 *Recaudación Total:* $${totalRevenue.toFixed(2)}
+⏳ *Por Cobrar:* $${pendingCollections.toFixed(2)}
+📑 *Gestiones Completadas:* ${declarationsDoneThisMonth}
+
+Santiago, el flujo de caja operativo está en $${totalRevenue.toFixed(2)}. Tienes $${pendingCollections.toFixed(2)} en honorarios listos para ser reclamados. Baku.`;
+
+    } catch (err: any) {
+        console.error("Error in getFinancialSummary:", err);
+        return `Error al generar el reporte financiero: ${err.message}. Baku.`;
+    }
+}
+
 export async function getDatabaseSummary() {
     console.log(`📊 Generating global database summary from Supabase...`);
     try {

@@ -162,13 +162,13 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
         return (
             <div className={`grid grid-cols-2 gap-2 text-xs p-3 rounded-xl border ${isDiff ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800' : 'bg-slate-50 border-slate-100 dark:bg-slate-800 dark:border-slate-700'}`}>
                 <div className="text-slate-500 truncate">
-                    <span className="block font-bold text-[9px] uppercase opacity-70 mb-1">{label} (Actual)</span>
+                    <span className="block font-medium text-[9px] uppercase opacity-70 mb-1">{label} (Actual)</span>
                     <span className={isDiff ? "line-through opacity-60 italic" : ""}>{oldVal || 'Vacío'}</span>
                 </div>
-                <div className="text-slate-800 dark:text-white font-bold truncate">
-                     <span className="block font-bold text-[9px] uppercase text-brand-teal mb-1">{label} (Escaneado)</span>
+                <div className="text-slate-800 dark:text-white font-medium truncate">
+                     <span className="block font-medium text-[9px] uppercase text-brand-teal mb-1">{label} (Escaneado)</span>
                     {newVal || 'No detectado'}
-                    {isDiff && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>}
+                    {isDiff && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>}
                 </div>
             </div>
         );
@@ -178,14 +178,14 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
         <div className="max-w-5xl mx-auto pb-20 animate-fade-in px-4 h-[calc(100vh-100px)] flex flex-col">
             <header className="mb-6 pt-4 flex flex-col md:flex-row justify-between md:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-display font-black text-brand-navy dark:text-white flex items-center gap-2">
+                    <h2 className="text-3xl font-display font-semibold text-brand-navy dark:text-white flex items-center gap-2">
                         <ScanLine className="text-brand-teal"/> Escáner de RUC
                     </h2>
                     <p className="text-slate-500 text-sm font-medium mt-1">
                         Sincronización profesional de datos fiscales.
                     </p>
                 </div>
-                <button onClick={() => navigate('clients')} className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white font-bold text-xs uppercase tracking-wider transition-colors self-start md:self-auto">
+                <button onClick={() => navigate('clients')} className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white font-medium text-xs uppercase tracking-wider transition-colors self-start md:self-auto">
                     <X size={16} className="inline mr-1"/> Cancelar
                 </button>
             </header>
@@ -204,19 +204,19 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                         {step === 'analyzing' ? (
                             <div className="text-center relative z-10">
                                 <Loader className="w-16 h-16 text-brand-teal animate-spin mx-auto mb-6"/>
-                                <h3 className="text-xl font-black text-brand-navy dark:text-white mb-2">Procesando Certificado...</h3>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Validando identidad en SRI</p>
+                                <h3 className="text-xl font-semibold text-brand-navy dark:text-white mb-2">Procesando Certificado...</h3>
+                                <p className="text-slate-400 text-xs font-medium uppercase tracking-widest">Validando identidad en SRI</p>
                             </div>
                         ) : step === 'success' ? (
                             <div className="text-center relative z-10">
-                                <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-bounce">
+                                <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-bounce">
                                     <CheckCircle size={48} />
                                 </div>
-                                <h3 className="text-2xl font-black text-emerald-700 mb-2">¡Sincronización Exitosa!</h3>
+                                <h3 className="text-2xl font-semibold text-emerald-700 mb-2">¡Sincronización Exitosa!</h3>
                                 <p className="text-slate-500 mb-8 text-sm">Tarifas $5 mes / $10 renta configuradas.</p>
                                 <button 
                                     onClick={() => navigate('clients', { clientIdToView: extractedData?.id })}
-                                    className="px-8 py-3 bg-brand-navy text-white font-bold rounded-xl shadow-lg hover:bg-slate-800 transition-all text-xs uppercase"
+                                    className="px-8 py-3 bg-brand-navy text-white font-medium rounded-xl shadow-lg hover:bg-slate-800 transition-all text-xs uppercase"
                                 >
                                     Ver Ficha del Cliente
                                 </button>
@@ -224,10 +224,10 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                         ) : (
                             <div className="text-center relative z-10 space-y-6 w-full max-w-xs">
                                 <div className="w-24 h-24 bg-red-50 dark:bg-red-900/10 rounded-3xl flex items-center justify-center mx-auto shadow-sm border border-red-100 dark:border-red-900/30">
-                                    <FileText size={40} className="text-red-600 dark:text-red-400" />
+                                    <FileText size={40} className="text-rose-400 dark:text-red-400" />
                                 </div>
                                 
-                                <button onClick={() => fileInputRef.current?.click()} className="w-full py-4 bg-brand-teal text-white rounded-xl font-bold shadow-lg shadow-teal-500/20 hover:bg-teal-600 transition-all flex items-center justify-center gap-2">
+                                <button onClick={() => fileInputRef.current?.click()} className="w-full py-4 bg-brand-teal text-white rounded-xl font-medium shadow-lg shadow-teal-500/20 hover:bg-teal-600 transition-all flex items-center justify-center gap-2">
                                     <UploadCloud size={20}/>
                                     <span>Subir PDF RUC</span>
                                 </button>
@@ -243,18 +243,18 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                         <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-xl h-full flex flex-col animate-slide-in-right">
                             <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
                                 <div>
-                                    <h3 className="text-xl font-black text-brand-navy dark:text-white flex items-center gap-2">
+                                    <h3 className="text-xl font-semibold text-brand-navy dark:text-white flex items-center gap-2">
                                         <ShieldCheck size={24} className="text-brand-teal"/> Revisión de Datos
                                     </h3>
                                     {existingClient && (
-                                        <p className="text-amber-600 dark:text-amber-400 text-xs font-bold mt-1 uppercase flex items-center gap-1">
+                                        <p className="text-amber-500 dark:text-amber-400 text-xs font-medium mt-1 uppercase flex items-center gap-1">
                                             <AlertTriangle size={12}/> Cliente existente detectado.
                                         </p>
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2 bg-brand-navy/5 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-brand-navy/10 dark:border-slate-700">
-                                    <Coins size={14} className="text-amber-500"/>
-                                    <span className="text-[10px] font-black text-brand-navy dark:text-amber-500 uppercase">Tarifas Pro Aplicadas</span>
+                                    <Coins size={14} className="text-amber-400"/>
+                                    <span className="text-[10px] font-semibold text-brand-navy dark:text-amber-400 uppercase">Tarifas Pro Aplicadas</span>
                                 </div>
                             </div>
 
@@ -262,7 +262,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                 {/* Comparación si el cliente ya existe */}
                                 {existingClient && (
                                     <div className="space-y-2 p-4 bg-amber-50/30 dark:bg-amber-900/10 rounded-2xl border border-amber-100 dark:border-amber-800/50">
-                                        <h4 className="text-[10px] font-black text-amber-600 uppercase tracking-widest ml-1 mb-2">Comparativa de cambios</h4>
+                                        <h4 className="text-[10px] font-semibold text-amber-500 uppercase tracking-widest ml-1 mb-2">Comparativa de cambios</h4>
                                         <ComparisonRow label="Razón Social" oldVal={existingClient.name} newVal={extractedData.name} />
                                         <ComparisonRow label="Dirección" oldVal={existingClient.address} newVal={extractedData.address} />
                                     </div>
@@ -270,27 +270,27 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">RUC</label>
+                                        <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider ml-1">RUC</label>
                                         <div className="relative">
                                             <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
-                                            <input value={extractedData.ruc || ''} readOnly className="w-full pl-10 p-3 bg-slate-100 dark:bg-slate-900 rounded-xl font-mono font-bold text-slate-500 border border-slate-200 dark:border-slate-800 text-sm" />
+                                            <input value={extractedData.ruc || ''} readOnly className="w-full pl-10 p-3 bg-slate-100 dark:bg-slate-900 rounded-xl font-mono font-medium text-slate-500 border border-slate-200 dark:border-slate-800 text-sm" />
                                         </div>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">WhatsApp de contacto</label>
+                                        <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider ml-1">WhatsApp de contacto</label>
                                         <div className="relative">
                                             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
                                             <input 
                                                 value={(extractedData.phones || [])[0] || ''} 
                                                 onChange={e => setExtractedData({...extractedData, phones: [e.target.value]})}
-                                                className="w-full pl-10 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-brand-teal" 
+                                                className="w-full pl-10 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-sm outline-none focus:ring-2 focus:ring-brand-teal" 
                                             />
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider ml-1">Dirección Detectada</label>
+                                    <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider ml-1">Dirección Detectada</label>
                                     <textarea 
                                         rows={2}
                                         value={extractedData.address || ''} 
@@ -301,24 +301,24 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
 
                                 <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 rounded-2xl flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-600 dark:text-emerald-400"><Coins size={18}/></div>
+                                        <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg text-emerald-500 dark:text-emerald-400"><Coins size={18}/></div>
                                         <div>
-                                            <p className="text-[10px] font-bold text-emerald-600 uppercase">Honorarios Sugeridos</p>
+                                            <p className="text-[10px] font-medium text-emerald-500 uppercase">Honorarios Sugeridos</p>
                                             <div className="flex gap-4">
                                                 <div className="flex flex-col">
-                                                    <span className="text-[9px] text-slate-400 font-bold uppercase">Mensual</span>
-                                                    <span className="text-sm font-black text-emerald-800 dark:text-emerald-200">$5.00</span>
+                                                    <span className="text-[9px] text-slate-400 font-medium uppercase">Mensual</span>
+                                                    <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">$5.00</span>
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-[9px] text-slate-400 font-bold uppercase">Anual</span>
-                                                    <span className="text-sm font-black text-emerald-800 dark:text-emerald-200">$10.00</span>
+                                                    <span className="text-[9px] text-slate-400 font-medium uppercase">Anual</span>
+                                                    <span className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">$10.00</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div 
-                                            className="p-2 rounded-xl bg-amber-100 text-amber-600"
+                                            className="p-2 rounded-xl bg-amber-100 text-amber-500"
                                             title="Plan VIP"
                                         >
                                             <Crown size={20} fill="currentColor"/>
@@ -330,13 +330,13 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                             <div className="mt-auto pt-6 border-t border-slate-100 dark:border-slate-800 flex gap-4">
                                 <button 
                                     onClick={() => { setStep('upload'); setExtractedData(null); }}
-                                    className="flex-1 py-4 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-bold text-sm uppercase tracking-wider transition-colors"
+                                    className="flex-1 py-4 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl font-medium text-sm uppercase tracking-wider transition-colors"
                                 >
                                     Descartar
                                 </button>
                                 <button 
                                     onClick={handleSave}
-                                    className={`flex-[2] py-4 rounded-xl font-black text-sm shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wide transform hover:scale-[1.02] ${existingClient ? 'bg-amber-500 text-white shadow-amber-500/20' : 'bg-brand-navy text-white shadow-brand-navy/20'}`}
+                                    className={`flex-[2] py-4 rounded-xl font-semibold text-sm shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wide transform hover:scale-[1.02] ${existingClient ? 'bg-amber-400 text-white shadow-amber-400/20' : 'bg-brand-navy text-white shadow-brand-navy/20'}`}
                                 >
                                     <Save size={18}/> {existingClient ? 'Actualizar Información' : 'Registrar Cliente VIP'}
                                 </button>
@@ -347,7 +347,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                             <div className="p-4 rounded-full bg-white dark:bg-slate-800 shadow-sm mb-4">
                                 <ArrowLeft size={24} className="text-slate-300"/>
                             </div>
-                            <h4 className="text-lg font-bold text-slate-400">Seleccione un certificado SRI</h4>
+                            <h4 className="text-lg font-medium text-slate-400">Seleccione un certificado SRI</h4>
                             <p className="text-xs text-slate-400 mt-2 max-w-[200px]">Los datos se extraerán para tu revisión inmediata.</p>
                         </div>
                     )}

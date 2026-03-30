@@ -2,7 +2,7 @@ import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
 import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
-import { searchClient, updateClientData, getDatabaseSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks } from './database_ops';
+import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -24,11 +24,15 @@ const openRouterClient = new OpenAI({
 export const BOT_NAME = "SantiagoBot";
 export const STATUS_ICON = "⚡🛡️ [STITCH ELITE v5.0]";
 
-const SYSTEM_PROMPT = `Baku: Comandante de Operaciones de Santiago. Excelencia absoluta, estatus de elite.
-FILOSOFÍA STITCH: "La tecnología no es un fin, es el medio para la perfección."
-REGLAS:
-1. Solo datos. Firma: "Baku."
-Santiago es el soberano; Baku es el núcleo. Baku: Control total.`;
+const SYSTEM_PROMPT = `Baku: Comandante de Operaciones de Santiago y Asistente Contable Elite.
+ERES: El núcleo de inteligencia de Soluciones Contables Pro. Tu tono es ejecutivo, analítico, eficiente y de lealtad absoluta al Ing. Santiago Córdova.
+FILOSOFÍA: "Excelencia técnica delegada. Control total del flujo fiscal."
+
+REGLAS DE ORO:
+1. RESPUESTAS: Concisas, técnicas y basadas en DATOS de Supabase.
+2. WHATSAPP: Si el usuario pide hablar directamente, indica que Santiago está atendiendo casos de alta prioridad.
+3. PERSONALIDAD: Firma siempre como "Baku." al final.
+4. SEGURIDAD: Solo Santiago (el soberano) tiene acceso a los datos financieros sensibles.`;
 
 // Tool logic implementation
 const availableTools: Record<string, (args: any, chatId: string) => Promise<string>> = {
@@ -50,6 +54,9 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
     },
     get_database_summary: async (args: any, chatId: string) => {
         return await getDatabaseSummary();
+    },
+    get_financial_summary: async (args: any, chatId: string) => {
+        return await getFinancialSummary();
     },
     update_client_note: async ({ ruc, note }: { ruc: string, note: string }, chatId: string) => {
         return await updateClientData(ruc, { notes: note });
@@ -175,7 +182,8 @@ function cleanMessages(messages: any[]): any[] {
 // Tool Definitions for LLM
 const toolDefinitions = [
     { type: "function", function: { name: "get_current_time", description: "Hora actual.", parameters: { type: "object", properties: { timezone: { type: "string" } } } } },
-    { type: "function", function: { name: "get_database_summary", description: "Resumen global cartera.", parameters: { type: "object", properties: {} } } },
+    { type: "function", function: { name: "get_database_summary", description: "Resumen global cartera (conteo clientes).", parameters: { type: "object", properties: {} } } },
+    { type: "function", function: { name: "get_financial_summary", description: "Reporte de recaudación y honorarios del mes actual.", parameters: { type: "object", properties: {} } } },
     { type: "function", function: { name: "read_unread_emails", description: "Lee Gmail unread.", parameters: { type: "object", properties: { maxResults: { type: "number" } } } } },
     { type: "function", function: { name: "search_emails", description: "Busca Gmail.", parameters: { type: "object", properties: { query: { type: "string" }, maxResults: { type: "number" } }, required: ["query"] } } },
     { type: "function", function: { name: "send_email", description: "Envía Gmail.", parameters: { type: "object", properties: { to: { type: "string" }, subject: { type: "string" }, body: { type: "string" } }, required: ["to", "subject", "body"] } } },

@@ -162,44 +162,154 @@ export const runStrategicAnalysis = async (clients: Client[], tasks: Task[], typ
   }
 };
 
+
 export const getAssistantResponse = async (messages: Message[], clients: Client[], tasks: Task[]): Promise<string> => {
-  try {
-    const ai = getAIClient();
-    if (!ai) return "Lo siento, para asistirte necesito mi 'cerebro' conectado (falta API Key). Pero envíame tu duda y trataré de responderte con mi lógica base por ahora.";
+    try {
+        const ai = getAIClient();
+        if (!ai) return "Lo siento, para asistirte necesito mi 'cerebro' conectado (falta API Key). Pero envíame tu duda y trataré de responderte con mi lógica base por ahora.";
 
-    // System prompt como instrucción inicial o embebido en el historial
-    const prompt = `
-      Eres la Recepcionista Virtual del Ing. Santiago Córdova, un reconocido experto en gestión tributaria y contable en Ecuador.
-      Tu MISION PRINCIPAL y ÚNICA es filtrar prospectos o dudas iniciales y DERIVARLOS lo más rápido posible al WhatsApp privado de Santiago.
-      
-      REGLAS DE ORO:
-      1. NO brindar asesorías fiscales largas, profundas o detalladas. Eres recepcionista, no el contador titular.
-      2. Si alguien pregunta por sus deudas, estados de cuenta, liquidaciones del SRI o trámites avanzados, responde: "Por motivos de confidencialidad y para brindarle una atención 100% personalizada, esos temas los maneja directamente el Ing. Santiago. Escríbale ahora mismo a su WhatsApp."
-      3. Mantén respuestas sumamente amables, persuasivas y MUY CORTAS (1 o 2 líneas máximo).
-      4. Invítalos SIEMPRE a usar el botón flotante de WhatsApp de la página o a escribir directamente ("Puede contactarlo dando clic al ícono de WhatsApp").
-    `;
+        // Support Functions for Tools
+        const functions: Record<string, Function> = {
+            search_clients: ({ query }: { query: string }) => {
+                const search = query.toLowerCase();
+                return clients
+                    .filter(c => c.name.toLowerCase().includes(search) || c.ruc.includes(search))
+                    .map(c => ({ name: c.name, ruc: c.ruc, regime: c.regime }));
+            },
+            get_client_details: ({ ruc }: { ruc: string }) => {
+                const client = clients.find(c => c.ruc === ruc);
+                if (!client) return { error: "Cliente no encontrado" };
+                
+                const clientTasks = tasks.filter(t => t.clientId === client.id);
+                const debt = clientTasks
+                    .filter(t => t.status !== 'Pagada' && t.status !== 'Completada')
+                    .reduce((sum, t) => sum + (t.cost || 0), 0);
+                
+                return {
+                    name: client.name,
+                    ruc: client.ruc,
+                    regime: client.regime,
+                    debt: debt,
+                    email: client.email || 'No registrado',
+                    phone: client.phones?.[0] || 'No registrado'
+                };
+            },
+            get_financial_summary: () => {
+                const paid = tasks.filter(t => t.status === 'Pagada').reduce((s, t) => s + (t.cost || 0), 0);
+                const pending = tasks.filter(t => t.status !== 'Pagada' && t.status !== 'Completada').length;
+                return {
+                    totalRevenueCollected: paid,
+                    pendingTaskCount: pending,
+                    activeClients: clients.filter(c => c.isActive).length
+                };
+            }
+        };
 
-    // Convertimos nuestros mensajes al formato de Gemini
-    const geminiHistory = messages.map(m => ({
-      role: m.role === 'model' ? 'model' : 'user',
-      parts: [{ text: m.text }]
-    }));
+        const toolDeclarations: any[] = [
+            {
+                name: "search_clients",
+                description: "Busca clientes por nombre, razón social o RUC.",
+                parameters: {
+                    type: "OBJECT",
+                    properties: {
+                        query: { type: "STRING", description: "El término de búsqueda (nombre o RUC)" }
+                    },
+                    required: ["query"]
+                }
+            },
+            {
+                name: "get_client_details",
+                description: "Obtiene los detalles completos de un cliente específico, incluyendo deudas y régimen.",
+                parameters: {
+                    type: "OBJECT",
+                    properties: {
+                        ruc: { type: "STRING", description: "El RUC del cliente" }
+                    },
+                    required: ["ruc"]
+                }
+            },
+            {
+                name: "get_financial_summary",
+                description: "Obtiene un resumen financiero del mes actual (honorarios recaudados, tareas pendientes).",
+                parameters: {
+                    type: "OBJECT",
+                    properties: {}
+                }
+            }
+        ];
 
-    // Nos aseguramos de inyectar el prompt de sistema
-    const contents = [
-      { role: 'user', parts: [{ text: prompt }] },
-      { role: 'model', parts: [{ text: 'Entendido. Seré una recepcionista amable, breve, y derivaré toda consulta técnica o de clientes al WhatsApp del Ing. Santiago Córdova.' }]},
-      ...geminiHistory
-    ];
+        let history: any[] = [
+            {
+                role: 'user',
+                parts: [{ text: `
+                    Eres el "Elite Accounting Assistant" de Soluciones Contables Pro (Ecuador).
+                    Tu jefe es el Ing. Santiago Córdova.
+                    
+                    TIENES ACCESO A HERRAMIENTAS para consultar la base de datos de clientes y finanzas.
+                    SIEMPRE usa las herramientas si el usuario pregunta por datos específicos de clientes, deudas o recaudación.
+                    
+                    TONO: Profesional, ejecutivo, eficiente y muy amable.
+                    REGLAS:
+                    1. Si no encuentras un dato, sé directo pero amable.
+                    2. SIEMPRE ofrece derivar a WhatsApp para temas complejos.
+                    3. Tus respuestas deben ser breves y estructuradas. Usa negritas.
+                    4. SIEMPRE responde en ESPAÑOL.
+                ` }]
+            },
+            {
+                role: 'model',
+                parts: [{ text: 'Entendido. Estoy listo para asistir con datos precisos de los clientes y finanzas de Soluciones Contables Pro. ¿En qué puedo ayudarle hoy?' }]
+            },
+            ...messages.map(m => ({
+                role: m.role === 'model' ? 'model' : 'user',
+                parts: [{ text: m.text }]
+            }))
+        ];
 
-    const result = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: contents,
-    });
+        let response = await ai.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: history,
+            config: {
+                tools: [{ functionDeclarations: toolDeclarations }]
+            }
+        });
 
-    return result.text || "Disculpe, tuve un pequeño lapsus en mis registros. ¿Podría repetirme la consulta?";
-  } catch (error) {
-    console.error("Assistant Error:", error);
-    return "Mil disculpas, parece que el archivo de sistema está temporalmente fuera de mi alcance. ¿En qué más puedo servirle?";
-  }
+        // Loop handles potential multiple function calls in one response
+        while (response.functionCalls && response.functionCalls.length > 0) {
+            // Add the model's response (with function calls) to history
+            history.push(response.candidates?.[0]?.content);
+
+            const toolResults = await Promise.all(response.functionCalls.map(async (call) => {
+                const fn = functions[call.name];
+                const result = fn ? fn(call.args) : { error: "Function not found" };
+                
+                return {
+                    functionResponse: {
+                        name: call.name,
+                        response: { content: result }
+                    }
+                };
+            }));
+
+            // Add tool results to history
+            history.push({
+                role: 'tool',
+                parts: toolResults
+            });
+
+            // Get standard response after providing tool data
+            response = await ai.models.generateContent({
+                model: 'gemini-1.5-flash',
+                contents: history,
+                config: {
+                    tools: [{ functionDeclarations: toolDeclarations }]
+                }
+            });
+        }
+
+        return response.text || "Disculpe, no pude generar una respuesta de texto.";
+    } catch (error) {
+        console.error("Assistant Error:", error);
+        return "Mil disculpas, parece que mi sistema de consulta está temporalmente fuera de mi alcance. ¿Podría intentarlo de nuevo?";
+    }
 };

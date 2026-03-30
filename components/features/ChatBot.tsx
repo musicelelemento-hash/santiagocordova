@@ -51,7 +51,7 @@ export const ChatBot: React.FC = () => {
   return (
     <div className="fixed bottom-6 right-6 z-[1000] flex flex-col items-end">
       {isOpen ? (
-        <div className="mb-4 w-[90vw] md:w-[400px] h-[600px] max-h-[80vh] rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom-5 fade-in duration-300">
+        <div className="mb-4 w-[90vw] md:w-[420px] h-[650px] max-h-[85vh] rounded-[2.5rem] overflow-hidden shadow-2xl glass-tactical border border-white/10 animate-in slide-in-from-bottom-5 fade-in duration-500">
           <ChatInterface 
             messages={messages}
             onSendMessage={handleSendMessage}
@@ -62,11 +62,11 @@ export const ChatBot: React.FC = () => {
       ) : (
         <button
           onClick={() => setIsOpen(true)}
-          className="p-4 bg-[#0B2149] hover:bg-[#1a3a6e] text-white rounded-2xl shadow-2xl transform transition-all hover:scale-110 active:scale-95 group relative overflow-hidden"
+          className="w-16 h-16 bg-slate-950 text-white rounded-2xl shadow-2xl border border-white/10 flex items-center justify-center transform transition-all hover:scale-110 active:scale-95 group relative overflow-hidden animate-float-premium"
         >
-          <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <MessageSquare className="w-6 h-6 relative z-10" />
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse"></div>
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#00A896]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <MessageSquare className="w-7 h-7 relative z-10 text-[#00A896]" />
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#00A896] rounded-full border-2 border-slate-950 animate-pulse shadow-[0_0_15px_rgba(0,168,150,0.5)]"></div>
         </button>
       )}
     </div>

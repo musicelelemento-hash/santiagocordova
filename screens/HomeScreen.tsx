@@ -138,17 +138,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10 px-1 sm:px-0 mb-4">
           <div className="animate-fade-in-left w-full sm:w-auto">
               <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                      <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Command Center Online</span>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/20">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+                      <span className="text-[10px] font-semibold text-emerald-400 uppercase tracking-widest">Command Center Online</span>
                   </div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• HQ Terminal v3.0</span>
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• HQ Terminal v3.0</span>
               </div>
-              <h2 className="text-3xl sm:text-5xl font-display font-black text-slate-900 dark:text-white leading-[0.85] tracking-tighter mb-2 italic">
+              <h2 className="text-3xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-[0.85] tracking-tighter mb-2 italic">
                   Menú <span className="text-gradient-sky">Principal</span>
               </h2>
-              <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold uppercase tracking-widest">
-                  <Activity size={12} className="text-sky-500" />
+              <div className="flex items-center gap-2 text-slate-500 text-[11px] font-medium uppercase tracking-widest">
+                  <Activity size={12} className="text-sky-400" />
                   <span>Navegación Táctica de Operaciones</span>
               </div>
           </div>
@@ -158,28 +158,28 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
         {allMenuItems.map((item, index) => (
           <div
             key={item.title + index}
-            className={`group relative p-8 rounded-[2.5rem] glass-tactical border border-white/5 transition-all duration-500 hover:bg-white/10 hover:border-sky-500/30 cursor-pointer overflow-hidden animate-slide-up-fade ${item.highlight ? 'border-sky-500/30 bg-sky-500/5 shadow-2xl shadow-sky-500/10' : ''}`}
+            className={`group relative p-8 rounded-[2.5rem] glass-tactical border border-white/5 transition-all duration-500 hover:bg-white/10 hover:border-sky-400/30 cursor-pointer overflow-hidden animate-slide-up-fade ${item.highlight ? 'border-sky-400/30 bg-sky-400/5 shadow-2xl shadow-sky-400/10' : ''}`}
             onClick={() => navigate(item.navigation.screen, item.navigation.options)}
             style={{ animationDelay: `${index * 50}ms`, opacity: 0 }}
           >
             {/* Background Accent */}
-            <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full -mr-16 -mt-16 transition-all duration-700 group-hover:scale-150 opacity-10 ${item.highlight ? 'bg-sky-500' : 'bg-slate-500'}`}></div>
+            <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full -mr-16 -mt-16 transition-all duration-700 group-hover:scale-150 opacity-10 ${item.highlight ? 'bg-sky-400' : 'bg-slate-500'}`}></div>
             
             {item.highlight && (
-                <div className="absolute top-0 right-0 bg-sky-600 text-white text-[9px] font-black px-4 py-1.5 rounded-bl-[1.5rem] uppercase tracking-widest shadow-xl z-20">
+                <div className="absolute top-0 right-0 bg-sky-500 text-white text-[9px] font-semibold px-4 py-1.5 rounded-bl-[1.5rem] uppercase tracking-widest shadow-xl z-20">
                     OFERTA ALPHA
                 </div>
             )}
 
             <div className="relative z-10">
                 <div className="flex justify-between items-start mb-6">
-                    <div className={`p-4 rounded-2xl shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${item.title.includes('Nuevo') ? 'bg-emerald-500 text-white shadow-emerald-500/20' : item.highlight ? 'bg-sky-500 text-white shadow-sky-500/20' : 'bg-white/5 text-sky-500 border border-white/10'}`}>
+                    <div className={`p-4 rounded-2xl shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${item.title.includes('Nuevo') ? 'bg-emerald-400 text-white shadow-emerald-400/20' : item.highlight ? 'bg-sky-400 text-white shadow-sky-400/20' : 'bg-white/5 text-sky-400 border border-white/10'}`}>
                         <item.icon size={26} strokeWidth={2.5} />
                     </div>
                 </div>
 
                 <div className="mb-6">
-                    <h3 className="text-xl font-display font-black text-slate-900 dark:text-white tracking-tight mb-2 uppercase group-hover:text-sky-500 transition-colors">
+                    <h3 className="text-xl font-display font-semibold text-slate-900 dark:text-white tracking-tight mb-2 uppercase group-hover:text-sky-400 transition-colors">
                         {item.title}
                     </h3>
                     <p className="text-[12px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity whitespace-pre-wrap">
@@ -187,10 +187,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
                     </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-6 border-t border-white/5 transition-all group-hover:border-sky-500/20">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest hidden sm:inline">EJECUTAR PROTOCOLO</span>
-                    <div className="p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:border-sky-500/30 transition-all">
-                        <ArrowRight size={20} className="text-slate-400 group-hover:text-sky-500 group-hover:translate-x-1 transition-all" />
+                <div className="flex items-center justify-between pt-6 border-t border-white/5 transition-all group-hover:border-sky-400/20">
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest hidden sm:inline">EJECUTAR PROTOCOLO</span>
+                    <div className="p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:border-sky-400/30 transition-all">
+                        <ArrowRight size={20} className="text-slate-400 group-hover:text-sky-400 group-hover:translate-x-1 transition-all" />
                     </div>
                 </div>
             </div>
@@ -202,8 +202,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
       </div>
 
       {/* Decorative Tactical Elements */}
-      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-sky-500/5 dark:bg-sky-400/5 blur-[160px] rounded-full pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-500/5 dark:bg-emerald-400/5 blur-[140px] rounded-full pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-sky-400/5 dark:bg-sky-400/5 blur-[160px] rounded-full pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-400/5 dark:bg-emerald-400/5 blur-[140px] rounded-full pointer-events-none"></div>
     </div>
   );
 };

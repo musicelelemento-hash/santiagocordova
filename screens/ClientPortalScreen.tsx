@@ -20,16 +20,16 @@ const StatCard = ({ title, value, status, icon: Icon, colorClass }: any) => (
         <div className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-10 -mr-10 -mt-10 ${colorClass}`}></div>
         <div className="flex justify-between items-start mb-4 relative z-10">
             <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
-                <h3 className="text-2xl font-black text-slate-800">{value}</h3>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
+                <h3 className="text-2xl font-semibold text-slate-800">{value}</h3>
             </div>
-            <div className={`p-3 rounded-2xl ${status === 'good' ? 'bg-emerald-50 text-emerald-600' : status === 'warning' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
+            <div className={`p-3 rounded-2xl ${status === 'good' ? 'bg-emerald-50 text-emerald-500' : status === 'warning' ? 'bg-amber-50 text-amber-500' : 'bg-red-50 text-rose-400'}`}>
                 <Icon size={24} />
             </div>
         </div>
-        {status === 'good' && <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg w-max"><LucideIcons.CheckCircle2 size={12} /> Al Día</div>}
-        {status === 'warning' && <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg w-max"><LucideIcons.Clock size={12} /> Próximo</div>}
-        {status === 'bad' && <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded-lg w-max"><LucideIcons.AlertTriangle size={12} /> Pendiente</div>}
+        {status === 'good' && <div className="inline-flex items-center gap-1.5 text-[10px] font-medium text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg w-max"><LucideIcons.CheckCircle2 size={12} /> Al Día</div>}
+        {status === 'warning' && <div className="inline-flex items-center gap-1.5 text-[10px] font-medium text-amber-500 bg-amber-50 px-2 py-1 rounded-lg w-max"><LucideIcons.Clock size={12} /> Próximo</div>}
+        {status === 'bad' && <div className="inline-flex items-center gap-1.5 text-[10px] font-medium text-rose-400 bg-red-50 px-2 py-1 rounded-lg w-max"><LucideIcons.AlertTriangle size={12} /> Pendiente</div>}
     </div>
 );
 
@@ -53,13 +53,13 @@ const BankInfoCard = () => {
                 <div className="flex justify-between items-start">
                     <div>
                         <p className="text-xs font-medium text-slate-300 uppercase tracking-widest mb-1">Cuenta para Depósitos</p>
-                        <h4 className="text-xl font-display font-bold">Banco Pichincha</h4>
+                        <h4 className="text-xl font-display font-medium">Banco Pichincha</h4>
                     </div>
                     <Logo className="w-8 h-8 text-white opacity-80" />
                 </div>
 
                 <div className="space-y-1">
-                    <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Cuenta Ahorros</p>
+                    <p className="text-[10px] text-slate-400 uppercase font-medium tracking-widest">Cuenta Ahorros</p>
                     <div className="flex items-center gap-3">
                         <span className="font-mono text-2xl tracking-widest text-white shadow-sm">220XXXXXXX</span>
                         <button onClick={handleCopy} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white">
@@ -165,19 +165,19 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                             <Logo className="w-6 h-6" />
                         </div>
                         <div>
-                            <h1 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em] leading-none mb-1">Bóveda Privada</h1>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Santiago Cordova</p>
+                            <h1 className="text-xs font-semibold text-slate-900 uppercase tracking-[0.2em] leading-none mb-1">Bóveda Privada</h1>
+                            <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Santiago Cordova</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-6">
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-slate-900 tracking-tight">{client.name}</p>
+                            <p className="text-sm font-medium text-slate-900 tracking-tight">{client.name}</p>
                             <p className="text-[10px] font-mono font-medium text-slate-400">{client.ruc}</p>
                         </div>
                         <button 
                             onClick={onLogout} 
-                            className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all active:scale-95 border border-slate-100"
+                            className="w-11 h-11 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-400 transition-all active:scale-95 border border-slate-100"
                             title="Cerrar Sesión"
                         >
                             <LucideIcons.LogOut size={18} />
@@ -199,7 +199,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-[11px] font-bold uppercase tracking-widest transition-all ${activeTab === tab.id
+                                className={`flex items-center gap-2.5 px-8 py-3.5 rounded-2xl text-[11px] font-medium uppercase tracking-widest transition-all ${activeTab === tab.id
                                     ? 'bg-white text-slate-900 shadow-[0_10px_20px_-5px_rgba(0,0,0,0.05)] border border-slate-200/60'
                                     : 'text-slate-400 hover:text-slate-600'
                                     }`}
@@ -218,10 +218,10 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                              <div className="absolute top-0 right-0 w-64 h-64 bg-[#00A896]/5 rounded-full blur-[100px] -mr-32 -mt-32"></div>
                              <div className="relative z-10 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
                                 <div>
-                                    <span className="inline-block px-4 py-1.5 bg-slate-50 text-slate-500 rounded-full text-[9px] font-black uppercase tracking-[0.2em] mb-6 border border-slate-100">
+                                    <span className="inline-block px-4 py-1.5 bg-slate-50 text-slate-500 rounded-full text-[9px] font-semibold uppercase tracking-[0.2em] mb-6 border border-slate-100">
                                         {client.regime} • {client.taxProfile?.ivaFrequency || 'Especial'}
                                     </span>
-                                    <h2 className="text-4xl sm:text-5xl font-display font-black text-slate-900 tracking-tight leading-tight mb-4">
+                                    <h2 className="text-4xl sm:text-5xl font-display font-semibold text-slate-900 tracking-tight leading-tight mb-4">
                                         Hola,<br />{client.name.split(' ')[0]}
                                     </h2>
                                     <p className="text-slate-400 font-medium max-w-sm text-sm">
@@ -230,12 +230,12 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="p-6 bg-emerald-50/50 rounded-3xl border border-emerald-100/50 text-emerald-700 min-w-[160px]">
-                                        <p className="text-[10px] font-black uppercase tracking-widest mb-1 opacity-60">Estado</p>
-                                        <p className="text-xl font-black">{isPaid ? "AL DÍA" : "CONTROLADO"}</p>
+                                        <p className="text-[10px] font-semibold uppercase tracking-widest mb-1 opacity-60">Estado</p>
+                                        <p className="text-xl font-semibold">{isPaid ? "AL DÍA" : "CONTROLADO"}</p>
                                     </div>
                                     <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 text-slate-900 min-w-[160px]">
-                                        <p className="text-[10px] font-black uppercase tracking-widest mb-1 opacity-40">Pendiente</p>
-                                        <p className="text-xl font-black">${totalDebt.toFixed(2)}</p>
+                                        <p className="text-[10px] font-semibold uppercase tracking-widest mb-1 opacity-40">Pendiente</p>
+                                        <p className="text-xl font-semibold">${totalDebt.toFixed(2)}</p>
                                     </div>
                                 </div>
                              </div>
@@ -247,13 +247,13 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 <div className="w-16 h-16 bg-[#00A896]/10 text-[#00A896] rounded-2xl flex items-center justify-center mb-6">
                                     <LucideIcons.MessageCircle size={28} />
                                 </div>
-                                <h4 className="text-xl font-bold text-slate-900 mb-2">Asistencia VIP</h4>
+                                <h4 className="text-xl font-medium text-slate-900 mb-2">Asistencia VIP</h4>
                                 <p className="text-slate-400 text-sm mb-8 leading-relaxed">¿Dudas sobre su situación fiscal?<br />Su asesor está disponible para ayudarle.</p>
                                 <a
                                     href="https://wa.me/593978980722"
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="px-10 py-4 bg-slate-900 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-slate-200"
+                                    className="px-10 py-4 bg-slate-900 text-white text-[11px] font-semibold uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-800 transition-all active:scale-95 shadow-xl shadow-slate-200"
                                 >
                                     Enviar Mensaje
                                 </a>
@@ -270,10 +270,10 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                             <div className="bg-white rounded-[3rem] shadow-premium border border-slate-100 overflow-hidden">
                                 <div className="px-10 py-8 border-b border-slate-50 flex justify-between items-center">
                                     <div>
-                                        <h3 className="text-lg font-black text-slate-900 flex items-center gap-3">
+                                        <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-3">
                                             <LucideIcons.FolderOpen size={20} className="text-[#00A896]" /> Galería de Comprobantes
                                         </h3>
-                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Total {client.declarations.length} documentos encontrados</p>
+                                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mt-1">Total {client.declarations.length} documentos encontrados</p>
                                     </div>
                                 </div>
 
@@ -285,9 +285,9 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                                     <LucideIcons.FileText size={20} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-900">{formatPeriodForDisplay(decl.period)}</p>
+                                                    <p className="font-medium text-slate-900">{formatPeriodForDisplay(decl.period)}</p>
                                                     <div className="flex items-center gap-3 mt-1">
-                                                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${decl.status === 'Pagada' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
+                                                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${decl.status === 'Pagada' ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-50 text-slate-400'}`}>
                                                             {decl.status}
                                                         </span>
                                                         <span className="text-[10px] text-slate-300 font-mono">
@@ -301,7 +301,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                                 <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0">
                                                     <button 
                                                         onClick={() => handleOpenInNewTab(decl)}
-                                                        className="h-11 px-6 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#00A896] transition-all active:scale-95 flex items-center gap-2"
+                                                        className="h-11 px-6 bg-slate-900 text-white rounded-xl text-[10px] font-semibold uppercase tracking-widest hover:bg-[#00A896] transition-all active:scale-95 flex items-center gap-2"
                                                     >
                                                         <LucideIcons.ExternalLink size={14} /> Abrir
                                                     </button>
@@ -341,16 +341,16 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-all ${client.rucPdf || client.rucCertificate ? 'bg-[#00A896] text-white shadow-xl shadow-teal-100' : 'bg-slate-50 text-slate-300'}`}>
                                     <LucideIcons.Verified size={24} />
                                 </div>
-                                <h4 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-1">RUC Certificado</h4>
-                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{client.rucCertificate ? 'VIGENTE' : (client.rucPdf ? 'DIGITAL' : 'PENDIENTE')}</p>
+                                <h4 className="font-semibold text-slate-900 uppercase tracking-widest text-xs mb-1">RUC Certificado</h4>
+                                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">{client.rucCertificate ? 'VIGENTE' : (client.rucPdf ? 'DIGITAL' : 'PENDIENTE')}</p>
                                 {(client.rucPdf || client.rucCertificate) && (
-                                    <span className="mt-4 text-[9px] font-black text-[#00A896] opacity-0 group-hover:opacity-100 transition-opacity">CLIC PARA VER EN LÍNEA</span>
+                                    <span className="mt-4 text-[9px] font-semibold text-[#00A896] opacity-0 group-hover:opacity-100 transition-opacity">CLIC PARA VER EN LÍNEA</span>
                                 )}
                             </div>
 
                             <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl"></div>
-                                <h4 className="font-black uppercase tracking-[0.2em] text-[10px] text-teal-400 mb-8 border-b border-white/5 pb-4">Credenciales Digitales</h4>
+                                <h4 className="font-semibold uppercase tracking-[0.2em] text-[10px] text-teal-400 mb-8 border-b border-white/5 pb-4">Credenciales Digitales</h4>
                                 <div className="space-y-8">
                                     {[
                                         { id: 'sri', label: 'Acceso SRI', value: client.sriPassword },
@@ -358,7 +358,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     ].map(cred => (
                                         <div key={cred.id} className="relative">
                                             <div className="flex justify-between items-center mb-3">
-                                                <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest">{cred.label}</span>
+                                                <span className="text-[9px] font-semibold uppercase text-slate-500 tracking-widest">{cred.label}</span>
                                                 <button onClick={() => toggleKeyVisibility(cred.id)} className="text-slate-500 hover:text-white transition-colors">
                                                     {visibleKeys[cred.id] ? <LucideIcons.EyeOff size={14} /> : <LucideIcons.Eye size={14} />}
                                                 </button>
@@ -379,8 +379,8 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                     <div className="max-w-2xl mx-auto animate-fade-in-up">
                         <section className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-premium">
                             <header className="text-center mb-12">
-                                <h3 className="text-3xl font-display font-black text-slate-900 tracking-tight">Cronograma Anual</h3>
-                                <p className="text-slate-400 text-sm mt-3 font-medium">Vencimientos para RUC terminados en <span className="text-slate-900 font-black">{client.ruc[8]}</span></p>
+                                <h3 className="text-3xl font-display font-semibold text-slate-900 tracking-tight">Cronograma Anual</h3>
+                                <p className="text-slate-400 text-sm mt-3 font-medium">Vencimientos para RUC terminados en <span className="text-slate-900 font-semibold">{client.ruc[8]}</span></p>
                             </header>
 
                             <div className="space-y-6">
@@ -392,12 +392,12 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     return (
                                         <article key={offset} className="flex items-center gap-8 p-6 rounded-[2rem] bg-slate-50/50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-100 transition-all group">
                                             <div className="w-16 h-16 bg-white rounded-2x border border-slate-100 flex flex-col items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
-                                                <span className="text-[9px] font-black text-slate-300 uppercase">{monthName.slice(0, 3)}</span>
-                                                <span className="text-xl font-black text-slate-900">{day}</span>
+                                                <span className="text-[9px] font-semibold text-slate-300 uppercase">{monthName.slice(0, 3)}</span>
+                                                <span className="text-xl font-semibold text-slate-900">{day}</span>
                                             </div>
                                             <div>
-                                                <p className="font-black text-slate-900 text-lg">Declaración de IVA</p>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Periodo Mensual • {monthName}</p>
+                                                <p className="font-semibold text-slate-900 text-lg">Declaración de IVA</p>
+                                                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Periodo Mensual • {monthName}</p>
                                             </div>
                                             <div className="ml-auto opacity-20 group-hover:opacity-100 transition-opacity">
                                                 <LucideIcons.CalendarCheck size={24} className="text-[#00A896]" />
@@ -409,7 +409,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
 
                             <footer className="mt-12 p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4">
                                 <LucideIcons.Info size={20} className="text-slate-400" />
-                                <p className="text-[10px] text-slate-500 font-bold leading-relaxed uppercase tracking-wider">
+                                <p className="text-[10px] text-slate-500 font-medium leading-relaxed uppercase tracking-wider">
                                     Las fechas presentadas son referenciales basadas en el calendario general del SRI.
                                 </p>
                             </footer>

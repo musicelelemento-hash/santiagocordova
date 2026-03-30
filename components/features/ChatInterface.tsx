@@ -28,10 +28,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
   };
 
   const suggestions = [
-    "¿Cuál es el límite de ingresos para RIMPE Popular?",
-    "Redactar correo de cobro formal a cliente",
-    "Calcular multa por declaración tardía de IVA",
-    "Requisitos para devolución de IVA 3ra Edad"
+    "¿Quiénes tienen deudas pendientes hoy?",
+    "Busca al cliente 'Santiago'",
+    "¿Cuánto hemos recaudado este mes?",
+    "¿Cuál es el RUC de Aleida?",
+    "Requisitos para RIMPE Emprendedor"
   ];
 
   return (
@@ -43,8 +44,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
             <Bot size={20} className="text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-bold font-display leading-tight uppercase tracking-wide">Asistente Tributario</h3>
-            <p className="text-[10px] text-slate-300 font-medium">Potenciado por Gemini 2.0</p>
+            <h3 className="text-sm font-medium font-display leading-tight uppercase tracking-widest text-[#00A896]">Elite Intelligence</h3>
+            <p className="text-[9px] text-slate-400 font-medium uppercase tracking-widest">Potenciado por Gemini 1.5 Flash</p>
           </div>
         </div>
         {onClose && (
@@ -61,8 +62,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
             <div className="w-16 h-16 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-6 shadow-sm">
               <Sparkles className="w-8 h-8 text-[#00A896]" />
             </div>
-            <h4 className="font-bold text-slate-700 dark:text-slate-200 mb-2 text-sm uppercase tracking-wide">Consulta Experta</h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-8 max-w-[240px] leading-relaxed">
+            <h4 className="font-medium text-slate-700 dark:text-slate-200 mb-2 text-sm uppercase tracking-wide">Consulta Experta</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-8 max-w-[240px] leading-loose">
               Puedo ayudarte con cálculos, redacción de correos, normativas del SRI o consultas sobre régimen RIMPE.
             </p>
             <div className="grid grid-cols-1 gap-2 w-full">
@@ -89,7 +90,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
               className={`max-w-[85%] p-3.5 rounded-2xl text-xs leading-relaxed shadow-sm ${msg.role === 'user'
                   ? 'bg-[#0B2149] text-white rounded-br-none'
                   : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-bl-none border border-slate-200 dark:border-slate-700'
-                } ${msg.isError ? 'bg-red-50 dark:bg-red-900/20 border-red-200 text-red-600' : ''}`}
+                } ${msg.isError ? 'bg-red-50 dark:bg-red-900/20 border-red-200 text-rose-400' : ''}`}
             >
               {msg.text}
             </div>

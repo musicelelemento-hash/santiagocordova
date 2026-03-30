@@ -71,27 +71,27 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
     const getStatusConfig = (currentStatus: string, overdue: boolean, paid: boolean, fullyPaid: boolean) => {
 
         if (fullyPaid && (paid || isRentaPaid) && !isIcePending && !isPvpPending) {
-            return { color: 'text-white bg-emerald-600 border-emerald-700 shadow-xl scale-105', icon: CheckCircle, text: 'OBJETIVO CUMPLIDO' };
+            return { color: 'text-white bg-emerald-500 border-emerald-700 shadow-xl scale-105', icon: CheckCircle, text: 'OBJETIVO CUMPLIDO' };
         }
         if (hasWorkOrder) {
-            return { color: 'text-white bg-amber-500 border-amber-600 shadow-xl animate-pulse', icon: Zap, text: 'ORDEN DE TRABAJO' };
+            return { color: 'text-white bg-amber-400 border-amber-500 shadow-xl animate-pulse', icon: Zap, text: 'ORDEN DE TRABAJO' };
         }
         if (paid && !isRentaPaid && needsRenta) {
-            return { color: 'text-amber-600 bg-amber-50 border-amber-200', icon: Clock, text: 'Pendiente Renta' };
+            return { color: 'text-amber-500 bg-amber-50 border-amber-200', icon: Clock, text: 'Pendiente Renta' };
         }
         if (isIcePending || isPvpPending) {
             return { color: 'text-indigo-600 bg-indigo-50 border-indigo-200', icon: AlertTriangle, text: 'Pendiente Otros' };
         }
         if (paid) {
-            return { color: 'text-emerald-600 bg-emerald-50 border-emerald-200', icon: ShieldCheck, text: 'Cuota Al Día' };
+            return { color: 'text-emerald-500 bg-emerald-50 border-emerald-200', icon: ShieldCheck, text: 'Cuota Al Día' };
         }
         if (currentStatus === DeclarationStatus.Enviada || !!declaration?.proof_file) {
-            return { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Send, text: 'Declarado' };
+            return { color: 'text-sky-400 bg-blue-50 border-blue-200', icon: Send, text: 'Declarado' };
         }
         if (overdue) {
-            return { color: 'text-red-600 bg-red-50 border-red-200', icon: AlertTriangle, text: 'Vencido IVA' };
+            return { color: 'text-rose-400 bg-red-50 border-red-200', icon: AlertTriangle, text: 'Vencido IVA' };
         }
-        return { color: 'text-amber-600 bg-amber-50 border-amber-200', icon: Clock, text: 'Pendiente' };
+        return { color: 'text-amber-500 bg-amber-50 border-amber-200', icon: Clock, text: 'Pendiente' };
     };
 
     const statusConfig = getStatusConfig(status, isOverdue || false, isPaid, isFullyPaid);
@@ -141,19 +141,19 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
         return (
             <div
                 onClick={onClick}
-                className={`relative group overflow-hidden bg-white dark:bg-slate-800 rounded-2xl border ${hasWorkOrder ? 'border-amber-500 ring-4 ring-amber-400/50 animate-pulse-subtle' : 'border-purple-200 dark:border-purple-900/50'} shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer`}
+                className={`relative group overflow-hidden bg-white dark:bg-slate-800 rounded-2xl border ${hasWorkOrder ? 'border-amber-400 ring-4 ring-amber-400/50 animate-pulse-subtle' : 'border-purple-200 dark:border-purple-900/50'} shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer`}
             >
                 {/* Purple Accent for Popular */}
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500"></div>
                 {hasWorkOrder && (
-                    <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
+                    <div className="absolute top-0 right-0 bg-amber-400 text-white text-[9px] font-semibold px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
                         <Sparkles size={8} className="animate-spin-slow" /> DINERO EN MANO
                     </div>
                 )}
                 
                 <button
                     onClick={(e) => { e.stopPropagation(); if (confirm(`¿Desactivar a ${client.name}?`)) onQuickAction?.(client, 'deactivate'); }}
-                    className="absolute top-3 right-3 p-1.5 rounded-full bg-rose-500/10 text-rose-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white z-30"
+                    className="absolute top-3 right-3 p-1.5 rounded-full bg-rose-400/10 text-rose-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-400 hover:text-white z-30"
                     title="Desactivar Cliente"
                 >
                     <UserX size={14} />
@@ -162,17 +162,27 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                 <div className="p-5">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 flex items-center justify-center font-display font-bold text-lg shadow-sm">
+                            <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 flex items-center justify-center font-display font-medium text-lg shadow-sm">
                                 {client.name.substring(0, 2).toUpperCase()}
                             </div>
                             <div>
-                                <h3 className="font-bold text-slate-800 dark:text-white leading-tight line-clamp-1">{mainName}</h3>
+                                <h3 className="font-medium text-slate-800 dark:text-white leading-tight line-clamp-1">{mainName}</h3>
                                 {subName && <p className="text-[10px] text-slate-400 font-medium truncate">{subName}</p>}
-                                <div className="flex items-center gap-1 mt-0.5">
-                                    <Star size={10} className="text-purple-500" fill="currentColor" />
-                                    <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wide">
-                                        Negocio Popular
-                                    </span>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <button 
+                                        onClick={handleCopyRuc}
+                                        className={`font-mono text-[9px] px-1.5 py-0.5 rounded border transition-all flex items-center gap-1 uppercase tracking-widest ${copied ? 'bg-emerald-400 text-white border-emerald-400' : 'text-slate-400 bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-purple-500 hover:text-purple-600'}`}
+                                        title="Copiar RUC"
+                                    >
+                                        {client.ruc}
+                                        {copied ? <CheckCircle size={10} /> : <Copy size={10} />}
+                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        <Star size={10} className="text-purple-500" fill="currentColor" />
+                                        <span className="text-[10px] font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+                                            Negocio Popular
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -183,20 +193,20 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
 
                     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-700 flex items-center justify-between">
                         <div>
-                            <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Renta {year - 1}</p>
+                            <p className="text-[10px] text-slate-400 uppercase font-medium tracking-wider mb-1">Renta {year - 1}</p>
                             <div className="flex items-center gap-2">
                                 {isAnnualDone ? (
-                                    <span className={`flex items-center ${isAnnualPaid ? 'text-emerald-600' : 'text-blue-600'} font-bold text-xs`}>
+                                    <span className={`flex items-center ${isAnnualPaid ? 'text-emerald-500' : 'text-sky-400'} font-medium text-xs`}>
                                         <CheckCircle size={14} className="mr-1" /> {isAnnualPaid ? 'Listo' : 'Declarado'}
                                     </span>
                                 ) : (
-                                    <span className="flex items-center text-slate-600 dark:text-slate-300 font-bold text-xs"><Calendar size={14} className="mr-1" /> Mayo</span>
+                                    <span className="flex items-center text-slate-600 dark:text-slate-300 font-medium text-xs"><Calendar size={14} className="mr-1" /> Mayo</span>
                                 )}
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Cuota</p>
-                            <p className="text-sm font-mono font-bold text-purple-600 dark:text-purple-400">$60.00</p>
+                            <p className="text-[10px] text-slate-400 uppercase font-medium tracking-wider mb-1">Cuota</p>
+                            <p className="text-sm font-mono font-medium text-purple-600 dark:text-purple-400">$60.00</p>
                         </div>
                     </div>
                 </div>
@@ -218,19 +228,17 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
             return 'bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-800 dark:border-slate-700';
         }
 
-        const containerClass = true
-            ? "border-amber-300 dark:border-amber-700/50 shadow-md hover:shadow-amber-500/20"
-            : "border-slate-200 dark:border-slate-700 hover:border-sky-300";
+        const containerClass = "border-amber-300 dark:border-amber-700/50 shadow-md hover:shadow-amber-400/20";
 
         return (
             <div
                 onClick={onClick}
-                className={`relative group overflow-hidden bg-white dark:bg-slate-800 rounded-2xl border ${containerClass} ${hasWorkOrder ? 'border-amber-500 ring-4 ring-amber-400/50 animate-pulse-subtle' : ''} transition-all duration-300 hover:-translate-y-1 cursor-pointer`}
+                className={`relative group overflow-hidden bg-white dark:bg-slate-800 rounded-2xl border ${containerClass} ${hasWorkOrder ? 'border-amber-400 ring-4 ring-amber-400/50 animate-pulse-subtle' : ''} transition-all duration-300 hover:-translate-y-1 cursor-pointer`}
             >
                 {/* Accent Line */}
-                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${true ? 'from-amber-300 via-yellow-400 to-amber-500' : 'from-sky-400 to-blue-500'}`}></div>
+                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-400`}></div>
                 {hasWorkOrder && (
-                    <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
+                    <div className="absolute top-0 right-0 bg-amber-400 text-white text-[9px] font-semibold px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
                         <Sparkles size={8} className="animate-spin-slow" /> DINERO EN MANO
                     </div>
                 )}
@@ -238,29 +246,37 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                 <div className="p-5">
                     <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-lg shadow-sm ${true ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-medium text-lg shadow-sm bg-amber-100 text-amber-700`}>
                                 {client.name.substring(0, 2).toUpperCase()}
                             </div>
                             <div>
-                                <h3 className="font-bold text-slate-800 dark:text-white leading-tight line-clamp-1">{mainName}</h3>
+                                <h3 className="font-medium text-slate-800 dark:text-white leading-tight line-clamp-1">{mainName}</h3>
                                 {subName && <p className="text-[10px] text-slate-400 font-medium truncate">{subName}</p>}
-                                <div className="flex flex-wrap gap-1 mt-0.5 mb-1">
-                                    <span className="font-bold text-[9px] border border-sky-400/20 text-sky-600 px-1 rounded bg-sky-400/5">
-                                        {client.regime} • Semestral
-                                    </span>
-                                    {client.taxProfile?.requiresAnnualRenta && <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Renta</span>}
-                                    {client.taxProfile?.requiresAnexosGastos && <span className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Anexo</span>}
-                                    {client.taxProfile?.hasActiveDevolucionIva && <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Devolución</span>}
+                                <div className="flex flex-col gap-1 mt-1">
+                                    <button 
+                                        onClick={handleCopyRuc}
+                                        className={`w-fit font-mono text-[9px] px-1.5 py-0.5 rounded border transition-all flex items-center gap-1 uppercase tracking-widest ${copied ? 'bg-emerald-400 text-white border-emerald-400' : 'text-slate-400 bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-amber-400 hover:text-amber-500'}`}
+                                        title="Copiar RUC"
+                                    >
+                                        {client.ruc}
+                                        {copied ? <CheckCircle size={10} /> : <Copy size={10} />}
+                                    </button>
+                                    <div className="flex flex-wrap gap-1">
+                                        <span className="font-medium text-[9px] border border-sky-400/20 text-sky-500 px-1 rounded bg-sky-400/5">
+                                            {client.regime} • Semestral
+                                        </span>
+                                        {client.taxProfile?.requiresAnnualRenta && <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Renta</span>}
+                                        {client.taxProfile?.requiresAnexosGastos && <span className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Anexo</span>}
+                                        {client.taxProfile?.hasActiveDevolucionIva && <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Devolución</span>}
+                                    </div>
                                 </div>
-                                {true && (
-                                    <span className="text-[10px] font-bold text-amber-600 flex items-center gap-1 mt-0.5">
-                                        <Crown size={10} fill="currentColor" /> VIP Semestral
-                                    </span>
-                                )}
+                                <span className="text-[10px] font-medium text-amber-500 flex items-center gap-1 mt-0.5">
+                                    <Crown size={10} fill="currentColor" /> VIP Semestral
+                                </span>
                             </div>
                         </div>
 
-                        <div className={`px-2 py-1 rounded-lg border text-[10px] font-bold flex flex-col items-center ${statusConfig.color}`}>
+                        <div className={`px-2 py-1 rounded-lg border text-[10px] font-medium flex flex-col items-center ${statusConfig.color}`}>
                             <StatusIcon size={12} className="mb-0.5" />
                             {statusConfig.text}
                         </div>
@@ -268,12 +284,12 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
 
                     <div className="grid grid-cols-2 gap-2">
                         <div className={`rounded-lg p-2 border flex flex-col items-center justify-center ${getSemStyle(s1Decl)}`}>
-                            <span className="text-[9px] font-bold uppercase tracking-wide">Ene - Jun</span>
-                            <span className="text-xs font-bold">{s1Decl?.status === 'Pagada' ? 'Al Día' : (s1Decl?.status || '-')}</span>
+                            <span className="text-[9px] font-medium uppercase tracking-wide">Ene - Jun</span>
+                            <span className="text-xs font-medium">{s1Decl?.status === 'Pagada' ? 'Al Día' : (s1Decl?.status || '-')}</span>
                         </div>
                         <div className={`rounded-lg p-2 border flex flex-col items-center justify-center ${getSemStyle(s2Decl)}`}>
-                            <span className="text-[9px] font-bold uppercase tracking-wide">Jul - Dic</span>
-                            <span className="text-xs font-bold">{s2Decl?.status === 'Pagada' ? 'Al Día' : (s2Decl?.status || '-')}</span>
+                            <span className="text-[9px] font-medium uppercase tracking-wide">Jul - Dic</span>
+                            <span className="text-xs font-medium">{s2Decl?.status === 'Pagada' ? 'Al Día' : (s2Decl?.status || '-')}</span>
                         </div>
                     </div>
                 </div>
@@ -284,12 +300,12 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
     // --- CARA 1: VIP / MENSUAL (Default) ---
     // Premium Design Logic
     const containerClasses = true
-        ? `${hasWorkOrder ? 'border-amber-500 ring-4 ring-amber-400/50 shadow-amber-500/30 animate-pulse-subtle' : 'border-amber-300 dark:border-amber-700/50'} shadow-md hover:shadow-amber-500/20 bg-gradient-to-b from-white to-amber-50/20 dark:from-slate-800 dark:to-slate-900`
-        : `${hasWorkOrder ? 'border-amber-500 ring-4 ring-amber-400/50 animate-pulse-subtle' : 'border-slate-200 dark:border-slate-700'} hover:border-brand-teal/50 bg-white dark:bg-slate-800`;
+        ? `${hasWorkOrder ? 'border-amber-400 ring-4 ring-amber-400/50 shadow-amber-400/30 animate-pulse-subtle' : 'border-amber-300 dark:border-amber-700/50'} shadow-md hover:shadow-amber-400/20 bg-gradient-to-b from-white to-amber-50/20 dark:from-slate-800 dark:to-slate-900`
+        : `${hasWorkOrder ? 'border-amber-400 ring-4 ring-amber-400/50 animate-pulse-subtle' : 'border-slate-200 dark:border-slate-700'} hover:border-brand-teal/50 bg-white dark:bg-slate-800`;
 
     const topAccent = true
-        ? "bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 h-1.5"
-        : `${hasWorkOrder ? 'bg-amber-500' : 'bg-brand-navy'} h-1`;
+        ? "bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-400 h-1.5"
+        : `${hasWorkOrder ? 'bg-amber-400' : 'bg-brand-navy'} h-1`;
 
     return (
         <div
@@ -299,7 +315,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
             {/* Top Accent Line */}
             <div className={`absolute top-0 left-0 w-full ${topAccent}`}></div>
             {hasWorkOrder && (
-                <div className="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-black px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
+                <div className="absolute top-0 right-0 bg-amber-400 text-white text-[9px] font-semibold px-3 py-1 rounded-bl-xl shadow-lg z-20 flex items-center gap-1">
                     <Sparkles size={8} className="animate-spin-slow" /> DINERO EN MANO
                 </div>
             )}
@@ -309,50 +325,50 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
                         <div className="relative">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-lg shadow-sm ${true ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}`}>
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-display font-medium text-lg shadow-sm ${true ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'}`}>
                                 {client.name.substring(0, 2).toUpperCase()}
                             </div>
                             {true && (
-                                <div className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white p-1 rounded-full shadow-sm border-2 border-white dark:border-slate-800">
+                                <div className="absolute -top-1.5 -right-1.5 bg-amber-400 text-white p-1 rounded-full shadow-sm border-2 border-white dark:border-slate-800">
                                     <Crown size={10} fill="currentColor" />
                                 </div>
                             )}
                         </div>
                         <div>
-                            <h3 className="font-bold text-slate-900 dark:text-white leading-tight line-clamp-1 text-base flex items-center gap-1.5">
+                            <h3 className="font-medium text-slate-900 dark:text-white leading-tight line-clamp-1 text-base flex items-center gap-1.5">
                                 {mainName}
                                 {needsRenta && isRentaFullyDone && (
-                                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full border border-emerald-500/20" title={`Renta ${rentaPeriod} al día`}>
+                                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-400/10 text-emerald-500 dark:text-emerald-400 rounded-full border border-emerald-400/20" title={`Renta ${rentaPeriod} al día`}>
                                         <ShieldCheck size={10} />
-                                        <span className="text-[8px] font-black">{rentaPeriod}</span>
+                                        <span className="text-[8px] font-semibold">{rentaPeriod}</span>
                                     </div>
                                 )}
                                 {client.tradeName && <Store size={12} className="text-slate-400" />}
                             </h3>
                             {subName && <p className="text-[10px] text-slate-400 font-medium truncate mb-0.5">{subName}</p>}
                             <div className="flex flex-wrap gap-1 mb-1 mt-0.5">
-                                <span className="font-bold text-[9px] border border-brand-teal/20 text-brand-teal px-1 rounded bg-brand-teal/5">
+                                <span className="font-medium text-[9px] border border-brand-teal/20 text-brand-teal px-1 rounded bg-brand-teal/5">
                                     {client.regime} • {(client.regime === TaxRegime.RimpeEmprendedor || (client.taxProfile?.ivaFrequency as string) === 'Semestral') ? 'Sem. (E/J)' : 'Mensual'}
                                 </span>
-                                {client.taxProfile?.requiresAnnualRenta && <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Renta</span>}
-                                {client.taxProfile?.requiresAnexosGastos && <span className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Anexo</span>}
-                                {client.taxProfile?.requiresIce && <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">ICE</span>}
-                                {client.taxProfile?.requiresAnexoPvp && <span className="bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">PVP</span>}
-                                {client.taxProfile?.hasActiveDevolucionIva && <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Devolución</span>}
+                                {client.taxProfile?.requiresAnnualRenta && <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Renta</span>}
+                                {client.taxProfile?.requiresAnexosGastos && <span className="bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Anexo</span>}
+                                {client.taxProfile?.requiresIce && <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">ICE</span>}
+                                {client.taxProfile?.requiresAnexoPvp && <span className="bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/30 dark:text-fuchsia-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">PVP</span>}
+                                {client.taxProfile?.hasActiveDevolucionIva && <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[8px] px-1.5 py-0.5 rounded font-semibold uppercase tracking-wider">Devolución</span>}
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={handleCopyRuc}
-                                    className={`group/ruc flex items-center gap-2 px-2 py-1 rounded-xl border transition-all shadow-sm relative overflow-hidden ${copied ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 hover:border-amber-400 hover:shadow-md hover:translate-y-[-1px] active:scale-95'}`}
+                                    className={`group/ruc flex items-center gap-2 px-2 py-1 rounded-xl border transition-all shadow-sm relative overflow-hidden ${copied ? 'bg-emerald-400 border-emerald-400 text-white' : 'bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 hover:border-amber-400 hover:shadow-md hover:translate-y-[-1px] active:scale-95'}`}
                                     title="Copiar RUC al portapapeles"
                                 >
-                                    <span className={`font-mono text-[10px] font-black tracking-widest ${copied ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>
+                                    <span className={`font-mono text-[10px] font-semibold tracking-widest ${copied ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>
                                         {client.ruc}
                                     </span>
                                     {copied ? (
                                         <CheckCircle size={12} strokeWidth={3} className="animate-in zoom-in duration-300" />
                                     ) : (
-                                        <Copy size={12} className="text-slate-400 group-hover/ruc:text-amber-500 transition-all duration-300" />
+                                        <Copy size={12} className="text-slate-400 group-hover/ruc:text-amber-400 transition-all duration-300" />
                                     )}
                                     {copied && <div className="absolute inset-0 bg-white/20 animate-fade-out pointer-events-none"></div>}
                                 </button>
@@ -371,7 +387,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                     </div>
 
                     {/* Status Badge */}
-                    <div className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border flex flex-col items-center justify-center min-w-[70px] ${statusConfig.color}`}>
+                    <div className={`px-3 py-1.5 rounded-xl text-[10px] font-medium border flex flex-col items-center justify-center min-w-[70px] ${statusConfig.color}`}>
                         <StatusIcon size={14} className="mb-0.5" />
                         {statusConfig.text}
                     </div>
@@ -380,20 +396,20 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                 {/* Info Grid - Analysis */}
                 <div className="flex-1 flex flex-col">
                     {isFullyPaid ? (
-                        <div className="flex-1 flex flex-col items-center justify-center p-5 bg-gradient-to-br from-emerald-500/5 to-amber-500/5 dark:bg-emerald-500/10 rounded-2xl border border-emerald-100 dark:border-emerald-500/20 mb-4 relative overflow-hidden group/vip-success">
+                        <div className="flex-1 flex flex-col items-center justify-center p-5 bg-gradient-to-br from-emerald-400/5 to-amber-400/5 dark:bg-emerald-400/10 rounded-2xl border border-emerald-100 dark:border-emerald-400/20 mb-4 relative overflow-hidden group/vip-success">
                             <div className="absolute top-0 right-0 p-2 opacity-20 transform translate-x-2 -translate-y-2 group-hover/vip-success:translate-x-0 group-hover/vip-success:translate-y-0 transition-transform duration-1000">
                                 <Star size={40} className="text-amber-400 fill-amber-400" />
                             </div>
                             <div className="relative z-10 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-2 duration-700">
-                                <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 shadow-lg border-2 border-emerald-100 dark:border-emerald-500/20">
-                                    <ShieldCheck size={28} className="text-emerald-500" />
+                                <div className="w-14 h-14 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mb-3 shadow-lg border-2 border-emerald-100 dark:border-emerald-400/20">
+                                    <ShieldCheck size={28} className="text-emerald-400" />
                                 </div>
-                                <h4 className="text-emerald-800 dark:text-emerald-300 font-black text-xs uppercase tracking-[0.2em] mb-1">Estatus Premium</h4>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold mb-4 italic">"Excelencia en cumplimiento tributario"</p>
+                                <h4 className="text-emerald-800 dark:text-emerald-300 font-semibold text-xs uppercase tracking-[0.2em] mb-1">Estatus Premium</h4>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mb-4 italic">"Excelencia en cumplimiento tributario"</p>
 
-                                <div className="py-1.5 px-4 bg-emerald-500 text-white rounded-full shadow-md flex items-center gap-2 border border-emerald-400">
+                                <div className="py-1.5 px-4 bg-emerald-400 text-white rounded-full shadow-md flex items-center gap-2 border border-emerald-400">
                                     <Clock size={12} />
-                                    <span className="text-[9px] font-black uppercase tracking-wider text-emerald-50">
+                                    <span className="text-[9px] font-semibold uppercase tracking-wider text-emerald-50">
                                         Próximo Hito: {dueDate ? safeFormat(dueDate, 'dd MMM') : 'Por definir'}
                                     </span>
                                 </div>
@@ -404,15 +420,15 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                             {/* IVA Info Cluster - Refined to focus on declared status */}
                             <div className={`flex flex-col gap-1 p-2 rounded-lg border ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'bg-emerald-50/30 border-emerald-100/30' : 'bg-white/50 border-white/20'}`}>
                                 <div className="flex justify-between items-center text-[10px]">
-                                    <p className="text-slate-400 uppercase font-black tracking-wider flex items-center gap-1">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'bg-emerald-500' : 'bg-amber-400 animate-pulse'}`}></div>
+                                    <p className="text-slate-400 uppercase font-semibold tracking-wider flex items-center gap-1">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></div>
                                         IVA {formatPeriodForDisplay(currentPeriod)}
                                     </p>
-                                    <p className={`font-black ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'text-emerald-500' : 'text-slate-500'}`}>{declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'DECLARADO' : 'PENDIENTE'}</p>
+                                    <p className={`font-semibold ${declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'text-emerald-400' : 'text-slate-500'}`}>{declaration?.status === DeclarationStatus.Enviada || !!declaration?.proof_file ? 'DECLARADO' : 'PENDIENTE'}</p>
                                 </div>
                                 <div className="flex justify-between items-center text-[10px]">
-                                    <p className="font-bold text-slate-400">Vence:</p>
-                                    <p className={`font-black ${!declaration && isOverdue ? 'text-red-500' : 'text-slate-600'}`}>
+                                    <p className="font-medium text-slate-400">Vence:</p>
+                                    <p className={`font-semibold ${!declaration && isOverdue ? 'text-rose-400' : 'text-slate-600'}`}>
                                         {dueDate ? safeFormat(dueDate, 'dd MMM') : 'N/A'}
                                     </p>
                                 </div>
@@ -426,14 +442,14 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                     <div className="flex-1 flex gap-1">
                         <button
                             onClick={handleWhatsApp}
-                            className="flex-1 bg-green-50 text-green-600 hover:bg-green-500 hover:text-white dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-600 dark:hover:text-white py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2"
+                            className="flex-1 bg-green-50 text-emerald-400 hover:bg-emerald-400 hover:text-white dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-emerald-400 dark:hover:text-white py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2"
                         >
                             <MessageCircle size={14} /> WhatsApp
                         </button>
                     </div>
                     <button
                         onClick={handleDetailsClick}
-                        className="flex-1 bg-slate-100 text-slate-600 hover:bg-brand-navy hover:text-white dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 group/btn"
+                        className="flex-1 bg-slate-100 text-slate-600 hover:bg-brand-navy hover:text-white dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-2 group/btn"
                     >
                         Detalles <ArrowRight size={14} className="group-hover/btn:translate-x-0.5 transition-transform" />
                     </button>

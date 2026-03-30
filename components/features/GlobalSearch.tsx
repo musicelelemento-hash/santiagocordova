@@ -81,13 +81,13 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, cli
                     {/* Quick Actions if empty */}
                     {!debouncedSearchTerm && (
                         <div className="p-2 animate-fade-in">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">Acciones Rápidas</p>
+                            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 px-2">Acciones Rápidas</p>
                             <button onClick={() => { navigate('tasks', { initialTaskData: {} }); onClose(); }} className="w-full flex items-center p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
                                 <div className="p-2 bg-brand-teal/10 text-brand-teal rounded-lg mr-3 group-hover:bg-brand-teal group-hover:text-white transition-colors"><Zap size={18} /></div>
                                 <span className="font-medium dark:text-gray-200">Nueva Tarea</span>
                             </button>
                             <button onClick={() => { navigate('cobranza'); onClose(); }} className="w-full flex items-center p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group">
-                                <div className="p-2 bg-green-100 text-green-600 rounded-lg mr-3 group-hover:bg-green-600 group-hover:text-white transition-colors"><Briefcase size={18} /></div>
+                                <div className="p-2 bg-green-100 text-emerald-400 rounded-lg mr-3 group-hover:bg-emerald-400 group-hover:text-white transition-colors"><Briefcase size={18} /></div>
                                 <span className="font-medium dark:text-gray-200">Registrar Pago</span>
                             </button>
                         </div>
@@ -99,15 +99,15 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, cli
                             {/* Clients */}
                             {filteredClients.length > 0 && (
                                 <div className="p-2">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">Clientes</p>
+                                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 px-2">Clientes</p>
                                     {filteredClients.map(client => (
                                         <button key={client.id} onClick={() => handleSelectClient(client)} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group text-left">
                                             <div className="flex items-center">
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 flex items-center justify-center text-xs font-bold mr-3">
+                                                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-sky-400 dark:text-blue-300 flex items-center justify-center text-xs font-medium mr-3">
                                                     {client.name.substring(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-sm text-slate-800 dark:text-white">{client.name}</p>
+                                                    <p className="font-medium text-sm text-slate-800 dark:text-white">{client.name}</p>
                                                     <p className="text-xs text-slate-500">{client.ruc}</p>
                                                 </div>
                                             </div>
@@ -120,15 +120,15 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, cli
                             {/* Tasks */}
                             {filteredTasks.length > 0 && (
                                 <div className="p-2 border-t border-slate-100 dark:border-slate-800">
-                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 px-2 mt-2">Tareas</p>
+                                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 px-2 mt-2">Tareas</p>
                                     {filteredTasks.map(task => (
                                         <button key={task.id} onClick={() => handleSelectTask(task)} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group text-left">
                                             <div className="flex items-center">
-                                                <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 mr-3">
+                                                <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 text-amber-400 mr-3">
                                                     <CheckSquare size={16} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-sm text-slate-800 dark:text-white line-clamp-1">{task.title}</p>
+                                                    <p className="font-medium text-sm text-slate-800 dark:text-white line-clamp-1">{task.title}</p>
                                                     <p className="text-xs text-slate-500">{task.status}</p>
                                                 </div>
                                             </div>

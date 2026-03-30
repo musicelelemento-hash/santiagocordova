@@ -115,18 +115,18 @@ export const GeminiScreen: React.FC<GeminiScreenProps> = ({ navigate }) => {
             <BrainCircuit size={24} className="text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-white/60 tracking-tight">
+            <h1 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-white/60 tracking-tight">
               INTELIGENCIA ELITE
             </h1>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-ping" />
-              <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.2em]">Cerebro Activo</span>
+              <span className="w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
+              <span className="text-[10px] font-medium text-[#00A896] uppercase tracking-[0.2em]">Cerebro Activo</span>
             </div>
           </div>
         </div>
         <button 
           onClick={clearChat}
-          className="p-3 bg-white/5 hover:bg-red-500/20 text-white/60 hover:text-red-400 rounded-2xl transition-all border border-white/10 hover:border-red-500/30 group"
+          className="p-3 bg-white/5 hover:bg-rose-400/20 text-white/60 hover:text-red-400 rounded-2xl transition-all border border-white/10 hover:border-rose-400/30 group"
           title="Limpiar Memoria"
         >
           <Trash2 size={20} className="group-hover:rotate-12 transition-transform" />
@@ -195,7 +195,7 @@ export const GeminiScreen: React.FC<GeminiScreenProps> = ({ navigate }) => {
                   onClick={() => {
                     setInput(suggestion);
                   }}
-                  className="px-4 py-2 bg-white/5 hover:bg-[#00A896]/20 border border-white/10 hover:border-[#00A896]/30 rounded-full text-[11px] font-bold text-white/60 hover:text-white transition-all flex items-center gap-2 group"
+                  className="px-4 py-2 bg-white/5 hover:bg-[#00A896]/20 border border-white/10 hover:border-[#00A896]/30 rounded-full text-[11px] font-medium text-white/60 hover:text-white transition-all flex items-center gap-2 group"
                 >
                   <Command size={12} className="opacity-40 group-hover:opacity-100" />
                   {suggestion}
@@ -235,7 +235,7 @@ export const GeminiScreen: React.FC<GeminiScreenProps> = ({ navigate }) => {
             </div>
           </form>
           
-          <p className="text-center text-[10px] text-white/20 mt-4 font-bold tracking-widest uppercase">
+          <p className="text-center text-[10px] text-white/20 mt-4 font-medium tracking-widest uppercase">
             Powered by Gemini 1.5 Pro & Santiago Cordova Engine
           </p>
         </div>

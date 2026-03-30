@@ -126,7 +126,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 features: ["Firma Electrónica (1 Año)", "Facturación Ilimitada", "App Móvil", "Control de Inventario"],
                 icon: LucideIcons.Laptop,
                 popular: true,
-                color: "from-blue-500 to-cyan-500"
+                color: "from-sky-400 to-cyan-500"
             }
         ],
         tax: [
@@ -150,7 +150,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 features: ["IVA Semestral", "Renta Anual", "Anexo Transaccional", "Soporte Prioritario"],
                 icon: LucideIcons.TrendingUp,
                 popular: true,
-                color: "from-[#00A896] to-emerald-600"
+                color: "from-[#00A896] to-emerald-500"
             },
             {
                 title: "Profesionales",
@@ -170,7 +170,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 features: ["Análisis de facturas", "Carga de solicitud", "Seguimiento hasta acreditación"],
                 icon: LucideIcons.DollarSign,
                 popular: true,
-                color: "from-green-500 to-emerald-700"
+                color: "from-emerald-400 to-emerald-700"
             },
             {
                 title: "Devolución Renta",
@@ -179,7 +179,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 features: ["Análisis de retenciones", "Solicitud de devolución", "Gestión de cuenta bancaria"],
                 icon: LucideIcons.ArrowDownCircle,
                 popular: false,
-                color: "from-blue-500 to-indigo-700"
+                color: "from-sky-400 to-indigo-700"
             }
         ]
     };
@@ -190,7 +190,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
         <button
             onClick={() => { setActiveCategory(id as any); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
             className={`
-                flex items-center gap-2 px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all duration-300 flex-shrink-0
+                flex items-center gap-2 px-6 py-3 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-300 flex-shrink-0
                 ${activeCategory === id
                     ? 'bg-[#00A896] text-white shadow-lg shadow-teal-500/30 scale-105'
                     : 'bg-white/80 dark:bg-slate-800/80 text-slate-500 hover:bg-white hover:text-slate-800 border border-transparent'
@@ -213,20 +213,20 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             <Logo className={`w-6 h-6 ${scrolled ? 'text-[#0B2149]' : 'text-white'}`} />
                         </div>
                         <div className="text-left">
-                            <span className={`text-base font-display font-black tracking-tight leading-none block ${scrolled ? 'text-[#0B2149]' : 'text-white'}`}>SERVICIOS</span>
+                            <span className={`text-base font-display font-semibold tracking-tight leading-none block ${scrolled ? 'text-[#0B2149]' : 'text-white'}`}>SERVICIOS</span>
                         </div>
                     </button>
 
                     <div className="hidden md:flex items-center gap-8">
-                        <button onClick={onNavigateToHome} className={`text-sm font-bold transition-colors ${scrolled ? 'text-slate-500 hover:text-[#0B2149]' : 'text-slate-300 hover:text-white'}`}>Inicio</button>
-                        <button onClick={() => setIsCartOpen(true)} className={`relative flex items-center gap-2 text-sm font-bold transition-colors group ${scrolled ? 'text-slate-700 hover:text-[#00A896]' : 'text-white hover:text-[#00A896]'}`}>
+                        <button onClick={onNavigateToHome} className={`text-sm font-medium transition-colors ${scrolled ? 'text-slate-500 hover:text-[#0B2149]' : 'text-slate-300 hover:text-white'}`}>Inicio</button>
+                        <button onClick={() => setIsCartOpen(true)} className={`relative flex items-center gap-2 text-sm font-medium transition-colors group ${scrolled ? 'text-slate-700 hover:text-[#00A896]' : 'text-white hover:text-[#00A896]'}`}>
                             <div className="relative">
                                 <LucideIcons.ShoppingCart size={20} className="group-hover:scale-110 transition-transform" />
-                                {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-[#00A896] text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full shadow-[0_0_10px_#00A896]">{cart.length}</span>}
+                                {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-[#00A896] text-white text-[9px] font-semibold w-4 h-4 flex items-center justify-center rounded-full shadow-[0_0_10px_#00A896]">{cart.length}</span>}
                             </div>
                             <span>Carrito</span>
                         </button>
-                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className={`px-6 py-2.5 rounded-xl transition-all text-xs font-black uppercase tracking-wider flex items-center gap-2 ${scrolled ? 'bg-[#0B2149] text-white hover:bg-slate-800' : 'bg-white/10 border border-white/20 text-white hover:bg-white hover:text-[#0B2149]'}`}>
+                        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className={`px-6 py-2.5 rounded-xl transition-all text-xs font-semibold uppercase tracking-wider flex items-center gap-2 ${scrolled ? 'bg-[#0B2149] text-white hover:bg-slate-800' : 'bg-white/10 border border-white/20 text-white hover:bg-white hover:text-[#0B2149]'}`}>
                             <LucideIcons.MessageCircle size={16} /> Asesoría
                         </a>
                     </div>
@@ -241,9 +241,9 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                     <button className="absolute top-8 right-8 p-3 bg-white/10 rounded-full text-white" onClick={() => setMobileMenuOpen(false)}>
                         <LucideIcons.X size={24} />
                     </button>
-                    <button onClick={() => { onNavigateToHome(); setMobileMenuOpen(false); }} className="text-3xl font-display font-black text-white">Inicio</button>
-                    <button onClick={() => { setIsCartOpen(true); setMobileMenuOpen(false); }} className="text-3xl font-display font-black text-white">Ver Carrito ({cart.length})</button>
-                    <button onClick={() => { onAdminAccess(); setMobileMenuOpen(false); }} className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-8">Acceso Admin</button>
+                    <button onClick={() => { onNavigateToHome(); setMobileMenuOpen(false); }} className="text-3xl font-display font-semibold text-white">Inicio</button>
+                    <button onClick={() => { setIsCartOpen(true); setMobileMenuOpen(false); }} className="text-3xl font-display font-semibold text-white">Ver Carrito ({cart.length})</button>
+                    <button onClick={() => { onAdminAccess(); setMobileMenuOpen(false); }} className="text-sm font-medium text-slate-500 uppercase tracking-widest mt-8">Acceso Admin</button>
                 </div>
             )}
 
@@ -253,10 +253,10 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 <div className="absolute top-[-100px] right-[-100px] w-[600px] h-[600px] bg-[#00A896]/20 rounded-full blur-[120px]"></div>
 
                 <div className="relative z-10 max-w-4xl mx-auto">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest mb-6 backdrop-blur-md">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/10 text-white text-[10px] font-semibold uppercase tracking-widest mb-6 backdrop-blur-md">
                         <LucideIcons.Globe size={12} /> Servicios Digitales 2026
                     </div>
-                    <h1 className="text-4xl md:text-7xl font-display font-black text-white mb-6 tracking-tight leading-[1.1]">
+                    <h1 className="text-4xl md:text-7xl font-display font-semibold text-white mb-6 tracking-tight leading-[1.1]">
                         Soluciones a su <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] to-emerald-300">Medida.</span>
                     </h1>
                 </div>
@@ -280,7 +280,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             className={`group bg-white rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden border relative ${plan.popular ? 'border-[#00A896] ring-4 ring-[#00A896]/10' : 'border-slate-100'}`}
                         >
                             {plan.popular && (
-                                <div className="absolute top-0 right-0 bg-[#00A896] text-white text-[9px] font-black px-4 py-1.5 rounded-bl-2xl uppercase tracking-widest z-10">
+                                <div className="absolute top-0 right-0 bg-[#00A896] text-white text-[9px] font-semibold px-4 py-1.5 rounded-bl-2xl uppercase tracking-widest z-10">
                                     Popular
                                 </div>
                             )}
@@ -289,24 +289,24 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${plan.popular ? 'bg-[#0B2149] text-white' : 'bg-slate-100 text-slate-500'}`}>
                                     <plan.icon size={28} strokeWidth={1.5} />
                                 </div>
-                                <h3 className="text-2xl font-black text-[#0B2149] mb-2 leading-tight">{plan.title}</h3>
+                                <h3 className="text-2xl font-semibold text-[#0B2149] mb-2 leading-tight">{plan.title}</h3>
                                 <p className="text-xs font-medium text-slate-500 min-h-[2.5rem] leading-relaxed line-clamp-2">{plan.description}</p>
                             </div>
 
                             <div className="p-8 pt-4">
                                 <div className="flex items-end gap-2 mb-6">
-                                    <span className="text-5xl font-display font-black text-slate-900 tracking-tighter">${plan.price}</span>
+                                    <span className="text-5xl font-display font-semibold text-slate-900 tracking-tighter">${plan.price}</span>
                                     {plan.originalPrice && (
                                         <div className="flex flex-col mb-1.5">
-                                            <span className="text-xs font-bold text-slate-400 line-through">${plan.originalPrice}</span>
-                                            <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">AHORRA ${plan.save}</span>
+                                            <span className="text-xs font-medium text-slate-400 line-through">${plan.originalPrice}</span>
+                                            <span className="text-[9px] font-semibold text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded">AHORRA ${plan.save}</span>
                                         </div>
                                     )}
                                 </div>
 
                                 <div className="space-y-4 mb-8">
                                     {plan.features.map((feat: string, i: number) => (
-                                        <div key={i} className="flex items-start gap-3 text-xs font-bold text-slate-600">
+                                        <div key={i} className="flex items-start gap-3 text-xs font-medium text-slate-600">
                                             <div className="min-w-[16px] mt-0.5 text-[#00A896]"><LucideIcons.CheckCircle size={16} /></div>
                                             <span>{feat}</span>
                                         </div>
@@ -316,7 +316,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                 <button
                                     onClick={() => handleAddToCart(plan)}
                                     className={`
-                                        w-full py-4 rounded-xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg
+                                        w-full py-4 rounded-xl font-semibold text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg
                                         relative overflow-hidden group/btn
                                         ${plan.popular ? 'bg-[#00A896] text-white hover:bg-teal-600 shadow-teal-500/20' : 'bg-slate-900 text-white hover:bg-slate-800 shadow-slate-900/20'}
                                     `}
@@ -336,12 +336,12 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 <div className="md:hidden fixed bottom-6 left-4 right-4 z-50 animate-slide-up-fade">
                     <div className="bg-[#0B2149] text-white p-4 rounded-2xl shadow-2xl flex justify-between items-center border border-white/10 backdrop-blur-xl">
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">{cart.length} Servicio{cart.length > 1 ? 's' : ''}</span>
-                            <span className="text-xl font-black">${cartTotal.toFixed(2)}</span>
+                            <span className="text-[10px] text-slate-300 font-medium uppercase tracking-wider">{cart.length} Servicio{cart.length > 1 ? 's' : ''}</span>
+                            <span className="text-xl font-semibold">${cartTotal.toFixed(2)}</span>
                         </div>
                         <button
                             onClick={() => setIsCheckoutOpen(true)}
-                            className="px-6 py-3 bg-[#00A896] rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform flex items-center gap-2 shadow-lg shadow-teal-500/30"
+                            className="px-6 py-3 bg-[#00A896] rounded-xl text-xs font-semibold uppercase tracking-widest hover:scale-105 transition-transform flex items-center gap-2 shadow-lg shadow-teal-500/30"
                         >
                             Pagar <LucideIcons.ArrowRight size={16} />
                         </button>
@@ -355,7 +355,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}></div>
                     <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 flex flex-col animate-slide-in-right text-slate-900">
                         <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
-                            <h3 className="text-2xl font-display font-bold text-slate-900">Su Pedido</h3>
+                            <h3 className="text-2xl font-display font-medium text-slate-900">Su Pedido</h3>
                             <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><LucideIcons.X size={24} /></button>
                         </div>
 
@@ -363,30 +363,30 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             {cart.length === 0 ? (
                                 <div className="text-center py-20 text-gray-400">
                                     <LucideIcons.Package size={64} className="mx-auto mb-4 opacity-20" />
-                                    <p className="font-bold">Su carrito está vacío.</p>
+                                    <p className="font-medium">Su carrito está vacío.</p>
                                 </div>
                             ) : (
                                 cart.map(item => (
                                     <div key={item.id} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:border-brand-teal/30 transition-colors">
                                         <div>
-                                            <p className="font-bold text-sm text-slate-800">{item.title}</p>
-                                            <span className="text-[#00A896] font-black text-lg">${item.price.toFixed(2)}</span>
+                                            <p className="font-medium text-sm text-slate-800">{item.title}</p>
+                                            <span className="text-[#00A896] font-semibold text-lg">${item.price.toFixed(2)}</span>
                                         </div>
-                                        <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-xl transition-all"><LucideIcons.Trash2 size={18} /></button>
+                                        <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-rose-400 p-2 hover:bg-red-50 rounded-xl transition-all"><LucideIcons.Trash2 size={18} /></button>
                                     </div>
                                 ))
                             )}
                         </div>
 
                         <div className="mt-6 pt-6 border-t border-gray-200">
-                            <div className="flex justify-between items-center mb-6 text-xl font-bold">
+                            <div className="flex justify-between items-center mb-6 text-xl font-medium">
                                 <span className="text-slate-500">Total</span>
-                                <span className="text-green-600 text-2xl font-black">${cartTotal.toFixed(2)}</span>
+                                <span className="text-emerald-400 text-2xl font-semibold">${cartTotal.toFixed(2)}</span>
                             </div>
                             <button
                                 onClick={() => { setIsCartOpen(false); setIsCheckoutOpen(true); }}
                                 disabled={cart.length === 0}
-                                className="w-full py-5 bg-[#00A896] text-white font-black rounded-2xl hover:bg-teal-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-teal-500/20 flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
+                                className="w-full py-5 bg-[#00A896] text-white font-semibold rounded-2xl hover:bg-teal-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-xl shadow-teal-500/20 flex items-center justify-center gap-3 uppercase tracking-widest text-sm"
                             >
                                 Finalizar Pedido <LucideIcons.ArrowRight size={20} />
                             </button>
@@ -399,10 +399,10 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
             <Modal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} title="">
                 {orderSuccess ? (
                     <div className="text-center py-16 px-6 animate-fade-in">
-                        <div className="w-24 h-24 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/40 animate-bounce">
+                        <div className="w-24 h-24 bg-emerald-400 text-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-400/40 animate-bounce">
                             <LucideIcons.Check size={48} strokeWidth={3} />
                         </div>
-                        <h3 className="text-3xl font-display font-black text-slate-900 mb-4">¡Pedido en Marcha!</h3>
+                        <h3 className="text-3xl font-display font-semibold text-slate-900 mb-4">¡Pedido en Marcha!</h3>
                         <p className="text-slate-500 font-medium text-lg leading-relaxed max-w-sm mx-auto">
                             Hemos recibido su solicitud. En breves instantes un asesor se comunicará con usted para finalizar los detalles.
                         </p>
@@ -414,35 +414,35 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             <div className="inline-flex p-3 bg-[#0B2149]/5 rounded-2xl mb-4">
                                 <LucideIcons.ShieldCheck className="text-[#0B2149]" size={32} strokeWidth={1.5} />
                             </div>
-                            <h3 className="text-2xl font-display font-black text-slate-900 tracking-tight">Finalizar Contratación</h3>
-                            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Soluciones Contables Pro</p>
+                            <h3 className="text-2xl font-display font-semibold text-slate-900 tracking-tight">Finalizar Contratación</h3>
+                            <p className="text-slate-500 text-xs font-medium uppercase tracking-widest mt-1">Soluciones Contables Pro</p>
                         </div>
 
                         <form onSubmit={handleCheckoutSubmit} className="space-y-6">
                             {/* Resumen Glassmorphic */}
                             <div className="p-6 bg-slate-900 rounded-3xl text-white relative overflow-hidden shadow-2xl">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#00A896]/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 rounded-full bg-[#00A896]"></div> Resumen de Compra
                                 </h4>
                                 <div className="space-y-3 mb-6">
                                     {cart.map(i => (
                                         <div key={i.id} className="flex justify-between items-center group">
-                                            <span className="text-sm font-bold text-slate-200 group-hover:text-white transition-colors">{i.title}</span>
-                                            <span className="font-mono font-black text-[#00A896]">${i.price.toFixed(2)}</span>
+                                            <span className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors">{i.title}</span>
+                                            <span className="font-mono font-semibold text-[#00A896]">${i.price.toFixed(2)}</span>
                                         </div>
                                     ))}
                                 </div>
                                 <div className="flex justify-between items-end pt-4 border-t border-white/10">
-                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total a Pagar</span>
-                                    <span className="text-4xl font-display font-black text-white tracking-tighter">${cartTotal.toFixed(2)}</span>
+                                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Total a Pagar</span>
+                                    <span className="text-4xl font-display font-semibold text-white tracking-tighter">${cartTotal.toFixed(2)}</span>
                                 </div>
                             </div>
 
                             {/* Campos de Datos */}
                             <div className="space-y-4">
                                 <div className="group">
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">Nombre Destinatario</label>
+                                    <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-2 ml-4">Nombre Destinatario</label>
                                     <div className="relative group-focus-within:scale-[1.01] transition-transform">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             <LucideIcons.User className="text-slate-300 group-focus-within:text-[#00A896] transition-colors" size={20} />
@@ -452,7 +452,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                             type="text" 
                                             value={clientName} 
                                             onChange={e => setClientName(e.target.value)} 
-                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-[#00A896] rounded-2xl focus:bg-white transition-all outline-none font-bold text-lg text-slate-800" 
+                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-[#00A896] rounded-2xl focus:bg-white transition-all outline-none font-medium text-lg text-slate-800" 
                                             placeholder="Juan Pérez" 
                                             disabled={!!currentUser} 
                                         />
@@ -461,7 +461,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="group">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">WhatsApp de Contacto</label>
+                                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-2 ml-4">WhatsApp de Contacto</label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                                 <LucideIcons.Phone className="text-slate-300 group-focus-within:text-[#00A896] transition-colors" size={20} />
@@ -471,13 +471,13 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                                 type="tel" 
                                                 value={clientPhone} 
                                                 onChange={e => setClientPhone(e.target.value)} 
-                                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-[#00A896] rounded-2xl focus:bg-white transition-all outline-none font-bold text-lg text-slate-800" 
+                                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-[#00A896] rounded-2xl focus:bg-white transition-all outline-none font-medium text-lg text-slate-800" 
                                                 placeholder="099 123 4567" 
                                             />
                                         </div>
                                     </div>
                                     <div className="group">
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-4">RUC / Cédula (Opcional)</label>
+                                        <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-2 ml-4">RUC / Cédula (Opcional)</label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                                 <LucideIcons.CreditCard className="text-slate-300 group-focus-within:text-[#00A896] transition-colors" size={20} />
@@ -486,7 +486,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                                 type="text" 
                                                 value={clientRuc} 
                                                 onChange={e => setClientRuc(e.target.value)} 
-                                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-[#00A896] rounded-2xl focus:bg-white transition-all outline-none font-bold text-lg text-slate-800" 
+                                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-[#00A896] rounded-2xl focus:bg-white transition-all outline-none font-medium text-lg text-slate-800" 
                                                 placeholder="17..." 
                                             />
                                         </div>
@@ -497,7 +497,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             {/* Botón de Acción */}
                             <button 
                                 type="submit" 
-                                className="w-full py-5 bg-[#0B2149] text-white font-black rounded-3xl hover:bg-slate-900 transition-all text-sm uppercase tracking-[0.2em] shadow-2xl shadow-blue-900/40 relative overflow-hidden group/submit"
+                                className="w-full py-5 bg-[#0B2149] text-white font-semibold rounded-3xl hover:bg-slate-900 transition-all text-sm uppercase tracking-[0.2em] shadow-2xl shadow-blue-900/40 relative overflow-hidden group/submit"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover/submit:translate-x-full transition-transform duration-1000"></div>
                                 <span className="flex items-center justify-center gap-3">
@@ -505,7 +505,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                 </span>
                             </button>
                             
-                            <p className="text-[10px] text-center text-slate-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
+                            <p className="text-[10px] text-center text-slate-400 font-medium uppercase tracking-widest flex items-center justify-center gap-2">
                                 <LucideIcons.Lock size={12} /> Conexión Segura & Encriptada
                             </p>
                         </form>
@@ -518,9 +518,9 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
                     <div className="flex items-center gap-4 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
                         <Logo className="w-8 h-8" />
-                        <span className="font-display font-bold text-lg tracking-tight text-[#0B2149]">GESTIONES TRIBUTARIAS</span>
+                        <span className="font-display font-medium text-lg tracking-tight text-[#0B2149]">GESTIONES TRIBUTARIAS</span>
                     </div>
-                    <div className="flex gap-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <div className="flex gap-8 text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
                         <a href="#" className="hover:text-[#00A896] transition-colors">Privacidad</a>
                         <a href="#" className="hover:text-[#00A896] transition-colors">Términos</a>
                         <button onClick={onAdminAccess} className="hover:text-[#0B2149] transition-colors">Administración</button>

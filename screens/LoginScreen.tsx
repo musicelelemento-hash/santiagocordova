@@ -60,7 +60,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
 
             {/* Aurora Blobs */}
             <div className={`absolute top-0 right-0 w-[800px] h-[800px] bg-[#00A896]/10 rounded-full blur-[120px] -mr-40 -mt-40 transition-all duration-[2000ms] ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}></div>
-            <div className={`absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] -ml-20 -mb-20 transition-all duration-[2000ms] delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}></div>
+            <div className={`absolute bottom-0 left-0 w-[600px] h-[600px] bg-sky-400/10 rounded-full blur-[120px] -ml-20 -mb-20 transition-all duration-[2000ms] delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}></div>
 
             {/* --- MAIN CARD --- */}
             <div className={`relative z-10 w-full max-w-[420px] p-8 transition-all duration-700 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
@@ -68,7 +68,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                 {/* Back Button */}
                 <button
                     onClick={onBack}
-                    className="absolute top-0 left-8 -mt-12 flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest group"
+                    className="absolute top-0 left-8 -mt-12 flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-medium uppercase tracking-widest group"
                 >
                     <div className="p-1 rounded-full border border-slate-700 group-hover:border-white transition-colors">
                         <LucideIcons.ChevronLeft size={14} />
@@ -86,7 +86,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                             <div className="inline-flex p-4 bg-gradient-to-br from-[#0B2149] to-[#020617] rounded-3xl shadow-lg border border-white/10 mb-6">
                                 <Logo className="w-10 h-10" />
                             </div>
-                            <h2 className="text-2xl font-display font-black text-white tracking-tight">
+                            <h2 className="text-2xl font-display font-semibold text-white tracking-tight">
                                 {loginType === 'admin' ? 'Comando Central' : 'Bóveda del Cliente'}
                             </h2>
                             <p className="text-slate-400 text-xs mt-3 font-medium tracking-wide flex justify-center items-center gap-2">
@@ -98,13 +98,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                         <div className="grid grid-cols-2 gap-2 bg-black/20 p-1.5 rounded-2xl mb-8 border border-white/5">
                             <button
                                 onClick={() => { setLoginType('client'); setError(''); }}
-                                className={`py-3 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'client' ? 'bg-[#00A896] text-white shadow-lg shadow-teal-900/50' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                                className={`py-3 text-[10px] font-semibold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'client' ? 'bg-[#00A896] text-white shadow-lg shadow-teal-900/50' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
                             >
                                 <LucideIcons.Briefcase size={14} /> Clientes
                             </button>
                             <button
                                 onClick={() => { setLoginType('admin'); setError(''); }}
-                                className={`py-3 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'admin' ? 'bg-white text-[#0B2149] shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                                className={`py-3 text-[10px] font-semibold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'admin' ? 'bg-white text-[#0B2149] shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
                             >
                                 <LucideIcons.Lock size={14} /> Admin
                             </button>
@@ -113,7 +113,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                         {/* Form */}
                         <form onSubmit={handleLogin} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[9px] font-black text-[#00A896] uppercase tracking-[0.2em] ml-2">
+                                <label className="text-[9px] font-semibold text-[#00A896] uppercase tracking-[0.2em] ml-2">
                                     {loginType === 'client' ? 'Identificación (RUC)' : 'ID Usuario'}
                                 </label>
                                 <div className="group relative">
@@ -134,7 +134,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[9px] font-black text-[#00A896] uppercase tracking-[0.2em] ml-2">
+                                <label className="text-[9px] font-semibold text-[#00A896] uppercase tracking-[0.2em] ml-2">
                                     {loginType === 'client' ? 'Contraseña SRI' : 'Clave de Acceso'}
                                 </label>
                                 <div className="group relative">
@@ -154,16 +154,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                             </div>
 
                             {error && (
-                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-3 animate-fade-in-down backdrop-blur-sm">
-                                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                                    <p className="text-red-200 text-xs font-bold">{error}</p>
+                                <div className="p-4 bg-rose-400/10 border border-rose-400/20 rounded-2xl flex items-center gap-3 animate-fade-in-down backdrop-blur-sm">
+                                    <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></div>
+                                    <p className="text-red-200 text-xs font-medium">{error}</p>
                                 </div>
                             )}
 
                             <button
                                 type="submit"
                                 disabled={isSubmitting || !identifier}
-                                className="w-full h-16 mt-4 bg-gradient-to-r from-[#00A896] to-teal-500 hover:to-teal-400 text-white font-black rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-[0.2em] shadow-2xl shadow-teal-900/30 hover:shadow-teal-500/20 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
+                                className="w-full h-16 mt-4 bg-gradient-to-r from-[#00A896] to-teal-500 hover:to-teal-400 text-white font-semibold rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-[0.2em] shadow-2xl shadow-teal-900/30 hover:shadow-teal-500/20 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
                             >
                                 <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out skew-y-12"></div>
                                 <span className="relative z-10 flex items-center gap-3">
