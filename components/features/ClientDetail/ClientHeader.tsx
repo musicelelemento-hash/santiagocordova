@@ -41,178 +41,153 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
 }) => {
     return (
         <div className="relative mb-8 sm:mb-16">
-            {/* Top Action Bar - Minimalist Navigation following Architectural precision */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 sm:gap-8 mb-8 sm:mb-12 overflow-x-auto no-scrollbar pb-2">
-                <div className="flex items-center gap-3 sm:gap-5">
+            {/* Top Action Bar - Dynamic & Precise */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-4 border-b border-white/5">
+                <div className="flex items-center gap-4">
                     <button
                         onClick={onBack}
-                        className="group flex items-center gap-2.5 sm:gap-3 px-6 py-3 sm:px-8 sm:py-4 bg-surface-low rounded-2xl border-0 text-on-surface-variant font-premium font-bold text-[10px] sm:text-[11px] uppercase tracking-[0.2em] hover:bg-surface-lowest hover:text-on-surface transition-all active:scale-95 shadow-architect"
+                        className="group flex items-center gap-3 px-6 py-3 bg-surface-low rounded-2xl border border-white/5 text-on-surface-variant font-premium font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-surface-lowest hover:text-on-surface transition-all active:scale-95 shadow-architect"
                     >
-                        <ArrowLeft size={14} className="sm:w-[16px] sm:h-[16px] group-hover:-translate-x-1 transition-transform" strokeWidth={2.5} />
-                        VOLVER
+                        <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" strokeWidth={2.5} />
+                        BACK
                     </button>
                     
-                    <div className="h-6 w-[1px] bg-on-surface-variant/10 hidden md:block"></div>
+                    <div className="h-6 w-[1px] bg-white/5 hidden md:block"></div>
 
-                    <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="flex items-center gap-2.5">
                         <button
                             onClick={onToggleEdit}
-                            className={`flex items-center gap-2.5 sm:gap-3 px-5 py-3 sm:px-6 sm:py-4 rounded-2xl transition-all font-premium font-bold text-[10px] sm:text-[11px] uppercase tracking-[0.2em] active:scale-95 shadow-architect ${isEditing ? 'bg-primary text-white' : 'bg-surface-low text-on-surface-variant hover:bg-surface-lowest hover:text-on-surface'}`}
+                            className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl transition-all font-premium font-bold text-[10px] uppercase tracking-[0.2em] active:scale-95 border ${isEditing ? 'bg-primary border-primary text-white glow-azure' : 'bg-surface-low border-white/5 text-on-surface-variant hover:bg-surface-lowest hover:text-on-surface shadow-architect'}`}
                         >
-                            {isEditing ? <Save size={16} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} /> : <Edit size={16} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />}
-                            {isEditing ? 'GUARDAR' : 'EDITAR'}
+                            {isEditing ? <Save size={16} strokeWidth={2.5} /> : <Edit size={16} strokeWidth={2.5} />}
+                            {isEditing ? 'SAVE' : 'EDIT'}
                         </button>
 
                         <button
                             onClick={onWhatsApp}
-                            className="p-3 sm:p-4 bg-surface-low text-on-surface-variant rounded-2xl border-0 hover:bg-surface-lowest hover:text-primary transition-all active:scale-95 shadow-architect"
-                            title="WhatsApp"
+                            className="p-3 bg-surface-low text-on-surface-variant rounded-2xl border border-white/5 hover:bg-surface-lowest hover:text-primary transition-all active:scale-95 shadow-architect"
                         >
-                            <MessageCircle size={18} className="sm:w-[20px] sm:h-[20px]" strokeWidth={2.5} />
+                            <MessageCircle size={18} strokeWidth={2.5} />
                         </button>
 
                         <button
                             onClick={onOpenSRI}
-                            className="p-3 sm:p-4 bg-surface-low text-on-surface-variant rounded-2xl border-0 hover:bg-surface-lowest hover:text-primary transition-all active:scale-95 shadow-architect"
-                            title="Abrir SRI"
+                            className="p-3 bg-surface-low text-on-surface-variant rounded-2xl border border-white/5 hover:bg-surface-lowest hover:text-primary transition-all active:scale-95 shadow-architect"
                         >
-                            <ExternalLink size={18} className="sm:w-[20px] sm:h-[20px]" strokeWidth={2.5} />
-                        </button>
-
-                        <button
-                            onClick={onShare}
-                            className="p-3 sm:p-4 bg-surface-low text-on-surface-variant rounded-2xl border-0 hover:bg-surface-lowest hover:text-primary transition-all active:scale-95 shadow-architect"
-                            title="Compartir Bóveda"
-                        >
-                            <Share2 size={18} className="sm:w-[20px] sm:h-[20px]" strokeWidth={2.5} />
+                             <ExternalLink size={18} strokeWidth={2.5} />
                         </button>
                     </div>
-
                 </div>
 
-                <div className="flex items-center gap-3 sm:gap-5">
-                    <div className="relative group/vip">
-                        {/* VIP Badge with Primary Fixed Tones */}
-                        <div className="relative flex items-center gap-2.5 sm:gap-3 px-5 py-3 sm:px-7 sm:py-4 bg-primary-fixed text-on-primary-fixed rounded-2xl border-0 shadow-architect overflow-hidden">
-                            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover/vip:opacity-100 transition-opacity"></div>
-                            <Crown size={14} className="sm:w-[16px] sm:h-[16px] animate-pulse" fill="currentColor" />
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] sm:tracking-[0.25em] font-premium whitespace-nowrap">EXTRACTO VIP</span>
-                        </div>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 px-6 py-3 bg-surface-low border border-white/5 text-on-surface-variant/80 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] shadow-architect">
+                        <Smartphone size={14} className="text-primary/60" />
+                        ID <span className="text-primary font-mono ml-2 text-xs">{client.ruc}</span>
                     </div>
                     
-                    {/* Identification Chip with Tonal Background */}
-                    <div className="px-5 py-3 sm:px-7 sm:py-4 bg-surface-low text-on-surface-variant/80 rounded-2xl border-0 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] shadow-architect whitespace-nowrap">
-                        RUC <span className="text-primary font-mono ml-2 sm:ml-3 text-xs sm:text-sm">{client.ruc}</span>
+                    <div className="px-6 py-3 bg-indigo-500/10 text-primary border border-primary/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] font-premium shadow-architect glow-azure">
+                        ELITE ASSET
                     </div>
                 </div>
             </div>
 
-            {/* Profile Portfolio Card - THE EDITORIAL HERO */}
-            <div className="bg-surface-lowest rounded-[2rem] sm:rounded-[4rem] p-5 sm:p-16 relative overflow-hidden shadow-architect">
-                {/* Asymmetric Ambient Accents */}
-                <div className="absolute top-0 right-0 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-primary/5 rounded-full -mr-24 md:-mr-48 -mt-24 md:-mt-48 blur-[80px] md:blur-[120px] pointer-events-none opacity-40"></div>
-                <div className="absolute bottom-0 left-0 w-[150px] md:w-[300px] h-[150px] md:h-[300px] bg-tertiary-fixed/10 rounded-full -ml-12 md:-ml-24 -mb-12 md:-mb-24 blur-[40px] md:blur-[80px] pointer-events-none opacity-30"></div>
+            {/* Profile Portfolio Card - THE OBSIDIAN HERO */}
+            <div className="bg-surface-lowest rounded-[3rem] p-8 sm:p-14 relative overflow-hidden shadow-2xl border border-white/5 group">
+                {/* Cinematic Ambient Lighting */}
+                <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none group-hover:bg-primary/30 transition-all duration-1000"></div>
+                <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-tertiary/10 rounded-full blur-[100px] pointer-events-none group-hover:bg-tertiary/20 transition-all duration-1000"></div>
                 
-                <div className="flex flex-col lg:flex-row gap-8 sm:gap-16 relative z-10">
-                    <div className="flex-shrink-0 flex justify-center sm:justify-start">
+                <div className="flex flex-col lg:flex-row gap-10 sm:gap-16 relative z-10 items-center lg:items-start text-center lg:text-left">
+                    <div className="flex-shrink-0">
                         <div className="relative">
-                            {/* Larger Architect Avatar */}
-                            <div className="w-28 h-28 sm:w-32 md:w-56 md:h-56 bg-surface-low rounded-[2.5rem] sm:rounded-[3.5rem] border-0 flex items-center justify-center text-on-surface-variant/20 shadow-2xl relative overflow-hidden group/avatar">
-                                <div className="absolute inset-0 bg-surface-dim opacity-0 group-hover/avatar:opacity-10 transition-opacity"></div>
-                                <User size={48} className="sm:hidden" strokeWidth={1.5} />
-                                <User size={88} strokeWidth={1} className="hidden sm:block group-hover:scale-110 transition-transform duration-1000 group-hover:text-primary/40" />
+                            {/* Holographic Avatar Frame */}
+                            <div className="w-40 h-40 md:w-52 md:h-52 bg-surface-lowest rounded-[3rem] border border-white/10 flex items-center justify-center relative overflow-hidden shadow-2xl group/avatar">
+                                <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent opacity-30"></div>
+                                
+                                {/* Animated Tech Ring */}
+                                <div className="absolute inset-4 border border-primary/5 rounded-full animate-[spin_15s_linear_infinite]">
+                                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary/40 rounded-full blur-[1px]"></div>
+                                </div>
+                                
+                                <User size={80} strokeWidth={0.5} className="text-primary/40 group-hover:scale-105 transition-transform duration-1000 group-hover:text-primary/60" />
+                                
+                                {/* Scan Line Effect */}
+                                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent h-1/2 w-full animate-scan pointer-events-none opacity-40"></div>
                             </div>
                             
-                            {/* Compliance Status Shield */}
-                            <div className={`absolute -bottom-2 -right-2 sm:-bottom-4 sm:-right-4 w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[1.5rem] flex items-center justify-center shadow-2xl border-0 backdrop-blur-xl ${isFullyPaid ? 'bg-tertiary-fixed text-on-tertiary-fixed shadow-tertiary-fixed/20' : 'bg-primary text-on-primary shadow-primary/20 animate-heartbeat'}`}>
-                                {isFullyPaid ? <ShieldCheck size={24} className="sm:hidden" /> : <AlertTriangle size={24} className="sm:hidden" />}
-                                {isFullyPaid ? <ShieldCheck size={32} strokeWidth={2} className="hidden sm:block" /> : <AlertTriangle size={32} strokeWidth={2} className="hidden sm:block" />}
+                            {/* Vital Status Badge */}
+                            <div className={`absolute -bottom-4 -right-4 w-16 h-16 rounded-3xl flex items-center justify-center shadow-2xl border border-white/10 backdrop-blur-3xl transition-all duration-700 ${isFullyPaid ? 'bg-tertiary/10 text-tertiary glow-emerald' : 'bg-primary/10 text-primary animate-heartbeat glow-azure'}`}>
+                                {isFullyPaid ? <ShieldCheck size={32} strokeWidth={1.5} /> : <AlertTriangle size={32} strokeWidth={1.5} />}
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex-grow flex flex-col justify-center">
+                    <div className="flex-grow flex flex-col justify-center min-w-0 w-full">
                         {isEditing && editedClient && setEditedClient ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                <div className="space-y-4">
-                                    <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-[0.25em] ml-2 font-premium">RAZÓN SOCIAL</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.3em] font-premium">NOMINACIÓN FISCAL</label>
                                     <input
                                         type="text"
                                         value={editedClient.name}
                                         onChange={e => setEditedClient({ ...editedClient, name: e.target.value })}
-                                        className="w-full px-8 py-5 bg-surface-low border-0 rounded-2xl text-base font-bold text-on-surface focus:ring-4 focus:ring-primary/10 outline-none transition-all shadow-architect ring-1 ring-on-surface-variant/5"
+                                        className="w-full px-6 py-4 bg-surface rounded-xl border border-white/10 text-on-surface focus:border-primary/50 outline-none transition-all font-premium font-bold"
                                     />
                                 </div>
-                                <div className="space-y-4">
-                                    <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-[0.25em] ml-2 font-premium">IDENTIFICACIÓN RUC</label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            value={editedClient.ruc}
-                                            onChange={e => setEditedClient({ ...editedClient, ruc: e.target.value })}
-                                            className="w-full px-8 py-5 bg-surface-low border-0 rounded-2xl text-base font-bold text-primary focus:ring-4 focus:ring-primary/10 outline-none pr-16 transition-all font-mono tracking-wider shadow-architect ring-1 ring-on-surface-variant/5"
-                                        />
-                                        {onCopy && (
-                                            <button onClick={() => onCopy(editedClient.ruc)} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-xl text-on-surface-variant/40 hover:text-primary hover:bg-primary/5 transition-all">
-                                                <Copy size={20} />
-                                            </button>
-                                        )}
-                                    </div>
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.3em] font-premium">IDENTIFICADOR RUC</label>
+                                    <input
+                                        type="text"
+                                        value={editedClient.ruc}
+                                        onChange={e => setEditedClient({ ...editedClient, ruc: e.target.value })}
+                                        className="w-full px-6 py-4 bg-surface rounded-xl border border-white/10 text-primary focus:border-primary/50 outline-none transition-all font-mono font-bold tracking-widest"
+                                    />
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-4 text-center sm:text-left">
-                                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 sm:gap-5">
-                                    <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-2 sm:py-2.5 bg-surface-low text-on-surface-variant rounded-xl border-0 shadow-architect">
-                                        <Landmark size={14} className="text-primary sm:w-[16px] sm:h-[16px]" />
-                                        <span className="text-[9px] sm:text-[11px] font-bold uppercase tracking-[0.2em] font-premium">{client.regime}</span>
+                            <div className="space-y-4">
+                                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                                    <div className="px-4 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-full text-[9px] font-black uppercase tracking-widest font-premium">
+                                        {client.regime}
                                     </div>
-                                    <div className="hidden sm:block w-1 h-1 bg-primary/20 rounded-full"></div>
-                                    <span className="text-[9px] sm:text-[11px] font-bold text-on-surface-variant/60 uppercase tracking-[0.2em] sm:tracking-[0.35em] font-premium">ESTRUCTURA TRIBUTARIA CONSOLIDADA</span>
+                                    <div className="w-1.5 h-1.5 bg-white/10 rounded-full"></div>
+                                    <span className="text-[9px] font-bold text-on-surface-variant uppercase tracking-[0.3em] font-premium">OPERACIÓN ACTIVA</span>
                                 </div>
-                                <h1 className="text-3xl sm:text-5xl md:text-6xl font-premium font-extrabold text-on-surface tracking-tight leading-[1.1] max-w-5xl break-words pb-4">
+                                <h1 className="text-3xl sm:text-5xl md:text-6xl font-premium font-black text-on-surface tracking-tight leading-[1.05] break-words uppercase">
                                     {client.name}
                                 </h1>
+                                <p className="text-[11px] font-bold text-on-surface-variant/60 uppercase tracking-[0.4em] font-premium">SANTIAGO CORDOVA • PLATINUM MANAGEMENT</p>
                             </div>
                         )}
 
-                        {/* Minimalist Executive KPI Grid */}
-                        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-12 pt-8 sm:pt-14 mt-6 border-t border-on-surface-variant/5">
-                            <div className="space-y-2 sm:space-y-3 p-4 sm:p-0 bg-surface-low/50 sm:bg-transparent rounded-2xl">
-                                <p className="text-[9px] sm:text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.3em] font-premium">PRÓXIMO VENCIMIENTO</p>
-                                <p className="text-lg sm:text-xl font-extrabold text-on-surface tracking-tight uppercase font-premium">
-                                    {nextDeadline ? safeFormat(nextDeadline, 'dd MMM, yyyy') : '-- / -- / --'}
+                        {/* High-Density Info Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-10 mt-10 border-t border-white/5">
+                            <div className="space-y-1 group/item">
+                                <p className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-widest font-premium group-hover:text-primary/60 transition-colors">VENCIMIENTO</p>
+                                <p className="text-sm sm:text-base font-black text-on-surface font-premium">
+                                    {nextDeadline ? safeFormat(nextDeadline, 'dd MMM, yy') : 'N/A'}
                                 </p>
-                                {nextDeadline && (
-                                    <div className="flex items-center gap-2">
-                                        <Clock size={12} className="text-primary/40" />
-                                        <span className="text-[9px] sm:text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] font-premium">{getDaysUntilDue(nextDeadline)} DÍAS RESTANTES</span>
-                                    </div>
-                                )}
                             </div>
-                            <div className="space-y-2 sm:space-y-3 p-4 sm:p-0 bg-surface-low/50 sm:bg-transparent rounded-2xl">
-                                <p className="text-[9px] sm:text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.3em] font-premium">ESTADO FISCAL</p>
-                                <div className="flex items-center gap-3 sm:gap-4">
-                                    <div className={`w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full ${isFullyDeclared ? 'bg-tertiary shadow-[0_0_15px_rgba(var(--tertiary-rgb),0.6)]' : 'bg-primary animate-pulse shadow-[0_0_15px_rgba(var(--primary-rgb),0.6)]'}`}></div>
-                                    <p className={`text-[11px] sm:text-[13px] font-black uppercase tracking-[0.2em] font-premium ${isFullyDeclared ? 'text-on-surface' : 'text-primary'}`}>
-                                        {isFullyDeclared ? 'CUMPLIMIENTO TOTAL' : 'GESTIÓN EN CURSO'}
+                            <div className="space-y-1 group/item">
+                                <p className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-widest font-premium group-hover:text-primary/60 transition-colors">DÍAS RESTANTES</p>
+                                <p className={`text-sm sm:text-base font-black font-premium ${nextDeadline && getDaysUntilDue(nextDeadline) < 5 ? 'text-primary' : 'text-on-surface'}`}>
+                                    {nextDeadline ? `${getDaysUntilDue(nextDeadline)} DÍAS` : '--'}
+                                </p>
+                            </div>
+                            <div className="space-y-1 group/item">
+                                <p className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-widest font-premium group-hover:text-primary/60 transition-colors">CUMPLIMIENTO</p>
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${isFullyDeclared ? 'bg-tertiary glow-emerald shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-primary animate-pulse glow-azure shadow-[0_0_10px_rgba(59,130,246,0.5)]'}`}></div>
+                                    <p className="text-sm font-black text-on-surface font-premium uppercase">
+                                        {isFullyDeclared ? 'AL DÍA' : 'PENDIENTE'}
                                     </p>
                                 </div>
                             </div>
-                            <div className="space-y-2 sm:space-y-3 p-4 sm:p-0 bg-surface-low/50 sm:bg-transparent rounded-2xl">
-                                <p className="text-[9px] sm:text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.3em] font-premium">ÚLTIMA GESTIÓN</p>
-                                <p className="text-lg sm:text-xl font-extrabold text-on-surface tracking-tight font-premium">
-                                    {complianceStats?.iva.lastDate ? safeFormat(complianceStats.iva.lastDate, 'dd/MM/yy') : '-- / -- / --'}
+                            <div className="space-y-1 lg:pl-10 lg:border-l lg:border-white/5">
+                                <p className="text-[9px] font-black text-primary/40 uppercase tracking-widest font-premium">HONORARIOS</p>
+                                <p className={`text-2xl sm:text-4xl font-black font-premium tracking-tighter ${totalDebt > 0 ? 'text-primary drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]' : 'text-on-surface/10'}`}>
+                                    ${totalDebt.toFixed(2)}
                                 </p>
-                            </div>
-                            <div className="space-y-2 sm:space-y-3 p-4 sm:p-8 bg-primary/5 sm:bg-transparent border border-primary/10 sm:border-0 rounded-[2rem] sm:border-l sm:border-on-surface-variant/5 sm:pl-16">
-                                <p className="text-[9px] sm:text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.3em] font-premium">PASIVO PENDIENTE</p>
-                                <div className="flex items-baseline gap-2">
-                                    <span className={`text-lg sm:text-xl font-black mb-1 ${totalDebt > 0 ? 'text-primary' : 'text-tertiary'}`}>$</span>
-                                    <p className={`text-5xl sm:text-7xl font-extrabold font-premium tracking-tighter leading-none ${totalDebt > 0 ? 'text-primary' : 'text-on-surface-variant/20'}`}>
-                                        {totalDebt.toFixed(2)}
-                                    </p>
-                                </div>
                             </div>
                         </div>
                     </div>

@@ -447,14 +447,16 @@ const App: React.FC = () => {
                 {renderScreen()}
               </div>
             </ErrorBoundary>
-            <MobileNavBar
-              navItems={navItems}
-              activeScreen={activeScreen}
-              onNavigate={(s) => {
-                if (s === 'landing' as any) setAppState('landing');
-                else navigate(s as Screen);
-              }}
-            />
+            {!clientToView && (
+              <MobileNavBar
+                navItems={navItems}
+                activeScreen={activeScreen}
+                onNavigate={(s) => {
+                  if (s === 'landing' as any) setAppState('landing');
+                  else navigate(s as Screen);
+                }}
+              />
+            )}
           </main>
         </div>
         <Modal isOpen={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)} title="Cerrar Sesión">

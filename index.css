@@ -1,49 +1,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap');
 
 :root {
-    /* The Analytical Architect - Official Color Tokens from Stitch */
-    --primary: 231 63% 38%; /* #24389C */
-    --primary-container: 231 48% 48%; /* #3F51B5 */
+    /* The Analytical Architect - Zen Obsidian 2.0 (Deep Edition) */
+    --primary: 221 100% 64%; /* Electric Azure #3B82F6 - Focused */
+    --primary-container: 221 60% 15%;
     --on-primary: 0 0% 100%;
     
-    --secondary: 204 10% 38%; /* #546067 */
-    --secondary-container: 204 31% 88%; /* #D7E4EC */
+    --secondary: 262 83% 75%; /* Cyber Violet */
+    --secondary-container: 262 30% 10%;
     
-    --tertiary: 160 100% 15%; /* #004E33 */
-    --tertiary-container: 161 100% 20%; /* #006846 */
-    --tertiary-fixed: 154 94% 71%; /* #6FFBBE */
+    --tertiary: 165 90% 45%; /* Zen Emerald #10B981 */
+    --tertiary-container: 165 70% 15%;
+    --tertiary-fixed: 165 100% 75%; 
     
-    /* Surfaces - The Layering Principle */
-    --surface: 210 25% 98%; /* #F7F9FB - Base Level */
-    --surface-low: 210 16% 96%; /* #F2F4F6 - Secondary Zones */
-    --surface-lowest: 0 0% 100%; /* #FFFFFF - High-Focus Cards */
+    /* Zen Obsidian Palette - Atmospheric Depth */
+    --background: 222 47% 2%; /* Deep Midnight #020617 */
+    --foreground: 210 40% 98%;
     
-    --background: 210 25% 98%;
-    --foreground: 204 9% 11%; /* #191C1E */
+    --surface: 222 47% 4%;   /* Deep Indigo #0B1326 - Base */
+    --surface-low: 222 47% 8%; 
+    --surface-lowest: 222 47% 12%; 
     
-    /* Semantic Variations */
-    --on-surface: 204 9% 11%;
-    --on-surface-variant: 233 9% 30%; /* #454652 */
+    --on-surface: 210 40% 98%;
+    --on-surface-variant: 215 20% 70%;
     
-    /* Ghost Borders - Rare usage (15% opacity) */
-    --outline-variant: 240 14% 80%; /* #C5C5D4 */
-    --border: var(--outline-variant);
+    /* Ghost Borders - Editorial Whisper (10% opacity) */
+    --outline-variant: 240 14% 80%;
+    --border: 222 47% 12%;
 
-    --radius: 0.5rem; /* 8px fixed */
+    --radius: 1rem; /* Softer, more premium 16px radius */
 
-    /* Ambient Shadows (6% opacity on_surface) */
-    --architect-shadow: 0 32px 64px -12px hsla(204, 9%, 11%, 0.06);
-    --architect-gradient: linear-gradient(135deg, #24389c 0%, #3f51b5 100%);
+    /* Zen Shadows & Gradients */
+    --architect-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.6);
+    --architect-gradient: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
 }
 
 .dark {
-    --background: 210 10% 12%; 
-    --surface: 210 10% 12%;
-    --surface-low: 210 10% 15%;
-    --surface-lowest: 210 10% 18%;
-    --foreground: 210 20% 98%;
-    --on-surface: 210 20% 98%;
-    --border: 210 10% 25%;
+    /* Dark mode is now the native environment for Zen Obsidian */
+    --background: 222 47% 2%;
+    --surface: 222 47% 5%;   
+    --surface-low: 222 47% 9%; 
+    --surface-lowest: 222 47% 13%; 
+    --foreground: 210 40% 98%;
+    --on-surface: 210 40% 98%;
+    --border: 222 47% 10%;
 }
 
 body {
@@ -74,32 +74,32 @@ h1, h2, h3, h4 {
 
 /* Elegant minimalist variations for Client Portal */
 .glass-morphism {
-    background: hsla(210, 25%, 98%, 0.8);
-    backdrop-filter: blur(20px);
-    border: 1px solid hsla(240, 14%, 80%, 0.15); /* 15% opacity ghost border */
-    box-shadow: var(--architect-shadow);
+    background: hsla(225, 30%, 5%, 0.7);
+    backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid hsla(0, 0%, 100%, 0.1);
+    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.6);
 }
 
 .glass-card {
-    background: var(--card);
-    backdrop-filter: blur(16px);
-    border: none; /* No lines rule */
+    background: hsla(var(--surface-lowest), 0.3);
+    backdrop-filter: blur(24px);
+    border: 1px solid hsla(var(--foreground), 0.08); /* Architectural Trace */
     border-radius: var(--radius);
     box-shadow: var(--architect-shadow);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-card:hover {
-    background: hsla(210, 16%, 96%, 1); /* Shift to low container on hover */
-    box-shadow: 0 40px 80px -15px rgba(25, 28, 30, 0.1);
-    transform: translateY(-2px);
+    background: hsla(var(--surface-low), 0.5);
+    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
+    transform: translateY(-4px) scale(1.01);
 }
 
 .glass-elite {
-    background: var(--architect-gradient);
-    backdrop-filter: blur(32px);
-    border: none;
-    box-shadow: var(--architect-shadow);
+    background: linear-gradient(135deg, hsla(var(--primary), 0.1), hsla(var(--secondary), 0.1));
+    backdrop-filter: blur(40px);
+    border: 1px solid hsla(var(--primary), 0.2);
+    box-shadow: 0 0 40px -10px hsla(var(--primary), 0.2);
     color: white;
 }
 
@@ -108,7 +108,7 @@ h1, h2, h3, h4 {
 }
 
 .text-gradient-teal {
-    background: linear-gradient(135deg, #0f172a 0%, #00A896 100%);
+    background: linear-gradient(135deg, #3B82F6 0%, #10B981 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -189,40 +189,37 @@ h1, h2, h3, h4 {
 }
 
 .aurora-zen {
-    background: radial-gradient(circle at 10% 20%, rgba(63, 81, 181, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(93, 235, 175, 0.05) 0%, transparent 40%);
+    background: radial-gradient(circle at 10% 20%, rgba(63, 81, 181, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
 }
 
 .glass-zen {
-    background: hsla(210, 25%, 98%, 0.8);
-    backdrop-filter: blur(20px);
-    border: 1px solid hsla(240, 14%, 80%, 0.15); /* Ghost Border */
+    background: hsla(var(--surface-lowest), 0.8);
+    backdrop-filter: blur(30px) saturate(180%);
+    border: 1px solid hsla(var(--foreground), 0.1);
     box-shadow: var(--architect-shadow);
 }
 
 .dark .glass-zen {
-    background: rgba(45, 49, 51, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: var(--architect-shadow);
+    background: hsla(var(--surface), 0.7);
+    border: 1px solid hsla(0, 0%, 100%, 0.05);
+    backdrop-filter: blur(40px) saturate(200%);
+    box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.4);
 }
 
 .zen-card {
-    background: var(--card);
+    background: hsla(var(--surface-lowest), 0.5);
     border-radius: var(--radius);
     padding: 1.5rem;
     transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    border: none; /* No lines rule */
+    border: 1px solid hsla(var(--foreground), 0.05);
     box-shadow: var(--architect-shadow);
-}
-
-.dark .zen-card {
-    background: rgba(45, 49, 51, 1);
 }
 
 .zen-card:hover {
     transform: translateY(-4px);
-    background: hsla(210, 16%, 96%, 1);
-    box-shadow: 0 40px 80px -15px rgba(25, 28, 30, 0.1);
+    background: hsla(var(--surface-low), 0.8);
+    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
 }
 
 .neon-text-teal {
@@ -245,13 +242,13 @@ h1, h2, h3, h4 {
 }
 
 @keyframes heartbeat-pulse {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.4); }
-    50% { transform: scale(1.02); box-shadow: 0 0 15px 5px rgba(14, 165, 233, 0.2); }
-    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+    50% { transform: scale(1.05); box-shadow: 0 0 20px 10px rgba(59, 130, 246, 0.2); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
 }
 
 .animate-heartbeat {
-    animation: heartbeat-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    animation: heartbeat-pulse 3s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes scan {
@@ -261,7 +258,30 @@ h1, h2, h3, h4 {
 }
 
 .animate-scan {
-    animation: scan 2s linear infinite;
+    animation: scan 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.dynamic-island {
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 32px 100px -12px rgba(0, 0, 0, 0.7);
+}
+
+.glow-emerald {
+    box-shadow: 0 0 40px -5px rgba(16, 185, 129, 0.4);
+    border-color: rgba(16, 185, 129, 0.5);
+}
+
+.glow-azure {
+    box-shadow: 0 0 40px -5px rgba(59, 130, 246, 0.4);
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+.glass-indigo-zen {
+    background: linear-gradient(135deg, rgba(30, 27, 75, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
+    backdrop-filter: blur(32px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Base Animations */
@@ -305,17 +325,16 @@ h1, h2, h3, h4 {
     gap: 0.5rem;
     padding: 1rem 1.5rem;
     border-radius: 2.5rem;
-    background-color: rgba(2, 6, 23, 0.8);
+    background-color: rgba(2, 6, 23, 0.9);
     backdrop-filter: blur(40px) saturate(200%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
     transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mobile-island-dock-active {
     transform: scale(0.95);
     opacity: 0.9;
-    filter: blur(1px);
 }
 
 .card-stagger-up {
@@ -339,7 +358,7 @@ h1, h2, h3, h4 {
     position: absolute;
     inset: 0;
     border: 1px solid transparent;
-    background: linear-gradient(135deg, rgba(0, 168, 150, 0.4), rgba(59, 130, 246, 0.4), rgba(168, 85, 247, 0.4)) border-box;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.6), rgba(59, 130, 246, 0.6), rgba(139, 92, 246, 0.6)) border-box;
     -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: destination-out;
@@ -359,8 +378,8 @@ h1, h2, h3, h4 {
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle at center, rgba(0, 168, 150, 0.1) 0%, transparent 70%);
-    animation: rotateGlow 10s linear infinite;
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+    animation: rotateGlow 12s linear infinite;
     pointer-events: none;
 }
 

@@ -383,12 +383,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         content: b64
                     };
                 }
-                return { ...prev, ...updatedData };
-            });
-            toast.success(extracted.isCertificate ? "Certificado RUC validado y guardado." : "Información SRI validada.");
-        } catch (error) { toast.error("Error al validar PDF."); }
-        finally { setIsAnalyzingPdf(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
-    };
+            const updatedClientFull = { ...prev, ...updatedData };
+            onSave(updatedClientFull);
+            return updatedClientFull;
+        });
+        toast.success(extracted.isCertificate ? "Certificado RUC validado y guardado." : "Información SRI validada.");
+    } catch (error) { toast.error("Error al validar PDF."); }
+    finally { setIsAnalyzingPdf(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
+};
 
     const handleJumpToOwner = () => {
         if (!mismatchData) return;
@@ -606,7 +608,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                     <div className={`px-6 sm:px-8 py-3 sm:py-4 rounded-2xl border-0 text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em] shadow-2xl font-premium backdrop-blur-xl ${isFullyAlDia ? 'bg-tertiary/10 text-tertiary shadow-tertiary/10 border border-tertiary/20' : 'bg-primary text-on-primary shadow-primary/20'}`}>
                                         {isFullyAlDia ? 'COMPLIANCE VERIFIED' : 'ACTION REQUIRED'}
                                     </div>
-                                    <div className="flex items-center justify-center gap-3 text-on-surface-variant/40">
+                                    <div className="flex items-center justify-center gap-3 text-on-surface-variant/90">
                                         <TrendingUp size={16} />
                                         <span className="text-[9px] font-bold uppercase tracking-widest font-premium">PROYECCIÓN POSITIVA</span>
                                     </div>
@@ -1117,15 +1119,52 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     );
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8 bg-black/60 backdrop-blur-sm overflow-hidden animate-in fade-in duration-700">
-            <div className="bg-surface w-full h-full md:max-h-[92vh] md:max-w-6xl md:rounded-[2.5rem] shadow-architect flex flex-col relative overflow-hidden architect-layer-1">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 md:p-8 bg-slate-950/95 backdrop-blur-md overflow-hidden animate-in fade-in duration-700">
+            <div className="bg-surface w-full h-full md:max-h-[92vh] md:max-w-7xl md:rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col relative overflow-hidden architect-layer-1 group/modal">
                 
-                <button onClick={onBack} className="absolute top-8 right-8 z-50 p-3 bg-surface-low border border-surface-lowest text-on-surface-variant hover:text-primary rounded-2xl transition-all md:flex hidden hover:scale-110 active:scale-90 group/close shadow-sm">
-                    <X size={20} className="group-hover:rotate-90 transition-transform duration-500" />
+                {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed) */}
+                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
+                    <div className="flex items-center gap-1 p-1 bg-surface-lowest/60 backdrop-blur-[40px] border border-surface-low rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_40px_rgba(var(--primary-rgb),0.1)] pointer-events-auto ring-1 ring-white/5">
+                        {(['profile', 'history', 'vault', 'settings'] as const).map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`group relative flex items-center gap-3 px-6 py-4 rounded-[2rem] transition-all duration-700 overflow-hidden ${activeTab === tab ? 'bg-primary text-on-primary-fixed shadow-2xl shadow-primary/40 scale-[1.08] -translate-y-1' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-low/50'}`}
+                            >
+                                <div className="relative z-10 flex items-center gap-3">
+                                    {tab === 'profile' && <LayoutDashboard size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-12 group-hover:scale-110'}`} />}
+                                    {tab === 'history' && <Activity size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
+                                    {tab === 'vault' && <Lock size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:-translate-y-0.5'}`} />}
+                                    {tab === 'settings' && <Settings size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-90 group-hover:scale-110'}`} />}
+                                    <span className={`text-[11px] font-black uppercase tracking-[0.25em] font-premium transition-all duration-700 ${activeTab === tab ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0 md:opacity-100 md:max-w-[150px] overflow-hidden'}`}>
+                                        {tab === 'profile' ? 'Táctico' : tab === 'history' ? 'Operativas' : tab === 'vault' ? 'Bóveda' : 'Sistemas'}
+                                    </span>
+                                </div>
+                                {activeTab === tab && (
+                                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(255,255,255,0.15),transparent)] animate-shine"></div>
+                                )}
+                            </button>
+                        ))}
+                        
+                        <div className="w-[1px] h-8 bg-on-surface-variant/20 mx-3 hidden md:block"></div>
+                        
+                        <button 
+                            onClick={onBack}
+                            className="hidden md:flex items-center gap-3 px-6 py-4 text-on-surface-variant/40 hover:text-primary transition-all duration-500 group rounded-[2rem] hover:bg-primary/5"
+                            title="Regresar al Directorio"
+                        >
+                            <X size={16} className="group-hover:rotate-90 transition-transform duration-700" />
+                            <span className="text-[11px] font-black uppercase tracking-[0.25em] font-premium">Salir</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button onClick={onBack} className="absolute top-8 right-8 z-50 p-4 bg-surface-low/80 backdrop-blur-xl border border-surface-lowest text-on-surface-variant hover:text-primary rounded-2xl transition-all md:flex hidden hover:scale-110 active:scale-90 group/close shadow-2xl hover:border-primary/30">
+                    <X size={24} className="group-hover:rotate-90 transition-transform duration-700" />
                 </button>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                    <div className="p-5 sm:p-14 pb-20 relative z-10">
+                <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth relative">
+                    <div className="p-5 sm:p-14 pb-40 relative z-10">
                         <ClientHeader
                             client={client}
                             onBack={onBack}
@@ -1144,25 +1183,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             nextDeadline={nextDeadline}
                         />
 
-                        <div className="flex gap-1 p-1 sm:p-1.5 bg-surface-low rounded-[2rem] mb-10 sm:mb-12 overflow-x-auto no-scrollbar max-w-full sm:max-w-fit mx-auto md:mx-0 shadow-sm relative z-20">
-                            {(['profile', 'history', 'vault', 'settings'] as const).map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`px-4 sm:px-10 py-3 sm:py-3.5 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.25em] transition-all relative rounded-[1.5rem] whitespace-nowrap flex-shrink-0 ${activeTab === tab ? 'text-on-surface bg-surface shadow-architect scale-[1.02]' : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-lowest'}`}
-                                >
-                                    <span className="relative z-10 flex items-center gap-2 sm:gap-3">
-                                        {tab === 'profile' && <LayoutDashboard size={13} className={`sm:w-[14px] sm:h-[14px] ${activeTab === tab ? 'text-primary' : ''}`} />}
-                                        {tab === 'history' && <Activity size={13} className={`sm:w-[14px] sm:h-[14px] ${activeTab === tab ? 'text-primary' : ''}`} />}
-                                        {tab === 'vault' && <Lock size={13} className={`sm:w-[14px] sm:h-[14px] ${activeTab === tab ? 'text-primary' : ''}`} />}
-                                        {tab === 'settings' && <Settings size={13} className={`sm:w-[14px] sm:h-[14px] ${activeTab === tab ? 'text-primary' : ''}`} />}
-                                        {tab === 'profile' ? 'ESTRATEGIA' : tab === 'history' ? 'OPERATIVAS' : tab === 'vault' ? 'DATA BÓVEDA' : 'SISTEMAS'}
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000 min-h-[500px]">
+                        {/* Main Tactical Viewport */}
+                        <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000 min-h-[700px] relative z-10">
                             {activeTab === 'profile' && renderProfileTab()}
                             {activeTab === 'history' && renderHistoryTab()}
                             {activeTab === 'vault' && renderVaultTab()}
@@ -1171,25 +1193,21 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     </div>
                 </div>
 
-                <div className="flex-none p-5 sm:p-6 md:px-14 bg-surface-low border-t border-surface-lowest flex flex-col sm:flex-row justify-between items-center gap-6 sm:gap-0 relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.02)]">
+                {/* Tactical Footer Action Bar - Integrated into context */}
+                <div className={`flex-none p-6 md:px-14 bg-surface-low border-t border-surface-lowest flex flex-col sm:flex-row justify-between items-center transition-all duration-700 ${isEditing ? 'opacity-100 translate-y-0 h-auto visible' : 'opacity-0 translate-y-full h-0 invisible'}`}>
                     <div className="flex items-center gap-6">
                         <SidebarAction icon={Download} label="Exportar Dossier" onClick={() => toast.info('Generando Reporte Elite...')} />
+                        <div className="hidden lg:flex items-center gap-2 border-l border-on-surface-variant/10 pl-6 opacity-30 select-none">
+                            <span className="text-[9px] font-black tracking-[0.4em] text-on-surface-variant font-premium uppercase">CONTROL DE MISIÓN v3.2</span>
+                        </div>
                     </div>
                     <div className="flex gap-4">
-                        {isEditing ? (
-                            <>
-                                <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-5 py-3.5 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl border border-primary/20 text-[10px] font-black uppercase tracking-[0.25em] flex items-center gap-2 transition-all">
-                                    {isAnalyzingPdf ? <Loader size={12} className="animate-spin" /> : <ScanLine size={14} />}
-                                    <span>MÓDULO SCANNER</span>
-                                </button>
-                                <button onClick={() => setIsEditing(false)} className="px-6 py-3.5 text-on-surface-variant font-black text-[10px] uppercase tracking-[0.25em] hover:bg-surface-lowest transition-all rounded-xl">CANCELAR</button>
-                                <button onClick={handleSave} className="px-8 py-3.5 bg-primary text-on-primary-fixed rounded-xl text-[10px] font-black uppercase tracking-[0.25em] shadow-architect transition-all active:scale-95">GUARDAR CAMBIOS</button>
-                            </>
-                        ) : (
-                            <button onClick={() => setIsEditing(true)} className="flex items-center justify-center w-full sm:w-auto px-10 py-3.5 bg-surface text-primary border border-primary/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] shadow-architect hover:bg-primary/5 hover:border-primary/40 transition-all transform hover:-translate-y-0.5 active:scale-95">
-                                MÓDULO DE EDICIÓN
-                            </button>
-                        )}
+                        <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-5 py-3.5 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl border border-primary/20 text-[10px] font-black uppercase tracking-[0.25em] flex items-center gap-2 transition-all">
+                            {isAnalyzingPdf ? <Loader size={12} className="animate-spin" /> : <ScanLine size={14} />}
+                            <span>MÓDULO SCANNER</span>
+                        </button>
+                        <button onClick={() => setIsEditing(false)} className="px-6 py-3.5 text-on-surface-variant font-black text-[10px] uppercase tracking-[0.25em] hover:bg-surface-lowest transition-all rounded-xl">ABORTAR</button>
+                        <button onClick={handleSave} className="px-8 py-3.5 bg-primary text-on-primary-fixed rounded-xl text-[10px] font-black uppercase tracking-[0.25em] shadow-architect transition-all active:scale-95 glow-primary">GUARDAR DATOS</button>
                     </div>
                 </div>
                 <input type="file" ref={proofInputRef} className="hidden" onChange={handleProofUpload} accept=".pdf,image/*" />
