@@ -9,7 +9,7 @@ import {
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy,
     ShieldCheck, FileText, Zap, UserCheck, UserX, UserCheck2, HandCoins,
     MoreHorizontal, Printer, Clipboard, CheckCircle, CheckCircle2, Send, Loader, ArrowDownToLine,
-    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History as HistoryIcon, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, ScanLine, FilePlus, Power, FileCheck, Coins, BadgePercent, Play, Settings, FileDown,
+    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History as HistoryIcon, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, ScanLine, FilePlus, Power, FileCheck, Coins, BadgePercent, Play, Settings, FileDown, TrendingUp,
     Search, Filter, Trash, LogOut, Menu, ArrowLeft, RefreshCcw, Smartphone, Hash, Landmark, AlertCircle
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
@@ -118,6 +118,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [isAnalyzingPdf, setIsAnalyzingPdf] = useState(false);
     const proofInputRef = useRef<HTMLInputElement>(null);
     const [uploadingTarget, setUploadingTarget] = useState<{ type: string; period?: string } | null>(null);
+    const [activeSection, setActiveSection] = useState<'overview' | 'actions' | 'notes'>('overview');
 
     const [mismatchData, setMismatchData] = useState<{ ruc: string, name: string } | null>(null);
 
@@ -560,266 +561,242 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const greeting = new Date().getHours() < 12 ? 'Buenos días' : 'Buenas tardes';
         const name = client.name.split(' ')[0];
         const formattedPeriod = formatPeriodForDisplay(period);
-        
         const message = `${greeting} ${name} 👋. Le saludo de SantiagoCordova.com. Le informo que su obligación de ${type} correspondiente a ${formattedPeriod} ya ha sido procesada con éxito en el SRI.\n\nEl valor total de honorarios es de $${fee.toFixed(2)}. Puede realizar el pago por transferencia o depósito.\n\n¡Muchas gracias!`;
-        
         window.open(getWhatsAppUrl(client.phones[0], message), "_blank");
     };
 
     const renderProfileTab = () => (
-        <div className="space-y-8 sm:space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-                <div className={`p-8 rounded-[2rem] shadow-architect transition-all duration-700 relative overflow-hidden group ${isFullyAlDia ? 'bg-tertiary-fixed/10' : 'bg-primary'}`}>
-                    <div className="relative z-10">
-                        <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-3 font-premium ${isFullyAlDia ? 'text-tertiary' : 'text-primary-foreground/70'}`}>Directiva de Cumplimiento</p>
-                        <h4 className={`text-2xl font-bold leading-tight tracking-tight uppercase font-premium ${isFullyAlDia ? 'text-on-surface' : 'text-white'}`}>
-                            {isFullyAlDia ? 'ESTADO ÓPTIMO' : 'ACCIÓN REQUERIDA'}
-                        </h4>
-                        <div className="mt-6 flex items-center gap-3">
-                            <div className={`w-2 h-2 rounded-full animate-pulse ${isFullyAlDia ? 'bg-tertiary' : 'bg-primary-foreground'}`}></div>
-                            <span className={`text-[10px] font-bold uppercase tracking-widest font-premium ${isFullyAlDia ? 'text-on-surface-variant' : 'text-primary-foreground/60'}`}>Sincronización Activa</span>
-                        </div>
-                    </div>
-                </div>
-
-                {!isFullyDeclared && (
-                    <div className="p-8 rounded-[2rem] bg-surface-lowest shadow-architect flex items-center gap-6 group hover:bg-surface-low transition-all duration-500">
-                        <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                            <Zap size={28} className="animate-pulse" />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-1 font-premium">Vector de Acción</p>
-                            <p className="text-sm font-bold text-on-surface uppercase tracking-tight font-premium">DECLARAR OBLIGACIÓN</p>
-                        </div>
-                    </div>
-                )}
-
-                {isFullyDeclared && !isFullyPaid && (
-                    <div className="p-8 rounded-[2rem] bg-surface-lowest shadow-architect flex items-center gap-6 group hover:bg-surface-low transition-all duration-500">
-                        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
-                            <DollarSign size={28} />
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-bold uppercase text-amber-600 tracking-[0.2em] mb-1 font-premium">Estado: Liquidación</p>
-                            <p className="text-sm font-bold text-on-surface uppercase tracking-tight font-premium">PENDIENTE DE PAGO</p>
-                        </div>
-                    </div>
-                )}
+        <div className="space-y-6 sm:space-y-16 animate-in fade-in slide-in-from-bottom-10 h-full duration-1000">
+            {/* The Tactical Main View: Grid Architecture (Alpha + Beta) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-16">
                 
-                {cloudStatus === 'saving' && (
-                    <div className="p-8 rounded-[2.5rem] glass-card flex items-center gap-6 animate-pulse border border-white/5">
-                        <div className="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                            <RefreshCcw size={28} className="animate-spin" />
-                        </div>
-                        <div>
-                            <p className="text-xs font-medium uppercase tracking-widest text-indigo-400 mb-1">Sincronización</p>
-                            <p className="text-sm font-medium text-white uppercase tracking-tight">Actualizando Nube</p>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <div className="lg:col-span-2 space-y-10">
-                    <div className="bg-surface-lowest dark:bg-surface-lowest rounded-[3rem] p-10 shadow-architect relative overflow-hidden group">
-                        <div className="flex items-center justify-between mb-12">
-                            <div>
-                                <h3 className="text-xl font-bold text-on-surface tracking-tight uppercase flex items-center gap-4 font-premium">
-                                    <Activity className="text-primary" size={24} />
-                                    Panel de Inteligencia Fiscal
-                                </h3>
-                                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mt-3 font-premium">MÉTRICAS DE CUMPLIMIENTO Y OBLIGACIONES CRÍTICAS</p>
+                {/* Sector Alfa: Compliance Intelligence (8/12) */}
+                <div className="lg:col-span-8 space-y-6 sm:space-y-16">
+                    
+                    {/* High-Impact Compliance Score - THE KPI HERO */}
+                    <div className="bg-surface-lowest rounded-[2.5rem] sm:rounded-[4rem] p-6 sm:p-16 relative overflow-hidden shadow-architect border border-surface-low group">
+                        {/* Dynamic Background Mesh */}
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(var(--primary-rgb),0.03),transparent_70%)]"></div>
+                        
+                        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8 sm:gap-12">
+                            <div className="space-y-8 sm:space-y-10 group-hover:translate-x-3 transition-transform duration-1000">
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-1.5 h-6 bg-primary rounded-full"></div>
+                                        <h2 className="text-sm font-black text-on-surface uppercase tracking-[0.5em] font-premium">DIRECTIVA DE CUMPLIMIENTO</h2>
+                                    </div>
+                                    <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.3em] font-premium opacity-40">FISCAL SCORE & RISK CONTROL v2.1</p>
+                                </div>
+                                <div className="flex flex-col">
+                                    <div className="flex items-baseline gap-4">
+                                        <span className="text-4xl sm:text-6xl font-black text-primary tracking-tighter transition-all duration-700 font-premium group-hover:scale-105 active:opacity-40 select-none">
+                                            {isFullyAlDia ? 100 : 88}<span className="text-2xl sm:text-4xl ml-1 sm:ml-2">%</span>
+                                        </span>
+                                        <div className="h-0.5 flex-grow max-w-[60px] sm:max-w-[80px] bg-primary/20 rounded-full mb-3 sm:mb-8"></div>
+                                    </div>
+                                    <p className="text-[9px] sm:text-[11px] font-black text-on-surface-variant uppercase tracking-[0.3em] sm:tracking-[0.4em] font-premium">REPUTACIÓN FISCAL ÓPTIMA</p>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
-                            <TaxObligationCard
-                                title="IVA Mensual"
-                                period={complianceStats?.iva.period || ''}
-                                status={complianceStats?.iva.isDeclared ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente}
-                                isPaid={complianceStats?.iva.is_paid}
-                                amount={client.fee_structure?.monthly || 5}
-                                dueDate={getDueDateForPeriod(editedClient, complianceStats?.iva.period || '') || undefined}
-                                onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats?.iva.period || '' })}
-                                onPay={() => handleQuickPay(complianceStats?.iva.period || '')}
-                                onUpload={() => { setUploadingTarget({ type: 'iva', period: complianceStats?.iva.period }); proofInputRef.current?.click(); }}
-                                onWhatsApp={() => handleWhatsAppPaymentRequest(complianceStats?.iva.period || '', 'IVA')}
-                                onRevertPayment={() => handleRevertPayment(complianceStats?.iva.period || '')}
-                                declarationDate={editedClient.declarations.find(d => d.period === complianceStats?.iva.period)?.declaredAt}
-                            />
-
-                            <div className="space-y-8">
-                                <div className="p-8 glass-card rounded-[2.5rem] relative overflow-hidden group/card shadow-2xl border border-white/5">
-                                    <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Arquitectura Tributaria</p>
-                                    <div className="flex items-center gap-5">
-                                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-primary shadow-inner group-hover/card:scale-110 transition-transform">
-                                            <ShieldCheck size={28} />
-                                        </div>
-                                        <div>
-                                            <p className="text-base font-medium text-white leading-tight uppercase tracking-tight">{client.regime}</p>
-                                            <p className="text-[11px] font-black text-emerald-400 mt-1 uppercase tracking-[0.2em]">VALIDADO & ACTIVO</p>
-                                        </div>
+                            <div className="relative flex justify-center text-center">
+                                <span className={`absolute -top-10 sm:-top-20 left-1/2 -translate-x-1/2 text-[80px] sm:text-[150px] lg:text-[200px] font-black leading-none tracking-tighter opacity-5 transition-all duration-1000 group-hover:scale-125 select-none font-premium ${isFullyAlDia ? 'text-tertiary' : 'text-primary'}`}>
+                                    {isFullyAlDia ? 'A+' : 'A'}
+                                </span>
+                                <div className="relative z-10 space-y-4">
+                                    <div className={`px-6 sm:px-8 py-3 sm:py-4 rounded-2xl border-0 text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em] shadow-2xl font-premium backdrop-blur-xl ${isFullyAlDia ? 'bg-tertiary/10 text-tertiary shadow-tertiary/10 border border-tertiary/20' : 'bg-primary text-on-primary shadow-primary/20'}`}>
+                                        {isFullyAlDia ? 'COMPLIANCE VERIFIED' : 'ACTION REQUIRED'}
+                                    </div>
+                                    <div className="flex items-center justify-center gap-3 text-on-surface-variant/40">
+                                        <TrendingUp size={16} />
+                                        <span className="text-[9px] font-bold uppercase tracking-widest font-premium">PROYECCIÓN POSITIVA</span>
                                     </div>
                                 </div>
-
-                                {client.taxProfile?.requiresAnnualRenta && editedClient.rentaRefundStatus !== 'Completado' && (
-                                    <div className="p-8 glass-card rounded-[2.5rem] space-y-8 relative overflow-hidden group/renta shadow-2xl border border-white/5">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Protocolo Renta</p>
-                                            <div className="px-3 py-1 bg-amber-400/10 border border-amber-400/20 text-amber-400 text-xs font-black rounded-lg uppercase tracking-[0.2em]">MISIÓN CRÍTICA</div>
-                                        </div>
-                                        <div className="flex gap-3 flex-wrap pb-6">
-                                            {[
-                                                { id: 'Solicitado', label: 'Inicio', icon: Send },
-                                                { id: 'Esperando Confirmación', label: 'SRI Web', icon: Clock },
-                                                { id: 'Confirmado', label: 'Validado', icon: FileCheck },
-                                                { id: 'Completado', label: 'Dossier', icon: ShieldCheck }
-                                            ].map((step) => {
-                                                const statusOrder = ['Pendiente', 'Solicitado', 'Esperando Confirmación', 'Confirmado', 'Completado'];
-                                                const currentIdx = statusOrder.indexOf(editedClient.rentaRefundStatus || 'Pendiente');
-                                                const stepIdx = statusOrder.indexOf(step.id);
-                                                const isActive = editedClient.rentaRefundStatus === step.id;
-                                                const isDone = stepIdx < currentIdx;
-
-                                                return (
-                                                    <button
-                                                        key={step.id}
-                                                        onClick={() => {
-                                                            if (step.id === 'Solicitado') handleRentaRefundAction('start');
-                                                            if (step.id === 'Esperando Confirmación') handleRentaRefundAction('message_received');
-                                                            if (step.id === 'Confirmado') handleRentaRefundAction('confirm');
-                                                            if (step.id === 'Completado') handleRentaRefundAction('complete');
-                                                        }}
-                                                        className={`flex-1 min-w-[110px] flex justify-center items-center gap-2 px-4 py-3 rounded-2xl border transition-all whitespace-nowrap ${isActive ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-slate-950 text-slate-600 border-white/5 hover:border-white/10')}`}
-                                                    >
-                                                        <step.icon size={14} className="flex-shrink-0" />
-                                                        <span className="text-[11px] font-black uppercase tracking-[0.1em]">{step.label}</span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-
-                                        <TaxObligationCard
-                                            title={`Renta (${editedClient.rentaRefundStatus || 'Inactivo'})`}
-                                            period={complianceStats?.renta.period || ''}
-                                            status={
-                                                (editedClient.rentaRefundStatus && editedClient.rentaRefundStatus !== 'Pendiente' ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente)
-                                            }
-                                            isPaid={!!editedClient.rentaRefundPaid}
-                                            amount={10.00}
-                                            dueDate={getDueDateForPeriod(editedClient, complianceStats?.renta.period || '') || undefined}
-                                            onDeclare={() => handleRentaRefundAction('start')}
-                                            onPay={() => handleRentaRefundAction('pay')}
-                                            onUpload={() => { setUploadingTarget({ type: 'devolucionRenta', period: complianceStats?.renta.period }); proofInputRef.current?.click(); }}
-                                            onWhatsApp={() => handleWhatsAppPaymentRequest(complianceStats?.renta.period || '', 'Devolución de Renta')}
-                                            onRevertPayment={() => handleRentaRefundAction('revert_pay')}
-                                            declarationDate={editedClient.rentaRefundRequestedAt ? safeFormat(editedClient.rentaRefundRequestedAt, 'dd/MM/yyyy HH:mm') : undefined}
-                                        />
-                                    </div>
-                                )}
-
-                                {client.hasElderlyDevolucionIva && editedClient.elderlyDevolucionIvaStatus !== 'Completado' && (
-                                    <div className="p-8 glass-card rounded-[2.5rem] space-y-8 relative overflow-hidden group/elderly shadow-2xl border border-white/5">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em]">Protocolo Devolución (T. Edad)</p>
-                                        </div>
-
-                                        <div className="flex gap-3 flex-wrap pb-6">
-                                            {[
-                                                { id: 'Pendiente', label: 'Inicio', icon: Send, action: 'start' },
-                                                { id: 'En Proceso', label: 'En Proceso', icon: Clock, action: 'process' },
-                                                { id: 'Completado', label: 'Completado', icon: ShieldCheck, action: 'complete' }
-                                            ].map((step) => {
-                                                const statusOrder = ['Pendiente', 'En Proceso', 'Completado'];
-                                                const currentIdx = statusOrder.indexOf(editedClient.elderlyDevolucionIvaStatus || 'Pendiente');
-                                                const stepIdx = statusOrder.indexOf(step.id);
-                                                const isActive = editedClient.elderlyDevolucionIvaStatus === step.id;
-                                                const isDone = stepIdx < currentIdx;
-
-                                                return (
-                                                    <button
-                                                        key={step.id}
-                                                        onClick={() => handleElderlyRefundAction(step.action as any)}
-                                                        className={`flex-1 min-w-[110px] flex justify-center items-center gap-2 px-4 py-3 rounded-2xl border transition-all whitespace-nowrap ${isActive ? 'bg-primary/20 text-primary border-primary/50 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : (isDone ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-slate-950 text-slate-600 border-white/5 hover:border-white/10')}`}
-                                                    >
-                                                        <step.icon size={14} className="flex-shrink-0" />
-                                                        <span className="text-[11px] font-black uppercase tracking-[0.1em]">{step.label}</span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-
-                                        <TaxObligationCard
-                                            title={`Devolución IVA (${editedClient.elderlyDevolucionIvaStatus || 'Pendiente'})`}
-                                            period={complianceStats?.iva.period || ''}
-                                            status={
-                                                (editedClient.elderlyDevolucionIvaStatus && editedClient.elderlyDevolucionIvaStatus !== 'Pendiente' ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente)
-                                            }
-                                            isPaid={!!editedClient.elderlyDevolucionIvaPaid}
-                                            amount={15.00}
-                                            onDeclare={() => handleElderlyRefundAction('start')}
-                                            onPay={() => {
-                                                const updated = { ...editedClient, elderlyDevolucionIvaPaid: true };
-                                                setEditedClient(updated);
-                                                onSave(updated);
-                                                toast.success("Pago registrado");
-                                            }}
-                                            onUpload={() => { setUploadingTarget({ type: 'devolucionIvaTerceraEdad', period: complianceStats?.iva.period }); proofInputRef.current?.click(); }}
-                                            onWhatsApp={() => handleWhatsAppPaymentRequest(complianceStats?.iva.period || '', 'Devolución IVA Tercera Edad')}
-                                            onRevertPayment={() => {
-                                                const updated = { ...editedClient, elderlyDevolucionIvaPaid: false };
-                                                setEditedClient(updated);
-                                                onSave(updated);
-                                                toast.success("Pago revertido");
-                                            }}
-                                        />
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="space-y-10">
-                    <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
-                        <div className="space-y-8">
-                            <div className="flex items-center gap-6">
-                                <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-primary shadow-inner">
-                                    <Mail size={24} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em] mb-1">Enlace Email</p>
-                                    <p className="text-sm font-medium text-white truncate pr-4">{client.email || 'SIN ASIGNAR'}</p>
-                                </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-6">
-                                <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-amber-400 shadow-inner">
-                                    <Phone size={24} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-[11px] font-black uppercase text-slate-500 tracking-[0.2em] mb-1">Enlace Móvil</p>
-                                    <p className="text-sm font-medium text-white truncate pr-4">{(client.phones && client.phones.length > 0) ? client.phones[0] : 'SIN ASIGNAR'}</p>
-                                </div>
-                            </div>
+                    {/* Tactical Executive Dashboard */}
+                    <div className="space-y-6 sm:space-y-10 group/executive">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-[10px] sm:text-[11px] font-black text-on-surface-variant uppercase tracking-[0.25em] sm:tracking-[0.3em] font-premium relative flex items-center gap-3 sm:gap-4">
+                                OBLIGACIONES EJECUTIVAS
+                                <div className="h-[1px] w-8 sm:w-12 bg-on-surface-variant/10"></div>
+                            </h3>
+                            <button onClick={() => setActiveTab('history')} className="text-[8px] sm:text-[9px] font-black text-primary uppercase tracking-[0.15em] hover:tracking-[0.25em] transition-all font-premium">HISTORIAL</button>
                         </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
+                            {/* IVA Obligation Vector */}
+                            {complianceStats?.iva.needed && (
+                                <TaxObligationCard
+                                    type="iva"
+                                    title="IMPUESTO AL VALOR AGREGADO (IVA)"
+                                    period={complianceStats.iva.period}
+                                    isDeclared={complianceStats.iva.isDeclared}
+                                    isPaid={complianceStats.iva.is_paid}
+                                    amount={getClientServiceFee(client, serviceFees, complianceStats.iva.period)}
+                                    dueDate={getDueDateForPeriod(client, complianceStats.iva.period) || undefined}
+                                    onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats.iva.period })}
+                                    onPay={() => handleQuickPay(complianceStats.iva.period)}
+                                    onUpload={() => { setUploadingTarget({ type: 'iva', period: complianceStats.iva.period }); proofInputRef.current?.click(); }}
+                                />
+                            )}
 
-                        <div className="grid grid-cols-2 gap-4 mt-12 pt-10 border-t border-white/5">
-                            <button onClick={handleOpenSRI} className="flex flex-col items-center gap-3 p-5 bg-white/5 hover:bg-primary/10 border border-white/5 hover:border-primary/20 rounded-[2rem] transition-all group/btn">
-                                <Globe size={20} className="text-primary group-hover/btn:scale-110 transition-all duration-500" />
-                                <span className="text-[11px] font-black text-slate-500 group-hover/btn:text-primary uppercase tracking-[0.2em]">PORTAL SRI</span>
-                            </button>
-                            <button onClick={handleWhatsApp} className="flex flex-col items-center gap-3 p-5 bg-white/5 hover:bg-emerald-400/10 border border-white/5 hover:border-emerald-400/20 rounded-[2rem] transition-all group/btn">
-                                <MessageCircle size={20} className="text-emerald-400 group-hover/btn:scale-110 transition-all duration-500" />
-                                <span className="text-[11px] font-black text-slate-500 group-hover/btn:text-emerald-400 uppercase tracking-[0.2em]">WHATSAPP</span>
-                            </button>
+                            {/* RENTA Obligation Vector */}
+                            {complianceStats?.renta.needed && (
+                                <TaxObligationCard
+                                    type="renta"
+                                    title="IMPUESTO A LA RENTA (ANUAL)"
+                                    period={complianceStats.renta.period}
+                                    isDeclared={complianceStats.renta.isDeclared}
+                                    isPaid={complianceStats.renta.is_paid}
+                                    amount={editedClient.fee_structure?.annual ?? 10}
+                                    dueDate={getDueDateForPeriod(client, complianceStats.renta.period) || undefined}
+                                    onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats.renta.period })}
+                                    onPay={() => handleQuickPay(complianceStats.renta.period)}
+                                    onUpload={() => { setUploadingTarget({ type: 'renta', period: complianceStats.renta.period }); proofInputRef.current?.click(); }}
+                                />
+                            )}
+
+                            {/* Special Vectors: Refunds */}
+                            {editedClient.taxProfile?.hasActiveDevolucionIva && (
+                                <TaxObligationCard
+                                    type="refund"
+                                    title="DEVOLUCIÓN IVA (TERCERA EDAD)"
+                                    status={editedClient.elderlyDevolucionIvaStatus as any}
+                                    resolutionFile={editedClient.elderlyDevolucionIvaResolutionFile}
+                                    onAction={handleElderlyRefundAction}
+                                    onUpload={() => { setUploadingTarget({ type: 'devolucionIvaTerceraEdad' }); proofInputRef.current?.click(); }}
+                                />
+                            )}
+
+                            {editedClient.taxProfile?.requiresAnnualRenta && editedClient.rentaRefundStatus && (
+                                <TaxObligationCard
+                                    type="renta_refund"
+                                    title="DEVOLUCIÓN IMPUESTO RENTA"
+                                    status={editedClient.rentaRefundStatus as any}
+                                    isPaid={editedClient.rentaRefundPaid}
+                                    onAction={handleRentaRefundAction}
+                                    onUpload={() => { setUploadingTarget({ type: 'devolucionRenta' }); proofInputRef.current?.click(); }}
+                                />
+                            )}
                         </div>
                     </div>
 
-                    <div className="bg-white/5 backdrop-blur-md rounded-[3rem] p-10 border border-white/5 shadow-2xl">
+                    {/* Analytics Integration */}
+                    <div className="bg-surface-lowest rounded-[3rem] sm:rounded-[3.5rem] p-6 sm:p-10 border border-surface-low shadow-architect overflow-hidden relative group">
+                        <div className="absolute top-0 right-0 p-4 sm:p-8">
+                            <Activity size={24} className="text-primary/20" />
+                        </div>
+                        <div className="flex items-center gap-4 mb-6 sm:mb-10">
+                            <h3 className="text-[9px] sm:text-[10px] font-black text-on-surface-variant uppercase tracking-[0.3em] font-premium">ANALÍTICA DE HONORARIOS</h3>
+                        </div>
                         <PaymentHistoryChart client={client} />
                     </div>
+                </div>
 
+                {/* Sector Beta: Tactical Vault & Data (4/12) */}
+                <div className="lg:col-span-4 space-y-6 sm:space-y-12">
+                    
+                    {/* Tactical Access Card */}
+                    <div className="bg-surface-lowest rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low shadow-architect relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-6 sm:p-8 opacity-10 group-hover:opacity-40 transition-all duration-1000 group-hover:scale-110 group-hover:-rotate-12">
+                            <Key size={48} className="text-secondary" />
+                        </div>
+                        
+                        <div className="flex items-center gap-4 sm:gap-5 mb-8 sm:mb-12 relative z-10">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[1.2rem] sm:rounded-[1.5rem] bg-secondary-fixed/10 flex items-center justify-center text-secondary shadow-inner">
+                                <Lock size={20} className="sm:w-[24px] sm:h-[24px]" />
+                            </div>
+                            <div>
+                                <h3 className="text-xs sm:text-sm font-black text-on-surface uppercase tracking-[0.2em] font-premium">BÓVEDA TÁCTICA</h3>
+                                <p className="text-[8px] sm:text-[9px] font-black text-on-surface-variant/60 uppercase tracking-[0.3em] mt-1 font-premium">CREDENTIAL SECURITY MGR</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-5 sm:space-y-6 relative z-10">
+                            <div className="p-6 sm:p-8 bg-surface rounded-[1.5rem] sm:rounded-[2rem] border border-surface-low group/pass shadow-sm hover:border-primary/30 transition-all">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="text-[8px] sm:text-[9px] font-black text-on-surface-variant uppercase tracking-[0.3em] font-premium">CLAVE PORTAL SRI</div>
+                                    <div className="p-1 px-2.5 bg-primary/10 rounded-full text-[8px] font-black text-primary uppercase tracking-widest font-premium animate-pulse">ENCRIPTADO</div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <code className="text-base sm:text-lg font-black tracking-[0.2em] sm:tracking-[0.3em] text-primary font-premium selection:bg-primary selection:text-white truncate pr-4">
+                                        {passwordVisible ? client.sriPassword : '••••••••••••'}
+                                    </code>
+                                    <button 
+                                        onClick={() => setPasswordVisible(!passwordVisible)}
+                                        className="p-2 sm:p-3 hover:bg-primary/10 rounded-xl text-on-surface-variant hover:text-primary transition-all active:scale-90"
+                                        title={passwordVisible ? "Ocultar" : "Mostrar"}
+                                    >
+                                        {passwordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 sm:gap-5">
+                                <button 
+                                    onClick={handleOpenSRI}
+                                    className="flex flex-col items-center gap-3 sm:gap-4 p-6 sm:p-8 bg-surface hover:bg-primary/5 border border-surface-low hover:border-primary/20 rounded-[2rem] sm:rounded-[2.5rem] transition-all group/btn shadow-sm active:scale-95"
+                                >
+                                    <Globe size={20} className="sm:w-[24px] sm:h-[24px] text-primary group-hover/btn:scale-125 transition-all duration-700" />
+                                    <span className="text-[8px] sm:text-[9px] font-black text-on-surface-variant group-hover/btn:text-primary uppercase tracking-[0.2em] font-premium">LOG-IN SRI</span>
+                                </button>
+                                <button 
+                                    onClick={handleShareViaWhatsApp}
+                                    className="flex flex-col items-center gap-3 sm:gap-4 p-6 sm:p-8 bg-surface hover:bg-tertiary-fixed/10 border border-surface-low hover:border-tertiary/20 rounded-[2rem] sm:rounded-[2.5rem] transition-all group/btn shadow-sm active:scale-95"
+                                >
+                                    <Share2 size={20} className="sm:w-[24px] sm:h-[24px] text-tertiary group-hover/btn:scale-125 transition-all duration-700" />
+                                    <span className="text-[8px] sm:text-[9px] font-black text-on-surface-variant group-hover/btn:text-tertiary uppercase tracking-[0.2em] font-premium">DIFUNDIR</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Integrated Facturador Intelligence */}
+                    <div className="col-span-1 md:col-span-2 lg:col-span-1">
+                        <FacturadorCard 
+                            config={editedClient.facturadorConfig || {}} 
+                            isEditing={isEditing}
+                            onChange={(config) => setEditedClient({ ...editedClient, facturadorConfig: config })}
+                        />
+                    </div>
+
+                    {/* Operational Commands */}
+                    <div className="bg-surface-lowest rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low shadow-architect space-y-6 sm:space-y-10 group overflow-hidden relative">
+                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors"></div>
+                        <h3 className="text-[9px] sm:text-[10px] font-black text-on-surface-variant uppercase tracking-[0.4em] font-premium relative z-10">COMANDOS OPERACIONALES</h3>
+                        
+                        <div className="space-y-3 sm:space-y-5 relative z-10">
+                            <button onClick={handleWhatsApp} className="w-full flex items-center justify-between p-4 sm:p-7 bg-surface hover:bg-primary/5 border border-surface-low hover:border-primary/10 rounded-2xl sm:rounded-[2rem] transition-all group/opt shadow-sm active:scale-[0.98]">
+                                <div className="flex items-center gap-3 sm:gap-5">
+                                    <div className="p-2 sm:p-4 bg-primary/10 rounded-xl sm:rounded-2xl text-primary group-hover/opt:rotate-12 transition-transform">
+                                        <MessageCircle size={18} className="sm:w-[20px] sm:h-[20px]" />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="text-[10px] sm:text-xs font-black text-on-surface uppercase tracking-widest font-premium">ENLACE WHATSAPP</div>
+                                        <div className="text-[7px] sm:text-[9px] text-on-surface-variant font-bold uppercase tracking-widest mt-1 sm:mt-1.5 font-premium opacity-60">COMUNICACIÓN DIRECTA</div>
+                                    </div>
+                                </div>
+                                <ArrowRight size={16} className="sm:w-[18px] sm:h-[18px] text-on-surface-variant/40 group-hover/opt:translate-x-3 group-hover/opt:text-primary transition-all duration-500" />
+                            </button>
+
+                            <button onClick={() => setActiveTab('settings')} className="w-full flex items-center justify-between p-4 sm:p-7 bg-surface hover:bg-secondary/5 border border-surface-low hover:border-secondary/10 rounded-2xl sm:rounded-[2rem] transition-all group/opt shadow-sm active:scale-[0.98]">
+                                <div className="flex items-center gap-3 sm:gap-5">
+                                    <div className="p-2 sm:p-4 bg-secondary/10 rounded-xl sm:rounded-2xl text-secondary group-hover/opt:rotate-[30deg] transition-transform">
+                                        <Settings size={18} className="sm:w-[20px] sm:h-[20px]" />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="text-[10px] sm:text-xs font-black text-on-surface uppercase tracking-widest font-premium">PARAMETRÍA TÉCNICA</div>
+                                        <div className="text-[7px] sm:text-[9px] text-on-surface-variant font-bold uppercase tracking-widest mt-1 sm:mt-1.5 font-premium opacity-60">ESTRUCTURACIÓN FISCAL</div>
+                                    </div>
+                                </div>
+                                <ArrowRight size={16} className="sm:w-[18px] sm:h-[18px] text-on-surface-variant/40 group-hover/opt:translate-x-3 group-hover/opt:text-secondary transition-all duration-500" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Executive Notes */}
                     <ClientNotes 
                         clientId={client.id} 
                         notes={client.structuredNotes || []} 
@@ -839,14 +816,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
     const renderHistoryTab = () => (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group">
+            <div className="bg-surface-lowest rounded-[3rem] p-10 shadow-architect relative overflow-hidden group border border-surface-low">
                 <div className="flex items-center justify-between mb-12">
                     <div>
-                        <h3 className="text-xl font-medium text-white tracking-tight uppercase flex items-center gap-4">
+                        <h3 className="text-xl font-extrabold text-on-surface tracking-tight uppercase flex items-center gap-4 font-premium">
                             <Activity className="text-primary" size={24} />
                             REGISTRO OPERATIVO
                         </h3>
-                        <p className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mt-3">TRAZABILIDAD DE ACCIONES Y VALIDACIONES</p>
+                        <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mt-3 font-premium">TRAZABILIDAD DE ACCIONES Y VALIDACIONES</p>
                     </div>
                 </div>
 
@@ -858,10 +835,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 />
             </div>
             
-            <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group">
+            <div className="bg-surface-lowest rounded-[3rem] p-10 shadow-architect relative overflow-hidden group border border-surface-low">
                 <div className="flex items-center justify-between mb-10">
-                    <h3 className="text-base font-medium text-white tracking-tight uppercase flex items-center gap-3">
-                        <FileClock className="text-emerald-400" size={20} />
+                    <h3 className="text-base font-extrabold text-on-surface tracking-tight uppercase flex items-center gap-3 font-premium">
+                        <FileClock className="text-tertiary" size={20} />
                         Resumen de Declaraciones
                     </h3>
                 </div>
@@ -901,18 +878,18 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 onChange={(config) => setEditedClient({ ...editedClient, facturadorConfig: config })} 
             />
 
-            <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
+            <div className="bg-surface-lowest rounded-[3rem] p-10 border border-surface-low relative overflow-hidden group shadow-architect">
                 <div className="flex items-center justify-between mb-12">
                     <div>
-                        <h3 className="text-xl font-medium text-white tracking-tight uppercase flex items-center gap-4">
+                        <h3 className="text-xl font-extrabold text-on-surface tracking-tight uppercase flex items-center gap-4 font-premium">
                             <Store className="text-primary" size={24} />
                             Repositorio de Documentos
                         </h3>
-                        <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest mt-3">Gestión centralizada de archivos y comprobantes</p>
+                        <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mt-3 font-premium">Gestión centralizada de archivos y comprobantes</p>
                     </div>
                     <div className="flex gap-4">
-                        <div className="px-6 py-3 bg-white/5 rounded-2xl border border-white/5 text-xs font-medium text-emerald-400 flex items-center gap-3 shadow-inner uppercase tracking-widest">
-                            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <div className="px-6 py-3 bg-surface rounded-2xl text-[9px] font-black text-tertiary flex items-center gap-3 shadow-architect-low uppercase tracking-[0.2em] font-premium">
+                            <div className="w-2 h-2 bg-tertiary rounded-full animate-pulse"></div>
                             {(client.declarations || []).filter(d => d.proof_file).length} Archivos Protegidos
                         </div>
                     </div>
@@ -921,37 +898,37 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                     <button
                         onClick={() => { setUploadingTarget({ type: 'iva', period: getPeriod(client, new Date()) }); proofInputRef.current?.click(); }}
-                        className="aspect-square rounded-[2.5rem] border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden"
+                        className="aspect-square rounded-[2.5rem] border-2 border-dashed border-surface-low flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden architect-layer-2 shadow-sm"
                     >
-                        <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center group-hover:scale-110 transition-transform shadow-2xl relative z-10">
-                            <Plus className="text-slate-500 group-hover:text-primary" size={32} />
+                        <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center group-hover:scale-110 transition-transform shadow-architect relative z-10">
+                            <Plus className="text-on-surface-variant group-hover:text-primary" size={32} />
                         </div>
-                        <span className="text-xs font-medium uppercase text-slate-500 group-hover:text-primary tracking-widest relative z-10">Subir Documento</span>
+                        <span className="text-[10px] font-extrabold uppercase text-on-surface-variant group-hover:text-primary tracking-widest relative z-10 font-premium">Subir Documento</span>
                     </button>
 
                     {[...(client.declarations || [])]
                         .filter(d => d.proof_file)
                         .sort((a, b) => b.period.localeCompare(a.period))
                         .map((decl, idx) => (
-                            <div key={idx} className="glass-card rounded-[2.5rem] p-5 border border-white/5 shadow-2xl hover:border-primary/30 transition-all cursor-pointer group relative overflow-hidden" onClick={() => setPreviewItem(decl)}>
-                                <div className="aspect-[4/3] rounded-2xl bg-white/5 mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-white/10 transition-colors">
-                                    <FileText className="text-slate-700 group-hover:text-primary group-hover:scale-110 transition-all duration-500" size={48} />
+                            <div key={idx} className="bg-surface rounded-[2.5rem] p-5 shadow-architect-low hover:scale-[1.02] hover:shadow-architect transition-all cursor-pointer group relative overflow-hidden" onClick={() => setPreviewItem(decl)}>
+                                <div className="aspect-[4/3] rounded-2xl bg-surface-lowest mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-primary/5 transition-colors">
+                                    <FileText className="text-on-surface-variant/40 group-hover:text-primary group-hover:scale-110 transition-all duration-500" size={48} />
                                     {decl.proof_file?.metadata?.formType && (
-                                        <div className="absolute top-3 left-3 px-3 py-1 bg-primary text-slate-950 text-xs font-medium rounded-lg uppercase tracking-widest shadow-lg">
+                                        <div className="absolute top-3 left-3 px-3 py-1 bg-primary text-primary-foreground text-[9px] font-black rounded-lg uppercase tracking-widest shadow-md font-premium">
                                             {decl.proof_file.metadata.formType}
                                         </div>
                                     )}
-                                    <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <Eye className="text-white" size={28} />
+                                    <div className="absolute inset-0 bg-surface/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <Eye className="text-primary" size={28} />
                                     </div>
                                 </div>
                                 <div className="space-y-3 relative z-10">
                                     <div className="flex items-center justify-between">
                                         <div className="flex flex-col">
-                                            <span className="text-[11px] font-medium text-emerald-400 tracking-tighter">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
-                                            <span className="text-xs text-slate-500 font-medium uppercase tracking-widest mt-1">{formatPeriodForDisplay(decl.period)}</span>
+                                            <span className="text-[11px] font-extrabold text-tertiary tracking-tighter font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
+                                            <span className="text-[10px] text-on-surface-variant font-black uppercase tracking-widest mt-1 font-premium">{formatPeriodForDisplay(decl.period)}</span>
                                         </div>
-                                        <button className="p-2.5 hover:bg-white/10 rounded-xl text-slate-600 hover:text-primary transition-colors">
+                                        <button className="p-2.5 hover:bg-surface-lowest rounded-xl text-on-surface-variant hover:text-primary transition-colors">
                                             <Download size={14} />
                                         </button>
                                     </div>
@@ -965,61 +942,61 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     );
 
     const renderSettingsTab = () => (
-        <div className="space-y-10 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700 pb-20">
+        <div className="space-y-10 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-5 duration-1000 pb-20">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
-                    <h3 className="text-sm font-medium text-slate-500 uppercase tracking-widest mb-10 flex items-center gap-4">
-                        <Coins size={20} className="text-primary" />
+                        <div className="bg-surface-lowest rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low relative overflow-hidden group shadow-architect">
+                    <h3 className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
+                        <Coins size={18} className="sm:w-[20px] sm:h-[20px] text-primary" />
                         Configuración de Honorarios
                     </h3>
                     
                     <div className="space-y-8">
                         <div className="space-y-4">
-                            <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">
+                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">
                                 Honorario {editedClient.taxProfile?.ivaFrequency === 'Semestral' ? 'Semestral' : 'Mensual'}
                             </label>
                             <div className="relative group/input">
-                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-primary font-medium">$</div>
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-primary font-extrabold">$</div>
                                 <input
                                     type="number"
                                     value={monthlyFee}
                                     onChange={(e) => setMonthlyFee(e.target.value)}
                                     disabled={!isEditing}
-                                    className="w-full pl-12 pr-6 py-5 bg-white/5 border border-white/5 rounded-2xl text-base font-medium text-white focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all disabled:opacity-40 outline-none shadow-inner"
+                                    className="w-full pl-12 pr-6 py-5 bg-surface border border-surface-low rounded-2xl text-base font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-4">
-                            <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Asesoría Anual (Renta)</label>
+                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Asesoría Anual (Renta)</label>
                             <div className="relative group/input">
-                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-amber-400 font-medium">$</div>
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-amber-600 font-extrabold font-premium">$</div>
                                 <input
                                     type="number"
                                     value={annualFee}
                                     onChange={(e) => setAnnualFee(e.target.value)}
                                     disabled={!isEditing}
-                                    className="w-full pl-12 pr-6 py-5 bg-white/5 border border-white/5 rounded-2xl text-base font-medium text-white focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400/50 transition-all disabled:opacity-40 outline-none shadow-inner"
+                                    className="w-full pl-12 pr-6 py-5 bg-surface border border-surface-low rounded-2xl text-base font-extrabold text-on-surface focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/40 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
-                    <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-10 flex items-center gap-4">
-                        <MapPin size={20} className="text-emerald-400" />
+                <div className="bg-surface-lowest rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low relative overflow-hidden group shadow-architect">
+                    <h3 className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
+                        <MapPin size={18} className="sm:w-[20px] sm:h-[20px] text-tertiary" />
                         PERFIL DEL CONTRIBUYENTE
                     </h3>
 
                     <div className="space-y-8">
                         <div className="space-y-4">
-                            <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Régimen Tributario</label>
+                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Régimen Tributario</label>
                             <select
                                 value={editedClient.regime}
                                 onChange={(e) => setEditedClient({ ...editedClient, regime: e.target.value as TaxRegime })}
                                 disabled={!isEditing}
-                                className="w-full px-6 py-5 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-40 outline-none appearance-none shadow-inner"
+                                className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm font-premium"
                             >
                                 <option value={TaxRegime.General}>Régimen General</option>
                                 <option value={TaxRegime.RimpeEmprendedor}>RIMPE Emprendedor</option>
@@ -1030,32 +1007,32 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </div>
             </div>
 
-            <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
-                <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-10 flex items-center gap-4">
-                    <Building size={20} className="text-indigo-400" />
+            <div className="bg-surface-lowest rounded-[3rem] p-10 border border-surface-low relative overflow-hidden group shadow-architect">
+                <h3 className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mb-12 flex items-center gap-4 font-premium">
+                    <Building size={20} className="text-primary" />
                     INFORMACIÓN DE CONTACTO
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                        <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Correo Electrónico</label>
+                        <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Correo Electrónico</label>
                         <input
                             type="email"
                             value={editedClient.email || ''}
                             onChange={(e) => setEditedClient({ ...editedClient, email: e.target.value })}
                             disabled={!isEditing}
-                            className="w-full px-6 py-5 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-40 outline-none shadow-inner"
+                            className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                             placeholder="contacto@ejemplo.com"
                         />
                     </div>
                     <div className="space-y-4">
-                        <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Teléfono de Contacto</label>
+                        <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Teléfono de Contacto</label>
                         <input
                             type="text"
                             value={editedClient.phones && editedClient.phones.length > 0 ? editedClient.phones[0] : ''}
                             onChange={(e) => setEditedClient({ ...editedClient, phones: [e.target.value] })}
                             disabled={!isEditing}
-                            className="w-full px-6 py-5 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-40 outline-none shadow-inner"
+                            className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                             placeholder="+593 000 000 000"
                         />
                     </div>
@@ -1063,7 +1040,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
                     <div className="space-y-4">
-                        <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Frecuencia IVA</label>
+                        <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Frecuencia IVA</label>
                         <select
                             value={editedClient.taxProfile?.ivaFrequency || 'Mensual'}
                             onChange={(e) => setEditedClient({
@@ -1074,7 +1051,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 }
                             })}
                             disabled={!isEditing}
-                            className="w-full px-6 py-5 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-40 outline-none appearance-none shadow-inner"
+                            className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm font-premium"
                         >
                             <option value="Mensual">Ciclo Mensual</option>
                             <option value="Semestral">Ciclo Semestral</option>
@@ -1082,7 +1059,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         </select>
                     </div>
                     <div className="space-y-4">
-                        <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Clave SRI</label>
+                        <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Clave SRI</label>
                         <div className="relative">
                             <input
                                 type={passwordVisible ? "text" : "password"}
@@ -1090,10 +1067,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 onChange={(e) => setEditedClient({ ...editedClient, sriPassword: e.target.value })}
                                 disabled={!isEditing}
                                 autoComplete="new-password"
-                                className="w-full px-6 py-5 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-40 outline-none shadow-inner"
+                                className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                                 placeholder="********"
                             />
-                            <button onClick={() => setPasswordVisible(!passwordVisible)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-600 hover:text-primary">
+                            <button onClick={() => setPasswordVisible(!passwordVisible)} className="absolute right-6 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
                                 {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                         </div>
@@ -1101,33 +1078,33 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </div>
 
                 <div className="mt-8 space-y-4">
-                    <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Dirección Principal</label>
+                    <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Dirección Principal</label>
                     <input
                         type="text"
                         value={editedClient.address || ''}
                         onChange={(e) => setEditedClient({ ...editedClient, address: e.target.value })}
                         disabled={!isEditing}
-                        className="w-full px-6 py-5 bg-white/5 border border-white/5 rounded-2xl text-sm font-medium text-white focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-40 outline-none shadow-inner"
+                        className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                         placeholder="Dirección del domicilio o negocio"
                     />
                 </div>
 
                 <div className="mt-8 space-y-4">
-                    <label className="text-xs font-medium text-slate-500 uppercase tracking-widest ml-1">Detalle de Actividad</label>
+                    <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Detalle de Actividad</label>
                     <textarea
                         value={editedClient.economicActivity || ''}
                         onChange={(e) => setEditedClient({ ...editedClient, economicActivity: e.target.value })}
                         disabled={!isEditing}
                         rows={3}
-                        className="w-full px-6 py-5 bg-white/5 border border-white/5 rounded-[2rem] text-sm font-medium text-white focus:ring-2 focus:ring-primary/50 transition-all disabled:opacity-40 outline-none shadow-inner resize-none"
+                        className="w-full px-6 py-5 bg-surface border border-surface-low rounded-[2rem] text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none shadow-sm resize-none font-premium"
                         placeholder="Descripción de la actividad económica"
                     />
                 </div>
             </div>
 
-            <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
-                <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-[0.2em] mb-10 flex items-center gap-4">
-                    <ShieldCheck size={20} className="text-emerald-400" />
+            <div className="bg-surface-lowest rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low relative overflow-hidden group shadow-architect">
+                <h3 className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
+                    <ShieldCheck size={18} className="sm:w-[20px] sm:h-[20px] text-tertiary" />
                     PROTOCOLOS FISCALES AVANZADOS
                 </h3>
                 <ExtraObligationsCheckboxes
@@ -1140,15 +1117,15 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     );
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8 bg-black/80 backdrop-blur-md overflow-hidden animate-in fade-in duration-700">
-            <div className="bg-secondary/40 backdrop-blur-3xl w-full h-full md:max-h-[92vh] md:max-w-6xl md:rounded-[2.5rem] shadow-2xl flex flex-col relative overflow-hidden border border-white/5 aurora-premium">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8 bg-black/60 backdrop-blur-sm overflow-hidden animate-in fade-in duration-700">
+            <div className="bg-surface w-full h-full md:max-h-[92vh] md:max-w-6xl md:rounded-[2.5rem] shadow-architect flex flex-col relative overflow-hidden architect-layer-1">
                 
-                <button onClick={onBack} className="absolute top-8 right-8 z-50 p-3 bg-white/5 border border-white/5 text-slate-500 hover:text-primary rounded-2xl transition-all md:flex hidden hover:scale-110 active:scale-90 group/close shadow-2xl">
+                <button onClick={onBack} className="absolute top-8 right-8 z-50 p-3 bg-surface-low border border-surface-lowest text-on-surface-variant hover:text-primary rounded-2xl transition-all md:flex hidden hover:scale-110 active:scale-90 group/close shadow-sm">
                     <X size={20} className="group-hover:rotate-90 transition-transform duration-500" />
                 </button>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-                    <div className="p-8 md:p-14 pb-20 relative z-10">
+                    <div className="p-5 sm:p-14 pb-20 relative z-10">
                         <ClientHeader
                             client={client}
                             onBack={onBack}
@@ -1167,19 +1144,18 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             nextDeadline={nextDeadline}
                         />
 
-                        {/* Minimalist Navigation */}
-                        <div className="flex gap-2 p-2 bg-white/5 backdrop-blur-xl rounded-[2rem] border border-white/5 mb-12 overflow-x-auto no-scrollbar max-w-full sm:max-w-fit mx-auto md:mx-0">
+                        <div className="flex gap-1 p-1 sm:p-1.5 bg-surface-low rounded-[2rem] mb-10 sm:mb-12 overflow-x-auto no-scrollbar max-w-full sm:max-w-fit mx-auto md:mx-0 shadow-sm relative z-20">
                             {(['profile', 'history', 'vault', 'settings'] as const).map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-6 sm:px-10 py-3 text-xs font-black uppercase tracking-[0.2em] transition-all relative rounded-[1.5rem] whitespace-nowrap ${activeTab === tab ? 'text-slate-950 bg-primary shadow-primary' : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'}`}
+                                    className={`px-4 sm:px-10 py-3 sm:py-3.5 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.25em] transition-all relative rounded-[1.5rem] whitespace-nowrap flex-shrink-0 ${activeTab === tab ? 'text-on-surface bg-surface shadow-architect scale-[1.02]' : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-lowest'}`}
                                 >
-                                    <span className="relative z-10 flex items-center gap-3">
-                                        {tab === 'profile' && <LayoutDashboard size={16} />}
-                                        {tab === 'history' && <Activity size={16} />}
-                                        {tab === 'vault' && <Lock size={16} />}
-                                        {tab === 'settings' && <Settings size={16} />}
+                                    <span className="relative z-10 flex items-center gap-2 sm:gap-3">
+                                        {tab === 'profile' && <LayoutDashboard size={13} className={`sm:w-[14px] sm:h-[14px] ${activeTab === tab ? 'text-primary' : ''}`} />}
+                                        {tab === 'history' && <Activity size={13} className={`sm:w-[14px] sm:h-[14px] ${activeTab === tab ? 'text-primary' : ''}`} />}
+                                        {tab === 'vault' && <Lock size={13} className={`sm:w-[14px] sm:h-[14px] ${activeTab === tab ? 'text-primary' : ''}`} />}
+                                        {tab === 'settings' && <Settings size={13} className={`sm:w-[14px] sm:h-[14px] ${activeTab === tab ? 'text-primary' : ''}`} />}
                                         {tab === 'profile' ? 'ESTRATEGIA' : tab === 'history' ? 'OPERATIVAS' : tab === 'vault' ? 'DATA BÓVEDA' : 'SISTEMAS'}
                                     </span>
                                 </button>
@@ -1195,22 +1171,22 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     </div>
                 </div>
 
-                <div className="flex-none p-6 md:px-14 bg-white/5 backdrop-blur-2xl border-t border-white/5 flex justify-between items-center relative z-20">
+                <div className="flex-none p-5 sm:p-6 md:px-14 bg-surface-low border-t border-surface-lowest flex flex-col sm:flex-row justify-between items-center gap-6 sm:gap-0 relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.02)]">
                     <div className="flex items-center gap-6">
                         <SidebarAction icon={Download} label="Exportar Dossier" onClick={() => toast.info('Generando Reporte Elite...')} />
                     </div>
                     <div className="flex gap-4">
                         {isEditing ? (
                             <>
-                                <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-5 py-3.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl border border-primary/20 text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 transition-all">
+                                <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-5 py-3.5 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl border border-primary/20 text-[10px] font-black uppercase tracking-[0.25em] flex items-center gap-2 transition-all">
                                     {isAnalyzingPdf ? <Loader size={12} className="animate-spin" /> : <ScanLine size={14} />}
                                     <span>MÓDULO SCANNER</span>
                                 </button>
-                                <button onClick={() => setIsEditing(false)} className="px-6 py-3.5 bg-white/5 border border-white/5 text-slate-500 rounded-xl text-xs font-black uppercase tracking-[0.2em] hover:text-slate-300 transition-all">CANCELAR</button>
-                                <button onClick={handleSave} className="px-8 py-3.5 bg-primary text-slate-950 rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-primary transition-all active:scale-95">GUARDAR CAMBIOS</button>
+                                <button onClick={() => setIsEditing(false)} className="px-6 py-3.5 text-on-surface-variant font-black text-[10px] uppercase tracking-[0.25em] hover:bg-surface-lowest transition-all rounded-xl">CANCELAR</button>
+                                <button onClick={handleSave} className="px-8 py-3.5 bg-primary text-on-primary-fixed rounded-xl text-[10px] font-black uppercase tracking-[0.25em] shadow-architect transition-all active:scale-95">GUARDAR CAMBIOS</button>
                             </>
                         ) : (
-                            <button onClick={() => setIsEditing(true)} className="flex items-center justify-center w-full sm:w-auto px-10 py-3.5 bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-[0_0_20px_rgba(6,182,212,0.15)] hover:bg-cyan-500/20 hover:border-cyan-500/60 hover:shadow-[0_0_30px_rgba(6,182,212,0.3)] transition-all backdrop-blur-md transform hover:-translate-y-1 active:scale-95">
+                            <button onClick={() => setIsEditing(true)} className="flex items-center justify-center w-full sm:w-auto px-10 py-3.5 bg-surface text-primary border border-primary/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] shadow-architect hover:bg-primary/5 hover:border-primary/40 transition-all transform hover:-translate-y-0.5 active:scale-95">
                                 MÓDULO DE EDICIÓN
                             </button>
                         )}

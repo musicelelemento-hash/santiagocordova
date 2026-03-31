@@ -116,28 +116,35 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     return (
         <div 
-            className="fixed inset-0 z-[9999] flex items-start justify-center pt-[15vh] px-4 animate-in fade-in duration-300"
-            style={{ backdropFilter: 'blur(12px)', background: 'rgba(0,0,0,0.6)' }}
+            className="fixed inset-0 z-[9999] flex items-start justify-center pt-[15vh] px-4 animate-in fade-in duration-500"
+            style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
             onClick={onClose}
         >
             <div 
-                className="w-full max-w-2xl glass-card rounded-[2.5rem] overflow-hidden shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] border border-white/5 animate-in slide-in-from-top-4 duration-500"
+                className="w-full max-w-2xl bg-surface-lowest rounded-[2.5rem] overflow-hidden shadow-architect border border-surface-low animate-in slide-in-from-top-6 duration-700 hover:scale-[1.01] transition-transform"
                 onClick={e => e.stopPropagation()}
                 onKeyDown={handleKeyDown}
             >
                 {/* Search Header */}
-                <div className="flex items-center p-6 gap-4 border-b border-white/5 bg-white/[0.02]">
-                    <Search className="text-primary/40" size={20} />
+                <div className="flex items-center p-8 gap-5 border-b border-surface-low bg-surface relative overflow-hidden">
+                    {/* Architectural Accent */}
+                    <div className="absolute top-0 left-0 w-2 h-full bg-primary/20"></div>
+                    
+                    <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-architect-low">
+                        <Search size={22} className="animate-pulse" />
+                    </div>
+                    
                     <input
                         ref={inputRef}
                         type="text"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                         placeholder={placeholders[placeholderIndex]}
-                        className="flex-1 bg-transparent border-none outline-none text-white text-xl font-medium placeholder:text-white/10"
+                        className="flex-1 bg-transparent border-none outline-none text-on-surface text-2xl font-extrabold placeholder:text-on-surface-variant/20 tracking-tight font-premium"
                     />
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 text-white/30 text-xs uppercase tracking-[0.2em] font-medium border border-white/5">
-                        <Command size={10} />
+                    
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-low text-on-surface-variant/40 text-[10px] font-black uppercase tracking-[0.25em] border border-surface-low font-premium">
+                        <Command size={12} />
                         <span>K</span>
                     </div>
                 </div>
@@ -145,70 +152,74 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 {/* Results List */}
                 <div 
                     ref={listRef}
-                    className="max-h-[55vh] overflow-y-auto p-3 scroll-smooth no-scrollbar"
+                    className="max-h-[55vh] overflow-y-auto p-4 scroll-smooth no-scrollbar space-y-2"
                 >
                     {results.length > 0 ? (
-                        <div className="space-y-1.5">
+                        <div className="space-y-2">
                             {results.map((item, idx) => (
                                 <button
                                     key={item.id}
                                     onClick={() => handleSelection(item)}
                                     onMouseEnter={() => setSelectedIndex(idx)}
                                     className={`
-                                        w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 text-left group
-                                        ${idx === selectedIndex ? 'bg-primary/10 ring-1 ring-primary/20' : 'hover:bg-white/[0.02]'}
+                                        w-full flex items-center gap-5 p-5 rounded-[1.5rem] transition-all duration-500 text-left group/item
+                                        ${idx === selectedIndex ? 'bg-surface-low shadow-architect-low scale-[1.02]' : 'hover:bg-surface-low/50'}
                                     `}
                                 >
                                     <div className={`
-                                        p-3 rounded-xl transition-all duration-300
-                                        ${idx === selectedIndex ? 'bg-primary text-secondary shadow-lg shadow-primary/20' : 'bg-white/5 text-slate-500 group-hover:text-slate-300'}
+                                        w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700
+                                        ${idx === selectedIndex ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-110' : 'bg-surface text-on-surface-variant/40 group-hover/item:text-primary/60'}
                                     `}>
                                         {item.icon}
                                     </div>
                                     <div className="flex-1 overflow-hidden">
-                                        <div className={`font-medium transition-colors ${idx === selectedIndex ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                                        <div className={`text-lg font-extrabold transition-colors tracking-tight uppercase font-premium ${idx === selectedIndex ? 'text-on-surface' : 'text-on-surface-variant/60 group-hover/item:text-on-surface'}`}>
                                             {item.label}
                                         </div>
                                         {(item as any).subLabel && (
-                                            <div className="text-xs text-slate-500/60 truncate mt-0.5 tracking-wide">
+                                            <div className={`text-[10px] font-black uppercase tracking-[0.15em] mt-1 font-premium transition-colors ${idx === selectedIndex ? 'text-on-surface-variant' : 'text-on-surface-variant/30'}`}>
                                                 {(item as any).subLabel}
                                             </div>
                                         )}
                                     </div>
                                     {idx === selectedIndex && (
-                                        <div className="flex items-center gap-2 text-primary/60 animate-in fade-in slide-in-from-right-2 duration-300">
-                                            <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Ejecutar</span>
-                                            <ChevronRight size={14} />
+                                        <div className="flex items-center gap-3 text-primary animate-in fade-in slide-in-from-right-4 duration-500">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.25em] font-premium">EJECUTAR</span>
+                                            <ChevronRight size={16} />
                                         </div>
                                     )}
                                 </button>
                             ))}
                         </div>
                     ) : (
-                        <div className="p-12 text-center space-y-4">
-                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto">
-                                <Search className="text-white/10" size={32} />
+                        <div className="p-20 text-center space-y-6 group/empty">
+                            <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center mx-auto shadow-inner group-hover/empty:scale-110 transition-transform duration-700">
+                                <Search className="text-on-surface-variant/10" size={40} />
                             </div>
-                            <div className="text-slate-500 font-medium text-sm tracking-wide">No se encontraron resultados para "{searchTerm}"</div>
+                            <div className="text-on-surface-variant/40 text-[10px] uppercase font-black tracking-[0.3em] font-premium">Sin coincidencias para el protocolo actual</div>
                         </div>
                     )}
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 bg-white/[0.02] flex items-center justify-between text-xs font-medium uppercase tracking-[0.15em] text-slate-500 border-t border-white/5">
-                    <div className="flex gap-6">
-                        <span className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
-                            <span className="bg-white/5 px-2 py-0.5 rounded border border-white/5">↑↓</span> Navegar
+                <div className="p-6 bg-surface border-t border-surface-low flex items-center justify-between text-[9px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 font-premium">
+                    <div className="flex gap-8">
+                        <span className="flex items-center gap-3 group/nav">
+                            <span className="bg-surface-low px-2 py-1 rounded border border-surface-low text-on-surface shadow-sm font-premium">↑↓</span> 
+                            <span className="group-hover/nav:text-primary transition-colors">NAVEGAR</span>
                         </span>
-                        <span className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
-                            <span className="bg-white/5 px-2 py-0.5 rounded border border-white/5">↵</span> Seleccionar
+                        <span className="flex items-center gap-3 group/sel">
+                            <span className="bg-surface-low px-2 py-1 rounded border border-surface-low text-on-surface shadow-sm font-premium">↵</span> 
+                            <span className="group-hover/sel:text-primary transition-colors">SELECCIONAR</span>
                         </span>
                     </div>
-                    <div className="text-primary/40 font-medium">
-                        Centro de Operaciones | Santiago Cordova
+                    <div className="flex items-center gap-3 opacity-60">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                        CENTRO DE CONTROL ESTRATÉGICO
                     </div>
                 </div>
             </div>
         </div>
     );
 };
+
