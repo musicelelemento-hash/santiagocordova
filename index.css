@@ -1,49 +1,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap');
 
 :root {
-    /* The Analytical Architect - Zen Obsidian 2.0 (Deep Edition) */
-    --primary: 221 100% 64%; /* Electric Azure #3B82F6 - Focused */
-    --primary-container: 221 60% 15%;
+    /* The Human Architect - Pristine Light 2.0 */
+    --primary: 221 100% 50%; /* Deep Azure #2563EB - Legible */
+    --primary-container: 221 100% 95%;
     --on-primary: 0 0% 100%;
     
-    --secondary: 262 83% 75%; /* Cyber Violet */
-    --secondary-container: 262 30% 10%;
+    --secondary: 262 80% 50%; /* Deep Violet */
+    --secondary-container: 262 100% 95%;
     
-    --tertiary: 165 90% 45%; /* Zen Emerald #10B981 */
-    --tertiary-container: 165 70% 15%;
-    --tertiary-fixed: 165 100% 75%; 
+    --tertiary: 165 90% 35%; /* Pristine Emerald #059669 */
+    --tertiary-container: 165 100% 95%;
+    --tertiary-fixed: 165 100% 40%; 
     
-    /* Zen Obsidian Palette - Atmospheric Depth */
-    --background: 222 47% 2%; /* Deep Midnight #020617 */
-    --foreground: 210 40% 98%;
+    /* Pristine Palette - High Contrast & Clarity */
+    --background: 210 40% 98%; /* Slate 50 #F8FAFC */
+    --foreground: 222 47% 11%; /* Slate 950 #0F172A */
     
-    --surface: 222 47% 4%;   /* Deep Indigo #0B1326 - Base */
-    --surface-low: 222 47% 8%; 
-    --surface-lowest: 222 47% 12%; 
+    --surface: 0 0% 100%;   /* Pure White */
+    --surface-low: 210 40% 96%; 
+    --surface-lowest: 210 40% 94%; 
     
-    --on-surface: 210 40% 98%;
-    --on-surface-variant: 215 20% 70%;
+    --on-surface: 222 47% 11%;
+    --on-surface-variant: 215 25% 40%; /* Slate 600 - Human Readable */
     
-    /* Ghost Borders - Editorial Whisper (10% opacity) */
-    --outline-variant: 240 14% 80%;
-    --border: 222 47% 12%;
+    /* Defined Borders - Human Clarity (15% opacity) */
+    --outline-variant: 222 47% 90%;
+    --border: 222 47% 90%;
 
-    --radius: 1rem; /* Softer, more premium 16px radius */
+    --radius: 1.25rem; /* Friendly 20px radius */
 
-    /* Zen Shadows & Gradients */
-    --architect-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.6);
-    --architect-gradient: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+    /* Pristine Shadows & Gradients */
+    --architect-shadow: 0 20px 50px -12px rgba(15, 23, 42, 0.1);
+    --architect-gradient: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%);
 }
 
 .dark {
-    /* Dark mode is now the native environment for Zen Obsidian */
-    --background: 222 47% 2%;
-    --surface: 222 47% 5%;   
-    --surface-low: 222 47% 9%; 
-    --surface-lowest: 222 47% 13%; 
+    /* Even in dark mode, we optimize for maximum legibility now */
+    --background: 222 47% 4%;
+    --surface: 222 47% 7%;   
+    --surface-low: 222 47% 10%; 
+    --surface-lowest: 222 47% 14%; 
     --foreground: 210 40% 98%;
     --on-surface: 210 40% 98%;
-    --border: 222 47% 10%;
+    --border: 222 47% 15%;
 }
 
 body {
@@ -56,59 +56,60 @@ body {
 h1, h2, h3, h4 {
     font-family: 'Manrope', sans-serif;
     letter-spacing: -0.01em; 
-    font-weight: 600; /* Editorial presence */
+    font-weight: 700; /* Bold editorial presence */
+    color: hsl(var(--foreground));
 }
 
 .font-premium {
     font-family: 'Manrope', sans-serif;
     letter-spacing: -0.01em;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .font-premium-elegant {
     font-family: 'Manrope', sans-serif;
-    letter-spacing: 0.02em; 
+    letter-spacing: 0.05em; 
     text-transform: uppercase;
-    font-weight: 600;
+    font-weight: 700;
 }
 
 /* Elegant minimalist variations for Client Portal */
 .glass-morphism {
-    background: hsla(225, 30%, 5%, 0.7);
-    backdrop-filter: blur(24px) saturate(160%);
-    border: 1px solid hsla(0, 0%, 100%, 0.1);
-    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.6);
+    background: hsla(0, 0%, 100%, 0.8);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsla(222, 47%, 90%, 0.5);
+    box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.1);
 }
 
 .glass-card {
-    background: hsla(var(--surface-lowest), 0.3);
-    backdrop-filter: blur(24px);
-    border: 1px solid hsla(var(--foreground), 0.08); /* Architectural Trace */
+    background: hsla(0, 0%, 100%, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid hsla(222, 47%, 90%, 0.8); 
     border-radius: var(--radius);
     box-shadow: var(--architect-shadow);
-    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-card:hover {
-    background: hsla(var(--surface-low), 0.5);
-    box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
-    transform: translateY(-4px) scale(1.01);
+    background: #FFFFFF;
+    box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.15);
+    transform: translateY(-4px);
 }
 
 .glass-elite {
-    background: linear-gradient(135deg, hsla(var(--primary), 0.1), hsla(var(--secondary), 0.1));
-    backdrop-filter: blur(40px);
-    border: 1px solid hsla(var(--primary), 0.2);
-    box-shadow: 0 0 40px -10px hsla(var(--primary), 0.2);
-    color: white;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(99, 102, 241, 0.05));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(37, 99, 235, 0.1);
+    box-shadow: 0 10px 30px -10px rgba(37, 99, 235, 0.1);
+    color: hsl(var(--primary));
 }
 
 .shadow-primary {
-    box-shadow: 0 0 30px -5px hsla(var(--primary), 0.15);
+    box-shadow: 0 10px 40px -10px hsla(var(--primary), 0.2);
 }
 
 .text-gradient-teal {
-    background: linear-gradient(135deg, #3B82F6 0%, #10B981 100%);
+    background: linear-gradient(135deg, #2563EB 0%, #059669 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;

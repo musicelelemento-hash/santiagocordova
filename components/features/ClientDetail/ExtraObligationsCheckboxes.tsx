@@ -10,59 +10,59 @@ interface ExtraObligationsCheckboxesProps {
 
 export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProps> = ({ editedClient, setEditedClient, disabled = false }) => {
     return (
-        <div className="space-y-8">
-            <div className="space-y-4">
-                <label className="text-xs font-semibold text-slate-500 block uppercase tracking-[0.3em] ml-1">Protocolos Anuales / Trámites Especiales</label>
-                <div className="grid grid-cols-1 gap-3">
-                    <label className={`flex items-center p-5 rounded-2xl border transition-all duration-500 ${editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'cursor-not-allowed bg-slate-900/40 opacity-60 border-white/5' : 'cursor-pointer'} ${editedClient.taxProfile?.requiresAnnualRenta || editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'border-cyan-500/50 bg-cyan-500/5 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'border-white/5 bg-slate-950/40 hover:border-white/20'}`}>
-                        <div className="relative flex items-center justify-center mr-4">
+        <div className="space-y-10">
+            <div className="space-y-6">
+                <label className="text-[10px] font-black text-slate-400 block uppercase tracking-[0.3em] ml-1 font-premium">PROTOCOLOS ANUALES / TRÁMITES ESPECIALES</label>
+                <div className="grid grid-cols-1 gap-4">
+                    <label className={`flex items-center p-6 rounded-[1.5rem] border transition-all duration-700 ${editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'cursor-not-allowed bg-slate-50 opacity-60 border-slate-100' : 'cursor-pointer shadow-sm hover:shadow-md'} ${editedClient.taxProfile?.requiresAnnualRenta || editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'border-blue-200 bg-blue-50/50 shadow-blue-100' : 'border-slate-100 bg-white hover:border-blue-100'}`}>
+                        <div className="relative flex items-center justify-center mr-5">
                             <input
                                 type="checkbox"
                                 disabled={disabled || editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular}
                                 checked={editedClient.taxProfile?.requiresAnnualRenta || editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular}
                                 onChange={e => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), requiresAnnualRenta: e.target.checked } })}
-                                className="h-6 w-6 appearance-none border-2 border-white/10 rounded-lg checked:bg-cyan-500 checked:border-transparent transition-all cursor-pointer disabled:cursor-not-allowed"
+                                className="h-7 w-7 appearance-none border-2 border-slate-200 rounded-xl checked:bg-blue-600 checked:border-transparent transition-all cursor-pointer disabled:cursor-not-allowed bg-white shadow-sm"
                             />
-                            {(editedClient.taxProfile?.requiresAnnualRenta || editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular) && <Check size={14} className="absolute text-white pointer-events-none" strokeWidth={4} />}
+                            {(editedClient.taxProfile?.requiresAnnualRenta || editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular) && <Check size={16} className="absolute text-white pointer-events-none" strokeWidth={4} />}
                         </div>
                         <div className="flex-1 flex justify-between items-center">
-                            <span className={`text-[11px] font-semibold uppercase tracking-widest ${editedClient.taxProfile?.requiresAnnualRenta || editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'text-white' : 'text-slate-500'}`}>Impuesto a la Renta Corporativa/Personal</span>
+                            <span className={`text-[12px] font-black uppercase tracking-widest font-premium ${editedClient.taxProfile?.requiresAnnualRenta || editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular ? 'text-slate-900' : 'text-slate-500'}`}>Impuesto a la Renta Corporativa/Personal</span>
                             {(editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular) && (
-                                <span className="text-[11px] text-amber-400 font-semibold bg-amber-400/10 border border-amber-400/20 px-3 py-1 rounded-full ml-2 uppercase tracking-tighter">Obligatorio: {editedClient.regime}</span>
+                                <span className="text-[10px] text-amber-700 font-black bg-amber-50 border border-amber-100 px-4 py-1.5 rounded-xl ml-4 uppercase tracking-widest font-premium">OBLIGATORIO: {editedClient.regime}</span>
                             )}
                         </div>
                     </label>
 
-                    <label className={`flex items-center p-5 rounded-2xl border cursor-pointer transition-all duration-500 ${editedClient.taxProfile?.requiresAnexosGastos ? 'border-sky-400/50 bg-sky-400/5 shadow-[0_0_20px_rgba(14,165,233,0.1)]' : 'border-white/5 bg-slate-950/40 hover:border-white/20'}`}>
-                        <div className="relative flex items-center justify-center mr-4">
+                    <label className={`flex items-center p-6 rounded-[1.5rem] border cursor-pointer transition-all duration-700 shadow-sm hover:shadow-md ${editedClient.taxProfile?.requiresAnexosGastos ? 'border-blue-200 bg-blue-50/50 shadow-blue-100' : 'border-slate-100 bg-white hover:border-blue-100'}`}>
+                        <div className="relative flex items-center justify-center mr-5">
                             <input
                                 type="checkbox"
                                 disabled={disabled}
                                 checked={editedClient.taxProfile?.requiresAnexosGastos || false}
                                 onChange={e => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), requiresAnexosGastos: e.target.checked } })}
-                                className="h-6 w-6 appearance-none border-2 border-white/10 rounded-lg checked:bg-sky-400 checked:border-transparent transition-all cursor-pointer shadow-inner"
+                                className="h-7 w-7 appearance-none border-2 border-slate-200 rounded-xl checked:bg-blue-600 checked:border-transparent transition-all cursor-pointer bg-white shadow-sm"
                             />
-                            {editedClient.taxProfile?.requiresAnexosGastos && <Check size={14} className="absolute text-white pointer-events-none" strokeWidth={4} />}
+                            {editedClient.taxProfile?.requiresAnexosGastos && <Check size={16} className="absolute text-white pointer-events-none" strokeWidth={4} />}
                         </div>
-                        <span className={`text-[11px] font-semibold uppercase tracking-widest ${editedClient.taxProfile?.requiresAnexosGastos ? 'text-white' : 'text-slate-500'}`}>Anexo Gastos Personales (Inflexibilidad)</span>
+                        <span className={`text-[12px] font-black uppercase tracking-widest font-premium ${editedClient.taxProfile?.requiresAnexosGastos ? 'text-slate-900' : 'text-slate-500'}`}>Anexo Gastos Personales (Inflexibilidad)</span>
                     </label>
 
-                    <label className={`flex items-center p-5 rounded-2xl border cursor-pointer transition-all duration-500 ${editedClient.taxProfile?.hasActiveDevolucionIva ? 'border-emerald-400/50 bg-emerald-400/5 shadow-[0_0_20px_rgba(16,185,129,0.1)]' : 'border-white/5 bg-slate-950/40 hover:border-white/20'}`}>
-                        <div className="relative flex items-center justify-center mr-4">
+                    <label className={`flex items-center p-6 rounded-[1.5rem] border cursor-pointer transition-all duration-700 shadow-sm hover:shadow-md ${editedClient.taxProfile?.hasActiveDevolucionIva ? 'border-emerald-200 bg-emerald-50/50 shadow-emerald-100' : 'border-slate-100 bg-white hover:border-emerald-100'}`}>
+                        <div className="relative flex items-center justify-center mr-5">
                             <input
                                 type="checkbox"
                                 disabled={disabled}
                                 checked={editedClient.taxProfile?.hasActiveDevolucionIva || false}
                                 onChange={e => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), hasActiveDevolucionIva: e.target.checked } })}
-                                className="h-6 w-6 appearance-none border-2 border-white/10 rounded-lg checked:bg-emerald-400 checked:border-transparent transition-all cursor-pointer"
+                                className="h-7 w-7 appearance-none border-2 border-slate-200 rounded-xl checked:bg-emerald-600 checked:border-transparent transition-all cursor-pointer bg-white shadow-sm"
                             />
-                            {editedClient.taxProfile?.hasActiveDevolucionIva && <Check size={14} className="absolute text-white pointer-events-none" strokeWidth={4} />}
+                            {editedClient.taxProfile?.hasActiveDevolucionIva && <Check size={16} className="absolute text-white pointer-events-none" strokeWidth={4} />}
                         </div>
-                        <span className={`text-[11px] font-semibold uppercase tracking-widest ${editedClient.taxProfile?.hasActiveDevolucionIva ? 'text-white' : 'text-slate-500'}`}>Ciclo de Retorno: Devolución IVA/Renta</span>
+                        <span className={`text-[12px] font-black uppercase tracking-widest font-premium ${editedClient.taxProfile?.hasActiveDevolucionIva ? 'text-emerald-900' : 'text-slate-500'}`}>Ciclo de Retorno: Devolución IVA/Renta</span>
                     </label>
 
-                    <label className={`flex items-center p-5 rounded-2xl border cursor-pointer transition-all duration-500 ${editedClient.taxProfile?.hasActiveElderlyDevolucionIva ? 'border-rose-400/50 bg-rose-400/5 shadow-[0_0_20px_rgba(244,63,94,0.1)]' : 'border-white/5 bg-slate-950/40 hover:border-white/20'}`}>
-                        <div className="relative flex items-center justify-center mr-4">
+                    <label className={`flex items-center p-6 rounded-[1.5rem] border cursor-pointer transition-all duration-700 shadow-sm hover:shadow-md ${editedClient.taxProfile?.hasActiveElderlyDevolucionIva ? 'border-rose-200 bg-rose-50/50 shadow-rose-100' : 'border-slate-100 bg-white hover:border-rose-100'}`}>
+                        <div className="relative flex items-center justify-center mr-5">
                             <input
                                 type="checkbox"
                                 disabled={disabled}
@@ -76,43 +76,43 @@ export const ExtraObligationsCheckboxes: React.FC<ExtraObligationsCheckboxesProp
                                         hasActiveElderlyDevolucionIva: e.target.checked 
                                     } 
                                 })}
-                                className="h-6 w-6 appearance-none border-2 border-white/10 rounded-lg checked:bg-rose-400 checked:border-transparent transition-all cursor-pointer"
+                                className="h-7 w-7 appearance-none border-2 border-slate-200 rounded-xl checked:bg-rose-600 checked:border-transparent transition-all cursor-pointer bg-white shadow-sm"
                             />
-                            {editedClient.taxProfile?.hasActiveElderlyDevolucionIva && <Check size={14} className="absolute text-white pointer-events-none" strokeWidth={4} />}
+                            {editedClient.taxProfile?.hasActiveElderlyDevolucionIva && <Check size={16} className="absolute text-white pointer-events-none" strokeWidth={4} />}
                         </div>
-                        <span className={`text-[11px] font-semibold uppercase tracking-widest ${editedClient.taxProfile?.hasActiveElderlyDevolucionIva ? 'text-white' : 'text-slate-500'}`}>Devolución IVA Tercera Edad ($5/mes)</span>
+                        <span className={`text-[12px] font-black uppercase tracking-widest font-premium ${editedClient.taxProfile?.hasActiveElderlyDevolucionIva ? 'text-rose-900' : 'text-slate-500'}`}>Devolución IVA Tercera Edad ($5/mes)</span>
                     </label>
                 </div>
             </div>
 
-            <div className="pt-8 border-t border-white/10">
-                <label className="text-xs font-semibold text-slate-500 block uppercase tracking-[0.3em] mb-4 ml-1">Vigilancia ICE / PVP (Control de Consumo)</label>
+            <div className="pt-10 border-t border-slate-50">
+                <label className="text-[10px] font-black text-slate-400 block uppercase tracking-[0.3em] mb-6 ml-1 font-premium">VIGILANCIA ICE / PVP (CONTROL DE CONSUMO)</label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className={`flex items-center p-5 rounded-2xl border cursor-pointer transition-all duration-500 ${editedClient.taxProfile?.requiresIce ? 'border-amber-400/50 bg-amber-400/5 shadow-[0_0_20px_rgba(245,158,11,0.1)]' : 'border-white/5 bg-slate-950/40 hover:border-white/20'}`}>
-                        <div className="relative flex items-center justify-center mr-4">
+                    <label className={`flex items-center p-6 rounded-[1.5rem] border cursor-pointer transition-all duration-700 shadow-sm hover:shadow-md ${editedClient.taxProfile?.requiresIce ? 'border-amber-200 bg-amber-50/50 shadow-amber-100' : 'border-slate-100 bg-white hover:border-amber-100'}`}>
+                        <div className="relative flex items-center justify-center mr-5">
                             <input
                                 type="checkbox"
                                 disabled={disabled}
                                 checked={editedClient.taxProfile?.requiresIce || false}
                                 onChange={e => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), requiresIce: e.target.checked } })}
-                                className="h-6 w-6 appearance-none border-2 border-white/10 rounded-lg checked:bg-amber-400 checked:border-transparent transition-all cursor-pointer"
+                                className="h-7 w-7 appearance-none border-2 border-slate-200 rounded-xl checked:bg-amber-600 checked:border-transparent transition-all cursor-pointer bg-white shadow-sm"
                             />
-                            {editedClient.taxProfile?.requiresIce && <Check size={14} className="absolute text-white pointer-events-none" strokeWidth={4} />}
+                            {editedClient.taxProfile?.requiresIce && <Check size={16} className="absolute text-white pointer-events-none" strokeWidth={4} />}
                         </div>
-                        <span className={`text-xs font-semibold uppercase tracking-widest ${editedClient.taxProfile?.requiresIce ? 'text-white' : 'text-slate-500'}`}>Vector ICE (Intermitente)</span>
+                        <span className={`text-[11px] font-black uppercase tracking-widest font-premium ${editedClient.taxProfile?.requiresIce ? 'text-amber-900' : 'text-slate-500'}`}>Vector ICE (Intermitente)</span>
                     </label>
-                    <label className={`flex items-center p-5 rounded-2xl border cursor-pointer transition-all duration-500 ${editedClient.taxProfile?.requiresAnexoPvp ? 'border-rose-400/50 bg-rose-400/5 shadow-[0_0_20px_rgba(244,63,94,0.1)]' : 'border-white/5 bg-slate-950/40 hover:border-white/20'}`}>
-                        <div className="relative flex items-center justify-center mr-4">
+                    <label className={`flex items-center p-6 rounded-[1.5rem] border cursor-pointer transition-all duration-700 shadow-sm hover:shadow-md ${editedClient.taxProfile?.requiresAnexoPvp ? 'border-rose-200 bg-rose-50/50 shadow-rose-100' : 'border-slate-100 bg-white hover:border-rose-100'}`}>
+                        <div className="relative flex items-center justify-center mr-5">
                             <input
                                 type="checkbox"
                                 disabled={disabled}
                                 checked={editedClient.taxProfile?.requiresAnexoPvp || false}
                                 onChange={e => setEditedClient({ ...editedClient, taxProfile: { ...(editedClient.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), requiresAnexoPvp: e.target.checked } })}
-                                className="h-6 w-6 appearance-none border-2 border-white/10 rounded-lg checked:bg-rose-400 checked:border-transparent transition-all cursor-pointer"
+                                className="h-7 w-7 appearance-none border-2 border-slate-200 rounded-xl checked:bg-rose-600 checked:border-transparent transition-all cursor-pointer bg-white shadow-sm"
                             />
-                            {editedClient.taxProfile?.requiresAnexoPvp && <Check size={14} className="absolute text-white pointer-events-none" strokeWidth={4} />}
+                            {editedClient.taxProfile?.requiresAnexoPvp && <Check size={16} className="absolute text-white pointer-events-none" strokeWidth={4} />}
                         </div>
-                        <span className={`text-xs font-semibold uppercase tracking-widest ${editedClient.taxProfile?.requiresAnexoPvp ? 'text-white' : 'text-slate-500'}`}>Módulo PVP (Anual Externo)</span>
+                        <span className={`text-[11px] font-black uppercase tracking-widest font-premium ${editedClient.taxProfile?.requiresAnexoPvp ? 'text-rose-900' : 'text-slate-500'}`}>Módulo PVP (Anual Externo)</span>
                     </label>
                 </div>
             </div>

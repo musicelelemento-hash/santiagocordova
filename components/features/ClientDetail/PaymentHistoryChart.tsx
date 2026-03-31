@@ -64,11 +64,11 @@ export const PaymentHistoryChart: React.FC<PaymentHistoryChartProps> = memo(({ c
     const trendColor = avgScore >= 80 ? '#10b981' : avgScore >= 50 ? '#f59e0b' : '#ef4444';
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 shadow-sm border border-slate-100 dark:border-slate-700 h-full relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-teal/5 dark:bg-brand-teal/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 h-full relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
             
-            <h4 className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-6 uppercase tracking-widest flex items-center gap-2">
-                <TrendingUp size={16} className="text-brand-teal" /> Historial de Cumplimiento
+            <h4 className="text-[10px] font-black text-slate-400 mb-8 uppercase tracking-[0.3em] flex items-center gap-2 font-premium">
+                <TrendingUp size={16} className="text-primary" strokeWidth={3} /> HISTORIAL DE CUMPLIMIENTO
             </h4>
             <div className="w-full h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -93,16 +93,16 @@ export const PaymentHistoryChart: React.FC<PaymentHistoryChartProps> = memo(({ c
                                 if (active && payload && payload.length) {
                                     const dataPoint = (payload[0] as any).payload;
                                     return (
-                                        <div className="p-3 bg-slate-900/95 text-white rounded-xl text-xs shadow-2xl border border-slate-700/50 backdrop-blur-xl">
-                                            <p className="font-semibold mb-2 text-slate-300 border-b border-slate-700/50 pb-2 flex items-center gap-2">
+                                        <div className="p-4 bg-white/95 text-slate-900 rounded-2xl text-[10px] shadow-2xl border border-slate-100 backdrop-blur-xl font-premium">
+                                            <p className="font-black mb-2 text-slate-400 border-b border-slate-100 pb-2 flex items-center gap-3 uppercase tracking-widest">
                                                 {label}
-                                                <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                                <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-slate-50 text-primary border border-slate-100">
                                                     {dataPoint.score}%
                                                 </span>
                                             </p>
                                             <div className="flex items-center gap-2 mt-2">
                                                 <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: statusColors[dataPoint.status] }}></div>
-                                                <span className="font-medium text-white tracking-wide">{dataPoint.status}</span>
+                                                <span className="font-black text-slate-900 tracking-widest uppercase">{dataPoint.status}</span>
                                             </div>
                                         </div>
                                     );

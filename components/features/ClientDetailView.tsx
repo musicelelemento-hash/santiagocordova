@@ -9,7 +9,7 @@ import {
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy,
     ShieldCheck, FileText, Zap, UserCheck, UserX, UserCheck2, HandCoins,
     MoreHorizontal, Printer, Clipboard, CheckCircle, CheckCircle2, Send, Loader, ArrowDownToLine,
-    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History as HistoryIcon, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, ScanLine, FilePlus, Power, FileCheck, Coins, BadgePercent, Play, Settings, FileDown, TrendingUp,
+    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History as HistoryIcon, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, ChevronDown, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, ScanLine, FilePlus, Power, FileCheck, Coins, BadgePercent, Play, Settings, FileDown, TrendingUp,
     Search, Filter, Trash, LogOut, Menu, ArrowLeft, RefreshCcw, Smartphone, Hash, Landmark, AlertCircle
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
@@ -818,14 +818,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
     const renderHistoryTab = () => (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <div className="bg-surface-lowest rounded-[3rem] p-10 shadow-architect relative overflow-hidden group border border-surface-low">
+            <div className="bg-white rounded-[3rem] p-10 shadow-xl shadow-slate-200/50 relative overflow-hidden group border border-slate-100">
                 <div className="flex items-center justify-between mb-12">
                     <div>
-                        <h3 className="text-xl font-extrabold text-on-surface tracking-tight uppercase flex items-center gap-4 font-premium">
-                            <Activity className="text-primary" size={24} />
+                        <h3 className="text-xl font-extrabold text-slate-900 tracking-tight uppercase flex items-center gap-4 font-premium">
+                            <Activity className="text-blue-600" size={24} />
                             REGISTRO OPERATIVO
                         </h3>
-                        <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mt-3 font-premium">TRAZABILIDAD DE ACCIONES Y VALIDACIONES</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mt-3 font-premium">TRAZABILIDAD DE ACCIONES Y VALIDACIONES</p>
                     </div>
                 </div>
 
@@ -837,10 +837,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 />
             </div>
             
-            <div className="bg-surface-lowest rounded-[3rem] p-10 shadow-architect relative overflow-hidden group border border-surface-low">
+            <div className="bg-white rounded-[3rem] p-10 shadow-xl shadow-slate-200/50 relative overflow-hidden group border border-slate-100">
                 <div className="flex items-center justify-between mb-10">
-                    <h3 className="text-base font-extrabold text-on-surface tracking-tight uppercase flex items-center gap-3 font-premium">
-                        <FileClock className="text-tertiary" size={20} />
+                    <h3 className="text-base font-extrabold text-slate-900 tracking-tight uppercase flex items-center gap-3 font-premium">
+                        <FileClock className="text-emerald-600" size={20} />
                         Resumen de Declaraciones
                     </h3>
                 </div>
@@ -880,18 +880,18 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 onChange={(config) => setEditedClient({ ...editedClient, facturadorConfig: config })} 
             />
 
-            <div className="bg-surface-lowest rounded-[3rem] p-10 border border-surface-low relative overflow-hidden group shadow-architect">
+            <div className="bg-white rounded-[3rem] p-10 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50">
                 <div className="flex items-center justify-between mb-12">
                     <div>
-                        <h3 className="text-xl font-extrabold text-on-surface tracking-tight uppercase flex items-center gap-4 font-premium">
-                            <Store className="text-primary" size={24} />
+                        <h3 className="text-xl font-extrabold text-slate-900 tracking-tight uppercase flex items-center gap-4 font-premium">
+                            <Store className="text-blue-600" size={24} />
                             Repositorio de Documentos
                         </h3>
-                        <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mt-3 font-premium">Gestión centralizada de archivos y comprobantes</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mt-3 font-premium">Gestión centralizada de archivos y comprobantes</p>
                     </div>
                     <div className="flex gap-4">
-                        <div className="px-6 py-3 bg-surface rounded-2xl text-[9px] font-black text-tertiary flex items-center gap-3 shadow-architect-low uppercase tracking-[0.2em] font-premium">
-                            <div className="w-2 h-2 bg-tertiary rounded-full animate-pulse"></div>
+                        <div className="px-6 py-3 bg-slate-50 rounded-2xl text-[9px] font-black text-emerald-600 flex items-center gap-3 border border-slate-100 shadow-sm uppercase tracking-[0.2em] font-premium">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                             {(client.declarations || []).filter(d => d.proof_file).length} Archivos Protegidos
                         </div>
                     </div>
@@ -900,37 +900,37 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                     <button
                         onClick={() => { setUploadingTarget({ type: 'iva', period: getPeriod(client, new Date()) }); proofInputRef.current?.click(); }}
-                        className="aspect-square rounded-[2.5rem] border-2 border-dashed border-surface-low flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden architect-layer-2 shadow-sm"
+                        className="aspect-square rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-50/50 transition-all group relative overflow-hidden shadow-sm"
                     >
-                        <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center group-hover:scale-110 transition-transform shadow-architect relative z-10">
-                            <Plus className="text-on-surface-variant group-hover:text-primary" size={32} />
+                        <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-slate-100 relative z-10 shadow-sm">
+                            <Plus className="text-slate-400 group-hover:text-blue-600" size={32} />
                         </div>
-                        <span className="text-[10px] font-extrabold uppercase text-on-surface-variant group-hover:text-primary tracking-widest relative z-10 font-premium">Subir Documento</span>
+                        <span className="text-[10px] font-extrabold uppercase text-slate-400 group-hover:text-blue-600 tracking-widest relative z-10 font-premium">Subir Documento</span>
                     </button>
 
                     {[...(client.declarations || [])]
                         .filter(d => d.proof_file)
                         .sort((a, b) => b.period.localeCompare(a.period))
                         .map((decl, idx) => (
-                            <div key={idx} className="bg-surface rounded-[2.5rem] p-5 shadow-architect-low hover:scale-[1.02] hover:shadow-architect transition-all cursor-pointer group relative overflow-hidden" onClick={() => setPreviewItem(decl)}>
-                                <div className="aspect-[4/3] rounded-2xl bg-surface-lowest mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-primary/5 transition-colors">
-                                    <FileText className="text-on-surface-variant/40 group-hover:text-primary group-hover:scale-110 transition-all duration-500" size={48} />
+                            <div key={idx} className="bg-slate-50 rounded-[2.5rem] p-5 border border-slate-100 hover:bg-white hover:scale-[1.02] shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden" onClick={() => setPreviewItem(decl)}>
+                                <div className="aspect-[4/3] rounded-2xl bg-white border border-slate-100 mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-blue-50 transition-colors">
+                                    <FileText className="text-slate-200 group-hover:text-blue-600 group-hover:scale-110 transition-all duration-500" size={48} />
                                     {decl.proof_file?.metadata?.formType && (
-                                        <div className="absolute top-3 left-3 px-3 py-1 bg-primary text-primary-foreground text-[9px] font-black rounded-lg uppercase tracking-widest shadow-md font-premium">
+                                        <div className="absolute top-3 left-3 px-3 py-1 bg-blue-600 text-white text-[9px] font-black rounded-lg uppercase tracking-widest shadow-md font-premium">
                                             {decl.proof_file.metadata.formType}
                                         </div>
                                     )}
-                                    <div className="absolute inset-0 bg-surface/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <Eye className="text-primary" size={28} />
+                                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <Eye className="text-blue-600" size={28} />
                                     </div>
                                 </div>
                                 <div className="space-y-3 relative z-10">
                                     <div className="flex items-center justify-between">
                                         <div className="flex flex-col">
-                                            <span className="text-[11px] font-extrabold text-tertiary tracking-tighter font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
-                                            <span className="text-[10px] text-on-surface-variant font-black uppercase tracking-widest mt-1 font-premium">{formatPeriodForDisplay(decl.period)}</span>
+                                            <span className="text-[11px] font-extrabold text-emerald-600 tracking-tighter font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
+                                            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 font-premium">{formatPeriodForDisplay(decl.period)}</span>
                                         </div>
-                                        <button className="p-2.5 hover:bg-surface-lowest rounded-xl text-on-surface-variant hover:text-primary transition-colors">
+                                        <button className="p-2.5 hover:bg-white rounded-xl text-slate-300 hover:text-blue-600 transition-colors">
                                             <Download size={14} />
                                         </button>
                                     </div>
@@ -946,95 +946,98 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const renderSettingsTab = () => (
         <div className="space-y-10 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-5 duration-1000 pb-20">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <div className="bg-surface-lowest rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low relative overflow-hidden group shadow-architect">
-                    <h3 className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
-                        <Coins size={18} className="sm:w-[20px] sm:h-[20px] text-primary" />
+                        <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50 transition-all duration-700">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
+                        <Coins size={18} className="sm:w-[20px] sm:h-[20px] text-blue-600" />
                         Configuración de Honorarios
                     </h3>
                     
                     <div className="space-y-8">
                         <div className="space-y-4">
-                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">
                                 Honorario {editedClient.taxProfile?.ivaFrequency === 'Semestral' ? 'Semestral' : 'Mensual'}
                             </label>
                             <div className="relative group/input">
-                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-primary font-extrabold">$</div>
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-blue-600 font-extrabold font-premium">$</div>
                                 <input
                                     type="number"
                                     value={monthlyFee}
                                     onChange={(e) => setMonthlyFee(e.target.value)}
                                     disabled={!isEditing}
-                                    className="w-full pl-12 pr-6 py-5 bg-surface border border-surface-low rounded-2xl text-base font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
+                                    className="w-full pl-12 pr-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-base font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/40 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-4">
-                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Asesoría Anual (Renta)</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Asesoría Anual (Renta)</label>
                             <div className="relative group/input">
-                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-amber-600 font-extrabold font-premium">$</div>
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-600 font-extrabold font-premium">$</div>
                                 <input
                                     type="number"
                                     value={annualFee}
                                     onChange={(e) => setAnnualFee(e.target.value)}
                                     disabled={!isEditing}
-                                    className="w-full pl-12 pr-6 py-5 bg-surface border border-surface-low rounded-2xl text-base font-extrabold text-on-surface focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/40 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
+                                    className="w-full pl-12 pr-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-base font-extrabold text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/40 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-surface-lowest rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low relative overflow-hidden group shadow-architect">
-                    <h3 className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
-                        <MapPin size={18} className="sm:w-[20px] sm:h-[20px] text-tertiary" />
+                <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50 transition-all duration-700">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
+                        <MapPin size={18} className="sm:w-[20px] sm:h-[20px] text-emerald-600" />
                         PERFIL DEL CONTRIBUYENTE
                     </h3>
 
                     <div className="space-y-8">
                         <div className="space-y-4">
-                            <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Régimen Tributario</label>
-                            <select
-                                value={editedClient.regime}
-                                onChange={(e) => setEditedClient({ ...editedClient, regime: e.target.value as TaxRegime })}
-                                disabled={!isEditing}
-                                className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm font-premium"
-                            >
-                                <option value={TaxRegime.General}>Régimen General</option>
-                                <option value={TaxRegime.RimpeEmprendedor}>RIMPE Emprendedor</option>
-                                <option value={TaxRegime.RimpeNegocioPopular}>RIMPE Negocio Popular</option>
-                            </select>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Régimen Tributario</label>
+                            <div className="relative">
+                                <select
+                                    value={editedClient.regime}
+                                    onChange={(e) => setEditedClient({ ...editedClient, regime: e.target.value as TaxRegime })}
+                                    disabled={!isEditing}
+                                    className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm font-premium"
+                                >
+                                    <option value={TaxRegime.General}>Régimen General</option>
+                                    <option value={TaxRegime.RimpeEmprendedor}>RIMPE Emprendedor</option>
+                                    <option value={TaxRegime.RimpeNegocioPopular}>RIMPE Negocio Popular</option>
+                                </select>
+                                <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={16} />
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-surface-lowest rounded-[3rem] p-10 border border-surface-low relative overflow-hidden group shadow-architect">
-                <h3 className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mb-12 flex items-center gap-4 font-premium">
-                    <Building size={20} className="text-primary" />
+            <div className="bg-white rounded-[3rem] p-10 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-12 flex items-center gap-4 font-premium">
+                    <Building size={20} className="text-blue-600" />
                     INFORMACIÓN DE CONTACTO
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Correo Electrónico</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Correo Electrónico</label>
                         <input
                             type="email"
                             value={editedClient.email || ''}
                             onChange={(e) => setEditedClient({ ...editedClient, email: e.target.value })}
                             disabled={!isEditing}
-                            className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
+                            className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                             placeholder="contacto@ejemplo.com"
                         />
                     </div>
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Teléfono de Contacto</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Teléfono de Contacto</label>
                         <input
                             type="text"
                             value={editedClient.phones && editedClient.phones.length > 0 ? editedClient.phones[0] : ''}
                             onChange={(e) => setEditedClient({ ...editedClient, phones: [e.target.value] })}
                             disabled={!isEditing}
-                            className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
+                            className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                             placeholder="+593 000 000 000"
                         />
                     </div>
@@ -1042,26 +1045,29 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Frecuencia IVA</label>
-                        <select
-                            value={editedClient.taxProfile?.ivaFrequency || 'Mensual'}
-                            onChange={(e) => setEditedClient({
-                                ...editedClient,
-                                taxProfile: { 
-                                    ...(editedClient.taxProfile || { requiresAnnualRenta: true, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), 
-                                    ivaFrequency: e.target.value as any 
-                                }
-                            })}
-                            disabled={!isEditing}
-                            className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm font-premium"
-                        >
-                            <option value="Mensual">Ciclo Mensual</option>
-                            <option value="Semestral">Ciclo Semestral</option>
-                            <option value="Ninguno">Inactivo</option>
-                        </select>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Frecuencia IVA</label>
+                        <div className="relative">
+                            <select
+                                value={editedClient.taxProfile?.ivaFrequency || 'Mensual'}
+                                onChange={(e) => setEditedClient({
+                                    ...editedClient,
+                                    taxProfile: { 
+                                        ...(editedClient.taxProfile || { requiresAnnualRenta: true, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), 
+                                        ivaFrequency: e.target.value as any 
+                                    }
+                                })}
+                                disabled={!isEditing}
+                                className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm font-premium"
+                            >
+                                <option value="Mensual">Ciclo Mensual</option>
+                                <option value="Semestral">Ciclo Semestral</option>
+                                <option value="Ninguno">Inactivo</option>
+                            </select>
+                            <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={16} />
+                        </div>
                     </div>
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Clave SRI</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Clave SRI</label>
                         <div className="relative">
                             <input
                                 type={passwordVisible ? "text" : "password"}
@@ -1069,10 +1075,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                 onChange={(e) => setEditedClient({ ...editedClient, sriPassword: e.target.value })}
                                 disabled={!isEditing}
                                 autoComplete="new-password"
-                                className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
+                                className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                                 placeholder="********"
                             />
-                            <button onClick={() => setPasswordVisible(!passwordVisible)} className="absolute right-6 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
+                            <button onClick={() => setPasswordVisible(!passwordVisible)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors">
                                 {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                         </div>
@@ -1080,33 +1086,33 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </div>
 
                 <div className="mt-8 space-y-4">
-                    <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Dirección Principal</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Dirección Principal</label>
                     <input
                         type="text"
                         value={editedClient.address || ''}
                         onChange={(e) => setEditedClient({ ...editedClient, address: e.target.value })}
                         disabled={!isEditing}
-                        className="w-full px-6 py-5 bg-surface border border-surface-low rounded-2xl text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
+                        className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
                         placeholder="Dirección del domicilio o negocio"
                     />
                 </div>
 
                 <div className="mt-8 space-y-4">
-                    <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1 font-premium">Detalle de Actividad</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Detalle de Actividad</label>
                     <textarea
                         value={editedClient.economicActivity || ''}
                         onChange={(e) => setEditedClient({ ...editedClient, economicActivity: e.target.value })}
                         disabled={!isEditing}
                         rows={3}
-                        className="w-full px-6 py-5 bg-surface border border-surface-low rounded-[2rem] text-sm font-extrabold text-on-surface focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-40 outline-none shadow-sm resize-none font-premium"
+                        className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm resize-none font-premium"
                         placeholder="Descripción de la actividad económica"
                     />
                 </div>
             </div>
 
-            <div className="bg-surface-lowest rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low relative overflow-hidden group shadow-architect">
-                <h3 className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
-                    <ShieldCheck size={18} className="sm:w-[20px] sm:h-[20px] text-tertiary" />
+            <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50">
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
+                    <ShieldCheck size={18} className="sm:w-[20px] sm:h-[20px] text-emerald-600" />
                     PROTOCOLOS FISCALES AVANZADOS
                 </h3>
                 <ExtraObligationsCheckboxes
@@ -1119,17 +1125,17 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     );
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 md:p-8 bg-slate-950/95 backdrop-blur-md overflow-hidden animate-in fade-in duration-700">
-            <div className="bg-surface w-full h-full md:max-h-[92vh] md:max-w-7xl md:rounded-[2.5rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col relative overflow-hidden architect-layer-1 group/modal">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 md:p-8 bg-slate-100/40 backdrop-blur-3xl overflow-hidden animate-in fade-in duration-700">
+            <div className="bg-slate-50 w-full h-full md:max-h-[92vh] md:max-w-7xl md:rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] flex flex-col relative overflow-hidden group/modal">
                 
                 {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed) */}
                 <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
-                    <div className="flex items-center gap-1 p-1 bg-surface-lowest/60 backdrop-blur-[40px] border border-surface-low rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_40px_rgba(var(--primary-rgb),0.1)] pointer-events-auto ring-1 ring-white/5">
+                    <div className="flex items-center gap-1 p-1 bg-white/90 backdrop-blur-[40px] border border-slate-200 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] pointer-events-auto ring-1 ring-black/[0.05]">
                         {(['profile', 'history', 'vault', 'settings'] as const).map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`group relative flex items-center gap-3 px-6 py-4 rounded-[2rem] transition-all duration-700 overflow-hidden ${activeTab === tab ? 'bg-primary text-on-primary-fixed shadow-2xl shadow-primary/40 scale-[1.08] -translate-y-1' : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-low/50'}`}
+                                className={`group relative flex items-center gap-3 px-6 py-4 rounded-[2rem] transition-all duration-700 overflow-hidden ${activeTab === tab ? 'bg-slate-900 text-white shadow-xl shadow-slate-200 scale-[1.08] -translate-y-1' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}
                             >
                                 <div className="relative z-10 flex items-center gap-3">
                                     {tab === 'profile' && <LayoutDashboard size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-12 group-hover:scale-110'}`} />}
@@ -1141,16 +1147,16 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                     </span>
                                 </div>
                                 {activeTab === tab && (
-                                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(255,255,255,0.15),transparent)] animate-shine"></div>
+                                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(255,255,255,0.1),transparent)] animate-shine"></div>
                                 )}
                             </button>
                         ))}
                         
-                        <div className="w-[1px] h-8 bg-on-surface-variant/20 mx-3 hidden md:block"></div>
+                        <div className="w-[1px] h-8 bg-slate-200 mx-3 hidden md:block"></div>
                         
                         <button 
                             onClick={onBack}
-                            className="hidden md:flex items-center gap-3 px-6 py-4 text-on-surface-variant/40 hover:text-primary transition-all duration-500 group rounded-[2rem] hover:bg-primary/5"
+                            className="hidden md:flex items-center gap-3 px-6 py-4 text-slate-400 hover:text-rose-500 transition-all duration-500 group rounded-[2rem] hover:bg-rose-50"
                             title="Regresar al Directorio"
                         >
                             <X size={16} className="group-hover:rotate-90 transition-transform duration-700" />
@@ -1159,7 +1165,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     </div>
                 </div>
 
-                <button onClick={onBack} className="absolute top-8 right-8 z-50 p-4 bg-surface-low/80 backdrop-blur-xl border border-surface-lowest text-on-surface-variant hover:text-primary rounded-2xl transition-all md:flex hidden hover:scale-110 active:scale-90 group/close shadow-2xl hover:border-primary/30">
+                <button onClick={onBack} className="absolute top-8 right-8 z-50 p-4 bg-white/80 backdrop-blur-xl border border-slate-100 text-slate-400 hover:text-blue-600 rounded-2xl transition-all md:flex hidden hover:scale-110 active:scale-90 group/close shadow-xl hover:border-blue-500/30">
                     <X size={24} className="group-hover:rotate-90 transition-transform duration-700" />
                 </button>
 
@@ -1194,20 +1200,20 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </div>
 
                 {/* Tactical Footer Action Bar - Integrated into context */}
-                <div className={`flex-none p-6 md:px-14 bg-surface-low border-t border-surface-lowest flex flex-col sm:flex-row justify-between items-center transition-all duration-700 ${isEditing ? 'opacity-100 translate-y-0 h-auto visible' : 'opacity-0 translate-y-full h-0 invisible'}`}>
+                <div className={`flex-none p-8 md:px-14 bg-white border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center transition-all duration-700 ${isEditing ? 'opacity-100 translate-y-0 h-auto visible' : 'opacity-0 translate-y-full h-0 invisible'}`}>
                     <div className="flex items-center gap-6">
                         <SidebarAction icon={Download} label="Exportar Dossier" onClick={() => toast.info('Generando Reporte Elite...')} />
-                        <div className="hidden lg:flex items-center gap-2 border-l border-on-surface-variant/10 pl-6 opacity-30 select-none">
-                            <span className="text-[9px] font-black tracking-[0.4em] text-on-surface-variant font-premium uppercase">CONTROL DE MISIÓN v3.2</span>
+                        <div className="hidden lg:flex items-center gap-3 border-l border-slate-100 pl-8 opacity-40 select-none">
+                            <span className="text-[10px] font-black tracking-[0.5em] text-slate-400 font-premium uppercase">CONTROL DE MISIÓN v4.0</span>
                         </div>
                     </div>
-                    <div className="flex gap-4">
-                        <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-5 py-3.5 bg-primary/5 hover:bg-primary/10 text-primary rounded-xl border border-primary/20 text-[10px] font-black uppercase tracking-[0.25em] flex items-center gap-2 transition-all">
-                            {isAnalyzingPdf ? <Loader size={12} className="animate-spin" /> : <ScanLine size={14} />}
+                    <div className="flex gap-5">
+                        <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-6 py-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl border border-blue-100 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 transition-all shadow-sm">
+                            {isAnalyzingPdf ? <Loader size={14} className="animate-spin" /> : <ScanLine size={16} />}
                             <span>MÓDULO SCANNER</span>
                         </button>
-                        <button onClick={() => setIsEditing(false)} className="px-6 py-3.5 text-on-surface-variant font-black text-[10px] uppercase tracking-[0.25em] hover:bg-surface-lowest transition-all rounded-xl">ABORTAR</button>
-                        <button onClick={handleSave} className="px-8 py-3.5 bg-primary text-on-primary-fixed rounded-xl text-[10px] font-black uppercase tracking-[0.25em] shadow-architect transition-all active:scale-95 glow-primary">GUARDAR DATOS</button>
+                        <button onClick={() => setIsEditing(false)} className="px-8 py-4 text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-50 hover:text-slate-900 transition-all rounded-2xl">ABORTAR</button>
+                        <button onClick={handleSave} className="px-10 py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95">GUARDAR DATOS</button>
                     </div>
                 </div>
                 <input type="file" ref={proofInputRef} className="hidden" onChange={handleProofUpload} accept=".pdf,image/*" />

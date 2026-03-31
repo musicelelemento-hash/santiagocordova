@@ -20,16 +20,16 @@ export const CopyButton: React.FC<CopyButtonProps> = ({ text, label, obscured, o
     return (
         <button
             onClick={handleCopy}
-            className={`group relative flex items-center justify-between w-full p-3 rounded-xl border transition-all duration-200 ${copied ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-brand-teal/50 hover:shadow-sm'}`}
+            className={`group relative flex items-center justify-between w-full p-4 rounded-xl border transition-all duration-500 shadow-sm ${copied ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-100 hover:border-primary/30 hover:shadow-md'}`}
         >
             <div className="flex flex-col items-start truncate pr-2">
-                {label && <span className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-0.5">{label}</span>}
-                <span className={`font-mono text-sm font-medium truncate w-full text-left ${copied ? 'text-green-700' : 'text-slate-700 dark:text-slate-200'}`}>
+                {label && <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 font-premium">{label}</span>}
+                <span className={`font-mono text-xs font-black truncate w-full text-left uppercase tracking-widest ${copied ? 'text-emerald-700' : 'text-slate-900'}`}>
                     {obscured ? '••••••••' : (text || 'N/A')}
                 </span>
             </div>
-            <div className={`p-2 flex-shrink-0 rounded-lg transition-colors ${copied ? 'bg-green-200 text-green-700' : 'bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:text-brand-teal group-hover:bg-brand-teal/10'}`}>
-                {copied ? <Check size={16} /> : <Copy size={16} />}
+            <div className={`p-2.5 flex-shrink-0 rounded-xl transition-all duration-300 ${copied ? 'bg-emerald-500 text-white' : 'bg-slate-50 border border-slate-100 text-slate-400 group-hover:text-primary group-hover:bg-primary/5 group-hover:border-primary/20'}`}>
+                {copied ? <Check size={16} strokeWidth={3} /> : <Copy size={16} strokeWidth={2.5} />}
             </div>
         </button>
     );

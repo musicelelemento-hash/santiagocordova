@@ -22,11 +22,11 @@ interface ClientNotesProps {
 }
 
 const CATEGORY_STYLES = {
-  [NoteCategory.Important]: 'bg-rose-500/10 text-rose-500 border-rose-500/20',
-  [NoteCategory.Note]: 'bg-primary/10 text-primary border-primary/20',
-  [NoteCategory.Suggestion]: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  [NoteCategory.Key]: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
-  [NoteCategory.Other]: 'bg-on-surface-variant/10 text-on-surface-variant border-on-surface-variant/20',
+  [NoteCategory.Important]: 'bg-rose-50 text-rose-700 border-rose-100',
+  [NoteCategory.Note]: 'bg-blue-50 text-blue-700 border-blue-100',
+  [NoteCategory.Suggestion]: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  [NoteCategory.Key]: 'bg-amber-50 text-amber-700 border-amber-100',
+  [NoteCategory.Other]: 'bg-slate-50 text-slate-700 border-slate-100',
 };
 
 const CATEGORY_ICONS = {
@@ -58,34 +58,34 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
   };
 
   return (
-    <div className="bg-surface-lowest rounded-[2rem] p-8 shadow-architect border border-surface-low h-full flex flex-col relative overflow-hidden transition-all duration-700 group">
-      <div className="flex items-center justify-between mb-8 relative z-10">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-architect-low group-hover:scale-110 transition-transform">
-            <StickyNote size={20} />
+    <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 h-full flex flex-col relative overflow-hidden transition-all duration-700 group">
+      <div className="flex items-center justify-between mb-10 relative z-10">
+        <div className="flex items-center gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm border border-blue-100 group-hover:scale-105 transition-transform duration-700">
+            <StickyNote size={24} strokeWidth={2} />
           </div>
           <div>
-            <h3 className="text-[10px] font-black text-on-surface uppercase tracking-[0.25em] font-premium">
+            <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.25em] font-premium">
               INTELIGENCIA FISCAL
             </h3>
-            <p className="text-[9px] font-bold text-primary uppercase tracking-[0.25em] mt-1 font-premium">ASISTENCIA EN TIEMPO REAL</p>
+            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mt-1.5 font-premium">SISTEMA DE ASISTENCIA</p>
           </div>
         </div>
         
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="w-10 h-10 rounded-xl bg-surface-low text-on-surface-variant hover:bg-primary hover:text-white transition-all shadow-sm flex items-center justify-center active:scale-90"
+            className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-500 hover:bg-slate-900 hover:text-white transition-all shadow-sm border border-slate-100 flex items-center justify-center active:scale-90"
           >
-            <Plus size={18} />
+            <Plus size={22} strokeWidth={2.5} />
           </button>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-4 pr-3 custom-scrollbar relative z-10">
+      <div className="flex-1 overflow-y-auto space-y-5 pr-3 custom-scrollbar relative z-10">
         {isAdding && (
-          <form onSubmit={handleSubmit} className="p-6 rounded-[2rem] bg-surface border border-primary/10 shadow-architect-low animate-in fade-in slide-in-from-top-4 duration-500 mb-6">
-            <div className="flex flex-wrap gap-2 mb-6">
+          <form onSubmit={handleSubmit} className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 shadow-sm animate-in fade-in slide-in-from-top-4 duration-700 mb-8">
+            <div className="flex flex-wrap gap-2.5 mb-8">
               {Object.values(NoteCategory).map((cat) => {
                 const Icon = CATEGORY_ICONS[cat];
                 return (
@@ -93,13 +93,13 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
                     key={cat}
                     type="button"
                     onClick={() => setCategory(cat)}
-                    className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-2 font-premium ${
+                    className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-2.5 font-premium ${
                       category === cat 
-                        ? CATEGORY_STYLES[cat] + ' shadow-architect-low scale-[1.02]' 
-                        : 'bg-surface-low text-on-surface-variant/40 border-transparent hover:border-primary/20'
+                        ? CATEGORY_STYLES[cat] + ' shadow-sm scale-[1.02]' 
+                        : 'bg-white text-slate-400 border-slate-100 hover:border-blue-200'
                     }`}
                   >
-                    <Icon size={12} />
+                    <Icon size={14} strokeWidth={2.5} />
                     {cat}
                   </button>
                 );
@@ -110,20 +110,20 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Describa la observación o recomendación técnica..."
-              className="w-full bg-surface-low border border-surface-low focus:border-primary/30 p-4 rounded-2xl text-sm text-on-surface placeholder:text-on-surface-variant/30 resize-none h-32 transition-all outline-none font-medium"
+              className="w-full bg-white border border-slate-100 focus:border-blue-400 p-6 rounded-[1.5rem] text-[15px] text-slate-950 placeholder:text-slate-300 resize-none h-40 transition-all outline-none font-medium shadow-inner"
             />
-            <div className="flex justify-end gap-3 mt-6">
+            <div className="flex justify-end gap-3 mt-8">
               <button
                 type="button"
                 onClick={() => setIsAdding(false)}
-                className="px-6 py-3 rounded-xl text-[10px] font-black text-on-surface-variant uppercase tracking-widest hover:bg-surface-low transition-all font-premium"
+                className="px-8 py-4 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-white hover:text-slate-600 transition-all font-premium"
               >
                 DESCARTAR
               </button>
               <button
                 type="submit"
                 disabled={!content.trim()}
-                className="px-6 py-3 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary-hover transition-all disabled:opacity-50 shadow-lg shadow-primary/20 font-premium active:scale-95"
+                className="px-8 py-4 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50 shadow-xl shadow-slate-200 font-premium active:scale-95"
               >
                 REGISTRAR NOTA
               </button>
@@ -132,14 +132,14 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
         )}
 
         {notes.length === 0 && !isAdding && (
-          <div className="flex flex-col items-center justify-center py-20 text-center relative group/empty">
-            <div className="w-16 h-16 rounded-full bg-surface-low border border-surface-low flex items-center justify-center text-on-surface-variant/20 mb-6 shadow-inner group-hover/empty:scale-110 transition-transform duration-700">
-              <MessageSquare size={24} strokeWidth={1.5} />
+          <div className="flex flex-col items-center justify-center py-24 text-center relative group/empty">
+            <div className="w-20 h-20 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-200 mb-8 shadow-inner group-hover/empty:scale-110 transition-transform duration-1000">
+              <MessageSquare size={32} strokeWidth={1} />
             </div>
-            <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.3em] font-premium">SIN ACTIVIDAD REGISTRADA</p>
-            <div className="flex items-center justify-center gap-3 mt-4 opacity-50">
-                <span className="w-1 h-1 rounded-full bg-primary/40 animate-pulse"></span>
-                <p className="text-[9px] uppercase font-black tracking-[0.4em] text-on-surface-variant/30 font-premium">IDLE SYSTEM</p>
+            <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] font-premium">SIN ACTIVIDAD REGISTRADA</p>
+            <div className="flex items-center justify-center gap-4 mt-5 opacity-40">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                <p className="text-[10px] uppercase font-black tracking-[0.5em] text-slate-300 font-premium">IDLE SYSTEM</p>
             </div>
           </div>
         )}
@@ -151,52 +151,48 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
           return (
             <div 
               key={note.id}
-              className="group/note relative p-5 rounded-2xl bg-surface border border-surface-low hover:border-primary/20 transition-all duration-500 hover:shadow-architect-low animate-in fade-in slide-in-from-bottom-2"
-              style={{ animationDelay: `${idx * 50}ms` }}
+              className="group/note relative p-8 rounded-[1.5rem] bg-white border border-slate-100 hover:border-blue-200 transition-all duration-700 hover:shadow-md animate-in fade-in slide-in-from-bottom-4"
+              style={{ animationDelay: `${idx * 100}ms` }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] border flex items-center gap-2 font-premium ${style}`}>
-                  <Icon size={10} />
+              <div className="flex items-center justify-between mb-6">
+                <div className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] border flex items-center gap-2.5 font-premium ${style}`}>
+                  <Icon size={12} strokeWidth={3} />
                   {note.category}
                 </div>
                 <div className="flex items-center gap-2">
                    <button
                     onClick={() => removeClientNote(clientId, note.id)}
-                    className="opacity-0 group-hover/note:opacity-100 p-2 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-all active:scale-95"
+                    className="opacity-0 group-hover/note:opacity-100 p-2.5 rounded-xl text-rose-500 hover:bg-rose-50 transition-all active:scale-90 border border-transparent hover:border-rose-100"
                     title="Eliminar registro"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} strokeWidth={2.5} />
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-on-surface whitespace-pre-wrap leading-relaxed font-medium">
+              <p className="text-[15px] text-slate-900 whitespace-pre-wrap leading-relaxed font-semibold font-premium tracking-tight">
                 {note.content}
               </p>
-              <div className="mt-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary/20" />
-                  <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-tighter">
+              <div className="mt-8 flex items-center justify-between border-t border-slate-50 pt-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                     {new Date(note.createdAt).toLocaleDateString('es-ES', { 
-                      day: 'numeric', 
+                      day: '2-digit', 
                       month: 'short', 
                       hour: '2-digit',
                       minute: '2-digit'
                     })}
                   </span>
                 </div>
-                <div className="h-[1px] bg-surface-low flex-1 mx-4" />
-                <div className="flex items-center gap-2 opacity-0 group-hover/note:opacity-100 transition-opacity">
-                    <ShieldCheck size={10} className="text-primary/40" />
-                    <span className="text-[9px] font-black text-primary/30 uppercase tracking-[0.1em] font-premium">LOG VALIDADO</span>
+                <div className="flex items-center gap-2.5 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
+                    <ShieldCheck size={12} className="text-emerald-600" strokeWidth={3} />
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.1em] font-premium">LOG VALIDADO</span>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* Decorative Architectural Line */}
-      <div className="absolute right-0 top-0 w-px h-full bg-gradient-to-b from-transparent via-primary/5 to-transparent/0 pointer-events-none"></div>
     </div>
   );
 };
