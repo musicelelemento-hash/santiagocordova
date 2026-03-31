@@ -1,43 +1,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap');
 
 :root {
-    /* The Analytical Architect - Color Tokens */
-    --primary: 231 48% 48%; /* #3F51B5 - Deep Indigo */
-    --primary-dark: 230 63% 38%; /* #24389C */
-    --primary-foreground: 0 0% 100%;
+    /* The Analytical Architect - Official Color Tokens from Stitch */
+    --primary: 231 63% 38%; /* #24389C */
+    --primary-container: 231 48% 48%; /* #3F51B5 */
+    --on-primary: 0 0% 100%;
     
-    --secondary: 200 10% 38%; /* #546067 */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 204 10% 38%; /* #546067 */
+    --secondary-container: 204 31% 88%; /* #D7E4EC */
+    
+    --tertiary: 160 100% 15%; /* #004E33 */
+    --tertiary-container: 161 100% 20%; /* #006846 */
+    --tertiary-fixed: 154 94% 71%; /* #6FFBBE */
+    
+    /* Surfaces - The Layering Principle */
+    --surface: 210 25% 98%; /* #F7F9FB - Base Level */
+    --surface-low: 210 16% 96%; /* #F2F4F6 - Secondary Zones */
+    --surface-lowest: 0 0% 100%; /* #FFFFFF - High-Focus Cards */
+    
+    --background: 210 25% 98%;
+    --foreground: 204 9% 11%; /* #191C1E */
+    
+    /* Semantic Variations */
+    --on-surface: 204 9% 11%;
+    --on-surface-variant: 233 9% 30%; /* #454652 */
+    
+    /* Ghost Borders - Rare usage (15% opacity) */
+    --outline-variant: 240 14% 80%; /* #C5C5D4 */
+    --border: var(--outline-variant);
 
-    --accent: 154 60% 50%; /* #5debaf - Emerald tint for highlights */
-    --accent-foreground: 160 100% 6%;
+    --radius: 0.5rem; /* 8px fixed */
 
-    /* Surfaces - Apilado de Papel */
-    --background: 210 25% 98%; /* #f7f9fb - Base */
-    --foreground: 204 9% 11%; /* #191c1e - On-Surface */
-    
-    --card: 0 0% 100%; /* #ffffff - Highest priority info */
-    --card-foreground: 204 9% 11%;
-    
-    --surface-low: 210 16% 96%; /* #f2f4f6 - Minor widgets */
-    
-    /* Ghost Borders - Barely visible */
-    --border: 240 14% 80%; /* #c5c5d4 */
-    --ring: 231 48% 48%;
-    
-    --radius: 0.5rem; /* 8px for Analytical Architect */
-
-    /* Custom Gradients & Shadows */
-    --architect-shadow: 0 32px 64px -12px rgba(25, 28, 30, 0.06);
+    /* Ambient Shadows (6% opacity on_surface) */
+    --architect-shadow: 0 32px 64px -12px hsla(204, 9%, 11%, 0.06);
     --architect-gradient: linear-gradient(135deg, #24389c 0%, #3f51b5 100%);
 }
 
 .dark {
-    --background: 210 10% 18%; /* Dark theme adaptation */
+    --background: 210 10% 12%; 
+    --surface: 210 10% 12%;
+    --surface-low: 210 10% 15%;
+    --surface-lowest: 210 10% 18%;
     --foreground: 210 20% 98%;
-    --card: 210 10% 22%;
-    --card-foreground: 210 20% 98%;
-    --border: 210 10% 30%;
+    --on-surface: 210 20% 98%;
+    --border: 210 10% 25%;
 }
 
 body {
@@ -289,4 +295,84 @@ h1, h2, h3, h4 {
 
 .duration-1000 {
     animation-duration: 1000ms;
+}
+
+/* --- STITCH-ELITE INTEGRATION: Mobile Core --- */
+.mobile-island-dock {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 2.5rem;
+    background-color: rgba(2, 6, 23, 0.8);
+    backdrop-filter: blur(40px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mobile-island-dock-active {
+    transform: scale(0.95);
+    opacity: 0.9;
+    filter: blur(1px);
+}
+
+.card-stagger-up {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.border-holographic {
+    position: relative;
+    overflow: hidden;
+}
+
+.border-holographic::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, rgba(0, 168, 150, 0.4), rgba(59, 130, 246, 0.4), rgba(168, 85, 247, 0.4)) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+.glow-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+
+.glow-shimmer::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(0, 168, 150, 0.1) 0%, transparent 70%);
+    animation: rotateGlow 10s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes rotateGlow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.touch-scale {
+    transition: transform 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.touch-scale:active {
+    transform: scale(0.96) translateY(2px);
 }

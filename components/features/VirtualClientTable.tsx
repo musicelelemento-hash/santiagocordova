@@ -98,173 +98,102 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
     return (
         <div style={style} className={`flex border-b border-slate-100 dark:border-white/5 hover:bg-primary/[0.03] dark:hover:bg-primary/[0.08] transition-all items-center px-4 group/row hover:shadow-[inset_4px_0_0_0_theme(colors.primary.DEFAULT)] ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-inset ring-primary/30' : ''}`}>
             {/* Estatus Zen */}
-            <div className="w-16 shrink-0 flex flex-col items-center group cursor-help relative" title={merit.label}>
-                <div className={`p-2 rounded-xl bg-opacity-10 ${merit.rank === 1 ? 'bg-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]' : (merit.rank === 2 ? 'bg-slate-400' : 'bg-orange-600')} transition-transform group-hover/row:scale-110`}>
-                    <merit.icon size={20} className={`${merit.color}`} strokeWidth={2} />
+            <div className="w-20 shrink-0 flex flex-col items-center group cursor-help relative px-2" title={merit.label}>
+                <div className={`p-2.5 rounded-2xl ${merit.rank === 1 ? 'bg-tertiary/10 text-tertiary shadow-sm' : (merit.rank === 2 ? 'bg-on-surface-variant/10 text-on-surface-variant' : 'bg-primary/10 text-primary')} transition-all group-hover:scale-110`}>
+                    <merit.icon size={22} strokeWidth={2.5} />
                 </div>
-                <span className={`text-[11px] font-bold uppercase mt-1.5 px-1.5 py-0.5 rounded-md border ${merit.color} ${merit.rank === 1 ? 'border-amber-400/30' : 'border-slate-500/20'}`}>{merit.label.split(' - ')[0]}</span>
+                <span className={`text-[9px] font-bold uppercase mt-2 px-2 py-0.5 rounded-full tracking-wider ${merit.rank === 1 ? 'bg-tertiary/10 text-tertiary' : 'bg-surface-low text-on-surface-variant'}`}>{merit.label.split(' - ')[0]}</span>
             </div>
 
-            <div className="flex-1 min-w-0 px-4">
-                <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0 px-6">
+                <div className="flex items-center gap-3">
                     {hasMissingHistoryPdf && (
-                        <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.4)] shrink-0" title="Pendiente: Documentación histórica" />
+                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(var(--primary-rgb),0.4)] shrink-0" title="Pendiente: Documentación histórica" />
                     )}
                     <span 
-                        className="font-semibold text-slate-800 dark:text-white text-[13.5px] truncate group-hover/row:text-primary transition-colors tracking-tight" 
+                        className="font-premium font-bold text-on-surface text-[15px] truncate group-hover/row:text-primary transition-colors tracking-tight" 
                         title={client.name}
                     >
                         {client.tradeName || client.name}
                     </span>
                     {client.isActive === false && (
-                        <span className="text-[11px] font-bold bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-md uppercase flex items-center gap-1">
-                            <LucideIcons.UserX size={8} strokeWidth={3} />
+                        <span className="text-[10px] font-bold bg-surface-low text-on-surface-variant px-2 py-0.5 rounded-full uppercase flex items-center gap-1.5">
+                            <LucideIcons.UserX size={10} strokeWidth={3} />
                             Inactivo
                         </span>
                     )}
                     {true && (
-                        <div className="flex items-center gap-1 text-[11px] font-bold bg-amber-50 text-amber-600 border border-amber-200/50 px-2 py-0.5 rounded-md uppercase tracking-tighter shadow-sm">
-                            <LucideIcons.Crown size={8} className="fill-current" />
-                            Protocolo VIP
-                        </div>
-                    )}
-                    {(client.hasElderlyDevolucionIva || (client as any).hasElderlyIvaRefund) && (
-                        <div className="flex items-center gap-1 text-[11px] font-bold bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-md uppercase tracking-tighter shadow-sm">
-                            <LucideIcons.Heart size={8} className="fill-current" />
-                            T. EDAD
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold bg-primary/5 text-primary px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm ring-1 ring-primary/10">
+                            <LucideIcons.Crown size={10} className="fill-current" />
+                            VIP
                         </div>
                     )}
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 truncate tracking-wide" title={client.name}>
-                        {client.tradeName ? client.name : client.ruc}
+                <div className="flex items-center gap-3 mt-1.5">
+                    <span className="text-[11px] font-bold text-on-surface-variant/60 truncate tracking-widest font-mono" title={client.name}>
+                        {client.ruc}
                     </span>
-                    {client.tradeName && (
-                        <button 
-                            onClick={handleCopyRuc}
-                            className={`font-mono text-xs px-2 py-0.5 rounded-md border transition-all flex items-center gap-1.5 uppercase tracking-widest ${copied ? 'bg-primary text-white border-primary' : 'text-slate-400 bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 hover:border-primary/50 hover:text-primary'}`}
-                            title="Copiar RUC"
-                        >
-                            {client.ruc}
-                            {copied ? <LucideIcons.Check size={8} /> : <LucideIcons.Copy size={8} />}
-                        </button>
-                    )}
-                    {!client.tradeName && (
-                         <button 
-                            onClick={handleCopyRuc}
-                            className={`font-mono text-xs px-2 py-0.5 rounded-md border transition-all flex items-center gap-1.5 uppercase tracking-widest ${copied ? 'bg-primary text-white border-primary' : 'text-slate-400 border-transparent hover:border-primary/50 hover:text-primary'}`}
-                            title="Copiar RUC"
-                        >
-                            <LucideIcons.Copy size={8} />
-                        </button>
-                    )}
-                    <span className="text-xs font-bold text-primary/70 uppercase tracking-widest font-mono opacity-80">{client.regime}</span>
+                    <div className="w-1 h-1 rounded-full bg-on-surface-variant/20"></div>
+                    <span className="text-[10px] font-bold text-primary/70 uppercase tracking-[0.2em] font-premium">{client.regime}</span>
                 </div>
             </div>
 
             {/* Perfil Táctico */}
-            <div className="w-40 shrink-0 px-4 border-l border-slate-100 dark:border-white/5 h-full flex flex-col justify-center">
-                <div className="flex flex-wrap gap-1.5">
+            <div className="w-48 shrink-0 px-6 h-full flex flex-col justify-center">
+                <div className="flex flex-wrap gap-2">
                     {needsIva && (
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${isCampaignDone ? 'bg-emerald-400/10 border-emerald-400/20 text-emerald-500' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400'}`}>
-                            {isCampaignDone ? <LucideIcons.ShieldCheck size={10} strokeWidth={3} /> : <LucideIcons.Loader2 size={10} className="animate-spin" />}
-                            <span className="text-[11px] font-semibold uppercase tracking-widest">{frequencyText.replace('IVA ', '')}</span>
+                        <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl transition-all shadow-sm ${isCampaignDone ? 'bg-tertiary/10 text-tertiary' : 'bg-surface-low text-on-surface-variant'}`}>
+                            {isCampaignDone ? <LucideIcons.ShieldCheck size={12} strokeWidth={3} /> : <LucideIcons.Loader2 size={12} className="animate-spin" />}
+                            <span className="text-[10px] font-bold uppercase tracking-wider">{frequencyText.replace('IVA ', '')}</span>
                         </div>
                     )}
                     {needsRenta && (
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${isRentaDeclared ? 'bg-emerald-400/10 border-emerald-400/20 text-emerald-500' : 'bg-orange-500/10 border-orange-500/20 text-orange-600'}`}>
-                            {isRentaDeclared ? <LucideIcons.Award size={10} strokeWidth={3} /> : <LucideIcons.Target size={10} />}
-                            <span className="text-[11px] font-semibold uppercase tracking-widest text-inherit">RENTA</span>
-                        </div>
-                    )}
-                    {client.hasRentaRefund && (
-                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all ${client.rentaRefundStatus === 'Completado' ? 'bg-sky-400/10 border-sky-400/20 text-sky-500' : 'bg-rose-400/10 border-rose-400/20 text-rose-400 animate-pulse'}`}>
-                            <LucideIcons.HandCoins size={10} />
-                            <span className="text-[11px] font-semibold uppercase tracking-widest">DEV. RENTA</span>
+                        <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl transition-all shadow-sm ${isRentaDeclared ? 'bg-tertiary/10 text-tertiary' : 'bg-primary/10 text-primary'}`}>
+                            {isRentaDeclared ? <LucideIcons.Award size={12} strokeWidth={3} /> : <LucideIcons.Target size={12} />}
+                            <span className="text-[10px] font-bold uppercase tracking-wider">RENTA</span>
                         </div>
                     )}
                 </div>
             </div>
 
             {/* Cronómetro SRI */}
-            <div className="w-44 shrink-0 px-4 border-l border-slate-100 dark:border-white/5 h-full flex items-center">
-                <div className={`flex items-center gap-3 p-2 rounded-xl border w-full transition-all ${isCampaignDone ? 'bg-emerald-400/5 border-emerald-400/20' : 'bg-slate-50/50 dark:bg-white/5 border-slate-200 dark:border-white/10'}`}>
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isCampaignDone ? 'bg-emerald-400 text-white' : (needsIva && ivaDueDate && isPast(ivaDueDate) ? 'bg-rose-400 text-white animate-pulse' : 'bg-sky-400 text-white')}`}>
-                        <LucideIcons.Clock size={16} />
+            <div className="w-52 shrink-0 px-6 h-full flex items-center">
+                <div className={`flex items-center gap-4 p-2.5 rounded-2xl w-full transition-all bg-surface-low/50`}>
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm ${isCampaignDone ? 'bg-tertiary text-white' : (needsIva && ivaDueDate && isPast(ivaDueDate) ? 'bg-primary text-white animate-pulse' : 'bg-surface-lowest text-on-surface-variant')}`}>
+                        <LucideIcons.Clock size={18} />
                     </div>
                     <div className="flex flex-col">
-                        <span className={`text-xs font-semibold uppercase tracking-tighter ${(needsIva ? isCampaignDone : isRentaDeclared) ? 'text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                        <span className={`text-[11px] font-bold uppercase tracking-wider ${isCampaignDone || (needsRenta && isRentaDeclared) ? 'text-tertiary' : 'text-on-surface'}`}>
                             {formatPeriodForDisplay(needsIva ? period : rentaPeriod)}
                         </span>
-                        <span className={`text-xs font-semibold font-mono tracking-widest ${(needsIva ? isCampaignDone : isRentaDeclared) ? ((((needsIva ? campaignDecl : rentaDecl)?.proof_file) || (needsIva ? decl : rentaDecl)?.proof_file) ? 'text-emerald-400/70' : 'text-rose-400 animate-pulse') : (needsIva && ivaDueDate && isPast(ivaDueDate) ? 'text-rose-400/70' : 'text-sky-400/70')}`}>
-                            {(needsIva ? isCampaignDone : isRentaDeclared) ? 
-                                ((((needsIva ? campaignDecl : rentaDecl)?.proof_file) || (needsIva ? decl : rentaDecl)?.proof_file) ? 'TARGET OK' : 'FALTA PDF') 
-                                : (needsIva ? (ivaDueDate ? safeFormat(ivaDueDate, 'dd MMM') : 'N/A') : (rentaDueDate ? safeFormat(rentaDueDate, 'dd MMM') : 'N/A'))}
+                        <span className={`text-[10px] font-bold font-mono tracking-widest ${isCampaignDone || (needsRenta && isRentaDeclared) ? 'text-tertiary/70' : 'text-on-surface-variant'}`}>
+                            {isCampaignDone || (needsRenta && isRentaDeclared) ? 'OK' : (needsIva ? (ivaDueDate ? safeFormat(ivaDueDate, 'dd MMM') : 'N/A') : (rentaDueDate ? safeFormat(rentaDueDate, 'dd MMM') : 'N/A'))}
                         </span>
                     </div>
-                    {(campaignDecl?.proof_file || decl?.proof_file) && (
-                        <button 
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                const file = campaignDecl?.proof_file || decl?.proof_file;
-                                if (file?.content) {
-                                    // Abrir PDF en nueva pestaña si es base64
-                                    const win = window.open();
-                                    win?.document.write(`<iframe src="${file.content}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-                                } else {
-                                    onView(client); // Fallback a la ficha
-                                }
-                            }}
-                            className="ml-auto p-1.5 rounded-lg bg-sky-400/10 text-sky-400 hover:bg-sky-400 hover:text-white transition-all border border-sky-400/20" 
-                            title="Ver Comprobante SRI Online"
-                        >
-                            <LucideIcons.Eye size={12} strokeWidth={3} />
-                        </button>
-                    )}
                 </div>
             </div>
 
-            {/* Logistics - Fee */}
-            <div className="w-28 shrink-0 px-4 border-l border-slate-100 dark:border-white/5 h-full flex flex-col justify-center">
-                <span className="font-semibold text-emerald-500 dark:text-emerald-400 text-base font-mono leading-none tracking-tighter">${fee.toFixed(2)}</span>
-                <span className="text-xs text-slate-400 font-semibold uppercase tracking-widest mt-1">Recurrencia</span>
+            {/* Honorarios */}
+            <div className="w-32 shrink-0 px-6 h-full flex flex-col justify-center">
+                <span className="font-bold text-on-surface text-lg font-mono tracking-tighter leading-none">${fee.toFixed(2)}</span>
+                <span className="text-[9px] text-on-surface-variant font-bold uppercase tracking-[0.2em] mt-2">MENSUAL</span>
             </div>
 
-            {/* Operaciones Zen */}
-            <div className="w-52 shrink-0 px-4 border-l border-slate-100 dark:border-white/5 h-full flex flex-col justify-center gap-1.5">
+            {/* Operaciones */}
+            <div className="w-64 shrink-0 px-6 flex items-center gap-3">
                 <button
                     onClick={(e) => { e.stopPropagation(); onView(client); }}
-                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all border
-                    ${isCampaignPaid ? 'bg-primary/20 text-primary border-primary/30 shadow-none' : 'bg-slate-800 text-white border-white/10 hover:bg-slate-700 active:scale-95'}`}>
-                    <span>{isCampaignPaid ? 'LOGÍSTICA COMPLETA' : 'GESTIONAR PAGO'}</span>
-                    {isCampaignPaid ? <LucideIcons.ShieldCheck size={12} /> : <LucideIcons.ChevronRight size={12} />}
-                </button>
-                
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onUploadReceipt(client, period); }}
-                    className={`flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all border
-                    ${isCampaignDone ? 'bg-slate-50 dark:bg-white/5 text-slate-400 border-slate-200 dark:border-white/10' : 'bg-primary text-white border-primary hover:scale-[1.02] shadow-lg shadow-primary/20'}`}>
-                    {isCampaignDone ? <LucideIcons.Check size={12} strokeWidth={3} /> : <LucideIcons.Upload size={12} />}
-                    {isCampaignDone ? 'GESTIÓN FINALIZADA' : 'INICIAR TRÁMITE'}
-                </button>
-            </div>
-
-            {/* Tactical Switch */}
-            <div className="w-32 shrink-0 px-4 flex items-center justify-end gap-2">
-                <button 
-                    onClick={() => onView(client)}
-                    className="flex items-center justify-center gap-2 text-white font-semibold text-xs bg-slate-800 dark:bg-white/5 hover:bg-sky-400 dark:hover:bg-sky-400 px-4 py-2.5 rounded-xl transition-all border border-white/5 uppercase tracking-widest"
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all bg-surface-low text-on-surface hover:bg-surface-lowest border-0 shadow-sm"
                 >
-                    Ficha
+                    DETALLES
                     <LucideIcons.ArrowRight size={14} />
                 </button>
-                <div className="h-8 w-[1px] bg-slate-100 dark:bg-white/5"></div>
                 <button
-                    onClick={(e) => { e.stopPropagation(); if (confirm(`¿Desactivar a ${client.name}?`)) onQuickAction(client, 'deactivate'); }}
-                    className="p-2 text-slate-300 hover:text-rose-400 hover:bg-rose-400/10 rounded-xl transition-all"
-                    title="Dar de baja de la unidad"
+                    onClick={(e) => { e.stopPropagation(); onUploadReceipt(client, period); }}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all shadow-md ${isCampaignDone ? 'bg-surface-low text-on-surface-variant' : 'bg-primary text-white shadow-primary/20 hover:shadow-primary/40'}`}
                 >
-                    <LucideIcons.ShieldX size={18} />
+                    {isCampaignDone ? <LucideIcons.Check size={14} strokeWidth={3} /> : <LucideIcons.Upload size={14} />}
+                    {isCampaignDone ? 'LISTO' : 'CARGAR'}
                 </button>
             </div>
         </div>
@@ -273,15 +202,14 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
 
 export const VirtualClientTable: React.FC<VirtualClientTableProps> = (props) => {
     return (
-        <div className="bg-white/40 dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200 dark:border-white/5 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 425px)', minHeight: '550px' }}>
-            <div className="flex bg-slate-50 dark:bg-white/5 text-[11px] font-bold uppercase text-slate-500 py-4 px-4 border-b border-slate-200 dark:border-white/5 active:select-none tracking-[0.2em]">
-                <div className="w-16 shrink-0 text-center">Protocolo</div>
-                <div className="flex-1 px-4">Titular / RUC</div>
-                <div className="w-40 shrink-0 px-4">Configuración Fiscal</div>
-                <div className="w-44 shrink-0 px-4">Estado SRI</div>
-                <div className="w-28 shrink-0 px-4">Honorarios</div>
-                <div className="w-52 shrink-0 px-4">Acciones de Gestión</div>
-                <div className="w-32 shrink-0 text-right pr-4">Opciones</div>
+        <div className="bg-surface-lowest rounded-[2.5rem] shadow-architect border-0 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 425px)', minHeight: '550px' }}>
+            <div className="flex bg-surface-low text-[10px] font-bold uppercase text-on-surface-variant/60 py-5 px-6 active:select-none tracking-[0.2em]">
+                <div className="w-20 shrink-0 text-center">Status</div>
+                <div className="flex-1 px-6">Titular y Regimen</div>
+                <div className="w-48 shrink-0 px-6">Configuración</div>
+                <div className="w-52 shrink-0 px-6">Vencimientos</div>
+                <div className="w-32 shrink-0 px-6">Honorarios</div>
+                <div className="w-64 shrink-0 px-6">Gestión</div>
             </div>
             <div className="flex-1">
                 <AutoSizer>
@@ -289,7 +217,7 @@ export const VirtualClientTable: React.FC<VirtualClientTableProps> = (props) => 
                         <List
                             height={height}
                             itemCount={props.clients.length}
-                            itemSize={78} // Slightly taller for elite spacing
+                            itemSize={96} // Taller for high-end padding
                             width={width}
                             itemData={props}
                             className="no-scrollbar"

@@ -127,7 +127,6 @@ export const db = {
     splitLargeFiles: async function (collectionName: string, docId: string, obj: any): Promise<any> {
         if (!obj || typeof obj !== 'object') return obj;
 
-        // Elite 500k: Deep copy to avoid mutating the original state/store
         const newObj = JSON.parse(JSON.stringify(obj));
         const filesToSave: { id: string, content: string }[] = [];
         const isLargeContent = this.isLargeContent;
@@ -152,6 +151,12 @@ export const db = {
         if (filesToSave.length > 0) {
             for (const file of filesToSave) {
                 try {
+                    // Save to Supabase if active
+                    if (USE_SUPABASE) {
+                        await SupabaseService.upsertFile(file.id, file.content);
+                    }
+                    
+                    // Always try Firestore as backup for now
                     const fileRef = doc(firestoreDb, "sc_pro_files", file.id);
                     await setDoc(fileRef, { content: file.content });
                 } catch (e) {
@@ -171,10 +176,24 @@ export const db = {
                 if (typeof value === 'string' && value.startsWith('__SPLIT__:')) {
                     const fileId = value.replace('__SPLIT__:', '');
                     try {
-                        const fileRef = doc(firestoreDb, "sc_pro_files", fileId);
-                        const fileSnap = await getDoc(fileRef);
-                        if (fileSnap.exists()) {
-                            current[key] = fileSnap.data().content;
+                        let content = null;
+                        
+                        // Try Supabase first
+                        if (USE_SUPABASE) {
+                            content = await SupabaseService.getFile(fileId);
+                        }
+                        
+                        // Fallback to Firestore
+                        if (!content) {
+                            const fileRef = doc(firestoreDb, "sc_pro_files", fileId);
+                            const fileSnap = await getDoc(fileRef);
+                            if (fileSnap.exists()) {
+                                content = fileSnap.data().content;
+                            }
+                        }
+                        
+                        if (content) {
+                            current[key] = content;
                         }
                     } catch (e) {
                         console.error("Error rejoining split file:", e);
@@ -192,18 +211,16 @@ export const db = {
     updateRecord: async function (collectionName: string, id: string, value: any): Promise<void> {
         console.log(`📡 Cloud Sync [Supabase=${USE_SUPABASE}]: Updating ${collectionName}/${id}...`);
         try {
+            const safeValue = await this.splitLargeFiles(collectionName, id, value);
+            
             if (USE_SUPABASE) {
                 if (collectionName === 'sc_pro_clients') {
-                    await SupabaseService.upsertClient(value);
+                    await SupabaseService.upsertClient(safeValue);
                 } else if (collectionName === 'sc_pro_tasks') {
-                    await SupabaseService.upsertTask(value);
+                    await SupabaseService.upsertTask(safeValue);
                 }
-                // Fallback for other collections to Firestore (or extend Supabase tables)
             }
             
-            // Still run Firestore in parallel or as fallback? For now, let's keep it as dual-write for safety if desired,
-            // but the plan is to migrate, so let's mark it as primary.
-            const safeValue = await this.splitLargeFiles(collectionName, id, value);
             const docRef = doc(firestoreDb, collectionName, id);
             await setDoc(docRef, safeValue, { merge: true });
             
@@ -234,15 +251,19 @@ export const db = {
     syncCollection: function (collectionName: string, onUpdate: (changes: { type: 'added' | 'modified' | 'removed', data: any }[]) => void) {
         if (USE_SUPABASE && collectionName === 'sc_pro_clients') {
             console.log("🔥 Subscribing to Supabase Realtime for clients...");
-            const subscription = SupabaseService.subscribeToChanges('clients', (payload) => {
+            const subscription = SupabaseService.subscribeToChanges('clients', async (payload) => {
                 const typeMap: Record<string, 'added' | 'modified' | 'removed'> = {
                     'INSERT': 'added',
                     'UPDATE': 'modified',
                     'DELETE': 'removed'
                 };
+                let data = SupabaseService.mapClientFromDb(payload.new || payload.old);
+                // JOIN: Critical for Supabase realtime updates
+                data = await this.rejoinLargeFiles(data);
+                
                 const change = {
                     type: typeMap[payload.eventType] || 'modified',
-                    data: SupabaseService.mapClientFromDb(payload.new || payload.old)
+                    data
                 };
                 onUpdate([change]);
             });
@@ -275,7 +296,8 @@ export const db = {
 
         if (USE_SUPABASE && collectionName === 'sc_pro_clients') {
             try {
-                await SupabaseService.bulkUpsertClients(records);
+                const safeRecords = await Promise.all(records.map(r => this.splitLargeFiles(collectionName, r.id, r)));
+                await SupabaseService.bulkUpsertClients(safeRecords);
                 console.log(`📡 Supabase Bulk Sync Success: ${records.length} records.`);
             } catch (err) {
                 console.error("Supabase bulk update failed:", err);

@@ -335,18 +335,18 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-8 bg-white/40 dark:bg-slate-900/40 p-8 rounded-[2.5rem] border border-slate-200 dark:border-white/5 backdrop-blur-xl">
-                    <div className="flex items-center gap-4 pb-6 border-b border-slate-200 dark:border-white/5">
-                        <div className="bg-primary/10 p-3 rounded-2xl text-primary">
+                <div className="space-y-8 bg-surface-low dark:bg-surface-low p-8 rounded-[2rem] shadow-architect transition-colors">
+                    <div className="flex items-center gap-4 pb-6 border-b border-outline-variant/10">
+                        <div className="bg-primary/5 p-3 rounded-2xl text-primary">
                             <User size={22} />
                         </div>
-                        <h3 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.34em]">Identidad Fiscal</h3>
+                        <h3 className="text-xs font-bold text-on-surface uppercase tracking-[0.2em] font-premium">Identidad Fiscal</h3>
                     </div>
 
                         <div className="relative">
                             <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest ml-1">Número de RUC</label>
                             <div className="relative group">
-                                <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={18} />
+                                <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors" size={18} />
                                 <input
                                     type="text"
                                     value={clientData.ruc || ''}
@@ -355,7 +355,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                         setClientData({ ...clientData, ruc: val });
                                         checkExistingRuc(val);
                                     }}
-                                    className={`w-full pl-12 p-4 bg-white/50 dark:bg-slate-950/40 border rounded-2xl text-sm font-mono font-bold outline-none focus:border-primary/50 transition-all ${validationErrors.ruc ? 'border-rose-400/50' : 'border-slate-200 dark:border-white/5'}`}
+                                    className={`w-full pl-12 p-4 bg-surface-lowest dark:bg-surface-lowest border-0 rounded-2xl text-sm font-mono font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all ${validationErrors.ruc ? 'ring-2 ring-rose-400/50' : ''}`}
                                     placeholder="1790000000001"
                                 />
                             </div>
@@ -419,12 +419,12 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                         </div>
                 </div>
 
-                <div className="space-y-8 bg-white/40 dark:bg-slate-900/40 p-8 rounded-[2.5rem] border border-slate-200 dark:border-white/5 backdrop-blur-xl">
-                    <div className="flex items-center gap-4 pb-6 border-b border-slate-200 dark:border-white/5">
-                        <div className="bg-primary/10 p-3 rounded-2xl text-primary">
+                <div className="space-y-8 bg-surface-low dark:bg-surface-low p-8 rounded-[2rem] shadow-architect transition-colors">
+                    <div className="flex items-center gap-4 pb-6 border-b border-outline-variant/10">
+                        <div className="bg-primary/5 p-3 rounded-2xl text-primary">
                             <Briefcase size={22} />
                         </div>
-                        <h3 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.34em]">Perfil Administrativo</h3>
+                        <h3 className="text-xs font-bold text-on-surface uppercase tracking-[0.2em] font-premium">Perfil Administrativo</h3>
                     </div>
 
                     <div className="space-y-5">

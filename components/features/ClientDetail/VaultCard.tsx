@@ -19,57 +19,57 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
     const hasData = !!(file || value);
 
     return (
-        <div className="bg-slate-950/60 backdrop-blur-2xl rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.4)] hover:shadow-cyan-500/20 hover:border-cyan-500/40 transition-all group overflow-hidden relative border-l-4 border-l-slate-800 hover:border-l-cyan-500 duration-500 aura-premium">
-            {/* Visual HUD line */}
-            <div className="absolute top-0 right-0 w-32 h-[2px] bg-gradient-to-l from-cyan-500/40 to-transparent"></div>
+        <div className="bg-surface-lowest dark:bg-surface-lowest rounded-[2rem] p-6 sm:p-8 shadow-architect hover:bg-surface-low transition-all duration-500 group relative overflow-hidden">
+            {/* Tonal Accent - Top Strip */}
+            <div className={`absolute top-0 left-0 right-0 h-[4px] ${hasData ? 'bg-primary' : 'bg-surface-low'}`}></div>
 
-            <div className="flex justify-between items-start mb-10">
-                <div className="flex items-center gap-4 sm:gap-5">
-                    <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl border flex items-center justify-center transition-all duration-700 ${hasData ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.15)]' : 'bg-slate-900 border-white/5 text-slate-600 shadow-inner group-hover:text-cyan-500/50'}`}>
-                        <Icon size={22} className="sm:w-6 sm:h-6" />
+            <div className="flex justify-between items-start mb-8">
+                <div className="flex items-center gap-5">
+                    <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center transition-all duration-700 ${hasData ? 'bg-primary/5 text-primary' : 'bg-surface-low text-secondary'}`}>
+                        <Icon size={24} />
                     </div>
                     <div>
-                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3em]">{label}</p>
-                        <div className="mt-2 min-h-[1.75rem] flex items-center">
+                        <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.25em] font-premium">{label}</p>
+                        <div className="mt-1 min-h-[1.75rem] flex items-center">
                             {isPassword ? (
-                                <p className={`text-xs sm:text-sm font-semibold tracking-[0.1em] sm:tracking-[0.2em] font-mono ${showPassword ? 'text-white' : 'text-slate-700'}`}>
+                                <p className={`text-sm font-bold tracking-[0.15em] font-mono ${showPassword ? 'text-on-surface' : 'text-on-surface/30'}`}>
                                     {showPassword ? value : '••••••••••••'}
                                 </p>
                             ) : file ? (
-                                <p className="text-xs sm:text-sm font-semibold text-white truncate max-w-[100px] xs:max-w-[140px] sm:max-w-[160px] pr-2 uppercase tracking-tighter">
+                                <p className="text-sm font-bold text-on-surface truncate max-w-[120px] sm:max-w-[180px] uppercase tracking-tight font-premium">
                                     {file.name}
                                 </p>
                             ) : (
-                                <p className="text-xs sm:text-[11px] font-semibold text-slate-700 uppercase tracking-widest italic">No Sincronizado</p>
+                                <p className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest italic">Sin Sincronizar</p>
                             )}
                         </div>
                     </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-2.5">
                     {file ? (
                         <>
                             <button
                                 onClick={onDownload}
-                                className="p-3 bg-slate-900 hover:bg-cyan-500 text-slate-500 hover:text-white rounded-xl transition-all border border-white/5 shadow-2xl hover:shadow-cyan-500/40 active:scale-95"
+                                className="p-3 bg-surface-low hover:bg-primary hover:text-white text-secondary rounded-xl transition-all shadow-sm active:scale-95"
                                 title="Descargar"
                             >
                                 <Download size={18} />
                             </button>
-                            <button className="p-3 bg-slate-900 hover:bg-rose-400 text-slate-500 hover:text-white rounded-xl transition-all border border-white/5 shadow-2xl hover:shadow-rose-400/40 active:scale-95" title="Eliminar">
+                            <button className="p-3 bg-surface-low hover:bg-rose-500 hover:text-white text-secondary rounded-xl transition-all shadow-sm active:scale-95" title="Eliminar">
                                 <Trash2 size={18} />
                             </button>
                         </>
                     ) : isPassword ? (
                         <button
                             onClick={() => setShowPassword(!showPassword)}
-                            className="p-3 bg-slate-900 hover:bg-cyan-500 text-slate-500 hover:text-white rounded-xl transition-all border border-white/5 shadow-2xl active:scale-95"
+                            className="p-3 bg-surface-low hover:bg-primary hover:text-white text-secondary rounded-xl transition-all shadow-sm active:scale-95"
                         >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                     ) : (
-                        <label className="p-3 bg-slate-900 hover:bg-cyan-500 text-slate-500 hover:text-white cursor-pointer transition-all border border-white/5 rounded-xl shadow-3xl hover:shadow-cyan-500/40 active:scale-95 flex items-center justify-center">
-                            <UploadCloud size={20} />
+                        <label className="p-3 bg-surface-low hover:bg-primary hover:text-white text-secondary cursor-pointer transition-all rounded-xl shadow-sm active:scale-95 flex items-center justify-center">
+                            <UploadCloud size={18} />
                             <input type="file" className="hidden" onChange={async (e) => {
                                 const f = e.target.files?.[0];
                                 if (f && onUpload) {
@@ -84,24 +84,17 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
 
             {hasData && (
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-400/10 rounded-lg border border-emerald-400/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                        <ShieldCheck size={12} className="text-emerald-400" />
-                        <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-[0.2em]">Verificado por Sistema</span>
+                    <div className="flex items-center gap-2 px-3 py-1 bg-tertiary-fixed/20 rounded-lg border border-tertiary-fixed/30">
+                        <ShieldCheck size={12} className="text-tertiary" />
+                        <span className="text-[9px] font-bold text-tertiary uppercase tracking-[0.2em] font-premium">Sincronización Validada</span>
                     </div>
-                    {file && (
-                        <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-widest font-mono">
-                            DATA: {(file.size / 1024).toFixed(1)} KB
-                        </span>
-                    )}
                 </div>
             )}
 
-            {/* Tactical design flourish */}
-            <div className="absolute -right-6 -bottom-6 opacity-[0.04] text-cyan-400 group-hover:rotate-12 group-hover:scale-125 transition-all duration-1000">
-                <Lock size={150} />
+            {/* Background Architectural Mark */}
+            <div className="absolute -right-4 -bottom-4 opacity-[0.03] text-on-surface transform rotate-12 group-hover:rotate-6 transition-all duration-1000">
+                <Icon size={120} />
             </div>
-            
-            <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
         </div>
     );
 };

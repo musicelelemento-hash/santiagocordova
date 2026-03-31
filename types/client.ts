@@ -102,6 +102,17 @@ export interface TaxProfile {
     requiresAnexoPvp: boolean;
 }
 
+export interface FacturadorConfig {
+    programName?: string;
+    url?: string;
+    username?: string;
+    password?: string;
+    expirationDate?: string;
+    documentStatus?: string;
+    documentCount?: number;
+    price?: number;
+}
+
 export interface Client {
     id: string;
     ruc: string;
@@ -151,6 +162,7 @@ export interface Client {
     createdAt?: string;
     updatedAt?: string;
     advanceCredits?: number;
+    facturadorConfig?: FacturadorConfig;
 }
 
 export type ClientFilter = {

@@ -56,12 +56,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const addClientItem = navItems.find(i => i.screen === 'add_client' as any) as any;
 
     return (
-        <aside className="hidden md:flex fixed bottom-8 left-1/2 -translate-x-1/2 z-50 glass-zen items-center gap-1 p-2 rounded-[2.5rem] border border-white/20 shadow-2xl transition-all duration-700 hover:shadow-primary/10 animate-in slide-in-from-bottom-5 fade-in">
-            {/* Logo Section */}
-            <div className="flex items-center gap-3 pr-4 pl-2 border-r border-slate-200 dark:border-white/10">
-                <div className="p-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm group cursor-pointer relative" onClick={() => onNavigate('home')}>
+        <aside className="hidden md:flex fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-surface-lowest dark:bg-surface-lowest items-center gap-1 p-2 rounded-[2rem] shadow-architect transition-all duration-700 hover:shadow-primary/5 animate-in slide-in-from-bottom-5 fade-in border-0">
+            <div className="flex items-center gap-3 pr-4 pl-2 border-r border-outline-variant/10">
+                <div className="p-2 bg-surface-low dark:bg-surface-low rounded-xl shadow-sm group cursor-pointer relative" onClick={() => onNavigate('home')}>
                     <Logo className="w-8 h-8 text-primary group-hover:scale-110 transition-transform duration-500" />
-                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 glass-zen border border-slate-200 dark:border-white/5 text-slate-800 dark:text-white text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-xl">
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-surface-lowest dark:bg-surface-lowest border border-outline-variant/20 text-on-surface text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-lg opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-architect font-premium">
                         Inicio
                     </div>
                 </div>
@@ -92,10 +91,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         )}
 
                         {/* Hover Tooltip */}
-                        <div className="absolute -top-14 left-1/2 -translate-x-1/2 glass-zen border border-slate-200 dark:border-white/5 text-slate-800 dark:text-white text-xs font-semibold uppercase tracking-widest px-3 py-1.5 rounded-xl opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-xl z-50">
+                        <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-surface-lowest dark:bg-surface-lowest border border-outline-variant/20 text-on-surface text-[10px] font-bold uppercase tracking-[0.2em] px-3 py-1.5 rounded-lg opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 pointer-events-none whitespace-nowrap shadow-architect z-50 font-premium">
                             {label}
                             {/* Decorative arrow */}
-                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 glass-zen border-b border-r border-slate-200 dark:border-white/5 rotate-45"></div>
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-surface-lowest border-b border-r border-outline-variant/20 rotate-45"></div>
                         </div>
                     </button>
                 ))}

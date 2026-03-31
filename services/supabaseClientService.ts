@@ -100,6 +100,29 @@ export const SupabaseService = {
     if (error) console.error("Error inserting audit log:", error);
   },
 
+  async upsertFile(id: string, content: string): Promise<void> {
+    const { error } = await supabase
+      .from('files')
+      .upsert({ id, content, updated_at: new Date().toISOString() });
+    if (error) {
+      console.error(`[Supabase Error] FAILED upsert for file ${id}:`, error);
+      throw error;
+    }
+  },
+
+  async getFile(id: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('files')
+      .select('content')
+      .eq('id', id)
+      .single();
+    if (error) {
+      if (error.code === 'PGRST116') return null; // Not found
+      throw error;
+    }
+    return data?.content || null;
+  },
+
   // --- Real-time Sync ---
 
   subscribeToChanges(table: string, callback: (payload: any) => void) {

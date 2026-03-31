@@ -20,14 +20,14 @@ import { StoredFile } from '../types';
 import { BulkUploadReportModal, BulkUploadResult } from '../components/features/BulkUploadReportModal';
 
 const OBLIGATION_GROUPS = [
-    { id: 'all', label: 'Todos', icon: LucideIcons.Users, color: 'text-slate-700 bg-slate-100 dark:text-slate-200 dark:bg-slate-700/80 ring-slate-200' },
-    { id: 'vencidos', label: 'Vencidos', icon: LucideIcons.AlertCircle, color: 'text-rose-700 bg-rose-100 dark:text-rose-400 dark:bg-rose-900/50 ring-rose-300' },
-    { id: 'ordenes', label: 'Órdenes de Trabajo', icon: LucideIcons.Zap, color: 'text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-900/50 ring-amber-300' },
-    { id: 'cobros', label: 'Por Cobrar', icon: LucideIcons.DollarSign, color: 'text-sky-700 bg-sky-100 dark:text-sky-300 dark:bg-sky-900/50 ring-sky-300' },
-    { id: 'al-dia', label: 'Elite / Al Día', icon: LucideIcons.ShieldCheck, color: 'text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/50 ring-emerald-300' },
-    { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.Clock, color: 'text-slate-600 bg-slate-50 dark:text-slate-300 dark:bg-slate-900/50 ring-slate-200' },
-    { id: 'semestral', label: 'IVA Semestral', icon: LucideIcons.Briefcase, color: 'text-slate-600 bg-slate-50 dark:text-slate-300 dark:bg-slate-900/50 ring-slate-200' },
-    { id: 'trash', label: 'Papelera', icon: LucideIcons.Trash2, color: 'text-rose-500 bg-rose-50 dark:text-rose-300 dark:bg-rose-900/50 ring-rose-200' },
+    { id: 'all', label: 'Todos', icon: LucideIcons.Users, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'vencidos', label: 'Vencidos', icon: LucideIcons.AlertCircle, color: 'text-primary bg-primary/10 ring-primary/20' },
+    { id: 'ordenes', label: 'Órdenes', icon: LucideIcons.Zap, color: 'text-tertiary bg-tertiary/10 ring-tertiary/20' },
+    { id: 'cobros', label: 'Por Cobrar', icon: LucideIcons.Sparkles, color: 'text-accent bg-accent/10 ring-accent/20' },
+    { id: 'al-dia', label: 'Al Día', icon: LucideIcons.ShieldCheck, color: 'text-tertiary bg-tertiary/10 ring-tertiary/20' },
+    { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.Clock, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'semestral', label: 'IVA Semestral', icon: LucideIcons.Briefcase, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'trash', label: 'Papelera', icon: LucideIcons.Trash2, color: 'text-primary bg-primary/10 ring-primary/20' },
 ];
 
 import { useAppStore } from '../store/useAppStore';
@@ -704,161 +704,156 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     // El detalle ahora se renderiza como un overlay al final para no desmontar la lista y preservar scroll/estado
 
     return (
-        <div>
-            {/* ZENITH CLIENT MANAGEMENT - PEACEFUL HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 relative z-10 px-1 sm:px-0 mb-6 sm:mb-10 animate-fade-in">
+        <div className="bg-surface-lowest min-h-screen">
+            {/* ZENITH CLIENT MANAGEMENT - ARCHITECTURAL HEADER */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 relative z-10 px-1 sm:px-0 mb-8 sm:mb-12 animate-fade-in">
                 <div className="animate-fade-in-left w-full sm:w-auto">
-                    <div className="flex items-center justify-between sm:justify-start gap-2 mb-3">
-                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
-                            <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(134,167,137,0.5)]"></div>
-                            <span className="text-[11px] sm:text-xs font-bold text-primary uppercase tracking-[0.2em]">Protocolo de Orden</span>
+                    <div className="flex items-center justify-between sm:justify-start gap-4 mb-4">
+                        <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-primary/5 border border-primary/10 shadow-architect">
+                            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.4)]"></div>
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-[0.25em] font-premium">SISTEMA CORE</span>
                         </div>
-                        <span className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Acceso Zenith</span>
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] opacity-40 sm:block hidden font-premium">• PROTOCOLO ZENITH</span>
                     </div>
-                    <h2 className="text-3xl sm:text-5xl font-sans font-semibold text-slate-900 dark:text-white leading-tight tracking-tighter mb-2">
+                    <h2 className="text-4xl sm:text-6xl font-premium font-bold text-on-surface leading-[1.1] tracking-tighter mb-3">
                         Directorio <span className="text-primary italic font-light">Tributario</span>
                     </h2>
-                    <div className="flex items-center gap-2 text-slate-500 text-[11px] sm:text-[11px] font-medium uppercase tracking-widest">
-                        <LucideIcons.Shield size={12} className="text-primary" />
-                        <span>Gestión de Activos Financieros</span>
-                        <span className="ml-3 px-2.5 py-0.5 bg-slate-100 dark:bg-white/5 text-slate-500 rounded-full text-[11px] font-bold border border-slate-200 dark:border-white/5">{sortedClients.length} CLIENTES</span>
+                    <div className="flex items-center gap-4 text-on-surface-variant text-[10px] font-bold uppercase tracking-[0.2em] font-premium">
+                        <div className="flex items-center gap-2 px-3 py-1 bg-surface-low rounded-lg border border-outline-variant/30">
+                            <LucideIcons.Shield size={12} className="text-tertiary" />
+                            <span>MANTENIMIENTO ACTIVOS</span>
+                        </div>
+                        <span className="px-3 py-1 bg-tertiary/10 text-tertiary rounded-lg border border-tertiary/20">{sortedClients.length} EXPEDIENTES</span>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto animate-fade-in-right">
+                <div className="flex flex-wrap items-center gap-4 w-full md:w-auto animate-fade-in-right">
                     <button
                         onClick={handleBulkUpload}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl glass-zen text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10 text-xs sm:text-[11px] font-bold uppercase tracking-widest transition-all duration-500 hover:scale-[1.02]"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-5 rounded-3xl bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.2em] border border-outline-variant hover:bg-surface-medium transition-all duration-500 shadow-architect font-premium"
                     >
-                        <LucideIcons.UploadCloud size={16} />
-                        Carga Masiva
+                        <LucideIcons.UploadCloud size={18} />
+                        CARGA MASIVA
                     </button>
                     
                     <button onClick={() => setIsModalOpen(true)}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-primary text-white shadow-xl shadow-primary/20 font-bold text-xs sm:text-[11px] uppercase tracking-widest transition-all duration-500 hover:scale-[1.05]"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-5 rounded-3xl bg-primary text-white shadow-architect-lg font-bold text-[11px] uppercase tracking-[0.2em] transition-all duration-500 hover:scale-[1.03] active:scale-95 font-premium"
                     >
-                        <LucideIcons.PlusCircle size={16} strokeWidth={2} />
-                        Añadir Cliente
+                        <LucideIcons.PlusCircle size={18} strokeWidth={2.5} />
+                        NUEVO CLIENTE
                     </button>
-                    <a href="https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT" target="_blank" rel="noopener noreferrer"
-                        className="p-4 rounded-2xl glass-zen text-slate-500 border border-slate-200 dark:border-white/5 hover:text-primary transition-colors hidden sm:block"
-                    >
-                        <LucideIcons.ExternalLink size={20} />
-                    </a>
                 </div>
             </div>
 
-            {/* ACTIVE FILTER BANNER - Zen Mode */}
+            {/* ACTIVE FILTER BANNER - Architect Mode */}
             {initialFilter && (
-                <div className="mb-6 animate-in slide-in-from-top-2 duration-500">
-                    <div className="flex items-center justify-between p-4 rounded-2xl glass-zen border-primary/20">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
-                                <LucideIcons.Filter size={18} />
+                <div className="mb-8 animate-in slide-in-from-top-4 duration-700">
+                    <div className="flex items-center justify-between p-6 rounded-[2rem] bg-surface-low border border-primary/20 shadow-architect">
+                        <div className="flex items-center gap-5">
+                            <div className="p-4 rounded-2xl bg-primary text-white shadow-architect-lg">
+                                <LucideIcons.Filter size={20} />
                             </div>
                             <div>
-                                <h4 className="text-xs font-bold text-primary uppercase tracking-widest">
-                                    Filtro Dinámico Activo
+                                <h4 className="text-[10px] font-bold text-primary uppercase tracking-[0.25em] font-premium mb-1">
+                                    FILTRO ESTRATÉGICO
                                 </h4>
-                                <p className="text-xs font-medium text-slate-500 uppercase">
-                                    {initialFilter.title || 'Vista Personalizada'} • {sortedClients.length} Resultados
+                                <p className="text-sm font-bold text-on-surface uppercase tracking-tight font-premium">
+                                    {initialFilter.title || 'VISTA ANALÍTICA'} • {sortedClients.length} RESULTADOS
                                 </p>
                             </div>
                         </div>
                         <button 
                             onClick={() => navigate('clients', { initialFilter: null })}
-                            className="px-4 py-2 rounded-xl bg-white dark:bg-white/5 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-rose-400 border border-slate-200 dark:border-white/10 transition-all"
+                            className="px-6 py-3 rounded-2xl bg-surface-medium text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant hover:text-primary border border-outline-variant transition-all font-premium active:scale-95"
                         >
-                            Limpiar
+                            RESETEAR VISTA
                         </button>
                     </div>
                 </div>
             )}
-
-            {/* ZENITH SEARCH & FILTERS - MINIMALIST CONTROL */}
-            <div className="glass-zen p-3 rounded-[2rem] border border-slate-200 dark:border-white/10 flex flex-col lg:flex-row gap-4 items-center mb-6 mx-1 sm:mx-0">
-                <div className="flex p-1 bg-slate-100 dark:bg-black/20 rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar">
+            {/* ZENITH SEARCH & FILTERS - ARCHITECTURAL CONTROL */}
+            <div className="bg-surface-low p-4 rounded-[2.5rem] border border-outline-variant/30 flex flex-col lg:flex-row gap-6 items-center mb-8 mx-1 sm:mx-0 shadow-architect">
+                <div className="flex p-1.5 bg-surface-medium rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar border border-outline-variant/20">
                     <button 
                         onClick={() => {
                             setIsWorkspaceView(!isWorkspaceView);
                             if (!isWorkspaceView) setIsCobrosView(false);
                         }}
-                        className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-widest transition-all duration-500 shrink-0
+                        className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 shrink-0 font-premium
                             ${isWorkspaceView 
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-500/30' 
-                                : 'text-slate-400 hover:text-slate-600'}`}
+                                ? 'bg-primary text-white shadow-architect' 
+                                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-low'}`}
                     >
-                        <LucideIcons.ShieldAlert size={14} />
-                        Centro de Alertas
+                        <LucideIcons.ShieldAlert size={16} />
+                        ALERTAS
                     </button>
                     <button 
                         onClick={() => {
                             setIsCobrosView(!isCobrosView);
                             if (!isCobrosView) setIsWorkspaceView(false);
                         }}
-                        className={`flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-widest transition-all duration-500 shrink-0
+                        className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 shrink-0 font-premium
                             ${isCobrosView 
-                                ? 'bg-primary/20 text-primary ring-1 ring-primary/30' 
-                                : 'text-slate-400 hover:text-slate-600'}`}
+                                ? 'bg-tertiary text-white shadow-architect' 
+                                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-low'}`}
                     >
-                        <LucideIcons.DollarSign size={14} />
-                        Tesorería
+                        <LucideIcons.DollarSign size={16} />
+                        CÉLULA COBROS
                     </button>
                 </div>
 
-                <div className="relative flex-grow w-full px-1">
-                    <LucideIcons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40 pointer-events-none" size={16} />
+                <div className="relative flex-1 w-full group">
+                    <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                        <LucideIcons.Search className="text-on-surface-variant/40 group-focus-within:text-primary transition-colors" size={20} />
+                    </div>
                     <input 
-                        type="text" 
-                        placeholder="BUSCAR CLIENTE O IDENTIFICADOR..." 
-                        value={searchTerm} 
-                        onChange={e => setSearchTerm(e.target.value)} 
-                        className="w-full pl-11 pr-5 py-3 sm:py-4 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-2xl text-xs sm:text-[11px] font-medium uppercase tracking-widest placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" 
+                        type="text"
+                        placeholder="BUSCAR EXPEDIENTE POR NOMBRE, RUC O MATRIZ..."
+                        className="w-full bg-surface-medium border border-outline-variant/30 rounded-2xl py-5 pl-16 pr-6 text-xs font-bold text-on-surface placeholder:text-on-surface-variant/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-premium tracking-widest shadow-inner uppercase"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
 
-                <div className="flex items-center gap-2 w-full lg:w-auto px-1">
-                    <div className="flex p-1 bg-slate-100 dark:bg-black/20 rounded-2xl flex-grow lg:flex-grow-0">
-                        <button 
-                            onClick={() => setViewMode('cards')}
-                            className={`flex-1 p-3 rounded-xl transition-all duration-500 ${viewMode === 'cards' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
-                        >
-                            <LucideIcons.LayoutGrid size={16} />
-                        </button>
+                <div className="flex items-center gap-3 w-full lg:w-auto">
+                    <div className="flex bg-surface-medium p-1 rounded-2xl border border-outline-variant/20 shadow-inner">
                         <button 
                             onClick={() => setViewMode('list')}
-                            className={`flex-1 p-3 rounded-xl transition-all duration-500 ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
+                            className={`p-3.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-surface-low text-primary shadow-architect' : 'text-on-surface-variant'}`}
                         >
-                            <LucideIcons.List size={16} />
+                            <LucideIcons.LayoutList size={20} />
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('cards')}
+                            className={`p-3.5 rounded-xl transition-all ${viewMode === 'cards' ? 'bg-surface-low text-primary shadow-architect' : 'text-on-surface-variant'}`}
+                        >
+                            <LucideIcons.LayoutGrid size={20} />
                         </button>
                     </div>
 
                     <div className="relative" ref={sortMenuRef}>
-                        <button 
-                            onClick={() => setIsSortMenuOpen(!isSortMenuOpen)} 
-                            className="p-4 bg-white/50 dark:bg-white/5 text-slate-500 rounded-2xl border border-slate-200 dark:border-white/5 hover:text-primary transition-all active:scale-95 shadow-sm"
+                        <button
+                            onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                            className="flex items-center gap-3 px-6 py-4.5 bg-surface-medium border border-outline-variant/30 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant hover:text-on-surface transition-all font-premium shadow-architect h-full"
                         >
-                            <LucideIcons.SlidersHorizontal size={18} />
+                            <LucideIcons.ArrowUpDown size={16} className="text-primary" />
+                            ORDENAR
                         </button>
+                        
                         {isSortMenuOpen && (
-                            <div className="absolute right-0 mt-3 w-64 glass-zen border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl z-50 p-2 animate-fade-in-down">
-                                <p className="text-xs font-bold text-slate-400 px-3 pb-2 uppercase tracking-[0.2em]">Prioridad de Orden</p>
-                                <div className="space-y-1">
-                                    {[
-                                        { id: 'pending_obligations', label: 'Obligaciones' },
-                                        { id: 'pending_payments', label: 'Cobros' },
-                                        { id: '9th_digit', label: 'Vencimiento' },
-                                        { id: 'name', label: 'Alfabético' }
-                                    ].map(opt => (
-                                        <button 
-                                            key={opt.id}
-                                            onClick={() => { setSortOption(opt.id as any); setIsSortMenuOpen(false); }} 
-                                            className={`w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${sortOption === opt.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5'}`}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    ))}
-                                </div>
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-architect border border-outline-variant/30 p-2 z-50">
+                                {[
+                                    { id: '9th_digit', label: 'Vencimiento' },
+                                    { id: 'name', label: 'Alfabético' }
+                                ].map(opt => (
+                                    <button 
+                                        key={opt.id}
+                                        onClick={() => { setSortOption(opt.id as any); setIsSortMenuOpen(false); }} 
+                                        className={`w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${sortOption === opt.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5'}`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
                             </div>
                         )}
                     </div>

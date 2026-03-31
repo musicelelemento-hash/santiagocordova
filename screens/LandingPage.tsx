@@ -205,45 +205,58 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     </div>
                 </nav>
             </div>
-
-            <div className={`md:hidden fixed bottom-6 left-4 right-4 z-50 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${scrolled ? 'translate-y-2 opacity-100 scale-95' : 'translate-y-0 opacity-100'}`}>
-                <div className="bg-[#0B2149]/90 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-3 shadow-[0_0_40px_rgba(0,0,0,0.5)] flex justify-between items-end px-6 relative overflow-hidden border-holographic">
+            {/* --- MOBILE DOCK: Dynamic Island Style --- */}
+            <div className={`md:hidden fixed bottom-6 left-5 right-5 z-50 transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) ${scrolled ? 'translate-y-2 scale-95 opacity-[0.98]' : 'translate-y-0 opacity-100'}`}>
+                <div className="mobile-island-dock border-holographic relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
 
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform active:scale-90">
-                        <LucideIcons.Home size={22} className={scrolled ? 'text-[#00A896]' : ''} />
-                        <span className="text-[11px] font-medium mt-1 uppercase tracking-tighter">Inicio</span>
+                    <button 
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} 
+                        className="touch-scale flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform"
+                    >
+                        <LucideIcons.Home size={20} className={scrolled ? 'text-[#00A896] drop-shadow-[0_0_8px_rgba(0,168,150,0.5)]' : ''} />
+                        <span className="text-[10px] font-semibold mt-1 uppercase tracking-tighter">Inicio</span>
                     </button>
 
-                    <button onClick={onNavigateToServices} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform active:scale-90">
-                        <LucideIcons.Grid size={22} />
-                        <span className="text-[11px] font-medium mt-1 uppercase tracking-tighter">Servicios</span>
+                    <button 
+                        onClick={onNavigateToServices} 
+                        className="touch-scale flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform"
+                    >
+                        <LucideIcons.Grid size={20} />
+                        <span className="text-[10px] font-semibold mt-1 uppercase tracking-tighter">Servicios</span>
                     </button>
 
-                    {/* Elite Floating Action Button */}
-                    <div className="relative -mt-10">
-                        <div className="absolute inset-0 bg-[#00A896] rounded-full blur-xl opacity-50 animate-pulse" />
+                    {/* Elite Floating Action Button (Integrated) */}
+                    <div className="relative -mt-12 mb-2">
+                        <div className="absolute inset-0 bg-[#00A896] rounded-full blur-xl opacity-40 animate-pulse" />
                         <a
                             href={`https://wa.me/${phoneNumber}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="relative flex items-center justify-center w-16 h-16 bg-[#00A896] rounded-full text-white shadow-[0_8px_32px_rgba(0,168,150,0.4)] border-4 border-[#020617] transform hover:scale-110 active:scale-95 transition-all"
+                            className="relative flex items-center justify-center w-14 h-14 bg-[#00A896] rounded-full text-white shadow-[0_8px_32px_rgba(0,168,150,0.4)] border-4 border-[#020617] transform active:scale-90 transition-all duration-300"
                         >
-                            <LucideIcons.MessageCircle size={28} />
+                            <LucideIcons.MessageCircle size={26} />
                         </a>
                     </div>
 
-                    <button onClick={() => scrollToSection('recursos')} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform active:scale-90">
-                        <LucideIcons.BookOpen size={22} />
-                        <span className="text-[11px] font-medium mt-1 uppercase tracking-tighter">Wiki</span>
+                    <button 
+                        onClick={() => scrollToSection('recursos')} 
+                        className="touch-scale flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform"
+                    >
+                        <LucideIcons.BookOpen size={20} />
+                        <span className="text-[10px] font-semibold mt-1 uppercase tracking-tighter">Wiki</span>
                     </button>
 
-                    <button onClick={onAdminAccess} className="flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform active:scale-90">
-                        <LucideIcons.ShieldCheck size={22} />
-                        <span className="text-[11px] font-medium mt-1 uppercase tracking-tighter">Admin</span>
+                    <button 
+                        onClick={onAdminAccess} 
+                        className="touch-scale flex flex-col items-center p-2 text-slate-400 hover:text-white transition-all transform"
+                    >
+                        <LucideIcons.ShieldCheck size={20} />
+                        <span className="text-[10px] font-semibold mt-1 uppercase tracking-tighter">Admin</span>
                     </button>
                 </div>
             </div>
+
 
             {/* --- HERO SECTION: Aurora & Noise --- */}
             <header id="top" className="relative min-h-[90vh] md:min-h-screen flex items-center justify-center overflow-hidden bg-[#020617] bg-noise">
@@ -323,23 +336,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             Ver catálogo completo <LucideIcons.ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                         </button>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-6 h-auto md:h-[800px]">
-
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {/* Card 1: Large Vertical */}
-                        <Reveal className="md:col-span-1 md:row-span-2" delay={100}>
-                            <SpotlightCard className="h-full bg-white/5 border border-white/10 rounded-[2.5rem] p-8 flex flex-col justify-between hover:bg-white/10 transition-all duration-500 group cursor-pointer hover:border-[#00A896]/30 hover:shadow-[0_0_50px_rgba(0,168,150,0.1)]">
+                        <Reveal className="md:col-span-1 md:row-span-2 group/bento" delay={100}>
+                            <SpotlightCard className="h-full bg-white/5 border border-white/10 rounded-[2.5rem] p-8 flex flex-col justify-between hover:bg-white/10 transition-all duration-700 group cursor-pointer hover:border-[#00A896]/30 hover:shadow-[0_0_50px_rgba(0,168,150,0.1)] touch-scale active:bg-white/15">
                                 <div onClick={onNavigateToServices} className="h-full flex flex-col justify-between">
                                     <div className="relative z-10">
-                                        <div className="w-14 h-14 bg-sky-400/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6 group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                                        <div className="w-14 h-14 bg-sky-400/20 rounded-2xl flex items-center justify-center text-blue-400 mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                                             <LucideIcons.TrendingUp size={32} />
                                         </div>
-                                        <h3 className="text-3xl font-medium mb-4">Gestión RIMPE</h3>
-                                        <p className="text-slate-400 text-sm leading-relaxed">
+                                        <h3 className="text-3xl font-medium mb-4 group-hover:text-white transition-colors">Gestión RIMPE</h3>
+                                        <p className="text-slate-400 text-sm leading-relaxed group-hover:text-slate-300 transition-colors">
                                             Optimización fiscal para Negocios Populares y Emprendedores. Análisis de categorización y proyección de impuesto a la renta anual.
                                         </p>
                                     </div>
-                                    <div className="mt-8 relative h-48 bg-gradient-to-t from-blue-900/50 to-transparent rounded-2xl overflow-hidden border border-white/5 group-hover:border-white/20 transition-colors">
+                                    <div className="mt-8 relative h-48 bg-gradient-to-t from-blue-900/50 to-transparent rounded-2xl overflow-hidden border border-white/5 group-hover:border-white/20 transition-all duration-700">
                                         {/* Abstract Chart */}
                                         <div className="absolute bottom-0 left-0 w-full h-full flex items-end justify-around px-4 pb-4">
                                             <div className="w-4 h-16 bg-sky-400/50 rounded-t-sm animate-pulse"></div>
@@ -353,50 +364,52 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                         {/* Card 2: Wide Horizontal */}
                         <Reveal className="md:col-span-2" delay={200}>
-                            <SpotlightCard className="h-full bg-[#00A896] rounded-[2.5rem] p-8 relative overflow-hidden group cursor-pointer shadow-[0_0_50px_rgba(0,168,150,0.2)] hover:shadow-[0_0_80px_rgba(0,168,150,0.4)] transition-all duration-500">
+                            <SpotlightCard className="h-full bg-gradient-to-br from-[#00A896] to-[#008F81] rounded-[2.5rem] p-8 relative overflow-hidden group cursor-pointer shadow-[0_0_50px_rgba(0,168,150,0.2)] hover:shadow-[0_0_80px_rgba(0,168,150,0.4)] transition-all duration-700 touch-scale group/firma">
                                 <div onClick={onNavigateToServices} className="relative z-10 flex flex-col md:flex-row justify-between h-full">
                                     <div className="max-w-md">
-                                        <div className="w-12 h-12 bg-black/20 rounded-xl flex items-center justify-center text-white mb-6">
+                                        <div className="w-12 h-12 bg-black/20 rounded-xl flex items-center justify-center text-white mb-6 group-hover:rotate-12 transition-transform duration-500">
                                             <LucideIcons.Laptop size={24} />
                                         </div>
-                                        <h3 className="text-4xl font-semibold mb-2 text-[#020617] tracking-tight text-shimmer">Firma Electrónica</h3>
+                                        <h3 className="text-4xl font-semibold mb-2 text-[#020617] tracking-tight group-hover:scale-[1.02] transition-transform">Firma Electrónica</h3>
                                         <p className="text-[#020617]/80 font-medium text-lg">Emisión inmediata y segura. Válida para facturación, Quipux y trámites legales. Entrega 100% digital.</p>
                                     </div>
                                     <div className="mt-6 md:mt-0 flex items-end">
-                                        <div className="bg-black/20 backdrop-blur-md px-8 py-4 rounded-full text-[#020617] font-medium text-xs uppercase tracking-wider flex items-center gap-2 group-hover:bg-white group-hover:text-[#00A896] transition-all duration-300">
-                                            Solicitar Ahora <LucideIcons.ArrowRight size={14} />
+                                        <div className="bg-black/20 backdrop-blur-md px-8 py-4 rounded-full text-[#020617] font-semibold text-xs uppercase tracking-wider flex items-center gap-2 group-hover:bg-white group-hover:text-[#00A896] transition-all duration-500 shadow-xl">
+                                            Solicitar Ahora <LucideIcons.ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                                         </div>
                                     </div>
                                 </div>
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32 animate-pulse-slow"></div>
                             </SpotlightCard>
                         </Reveal>
 
                         {/* Card 3: Small Square */}
                         <Reveal delay={300}>
-                            <SpotlightCard className="h-full bg-white/5 border border-white/10 rounded-[2.5rem] p-8 hover:bg-white/10 hover:border-purple-500/50 transition-all duration-300 group cursor-pointer flex flex-col justify-center text-center relative overflow-hidden">
+                            <SpotlightCard className="h-full bg-white/5 border border-white/10 rounded-[2.5rem] p-8 hover:bg-white/10 hover:border-teal-500/50 transition-all duration-500 group cursor-pointer flex flex-col justify-center text-center relative overflow-hidden touch-scale">
                                 <div onClick={onNavigateToServices} className="relative z-10">
-                                    <div className="mx-auto w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center text-purple-400 mb-4 group-hover:rotate-12 transition-transform shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+                                    <div className="mx-auto w-16 h-16 bg-teal-500/20 rounded-full flex items-center justify-center text-[#00A896] mb-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 shadow-[0_0_20px_rgba(0,168,150,0.3)]">
                                         <LucideIcons.ShieldCheck size={32} />
                                     </div>
-                                    <h3 className="text-xl font-medium mb-2">Auditoría VIP</h3>
-                                    <p className="text-xs text-slate-400">Revisión preventiva para evitar multas.</p>
+                                    <h3 className="text-xl font-medium mb-2 group-hover:text-white">Auditoría VIP</h3>
+                                    <p className="text-xs text-slate-400 group-hover:text-slate-300">Revisión preventiva para evitar multas.</p>
                                 </div>
+                                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00A896]/40 to-transparent"></div>
                             </SpotlightCard>
                         </Reveal>
 
                         {/* Card 4: Small Square */}
                         <Reveal delay={400}>
-                            <SpotlightCard className="h-full bg-gradient-to-br from-slate-800 to-slate-900 border border-white/5 rounded-[2.5rem] p-8 hover:shadow-2xl transition-all group cursor-pointer flex flex-col justify-center text-center relative overflow-hidden hover:border-orange-500/50">
+                            <SpotlightCard className="h-full bg-gradient-to-br from-slate-900 to-[#111827] border border-white/5 rounded-[2.5rem] p-8 hover:shadow-[0_0_50px_rgba(249,115,22,0.1)] transition-all duration-500 group cursor-pointer flex flex-col justify-center text-center relative overflow-hidden hover:border-orange-500/50 touch-scale">
                                 <div onClick={onNavigateToServices} className="relative z-10 h-full flex flex-col justify-center">
-                                    <div className="mx-auto w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center text-orange-400 mb-4 shadow-[0_0_20px_rgba(249,115,22,0.3)]">
+                                    <div className="mx-auto w-16 h-16 bg-orange-500/20 rounded-full flex items-center justify-center text-orange-400 mb-4 group-hover:scale-110 transition-transform duration-500 shadow-[0_0_20px_rgba(249,115,22,0.3)]">
                                         <LucideIcons.Star size={32} fill="currentColor" />
                                     </div>
                                     <h3 className="text-xl font-medium mb-2 text-white">Suscripciones</h3>
-                                    <p className="text-xs text-slate-400">Planes mensuales todo incluido.</p>
+                                    <p className="text-xs text-slate-400 group-hover:text-slate-300">Planes mensuales todo incluido.</p>
                                 </div>
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl"></div>
                             </SpotlightCard>
                         </Reveal>
-
                     </div>
                 </div>
             </section>

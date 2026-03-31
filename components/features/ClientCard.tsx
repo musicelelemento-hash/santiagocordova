@@ -146,6 +146,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
         window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
     };
 
+
     return (
         <div
             onClick={() => onView(client)}
@@ -153,166 +154,100 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
             onMouseLeave={() => setIsHovered(false)}
             className={`
                 relative rounded-[2rem] transition-all duration-500 cursor-pointer overflow-hidden group
-                ${isHovered ? 'glass-elite -translate-y-1.5' : 'glass-card'}
-                ${hasWorkOrder ? 'ring-2 ring-amber-400/50' : ''}
-                ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-sky-400/50' : ''}
+                ${isHovered ? 'bg-surface-low -translate-y-1.5' : 'bg-surface-lowest'}
+                shadow-architect border-0
+                ${hasWorkOrder ? 'ring-2 ring-primary/30' : ''}
+                ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-tertiary/30' : ''}
             `}
         >
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+            {/* Tonal Accent Strip */}
+            <div className={`absolute top-0 left-0 right-0 h-[4px] ${isFullyAlDia ? 'bg-tertiary' : (isOverdue ? 'bg-primary' : 'bg-surface-low')}`}></div>
             
-            {true && !client.isDeleted && (
-                <div className="absolute -top-10 -right-10 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity duration-1000 rotate-12">
-                    <LucideIcons.Crown size={200} />
-                </div>
-            )}
-
-            <div className={`${compact ? 'p-4' : 'p-6'} relative z-10 flex flex-col h-full justify-between`}>
-                <div className={`flex justify-between items-start ${compact ? 'mb-4' : 'mb-6'}`}>
-                    <div className="flex items-center gap-4">
-                        <div className={`relative group/avatar`}>
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-medium text-sm transition-all duration-500 ${true && !client.isDeleted ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-white/5 text-slate-400 border border-white/5'}`}>
+            <div className={`${compact ? 'p-5' : 'p-8'} relative z-10 flex flex-col h-full justify-between`}>
+                <div className={`flex justify-between items-start ${compact ? 'mb-4' : 'mb-8'}`}>
+                    <div className="flex items-center gap-5">
+                        <div className={`relative`}>
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-sm transition-all duration-700 ${isFullyAlDia ? 'bg-tertiary/5 text-tertiary' : 'bg-primary/5 text-primary'}`}>
                                 {client.name.substring(0, 2).toUpperCase()}
                             </div>
-                            {isFullyAlDia && !client.isDeleted && <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-400 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center"><LucideIcons.Check size={10} className="text-white" /></div>}
+                            {isFullyAlDia && !client.isDeleted && (
+                                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-tertiary rounded-full border-[3px] border-surface-lowest flex items-center justify-center">
+                                    <LucideIcons.Check size={12} className="text-white" />
+                                </div>
+                            )}
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                                <span className={`text-[11px] px-2 py-0.5 rounded-lg font-medium tracking-widest uppercase border ${true && !client.isDeleted ? 'bg-white/5 text-slate-400 border-white/10' : 'bg-white/5 text-slate-500 border-white/5'}`}>
-                                    {client.taxProfile?.ivaFrequency || 'Mensual'}
-                                </span>
-                                {true && !client.isDeleted && <span className="text-[11px] px-2 py-0.5 bg-primary/15 text-primary rounded-lg font-medium tracking-widest border border-primary/20">Activo</span>}
-                                {client.hasElderlyDevolucionIva && (
-                                    <span className="text-[11px] px-2 py-0.5 bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 rounded-lg font-medium tracking-widest flex items-center gap-1">
-                                        <LucideIcons.Heart size={8} /> 3ra Edad
-                                    </span>
-                                )}
-                            </div>
-                                <h3 className={`font-premium font-medium text-base line-clamp-1 leading-tight text-white`} title={client.name}>
-                                    {client.tradeName || client.name}
-                                </h3>
-                                {client.tradeName && (
-                                    <p className="text-xs font-medium text-slate-400 dark:text-slate-500 truncate uppercase mt-0.5" title={client.name}>
-                                        {client.name}
-                                    </p>
-                                )}
-                            <div className="flex items-center gap-2 mt-1">
-                                <button onClick={handleCopy} className={`group/ruc flex items-center gap-2 px-2 py-1 rounded-lg border transition-all ${copied ? 'bg-emerald-400 border-emerald-400 text-white' : 'bg-slate-50/50 dark:bg-white/5 border-slate-100 dark:border-white/5 hover:border-sky-400'}`}>
-                                    <span className="font-mono text-xs font-semibold tracking-widest">{client.ruc}</span>
-                                    {copied ? <LucideIcons.Check size={10} strokeWidth={3} /> : <LucideIcons.Copy size={10} className="text-slate-400 group-hover/ruc:text-sky-400" />}
+                            <h3 className={`font-premium font-bold text-lg line-clamp-1 leading-tight text-on-surface`} title={client.name}>
+                                {client.tradeName || client.name}
+                            </h3>
+                            <div className="flex items-center gap-3 mt-2">
+                                <button onClick={handleCopy} className={`flex items-center gap-2 transition-all text-on-surface-variant hover:text-primary`}>
+                                    <span className="font-mono text-[10px] font-bold tracking-[0.2em]">{client.ruc}</span>
+                                    {copied ? <LucideIcons.Check size={10} className="text-tertiary" /> : <LucideIcons.Copy size={10} className="opacity-40" />}
                                 </button>
-                                {client.declarations && client.declarations.find(d => d.period === currentPeriod && !!d.proof_file) && (
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onView(client, 'operative'); // Trigger view in operative tab for pdf
-                                        }}
-                                        className="p-1 px-2.5 bg-sky-400/10 hover:bg-sky-400/20 text-sky-400 rounded-lg border border-sky-400/20 transition-all group/pdf"
-                                        title="Ver Comprobante Actual"
-                                    >
-                                        <LucideIcons.FileText size={10} className="group-hover/pdf:scale-110 transition-transform" />
-                                    </button>
+                                {client.hasElderlyDevolucionIva && (
+                                    <span className="text-[9px] px-2 py-0.5 bg-tertiary/10 text-tertiary rounded-md font-bold tracking-[0.1em] flex items-center gap-1 uppercase font-premium">
+                                        <LucideIcons.Heart size={8} /> Senior
+                                    </span>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-2">
-                        <div className={`px-3 py-1.5 rounded-xl border text-[11px] font-medium tracking-widest flex items-center gap-2 ${statusBadge.color}`}>
-                            <statusBadge.icon size={12} strokeWidth={2} />
+                    <div className="flex flex-col items-end">
+                        <div className={`px-4 py-1.5 rounded-xl border-0 text-[10px] font-bold tracking-[0.15em] flex items-center gap-2 uppercase font-premium ${statusBadge.color.replace('border-white/10', '').replace('bg-white/5', 'bg-surface-low')}`}>
+                            <statusBadge.icon size={12} strokeWidth={2.5} />
                             {statusBadge.text}
                         </div>
-                        
-                        {/* Fee Dots Removed Phase 4 */}
                     </div>
                 </div>
 
                 {!compact && !client.isDeleted && (
-                    <div className="flex-1 flex flex-col justify-center px-1 mb-4 mt-2">
-                        <div className="flex flex-col gap-2">
+                    <div className="flex-1 flex flex-col justify-center px-1 mb-6">
+                        <div className="grid grid-cols-2 gap-3">
                             {activeDecl && (
-                                <div className={`flex items-center justify-between p-3 rounded-2xl border ${isPaid ? 'bg-emerald-50 dark:bg-emerald-400/5 border-emerald-100 dark:border-emerald-400/10' : (isOverdue ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/5')}`}>
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${isPaid ? 'bg-emerald-400' : (isOverdue ? 'bg-rose-400' : 'bg-slate-400')}`}></div>
-                                        <span className="text-xs font-semibold tracking-tighter uppercase">IVA {dueDate ? safeFormat(dueDate, 'dd MMM') : 'N/A'}</span>
+                                <div className={`flex flex-col p-4 rounded-[1.5rem] ${isPaid ? 'bg-tertiary/5' : (isOverdue ? 'bg-primary/5' : 'bg-surface-low')} transition-colors`}>
+                                    <span className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${isPaid ? 'text-tertiary' : (isOverdue ? 'text-primary' : 'text-on-surface-variant')}`}>Ciclo IVA</span>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-on-surface uppercase tracking-tight font-premium">{dueDate ? safeFormat(dueDate, 'dd MMM') : 'N/A'}</span>
+                                        <LucideIcons.ChevronRight size={14} className="opacity-20" />
                                     </div>
-                                    <span className={`text-xs font-semibold ${isPaid ? 'text-emerald-400' : 'text-slate-400'}`}>{isPaid ? 'CONFIRMED' : 'DUE'}</span>
                                 </div>
                             )}
-                            {needsRenta && !isRentaFullyDone && (
-                                <div className="flex items-center justify-between p-3 rounded-2xl border bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/5">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${isRentaPaid ? 'bg-emerald-400' : 'bg-violet-500'}`}></div>
-                                        <span className="text-xs font-semibold tracking-tighter uppercase">RENTA {rentaPeriod}</span>
+                            {needsRenta && (
+                                <div className={`flex flex-col p-4 rounded-[1.5rem] ${isRentaFullyDone ? 'bg-tertiary/5' : 'bg-surface-low'} transition-colors`}>
+                                    <span className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${isRentaFullyDone ? 'text-tertiary' : 'text-on-surface-variant'}`}>Ciclo Anual</span>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-on-surface uppercase tracking-tight font-premium">{rentaPeriod}</span>
+                                        <LucideIcons.ChevronRight size={14} className="opacity-20" />
                                     </div>
-                                    <span className={`text-xs font-semibold ${isRentaPaid ? 'text-emerald-400' : 'text-violet-500'}`}>{isRentaPaid ? 'CONFIRMED' : 'PENDING'}</span>
                                 </div>
                             )}
                         </div>
                     </div>
                 )}
 
-                <div className={`flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/50 mt-1 transition-all`}>
+                <div className={`flex items-center justify-between pt-5 border-t border-outline-variant/10 mt-1`}>
                     {!compact && (
-                        <div className={`text-[11px] font-semibold uppercase tracking-wider ${textColor} opacity-60`}>
-                            {client.taxProfile?.ivaFrequency || 'Sin IVA'}
+                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-on-surface-variant font-premium">
+                            Intel Matrix Enabled
                         </div>
                     )}
                     
                     {client.isActive && !client.isDeleted && (
-                        <div className={`flex gap-1.5 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                        <div className={`flex gap-2.5 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
                             <button
                                 onClick={(e) => !isDeclared && handleAction(e, 'declare')}
-                                className={`flex items-center justify-center gap-1 rounded-lg transition-all font-medium border px-2.5 py-1.5 text-xs ${isDeclared ? 'bg-blue-50 text-blue-700 border-blue-200 cursor-default' : 'bg-white text-slate-400 border-slate-200 hover:bg-blue-100 hover:text-blue-700 active:scale-95'}`}
+                                className={`flex items-center justify-center gap-2 rounded-xl transition-all font-bold border-0 px-4 py-2 text-[10px] uppercase font-premium ${isDeclared ? 'bg-surface-low text-on-surface-variant opacity-50' : 'bg-primary text-white hover:bg-primary/90 shadow-sm active:scale-95'}`}
                             >
-                                <LucideIcons.Send size={12} /> {compact ? 'DECLARAR' : 'SRI'}
+                                <LucideIcons.Zap size={14} /> {compact ? 'ACT' : 'ACT EN SRI'}
                             </button>
-                            {/* Cobrar Button removed from main list per Phase 4 plan */}
                             <button
                                 onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
-                                className={`flex items-center justify-center gap-1.5 rounded-xl transition-all font-semibold border px-3 py-1.5 text-[11px] uppercase ${activeDecl?.proof_file ? 'bg-emerald-50 text-emerald-500 border-emerald-200' : 'bg-sky-50 text-sky-500 border-sky-200'} shadow-sm active:scale-95`}
+                                className={`flex items-center justify-center gap-2 rounded-xl transition-all font-bold border-0 px-4 py-2 text-[10px] uppercase font-premium ${activeDecl?.proof_file ? 'bg-tertiary text-white shadow-sm' : 'bg-surface-low text-on-surface-variant hover:text-primary'} active:scale-95`}
                             >
-                                <LucideIcons.UploadCloud size={13} /> {activeDecl?.proof_file ? 'PDF OK' : 'IVA PDF'}
-                            </button>
-
-                            {(activeDecl?.proof_file || isRentaDeclared) && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        const fileToPreview = activeDecl?.proof_file || (needsRenta ? (rentaDecl?.proof_file || undefined) : null);
-                                        if (fileToPreview && onPreview && activeDecl) onPreview(client, activeDecl);
-                                        else if (fileToPreview) {
-                                            const blob = new Blob([Uint8Array.from(atob(fileToPreview.content.split(',')[1] || fileToPreview.content), c => c.charCodeAt(0))], { type: 'application/pdf' });
-                                            window.open(URL.createObjectURL(blob), '_blank');
-                                        }
-                                    }}
-                                    className="p-1.5 rounded-xl bg-slate-100 border border-slate-200 hover:bg-sky-400/10 transition-all active:scale-90"
-                                >
-                                    <LucideIcons.Eye size={14} className="text-sky-400" />
-                                </button>
-                            )}
-
-                            {(isMissingPdf || isRentaMissingPdf) && (
-                                <div className="p-1.5 rounded-xl bg-rose-400 text-white border border-rose-400 animate-pulse shrink-0 shadow-[0_0_10px_rgba(239,68,68,0.5)]" title="PDF de declaración faltante">
-                                    <LucideIcons.FileWarning size={14} strokeWidth={3} />
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {client.isDeleted && isHovered && (
-                        <div className="flex gap-1.5 animate-in slide-in-from-right-2">
-                            <button
-                                onClick={(e) => handleAction(e, 'restore')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-400 text-white rounded-xl text-xs font-semibold hover:bg-emerald-500 active:scale-95"
-                            >
-                                <LucideIcons.RotateCcw size={12} /> RESTAURAR
-                            </button>
-                            <button
-                                onClick={(e) => handleAction(e, 'purge')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-400 text-white rounded-xl text-xs font-semibold hover:bg-rose-500 active:scale-95"
-                            >
-                                <LucideIcons.Trash2 size={12} /> ELIMINAR
+                                <LucideIcons.UploadCloud size={14} /> {activeDecl?.proof_file ? 'VER PDF' : 'CARGAR PDF'}
                             </button>
                         </div>
                     )}

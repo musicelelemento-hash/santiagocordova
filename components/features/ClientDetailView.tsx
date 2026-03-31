@@ -21,6 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ClientHeader } from './ClientDetail/ClientHeader';
 import { CopyButton } from './ClientDetail/CopyButton';
 import { VaultCard } from './ClientDetail/VaultCard';
+import { FacturadorCard } from './ClientDetail/FacturadorCard';
 import { DocumentTimeline } from './ClientDetail/DocumentTimeline';
 import { PdfPreviewModal } from './ClientDetail/PdfPreviewModal';
 import { ProfileDataItem } from './ClientDetail/ProfileDataItem';
@@ -568,39 +569,39 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const renderProfileTab = () => (
         <div className="space-y-8 sm:space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-                <div className={`p-8 rounded-[2.5rem] ${isWorkOrder ? 'bg-amber-400/10 border-amber-400/20 shadow-primary' : (isFullyAlDia ? 'bg-emerald-400/10 border-emerald-400/20 shadow-primary' : 'glass-elite')} relative overflow-hidden group transition-all duration-700`}>
+                <div className={`p-8 rounded-[2rem] shadow-architect transition-all duration-700 relative overflow-hidden group ${isFullyAlDia ? 'bg-tertiary-fixed/10' : 'bg-primary'}`}>
                     <div className="relative z-10">
-                        <p className={`text-xs font-medium uppercase tracking-widest mb-3 ${isWorkOrder ? 'text-amber-400' : (isFullyAlDia ? 'text-emerald-400' : 'text-slate-500')}`}>DIRECTIVA OPERATIVA</p>
-                        <h4 className="text-xl sm:text-2xl font-medium leading-tight tracking-tight uppercase text-white">
-                            {isFullyAlDia ? 'ÓPTIMA' : 'INTERVENCIÓN REQUERIDA'}
+                        <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-3 font-premium ${isFullyAlDia ? 'text-tertiary' : 'text-primary-foreground/70'}`}>Directiva de Cumplimiento</p>
+                        <h4 className={`text-2xl font-bold leading-tight tracking-tight uppercase font-premium ${isFullyAlDia ? 'text-on-surface' : 'text-white'}`}>
+                            {isFullyAlDia ? 'ESTADO ÓPTIMO' : 'ACCIÓN REQUERIDA'}
                         </h4>
                         <div className="mt-6 flex items-center gap-3">
-                            <div className={`w-2 h-2 rounded-full animate-ping ${isFullyAlDia ? 'bg-emerald-400' : 'bg-amber-400'}`}></div>
-                            <span className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Sincronización Activa</span>
+                            <div className={`w-2 h-2 rounded-full animate-pulse ${isFullyAlDia ? 'bg-tertiary' : 'bg-primary-foreground'}`}></div>
+                            <span className={`text-[10px] font-bold uppercase tracking-widest font-premium ${isFullyAlDia ? 'text-on-surface-variant' : 'text-primary-foreground/60'}`}>Sincronización Activa</span>
                         </div>
                     </div>
                 </div>
 
                 {!isFullyDeclared && (
-                    <div className="p-8 rounded-[2.5rem] glass-card flex items-center gap-6 group transition-all hover:bg-white/5 border border-white/5">
-                        <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-primary group-hover:scale-110 transition-transform duration-500">
+                    <div className="p-8 rounded-[2rem] bg-surface-lowest shadow-architect flex items-center gap-6 group hover:bg-surface-low transition-all duration-500">
+                        <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                             <Zap size={28} className="animate-pulse" />
                         </div>
                         <div>
-                            <p className="text-xs font-medium uppercase tracking-widest text-primary mb-1">VECTOR DE ATAQUE</p>
-                            <p className="text-sm font-medium text-white uppercase tracking-tight">DECLARAR OBLIGACIÓN</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary mb-1 font-premium">Vector de Acción</p>
+                            <p className="text-sm font-bold text-on-surface uppercase tracking-tight font-premium">DECLARAR OBLIGACIÓN</p>
                         </div>
                     </div>
                 )}
 
                 {isFullyDeclared && !isFullyPaid && (
-                    <div className="p-8 rounded-[2.5rem] glass-card flex items-center gap-6 group transition-all hover:bg-white/5 border border-white/5">
-                        <div className="w-16 h-16 rounded-2xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center text-amber-400 shadow-primary group-hover:scale-110 transition-transform duration-500">
+                    <div className="p-8 rounded-[2rem] bg-surface-lowest shadow-architect flex items-center gap-6 group hover:bg-surface-low transition-all duration-500">
+                        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
                             <DollarSign size={28} />
                         </div>
                         <div>
-                            <p className="text-[11px] font-black uppercase text-amber-400 tracking-[0.2em] mb-1">FASE: LIQUIDACIÓN</p>
-                            <p className="text-sm font-black text-white uppercase tracking-tight">RECURSOS COMPROMETIDOS</p>
+                            <p className="text-[10px] font-bold uppercase text-amber-600 tracking-[0.2em] mb-1 font-premium">Estado: Liquidación</p>
+                            <p className="text-sm font-bold text-on-surface uppercase tracking-tight font-premium">PENDIENTE DE PAGO</p>
                         </div>
                     </div>
                 )}
@@ -620,14 +621,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 <div className="lg:col-span-2 space-y-10">
-                    <div className="glass-card rounded-[3rem] p-10 relative overflow-hidden group border border-white/5">
+                    <div className="bg-surface-lowest dark:bg-surface-lowest rounded-[3rem] p-10 shadow-architect relative overflow-hidden group">
                         <div className="flex items-center justify-between mb-12">
                             <div>
-                                <h3 className="text-xl font-medium text-white tracking-tight uppercase flex items-center gap-4">
+                                <h3 className="text-xl font-bold text-on-surface tracking-tight uppercase flex items-center gap-4 font-premium">
                                     <Activity className="text-primary" size={24} />
-                                    PANEL DE INTELIGENCIA FISCAL
+                                    Panel de Inteligencia Fiscal
                                 </h3>
-                                <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest mt-3">MÉTRICAS DE CUMPLIMIENTO Y OBLIGACIONES CRÍTICAS</p>
+                                <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mt-3 font-premium">MÉTRICAS DE CUMPLIMIENTO Y OBLIGACIONES CRÍTICAS</p>
                             </div>
                         </div>
 
@@ -893,6 +894,12 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 )}
                 <VaultCard icon={Smartphone} label="Clave SRI" file={undefined} isPassword value={client.sriPassword} />
             </div>
+
+            <FacturadorCard 
+                config={editedClient.facturadorConfig} 
+                isEditing={isEditing} 
+                onChange={(config) => setEditedClient({ ...editedClient, facturadorConfig: config })} 
+            />
 
             <div className="glass-card rounded-[3rem] p-10 border border-white/5 relative overflow-hidden group shadow-2xl">
                 <div className="flex items-center justify-between mb-12">
