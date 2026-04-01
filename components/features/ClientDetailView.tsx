@@ -99,6 +99,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [editedClient, setEditedClient] = useState(client);
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'vault' | 'settings'>('profile');
+    const [vaultViewMode, setVaultViewMode] = useState<'gallery' | 'list' | 'table'>('gallery');
 
     const [obligation, setObligation] = useState(getStatusIndicator(client));
 
@@ -889,7 +890,22 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         </h3>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mt-3 font-premium">Gestión centralizada de archivos y comprobantes</p>
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-3">
+                        <div className="p-1.5 bg-slate-50 rounded-2xl border border-slate-100 flex gap-1 shadow-sm h-fit">
+                            {(['gallery', 'list', 'table'] as const).map((mode) => (
+                                <button
+                                    key={mode}
+                                    onClick={() => setVaultViewMode(mode)}
+                                    className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all font-premium ${
+                                        vaultViewMode === mode 
+                                            ? 'bg-white text-blue-600 shadow-md ring-1 ring-slate-100' 
+                                            : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                                    }`}
+                                >
+                                    {mode === 'gallery' ? 'Galería' : mode === 'list' ? 'Lista' : 'Tabla'}
+                                </button>
+                            ))}
+                        </div>
                         <div className="px-6 py-3 bg-slate-50 rounded-2xl text-[9px] font-black text-emerald-600 flex items-center gap-3 border border-slate-100 shadow-sm uppercase tracking-[0.2em] font-premium">
                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                             {(client.declarations || []).filter(d => d.proof_file).length} Archivos Protegidos
@@ -897,48 +913,140 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    <button
-                        onClick={() => { setUploadingTarget({ type: 'iva', period: getPeriod(client, new Date()) }); proofInputRef.current?.click(); }}
-                        className="aspect-square rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-50/50 transition-all group relative overflow-hidden shadow-sm"
-                    >
-                        <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-slate-100 relative z-10 shadow-sm">
-                            <Plus className="text-slate-400 group-hover:text-blue-600" size={32} />
-                        </div>
-                        <span className="text-[10px] font-extrabold uppercase text-slate-400 group-hover:text-blue-600 tracking-widest relative z-10 font-premium">Subir Documento</span>
-                    </button>
-
-                    {[...(client.declarations || [])]
-                        .filter(d => d.proof_file)
-                        .sort((a, b) => b.period.localeCompare(a.period))
-                        .map((decl, idx) => (
-                            <div key={idx} className="bg-slate-50 rounded-[2.5rem] p-5 border border-slate-100 hover:bg-white hover:scale-[1.02] shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden" onClick={() => setPreviewItem(decl)}>
-                                <div className="aspect-[4/3] rounded-2xl bg-white border border-slate-100 mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-blue-50 transition-colors">
-                                    <FileText className="text-slate-200 group-hover:text-blue-600 group-hover:scale-110 transition-all duration-500" size={48} />
-                                    {decl.proof_file?.metadata?.formType && (
-                                        <div className="absolute top-3 left-3 px-3 py-1 bg-blue-600 text-white text-[9px] font-black rounded-lg uppercase tracking-widest shadow-md font-premium">
-                                            {decl.proof_file.metadata.formType}
-                                        </div>
-                                    )}
-                                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                        <Eye className="text-blue-600" size={28} />
-                                    </div>
-                                </div>
-                                <div className="space-y-3 relative z-10">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex flex-col">
-                                            <span className="text-[11px] font-extrabold text-emerald-600 tracking-tighter font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
-                                            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 font-premium">{formatPeriodForDisplay(decl.period)}</span>
-                                        </div>
-                                        <button className="p-2.5 hover:bg-white rounded-xl text-slate-300 hover:text-blue-600 transition-colors">
-                                            <Download size={14} />
-                                        </button>
-                                    </div>
-                                </div>
+                {vaultViewMode === 'gallery' && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 animate-in fade-in duration-500">
+                        <button
+                            onClick={() => { setUploadingTarget({ type: 'iva', period: getPeriod(client, new Date()) }); proofInputRef.current?.click(); }}
+                            className="aspect-square rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-50/50 transition-all group relative overflow-hidden shadow-sm"
+                        >
+                            <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-slate-100 relative z-10 shadow-sm">
+                                <Plus className="text-slate-400 group-hover:text-blue-600" size={32} />
                             </div>
-                        ))}
+                            <span className="text-[10px] font-extrabold uppercase text-slate-400 group-hover:text-blue-600 tracking-widest relative z-10 font-premium">Subir Nuevo</span>
+                        </button>
 
-                </div>
+                        {[...(client.declarations || [])]
+                            .filter(d => d.proof_file)
+                            .sort((a, b) => b.period.localeCompare(a.period))
+                            .map((decl, idx) => (
+                                <div key={idx} className="bg-slate-50 rounded-[2.5rem] p-5 border border-slate-100 hover:bg-white hover:scale-[1.02] shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden" onClick={() => setPreviewItem(decl)}>
+                                    <div className="aspect-[4/3] rounded-2xl bg-white border border-slate-100 mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-blue-50 transition-colors">
+                                        <FileText className="text-slate-200 group-hover:text-blue-600 group-hover:scale-110 transition-all duration-500" size={48} />
+                                        {decl.proof_file?.metadata?.formType && (
+                                            <div className="absolute top-3 left-3 px-3 py-1 bg-blue-600 text-white text-[9px] font-black rounded-lg uppercase tracking-widest shadow-md font-premium">
+                                                {decl.proof_file.metadata.formType}
+                                            </div>
+                                        )}
+                                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <Eye className="text-blue-600" size={28} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3 relative z-10">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex flex-col">
+                                                <span className="text-[11px] font-extrabold text-emerald-600 tracking-tighter font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
+                                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 font-premium">{formatPeriodForDisplay(decl.period)}</span>
+                                            </div>
+                                            <button className="p-2.5 hover:bg-white rounded-xl text-slate-300 hover:text-blue-600 transition-colors">
+                                                <Download size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+                )}
+
+                {vaultViewMode === 'list' && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-left-5 duration-500">
+                        <button
+                            onClick={() => { setUploadingTarget({ type: 'iva', period: getPeriod(client, new Date()) }); proofInputRef.current?.click(); }}
+                            className="w-full p-6 rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-50/50 transition-all group shadow-sm font-premium"
+                        >
+                            <Plus className="text-slate-400 group-hover:text-blue-600" size={20} />
+                            <span className="text-[11px] font-black uppercase text-slate-400 group-hover:text-blue-600 tracking-widest">Subir Nuevo Documento al Repositorio</span>
+                        </button>
+
+                        {[...(client.declarations || [])]
+                            .filter(d => d.proof_file)
+                            .sort((a, b) => b.period.localeCompare(a.period))
+                            .map((decl, idx) => (
+                                <div key={idx} className="bg-slate-50 hover:bg-white rounded-[2rem] p-6 border border-slate-100 flex items-center justify-between shadow-sm hover:shadow-lg transition-all group cursor-pointer" onClick={() => setPreviewItem(decl)}>
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm group-hover:bg-blue-50 transition-colors">
+                                            <FileText className="text-slate-400 group-hover:text-blue-600" size={28} />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-extrabold text-slate-900 font-premium tracking-tight uppercase">Comprobante de {formatPeriodForDisplay(decl.period)}</h4>
+                                            <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest font-premium">{decl.proof_file?.name}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-10">
+                                        <div className="text-right">
+                                            <span className="block text-[13px] font-black text-emerald-600 font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-premium">Monto Validado</span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button className="p-3 bg-white hover:bg-slate-900 hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-100">
+                                                <Download size={16} />
+                                            </button>
+                                            <button className="p-3 bg-white hover:bg-blue-600 hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-100">
+                                                <Eye size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+                )}
+
+                {vaultViewMode === 'table' && (
+                    <div className="bg-slate-50/50 rounded-[2.5rem] border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-right-5 duration-500">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50/80 border-b border-slate-100">
+                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium">Documento</th>
+                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium">Periodo</th>
+                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium">Monto</th>
+                                    <th className="px-10 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium pr-12">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                                {[...(client.declarations || [])]
+                                    .filter(d => d.proof_file)
+                                    .sort((a, b) => b.period.localeCompare(a.period))
+                                    .map((decl, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => setPreviewItem(decl)}>
+                                            <td className="px-10 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-2 bg-slate-50 rounded-lg text-blue-600 group-hover:bg-white transition-colors">
+                                                        <FileText size={18} />
+                                                    </div>
+                                                    <span className="text-xs font-black text-slate-800 uppercase tracking-tight font-premium">{decl.proof_file?.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-premium">{formatPeriodForDisplay(decl.period)}</span>
+                                            </td>
+                                            <td className="px-10 py-6">
+                                                <span className="text-[12px] font-extrabold text-emerald-600 font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
+                                            </td>
+                                            <td className="px-10 py-6 text-right pr-12">
+                                                <div className="flex justify-end gap-3 opacity-40 group-hover:opacity-100 transition-opacity">
+                                                    <button className="p-2.5 hover:bg-white rounded-lg text-slate-400 hover:text-blue-600 transition-colors shadow-sm">
+                                                        <Download size={16} />
+                                                    </button>
+                                                    <button className="p-2.5 hover:bg-white rounded-lg text-slate-400 hover:text-emerald-600 transition-colors shadow-sm">
+                                                        <Eye size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );
