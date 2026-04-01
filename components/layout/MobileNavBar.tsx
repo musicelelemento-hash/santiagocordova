@@ -31,19 +31,19 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({ navItems, activeScre
                             key={item.screen}
                             onClick={() => onNavigate(item.screen as Screen)}
                             className={`flex flex-col items-center justify-center flex-1 transition-all duration-300 relative py-1 hover:-translate-y-1 active:scale-90 ${activeScreen === item.screen
-                                ? 'text-emerald-400'
+                                ? 'text-white'
                                 : 'text-slate-500 hover:text-white'
                                 }`}
                         >
                             <item.icon 
                                 size={22} 
                                 strokeWidth={activeScreen === item.screen ? 2.5 : 2} 
-                                className={`transition-all duration-300 ${activeScreen === item.screen ? 'scale-110 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]' : ''}`}
+                                className={`transition-all duration-300 ${activeScreen === item.screen ? 'scale-110 drop-shadow-[0_0_12px_rgba(255,255,255,0.4)]' : ''}`}
                             />
                             
-                            {/* Indicador de ítem activo minimalista */}
+                            {/* Indicador de ítem activo minimalista (Zen Dot) */}
                             {activeScreen === item.screen && (
-                                <div className="absolute -bottom-1.5 w-1 h-1 bg-emerald-400 rounded-full shadow-[0_0_10px_rgba(52,211,153,1)]"></div>
+                                <div className="absolute -bottom-1.5 w-1 h-1 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,1)]"></div>
                             )}
                         </button>
                     ))}

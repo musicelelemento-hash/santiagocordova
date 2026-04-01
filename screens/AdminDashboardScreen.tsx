@@ -348,8 +348,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <div className="flex flex-col">
                                 <span className="text-xs sm:text-xs font-semibold text-emerald-400 uppercase tracking-[0.4em] mb-0.5 sm:mb-1">ALERTA DEL SISTEMA</span>
                                 <div className="flex items-center gap-2 sm:gap-3">
-                                    <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white uppercase tracking-tighter">DÍGITO CRÍTICO HOY:</p>
-                                    <span className="text-2xl sm:text-4xl text-rose-400 font-display font-semibold tracking-tighter drop-shadow-[0_0_10px_rgba(244,63,94,0.3)]">{tacticalInfo.todayDigit}</span>
+                                    <p className="text-xs sm:text-sm font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-premium">DÍGITO CRÍTICO HOY:</p>
+                                    <span className="text-2xl sm:text-4xl text-slate-900 dark:text-white font-display font-semibold tracking-tighter">{tacticalInfo.todayDigit}</span>
                                 </div>
                             </div>
                         </div>
@@ -374,8 +374,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             )}
 
             {/* Background elements refined */}
-            <div className="absolute top-0 right-0 w-[1000px] h-[1000px] bg-sky-400/5 dark:bg-sky-400/5 blur-[160px] rounded-full pointer-events-none"></div>
-            <div className="absolute top-1/2 left-0 w-[800px] h-[800px] bg-emerald-400/5 dark:bg-emerald-400/5 blur-[140px] rounded-full pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[1000px] h-[1000px] bg-slate-400/5 dark:bg-white/5 blur-[160px] rounded-full pointer-events-none"></div>
+            <div className="absolute top-1/2 left-0 w-[800px] h-[800px] bg-slate-400/5 dark:bg-white/5 blur-[140px] rounded-full pointer-events-none"></div>
 
             {/* MANDO CENTRAL: Zen Hub */}
             <div className="relative z-20 sm:space-y-6 space-y-4 px-4 sm:px-0">
@@ -388,8 +388,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         <div className="flex items-center gap-6 sm:gap-8 self-start lg:self-center w-full lg:w-auto overflow-hidden">
                             <div className="flex flex-col min-w-0">
                                 <div className="flex items-center gap-2 mb-1 sm:mb-2">
-                                    <div className="w-3 h-1 bg-emerald-400 rounded-full"></div>
-                                    <span className="text-xs sm:text-xs font-medium text-emerald-400 uppercase tracking-[0.4em]">ADMINISTRACIÓN CENTRAL</span>
+                                    <div className="w-3 h-1 bg-slate-900 dark:bg-white rounded-full"></div>
+                                    <span className="text-xs sm:text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.4em] font-premium">ADMINISTRACIÓN CENTRAL</span>
                                 </div>
                                 <h1 className="text-xl sm:text-5xl font-sans font-semibold text-slate-900 dark:text-white tracking-tighter leading-tight mb-1 truncate">
                                     Gestión <span className="text-primary italic font-light">Tributaria</span>
@@ -403,8 +403,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-1.5 opacity-60">Status de Red</span>
                                 <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-2 group-hover:scale-110 transition-transform">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.8)] animate-pulse"></div>
-                                        <span className="text-[11px] font-semibold text-emerald-400 tech-font uppercase tracking-tighter">SYNC ACTIVE</span>
+                                        <div className="w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-white animate-pulse"></div>
+                                        <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tighter font-premium">SYNC ACTIVE</span>
                                     </div>
                                     <div className="h-4 w-[1px] bg-white/10"></div>
                                     <div className="flex items-center gap-2">
@@ -426,7 +426,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     placeholder="BUSCAR CLIENTE..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl sm:rounded-2xl py-3.5 sm:py-4 pl-12 sm:pl-14 pr-4 text-[11px] sm:text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:border-emerald-400 focus:bg-white dark:focus:bg-black/30 transition-all outline-none"
+                                    className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl sm:rounded-2xl py-3.5 sm:py-4 pl-12 sm:pl-14 pr-4 text-[11px] sm:text-sm font-black text-slate-900 dark:text-white placeholder-slate-400 focus:border-slate-900 dark:focus:border-white focus:bg-white dark:focus:bg-black/30 transition-all outline-none font-premium"
                                 />
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 sm:group-focus-within:opacity-100 transition-opacity hidden sm:block">
                                     <span className="text-[11px] font-semibold text-slate-500 bg-black/40 px-2 py-1 rounded border border-white/10 uppercase tracking-widest">Type to Search</span>
@@ -443,9 +443,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <button 
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isProcessing}
-                                className="w-full md:w-auto flex items-center justify-center gap-3 sm:gap-4 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-400 dark:hover:bg-emerald-500 text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-[11px] font-medium uppercase tracking-[0.2em] hover:scale-[1.03] active:scale-95 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 relative overflow-hidden group/btn"
+                                className="w-full md:w-auto flex items-center justify-center gap-3 sm:gap-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-xs sm:text-[10px] font-black uppercase tracking-[0.3em] hover:scale-[1.03] active:scale-95 transition-all shadow-xl shadow-slate-900/10 dark:shadow-none disabled:opacity-50 relative overflow-hidden group/btn font-premium"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700"></div>
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000"></div>
                                 {isProcessing ? (
                                     <LucideIcons.Loader2 size={16} className="animate-spin" />
                                 ) : (
@@ -459,7 +459,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     {/* METRICS DOCK: High-Density Swiper on Mobile */}
                     <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-6 mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-slate-100 dark:border-white/5 overflow-x-auto sm:overflow-x-visible no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0 snap-x snap-mandatory pb-4 sm:pb-0">
                         <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen group cursor-pointer" onClick={() => setFilter('all')}>
-                            <div className="p-3 sm:p-4 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl group-hover:bg-primary group-hover:text-white transition-all shadow-sm border border-slate-200 dark:border-white/5 shrink-0">
+                            <div className="p-3 sm:p-4 bg-slate-100 dark:bg-white/5 text-slate-400 rounded-2xl group-hover:bg-slate-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-slate-900 transition-all shadow-sm border border-slate-200 dark:border-white/5 shrink-0">
                                 <LucideIcons.Users size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
                             </div>
                             <div className="min-w-0">
@@ -468,12 +468,12 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             </div>
                         </div>
                         <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen group cursor-pointer" onClick={() => setFilter('overdue')}>
-                            <div className={`p-3 sm:p-4 rounded-2xl transition-all shadow-sm border shrink-0 ${kpis.overdue > 0 ? 'bg-rose-50 text-rose-400 border-rose-100 dark:bg-rose-900/20 dark:border-rose-800/20' : 'bg-primary/10 text-primary border-primary/20'}`}>
+                            <div className={`p-3 sm:p-4 rounded-2xl transition-all shadow-sm border shrink-0 ${kpis.overdue > 0 ? 'bg-rose-500 text-white border-rose-500' : 'bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-white/5'}`}>
                                 <LucideIcons.ShieldAlert size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5">Pendientes Críticos</p>
-                                <p className={`text-xl sm:text-3xl font-semibold tracking-tighter leading-none ${kpis.overdue > 0 ? 'text-rose-400' : 'text-primary'}`}>{kpis.overdue}</p>
+                                <p className="text-[11px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5 font-premium">Pendientes Críticos</p>
+                                <p className={`text-xl sm:text-3xl font-black tracking-tighter leading-none font-premium ${kpis.overdue > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>{kpis.overdue}</p>
                             </div>
                         </div>
                         <div className="flex-none w-[85%] sm:w-auto snap-center flex items-center gap-5 p-4 glass-zen group cursor-pointer" onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true, title: 'Auditoría de Bóveda' } })}>
@@ -501,20 +501,20 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                              <div className="relative z-10 w-full">
                                 <div className="flex justify-between items-end mb-2 sm:mb-3">
                                     <div className="flex flex-col">
-                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-[0.2em] mb-0.5 sm:mb-1">CONSOLIDADO</span>
+                                        <span className="text-[11px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-0.5 sm:mb-1 font-premium">CONSOLIDADO</span>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xl sm:text-2xl font-semibold text-primary">{Math.round((completados.length / (allResults.length || 1)) * 100)}%</span>
-                                            <span className="text-xs sm:text-xs font-medium text-slate-400 uppercase tracking-widest hidden sm:inline">Eficiencia</span>
+                                            <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-premium">{Math.round((completados.length / (allResults.length || 1)) * 100)}%</span>
+                                            <span className="text-xs sm:text-xs font-black text-slate-400 uppercase tracking-widest hidden sm:inline font-premium">Eficiencia</span>
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end">
-                                        <span className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase mb-0.5 sm:mb-1">{completados.length} / {allResults.length}</span>
-                                        <LucideIcons.CheckCircle2 size={14} className="text-primary" />
+                                        <span className="text-[11px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase mb-0.5 sm:mb-1 font-premium">{completados.length} / {allResults.length}</span>
+                                        <LucideIcons.CheckCircle2 size={14} className="text-slate-900 dark:text-white" />
                                     </div>
                                 </div>
                                 <div className="w-full h-1.5 bg-slate-100 dark:bg-black/20 rounded-full overflow-hidden">
                                     <div 
-                                        className="h-full bg-primary transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(134,167,137,0.3)]"
+                                        className="h-full bg-slate-900 dark:bg-white transition-all duration-1000 ease-out"
                                         style={{ width: `${(completados.length / (allResults.length || 1)) * 100}%` }}
                                     ></div>
                                 </div>
@@ -527,12 +527,12 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             {/* Campaign Progress Legend (Subtle) */}
             <div className="flex items-center gap-4 px-6">
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{completados.length} Declarados</span>
+                    <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-white"></div>
+                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">{completados.length} Declarados</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
-                    <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{pendientes.length} Pendientes</span>
+                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10"></div>
+                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">{pendientes.length} Pendientes</span>
                 </div>
             </div>
 
@@ -543,34 +543,37 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     {/* Renta Refunds Panel - High Priority */}
                     {activeRentaRefunds.length > 0 && (
-                        <div className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-slate-900 border border-amber-200/60 dark:border-amber-800/60 rounded-[2rem] p-6 shadow-xl shadow-amber-400/5 animate-fade-in-down lg:col-span-full">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-amber-100 dark:bg-amber-900/40 text-amber-500 dark:text-amber-400 rounded-xl">
+                        <div className="bg-white dark:bg-surface-low border border-slate-100 dark:border-white/5 rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none animate-fade-in-down lg:col-span-full">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-5">
+                                    <div className="p-3 bg-slate-50 dark:bg-white/5 text-slate-400 rounded-2xl">
                                         <LucideIcons.HandCoins size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-amber-900 dark:text-amber-300 text-lg">Trámites Devolución Renta</h3>
-                                        <p className="text-amber-500/70 dark:text-amber-400/60 text-xs font-semibold uppercase tracking-widest">{activeRentaRefunds.length} en seguimiento intensivo</p>
+                                        <h3 className="text-[12px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] font-premium">Devoluciones de Renta</h3>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{activeRentaRefunds.length} expedientes en monitoreo</p>
                                     </div>
                                 </div>
-                                <LucideIcons.Clock className="text-amber-400 animate-spin-slow" size={20} />
+                                <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-white/5 rounded-full border border-slate-100 dark:border-white/5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white animate-pulse"></div>
+                                    <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest font-premium">ACTIVO</span>
+                                </div>
                             </div>
-                            <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-4 custom-scrollbar grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {activeRentaRefunds.map(c => {
                                     const requestedAt = c.rentaRefundRequestedAt ? new Date(c.rentaRefundRequestedAt) : new Date();
                                     const hoursPassed = Math.abs(new Date().getTime() - requestedAt.getTime()) / 36e5;
                                     const isCritical = hoursPassed > 24;
                                     return (
-                                        <div key={c.id} className={`group/item flex justify-between items-center bg-white dark:bg-slate-800/50 p-3.5 rounded-2xl border transition-all ${isCritical ? 'border-red-300 dark:border-red-800/50 hover:border-rose-400' : 'border-amber-100 dark:border-amber-900/30 hover:border-amber-400'}`}>
-                                            <div className="flex flex-col min-w-0 pr-2">
-                                                <span className="font-medium text-slate-800 dark:text-slate-200 text-sm truncate">{c.name}</span>
-                                                <span className={`text-xs font-semibold uppercase tracking-wider mt-0.5 ${isCritical ? 'text-rose-400' : 'text-amber-500 dark:text-amber-400'}`}>
-                                                    Tiempo Transcurrido: {hoursPassed.toFixed(1)}h
+                                        <div key={c.id} className={`group/item flex justify-between items-center bg-slate-50/50 dark:bg-white/5 p-5 rounded-[2rem] border border-transparent hover:border-slate-200 dark:hover:border-white/10 transition-all`}>
+                                            <div className="flex flex-col min-w-0 pr-4">
+                                                <span className="text-xs font-black text-slate-800 dark:text-slate-50 uppercase tracking-tight font-premium truncate">{c.name}</span>
+                                                <span className={`text-[9px] font-black uppercase tracking-widest mt-2 ${isCritical ? 'text-rose-500' : 'text-slate-400'}`}>
+                                                    Tiempo: {hoursPassed.toFixed(1)}H {isCritical && '• PRIORIDAD'}
                                                 </span>
                                             </div>
-                                            <button onClick={() => navigate('clients', { clientIdToView: c.id })} className={`shrink-0 px-4 py-1.5 text-xs font-semibold rounded-xl transition-all uppercase ${isCritical ? 'bg-red-50 text-rose-400 hover:bg-rose-400 hover:text-white dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-50 text-amber-500 hover:bg-amber-500 hover:text-white dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                                                Revisar
+                                            <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="shrink-0 px-6 py-2.5 bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white hover:bg-slate-900 dark:hover:bg-white hover:text-white dark:hover:text-slate-900 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all font-premium">
+                                                DETALLE
                                             </button>
                                         </div>
                                     )
@@ -580,27 +583,29 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     )}
                     {/* Expiring Signatures Alert */}
                     {expiringSignatures.length > 0 && (
-                        <div className="bg-gradient-to-br from-red-50 to-white dark:from-red-950/20 dark:to-slate-900 border border-red-200/60 dark:border-red-800/60 rounded-[2rem] p-6 shadow-xl shadow-rose-400/5 animate-fade-in-down">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-red-100 dark:bg-red-900/40 text-rose-400 dark:text-red-400 rounded-xl">
+                        <div className="bg-white dark:bg-surface-low border border-slate-100 dark:border-white/5 rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none animate-fade-in-down lg:col-span-full mt-4">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-5">
+                                    <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl">
                                         <LucideIcons.AlertTriangle size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-red-900 dark:text-red-300 text-lg">Firmas por Caducar</h3>
-                                        <p className="text-rose-400/70 dark:text-red-400/60 text-xs font-semibold uppercase tracking-widest">{expiringSignatures.length} Clientes en riesgo</p>
+                                        <h3 className="text-[12px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] font-premium">Firmas por Caducar</h3>
+                                        <p className="text-[10px] font-bold text-rose-500/70 uppercase tracking-widest mt-2">{expiringSignatures.length} perfiles requieren renovación</p>
                                     </div>
                                 </div>
-                                <LucideIcons.ChevronRight className="text-red-300" size={20} />
+                                <LucideIcons.ChevronRight className="text-slate-300" size={20} />
                             </div>
-                            <div className="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-4 custom-scrollbar">
                                 {expiringSignatures.map(c => (
-                                    <div key={c.id} className="group/item flex justify-between items-center bg-white dark:bg-slate-800/50 p-3.5 rounded-2xl border border-red-100 dark:border-red-900/30 hover:border-red-400 transition-all">
+                                    <div key={c.id} className="group/item flex justify-between items-center bg-slate-50/50 dark:bg-white/5 p-5 rounded-[2rem] border border-transparent hover:border-rose-200 dark:hover:border-rose-900/30 transition-all">
                                         <div className="flex flex-col">
-                                            <span className="font-medium text-slate-800 dark:text-slate-200 text-sm">{c.name}</span>
-                                            <span className="text-xs text-rose-400 font-medium flex items-center gap-1 mt-0.5"><LucideIcons.Calendar size={12} /> Expira: {c.signatureExpirationDate}</span>
+                                            <span className="text-xs font-black text-slate-800 dark:text-slate-50 uppercase tracking-tight font-premium">{c.name}</span>
+                                            <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-2">VENCE: {c.signatureExpirationDate}</span>
                                         </div>
-                                        <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="px-4 py-1.5 bg-red-50 dark:bg-red-900/30 text-rose-400 dark:text-red-400 text-xs font-semibold rounded-xl hover:bg-rose-400 hover:text-white transition-all uppercase">Ver Detalle</button>
+                                        <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="px-6 py-2.5 bg-rose-500 text-white hover:bg-rose-600 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all font-premium shadow-lg shadow-rose-200/50 dark:shadow-none">
+                                            RENOVAR
+                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -628,10 +633,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 key={tab.id}
                                 onClick={() => setFilter(tab.id as any)}
                                 className={`
-                                    relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full text-[11px] sm:text-xs font-semibold uppercase tracking-wider transition-all duration-500 whitespace-nowrap group/tab
+                                    relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all duration-500 whitespace-nowrap group/tab font-premium
                                     ${isActive
-                                        ? 'bg-emerald-400 text-white shadow-[0_0_30px_rgba(16,185,129,0.5)] scale-105 sm:scale-110 z-10'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/10'
+                                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl scale-105 sm:scale-105 z-10'
+                                        : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'
                                     }
                                 `}
                             >

@@ -12,11 +12,11 @@ import { useTranscription } from '../../hooks/useTranscription';
 import { AreaChart as RechartsAreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const declarationStatusColors: { [key in DeclarationStatus]: string } = {
-    [DeclarationStatus.Pendiente]: 'bg-gray-400/20 text-gray-500 dark:text-gray-400',
-    [DeclarationStatus.Enviada]: 'bg-sky-400/20 text-sky-400',
-    [DeclarationStatus.Pagada]: 'bg-emerald-400/20 text-emerald-400',
-    [DeclarationStatus.Cancelada]: 'bg-rose-400/20 text-rose-400',
-    [DeclarationStatus.Vencida]: 'bg-rose-400/20 text-rose-400',
+    [DeclarationStatus.Pendiente]: 'bg-slate-400/10 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-white/5',
+    [DeclarationStatus.Enviada]: 'bg-slate-900/10 dark:bg-white/5 text-slate-800 dark:text-slate-100 border border-slate-200/50 dark:border-white/5',
+    [DeclarationStatus.Pagada]: 'bg-slate-900 dark:bg-white text-white dark:text-slate-900',
+    [DeclarationStatus.Cancelada]: 'bg-slate-100 dark:bg-white/5 text-slate-400',
+    [DeclarationStatus.Vencida]: 'bg-rose-500 text-white shadow-lg shadow-rose-200/50 dark:shadow-none',
 };
 
 const IVA_FREQUENCIES = ['Mensual', 'Semestral', 'Ninguno'];
@@ -91,14 +91,14 @@ const DeclarationProgressBar: React.FC<{ client: Client }> = ({ client }) => {
                 const status = historyMap.get(period);
                 let colorClass = 'bg-gray-300 dark:bg-gray-600';
 
-                if (status === DeclarationStatus.Pagada) colorClass = 'bg-emerald-400';
-                else if (status === DeclarationStatus.Enviada) colorClass = 'bg-sky-400';
+                if (status === DeclarationStatus.Pagada) colorClass = 'bg-slate-900 dark:bg-white';
+                else if (status === DeclarationStatus.Enviada) colorClass = 'bg-slate-400 dark:bg-slate-500';
                 else if (status === DeclarationStatus.Pendiente) {
                     const dueDate = getDueDateForPeriod(client, period);
                     if (dueDate && isPast(dueDate)) {
-                        colorClass = 'bg-rose-400';
+                        colorClass = 'bg-rose-500';
                     } else {
-                        colorClass = 'bg-amber-400';
+                        colorClass = 'bg-slate-200 dark:bg-slate-700';
                     }
                 }
 

@@ -82,9 +82,9 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                 </div>
 
                 <div className="flex items-center gap-5">
-                    <div className="flex items-center gap-4 px-8 py-4 bg-white border border-slate-200 text-slate-600 rounded-2xl text-[11px] font-black uppercase tracking-[0.25em] shadow-sm">
-                        <Smartphone size={16} className="text-blue-600" />
-                        ID <span className="text-blue-600 font-mono ml-2 text-sm font-black">{client.ruc}</span>
+                    <div className="flex items-center gap-3 px-5 py-2.5 bg-slate-50/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-sm transition-all hover:border-slate-300 dark:hover:border-white/20">
+                        <Smartphone size={14} className="text-slate-400 dark:text-slate-500" strokeWidth={3} />
+                        ID <span className="text-slate-900 dark:text-white font-mono ml-2 text-xs font-black">{client.ruc}</span>
                     </div>
                     
                     <div className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] font-premium shadow-xl">

@@ -14,9 +14,10 @@ interface ClientCardProps {
     onUploadReceipt?: (client: Client, period?: string) => void;
     onPreview?: (client: Client, declaration: Declaration) => void;
     compact?: boolean;
+    variant?: 'tactical' | 'zen';
 }
 
-export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false }) => {
+export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical' }) => {
     const [copied, setCopied] = React.useState(false);
     const [isHovered, setIsHovered] = React.useState(false);
 
@@ -106,7 +107,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
         }
     };
 
-    const theme = !client.isActive && client.isDeleted ? cardThemes.deleted : (isFullyAlDia ? cardThemes.elite : (true ? cardThemes.vip : (isOverdue ? cardThemes.alert : cardThemes.command)));
+    const theme = !client.isActive && client.isDeleted ? cardThemes.deleted : (isFullyAlDia ? cardThemes.elite : (variant === 'tactical' ? cardThemes.vip : cardThemes.command));
     const titleColor = theme.title;
     const textColor = theme.text;
 
@@ -158,6 +159,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                 shadow-architect border-0
                 ${hasWorkOrder ? 'ring-2 ring-primary/30' : ''}
                 ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-tertiary/30' : ''}
+                ${variant === 'zen' ? 'max-h-[200px]' : ''}
             `}
         >
             {/* Tonal Accent Strip */}
@@ -177,7 +179,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             )}
                         </div>
                         
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-8">
                             <h3 className={`font-premium font-bold text-lg line-clamp-1 leading-tight text-on-surface`} title={client.name}>
                                 {client.tradeName || client.name}
                             </h3>
@@ -228,30 +230,32 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     </div>
                 )}
 
-                <div className={`flex items-center justify-between pt-5 border-t border-outline-variant/10 mt-1`}>
-                    {!compact && (
-                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-on-surface-variant font-premium">
-                            Intel Matrix Enabled
-                        </div>
-                    )}
-                    
-                    {client.isActive && !client.isDeleted && (
-                        <div className={`flex gap-2.5 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
-                            <button
-                                onClick={(e) => !isDeclared && handleAction(e, 'declare')}
-                                className={`flex items-center justify-center gap-2 rounded-xl transition-all font-bold border-0 px-4 py-2 text-[10px] uppercase font-premium ${isDeclared ? 'bg-surface-low text-on-surface-variant opacity-50' : 'bg-primary text-white hover:bg-primary/90 shadow-sm active:scale-95'}`}
-                            >
-                                <LucideIcons.Zap size={14} /> {compact ? 'ACT' : 'ACT EN SRI'}
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
-                                className={`flex items-center justify-center gap-2 rounded-xl transition-all font-bold border-0 px-4 py-2 text-[10px] uppercase font-premium ${activeDecl?.proof_file ? 'bg-tertiary text-white shadow-sm' : 'bg-surface-low text-on-surface-variant hover:text-primary'} active:scale-95`}
-                            >
-                                <LucideIcons.UploadCloud size={14} /> {activeDecl?.proof_file ? 'VER PDF' : 'CARGAR PDF'}
-                            </button>
-                        </div>
-                    )}
-                </div>
+                {variant === 'tactical' && (
+                    <div className={`flex items-center justify-between pt-5 border-t border-outline-variant/10 mt-1`}>
+                        {!compact && (
+                            <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-on-surface-variant font-premium">
+                                Matrix Tactical Intel
+                            </div>
+                        )}
+                        
+                        {client.isActive && !client.isDeleted && (
+                            <div className={`flex gap-2.5 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                                <button
+                                    onClick={(e) => !isDeclared && handleAction(e, 'declare')}
+                                    className={`flex items-center justify-center gap-2 rounded-xl transition-all font-bold border-0 px-4 py-2 text-[10px] uppercase font-premium ${isDeclared ? 'bg-surface-low text-on-surface-variant opacity-50' : 'bg-primary text-white hover:bg-primary/90 shadow-sm active:scale-95'}`}
+                                >
+                                    <LucideIcons.Zap size={14} /> {compact ? 'ACT' : 'ACT EN SRI'}
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
+                                    className={`flex items-center justify-center gap-2 rounded-xl transition-all font-bold border-0 px-4 py-2 text-[10px] uppercase font-premium ${activeDecl?.proof_file ? 'bg-tertiary text-white shadow-sm' : 'bg-surface-low text-on-surface-variant hover:text-primary'} active:scale-95`}
+                                >
+                                    <LucideIcons.UploadCloud size={14} /> {activeDecl?.proof_file ? 'VER PDF' : 'CARGAR PDF'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

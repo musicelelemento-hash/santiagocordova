@@ -36,14 +36,24 @@
 }
 
 .dark {
-    /* Even in dark mode, we optimize for maximum legibility now */
-    --background: 222 47% 4%;
-    --surface: 222 47% 7%;   
-    --surface-low: 222 47% 10%; 
-    --surface-lowest: 222 47% 14%; 
-    --foreground: 210 40% 98%;
-    --on-surface: 210 40% 98%;
-    --border: 222 47% 15%;
+    /* The Human Architect - Midnight Zen v3.0 - Neutral Superiority */
+    --background: 220 20% 4%;    /* Neutral Charcoal #0a0b0d */
+    --surface: 220 15% 7%;      /* Deep Surface #111214 */
+    --surface-low: 220 12% 9%;  /* Balanced Layer #161719 */
+    --surface-lowest: 220 10% 11%; /* Tactical Base #1b1c1e */
+    
+    --foreground: 215 15% 85%;   /* Pristine Slate for readability */
+    --on-surface: 215 15% 85%;
+    --on-surface-variant: 215 10% 55%;
+    
+    --border: 220 12% 14%;       /* Minimal definition */
+    --primary-rgb: 71, 85, 105;  /* Slate-based primary */
+    
+    /* Pristine Zen Shadows */
+    --architect-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.9);
+    --architect-gradient: linear-gradient(135deg, #03050a 0%, #090f1e 100%);
+    
+    --secondary-fixed: 262 60% 55%; /* Less saturated violet */
 }
 
 body {
@@ -190,8 +200,8 @@ h1, h2, h3, h4 {
 }
 
 .aurora-zen {
-    background: radial-gradient(circle at 10% 20%, rgba(63, 81, 181, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
+    background: radial-gradient(circle at 10% 20%, rgba(63, 81, 181, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
 }
 
 .glass-zen {
@@ -202,10 +212,24 @@ h1, h2, h3, h4 {
 }
 
 .dark .glass-zen {
-    background: hsla(var(--surface), 0.7);
+    background: hsla(222, 47% , 3%, 0.6);
     border: 1px solid hsla(0, 0%, 100%, 0.05);
+    backdrop-filter: blur(50px) saturate(180%);
+    box-shadow: 0 60px 120px -30px rgba(0, 0, 0, 0.8);
+    background-image: radial-gradient(circle at top left, rgba(59, 130, 246, 0.03), transparent 70%);
+}
+
+.glass-premium {
+    background: hsla(0, 0%, 100%, 0.03);
     backdrop-filter: blur(40px) saturate(200%);
-    box-shadow: 0 50px 100px -20px rgba(0, 0, 0, 0.4);
+    border: 1px solid hsla(0, 0%, 100%, 0.08);
+    box-shadow: 0 40px 100px -15px rgba(0, 0, 0, 0.6);
+}
+
+.dark .glass-premium {
+    background: hsla(222, 47%, 2%, 0.8);
+    border: 1px solid hsla(222, 47%, 15%, 0.6);
+    box-shadow: 0 64px 128px -32px rgba(0, 0, 0, 0.8);
 }
 
 .zen-card {
@@ -379,8 +403,8 @@ h1, h2, h3, h4 {
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
-    animation: rotateGlow 12s linear infinite;
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.05) 0%, transparent 60%);
+    animation: rotateGlow 15s linear infinite;
     pointer-events: none;
 }
 

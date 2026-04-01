@@ -336,10 +336,13 @@ const App: React.FC = () => {
 
   return (
     <ToastProvider>
-      <div className={`font-body min-h-screen flex ${theme === 'dark' ? 'bg-slate-950 bg-aurora dark' : 'bg-slate-50'} text-slate-800 dark:text-slate-100 transition-colors duration-500 relative overflow-hidden bg-noise`}>
-        {/* Decorative background elements */}
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-sky-500/10 via-brand-teal/5 to-transparent blur-[150px] -z-10 animate-aurora pointer-events-none"></div>
+      <div className={`font-body min-h-screen flex ${theme === 'dark' ? 'bg-background bg-aurora dark' : 'bg-slate-50'} text-slate-800 dark:text-slate-100 transition-colors duration-500 relative overflow-hidden`}>
+        {/* Decorative background elements - Enhanced for Dark Elite */}
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-sky-500/15 via-primary/5 to-transparent blur-[150px] -z-10 animate-aurora pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-emerald-500/10 via-sky-600/5 to-transparent blur-[120px] -z-10 animate-aurora pointer-events-none"></div>
+        
+        {/* Subtle texture for premium feel */}
+        <div className={`absolute inset-0 opacity-[0.03] pointer-events-none bg-noise -z-20 ${theme === 'dark' ? 'invert' : ''}`}></div>
 
         <Sidebar
           onNavigate={(screen) => {
@@ -352,41 +355,25 @@ const App: React.FC = () => {
           onLogout={() => setShowLogoutConfirm(true)}
           cloudStatus={cloudStatus}
           onManualSave={handleManualSave}
+          userName="Santiago Cordova"
+          role="ADMINISTRADOR"
+          sessionCode="AQ.Ab8RN"
         />
-        <div className="flex-1 flex flex-col min-w-0 relative z-10">
-          <header className="hidden md:flex items-center justify-between p-6 px-10 bg-white/10 dark:bg-slate-900/40 backdrop-blur-xl border-b border-white/10 shadow-2xl relative overflow-hidden">
-            {/* Ambient light for header */}
-            <div className="absolute top-0 left-1/4 w-1/2 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
-            
-            <div className="flex items-center space-x-8">
-              <div className="flex items-center bg-white/40 dark:bg-slate-800/40 px-6 py-2.5 rounded-2xl border border-white/20 dark:border-white/10 shadow-xl glass-elite animate-float-premium">
-                <Clock />
-              </div>
-              <div className="h-6 w-[1px] bg-white/10"></div>
-              <div className="flex items-center gap-3 group">
-                <div className="relative">
-                  <div className="w-3 h-3 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.3)]"></div>
-                  <div className="absolute inset-0 w-3 h-3 bg-emerald-400 rounded-full opacity-50"></div>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Estado Operativo</span>
-                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">SISTEMA INTEGRAL v1.0</span>
-                </div>
-              </div>
+        <div className="flex-1 flex flex-col min-w-0 relative z-10 md:pl-[280px]">
+          <header className="hidden md:flex items-center justify-between p-6 px-10 bg-white/40 dark:bg-surface/60 backdrop-blur-3xl border-b border-slate-200/50 dark:border-white/10 relative overflow-hidden transition-all duration-700">
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-light tracking-tight text-slate-800 dark:text-white capitalize">
+                {activeScreen === 'home' ? 'Resumen General' : activeScreen.replace('_', ' ')}
+              </h1>
             </div>
 
             <div className="flex items-center space-x-6">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 mx-4">
-                <LucideIcons.ShieldCheck size={14} className="text-emerald-600 dark:text-emerald-500" />
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Conexión Segura Activa</span>
-              </div>
-
               <NotificationBell clients={clients} navigate={navigate} />
 
               <div className="flex items-center bg-white/40 dark:bg-slate-800/40 p-1.5 rounded-2xl border border-white/20 dark:border-white/10 shadow-lg group">
                 <button
                   onClick={toggleTheme}
-                  className={`p-2.5 rounded-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-700 text-yellow-400 shadow-xl rotate-[360deg] scale-110' : 'bg-white text-sky-600 shadow-xl rotate-0 scale-110'}`}
+                  className={`p-2.5 rounded-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-700 text-yellow-400' : 'bg-white text-sky-600 shadow-xl'}`}
                 >
                   {theme === 'dark' ? <LucideIcons.Sun size={20} fill="currentColor" /> : <LucideIcons.Moon size={20} fill="currentColor" />}
                 </button>
@@ -394,24 +381,11 @@ const App: React.FC = () => {
 
               <div className="h-8 w-[1px] bg-white/10 mx-2"></div>
 
-              <div className="flex items-center gap-4 pl-2">
-                <div className="flex flex-col items-end">
-                  <span className="text-sm font-semibold text-slate-800 dark:text-white leading-none tracking-tight">Santiago Cordova</span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-widest bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-500/20">ADMINISTRADOR</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium rounded-lg border border-slate-200 dark:border-white/10 shadow-sm">AQ.Ab8RN</span>
-                    </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-emerald-500 p-0.5 shadow-lg">
+                  <div className="w-full h-full rounded-[9px] bg-slate-900 flex items-center justify-center overflow-hidden">
+                    <Logo className="w-5 h-5 text-white" />
                   </div>
-                </div>
-                <div className="relative group cursor-pointer">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 via-emerald-500 to-teal-400 p-0.5 shadow-2xl border border-white/20 transform group-hover:rotate-6 transition-transform duration-500">
-                    <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center overflow-hidden relative">
-                      <Logo className="w-7 h-7 text-white" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/20 to-transparent"></div>
-                    </div>
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-slate-950 rounded-full shadow-lg"></div>
                 </div>
               </div>
             </div>
