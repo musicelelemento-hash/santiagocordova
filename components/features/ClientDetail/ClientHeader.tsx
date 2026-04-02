@@ -146,7 +146,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                             <div className="space-y-6">
                                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
                                     <div className="px-4 py-1.5 bg-primary/5 text-primary border border-primary/20 rounded-full text-[9px] font-mono font-black uppercase tracking-widest">
-                                        SYSTEM_{client.regime.toUpperCase()}
+                                        SYSTEM_{(client.regime || 'General').toUpperCase()}
                                     </div>
                                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                                     <span className="text-[10px] font-mono font-bold text-on-surface-variant/60 uppercase tracking-[0.2em]">CORE_ENGINE_ACTIVE</span>

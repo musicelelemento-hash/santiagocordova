@@ -73,7 +73,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                             <p className="font-bold text-slate-950 dark:text-white text-sm uppercase tracking-tight font-premium">{formatPeriodForDisplay(decl.period)}</p>
                                             <div className="flex items-center gap-2.5 mt-1">
                                                 <div className="w-1 h-1 rounded-full bg-blue-400 dark:bg-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
-                                                <p className="text-[9px] text-slate-400 dark:text-slate-500 font-mono font-bold uppercase tracking-widest uppercase">SINC: <span className="text-slate-600 dark:text-slate-300 ml-1">{safeFormat(decl.updatedAt, 'dd MMM').toUpperCase()}</span></p>
+                                                <p className="text-[9px] text-slate-400 dark:text-slate-500 font-mono font-bold uppercase tracking-widest uppercase">SINC: <span className="text-slate-600 dark:text-slate-300 ml-1">{(safeFormat(decl.updatedAt, 'dd MMM') || '').toUpperCase()}</span></p>
                                             </div>
                                         </div>
                                     </div>
@@ -111,7 +111,7 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                         </div>
                                         {decl.paidAt && (
                                             <span className="text-[8px] text-slate-400 dark:text-slate-500 font-mono font-bold uppercase tracking-[0.2em] ml-1 opacity-70">
-                                                FIXED_TIMESTAMP: {safeFormat(decl.paidAt, 'ddMMyy-HHmm').toUpperCase()}
+                                                FIXED_TIMESTAMP: {(safeFormat(decl.paidAt, 'ddMMyy-HHmm') || '').toUpperCase()}
                                             </span>
                                         )}
                                     </div>

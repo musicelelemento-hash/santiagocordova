@@ -34,7 +34,7 @@ export const DeclarationProgressBar: React.FC<DeclarationProgressBarProps> = ({ 
             result.push({
                 date,
                 periodKey,
-                label: format(date, 'MMM', { locale: es }).toUpperCase(),
+                label: (format(date, 'MMM', { locale: es }) || '').toUpperCase(),
                 fullLabel: formatPeriodForDisplay(periodKey),
                 isDeclared,
                 isPaid,

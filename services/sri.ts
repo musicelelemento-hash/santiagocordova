@@ -206,7 +206,7 @@ export const formatPeriodForDisplay = (period: string): string => {
     if (period.includes('-')) { // Monthly
         const [year, month] = period.split('-');
         const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-        const monthName = format(date, 'LLL', { locale: es }).replace('.', '').toUpperCase();
+        const monthName = (format(date, 'LLL', { locale: es }) || '').replace('.', '').toUpperCase();
         
         // Specifier for different forms if encoded in period or context
         if (period.includes(':ICE')) return `ICE ${monthName} ${year}`;
