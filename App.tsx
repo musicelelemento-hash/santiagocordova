@@ -358,6 +358,7 @@ const App: React.FC = () => {
           userName="Santiago Cordova"
           role="ADMINISTRADOR"
           sessionCode="AQ.Ab8RN"
+          theme={theme}
         />
         <div className="flex-1 flex flex-col min-w-0 relative z-10 md:pl-[280px]">
           <header className="hidden md:flex items-center justify-between p-6 px-10 bg-white/40 dark:bg-surface/60 backdrop-blur-3xl border-b border-slate-200/50 dark:border-white/10 relative overflow-hidden transition-all duration-700">

@@ -2,7 +2,7 @@
 import React from 'react';
 import { LogOut, RefreshCw, Check, Cloud, WifiOff, AlertCircle, Zap, UserPlus } from 'lucide-react';
 import { Logo } from '../ui/Logo';
-import { Screen } from '../../types';
+import { Screen, Theme } from '../../types';
 import { SystemPulse } from './SystemPulse';
 
 interface NavItem {
@@ -25,6 +25,7 @@ interface SidebarProps {
     userName?: string;
     role?: string;
     sessionCode?: string;
+    theme?: Theme;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -37,7 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onManualSave,
     userName,
     role,
-    sessionCode
+    sessionCode,
+    theme = 'dark'
 }) => {
 
     const getCloudStatusIcon = () => {
@@ -53,13 +55,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const addClientItem = navItems.find(i => i.screen === 'add_client' as any);
 
     return (
-        <aside className="hidden md:flex flex-col w-[280px] h-screen fixed left-0 top-0 z-50 bg-[#0f172a] border-r border-white/5 shadow-2xl transition-all duration-500 overflow-hidden">
+        <aside className={`hidden md:flex flex-col w-[280px] h-screen fixed left-0 top-0 z-50 border-r transition-all duration-500 overflow-hidden ${
+            theme === 'dark' 
+                ? 'bg-slate-950 border-white/5 shadow-2xl' 
+                : 'bg-white border-slate-200 shadow-xl'
+        }`}>
             {/* System Pulse - Top Integration */}
-            <div className="border-b border-white/5 bg-slate-900/50">
+            <div className={`border-b transition-colors duration-500 ${
+                theme === 'dark' ? 'border-white/5 bg-slate-900/50' : 'border-slate-100 bg-slate-50/50'
+            }`}>
                 <SystemPulse 
                     userName={userName} 
                     role={role} 
                     sessionCode={sessionCode} 
+                    theme={theme}
                 />
             </div>
 
@@ -72,8 +81,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             onClick={() => onNavigate(screen)}
                             className={`group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 
                                 ${activeScreen === screen
-                                    ? 'bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]'
-                                    : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                                    ? (theme === 'dark' 
+                                        ? 'bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]'
+                                        : 'bg-slate-900 text-white border border-slate-800 shadow-lg')
+                                    : (theme === 'dark'
+                                        ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+                                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900')
                                 }`}
                         >
                             <Icon size={20} className={`transition-transform duration-300 ${activeScreen === screen ? 'scale-110' : 'group-hover:scale-110'}`} />
@@ -84,15 +97,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             {count !== undefined && count > 0 && (
                                 <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border transition-colors duration-300 font-premium
                                     ${activeScreen === screen 
-                                        ? 'bg-white text-slate-900 border-white' 
-                                        : 'bg-slate-800 text-slate-400 border-slate-700'}
+                                        ? (theme === 'dark' ? 'bg-white text-slate-900 border-white' : 'bg-white text-slate-900 border-slate-200')
+                                        : (theme === 'dark' ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200')}
                                 `}>
                                     {count}
                                 </span>
                             )}
 
                             {activeScreen === screen && (
-                                <div className="absolute left-0 w-1 h-6 bg-white rounded-r-full shadow-[4px_0_12px_rgba(255,255,255,0.4)]"></div>
+                                <div className={`absolute left-0 w-1 h-6 rounded-r-full shadow-lg ${
+                                    theme === 'dark' ? 'bg-white shadow-[4px_0_12px_rgba(255,255,255,0.4)]' : 'bg-slate-900 shadow-[4px_0_12px_rgba(15,23,42,0.3)]'
+                                }`}></div>
                             )}
                         </button>
                     ))}
@@ -106,18 +121,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-1.5 px-1">
-                    <button 
-                        onClick={onQuickManagement} 
-                        className="group flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/40 border border-white/5 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all duration-300"
-                    >
-                        <Zap size={18} className="transition-transform group-hover:scale-110" />
-                        <span className="text-[11px] font-black uppercase tracking-widest font-premium">Gestión Inmediata</span>
-                    </button>
+                        <button 
+                            onClick={onQuickManagement} 
+                            className={`group flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 ${
+                                theme === 'dark'
+                                    ? 'bg-slate-800/40 border-white/5 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/10'
+                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-300'
+                            }`}
+                        >
+                            <Zap size={18} className="transition-transform group-hover:scale-110" />
+                            <span className="text-[11px] font-black uppercase tracking-widest font-premium">Gestión Inmediata</span>
+                        </button>
 
                     {addClientItem?.onClick && (
                         <button 
                             onClick={addClientItem.onClick} 
-                            className="group flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/40 border border-white/5 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all duration-300"
+                            className={`group flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 ${
+                                theme === 'dark'
+                                    ? 'bg-slate-800/40 border-white/5 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/10'
+                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-300'
+                            }`}
                         >
                             <UserPlus size={18} className="transition-transform group-hover:scale-110" />
                             <span className="text-[11px] font-black uppercase tracking-widest font-premium">Nuevo Cliente</span>
@@ -127,12 +150,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </nav>
 
             {/* Footer Section: Sync & Logout */}
-            <div className="p-4 bg-slate-900/80 border-t border-white/5">
+            <div className={`p-4 border-t transition-colors duration-500 ${
+                theme === 'dark' ? 'bg-slate-900/80 border-white/5' : 'bg-slate-50 border-slate-100'
+            }`}>
                 <div className="flex items-center gap-2">
                     {onManualSave && (
                         <button
                             onClick={onManualSave}
-                            className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl bg-slate-800/50 border border-white/5 text-slate-400 hover:text-sky-400 hover:bg-sky-400/5 transition-all duration-300 group"
+                            className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-xl border transition-all duration-300 group ${
+                                theme === 'dark'
+                                    ? 'bg-slate-800/50 border-white/5 text-slate-400 hover:text-sky-400 hover:bg-sky-400/5'
+                                    : 'bg-white border-slate-200 text-slate-500 hover:text-sky-600 hover:border-sky-200'
+                            }`}
                             title="Sincronizar Manualmente"
                         >
                             {getCloudStatusIcon()}
@@ -142,7 +171,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
                     <button 
                         onClick={onLogout} 
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800/50 border border-white/5 text-slate-500 hover:text-rose-400 hover:bg-rose-400/5 transition-all duration-300"
+                        className={`w-10 h-10 flex items-center justify-center rounded-xl border transition-all duration-300 ${
+                            theme === 'dark'
+                                ? 'bg-slate-800/50 border-white/5 text-slate-500 hover:text-rose-400 hover:bg-rose-400/5'
+                                : 'bg-white border-slate-200 text-slate-400 hover:text-rose-500 hover:border-rose-100'
+                        }`}
                         title="Cerrar Sesión"
                     >
                         <LogOut size={18} />
