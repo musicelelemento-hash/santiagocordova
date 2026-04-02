@@ -1,18 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  StickyNote, 
-  Plus, 
-  Trash2, 
-  AlertCircle, 
-  Info, 
-  Lightbulb, 
-  Key, 
-  MoreHorizontal,
-  X,
-  Search,
-  MessageSquare,
-  ShieldCheck
-} from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { ClientNote, NoteCategory } from '../../../types';
 import { useAppStore } from '../../../store/useAppStore';
 
@@ -22,19 +9,19 @@ interface ClientNotesProps {
 }
 
 const CATEGORY_STYLES = {
-  [NoteCategory.Important]: 'bg-rose-50 text-rose-700 border-rose-100',
-  [NoteCategory.Note]: 'bg-blue-50 text-blue-700 border-blue-100',
-  [NoteCategory.Suggestion]: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-  [NoteCategory.Key]: 'bg-amber-50 text-amber-700 border-amber-100',
-  [NoteCategory.Other]: 'bg-slate-50 text-slate-700 border-slate-100',
+  [NoteCategory.Important]: 'bg-rose-50/50 text-rose-700 border-rose-100/50 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.1)]',
+  [NoteCategory.Note]: 'bg-blue-50/50 text-blue-700 border-blue-100/50 dark:bg-primary/10 dark:text-primary-low dark:border-primary/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]',
+  [NoteCategory.Suggestion]: 'bg-emerald-50/50 text-emerald-700 border-emerald-100/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]',
+  [NoteCategory.Key]: 'bg-amber-50/50 text-amber-700 border-amber-100/50 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]',
+  [NoteCategory.Other]: 'bg-slate-50/50 text-slate-700 border-slate-100/50 dark:bg-surface-low/30 dark:text-slate-400 dark:border-white/10 shadow-[0_0_10px_rgba(148,163,184,0.1)]',
 };
 
 const CATEGORY_ICONS = {
-  [NoteCategory.Important]: AlertCircle,
-  [NoteCategory.Note]: Info,
-  [NoteCategory.Suggestion]: Lightbulb,
-  [NoteCategory.Key]: Key,
-  [NoteCategory.Other]: MoreHorizontal,
+  [NoteCategory.Important]: LucideIcons.AlertCircle,
+  [NoteCategory.Note]: LucideIcons.Info,
+  [NoteCategory.Suggestion]: LucideIcons.Lightbulb,
+  [NoteCategory.Key]: LucideIcons.Key,
+  [NoteCategory.Other]: LucideIcons.MoreHorizontal,
 };
 
 export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => {
@@ -58,34 +45,34 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 h-full flex flex-col relative overflow-hidden transition-all duration-700 group">
-      <div className="flex items-center justify-between mb-10 relative z-10">
-        <div className="flex items-center gap-5">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-sm border border-blue-100 group-hover:scale-105 transition-transform duration-700">
-            <StickyNote size={24} strokeWidth={2} />
+    <div className="bg-white dark:bg-surface/40 backdrop-blur-3xl rounded-[2rem] p-8 shadow-architect border border-slate-100 dark:border-white/10 h-full flex flex-col relative overflow-hidden transition-all duration-700 group">
+      <div className="flex items-center justify-between mb-8 relative z-10">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-primary/10 flex items-center justify-center text-blue-600 dark:text-primary-low shadow-[0_0_15px_rgba(59,130,246,0.1)] border border-blue-100 dark:border-primary/20 group-hover:scale-105 transition-transform duration-700">
+            <LucideIcons.StickyNote size={22} strokeWidth={2.5} />
           </div>
           <div>
-            <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.25em] font-premium">
+            <h3 className="text-[12px] font-bold text-slate-900 dark:text-slate-50 uppercase tracking-tight font-premium">
               INTELIGENCIA FISCAL
             </h3>
-            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mt-1.5 font-premium">SISTEMA DE ASISTENCIA</p>
+            <p className="text-[9px] font-mono font-bold text-blue-500 dark:text-primary-low uppercase tracking-[0.2em] mt-0.5">INTEL_ASSIST_SYSTEM</p>
           </div>
         </div>
         
         {!isAdding && (
           <button
             onClick={() => setIsAdding(true)}
-            className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-500 hover:bg-slate-900 hover:text-white transition-all shadow-sm border border-slate-100 flex items-center justify-center active:scale-90"
+            className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-surface-low text-slate-500 dark:text-slate-400 hover:bg-slate-900 dark:hover:bg-primary hover:text-white dark:hover:text-white transition-all border border-slate-200 dark:border-white/5 flex items-center justify-center active:scale-90"
           >
-            <Plus size={22} strokeWidth={2.5} />
+            <LucideIcons.Plus size={18} strokeWidth={3} />
           </button>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-5 pr-3 custom-scrollbar relative z-10">
         {isAdding && (
-          <form onSubmit={handleSubmit} className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 shadow-sm animate-in fade-in slide-in-from-top-4 duration-700 mb-8">
-            <div className="flex flex-wrap gap-2.5 mb-8">
+          <form onSubmit={handleSubmit} className="p-6 rounded-2xl bg-slate-100 dark:bg-surface-low border border-slate-200 dark:border-white/5 shadow-sm animate-in fade-in slide-in-from-top-4 duration-700 mb-8">
+            <div className="flex flex-wrap gap-2 mb-6">
               {Object.values(NoteCategory).map((cat) => {
                 const Icon = CATEGORY_ICONS[cat];
                 return (
@@ -93,13 +80,13 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
                     key={cat}
                     type="button"
                     onClick={() => setCategory(cat)}
-                    className={`px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-2.5 font-premium ${
+                    className={`px-3 py-2 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider border transition-all flex items-center gap-2 ${
                       category === cat 
-                        ? CATEGORY_STYLES[cat] + ' shadow-sm scale-[1.02]' 
-                        : 'bg-white text-slate-400 border-slate-100 hover:border-blue-200'
+                        ? CATEGORY_STYLES[cat] + ' scale-105 z-10' 
+                        : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-white/5 hover:border-blue-400 dark:hover:border-primary'
                     }`}
                   >
-                    <Icon size={14} strokeWidth={2.5} />
+                    <Icon size={12} strokeWidth={3} />
                     {cat}
                   </button>
                 );
@@ -110,36 +97,36 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Describa la observación o recomendación técnica..."
-              className="w-full bg-white border border-slate-100 focus:border-blue-400 p-6 rounded-[1.5rem] text-[15px] text-slate-950 placeholder:text-slate-300 resize-none h-40 transition-all outline-none font-medium shadow-inner"
+              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-blue-400 dark:focus:border-primary p-5 rounded-xl text-sm text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-700 resize-none h-32 transition-all outline-none font-medium shadow-inner"
             />
-            <div className="flex justify-end gap-3 mt-8">
+            <div className="flex justify-end gap-3 mt-6">
               <button
                 type="button"
                 onClick={() => setIsAdding(false)}
-                className="px-8 py-4 rounded-xl text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-white hover:text-slate-600 transition-all font-premium"
+                className="px-6 py-3 rounded-xl text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest hover:text-slate-600 truncate transition-all"
               >
-                DESCARTAR
+                DISCARD
               </button>
               <button
                 type="submit"
                 disabled={!content.trim()}
-                className="px-8 py-4 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all disabled:opacity-50 shadow-xl shadow-slate-200 font-premium active:scale-95"
+                className="px-6 py-3 rounded-xl bg-slate-900 dark:bg-primary text-white text-[9px] font-mono font-bold uppercase tracking-widest hover:bg-black dark:hover:bg-primary-low transition-all disabled:opacity-50 shadow-lg active:scale-95"
               >
-                REGISTRAR NOTA
+                REGISTER_NOTE
               </button>
             </div>
           </form>
         )}
 
         {notes.length === 0 && !isAdding && (
-          <div className="flex flex-col items-center justify-center py-24 text-center relative group/empty">
-            <div className="w-20 h-20 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-200 mb-8 shadow-inner group-hover/empty:scale-110 transition-transform duration-1000">
-              <MessageSquare size={32} strokeWidth={1} />
+          <div className="flex flex-col items-center justify-center py-24 text-center relative group/empty bg-slate-50/50 dark:bg-surface-low/10 rounded-2xl border border-dashed border-slate-200 dark:border-white/5">
+            <div className="w-16 h-16 rounded-full bg-white dark:bg-surface-low border border-slate-200 dark:border-white/5 flex items-center justify-center text-slate-200 dark:text-slate-800 shadow-inner group-hover/empty:scale-105 transition-transform duration-1000">
+              <LucideIcons.MessageSquare size={26} strokeWidth={1.5} />
             </div>
-            <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] font-premium">SIN ACTIVIDAD REGISTRADA</p>
-            <div className="flex items-center justify-center gap-4 mt-5 opacity-40">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
-                <p className="text-[10px] uppercase font-black tracking-[0.5em] text-slate-300 font-premium">IDLE SYSTEM</p>
+            <p className="text-[10px] font-mono font-bold text-slate-300 dark:text-slate-600 uppercase tracking-[0.4em] mt-6">NO_ACTIVITY_LOGGED</p>
+            <div className="flex items-center justify-center gap-3 mt-4 opacity-40">
+                <span className="w-1 h-1 rounded-full bg-blue-400 animate-pulse"></span>
+                <p className="text-[8px] font-mono font-bold tracking-[0.4em] text-slate-300 dark:text-slate-700 uppercase">IDLE_STATE</p>
             </div>
           </div>
         )}
@@ -151,42 +138,42 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
           return (
             <div 
               key={note.id}
-              className="group/note relative p-8 rounded-[1.5rem] bg-white border border-slate-100 hover:border-blue-200 transition-all duration-700 hover:shadow-md animate-in fade-in slide-in-from-bottom-4"
+              className="group/note relative p-6 rounded-2xl bg-white/50 dark:bg-surface-low/30 border border-slate-100 dark:border-white/5 hover:border-blue-200 dark:hover:border-primary/30 transition-all duration-700 hover:shadow-md animate-in fade-in slide-in-from-bottom-4"
               style={{ animationDelay: `${idx * 100}ms` }}
             >
-              <div className="flex items-center justify-between mb-6">
-                <div className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] border flex items-center gap-2.5 font-premium ${style}`}>
+              <div className="flex items-center justify-between mb-5">
+                <div className={`px-3 py-1 rounded-lg text-[9px] font-mono font-bold uppercase tracking-wider border flex items-center gap-2 ${style}`}>
                   <Icon size={12} strokeWidth={3} />
                   {note.category}
                 </div>
                 <div className="flex items-center gap-2">
                    <button
                     onClick={() => removeClientNote(clientId, note.id)}
-                    className="opacity-0 group-hover/note:opacity-100 p-2.5 rounded-xl text-rose-500 hover:bg-rose-50 transition-all active:scale-90 border border-transparent hover:border-rose-100"
+                    className="opacity-0 group-hover/note:opacity-100 p-2 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all active:scale-95 border border-transparent hover:border-rose-100 dark:hover:border-rose-500/20"
                     title="Eliminar registro"
                   >
-                    <Trash2 size={16} strokeWidth={2.5} />
+                    <LucideIcons.Trash2 size={16} strokeWidth={2.5} />
                   </button>
                 </div>
               </div>
-              <p className="text-[15px] text-slate-900 whitespace-pre-wrap leading-relaxed font-semibold font-premium tracking-tight">
+              <p className="text-[14px] text-slate-900 dark:text-slate-100 whitespace-pre-wrap leading-relaxed font-semibold tracking-tight font-premium">
                 {note.content}
               </p>
-              <div className="mt-8 flex items-center justify-between border-t border-slate-50 pt-5">
-                <div className="flex items-center gap-4">
-                  <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <div className="mt-6 flex items-center justify-between border-t border-slate-100 dark:border-white/5 pt-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  <span className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest leading-none">
                     {new Date(note.createdAt).toLocaleDateString('es-ES', { 
                       day: '2-digit', 
                       month: 'short', 
                       hour: '2-digit',
                       minute: '2-digit'
-                    })}
+                    }).toUpperCase()}
                   </span>
                 </div>
-                <div className="flex items-center gap-2.5 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100">
-                    <ShieldCheck size={12} className="text-emerald-600" strokeWidth={3} />
-                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.1em] font-premium">LOG VALIDADO</span>
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/5 px-2.5 py-1 rounded-md border border-slate-200 dark:border-white/5">
+                    <LucideIcons.ShieldCheck size={11} className="text-emerald-600 dark:text-emerald-400" strokeWidth={3} />
+                    <span className="text-[8px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">LOG_VALIDATED</span>
                 </div>
               </div>
             </div>

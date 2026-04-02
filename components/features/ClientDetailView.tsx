@@ -32,6 +32,14 @@ import { TaxObligationCard } from './ClientDetail/TaxObligationCard';
 import { DeclarationHistoryTable } from './ClientDetail/DeclarationHistoryTable';
 import { ExtraObligationsCheckboxes } from './ClientDetail/ExtraObligationsCheckboxes';
 import { ClientNotes } from './ClientDetail/ClientNotes';
+import { DeclarationProgressBar } from './ClientDetail/DeclarationProgressBar';
+import { DynamicStatusIndicator } from './ClientDetail/DynamicStatusIndicator';
+
+// Tab Components
+import { ProfileTab } from './ClientDetail/tabs/ProfileTab';
+import { HistoryTab } from './ClientDetail/tabs/HistoryTab';
+import { VaultTab } from './ClientDetail/tabs/VaultTab';
+import { SettingsTab } from './ClientDetail/tabs/SettingsTab';
 
 const getRecentPeriods = (client: Client, count: number): string[] => {
     if (!client) return [];
@@ -569,245 +577,28 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     };
 
     const renderProfileTab = () => (
-        <div className="space-y-6 sm:space-y-16 animate-in fade-in slide-in-from-bottom-10 h-full duration-1000">
-            {/* The Tactical Main View: Grid Architecture (Alpha + Beta) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-16">
-                
-                {/* Sector Alfa: Compliance Intelligence (8/12) */}
-                <div className="lg:col-span-8 space-y-6 sm:space-y-16">
-                    
-                    {/* High-Impact Compliance Score - THE KPI HERO */}
-                    <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[2.5rem] sm:rounded-[4rem] p-6 sm:p-16 relative overflow-hidden shadow-architect border border-surface-low dark:border-white/10 group">
-                        {/* Dynamic Background Mesh - Enhanced for Dark */}
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(var(--primary-rgb),0.08),transparent_70%)]"></div>
-                        <div className="absolute inset-0 bg-noise opacity-[0.02] pointer-events-none"></div>
-                        
-                        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8 sm:gap-12">
-                            <div className="space-y-8 sm:space-y-10 group-hover:translate-x-3 transition-transform duration-1000">
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-1.5 h-6 bg-primary rounded-full"></div>
-                                        <h2 className="text-sm font-black text-on-surface uppercase tracking-[0.5em] font-premium">DIRECTIVA DE CUMPLIMIENTO</h2>
-                                    </div>
-                                    <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.3em] font-premium opacity-40">FISCAL SCORE & RISK CONTROL v2.1</p>
-                                </div>
-                                <div className="flex flex-col">
-                                    <div className="flex items-baseline gap-4">
-                                        <span className="text-4xl sm:text-6xl font-black text-primary tracking-tighter transition-all duration-700 font-premium group-hover:scale-105 active:opacity-40 select-none">
-                                            {isFullyAlDia ? 100 : 88}<span className="text-2xl sm:text-4xl ml-1 sm:ml-2">%</span>
-                                        </span>
-                                        <div className="h-0.5 flex-grow max-w-[60px] sm:max-w-[80px] bg-primary/20 rounded-full mb-3 sm:mb-8"></div>
-                                    </div>
-                                    <p className="text-[9px] sm:text-[11px] font-black text-on-surface-variant uppercase tracking-[0.3em] sm:tracking-[0.4em] font-premium">REPUTACIÓN FISCAL ÓPTIMA</p>
-                                </div>
-                            </div>
-
-                            <div className="relative flex justify-center text-center">
-                                <span className={`absolute -top-10 sm:-top-20 left-1/2 -translate-x-1/2 text-[80px] sm:text-[150px] lg:text-[200px] font-black leading-none tracking-tighter transition-all duration-1000 group-hover:scale-125 select-none font-premium ${isFullyAlDia ? 'text-tertiary opacity-10 dark:opacity-20' : 'text-primary opacity-5 dark:opacity-15'}`}>
-                                    {isFullyAlDia ? 'A+' : 'A'}
-                                </span>
-                                <div className="relative z-10 space-y-4">
-                                    <div className={`px-6 sm:px-8 py-3 sm:py-4 rounded-2xl border-0 text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em] shadow-2xl font-premium backdrop-blur-xl transition-all duration-500 ${isFullyAlDia ? 'bg-tertiary/10 text-tertiary shadow-tertiary/20 border border-tertiary/30' : 'bg-primary text-on-primary shadow-primary/40'}`}>
-                                        {isFullyAlDia ? 'COMPLIANCE VERIFIED' : 'ACTION REQUIRED'}
-                                    </div>
-                                    <div className="flex items-center justify-center gap-3 text-on-surface-variant/90">
-                                        <TrendingUp size={16} />
-                                        <span className="text-[9px] font-bold uppercase tracking-widest font-premium">PROYECCIÓN POSITIVA</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Tactical Executive Dashboard */}
-                    <div className="space-y-6 sm:space-y-10 group/executive">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-[10px] sm:text-[11px] font-black text-on-surface-variant uppercase tracking-[0.25em] sm:tracking-[0.3em] font-premium relative flex items-center gap-3 sm:gap-4">
-                                OBLIGACIONES EJECUTIVAS
-                                <div className="h-[1px] w-8 sm:w-12 bg-on-surface-variant/10"></div>
-                            </h3>
-                            <button onClick={() => setActiveTab('history')} className="text-[8px] sm:text-[9px] font-black text-primary uppercase tracking-[0.15em] hover:tracking-[0.25em] transition-all font-premium">HISTORIAL</button>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
-                            {/* IVA Obligation Vector */}
-                            {complianceStats?.iva.needed && (
-                                <TaxObligationCard
-                                    type="iva"
-                                    title="IMPUESTO AL VALOR AGREGADO (IVA)"
-                                    period={complianceStats.iva.period}
-                                    isDeclared={complianceStats.iva.isDeclared}
-                                    isPaid={complianceStats.iva.is_paid}
-                                    amount={getClientServiceFee(client, serviceFees, complianceStats.iva.period)}
-                                    dueDate={getDueDateForPeriod(client, complianceStats.iva.period) || undefined}
-                                    onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats.iva.period })}
-                                    onPay={() => handleQuickPay(complianceStats.iva.period)}
-                                    onUpload={() => { setUploadingTarget({ type: 'iva', period: complianceStats.iva.period }); proofInputRef.current?.click(); }}
-                                />
-                            )}
-
-                            {/* RENTA Obligation Vector */}
-                            {complianceStats?.renta.needed && (
-                                <TaxObligationCard
-                                    type="renta"
-                                    title="IMPUESTO A LA RENTA (ANUAL)"
-                                    period={complianceStats.renta.period}
-                                    isDeclared={complianceStats.renta.isDeclared}
-                                    isPaid={complianceStats.renta.is_paid}
-                                    amount={editedClient.fee_structure?.annual ?? 10}
-                                    dueDate={getDueDateForPeriod(client, complianceStats.renta.period) || undefined}
-                                    onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats.renta.period })}
-                                    onPay={() => handleQuickPay(complianceStats.renta.period)}
-                                    onUpload={() => { setUploadingTarget({ type: 'renta', period: complianceStats.renta.period }); proofInputRef.current?.click(); }}
-                                />
-                            )}
-
-                            {/* Special Vectors: Refunds */}
-                            {editedClient.taxProfile?.hasActiveDevolucionIva && (
-                                <TaxObligationCard
-                                    type="refund"
-                                    title="DEVOLUCIÓN IVA (TERCERA EDAD)"
-                                    status={editedClient.elderlyDevolucionIvaStatus as any}
-                                    resolutionFile={editedClient.elderlyDevolucionIvaResolutionFile}
-                                    onAction={handleElderlyRefundAction}
-                                    onUpload={() => { setUploadingTarget({ type: 'devolucionIvaTerceraEdad' }); proofInputRef.current?.click(); }}
-                                />
-                            )}
-
-                            {editedClient.taxProfile?.requiresAnnualRenta && editedClient.rentaRefundStatus && (
-                                <TaxObligationCard
-                                    type="renta_refund"
-                                    title="DEVOLUCIÓN IMPUESTO RENTA"
-                                    status={editedClient.rentaRefundStatus as any}
-                                    isPaid={editedClient.rentaRefundPaid}
-                                    onAction={handleRentaRefundAction}
-                                    onUpload={() => { setUploadingTarget({ type: 'devolucionRenta' }); proofInputRef.current?.click(); }}
-                                />
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Analytics Integration */}
-                    <div className="bg-surface-lowest dark:bg-surface/30 rounded-[3rem] sm:rounded-[3.5rem] p-6 sm:p-10 border border-surface-low dark:border-white/5 shadow-architect overflow-hidden relative group backdrop-blur-2xl">
-                        <div className="absolute top-0 right-0 p-4 sm:p-8">
-                            <Activity size={24} className="text-primary/20" />
-                        </div>
-                        <div className="flex items-center gap-4 mb-6 sm:mb-10">
-                            <h3 className="text-[9px] sm:text-[10px] font-black text-on-surface-variant dark:text-slate-300 uppercase tracking-[0.3em] font-premium">ANALÍTICA DE HONORARIOS</h3>
-                        </div>
-                        <PaymentHistoryChart client={client} />
-                    </div>
-                </div>
-
-                {/* Sector Beta: Tactical Vault & Data (4/12) */}
-                <div className="lg:col-span-4 space-y-6 sm:space-y-12">
-                    
-                    {/* Tactical Access Card */}
-                    <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low dark:border-white/10 shadow-architect relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-6 sm:p-8 opacity-10 group-hover:opacity-40 transition-all duration-1000 group-hover:scale-110 group-hover:-rotate-12">
-                            <Key size={48} className="text-secondary" />
-                        </div>
-                        
-                        <div className="flex items-center gap-4 sm:gap-5 mb-8 sm:mb-12 relative z-10">
-                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[1.2rem] sm:rounded-[1.5rem] bg-secondary-fixed/10 flex items-center justify-center text-secondary dark:text-secondary-fixed shadow-inner">
-                                <Lock size={20} className="sm:w-[24px] sm:h-[24px]" />
-                            </div>
-                            <div>
-                                <h3 className="text-xs sm:text-sm font-black text-on-surface uppercase tracking-[0.2em] font-premium">BÓVEDA TÁCTICA</h3>
-                                <p className="text-[8px] sm:text-[9px] font-black text-on-surface-variant/70 uppercase tracking-[0.3em] mt-1 font-premium">CREDENTIAL SECURITY MGR</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-5 sm:space-y-6 relative z-10">
-                            <div className="p-6 sm:p-8 bg-surface dark:bg-surface-low/50 rounded-[1.5rem] sm:rounded-[2rem] border border-surface-low dark:border-white/5 group/pass shadow-sm hover:border-primary/30 transition-all">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="text-[8px] sm:text-[9px] font-black text-on-surface-variant dark:text-slate-400 uppercase tracking-[0.3em] font-premium">CLAVE PORTAL SRI</div>
-                                    <div className="p-1 px-2.5 bg-primary/10 rounded-full text-[8px] font-black text-primary uppercase tracking-widest font-premium animate-pulse">ENCRIPTADO</div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <code className="text-base sm:text-lg font-black tracking-[0.2em] sm:tracking-[0.3em] text-primary font-premium selection:bg-primary selection:text-white truncate pr-4">
-                                        {passwordVisible ? client.sriPassword : '••••••••••••'}
-                                    </code>
-                                    <button 
-                                        onClick={() => setPasswordVisible(!passwordVisible)}
-                                        className="p-2 sm:p-3 hover:bg-primary/10 rounded-xl text-on-surface-variant dark:text-slate-400 hover:text-primary transition-all active:scale-90"
-                                        title={passwordVisible ? "Ocultar" : "Mostrar"}
-                                    >
-                                        {passwordVisible ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 sm:gap-5">
-                                <button 
-                                    onClick={handleOpenSRI}
-                                    className="flex flex-col items-center gap-3 sm:gap-4 p-6 sm:p-8 bg-surface dark:bg-surface-low/50 hover:bg-primary/5 dark:hover:bg-primary/10 border border-surface-low dark:border-white/5 hover:border-primary/20 rounded-[2rem] sm:rounded-[2.5rem] transition-all group/btn shadow-sm active:scale-95"
-                                >
-                                    <Globe size={20} className="sm:w-[24px] sm:h-[24px] text-primary group-hover/btn:scale-125 transition-all duration-700" />
-                                    <span className="text-[8px] sm:text-[9px] font-black text-on-surface-variant dark:text-slate-400 group-hover/btn:text-primary uppercase tracking-[0.2em] font-premium">LOG-IN SRI</span>
-                                </button>
-                                <button 
-                                    onClick={handleShareViaWhatsApp}
-                                    className="flex flex-col items-center gap-3 sm:gap-4 p-6 sm:p-8 bg-surface dark:bg-surface-low/50 hover:bg-tertiary-fixed/10 dark:hover:bg-tertiary/10 border border-surface-low dark:border-white/5 hover:border-tertiary/20 rounded-[2rem] sm:rounded-[2.5rem] transition-all group/btn shadow-sm active:scale-95"
-                                >
-                                    <Share2 size={20} className="sm:w-[24px] sm:h-[24px] text-tertiary group-hover/btn:scale-125 transition-all duration-700" />
-                                    <span className="text-[8px] sm:text-[9px] font-black text-on-surface-variant dark:text-slate-400 group-hover/btn:text-tertiary uppercase tracking-[0.2em] font-premium">DIFUNDIR</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Integrated Facturador Intelligence */}
-                    <div className="col-span-1 md:col-span-2 lg:col-span-1">
-                        <FacturadorCard 
-                            config={editedClient.facturadorConfig || {}} 
-                            isEditing={isEditing}
-                            onChange={(config) => setEditedClient({ ...editedClient, facturadorConfig: config })}
-                        />
-                    </div>
-
-                    {/* Operational Commands */}
-                    <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low dark:border-white/10 shadow-architect space-y-6 sm:space-y-10 group overflow-hidden relative">
-                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors"></div>
-                        <h3 className="text-[9px] sm:text-[10px] font-black text-on-surface-variant dark:text-slate-300 uppercase tracking-[0.4em] font-premium relative z-10">COMANDOS OPERACIONALES</h3>
-                        
-                        <div className="space-y-3 sm:space-y-5 relative z-10">
-                            <button onClick={handleWhatsApp} className="w-full flex items-center justify-between p-4 sm:p-7 bg-surface dark:bg-surface-low/50 hover:bg-primary/5 border border-surface-low dark:border-white/5 hover:border-primary/10 rounded-2xl sm:rounded-[2rem] transition-all group/opt shadow-sm active:scale-[0.98]">
-                                <div className="flex items-center gap-3 sm:gap-5">
-                                    <div className="p-2 sm:p-4 bg-primary/10 rounded-xl sm:rounded-2xl text-primary group-hover/opt:rotate-12 transition-transform">
-                                        <MessageCircle size={18} className="sm:w-[20px] sm:h-[20px]" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="text-[10px] sm:text-xs font-black text-on-surface dark:text-slate-200 uppercase tracking-widest font-premium">ENLACE WHATSAPP</div>
-                                        <div className="text-[7px] sm:text-[9px] text-on-surface-variant dark:text-slate-400 font-bold uppercase tracking-widest mt-1 sm:mt-1.5 font-premium opacity-60">COMUNICACIÓN DIRECTA</div>
-                                    </div>
-                                </div>
-                                <ArrowRight size={16} className="sm:w-[18px] sm:h-[18px] text-on-surface-variant/40 group-hover/opt:translate-x-3 group-hover/opt:text-primary transition-all duration-500" />
-                            </button>
-
-                            <button onClick={() => setActiveTab('settings')} className="w-full flex items-center justify-between p-4 sm:p-7 bg-surface dark:bg-surface-low/50 hover:bg-secondary/5 border border-surface-low dark:border-white/5 hover:border-secondary/10 rounded-2xl sm:rounded-[2rem] transition-all group/opt shadow-sm active:scale-[0.98]">
-                                <div className="flex items-center gap-3 sm:gap-5">
-                                    <div className="p-2 sm:p-4 bg-secondary/10 rounded-xl sm:rounded-2xl text-secondary group-hover/opt:rotate-[30deg] transition-transform">
-                                        <Settings size={18} className="sm:w-[20px] sm:h-[20px]" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="text-[10px] sm:text-xs font-black text-on-surface dark:text-slate-200 uppercase tracking-widest font-premium">PARAMETRÍA TÉCNICA</div>
-                                        <div className="text-[7px] sm:text-[9px] text-on-surface-variant dark:text-slate-400 font-bold uppercase tracking-widest mt-1 sm:mt-1.5 font-premium opacity-60">ESTRUCTURACIÓN FISCAL</div>
-                                    </div>
-                                </div>
-                                <ArrowRight size={16} className="sm:w-[18px] sm:h-[18px] text-on-surface-variant/40 group-hover/opt:translate-x-3 group-hover/opt:text-secondary transition-all duration-500" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Executive Notes */}
-                    <ClientNotes 
-                        clientId={client.id} 
-                        notes={client.structuredNotes || []} 
-                    />
-                </div>
-            </div>
-        </div>
+        <ProfileTab
+            client={client}
+            editedClient={editedClient}
+            setEditedClient={setEditedClient}
+            isEditing={isEditing}
+            isFullyAlDia={isFullyAlDia}
+            complianceStats={complianceStats}
+            serviceFees={serviceFees}
+            setConfirmation={setConfirmation}
+            handleQuickPay={handleQuickPay}
+            setUploadingTarget={setUploadingTarget}
+            proofInputRef={proofInputRef}
+            setActiveTab={setActiveTab}
+            handleWhatsApp={handleWhatsApp}
+            handleOpenSRI={handleOpenSRI}
+            handleShareViaWhatsApp={handleShareViaWhatsApp}
+            passwordVisible={passwordVisible}
+            setPasswordVisible={setPasswordVisible}
+            handleExtraAction={handleExtraAction}
+            handleRentaRefundAction={handleRentaRefundAction}
+            handleElderlyRefundAction={handleElderlyRefundAction}
+        />
     );
 
     const handleDownload = (decl: Declaration) => {
@@ -819,448 +610,42 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     };
 
     const renderHistoryTab = () => (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[3rem] p-10 shadow-architect relative overflow-hidden group border border-surface-low dark:border-white/10">
-                <div className="flex items-center justify-between mb-12">
-                    <div>
-                        <h3 className="text-xl font-extrabold text-on-surface dark:text-slate-100 tracking-tight uppercase flex items-center gap-4 font-premium">
-                            <Activity className="text-primary" size={24} />
-                            REGISTRO OPERATIVO
-                        </h3>
-                        <p className="text-[10px] font-black text-on-surface-variant dark:text-slate-400 uppercase tracking-[0.25em] mt-3 font-premium">TRAZABILIDAD DE ACCIONES Y VALIDACIONES</p>
-                    </div>
-                </div>
-
-                <DocumentTimeline
-                    client={client}
-                    onViewPreview={(decl) => setPreviewItem(decl)}
-                    onDownload={handleDownload}
-                    onWhatsApp={(period) => handleWhatsAppPaymentRequest(period, 'IVA')}
-                />
-            </div>
-            
-            <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[3rem] p-10 shadow-architect relative overflow-hidden group border border-surface-low dark:border-white/10">
-                <div className="flex items-center justify-between mb-10">
-                    <h3 className="text-base font-extrabold text-on-surface dark:text-slate-100 tracking-tight uppercase flex items-center gap-3 font-premium">
-                        <FileClock className="text-tertiary" size={20} />
-                        Resumen de Declaraciones
-                    </h3>
-                </div>
-
-                <DeclarationHistoryTable
-                    client={client}
-                    history={editedClient.declarations || []}
-                    onShowReceipt={handleShowReceipt}
-                    onRevertPayment={handleRevertPayment}
-                    onDeclare={(period) => setConfirmation({ action: 'declare', period })}
-                    onPay={handleQuickPay}
-                    onUpload={(p) => { setUploadingTarget({ type: 'iva', period: p }); proofInputRef.current?.click(); }}
-                    onWhatsApp={(period) => handleWhatsAppPaymentRequest(period, 'IVA')}
-                />
-            </div>
-        </div>
+        <HistoryTab
+            client={client}
+            editedClient={editedClient}
+            setPreviewItem={setPreviewItem}
+            handleDownload={handleDownload}
+            handleWhatsAppPaymentRequest={handleWhatsAppPaymentRequest}
+            handleShowReceipt={handleShowReceipt}
+            handleRevertPayment={handleRevertPayment}
+            setConfirmation={setConfirmation}
+            handleQuickPay={handleQuickPay}
+            setUploadingTarget={setUploadingTarget}
+            proofInputRef={proofInputRef}
+        />
     );
 
     const renderVaultTab = () => (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <VaultCard icon={ScanLine} label="Certificado RUC" file={editedClient.rucCertificate} onUpload={(f) => setEditedClient({ ...editedClient, rucCertificate: f })} />
-                <VaultCard icon={FileText} label="Otros RUC PDF" file={editedClient.rucPdf} onUpload={(f) => setEditedClient({ ...editedClient, rucPdf: f })} />
-                <VaultCard icon={FileKey} label="Firma Electrónica" file={editedClient.signatureFile} onUpload={(f) => setEditedClient({ ...editedClient, signatureFile: f })} />
-                {editedClient.rentaRefundResolutionFile && (
-                    <VaultCard icon={ShieldCheck} label="Resolución Renta" file={editedClient.rentaRefundResolutionFile} onUpload={(f) => setEditedClient({ ...editedClient, rentaRefundResolutionFile: f })} />
-                )}
-                {editedClient.elderlyDevolucionIvaResolutionFile && (
-                    <VaultCard icon={ShieldCheck} label="Resolución T.EDAD" file={editedClient.elderlyDevolucionIvaResolutionFile} onUpload={(f) => setEditedClient({ ...editedClient, elderlyDevolucionIvaResolutionFile: f })} />
-                )}
-                <VaultCard icon={Smartphone} label="Clave SRI" file={undefined} isPassword value={client.sriPassword} />
-            </div>
-
-            <FacturadorCard 
-                config={editedClient.facturadorConfig} 
-                isEditing={isEditing} 
-                onChange={(config) => setEditedClient({ ...editedClient, facturadorConfig: config })} 
-            />
-
-            <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-surface-low dark:border-white/10 relative overflow-hidden group shadow-architect">
-                <div className="flex items-center justify-between mb-12">
-                    <div>
-                        <h3 className="text-xl font-extrabold text-on-surface dark:text-slate-100 tracking-tight uppercase flex items-center gap-4 font-premium">
-                            <Store className="text-primary" size={24} />
-                            Repositorio de Documentos
-                        </h3>
-                        <p className="text-[10px] font-black text-on-surface-variant dark:text-slate-400 uppercase tracking-[0.25em] mt-3 font-premium">Gestión centralizada de archivos y comprobantes</p>
-                    </div>
-                    <div className="flex gap-3">
-                        <div className="p-1.5 bg-surface dark:bg-surface-low/30 rounded-2xl border border-surface-low dark:border-white/5 flex gap-1 shadow-sm h-fit">
-                            {(['gallery', 'list', 'table'] as const).map((mode) => (
-                                <button
-                                    key={mode}
-                                    onClick={() => setVaultViewMode(mode)}
-                                    className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all font-premium ${
-                                        vaultViewMode === mode 
-                                            ? 'bg-surface dark:bg-primary/20 text-primary shadow-md ring-1 ring-surface-low dark:ring-primary/30' 
-                                            : 'text-on-surface-variant dark:text-slate-500 hover:text-primary hover:bg-surface/50'
-                                    }`}
-                                >
-                                    {mode === 'gallery' ? 'Galería' : mode === 'list' ? 'Lista' : 'Tabla'}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="px-6 py-3 bg-surface dark:bg-tertiary/10 rounded-2xl text-[9px] font-black text-tertiary flex items-center gap-3 border border-surface-low dark:border-tertiary/20 shadow-sm uppercase tracking-[0.2em] font-premium">
-                            <div className="w-2 h-2 bg-tertiary rounded-full animate-pulse"></div>
-                            {(client.declarations || []).filter(d => d.proof_file).length} Archivos Protegidos
-                        </div>
-                    </div>
-                </div>
-
-                {vaultViewMode === 'gallery' && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 animate-in fade-in duration-500">
-                        <button
-                            onClick={() => { setUploadingTarget({ type: 'iva', period: getPeriod(client, new Date()) }); proofInputRef.current?.click(); }}
-                            className="aspect-square rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-50/50 transition-all group relative overflow-hidden shadow-sm"
-                        >
-                            <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform border border-slate-100 relative z-10 shadow-sm">
-                                <Plus className="text-slate-400 group-hover:text-blue-600" size={32} />
-                            </div>
-                            <span className="text-[10px] font-extrabold uppercase text-slate-400 group-hover:text-blue-600 tracking-widest relative z-10 font-premium">Subir Nuevo</span>
-                        </button>
-
-                        {[...(client.declarations || [])]
-                            .filter(d => d.proof_file)
-                            .sort((a, b) => b.period.localeCompare(a.period))
-                            .map((decl, idx) => (
-                                <div key={idx} className="bg-slate-50 rounded-[2.5rem] p-5 border border-slate-100 hover:bg-white hover:scale-[1.02] shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden" onClick={() => setPreviewItem(decl)}>
-                                    <div className="aspect-[4/3] rounded-2xl bg-white border border-slate-100 mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-blue-50 transition-colors">
-                                        <FileText className="text-slate-200 group-hover:text-blue-600 group-hover:scale-110 transition-all duration-500" size={48} />
-                                        {decl.proof_file?.metadata?.formType && (
-                                            <div className="absolute top-3 left-3 px-3 py-1 bg-blue-600 text-white text-[9px] font-black rounded-lg uppercase tracking-widest shadow-md font-premium">
-                                                {decl.proof_file.metadata.formType}
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <Eye className="text-blue-600" size={28} />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3 relative z-10">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex flex-col">
-                                                <span className="text-[11px] font-extrabold text-emerald-600 tracking-tighter font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
-                                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 font-premium">{formatPeriodForDisplay(decl.period)}</span>
-                                            </div>
-                                            <button className="p-2.5 hover:bg-white rounded-xl text-slate-300 hover:text-blue-600 transition-colors">
-                                                <Download size={14} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                    </div>
-                )}
-
-                {vaultViewMode === 'list' && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-left-5 duration-500">
-                        <button
-                            onClick={() => { setUploadingTarget({ type: 'iva', period: getPeriod(client, new Date()) }); proofInputRef.current?.click(); }}
-                            className="w-full p-6 rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center gap-4 hover:border-blue-500/50 hover:bg-blue-50/50 transition-all group shadow-sm font-premium"
-                        >
-                            <Plus className="text-slate-400 group-hover:text-blue-600" size={20} />
-                            <span className="text-[11px] font-black uppercase text-slate-400 group-hover:text-blue-600 tracking-widest">Subir Nuevo Documento al Repositorio</span>
-                        </button>
-
-                        {[...(client.declarations || [])]
-                            .filter(d => d.proof_file)
-                            .sort((a, b) => b.period.localeCompare(a.period))
-                            .map((decl, idx) => (
-                                <div key={idx} className="bg-slate-50 hover:bg-white rounded-[2rem] p-6 border border-slate-100 flex items-center justify-between shadow-sm hover:shadow-lg transition-all group cursor-pointer" onClick={() => setPreviewItem(decl)}>
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shadow-sm group-hover:bg-blue-50 transition-colors">
-                                            <FileText className="text-slate-400 group-hover:text-blue-600" size={28} />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-extrabold text-slate-900 font-premium tracking-tight uppercase">Comprobante de {formatPeriodForDisplay(decl.period)}</h4>
-                                            <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest font-premium">{decl.proof_file?.name}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-10">
-                                        <div className="text-right">
-                                            <span className="block text-[13px] font-black text-emerald-600 font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-premium">Monto Validado</span>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button className="p-3 bg-white hover:bg-slate-900 hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-100">
-                                                <Download size={16} />
-                                            </button>
-                                            <button className="p-3 bg-white hover:bg-blue-600 hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-100">
-                                                <Eye size={16} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                    </div>
-                )}
-
-                {vaultViewMode === 'table' && (
-                    <div className="bg-white dark:bg-surface-low rounded-[2.5rem] border border-slate-100 dark:border-white/5 overflow-hidden animate-in fade-in slide-in-from-right-5 duration-500">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50/50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium">Documento</th>
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium">Periodo</th>
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium">Monto</th>
-                                    <th className="px-10 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium pr-12">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-white/5 bg-white dark:bg-surface-low">
-                                {[...(client.declarations || [])]
-                                    .filter(d => d.proof_file)
-                                    .sort((a, b) => b.period.localeCompare(a.period))
-                                    .map((decl, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => setPreviewItem(decl)}>
-                                            <td className="px-10 py-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="p-2 bg-slate-50 dark:bg-white/5 rounded-lg text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                                                        <FileText size={18} />
-                                                    </div>
-                                                    <span className="text-xs font-black text-slate-800 dark:text-slate-50 uppercase tracking-tight font-premium">{decl.proof_file?.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-10 py-6">
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-premium">{formatPeriodForDisplay(decl.period)}</span>
-                                            </td>
-                                            <td className="px-10 py-6">
-                                                <span className="text-[12px] font-extrabold text-slate-900 dark:text-white font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
-                                            </td>
-                                            <td className="px-10 py-6 text-right pr-12">
-                                                <div className="flex justify-end gap-3 opacity-20 group-hover:opacity-100 transition-opacity">
-                                                    <button className="p-2.5 hover:bg-white dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shadow-sm">
-                                                        <Download size={16} />
-                                                    </button>
-                                                    <button className="p-2.5 hover:bg-white dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shadow-sm">
-                                                        <Eye size={16} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
-        </div>
+        <VaultTab
+            client={client}
+            editedClient={editedClient}
+            setEditedClient={setEditedClient}
+            isEditing={isEditing}
+            vaultViewMode={vaultViewMode}
+            setVaultViewMode={setVaultViewMode}
+            setUploadingTarget={setUploadingTarget}
+            proofInputRef={proofInputRef}
+            setPreviewItem={setPreviewItem}
+        />
     );
 
     const renderSettingsTab = () => (
-        <div className="space-y-10 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-5 duration-1000 pb-20">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50 transition-all duration-700">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
-                        <Coins size={18} className="sm:w-[20px] sm:h-[20px] text-blue-600" />
-                        Configuración de Honorarios
-                    </h3>
-                    
-                    <div className="space-y-8">
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">
-                                Honorario {editedClient.taxProfile?.ivaFrequency === 'Semestral' ? 'Semestral' : 'Mensual'}
-                            </label>
-                            <div className="relative group/input">
-                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-blue-600 font-extrabold font-premium">$</div>
-                                <input
-                                    type="number"
-                                    value={monthlyFee}
-                                    onChange={(e) => setMonthlyFee(e.target.value)}
-                                    disabled={!isEditing}
-                                    className="w-full pl-12 pr-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-base font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/40 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Asesoría Anual (Renta)</label>
-                            <div className="relative group/input">
-                                <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 font-extrabold font-premium">$</div>
-                                <input
-                                    type="number"
-                                    value={annualFee}
-                                    onChange={(e) => setAnnualFee(e.target.value)}
-                                    disabled={!isEditing}
-                                    className="w-full pl-12 pr-6 py-5 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-base font-extrabold text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-400/20 focus:border-slate-400/40 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50 transition-all duration-700">
-                    <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
-                        <MapPin size={18} className="sm:w-[20px] sm:h-[20px] text-slate-400 dark:text-slate-500" />
-                        PERFIL DEL CONTRIBUYENTE
-                    </h3>
-
-                    <div className="space-y-8">
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Régimen Tributario</label>
-                            <div className="relative">
-                                <select
-                                    value={editedClient.regime}
-                                    onChange={(e) => setEditedClient({ ...editedClient, regime: e.target.value as TaxRegime })}
-                                    disabled={!isEditing}
-                                    className="w-full px-6 py-5 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-sm font-extrabold text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-400/20 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm font-premium"
-                                >
-                                    <option value={TaxRegime.General}>Régimen General</option>
-                                    <option value={TaxRegime.RimpeEmprendedor}>RIMPE Emprendedor</option>
-                                    <option value={TaxRegime.RimpeNegocioPopular}>RIMPE Negocio Popular</option>
-                                </select>
-                                <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={16} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="bg-white rounded-[3rem] p-10 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50">
-                <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mb-12 flex items-center gap-4 font-premium">
-                    <Building size={20} className="text-slate-400 dark:text-slate-500" />
-                    INFORMACIÓN DE CONTACTO
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Correo Electrónico</label>
-                        <input
-                            type="email"
-                            value={editedClient.email || ''}
-                            onChange={(e) => setEditedClient({ ...editedClient, email: e.target.value })}
-                            disabled={!isEditing}
-                            className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
-                            placeholder="contacto@ejemplo.com"
-                        />
-                    </div>
-                    <div className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Teléfono de Contacto</label>
-                        <input
-                            type="text"
-                            value={editedClient.phones && editedClient.phones.length > 0 ? editedClient.phones[0] : ''}
-                            onChange={(e) => setEditedClient({ ...editedClient, phones: [e.target.value] })}
-                            disabled={!isEditing}
-                            className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
-                            placeholder="+593 000 000 000"
-                        />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-                    <div className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Frecuencia IVA</label>
-                        <div className="relative">
-                            <select
-                                value={editedClient.taxProfile?.ivaFrequency || 'Mensual'}
-                                onChange={(e) => setEditedClient({
-                                    ...editedClient,
-                                    taxProfile: { 
-                                        ...(editedClient.taxProfile || { requiresAnnualRenta: true, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), 
-                                        ivaFrequency: e.target.value as any 
-                                    }
-                                })}
-                                disabled={!isEditing}
-                                className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm font-premium"
-                            >
-                                <option value="Mensual">Ciclo Mensual</option>
-                                <option value="Semestral">Ciclo Semestral</option>
-                                <option value="Ninguno">Inactivo</option>
-                            </select>
-                            <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" size={16} />
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Clave SRI</label>
-                        <div className="relative">
-                            <input
-                                type={passwordVisible ? "text" : "password"}
-                                value={editedClient.sriPassword || ''}
-                                onChange={(e) => setEditedClient({ ...editedClient, sriPassword: e.target.value })}
-                                disabled={!isEditing}
-                                autoComplete="new-password"
-                                className="w-full px-6 py-5 bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-2xl text-sm font-extrabold text-slate-900 dark:text-white focus:ring-2 focus:ring-slate-400/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
-                                placeholder="********"
-                            />
-                            <button onClick={() => setPasswordVisible(!passwordVisible)} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors">
-                                {passwordVisible ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="mt-8 space-y-4">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Dirección Principal</label>
-                    <input
-                        type="text"
-                        value={editedClient.address || ''}
-                        onChange={(e) => setEditedClient({ ...editedClient, address: e.target.value })}
-                        disabled={!isEditing}
-                        className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm font-premium"
-                        placeholder="Dirección del domicilio o negocio"
-                    />
-                </div>
-
-                <div className="mt-8 space-y-4">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 font-premium">Detalle de Actividad</label>
-                    <textarea
-                        value={editedClient.economicActivity || ''}
-                        onChange={(e) => setEditedClient({ ...editedClient, economicActivity: e.target.value })}
-                        disabled={!isEditing}
-                        rows={3}
-                        className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-[2rem] text-sm font-extrabold text-slate-900 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm resize-none font-premium"
-                        placeholder="Descripción de la actividad económica"
-                    />
-                </div>
-            </div>
-
-            <div className="bg-white dark:bg-surface-low rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-slate-100 dark:border-white/5 relative overflow-hidden group shadow-xl shadow-slate-200/50 dark:shadow-none">
-                <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mb-10 sm:mb-12 flex items-center gap-4 font-premium">
-                    <ShieldCheck size={18} className="sm:w-[20px] sm:h-[20px] text-slate-400 dark:text-slate-500" />
-                    PROTOCOLOS FISCALES AVANZADOS
-                </h3>
-                <ExtraObligationsCheckboxes
-                    editedClient={editedClient}
-                    setEditedClient={setEditedClient}
-                    disabled={!isEditing}
-                />
-            </div>
-
-            {/* ZONA DE RIESGO - Hidden by default, visible only during tactical edit */}
-            {isEditing && (
-                <div className="bg-rose-50/30 dark:bg-rose-950/20 rounded-[3rem] p-10 border border-rose-100 dark:border-rose-900/30 animate-in fade-in slide-in-from-bottom-10 duration-1000">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-                        <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 rounded-[2rem] bg-white dark:bg-white/5 border border-rose-200 dark:border-rose-900/50 flex items-center justify-center text-rose-600 shadow-sm">
-                                <AlertTriangle size={28} strokeWidth={2.5} />
-                            </div>
-                            <div>
-                                <h3 className="text-[12px] font-black text-rose-900 dark:text-rose-100 uppercase tracking-[0.3em] font-premium">ZONA DE RIESGO</h3>
-                                <p className="text-[10px] font-bold text-rose-500/70 uppercase tracking-widest mt-2">Acciones administrativas irreversibles</p>
-                            </div>
-                        </div>
-                        <button 
-                            onClick={() => {
-                                if (window.confirm("¿Está absolutamente seguro de ELIMINAR este perfil? Esta acción es irreversible.")) {
-                                    removeClient(client.id, true);
-                                    onBack();
-                                    toast.error("CLIENTE ELIMINADO PERMANENTEMENTE");
-                                }
-                            }}
-                            className="px-10 py-5 bg-white dark:bg-rose-900/20 border-2 border-rose-600/20 hover:border-rose-600 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 text-rose-600 dark:text-rose-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] font-premium transition-all shadow-xl shadow-rose-200/50 dark:shadow-none active:scale-95 flex items-center gap-4"
-                        >
-                            <Trash2 size={16} />
-                            BORRAR PERFIL COMPLETO
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
+        <SettingsTab
+            client={client}
+            editedClient={editedClient}
+            setEditedClient={setEditedClient}
+            isEditing={isEditing}
+        />
     );
 
     return (

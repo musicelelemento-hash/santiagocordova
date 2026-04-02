@@ -18,6 +18,7 @@ import { ClientCard } from '../components/features/ClientCard';
 import { extractDataFromDeclarationPdf, fileToBase64 } from '../services/pdfExtraction';
 import { StoredFile } from '../types';
 import { BulkUploadReportModal, BulkUploadResult } from '../components/features/BulkUploadReportModal';
+import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 
 const OBLIGATION_GROUPS = [
     { id: 'all', label: 'Todos', icon: LucideIcons.Users, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
@@ -27,6 +28,7 @@ const OBLIGATION_GROUPS = [
     { id: 'al-dia', label: 'Al Día', icon: LucideIcons.ShieldCheck, color: 'text-tertiary bg-tertiary/10 ring-tertiary/20' },
     { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.Clock, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
     { id: 'semestral', label: 'IVA Semestral', icon: LucideIcons.Briefcase, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'matrix', label: 'Matriz Fiscal', icon: LucideIcons.LayoutGrid, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
     { id: 'trash', label: 'Papelera', icon: LucideIcons.Trash2, color: 'text-primary bg-primary/10 ring-primary/20' },
 ];
 
@@ -97,6 +99,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     useEffect(() => {
         sessionStorage.setItem('clients_sort', sortOption);
     }, [sortOption]);
+
+    useEffect(() => {
+        if (activeGroupTab === 'matrix') {
+            setIsWorkspaceView(false);
+            setIsCobrosView(false);
+        }
+    }, [activeGroupTab]);
 
     useEffect(() => {
         sessionStorage.setItem('clients_view_mode', viewMode);
@@ -1087,7 +1096,20 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             {/* Client Grid or List */}
             {
-                isWorkspaceView ? (
+                activeGroupTab === 'matrix' ? (
+                    <div className="animate-fade-in pb-20 no-print">
+                        <TaxComplianceMatrix 
+                            clients={sortedClients}
+                            onViewClient={handleOpenClientDetails}
+                            onUploadReceipt={handleUploadReceipt}
+                            onPreviewReceipt={(client) => {
+                                setSelectedClient(client);
+                                setIsClientDetailsOpen(true);
+                            }}
+                            theme="dark"
+                        />
+                    </div>
+                ) : isWorkspaceView ? (
                     <div className="space-y-8 pb-20">
                         {/* SECCIÓN POR DECLARAR (ÓRDENES DE TRABAJO) */}
                         <section className="animate-fade-in px-1">

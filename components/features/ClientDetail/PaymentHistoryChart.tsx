@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { ResponsiveContainer, AreaChart as RechartsAreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { TrendingUp } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { Client, Declaration, DeclarationStatus } from '../../../types';
 import { subMonths, subYears } from 'date-fns';
 import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay } from '../../../services/sri';
@@ -64,25 +64,26 @@ export const PaymentHistoryChart: React.FC<PaymentHistoryChartProps> = memo(({ c
     const trendColor = avgScore >= 80 ? '#10b981' : avgScore >= 50 ? '#f59e0b' : '#ef4444';
 
     return (
-        <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 h-full relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+        <div className="bg-white dark:bg-surface/40 backdrop-blur-3xl rounded-[2rem] p-8 shadow-architect border border-slate-100 dark:border-white/10 h-full relative overflow-hidden group transition-all duration-700">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none opacity-50 group-hover:opacity-80 transition-opacity"></div>
             
-            <h4 className="text-[10px] font-black text-slate-400 mb-8 uppercase tracking-[0.3em] flex items-center gap-2 font-premium">
-                <TrendingUp size={16} className="text-primary" strokeWidth={3} /> HISTORIAL DE CUMPLIMIENTO
+            <h4 className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 mb-8 uppercase tracking-[0.3em] flex items-center gap-2">
+                <LucideIcons.TrendingUp size={15} className="text-primary" strokeWidth={3} />
+                COMPLIANCE_TELEMETRY
             </h4>
             <div className="w-full h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                     <RechartsAreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                         <defs>
                             <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={trendColor} stopOpacity={0.3}/>
+                                <stop offset="5%" stopColor={trendColor} stopOpacity={0.4}/>
                                 <stop offset="95%" stopColor={trendColor} stopOpacity={0}/>
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.1)" />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.08)" />
                         <XAxis 
                             dataKey="name" 
-                            tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} 
+                            tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 700, fontFamily: 'monospace' }} 
                             axisLine={false} 
                             tickLine={false} 
                             dy={10} 
@@ -93,16 +94,18 @@ export const PaymentHistoryChart: React.FC<PaymentHistoryChartProps> = memo(({ c
                                 if (active && payload && payload.length) {
                                     const dataPoint = (payload[0] as any).payload;
                                     return (
-                                        <div className="p-4 bg-white/95 text-slate-900 rounded-2xl text-[10px] shadow-2xl border border-slate-100 backdrop-blur-xl font-premium">
-                                            <p className="font-black mb-2 text-slate-400 border-b border-slate-100 pb-2 flex items-center gap-3 uppercase tracking-widest">
+                                        <div className="p-4 bg-white/95 dark:bg-slate-900/95 text-slate-900 dark:text-slate-50 rounded-xl text-[10px] shadow-2xl border border-slate-100 dark:border-white/10 backdrop-blur-xl">
+                                            <p className="font-mono font-bold mb-2 text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-white/10 pb-2 flex items-center gap-3 uppercase tracking-widest leading-none">
                                                 {label}
-                                                <span className="text-[11px] font-black px-2 py-0.5 rounded-full bg-slate-50 text-primary border border-slate-100">
+                                                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-primary-low border border-slate-100 dark:border-white/5">
                                                     {dataPoint.score}%
                                                 </span>
                                             </p>
-                                            <div className="flex items-center gap-2 mt-2">
-                                                <div className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: statusColors[dataPoint.status] }}></div>
-                                                <span className="font-black text-slate-900 tracking-widest uppercase">{dataPoint.status}</span>
+                                            <div className="flex items-center gap-2.5 mt-2">
+                                                <div className="w-1.5 h-1.5 rounded-full" style={{ background: statusColors[dataPoint.status], boxShadow: `0 0 10px ${statusColors[dataPoint.status]}40` }}></div>
+                                                <span className="font-mono font-bold text-slate-700 dark:text-slate-300 tracking-wider uppercase">
+                                                    {dataPoint.status === 'Completado' ? 'PHASE_DONE' : dataPoint.status === 'Vencido' ? 'ALERT_OVERDUE' : 'STATUS_PENDING'}
+                                                </span>
                                             </div>
                                         </div>
                                     );

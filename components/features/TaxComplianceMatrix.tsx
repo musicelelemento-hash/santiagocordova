@@ -64,14 +64,29 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const getStatusIcon = (declaration?: Declaration) => {
         if (!declaration) return <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10" title="Sin Registro" />;
         
-        switch (declaration.status) {
-            case DeclarationStatus.Pagada:
-                return <span title="Pagada"><LucideIcons.CheckCircle2 size={16} className="text-emerald-500" /></span>;
-            case DeclarationStatus.Enviada:
-                return <span title="Enviada"><LucideIcons.Send size={16} className="text-sky-500" /></span>;
-            default:
-                return <span title="Pendiente"><LucideIcons.Clock size={16} className="text-amber-500" /></span>;
-        }
+        const isPaid = declaration.status === DeclarationStatus.Pagada;
+        const isSent = declaration.status === DeclarationStatus.Enviada;
+        
+        return (
+            <div className="flex items-center gap-1.5">
+                {isPaid ? (
+                    <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-sm" title="Pagada">
+                        <LucideIcons.CheckCircle2 size={10} strokeWidth={3} />
+                        <span className="text-[8px] font-black uppercase tracking-tighter">PAGADA</span>
+                    </div>
+                ) : isSent ? (
+                    <div className="flex items-center gap-1 bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded-full border border-sky-500/20 shadow-sm" title="Enviada">
+                        <LucideIcons.Send size={10} strokeWidth={3} />
+                        <span className="text-[8px] font-black uppercase tracking-tighter">LISTA</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1 bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/20 shadow-sm" title="Pendiente">
+                        <LucideIcons.Clock size={10} strokeWidth={3} />
+                        <span className="text-[8px] font-black uppercase tracking-tighter">PEND</span>
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -103,20 +118,30 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     </button>
                 </div>
 
-                <div className="relative group w-full md:w-64">
-                    <LucideIcons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Filtrar cliente..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-3 pl-10 pr-4 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:border-primary outline-none transition-all"
-                    />
+                <div className="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+                    <div className="relative group flex-1 md:w-64">
+                        <LucideIcons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Filtrar cliente..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-3 pl-10 pr-4 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:border-primary outline-none transition-all uppercase tracking-widest"
+                        />
+                    </div>
+                    
+                    <button 
+                        onClick={() => window.print()}
+                        className="p-3 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-white/10 hover:text-primary hover:border-primary transition-all no-print shadow-sm"
+                        title="Imprimir Reporte"
+                    >
+                        <LucideIcons.Printer size={20} />
+                    </button>
                 </div>
             </div>
 
             {/* Progress Summary mini-dashboard */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 no-print">
                 {(() => {
                     const totalClients = filteredClients.length;
                     if (totalClients === 0) return null;
@@ -127,32 +152,39 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     
                     return (
                         <>
-                            <div className="glass-zen p-4 flex items-center gap-4">
-                                <div className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg">
-                                    <LucideIcons.CheckSquare size={18} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Declarados ({lastPeriod})</p>
-                                    <p className="text-xl font-black text-slate-900 dark:text-white">{declaredCount} <span className="text-xs text-slate-500">/ {totalClients}</span></p>
-                                </div>
-                            </div>
-                            <div className="glass-zen p-4 flex items-center gap-4">
-                                <div className="p-2 bg-sky-500/10 text-sky-500 rounded-lg">
-                                    <LucideIcons.Paperclip size={18} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Con Comprobante</p>
-                                    <p className="text-xl font-black text-slate-900 dark:text-white">{pdfCount} <span className="text-xs text-slate-500">/ {totalClients}</span></p>
+                            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/50 dark:border-white/5 shadow-lg">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl">
+                                        <LucideIcons.CheckSquare size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Declarados</p>
+                                        <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">{declaredCount}<span className="text-xs text-slate-400 font-bold ml-1">/ {totalClients}</span></p>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="md:col-span-2 glass-zen p-4 flex flex-col justify-center">
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Eficiencia de Recaudación ({lastPeriod})</span>
-                                    <span className="text-xs font-black text-emerald-500">{Math.round((pdfCount / totalClients) * 100)}%</span>
+                            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/50 dark:border-white/5 shadow-lg">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-sky-500/10 text-sky-500 rounded-2xl">
+                                        <LucideIcons.Paperclip size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Respaldos</p>
+                                        <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">{pdfCount}<span className="text-xs text-slate-400 font-bold ml-1">/ {totalClients}</span></p>
+                                    </div>
                                 </div>
-                                <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                            </div>
+                            <div className="md:col-span-2 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/50 dark:border-white/5 shadow-lg flex flex-col justify-center">
+                                <div className="flex justify-between items-center mb-3">
+                                    <div>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Eficiencia Mensual</p>
+                                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Ciclo {lastPeriod}</p>
+                                    </div>
+                                    <span className="text-lg font-black text-emerald-500">{Math.round((pdfCount / totalClients) * 100)}%</span>
+                                </div>
+                                <div className="w-full h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden p-0.5 border border-slate-200/50 dark:border-white/10">
                                     <div 
-                                        className="h-full bg-emerald-500 transition-all duration-1000" 
+                                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.3)]" 
                                         style={{ width: `${(pdfCount / totalClients) * 100}%` }}
                                     ></div>
                                 </div>
@@ -184,12 +216,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             return (
                                 <React.Fragment key={client.id}>
                                     {showDivider && (
-                                        <tr className="bg-slate-100/50 dark:bg-white/5 no-print">
+                                        <tr className="bg-slate-100/50 dark:bg-white/5 border-t border-slate-200/50 dark:border-white/10">
                                             <td colSpan={periods.length + 1} className="px-8 py-3">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-                                                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em]">
-                                                        Dígito {currentDigit} • Vencimiento: Día {currentDigit === 1 ? '10' : currentDigit === 2 ? '12' : currentDigit === 3 ? '14' : currentDigit === 4 ? '16' : currentDigit === 5 ? '18' : currentDigit === 6 ? '20' : currentDigit === 7 ? '22' : currentDigit === 8 ? '24' : currentDigit === 9 ? '26' : '28'}
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                                                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-200 uppercase tracking-[0.3em]">
+                                                            Dígito {currentDigit} • Vencimiento: Día {currentDigit === 1 ? '10' : currentDigit === 2 ? '12' : currentDigit === 3 ? '14' : currentDigit === 4 ? '16' : currentDigit === 5 ? '18' : currentDigit === 6 ? '20' : currentDigit === 7 ? '22' : currentDigit === 8 ? '24' : currentDigit === 9 ? '26' : '28'}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest no-print">
+                                                        {filteredClients.filter(c => parseInt(c.ruc[8], 10) === currentDigit).length} Clientes
                                                     </span>
                                                 </div>
                                             </td>
@@ -264,30 +301,64 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             </div>
 
             {/* Legend */}
-            <div className="flex flex-wrap items-center gap-6 px-4">
+            <div className="flex flex-wrap items-center gap-6 px-4 no-print pb-10">
                 <div className="flex items-center gap-2">
-                    <LucideIcons.CheckCircle2 size={14} className="text-emerald-500" />
-                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Pagada</span>
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Pagada / OK</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <LucideIcons.Send size={14} className="text-sky-500" />
-                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Enviada</span>
+                    <div className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]" />
+                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Enviada SBN</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <LucideIcons.Clock size={14} className="text-amber-500" />
-                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Pendiente</span>
+                    <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">En Proceso</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <LucideIcons.Paperclip size={14} className="text-emerald-500" />
-                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Con Comprobante</span>
+                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Respaldo Digital</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 flex items-center justify-center bg-rose-100 dark:bg-rose-500/20 text-rose-500 rounded-lg">
+                    <div className="w-7 h-7 flex items-center justify-center bg-rose-500/10 text-rose-500 rounded-lg border border-rose-500/20">
                         <LucideIcons.Upload size={14} />
                     </div>
-                    <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest font-premium animate-pulse">Falta Comprobante</span>
+                    <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest font-premium animate-pulse">Puntaje de Alerta: Sin PDF</span>
                 </div>
             </div>
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                    @page { 
+                        size: landscape; 
+                        margin: 1cm; 
+                    }
+                    body { 
+                        background: white !important; 
+                        color: black !important;
+                        -webkit-print-color-adjust: exact;
+                    }
+                    .no-print { display: none !important; }
+                    .custom-scrollbar::-webkit-scrollbar { display: none; }
+                    table { 
+                        border-collapse: collapse !important;
+                        width: 100% !important;
+                        font-size: 8px !important;
+                    }
+                    th, td { 
+                        border: 1px solid #e2e8f0 !important; 
+                        padding: 8px !important;
+                        background: transparent !important;
+                        color: black !important;
+                    }
+                    .sticky { position: static !important; }
+                    .bg-white\\/40, .dark\\:bg-slate-900\\/40 { 
+                        background: transparent !important; 
+                        border: none !important;
+                        box-shadow: none !important;
+                    }
+                    h2 { color: black !important; }
+                }
+            `}} />
         </div>
     );
 };
