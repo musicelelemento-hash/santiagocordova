@@ -4,7 +4,7 @@ import * as LucideIcons from 'lucide-react';
 import { Screen, Client, DeclarationStatus, TaxRegime } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay } from '../services/sri';
-import { isPast, isToday, isTomorrow } from 'date-fns';
+import { isPast, isToday, isTomorrow, format, subMonths } from 'date-fns';
 import { ClientCard } from '../components/features/ClientCard';
 import { useToast } from '../context/ToastContext';
 import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
@@ -12,12 +12,16 @@ import { processBulkPdfs, BulkProcessResult } from '../services/bulkOperations';
 import { BulkUploadReportModal } from '../components/features/BulkUploadReportModal';
 import { ChatBot } from '../components/features/ChatBot';
 import { VirtualClientList } from '../components/features/VirtualClientList';
+import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
+import { ComplianceReportExport } from '../components/features/ComplianceReportExport';
+import { IvaFrequency } from '../types';
 
 interface AdminDashboardScreenProps {
     navigate: (screen: Screen, options?: any) => void;
+    theme?: 'light' | 'dark';
 }
 
-export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navigate }) => {
+export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navigate, theme = 'dark' }) => {
     const { clients, setClients, serviceFees, updateClient } = useAppStore();
     const { toast } = useToast();
 
@@ -38,7 +42,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [isTacticalVisible, setIsTacticalVisible] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
+    const [matrixUploadSelection, setMatrixUploadSelection] = useState<{ client: Client, period: string } | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const matrixFileInputRef = React.useRef<HTMLInputElement>(null);
 
     // Persistence Effect
     React.useEffect(() => {
@@ -195,6 +202,45 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         };
     }, [clients, filter, searchTerm]);
 
+    // Data for Matrix Mode
+    const matrixPeriods = useMemo(() => {
+        const today = new Date();
+        const result = [];
+        const isSemestral = filter === 'semestral';
+        
+        if (!isSemestral) { // Monthly (Default or Mensual filter)
+            for (let i = 0; i < 6; i++) {
+                const date = subMonths(today, i + 1);
+                result.push(format(date, 'yyyy-MM'));
+            }
+        } else { // Semestral
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
+            if (currentMonth >= 6) {
+                result.push(`${currentYear}-S1`);
+                result.push(`${currentYear - 1}-S2`);
+            } else {
+                result.push(`${currentYear - 1}-S2`);
+                result.push(`${currentYear - 1}-S1`);
+            }
+        }
+        return result;
+    }, [filter]);
+
+    const matrixClients = useMemo(() => {
+        const freq = filter === 'semestral' ? 'Semestral' : 'Mensual';
+        const filtered = clients.filter(c => !c.isDeleted && c.isActive && c.taxProfile?.ivaFrequency === freq);
+        
+        return filtered.sort((a, b) => {
+            const digitA = parseInt(a.ruc[8], 10);
+            const digitB = parseInt(b.ruc[8], 10);
+            const sortA = digitA === 0 ? 10 : digitA;
+            const sortB = digitB === 0 ? 10 : digitB;
+            if (sortA !== sortB) return sortA - sortB;
+            return a.name.localeCompare(b.name);
+        });
+    }, [clients, filter]);
+
 
     const activeList = searchTerm ? allResults : (inboxTab === 'pendientes' ? (filter === 'all' || filter === 'mensual' ? [...urgentPriorities, ...pendientes] : allResults) : completados);
 
@@ -265,6 +311,30 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             client,
             declaration
         });
+    };
+
+    const handleUploadFromMatrix = (client: Client, period: string) => {
+        setMatrixUploadSelection({ client, period });
+        matrixFileInputRef.current?.click();
+    };
+
+    const onMatrixFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !matrixUploadSelection) return;
+
+        setIsProcessing(true);
+        try {
+            const results = await processBulkPdfs([file], () => {});
+            setBulkResults(results as any);
+            setIsBulkModalOpen(true);
+            toast.success("Documento procesado");
+        } catch (error) {
+            toast.error("Error al procesar el documento");
+        } finally {
+            setIsProcessing(false);
+            setMatrixUploadSelection(null);
+            if (matrixFileInputRef.current) matrixFileInputRef.current.value = '';
+        }
     };
     const tacticalInfo = useMemo(() => {
         const day = new Date().getDate();
@@ -453,6 +523,31 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 )}
                                 CARGA RÁPIDA
                             </button>
+                            <div className="flex items-center bg-slate-100 dark:bg-black/20 p-1 rounded-2xl border border-slate-200 dark:border-white/10 shrink-0">
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    className={`p-3 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 opacity-50'}`}
+                                    title="Vista de Lista"
+                                >
+                                    <LucideIcons.List size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('matrix')}
+                                    className={`p-3 rounded-xl transition-all ${viewMode === 'matrix' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 opacity-50'}`}
+                                    title="Vista de Matriz"
+                                >
+                                    <LucideIcons.LayoutGrid size={18} />
+                                </button>
+                            </div>
+                            {viewMode === 'matrix' && (
+                                <button 
+                                    onClick={() => window.print()}
+                                    className="flex items-center gap-2 bg-emerald-500 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/20 font-premium shrink-0"
+                                >
+                                    <LucideIcons.Printer size={16} />
+                                    EXPORTAR PDF
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -714,9 +809,17 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 </div>
             )}
 
-            {/* Client Grid (Virtualized) */}
-            <div className="animate-fade-in">
-                {activeList.length > 0 ? (
+            {/* Client Grid (Virtualized) or Matrix View */}
+            <div className="animate-fade-in no-print">
+                {viewMode === 'matrix' ? (
+                    <TaxComplianceMatrix 
+                        clients={matrixClients}
+                        onViewClient={(c) => navigate('clients', { clientIdToView: c.id })}
+                        onUploadReceipt={handleUploadFromMatrix}
+                        onPreviewReceipt={(c, d) => setPreviewState({ isOpen: true, client: c, declaration: d })}
+                        theme={theme}
+                    />
+                ) : activeList.length > 0 ? (
                     <VirtualClientList
                         clients={activeList}
                         serviceFees={serviceFees}
@@ -744,6 +847,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     </div>
                 )}
             </div>
+
+            {/* Hidden component for Print Export */}
+            <ComplianceReportExport 
+                clients={matrixClients}
+                periods={matrixPeriods}
+                frequency={filter === 'semestral' ? 'Semestral' : 'Mensual'}
+            />
 
             {previewState.client && previewState.declaration && (
                 <PdfPreviewModal
@@ -785,6 +895,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 </div>
             )}
 
+            <input
+                type="file"
+                accept=".pdf"
+                ref={matrixFileInputRef}
+                onChange={onMatrixFileChange}
+                className="hidden"
+            />
             <ChatBot />
         </div>
     );

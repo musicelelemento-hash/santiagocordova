@@ -420,3 +420,47 @@ h1, h2, h3, h4 {
 .touch-scale:active {
     transform: scale(0.96) translateY(2px);
 }
+
+/* --- PRINT & REPORTING UTILITIES --- */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+        font-size: 10pt;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .print-only {
+        display: block !important;
+    }
+
+    .page-break {
+        page-break-before: always;
+    }
+
+    .print-shadow-none {
+        box-shadow: none !important;
+    }
+
+    .print-border {
+        border: 1px solid #e2e8f0 !important;
+    }
+
+    @page {
+        margin: 1.5cm;
+        size: landscape;
+    }
+
+    /* Preserve colors in print */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
+
+.print-only {
+    display: none;
+}

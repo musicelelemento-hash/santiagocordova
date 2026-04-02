@@ -268,7 +268,7 @@ const App: React.FC = () => {
 
   const renderScreen = () => {
     switch (activeScreen) {
-      case 'home': return <AdminDashboardScreen navigate={navigate} />;
+      case 'home': return <AdminDashboardScreen navigate={navigate} theme={theme} />;
       case 'clients': return (
         <ClientsScreen 
           initialFilter={clientFilter} 
@@ -361,7 +361,7 @@ const App: React.FC = () => {
           theme={theme}
         />
         <div className="flex-1 flex flex-col min-w-0 relative z-10 md:pl-[280px]">
-          <header className="hidden md:flex items-center justify-between p-6 px-10 bg-white/40 dark:bg-surface/60 backdrop-blur-3xl border-b border-slate-200/50 dark:border-white/10 relative overflow-hidden transition-all duration-700">
+          <header className="hidden md:flex items-center justify-between p-6 px-10 bg-white/40 dark:bg-surface/60 backdrop-blur-3xl border-b border-slate-200/50 dark:border-white/10 relative overflow-hidden transition-all duration-700 no-print">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-light tracking-tight text-slate-800 dark:text-white capitalize">
                 {activeScreen === 'home' ? 'Resumen General' : activeScreen.replace('_', ' ')}
@@ -393,7 +393,7 @@ const App: React.FC = () => {
           </header>
 
           {/* Mobile Ultra-Premium Header */}
-          <header className="flex md:hidden fixed top-0 w-full z-50 items-center justify-between px-5 py-3 glass-zen border-b border-white/20 shadow-xl">
+          <header className="flex md:hidden fixed top-0 w-full z-50 items-center justify-between px-5 py-3 glass-zen border-b border-white/20 shadow-xl no-print">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-slate-800 dark:bg-white flex items-center justify-center shadow-md pointer-events-none">
                 <Logo className="w-5 h-5 text-white dark:text-slate-900" />
@@ -423,14 +423,16 @@ const App: React.FC = () => {
               </div>
             </ErrorBoundary>
             {!clientToView && (
-              <MobileNavBar
-                navItems={navItems}
-                activeScreen={activeScreen}
-                onNavigate={(s) => {
-                  if (s === 'landing' as any) setAppState('landing');
-                  else navigate(s as Screen);
-                }}
-              />
+              <div className="no-print">
+                <MobileNavBar
+                  navItems={navItems}
+                  activeScreen={activeScreen}
+                  onNavigate={(s) => {
+                    if (s === 'landing' as any) setAppState('landing');
+                    else navigate(s as Screen);
+                  }}
+                />
+              </div>
             )}
           </main>
         </div>
@@ -460,7 +462,9 @@ const App: React.FC = () => {
         />
         
         {/* Elite AI Assistant */}
-        <ChatBot />
+        <div className="no-print">
+          <ChatBot />
+        </div>
       </div>
     </ToastProvider>
   );

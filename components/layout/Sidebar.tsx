@@ -55,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const addClientItem = navItems.find(i => i.screen === 'add_client' as any);
 
     return (
-        <aside className={`hidden md:flex flex-col w-[280px] h-screen fixed left-0 top-0 z-50 border-r transition-all duration-500 overflow-hidden ${
+        <aside className={`hidden md:flex flex-col w-[280px] h-screen fixed left-0 top-0 z-50 border-r transition-all duration-500 overflow-hidden no-print ${
             theme === 'dark' 
                 ? 'bg-slate-950 border-white/5 shadow-2xl' 
                 : 'bg-white border-slate-200 shadow-xl'
