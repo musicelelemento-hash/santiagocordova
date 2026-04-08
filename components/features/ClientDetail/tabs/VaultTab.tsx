@@ -3,7 +3,8 @@ import { Client, TaxRegime, Declaration } from '../../../../types';
 import { getPeriod, formatPeriodForDisplay } from '../../../../services/sri';
 import * as LucideIcons from 'lucide-react';
 import { VaultCard } from '../VaultCard';
-import { FacturadorCard } from '../FacturadorCard';
+import { ClientNotes } from '../ClientNotes';
+import { ClientNote } from '../../../../types';
 
 interface VaultTabProps {
     client: Client;
@@ -15,6 +16,7 @@ interface VaultTabProps {
     setUploadingTarget: (target: { type: string; period?: string } | null) => void;
     proofInputRef: React.RefObject<HTMLInputElement>;
     setPreviewItem: (item: Declaration | null) => void;
+    notes: ClientNote[];
 }
 
 export const VaultTab: React.FC<VaultTabProps> = ({
@@ -26,10 +28,11 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     setVaultViewMode,
     setUploadingTarget,
     proofInputRef,
-    setPreviewItem
+    setPreviewItem,
+    notes
 }) => {
     return (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
             {/* Top Security Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <VaultCard icon={LucideIcons.ScanLine} label="Certificado RUC" file={editedClient.rucCertificate} onUpload={(f) => setEditedClient({ ...editedClient, rucCertificate: f })} />
@@ -50,80 +53,89 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 )}
             </div>
 
-            <FacturadorCard 
-                config={editedClient.facturadorConfig || {}} 
-                isEditing={isEditing} 
-                onChange={(config) => setEditedClient({ ...editedClient, facturadorConfig: config })} 
-            />
+            {/* Simplificación Zen: Notas Directas en lugar de Facturador complejo */}
+            <div className="grid grid-cols-1 gap-8">
+                <div className="min-h-[300px]">
+                    <ClientNotes clientId={client.id} notes={notes} />
+                </div>
+            </div>
 
             {/* Document Repository - Modularized Section */}
-            <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-surface-low dark:border-white/10 relative overflow-hidden group shadow-architect">
-                <div className="flex items-center justify-between mb-12">
+            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-slate-200/50 dark:border-white/10 relative overflow-hidden group shadow-2xl shadow-slate-200/50 dark:shadow-none transition-all duration-500 hover:shadow-primary/5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
                     <div>
-                        <h3 className="text-xl font-extrabold text-on-surface dark:text-slate-100 tracking-tight uppercase flex items-center gap-4 font-premium">
-                            <LucideIcons.Store className="text-primary" size={24} />
+                        <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-4">
+                            <div className="p-3 bg-primary/10 rounded-2xl">
+                                <LucideIcons.Store className="text-primary" size={24} />
+                            </div>
                             Repositorio de Documentos
                         </h3>
-                        <p className="text-[10px] font-black text-on-surface-variant dark:text-slate-400 uppercase tracking-[0.25em] mt-3 font-premium">Gestión centralizada de archivos y comprobantes</p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mt-3 font-premium">Gestión centralizada de archivos y comprobantes</p>
                     </div>
-                    <div className="flex gap-3">
-                        <div className="p-1.5 bg-surface dark:bg-surface-low/30 rounded-2xl border border-surface-low dark:border-white/5 flex gap-1 shadow-sm h-fit">
+                    <div className="flex items-center gap-4">
+                        <div className="p-1.5 bg-slate-100/50 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/5 flex gap-1 shadow-sm backdrop-blur-md">
                             {(['gallery', 'list', 'table'] as const).map((mode) => (
                                 <button
                                     key={mode}
                                     onClick={() => setVaultViewMode(mode)}
-                                    className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] transition-all font-premium ${
+                                    className={`px-5 py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-[0.15em] transition-all font-premium ${
                                         vaultViewMode === mode 
-                                            ? 'bg-surface dark:bg-primary/20 text-primary shadow-md ring-1 ring-surface-low dark:ring-primary/30' 
-                                            : 'text-on-surface-variant dark:text-slate-500 hover:text-primary hover:bg-surface/50'
+                                            ? 'bg-white dark:bg-primary/20 text-primary shadow-lg shadow-slate-200/50 dark:shadow-none ring-1 ring-slate-100 dark:ring-primary/30' 
+                                            : 'text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-white/50 dark:hover:bg-white/10'
                                     }`}
                                 >
                                     {mode === 'gallery' ? 'Galería' : mode === 'list' ? 'Lista' : 'Tabla'}
                                 </button>
                             ))}
                         </div>
-                        <div className="px-6 py-3 bg-surface dark:bg-tertiary/10 rounded-2xl text-[9px] font-black text-tertiary flex items-center gap-3 border border-surface-low dark:border-tertiary/20 shadow-sm uppercase tracking-[0.2em] font-premium">
-                            <div className="w-2 h-2 bg-tertiary rounded-full animate-pulse"></div>
+                        <div className="hidden sm:flex px-6 py-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl text-[9px] font-bold text-emerald-600 dark:text-emerald-400 items-center gap-3 border border-emerald-100 dark:border-emerald-500/20 shadow-sm uppercase tracking-[0.2em] font-premium">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                             {(client.declarations || []).filter(d => d.proof_file).length} Archivos Protegidos
                         </div>
                     </div>
                 </div>
 
                 {vaultViewMode === 'gallery' && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 animate-in fade-in duration-500">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
                         <button
                             onClick={() => { setUploadingTarget({ type: 'iva', period: '2024-03' }); proofInputRef.current?.click(); }}
-                            className="aspect-square rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden shadow-sm"
+                            className="aspect-square rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden shadow-sm bg-white/30 dark:bg-white/5 backdrop-blur-sm"
                         >
-                            <div className="w-16 h-16 rounded-2xl bg-slate-50 dark:bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform border border-slate-100 dark:border-white/5 relative z-10 shadow-sm">
-                                <LucideIcons.Plus className="text-slate-400 group-hover:text-primary" size={32} />
+                            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform border border-slate-100 dark:border-white/5 relative z-10 shadow-sm">
+                                <LucideIcons.Plus className="text-slate-300 group-hover:text-primary" size={32} />
                             </div>
-                            <span className="text-[10px] font-extrabold uppercase text-slate-400 group-hover:text-primary tracking-widest relative z-10 font-premium">Subir Nuevo</span>
+                            <span className="text-[10px] font-bold uppercase text-slate-400 group-hover:text-primary tracking-widest relative z-10 font-premium">Subir Nuevo</span>
                         </button>
 
                         {[...(client.declarations || [])]
                             .filter(d => d.proof_file)
                             .sort((a, b) => b.period.localeCompare(a.period))
                             .map((decl, idx) => (
-                                <div key={idx} className="bg-slate-50 dark:bg-white/5 rounded-[2.5rem] p-5 border border-slate-100 dark:border-white/5 hover:bg-white dark:hover:bg-white/10 hover:scale-[1.02] shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden" onClick={() => setPreviewItem(decl)}>
-                                    <div className="aspect-[4/3] rounded-2xl bg-white dark:bg-surface-low border border-slate-100 dark:border-white/5 mb-5 flex items-center justify-center relative overflow-hidden group-hover:bg-blue-50 dark:group-hover:bg-primary/10 transition-colors">
-                                        <LucideIcons.FileText className="text-slate-200 dark:text-slate-700 group-hover:text-primary group-hover:scale-110 transition-all duration-500" size={48} />
+                                <div 
+                                    key={idx} 
+                                    className="bg-white/60 dark:bg-white/5 rounded-[2.5rem] p-6 border border-slate-100 dark:border-white/5 hover:bg-white dark:hover:bg-white/10 hover:scale-[1.03] shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all cursor-pointer group relative overflow-hidden" 
+                                    onClick={() => setPreviewItem(decl)}
+                                >
+                                    <div className="aspect-[4/3] rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-white/5 mb-6 flex items-center justify-center relative overflow-hidden group-hover:bg-primary/5 transition-all duration-500">
+                                        <LucideIcons.FileText className="text-slate-200 dark:text-slate-700 group-hover:text-primary group-hover:scale-110 transition-all duration-700" size={48} />
                                         {decl.proof_file?.metadata?.formType && (
-                                            <div className="absolute top-3 left-3 px-3 py-1 bg-primary text-white text-[9px] font-black rounded-lg uppercase tracking-widest shadow-md font-premium">
+                                            <div className="absolute top-4 left-4 px-3 py-1 bg-primary text-white text-[9px] font-bold rounded-lg uppercase tracking-widest shadow-lg shadow-primary/20 font-premium">
                                                 {decl.proof_file.metadata.formType}
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 bg-white/80 dark:bg-surface/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <LucideIcons.Eye className="text-primary" size={28} />
+                                        <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
+                                            <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                                                <LucideIcons.Eye className="text-primary" size={24} />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="space-y-3 relative z-10">
+                                    <div className="space-y-4 relative z-10">
                                         <div className="flex items-center justify-between">
                                             <div className="flex flex-col">
-                                                <span className="text-[11px] font-extrabold text-emerald-600 tracking-tighter font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
-                                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 font-premium">{formatPeriodForDisplay(decl.period)}</span>
+                                                <span className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400 tracking-tight font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
+                                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1 font-premium">{formatPeriodForDisplay(decl.period)}</span>
                                             </div>
-                                            <button className="p-2.5 hover:bg-white dark:hover:bg-white/20 rounded-xl text-slate-300 hover:text-primary transition-colors">
+                                            <button className="p-3 bg-slate-50 dark:bg-white/5 hover:bg-primary hover:text-white rounded-xl text-slate-300 transition-all shadow-sm">
                                                 <LucideIcons.Download size={14} />
                                             </button>
                                         </div>

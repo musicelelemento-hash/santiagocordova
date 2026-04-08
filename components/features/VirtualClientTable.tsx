@@ -40,14 +40,11 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
     const needsRenta = client.taxProfile?.requiresAnnualRenta || client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular;
     const rentaPeriod = (currentYear - 1).toString();
     const rentaDecl = (client.declarations || []).find(d => d.period === rentaPeriod);
-    const isRentaPaid = false || !!rentaDecl?.is_paid;
+    const isRentaPaid = !!rentaDecl?.is_paid;
     const isRentaDeclared = (
         rentaDecl?.status === DeclarationStatus.Enviada ||
         rentaDecl?.status === DeclarationStatus.Pagada ||
-        !!rentaDecl?.proof_file ||
-        undefined === DeclarationStatus.Enviada ||
-        undefined === DeclarationStatus.Pagada ||
-        false
+        !!rentaDecl?.proof_file
     );
 
     const ivaDueDate = getDueDateForPeriod(client, period);

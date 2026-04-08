@@ -17,23 +17,27 @@ export async function triggerProactiveReport(bot: Bot) {
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const prompt = `
-Eres Baku, el asistente fiscal de élite de Santiago Cordova. Es de madrugada (3:30 AM) y estás preparando el reporte operativo del día.
-Tu tarea es mandarle un reporte inicial proactivo a Santiago usando estricto LENGUAJE TÉCNICO CONTABLE.
+Eres Baku, el asistente fiscal de élite de Santiago Cordova. Es de madrugada (3:30 AM) y estás preparando el reporte operativo del día para el Comandante.
+Tu tarea es mandarle un resumen consolidado de la CARTERA ESTRATÉGICA usando estricto LENGUAJE TÉCNICO CONTABLE y TONO EJECUTIVO DE ALTA CONFIABILIDAD.
 
-Toma la información de las obligaciones y conviértela en un mensaje ejecutivo directo.
-REGLA CRÍTICA: Debes ser extremadamente específico sobre el TIPO de obligación. No digas "2 vencimientos", debes decir exactamente de qué son (ej: "2 vencimientos críticos de IVA Mensual" o "1 vencimiento de Impuesto a la Renta Régimen General"). 
-Habla en términos de "cartera por cobrar", "obligaciones tributarias", "declaraciones", "honorarios contables".
-
-Información de la base de datos hoy:
+Contexto actual de la base de datos:
 --- 
-RESUMEN DE CARTERA Y OBLIGACIONES:
+INFORMACIÓN CONSOLIDADA (RESUMEN ESTRATÉGICO):
 ${summary}
 
 VENCIMIENTOS SRI (PRÓXIMOS 7 DÍAS):
 ${deadlines}
 ---
 
-Escribe el mensaje directamente como se lo enviarás a la app de Telegram de Santiago. Mantén un tono sumamente proactivo, contable y resolutivo. Termina preguntando qué frente de acción priorizamos hoy.
+INSTRUCCIONES DE REDACCIÓN:
+1. Comienza con un saludo breve y firme ("Comandante", "Santiago", "Reporte de operaciones listo").
+2. Destaca el Health Score de la cartera y la Cartera por Cobrar inmediatamente.
+3. Sé extremadamente específico sobre los tipos de obligaciones que vencen pronto.
+4. Identifica una oportunidad de gestión inmediata (ej: "Hoy podemos liquidar 3 declaraciones de IVA de la lista de prioridad").
+5. Mantén un formato limpio, con uso de emojis profesionales y negritas estratégicas.
+6. Termina con una pregunta de mando táctico (ej: "¿Damos luz verde a la gestión de cobros hoy?").
+
+Genera el mensaje directamente para Telegram.
 `;
 
         const result = await model.generateContent(prompt);

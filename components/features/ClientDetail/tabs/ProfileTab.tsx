@@ -249,14 +249,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         </div>
                     </div>
 
-                    {/* Integrated Facturador Intelligence */}
-                    <div className="col-span-1 md:col-span-2 lg:col-span-1">
-                        <FacturadorCard 
-                            config={editedClient.facturadorConfig || {}} 
-                            isEditing={isEditing}
-                            onChange={(config) => setEditedClient({ ...editedClient, facturadorConfig: config })}
-                        />
-                    </div>
+
 
                     {/* Operational Commands */}
                     <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low dark:border-white/10 shadow-architect space-y-6 sm:space-y-10 group overflow-hidden relative">

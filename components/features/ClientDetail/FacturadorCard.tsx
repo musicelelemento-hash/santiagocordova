@@ -16,38 +16,36 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
     };
 
     return (
-        <div className="bg-white dark:bg-surface/40 backdrop-blur-3xl rounded-[3rem] p-10 shadow-architect hover:shadow-2xl relative overflow-hidden group border border-slate-100 dark:border-white/10 transition-all duration-700">
-            {/* Architectural Depth - Subtle Gradient Accent */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 dark:bg-primary/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-blue-100/50 dark:group-hover:bg-primary/10 transition-all duration-1000 -mr-32 -mt-32"></div>
+        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden group border border-slate-200/50 dark:border-white/10 transition-all duration-500 hover:shadow-primary/5">
+            {/* Decorative glow */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[100px] pointer-events-none -mr-32 -mt-32 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
             
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-12 relative z-10 gap-6">
                 <div>
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-50/50 dark:bg-primary/10 flex items-center justify-center text-blue-600 dark:text-primary-low group-hover:scale-110 transition-transform border border-blue-100 dark:border-primary/20">
-                            <LucideIcons.Sparkles className="animate-pulse" size={24} />
+                    <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-4">
+                        <div className="p-3 bg-blue-500/10 rounded-2xl">
+                            <LucideIcons.Sparkles className="text-blue-500 animate-pulse" size={22} />
                         </div>
-                        <h3 className="text-xl font-black text-slate-900 dark:text-slate-50 tracking-tighter uppercase font-premium">
-                            0FACTURADOR_v3.1
-                        </h3>
-                    </div>
-                    <p className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mt-4">ELECTRONIC_INFRASTRUCTURE</p>
+                        Facturador Electrónico
+                    </h3>
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mt-3">Infraestructura de emisión de comprobantes</p>
                 </div>
                 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     {config.url && (
                         <a 
                             href={config.url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 px-6 py-3 bg-slate-900 dark:bg-primary text-white hover:bg-slate-800 dark:hover:bg-primary-low rounded-2xl transition-all shadow-sm group/link text-[9px] font-mono font-bold uppercase tracking-widest"
+                            className="flex items-center gap-2.5 px-5 py-2.5 bg-slate-900 dark:bg-primary text-white hover:bg-primary dark:hover:bg-primary/80 rounded-2xl transition-all shadow-lg text-[10px] font-bold uppercase tracking-widest group/link"
                         >
-                            <span>CMD_OPEN</span>
-                            <LucideIcons.ExternalLink size={14} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                            <span>Abrir</span>
+                            <LucideIcons.ExternalLink size={13} className="group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
                         </a>
                     )}
-                    <div className="hidden sm:flex items-center gap-2.5 px-4 py-1.5 bg-emerald-50/50 dark:bg-emerald-500/10 rounded-lg border border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-                        <LucideIcons.ShieldCheck size={14} strokeWidth={3} />
-                        <span className="text-[9px] font-mono font-bold uppercase tracking-widest">VALIDATED_SYS</span>
+                    <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                        <LucideIcons.ShieldCheck size={13} strokeWidth={2.5} />
+                        <span className="text-[9px] font-bold uppercase tracking-widest">Validado</span>
                     </div>
                 </div>
             </div>
@@ -71,7 +69,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                     }
                                 }}
                                 disabled={!isEditing}
-                                className="w-full px-6 py-4 bg-white dark:bg-surface-low/30 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-mono font-bold text-slate-900 dark:text-slate-50 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm"
+                                className="w-full px-5 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm"
                             >
                                 <option value="0facturador">0facturador.os</option>
                                 <option value="Otra">Custom_Ext</option>
@@ -167,7 +165,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                             value={config.documentStatus || ''}
                             onChange={(e) => handleFieldChange('documentStatus', e.target.value)}
                             disabled={!isEditing}
-                            className="w-full px-6 py-4 bg-white dark:bg-surface-low/30 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-mono font-bold text-slate-900 dark:text-slate-50 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm"
+                            className="w-full px-5 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm"
                         >
                             <option value="">UNCERTAIN</option>
                             <option value="Ilimitado">UNLIMITED</option>

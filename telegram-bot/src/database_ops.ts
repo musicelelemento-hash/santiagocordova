@@ -266,8 +266,8 @@ export async function getUpcomingDeadlines() {
     }
 }
 
-// Google Sync logic placeholder
-export const syncToSheets = async () => { console.log("Sheets sync not yet migrated to SQL. Baku."); };
+// [DEPRECATED] Google Sheets sync no migrada al bot. La webapp usa VITE_GOOGLE_SCRIPT_URL directamente.
+export const syncToSheets = async () => { console.warn("[Bot] Sheets sync no disponible — usar la webapp."); };
 
 /**
  * Updates or adds information to a client's record
@@ -448,19 +448,29 @@ export async function getDatabaseSummary() {
 
         const compliancePercent = Math.round((eliteCount / total) * 100);
 
-        return `📊 *RESUMEN EJECUTIVO DE CARTERA:*
-Total Clientes: ${total} | Cumplimiento: ${compliancePercent}%
-- 🟢 Régimen General: ${general}
-- 🟠 Rimpe Emprendedor: ${rimpeEmprendedor}
-- 🟣 Rimpe Popular: ${rimpePopular}
+        // Identificar frentes de acción inmediatos
+        const urgentlyPending = clients.filter(c => {
+            const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
+            const lastIva = (c.declarations || []).filter((d: any) => d.type === 'IVA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+            return (ivaFreq !== 'Ninguno' && (!lastIva || (lastIva.status !== 'Enviada' && lastIva.status !== 'Pagada' && !lastIva.proof_file)));
+        }).slice(0, 5).map(c => c.name.split(' ')[0]).join(', ');
 
-🛑 *PENDIENTES CRÍTICOS:*
-- 📑 Declaraciones SRI por realizar: ${pendingDeclarations}
-- 💰 Cobros de Honorarios (IVA): ${pendingIvaPayments}
-- 🏦 Cobros de Honorarios (Renta): ${pendingRentaCount}
-- 💵 **Total por Cobrar:** $${totalFeesAmount} USD
+        return `📊 *ESTADO ESTRATÉGICO DE CARTERA:*
+----------------------------------
+📈 *Health Score Global:* ${compliancePercent}%
+👥 *Universo:* ${total} Clientes Activos
 
-Santiago, tu cumplimiento real es del ${compliancePercent}%. Tienes ${pendingDeclarations} expedientes por declarar y un total de **$${totalFeesAmount} por cobrar**. Baku.`;
+🛡️ *DESGLOSE OPERATIVO:*
+- General: ${general}
+- Emprendedor: ${rimpeEmprendedor}
+- Popular: ${rimpePopular}
+
+🚧 *FRENTES CRÍTICOS:*
+- 📑 Declaraciones Pendientes: ${pendingDeclarations}
+- 💰 Cartera por Cobrar: $${totalFeesAmount} USD
+- 🚨 Foco Inmediato: ${urgentlyPending}${total > 5 ? '...' : ''}
+
+Santiago, el sistema reporta un ${compliancePercent}% de eficacia operativa. Tenemos **$${totalFeesAmount}** líquidos por recuperar. ¿Procedemos con los recordatorios masivos? Baku.`;
 
     } catch (error: any) {
         return "Error al generar resumen: " + error.message;

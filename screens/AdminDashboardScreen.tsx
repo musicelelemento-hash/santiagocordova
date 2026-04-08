@@ -15,6 +15,8 @@ import { VirtualClientList } from '../components/features/VirtualClientList';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 import { ComplianceReportExport } from '../components/features/ComplianceReportExport';
 import { IvaFrequency } from '../types';
+import { getComplianceSummary, getClientCompliance, ComplianceColor } from '../services/complianceEngine';
+import { PortfolioSemaphore } from '../components/ui/PortfolioSemaphore';
 
 interface AdminDashboardScreenProps {
     navigate: (screen: Screen, options?: any) => void;
@@ -26,8 +28,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const { toast } = useToast();
 
     // Auto-detección de Campaña Mensual
-    const [filter, setFilter] = useState<'all' | 'mensual' | 'semestral' | 'vip' | 'urgent' | 'rimpe' | 'popular' | 'renta' | 'overdue' | 'prepaid' | 'no-iva' | 'no-renta' | 'boveda'>(() => {
-        return (sessionStorage.getItem('dashboard_filter') as any) || 'mensual';
+    const [filter, setFilter] = useState<'all' | 'mensual' | 'semestral' | 'vip' | 'urgent' | 'rimpe' | 'popular' | 'renta' | 'overdue' | 'prepaid' | 'no-iva' | 'no-renta' | 'boveda' | 'digital-mando' | ComplianceColor>(() => {
+        return (sessionStorage.getItem('dashboard_filter') as any) || 'digital-mando';
     });
     const [inboxTab, setInboxTab] = useState<'pendientes' | 'completados'>('pendientes');
     const [searchTerm, setSearchTerm] = useState(() => {
@@ -74,16 +76,17 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // --- SINGLE PASS PERFORMANCE ENGINE ---
+    // --- SINGLE PASS PERFORMANCE ENGINE (Upgraded to Zen v3.1) ---
     const { 
         urgentPriorities, pendientes, completados, allResults, 
-        kpis, expiringSignatures, activeRentaRefunds 
+        kpis, expiringSignatures, activeRentaRefunds, complianceSummary
     } = useMemo(() => {
         const today = new Date();
         const currentYear = today.getFullYear();
         const rentaPeriod = (currentYear - 1).toString();
         const next15Days = new Date(today.getTime() + 15 * 24 * 60 * 60 * 1000);
         
+        const summary = getComplianceSummary(clients, today);
         const urgents: Client[] = [];
         const peds: Client[] = [];
         const comps: Client[] = [];
@@ -101,19 +104,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             activeCount++;
 
             // 1. KPI & Special Lists Calculations
+            const compliance = getClientCompliance(c, today);
             const currentP = getPeriod(c, today);
             const dueDate = getDueDateForPeriod(c, currentP);
             const declarations = c.declarations || [];
             
             const ivaDecl = declarations.find(dh => dh.period === currentP);
-            const isIvaDeclared = !!ivaDecl?.proof_file || ivaDecl?.status === DeclarationStatus.Enviada || ivaDecl?.status === DeclarationStatus.Pagada;
             
-            const rentaDecl = declarations.find(dh => dh.period === rentaPeriod);
-            const needsRenta = c.taxProfile?.requiresAnnualRenta ?? (c.regime === TaxRegime.RimpeEmprendedor || c.regime === TaxRegime.RimpeNegocioPopular || c.regime === TaxRegime.General);
-            const isRentaDeclared = !!rentaDecl?.proof_file || rentaDecl?.status === DeclarationStatus.Enviada || rentaDecl?.status === DeclarationStatus.Pagada;
-
             // Stats
-            if (dueDate && isPast(dueDate) && !isIvaDeclared) overdueCount++;
+            if (compliance.overdueCount > 0) overdueCount++;
             if (ivaDecl?.is_paid && ivaDecl?.status === DeclarationStatus.Pendiente) prepaidCount++;
             totalIncome += (c.fee_structure?.monthly ?? c.customServiceFee ?? 0);
 
@@ -136,8 +135,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
             let filterMatch = true;
             if (filter === 'urgent') {
-                const isUrgent = (dueDate && (isPast(dueDate) || isToday(dueDate))) && !isIvaDeclared;
-                filterMatch = !!isUrgent;
+                filterMatch = compliance.urgentCount > 0;
+            } else if (filter === 'overdue') {
+                filterMatch = compliance.overdueCount > 0;
+            } else if (filter === 'red' || filter === 'orange' || filter === 'yellow' || filter === 'green' || filter === 'gray') {
+                filterMatch = compliance.overallColor === filter;
             } else if (filter === 'prepaid') {
                 filterMatch = !!(ivaDecl?.is_paid && ivaDecl?.status === DeclarationStatus.Pendiente);
             } else if (filter === 'no-iva') {
@@ -152,25 +154,20 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 filterMatch = c.taxProfile?.requiresAnnualRenta === false;
             } else if (filter === 'boveda') {
                 filterMatch = !!(ivaDecl && !ivaDecl.proof_file && (ivaDecl.status === DeclarationStatus.Enviada || ivaDecl.status === DeclarationStatus.Pagada));
+            } else if (filter === 'digital-mando') {
+                filterMatch = c.taxProfile?.ivaFrequency !== 'Ninguno';
             }
 
             if (filterMatch) {
                 filtered.push(c);
                 
                 // 3. Categorization (Inbox)
-                const needsIva = c.regime !== TaxRegime.RimpeNegocioPopular && c.taxProfile?.ivaFrequency !== 'Ninguno';
-                const isDone = (!needsIva || isIvaDeclared) && (!needsRenta || isRentaDeclared);
+                const isDone = compliance.score === 100 && compliance.overdueCount === 0;
 
                 if (isDone) {
                     comps.push(c);
                 } else {
-                    let isUrgent = false;
-                    if (needsIva && !isIvaDeclared && dueDate && (isPast(dueDate) || isToday(dueDate))) isUrgent = true;
-                    if (needsRenta && !isRentaDeclared && today.getMonth() >= 2) isUrgent = true;
-                    if (ivaDecl && !ivaDecl.proof_file && ivaDecl.status === DeclarationStatus.Enviada) isUrgent = true;
-                    if (rentaDecl && !rentaDecl.proof_file && rentaDecl.status === DeclarationStatus.Enviada) isUrgent = true;
-
-                    if (isUrgent) urgents.push(c);
+                    if (compliance.urgentCount > 0 || compliance.overdueCount > 0) urgents.push(c);
                     else peds.push(c);
                 }
             }
@@ -198,9 +195,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 projectedIncome: totalIncome 
             },
             expiringSignatures: signExp,
-            activeRentaRefunds: refunds
+            activeRentaRefunds: refunds,
+            complianceSummary: summary
         };
-    }, [clients, filter, searchTerm]);
+    }, [clients, searchTerm, filter]);
 
     // Data for Matrix Mode
     const matrixPeriods = useMemo(() => {
@@ -551,6 +549,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         </div>
                     </div>
 
+                    {/* COMPLIANCE SEMAPHORE: Proactive Health Indicator */}
+                    <PortfolioSemaphore 
+                        summary={complianceSummary} 
+                        onFilterChange={(newFilter) => setFilter(newFilter as any)}
+                        activeFilter={filter as any}
+                    />
+
                     {/* METRICS DOCK: High-Density Swiper on Mobile */}
                     <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-6 mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-slate-100 dark:border-white/5 overflow-x-auto sm:overflow-x-visible no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0 snap-x snap-mandatory pb-4 sm:pb-0">
                         <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen group cursor-pointer" onClick={() => setFilter('all')}>
@@ -558,17 +563,17 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <LucideIcons.Users size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5">Cartera Total</p>
+                                <p className="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5">Total Clientes</p>
                                 <p className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tighter leading-none">{kpis.total}</p>
                             </div>
                         </div>
-                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen group cursor-pointer" onClick={() => setFilter('overdue')}>
-                            <div className={`p-3 sm:p-4 rounded-2xl transition-all shadow-sm border shrink-0 ${kpis.overdue > 0 ? 'bg-rose-500 text-white border-rose-500' : 'bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-white/5'}`}>
-                                <LucideIcons.ShieldAlert size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
+                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen group cursor-pointer" onClick={() => setFilter('all')}>
+                            <div className={`p-3 sm:p-4 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-white/5 transition-all shadow-sm shrink-0`}>
+                                <LucideIcons.TrendingUp size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[11px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5 font-premium">Pendientes Críticos</p>
-                                <p className={`text-xl sm:text-3xl font-black tracking-tighter leading-none font-premium ${kpis.overdue > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>{kpis.overdue}</p>
+                                <p className="text-[11px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5 font-premium">Facturación Est.</p>
+                                <p className={`text-xl sm:text-3xl font-black tracking-tighter leading-none font-premium text-emerald-600 dark:text-emerald-400`}>${Math.round(kpis.projectedIncome)}</p>
                             </div>
                         </div>
                         <div className="flex-none w-[85%] sm:w-auto snap-center flex items-center gap-5 p-4 glass-zen group cursor-pointer" onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true, title: 'Auditoría de Bóveda' } })}>
@@ -596,9 +601,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                              <div className="relative z-10 w-full">
                                 <div className="flex justify-between items-end mb-2 sm:mb-3">
                                     <div className="flex flex-col">
-                                        <span className="text-[11px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-0.5 sm:mb-1 font-premium">CONSOLIDADO</span>
+                                        <span className="text-[11px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-0.5 sm:mb-1 font-premium">LOGRO FISCAL</span>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-premium">{Math.round((completados.length / (allResults.length || 1)) * 100)}%</span>
+                                            <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-premium">{complianceSummary.averageScore}%</span>
                                             <span className="text-xs sm:text-xs font-black text-slate-400 uppercase tracking-widest hidden sm:inline font-premium">Eficiencia</span>
                                         </div>
                                     </div>
@@ -610,7 +615,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <div className="w-full h-1.5 bg-slate-100 dark:bg-black/20 rounded-full overflow-hidden">
                                     <div 
                                         className="h-full bg-slate-900 dark:bg-white transition-all duration-1000 ease-out"
-                                        style={{ width: `${(completados.length / (allResults.length || 1)) * 100}%` }}
+                                        style={{ width: `${complianceSummary.averageScore}%` }}
                                     ></div>
                                 </div>
                              </div>
@@ -715,12 +720,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 <div className="glass-tactical-dock rounded-full p-2 flex items-center gap-1.5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/10 dark:bg-black/60 backdrop-blur-3xl no-scrollbar overflow-x-auto">
                     {[
                         { id: 'all', label: 'Directorio', icon: LucideIcons.Users },
+                        { id: 'digital-mando', label: 'Mando Digital', icon: LucideIcons.Activity, color: 'text-sky-400' },
                         { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.Calendar },
                         { id: 'semestral', label: 'IVA Semestral', icon: LucideIcons.Clock },
                         { id: 'renta', label: 'Renta Anual', icon: LucideIcons.ShieldCheck },
                         { id: 'urgent', label: 'Crítico SRI', icon: LucideIcons.Zap, color: 'text-rose-400' },
-                        { id: 'no-iva', label: 'Sin IVA', icon: LucideIcons.XCircle },
-                        { id: 'no-renta', label: 'Sin Renta', icon: LucideIcons.XCircle },
                     ].map(tab => {
                         const isActive = filter === tab.id;
                         return (

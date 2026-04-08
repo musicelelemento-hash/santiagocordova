@@ -5,7 +5,7 @@ import { Client, Task, AnalysisType, TaxRegime, Message } from "../types";
 // Inicialización del cliente AI
 const getAIClient = () => {
   const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'PLACEHOLDER_API_KEY') return null;
+  if (!apiKey) return null;
   return new GoogleGenAI(apiKey);
 };
 

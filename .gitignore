@@ -43,3 +43,7 @@ debug-*.js
 test-pdf.js
 *.pdf
 .env*.local
+
+# Legacy / Archived Code
+santiagocordova-main/
+*.zip

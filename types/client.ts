@@ -7,11 +7,20 @@ export enum DeclarationStatus {
     Vencida = 'Vencida',
 }
 
+export enum InternalStatus {
+    WaitingSync = 'Esperando Sincronización',
+    InValidation = 'En Validación Digital',
+    ReadyToDeclare = 'Listo para Declarar',
+    Done = 'Completado',
+}
+
 export enum TaxRegime {
     General = 'Régimen General',
     RimpeNegocioPopular = 'RIMPE Negocio Popular',
     RimpeEmprendedor = 'RIMPE Emprendedor',
 }
+
+export type TaxObligationType = 'IVA' | 'RENTA' | 'ICE' | 'PVP' | 'ISD' | 'RET' | 'ANEXO';
 
 // ClientCategory removed - all logic now relies on Regime and TaxProfile
 
@@ -56,7 +65,11 @@ export type ReminderType = 'upcoming' | 'due_date' | 'overdue';
 
 export interface Declaration {
     period: string;
+    type?: TaxObligationType;
     status: DeclarationStatus;
+    internalStatus?: InternalStatus;
+    lastSyncTimestamp?: string;
+    validationAlerts?: string[];
     updatedAt: string;
     declaredAt?: string;
     is_paid?: boolean;

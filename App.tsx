@@ -268,7 +268,7 @@ const App: React.FC = () => {
 
   const renderScreen = () => {
     switch (activeScreen) {
-      case 'home': return <AdminDashboardScreen navigate={navigate} theme={theme} />;
+      case 'home': return <AdminDashboardScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />;
       case 'clients': return (
         <ClientsScreen 
           initialFilter={clientFilter} 

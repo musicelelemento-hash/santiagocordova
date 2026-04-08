@@ -180,7 +180,7 @@ export const SupabaseService = {
       address: client.address,
       notes: client.notes,
       regime: client.regime,
-      is_vip: true,
+      is_vip: true, // Decisión de negocio: todos los clientes son VIP (campo legacy)
       renta_category: client.rentaCategory,
       economic_activity: client.economicActivity,
       is_active: client.isActive,

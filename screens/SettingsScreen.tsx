@@ -65,7 +65,7 @@ const importBrowserPasswordsToClients = (
         newClientsList = newClientsList.map(c => c.id === existingClient.id ? { ...c, ...updates } : c);
     });
 
-    // Add new (Placeholders)
+    // Agregar clientes nuevos creados desde el CSV (pendientes de completar nombre)
     newClientsList = [...newClientsList, ...result.clientsToCreate];
 
     setClients(newClientsList);

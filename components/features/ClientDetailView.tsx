@@ -21,7 +21,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ClientHeader } from './ClientDetail/ClientHeader';
 import { CopyButton } from './ClientDetail/CopyButton';
 import { VaultCard } from './ClientDetail/VaultCard';
-import { FacturadorCard } from './ClientDetail/FacturadorCard';
+
 import { DocumentTimeline } from './ClientDetail/DocumentTimeline';
 import { PdfPreviewModal } from './ClientDetail/PdfPreviewModal';
 import { ProfileDataItem } from './ClientDetail/ProfileDataItem';
@@ -636,6 +636,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             setUploadingTarget={setUploadingTarget}
             proofInputRef={proofInputRef}
             setPreviewItem={setPreviewItem}
+            notes={client.structuredNotes || []}
         />
     );
 
@@ -655,18 +656,25 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed) */}
                 <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
                     <div className="flex items-center gap-1 p-1 bg-white/90 backdrop-blur-[40px] border border-slate-200 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] pointer-events-auto ring-1 ring-black/[0.05]">
-                        {(['profile', 'history', 'vault', 'settings'] as const).map(tab => (
+                        {(['profile', 'history', 'vault', 'settings'] as const).map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`group relative flex items-center gap-3 px-6 py-4 rounded-[2rem] transition-all duration-700 overflow-hidden ${activeTab === tab ? 'bg-slate-900 text-white shadow-xl shadow-slate-200 scale-[1.08] -translate-y-1' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}
+                                className={`group relative flex items-center gap-3 px-6 py-4 rounded-[2rem] transition-all duration-700 overflow-hidden ${
+                                    activeTab === tab 
+                                        ? 'bg-slate-900 text-white shadow-xl shadow-slate-200 scale-[1.08] -translate-y-1' 
+                                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                                }`}
                             >
                                 <div className="relative z-10 flex items-center gap-3">
                                     {tab === 'profile' && <LayoutDashboard size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-12 group-hover:scale-110'}`} />}
                                     {tab === 'history' && <Activity size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
                                     {tab === 'vault' && <Lock size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:-translate-y-0.5'}`} />}
                                     {tab === 'settings' && <Settings size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-90 group-hover:scale-110'}`} />}
-                                    <span className={`text-[11px] font-black uppercase tracking-[0.25em] font-premium transition-all duration-700 ${activeTab === tab ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0 md:opacity-100 md:max-w-[150px] overflow-hidden'}`}>
+                                    
+                                    <span className={`text-[11px] font-black uppercase tracking-[0.25em] font-premium transition-all duration-700 ${
+                                        activeTab === tab ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0 md:opacity-100 md:max-w-[150px] overflow-hidden'
+                                    }`}>
                                         {tab === 'profile' ? 'Táctico' : tab === 'history' ? 'Operativas' : tab === 'vault' ? 'Bóveda' : 'Sistemas'}
                                     </span>
                                 </div>

@@ -1,10 +1,11 @@
 
 import React, { memo } from 'react';
-import { Client, DeclarationStatus, ServiceFeesConfig, TaxRegime, Declaration } from '../../types';
+import { Client, DeclarationStatus, ServiceFeesConfig, TaxRegime, Declaration, InternalStatus } from '../../types';
 import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, safeFormat } from '../../services/sri';
 import { getClientServiceFee } from '../../services/clientService';
 import { isPast, differenceInCalendarDays, differenceInHours } from 'date-fns';
 import * as LucideIcons from 'lucide-react';
+import { getClientCompliance } from '../../services/complianceEngine';
 
 interface ClientCardProps {
     client: Client;
@@ -14,7 +15,7 @@ interface ClientCardProps {
     onUploadReceipt?: (client: Client, period?: string) => void;
     onPreview?: (client: Client, declaration: Declaration) => void;
     compact?: boolean;
-    variant?: 'tactical' | 'zen';
+    variant?: 'tactical' | 'zen' | 'digital';
 }
 
 export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical' }) => {
@@ -22,6 +23,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     const [isHovered, setIsHovered] = React.useState(false);
 
     const today = new Date();
+    const compliance = getClientCompliance(client, today);
     const currentPeriod = getPeriod(client, today);
     const activeDecl = client.declarations.find(d => d.period === currentPeriod);
 
@@ -155,107 +157,112 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
             onMouseLeave={() => setIsHovered(false)}
             className={`
                 relative rounded-[2rem] transition-all duration-500 cursor-pointer overflow-hidden group
-                ${isHovered ? 'bg-surface-low -translate-y-1.5' : 'bg-surface-lowest'}
-                shadow-architect border-0
+                ${isHovered ? 'bg-surface-low border-primary/20 -translate-y-1' : 'bg-surface-lowest border-transparent'}
+                shadow-sm border-2
                 ${hasWorkOrder ? 'ring-2 ring-primary/30' : ''}
                 ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-tertiary/30' : ''}
-                ${variant === 'zen' ? 'max-h-[200px]' : ''}
+                ${variant === 'zen' ? 'max-h-[140px]' : ''}
             `}
         >
             {/* Tonal Accent Strip */}
             <div className={`absolute top-0 left-0 right-0 h-[4px] ${isFullyAlDia ? 'bg-tertiary' : (isOverdue ? 'bg-primary' : 'bg-surface-low')}`}></div>
             
-            <div className={`${compact ? 'p-5' : 'p-8'} relative z-10 flex flex-col h-full justify-between`}>
-                <div className={`flex justify-between items-start ${compact ? 'mb-4' : 'mb-8'}`}>
-                    <div className="flex items-center gap-5">
-                        <div className={`relative`}>
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold text-sm transition-all duration-700 ${isFullyAlDia ? 'bg-tertiary/5 text-tertiary' : 'bg-primary/5 text-primary'}`}>
-                                {client.name.substring(0, 2).toUpperCase()}
-                            </div>
-                            {isFullyAlDia && !client.isDeleted && (
-                                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-tertiary rounded-full border-[3px] border-surface-lowest flex items-center justify-center">
-                                    <LucideIcons.Check size={12} className="text-white" />
-                                </div>
-                            )}
+            <div className={`${compact ? 'p-3' : 'p-4 px-5'} relative z-10 flex flex-col md:flex-row md:items-center h-full justify-between gap-4`}>
+                <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="relative shrink-0">
+                        <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center font-bold text-sm transition-all duration-700 ${isFullyAlDia ? 'bg-tertiary/10 text-tertiary' : 'bg-primary/10 text-primary'}`}>
+                            {client.name.substring(0, 2).toUpperCase()}
                         </div>
-                        
-                        <div className="flex-1 min-w-0 pr-8">
-                            <h3 className={`font-premium font-bold text-lg line-clamp-1 leading-tight text-on-surface`} title={client.name}>
+                        {/* Zen 3.1 Compliance Dot */}
+                        <div 
+                            className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-surface-lowest shadow-sm z-20 ${
+                                compliance.overallColor === 'red' ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]' :
+                                compliance.overallColor === 'orange' ? 'bg-orange-500' :
+                                compliance.overallColor === 'yellow' ? 'bg-amber-400' :
+                                compliance.overallColor === 'green' ? 'bg-emerald-500' :
+                                'bg-slate-300'
+                            }`}
+                            title={`Salud Fiscal: ${compliance.score}%`}
+                        />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                            <h3 className="font-premium font-bold text-base truncate text-on-surface leading-tight" title={client.name}>
                                 {client.tradeName || client.name}
                             </h3>
-                            <div className="flex items-center gap-3 mt-2">
-                                <button onClick={handleCopy} className={`flex items-center gap-2 transition-all text-on-surface-variant hover:text-primary`}>
-                                    <span className="font-mono text-[10px] font-bold tracking-[0.2em]">{client.ruc}</span>
-                                    {copied ? <LucideIcons.Check size={10} className="text-tertiary" /> : <LucideIcons.Copy size={10} className="opacity-40" />}
-                                </button>
-                                {client.hasElderlyDevolucionIva && (
-                                    <span className="text-[9px] px-2 py-0.5 bg-tertiary/10 text-tertiary rounded-md font-bold tracking-[0.1em] flex items-center gap-1 uppercase font-premium">
-                                        <LucideIcons.Heart size={8} /> Senior
-                                    </span>
-                                )}
-                            </div>
+                            {client.hasElderlyDevolucionIva && (
+                                <span className="shrink-0 text-[8px] px-1.5 py-0.5 bg-tertiary/20 text-tertiary rounded-md font-bold tracking-widest uppercase font-premium">
+                                    Sr
+                                </span>
+                            )}
                         </div>
-                    </div>
-
-                    <div className="flex flex-col items-end">
-                        <div className={`px-4 py-1.5 rounded-xl border-0 text-[10px] font-bold tracking-[0.15em] flex items-center gap-2 uppercase font-premium ${statusBadge.color.replace('border-white/10', '').replace('bg-white/5', 'bg-surface-low')}`}>
-                            <statusBadge.icon size={12} strokeWidth={2.5} />
-                            {statusBadge.text}
+                        <div className="flex items-center gap-3">
+                            <button onClick={handleCopy} className="flex items-center gap-1.5 transition-all text-on-surface-variant hover:text-primary">
+                                <span className="font-mono text-[9px] font-bold tracking-widest">{client.ruc}</span>
+                                {copied ? <LucideIcons.Check size={10} className="text-tertiary" /> : <LucideIcons.Copy size={10} className="opacity-30" />}
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                {!compact && !client.isDeleted && (
-                    <div className="flex-1 flex flex-col justify-center px-1 mb-6">
-                        <div className="grid grid-cols-2 gap-3">
+                {/* Status and Actions Group */}
+                <div className="flex items-center gap-4 md:gap-6">
+                    {/* Tax Indicators - Vertical Sparks */}
+                    {!client.isDeleted && variant !== 'digital' && (
+                        <div className="flex items-center gap-3 mr-2">
                             {activeDecl && (
-                                <div className={`flex flex-col p-4 rounded-[1.5rem] ${isPaid ? 'bg-tertiary/5' : (isOverdue ? 'bg-primary/5' : 'bg-surface-low')} transition-colors`}>
-                                    <span className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${isPaid ? 'text-tertiary' : (isOverdue ? 'text-primary' : 'text-on-surface-variant')}`}>Ciclo IVA</span>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-on-surface uppercase tracking-tight font-premium">{dueDate ? safeFormat(dueDate, 'dd MMM') : 'N/A'}</span>
-                                        <LucideIcons.ChevronRight size={14} className="opacity-20" />
-                                    </div>
+                                <div className="flex flex-col items-center">
+                                    <span className={`text-[8px] font-bold uppercase tracking-tighter opacity-40 mb-1 ${isPaid ? 'text-tertiary opacity-100' : (isOverdue ? 'text-rose-500 opacity-100' : '')}`}>IVA</span>
+                                    <div className={`w-2.5 h-2.5 rounded-full ${isPaid ? 'bg-tertiary' : (isOverdue ? 'bg-rose-500 h-3 w-3 shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'bg-surface-low')}`} />
                                 </div>
                             )}
                             {needsRenta && (
-                                <div className={`flex flex-col p-4 rounded-[1.5rem] ${isRentaFullyDone ? 'bg-tertiary/5' : 'bg-surface-low'} transition-colors`}>
-                                    <span className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${isRentaFullyDone ? 'text-tertiary' : 'text-on-surface-variant'}`}>Ciclo Anual</span>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-on-surface uppercase tracking-tight font-premium">{rentaPeriod}</span>
-                                        <LucideIcons.ChevronRight size={14} className="opacity-20" />
-                                    </div>
+                                <div className="flex flex-col items-center">
+                                    <span className={`text-[8px] font-bold uppercase tracking-tighter opacity-40 mb-1 ${isRentaFullyDone ? 'text-tertiary opacity-100' : ''}`}>REN</span>
+                                    <div className={`w-2.5 h-2.5 rounded-full ${isRentaFullyDone ? 'bg-tertiary' : 'bg-surface-low'}`} />
                                 </div>
                             )}
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {variant === 'tactical' && (
-                    <div className={`flex items-center justify-between pt-5 border-t border-outline-variant/10 mt-1`}>
-                        {!compact && (
-                            <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-on-surface-variant font-premium">
-                                Matrix Tactical Intel
-                            </div>
-                        )}
-                        
-                        {client.isActive && !client.isDeleted && (
-                            <div className={`flex gap-2.5 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
-                                <button
-                                    onClick={(e) => !isDeclared && handleAction(e, 'declare')}
-                                    className={`flex items-center justify-center gap-2 rounded-xl transition-all font-bold border-0 px-4 py-2 text-[10px] uppercase font-premium ${isDeclared ? 'bg-surface-low text-on-surface-variant opacity-50' : 'bg-primary text-white hover:bg-primary/90 shadow-sm active:scale-95'}`}
-                                >
-                                    <LucideIcons.Zap size={14} /> {compact ? 'ACT' : 'ACT EN SRI'}
-                                </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
-                                    className={`flex items-center justify-center gap-2 rounded-xl transition-all font-bold border-0 px-4 py-2 text-[10px] uppercase font-premium ${activeDecl?.proof_file ? 'bg-tertiary text-white shadow-sm' : 'bg-surface-low text-on-surface-variant hover:text-primary'} active:scale-95`}
-                                >
-                                    <LucideIcons.UploadCloud size={14} /> {activeDecl?.proof_file ? 'VER PDF' : 'CARGAR PDF'}
-                                </button>
-                            </div>
-                        )}
+                    {/* Badge - Always visible but more compact */}
+                    <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider font-premium ${statusBadge.color.replace('bg-white/5', 'bg-surface-low').replace('border-white/10', 'border-outline-variant/5')}`}>
+                        <statusBadge.icon size={11} strokeWidth={2.5} />
+                        {statusBadge.text}
                     </div>
-                )}
+
+                    {/* Actions - Permanently visible buttons, but subtle if not hovered */}
+                    {client.isActive && !client.isDeleted && (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={(e) => !isDeclared && handleAction(e, 'declare')}
+                                disabled={isDeclared}
+                                className={`flex items-center justify-center h-9 w-9 sm:w-auto sm:px-3 rounded-xl border transition-all font-bold text-[10px] uppercase font-premium ${
+                                    isDeclared 
+                                    ? 'bg-surface-low text-on-surface-variant opacity-40 border-transparent' 
+                                    : 'bg-primary text-white border-primary hover:scale-105 active:scale-95 shadow-sm'
+                                }`}
+                                title="Declarar en SRI"
+                            >
+                                <LucideIcons.Zap size={14} className={isDeclared ? '' : 'fill-current'} />
+                                <span className={compact ? 'hidden' : 'hidden md:inline ml-1.5'}>SRI</span>
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
+                                className={`flex items-center justify-center h-9 w-9 sm:w-auto sm:px-3 rounded-xl border transition-all font-bold text-[10px] uppercase font-premium ${
+                                    activeDecl?.proof_file 
+                                    ? 'bg-tertiary text-white border-tertiary shadow-sm' 
+                                    : 'bg-surface-lowest text-on-surface-variant border-outline-variant/20 hover:border-primary hover:text-primary'
+                                } active:scale-95`}
+                                title={activeDecl?.proof_file ? 'Ver Comprobante' : 'Cargar Comprobante'}
+                            >
+                                {activeDecl?.proof_file ? <LucideIcons.FileCheck size={14} /> : <LucideIcons.Upload size={14} />}
+                                <span className={compact ? 'hidden' : 'hidden md:inline ml-1.5'}>{activeDecl?.proof_file ? 'VER' : 'PDF'}</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -4,6 +4,7 @@ import { Client, DeclarationStatus, IvaFrequency, Declaration } from '../../type
 import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod } from '../../services/sri';
 import { format, subMonths, startOfMonth, endOfMonth, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { getClientCompliance, getObligationsForPeriod } from '../../services/complianceEngine';
 
 interface TaxComplianceMatrixProps {
     clients: Client[];
@@ -29,7 +30,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const periods = useMemo(() => {
         const result = [];
         if (frequency === 'Mensual') {
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 12; i++) {
                 const date = subMonths(today, i + 1);
                 result.push(format(date, 'yyyy-MM'));
             }
@@ -62,31 +63,14 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     }, [clients, frequency, searchTerm]);
 
     const getStatusIcon = (declaration?: Declaration) => {
-        if (!declaration) return <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10" title="Sin Registro" />;
+        if (!declaration) return <div className="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-white/5 shadow-inner" title="Sin Registro" />;
         
         const isPaid = declaration.status === DeclarationStatus.Pagada;
         const isSent = declaration.status === DeclarationStatus.Enviada;
         
-        return (
-            <div className="flex items-center gap-1.5">
-                {isPaid ? (
-                    <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-sm" title="Pagada">
-                        <LucideIcons.CheckCircle2 size={10} strokeWidth={3} />
-                        <span className="text-[8px] font-black uppercase tracking-tighter">PAGADA</span>
-                    </div>
-                ) : isSent ? (
-                    <div className="flex items-center gap-1 bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded-full border border-sky-500/20 shadow-sm" title="Enviada">
-                        <LucideIcons.Send size={10} strokeWidth={3} />
-                        <span className="text-[8px] font-black uppercase tracking-tighter">LISTA</span>
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-1 bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/20 shadow-sm" title="Pendiente">
-                        <LucideIcons.Clock size={10} strokeWidth={3} />
-                        <span className="text-[8px] font-black uppercase tracking-tighter">PEND</span>
-                    </div>
-                )}
-            </div>
-        );
+        if (isPaid) return <LucideIcons.CheckCircle2 size={12} className="text-emerald-500 shadow-sm" strokeWidth={3} />;
+        if (isSent) return <LucideIcons.Send size={12} className="text-sky-500 shadow-sm" strokeWidth={3} />;
+        return <LucideIcons.Clock size={12} className="text-amber-500 shadow-sm" strokeWidth={3} />;
     };
 
     return (
@@ -237,7 +221,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             className="px-8 py-5 sticky left-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-r border-slate-200/50 dark:border-white/10 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-800 transition-colors"
                                             onClick={() => onViewClient(client)}
                                         >
-                                            <div className="flex items-center gap-3 cursor-pointer group/name">
+                                            <div className="flex items-center gap-3 cursor-pointer group/name relative">
+                                                {/* ZEN 3.1 Compliance Dot */}
+                                                <div 
+                                                    className={`absolute -left-2 w-1.5 h-6 rounded-full ${
+                                                        getClientCompliance(client, today).overallColor === 'red' ? 'bg-rose-500' :
+                                                        getClientCompliance(client, today).overallColor === 'orange' ? 'bg-orange-500' :
+                                                        getClientCompliance(client, today).overallColor === 'yellow' ? 'bg-amber-400' :
+                                                        getClientCompliance(client, today).overallColor === 'green' ? 'bg-emerald-500' :
+                                                        'bg-slate-300'
+                                                    }`}
+                                                />
                                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black transition-colors ${
                                                     theme === 'dark' ? 'bg-white/5 text-slate-500 group-hover/name:bg-primary group-hover/name:text-white' : 'bg-slate-100 text-slate-400 group-hover/name:bg-primary group-hover/name:text-white'
                                                 }`}>
@@ -254,34 +248,45 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             </div>
                                         </td>
                                         {periods.map(p => {
-                                            const declaration = client.declarations?.find(d => d.period === p);
-                                            const hasProof = !!declaration?.proof_file;
-                                            const isMissingPdf = (declaration?.status === DeclarationStatus.Enviada || declaration?.status === DeclarationStatus.Pagada) && !hasProof;
-                                            const isDone = (declaration?.status === DeclarationStatus.Pagada || declaration?.status === DeclarationStatus.Enviada) && hasProof;
+                                            const obligations = getObligationsForPeriod(client, p);
+                                            const declarations = client.declarations || [];
                                             
+                                            // Determine if this cell is generally "Done" (all obligations met)
+                                            const allObligationsDone = obligations.every(ob => {
+                                                const d = declarations.find(dh => dh.period === p && dh.type === ob.type);
+                                                return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && d.proof_file;
+                                            });
+
                                             return (
-                                                <td key={p} className={`px-4 py-5 border-r border-slate-200/50 dark:border-white/5 last:border-r-0 transition-colors ${isDone ? 'bg-emerald-500/5 dark:bg-emerald-500/10' : ''}`}>
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <div className="flex items-center gap-2">
-                                                            {getStatusIcon(declaration)}
-                                                            {hasProof ? (
-                                                                <button 
-                                                                    onClick={(e) => { e.stopPropagation(); onPreviewReceipt(client, declaration!); }}
-                                                                    className="p-1.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:scale-110 transition-all shadow-sm"
-                                                                    title="Ver Comprobante"
+                                                <td key={p} className={`px-2 py-4 border-r border-slate-200/50 dark:border-white/5 last:border-r-0 transition-colors ${allObligationsDone ? 'bg-emerald-500/5 dark:bg-emerald-500/10' : ''}`}>
+                                                    <div className="flex flex-wrap justify-center gap-1.5 min-w-[60px]">
+                                                        {obligations.map(ob => {
+                                                            const d = declarations.find(dh => dh.period === p && dh.type === ob.type);
+                                                            const hasProof = !!d?.proof_file;
+                                                            const isDone = (d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada) && hasProof;
+                                                            
+                                                            return (
+                                                                <div 
+                                                                    key={`${p}-${ob.type}`}
+                                                                    className={`group/ob relative p-1 rounded-md transition-all ${isDone ? 'bg-emerald-500/10' : 'bg-slate-100 dark:bg-white/5'}`}
+                                                                    title={`${ob.label}: ${d?.status || 'Pendiente'}`}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (hasProof) onPreviewReceipt(client, d!);
+                                                                        else onUploadReceipt(client, p);
+                                                                    }}
                                                                 >
-                                                                    <LucideIcons.Paperclip size={14} strokeWidth={2.5} />
-                                                                </button>
-                                                            ) : (
-                                                                <button 
-                                                                    onClick={(e) => { e.stopPropagation(); onUploadReceipt(client, p); }}
-                                                                    className={`p-1.5 rounded-lg transition-all ${isMissingPdf ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-500 animate-pulse' : 'bg-slate-100 dark:bg-white/5 text-slate-400 hover:text-primary'} hover:scale-110`}
-                                                                    title={isMissingPdf ? "FALTA PDF" : "Subir Comprobante"}
-                                                                >
-                                                                    <LucideIcons.Upload size={14} strokeWidth={2.5} />
-                                                                </button>
-                                                            )}
-                                                        </div>
+                                                                    <div className="flex flex-col items-center">
+                                                                        <span className="text-[7px] font-black mb-0.5 opacity-40 group-hover/ob:opacity-100">{ob.type}</span>
+                                                                        {getStatusIcon(d)}
+                                                                        {d && !hasProof && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && (
+                                                                            <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                        {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-slate-200/20" />}
                                                     </div>
                                                 </td>
                                             );
