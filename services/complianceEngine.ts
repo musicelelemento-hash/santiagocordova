@@ -8,6 +8,7 @@ import { subMonths, format, getYear, getMonth } from 'date-fns';
 // ─────────────────────────────────────────────────────────
 
 export type ComplianceColor = 'green' | 'yellow' | 'orange' | 'red' | 'gray';
+export type TaxFrequency = 'Mensual' | 'Semestral' | 'Anual' | 'all';
 
 export interface ObligationStatus {
     type: TaxObligationType;
@@ -76,7 +77,8 @@ const getColor = (daysRemaining: number | null, declared: boolean, paid: boolean
 // CORE: Get all obligations for a client at a given date
 // ─────────────────────────────────────────────────────────
 
-export const getClientObligations = (client: Client, date: Date): ObligationStatus[] => {
+export const getClientObligations = (client: Client, date: Date, frequency: 'Mensual' | 'Semestral' | 'Anual' | 'all' = 'all'): ObligationStatus[] => {
+
     if (client.isDeleted || !client.isActive) return [];
 
     const obligations: ObligationStatus[] = [];
@@ -85,7 +87,12 @@ export const getClientObligations = (client: Client, date: Date): ObligationStat
     const rentaPeriod = (currentYear - 1).toString();
 
     // 1. IVA (Mensual / Semestral)
-    if (requiresIva(client)) {
+    const clientIvaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
+    const shouldIncludeIva = (frequency === 'all') || 
+                            (frequency === 'Mensual' && clientIvaFreq === 'Mensual') ||
+                            (frequency === 'Semestral' && clientIvaFreq === 'Semestral');
+
+    if (requiresIva(client) && shouldIncludeIva) {
         const ivaPeriod = getPeriod(client, date);
         const ivaDecl = declarations.find(d => d.period === ivaPeriod);
         const ivaDue = getDueDateForPeriod(client, ivaPeriod);
@@ -93,11 +100,10 @@ export const getClientObligations = (client: Client, date: Date): ObligationStat
         const ivaDeclared = isDeclared(ivaDecl);
         const ivaPaids = isPaid(ivaDecl);
 
-        const freq = client.taxProfile?.ivaFrequency || 'Mensual';
         obligations.push({
             type: 'IVA',
             period: ivaPeriod,
-            label: freq === 'Semestral' ? `IVA Semestral` : `IVA Mensual`,
+            label: clientIvaFreq === 'Semestral' ? `IVA Semestral` : `IVA Mensual`,
             color: getColor(ivaDays, ivaDeclared, ivaPaids, ivaDecl?.internalStatus),
             daysRemaining: ivaDays,
             dueDate: ivaDue,
@@ -107,13 +113,16 @@ export const getClientObligations = (client: Client, date: Date): ObligationStat
         });
     }
 
+
     // 2. Renta Anual
+    const shouldIncludeRenta = (frequency === 'all' || frequency === 'Anual');
     const needsRenta = client.taxProfile?.requiresAnnualRenta ??
         (client.regime === TaxRegime.RimpeEmprendedor ||
             client.regime === TaxRegime.RimpeNegocioPopular ||
             client.regime === TaxRegime.General);
 
-    if (needsRenta) {
+    if (needsRenta && shouldIncludeRenta) {
+
         const rentaDecl = declarations.find(d => d.period === rentaPeriod);
         const rentaDue = getDueDateForPeriod(client, rentaPeriod);
         const rentaDays = rentaDue ? getDaysUntilDue(rentaDue) : null;
@@ -138,7 +147,8 @@ export const getClientObligations = (client: Client, date: Date): ObligationStat
     }
 
     // 3. ICE Mensual (clientes como Chávez Cordova)
-    if (client.taxProfile?.requiresIce) {
+    if (client.taxProfile?.requiresIce && (frequency === 'all' || frequency === 'Mensual')) {
+
         const icePeriod = getPeriod({ ...client, taxProfile: { ...client.taxProfile!, ivaFrequency: 'Mensual' } }, date);
         const iceFullPeriod = `${icePeriod}:ICE`;
         const iceDecl = declarations.find(d => d.period === iceFullPeriod || d.period === `${icePeriod}-ICE`);
@@ -176,7 +186,8 @@ export const getClientObligations = (client: Client, date: Date): ObligationStat
     }
 
     // 4. Anexo PVP Anual
-    if (client.taxProfile?.requiresAnexoPvp) {
+    if (client.taxProfile?.requiresAnexoPvp && (frequency === 'all' || frequency === 'Anual')) {
+
         const pvpPeriod = `${currentYear - 1}:PVP`;
         const pvpDecl = declarations.find(d => d.period === pvpPeriod);
         const pvpDue = new Date(currentYear, 0, 5); // 5 de enero
@@ -195,7 +206,8 @@ export const getClientObligations = (client: Client, date: Date): ObligationStat
     }
 
     // 5. Devolución de IVA
-    if (client.taxProfile?.hasActiveDevolucionIva) {
+    if (client.taxProfile?.hasActiveDevolucionIva && (frequency === 'all' || frequency === 'Mensual')) {
+
         const devPeriod = getPeriod({ ...client, taxProfile: { ...client.taxProfile!, ivaFrequency: 'Mensual' } }, date);
         const devDecl = declarations.find(d => d.period === `${devPeriod}:DEV`);
         const devDue = getDueDateForPeriod(client, devPeriod);
@@ -214,7 +226,8 @@ export const getClientObligations = (client: Client, date: Date): ObligationStat
     }
 
     // 6. Anexo de Gastos Personales
-    if (client.taxProfile?.requiresAnexosGastos) {
+    if (client.taxProfile?.requiresAnexosGastos && (frequency === 'all' || frequency === 'Anual')) {
+
         const gapPeriod = `${currentYear - 1}:GAP`;
         const gapDecl = declarations.find(d => d.period === gapPeriod);
         const gapDue = new Date(currentYear, 1, 28); // Feb 28
@@ -267,13 +280,28 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
     
     return obligations;
 };
-
 // ─────────────────────────────────────────────────────────
 // COMPLIANCE STATUS: Full client compliance snapshot
 // ─────────────────────────────────────────────────────────
 
-export const getClientCompliance = (client: Client, date: Date): ClientCompliance => {
-    const obligations = getClientObligations(client, date);
+// Memory Cache for Compliance results to speed up large list analysis
+const complianceCache = new Map<string, { result: ClientCompliance, timestamp: number, clientHash: string }>();
+
+export const getClientCompliance = (client: Client, date: Date, frequency: 'Mensual' | 'Semestral' | 'Anual' | 'all' = 'all'): ClientCompliance => {
+    // Cache Key: clientId + frequency + date string (day level)
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const cacheKey = `${client.id}-${frequency}-${dateKey}`;
+    
+    // Simple hash based on declarations length and updatedAt
+    const clientHash = `${client.declarations?.length || 0}-${client.updatedAt || ''}-${client.isActive}-${client.regime}`;
+    
+    const cached = complianceCache.get(cacheKey);
+    if (cached && cached.clientHash === clientHash) {
+        return cached.result;
+    }
+
+    const obligations = getClientObligations(client, date, frequency);
+
 
     if (obligations.length === 0) {
         return { overallColor: 'gray', score: 100, obligations, urgentCount: 0, overdueCount: 0, syncHealth: 'healthy' };
@@ -316,7 +344,7 @@ export const getClientCompliance = (client: Client, date: Date): ClientComplianc
         else if (hoursDiff > 24) syncHealth = 'warning';
     }
 
-    return {
+    const result = {
         overallColor: worstColor,
         score,
         obligations,
@@ -324,13 +352,19 @@ export const getClientCompliance = (client: Client, date: Date): ClientComplianc
         overdueCount,
         syncHealth,
     };
+
+    // Store in cache
+    complianceCache.set(cacheKey, { result, timestamp: Date.now(), clientHash });
+
+    return result;
 };
 
 // ─────────────────────────────────────────────────────────
 // PORTFOLIO SUMMARY: Aggregate across all clients
 // ─────────────────────────────────────────────────────────
 
-export const getComplianceSummary = (clients: Client[], date: Date): ComplianceSummary => {
+export const getComplianceSummary = (clients: Client[], date: Date, frequency: 'Mensual' | 'Semestral' | 'Anual' | 'all' = 'all'): ComplianceSummary => {
+
     const summary: ComplianceSummary = {
         green: 0, yellow: 0, orange: 0, red: 0, gray: 0,
         total: 0, averageScore: 0,
@@ -343,7 +377,8 @@ export const getComplianceSummary = (clients: Client[], date: Date): ComplianceS
         if (client.isDeleted || !client.isActive) continue;
         activeClients++;
 
-        const compliance = getClientCompliance(client, date);
+        const compliance = getClientCompliance(client, date, frequency);
+
         summary[compliance.overallColor]++;
         summary.total++;
         totalScore += compliance.score;
@@ -376,20 +411,20 @@ export const getHistoricalScore = (client: Client, months: number = 6): number[]
 // DEADLINE HELPERS: For bot & alerts
 // ─────────────────────────────────────────────────────────
 
-export const getClientsExpiringInDays = (clients: Client[], days: number, date: Date): Client[] => {
+export const getClientsExpiringInDays = (clients: Client[], days: number, date: Date, frequency?: TaxFrequency): Client[] => {
     return clients.filter(c => {
         if (c.isDeleted || !c.isActive) return false;
-        const compliance = getClientCompliance(c, date);
+        const compliance = getClientCompliance(c, date, frequency);
         return compliance.obligations.some(ob =>
             !ob.isDeclared && ob.daysRemaining !== null && ob.daysRemaining >= 0 && ob.daysRemaining <= days
         );
     });
 };
 
-export const getClientsOverdue = (clients: Client[], date: Date): Client[] => {
+export const getClientsOverdue = (clients: Client[], date: Date, frequency?: TaxFrequency): Client[] => {
     return clients.filter(c => {
         if (c.isDeleted || !c.isActive) return false;
-        const compliance = getClientCompliance(c, date);
+        const compliance = getClientCompliance(c, date, frequency);
         return compliance.overdueCount > 0;
     });
 };

@@ -85,8 +85,16 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         const currentYear = today.getFullYear();
         const rentaPeriod = (currentYear - 1).toString();
         const next15Days = new Date(today.getTime() + 15 * 24 * 60 * 60 * 1000);
-        
-        const summary = getComplianceSummary(clients, today);
+
+        const currentFreq: 'Mensual' | 'Semestral' | 'Anual' | 'all' = 
+            filter === 'mensual' ? 'Mensual' :
+            filter === 'semestral' ? 'Semestral' :
+            filter === 'renta' ? 'Anual' : 
+            filter === 'digital-mando' ? 'Mensual' : 'all';
+
+        const summary = getComplianceSummary(clients, today, currentFreq);
+
+
         const urgents: Client[] = [];
         const peds: Client[] = [];
         const comps: Client[] = [];
@@ -104,8 +112,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             activeCount++;
 
             // 1. KPI & Special Lists Calculations
-            const compliance = getClientCompliance(c, today);
+            const compliance = getClientCompliance(c, today, currentFreq);
             const currentP = getPeriod(c, today);
+
             const dueDate = getDueDateForPeriod(c, currentP);
             const declarations = c.declarations || [];
             
@@ -829,6 +838,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         serviceFees={serviceFees}
                         onQuickAction={handleAction}
                         onView={(c) => navigate('clients', { clientIdToView: c.id })}
+                        frequency={filter === 'semestral' ? 'Semestral' : (filter === 'mensual' ? 'Mensual' : 'all')}
                     />
                 ) : (
                     <div className="py-32 text-center">

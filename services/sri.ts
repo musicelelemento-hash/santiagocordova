@@ -112,20 +112,21 @@ export const getNinthDigit = (ruc: string): number => {
 /**
  * Lógica Central de Periodos (Actualizada: Prioridad Mensual/Semestral vía TaxProfile)
  */
-export const getPeriod = (client: Pick<Client, 'taxProfile' | 'regime' | 'declarations'>, date: Date): string => {
+export const getPeriod = (client: Pick<Client, 'taxProfile' | 'regime' | 'declarations'>, date: Date, overrideFrequency?: 'Mensual' | 'Semestral' | 'Ninguno' | 'Anual' | 'all'): string => {
     const currentYear = getYear(date);
     const prevYearStr = (currentYear - 1).toString();
     const month = getMonth(date); // 0-11
 
     // 1. REGLA: Si es RIMPE Negocio Popular, la obligación principal SIEMPRE es Anual.
-    if (client.regime === TaxRegime.RimpeNegocioPopular) {
+    if (client.regime === TaxRegime.RimpeNegocioPopular || overrideFrequency === 'Anual') {
         return prevYearStr;
     }
 
-    // 2. REGLA: Uso de TaxProfile (ivaFrequency)
-    const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
+    // 2. REGLA: Uso de TaxProfile (ivaFrequency) u override
+    let ivaFreq = overrideFrequency || client.taxProfile?.ivaFrequency || 'Mensual';
+    if (ivaFreq === 'all') ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
 
-    if (ivaFreq === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor) {
+    if (ivaFreq === 'Semestral') {
         if (month < 6) { // Ene-Jun (Se declara el S2 del año anterior)
             return `${currentYear - 1}-S2`;
         } else { // Jul-Dic (Se declara el S1 del año actual)
@@ -137,6 +138,13 @@ export const getPeriod = (client: Pick<Client, 'taxProfile' | 'regime' | 'declar
         const declarationMonth = subMonths(date, 1);
         return format(declarationMonth, 'yyyy-MM');
     }
+
+    // Default Fallback
+    if (client.regime === TaxRegime.RimpeEmprendedor) {
+        if (month < 6) return `${currentYear - 1}-S2`;
+        return `${currentYear}-S1`;
+    }
+
 
     // Fallback por defecto a mensual para Devoluciones u otros casos no especificados
     const fallbackDate = subMonths(date, 1);

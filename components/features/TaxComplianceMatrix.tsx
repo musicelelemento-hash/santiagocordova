@@ -225,10 +225,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 {/* ZEN 3.1 Compliance Dot */}
                                                 <div 
                                                     className={`absolute -left-2 w-1.5 h-6 rounded-full ${
-                                                        getClientCompliance(client, today).overallColor === 'red' ? 'bg-rose-500' :
-                                                        getClientCompliance(client, today).overallColor === 'orange' ? 'bg-orange-500' :
-                                                        getClientCompliance(client, today).overallColor === 'yellow' ? 'bg-amber-400' :
-                                                        getClientCompliance(client, today).overallColor === 'green' ? 'bg-emerald-500' :
+                                                        getClientCompliance(client, today, (frequency === 'Ninguno' ? 'all' : frequency) as any).overallColor === 'red' ? 'bg-rose-500' :
+                                                        getClientCompliance(client, today, (frequency === 'Ninguno' ? 'all' : frequency) as any).overallColor === 'orange' ? 'bg-orange-500' :
+                                                        getClientCompliance(client, today, (frequency === 'Ninguno' ? 'all' : frequency) as any).overallColor === 'yellow' ? 'bg-amber-400' :
+                                                        getClientCompliance(client, today, (frequency === 'Ninguno' ? 'all' : frequency) as any).overallColor === 'green' ? 'bg-emerald-500' :
                                                         'bg-slate-300'
                                                     }`}
                                                 />

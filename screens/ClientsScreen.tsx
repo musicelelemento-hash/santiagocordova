@@ -159,6 +159,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const frequencyForList = useMemo(() => {
+        if (activeGroupTab === 'mensual') return 'Mensual' as const;
+        if (activeGroupTab === 'semestral') return 'Semestral' as const;
+        return 'all' as const;
+    }, [activeGroupTab]);
+
     const globalStats = useMemo(() => {
         const stats = { vencidos: 0, ordenes: 0, cobros: 0, elite: 0, total: clients.filter(c => !c.isDeleted).length };
         const today = new Date();
@@ -309,7 +315,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             if (activeGroupTab === 'mensual') {
                 const isSemestral = client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor;
                 const isAnual = client.taxProfile?.ivaFrequency === 'Ninguno';
-                if (isSemestral || isAnual) return false;
+                const isNegocioPopular = client.regime === TaxRegime.RimpeNegocioPopular; // RIMPE NP no declara IVA
+                if (isSemestral || isAnual || isNegocioPopular) return false;
             } else if (activeGroupTab === 'semestral') {
                 const isSemestral = client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor;
                 if (!isSemestral) return false;
@@ -1245,7 +1252,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 <VirtualClientTable
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
-                                        const period = getPeriod(c, today);
+                                        const period = getPeriod(c, today, frequencyForList);
                                         const decl = c.declarations.find(d => d.period === period);
                                         const isWorkOrder = !!decl?.is_paid && !decl?.proof_file;
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
@@ -1255,12 +1262,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onView={handleOpenClientDetails}
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
                                 />
                             ) : (
                                 <VirtualClientList
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
-                                        const period = getPeriod(c, today);
+                                        const period = getPeriod(c, today, frequencyForList);
                                         const decl = c.declarations.find(d => d.period === period);
                                         const isWorkOrder = !!decl?.is_paid && !decl?.proof_file;
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
@@ -1270,6 +1278,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onView={handleOpenClientDetails}
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
                                 />
                             )}
                         </section>
@@ -1290,7 +1299,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 <span className="text-xs font-bold bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full border border-orange-200 dark:border-orange-500/20 shadow-sm">
                                     {sortedClients.filter(c => {
                                         const today = new Date();
-                                        const period = getPeriod(c, today);
+                                        const period = getPeriod(c, today, frequencyForList);
                                         const decl = c.declarations.find(d => d.period === period);
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         return isDeclared && !decl?.is_paid;
@@ -1301,7 +1310,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 <VirtualClientTable
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
-                                        const period = getPeriod(c, today);
+                                        const period = getPeriod(c, today, frequencyForList);
                                         const decl = c.declarations.find(d => d.period === period);
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         return isDeclared && !decl?.is_paid;
@@ -1310,12 +1319,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onView={handleOpenClientDetails}
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
                                 />
                             ) : (
                                 <VirtualClientList
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
-                                        const period = getPeriod(c, today);
+                                        const period = getPeriod(c, today, frequencyForList);
                                         const decl = c.declarations.find(d => d.period === period);
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         return isDeclared && !decl?.is_paid;
@@ -1324,11 +1334,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onView={handleOpenClientDetails}
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
                                 />
                             )}
                             {sortedClients.filter(c => {
                                 const today = new Date();
-                                const period = getPeriod(c, today);
+                                const period = getPeriod(c, today, frequencyForList);
                                 const decl = c.declarations.find(d => d.period === period);
                                 const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                 return isDeclared && !decl?.is_paid;
@@ -1348,7 +1359,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     <span className="ml-2 text-xs bg-emerald-100 text-emerald-500 px-2 py-0.5 rounded-full">
                                         {sortedClients.filter(c => {
                                             const today = new Date();
-                                            const period = getPeriod(c, today);
+                                            const period = getPeriod(c, today, frequencyForList);
                                             const decl = c.declarations.find(d => d.period === period);
                                             return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
                                         }).length}
@@ -1359,7 +1370,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 <VirtualClientTable
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
-                                        const period = getPeriod(c, today);
+                                        const period = getPeriod(c, today, frequencyForList);
                                         const decl = c.declarations.find(d => d.period === period);
                                         return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
                                     })}
@@ -1367,12 +1378,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onView={handleOpenClientDetails}
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
                                 />
                             ) : (
                                 <VirtualClientList
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
-                                        const period = getPeriod(c, today);
+                                        const period = getPeriod(c, today, frequencyForList);
                                         const decl = c.declarations.find(d => d.period === period);
                                         return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
                                     })}
@@ -1380,6 +1392,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onView={handleOpenClientDetails}
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
                                 />
                             )}
                         </section>
@@ -1393,7 +1406,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     <span className="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
                                         {sortedClients.filter(c => {
                                             const today = new Date();
-                                            const period = getPeriod(c, today);
+                                            const period = getPeriod(c, today, frequencyForList);
                                             const decl = c.declarations.find(d => d.period === period);
                                             const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                             const isElite = !!decl?.is_paid && isDeclared;
@@ -1407,7 +1420,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 <VirtualClientTable
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
-                                        const period = getPeriod(c, today);
+                                        const period = getPeriod(c, today, frequencyForList);
                                         const decl = c.declarations.find(d => d.period === period);
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         const isElite = !!decl?.is_paid && isDeclared;
@@ -1418,12 +1431,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onView={handleOpenClientDetails}
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
                                 />
                             ) : (
                                 <VirtualClientList
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
-                                        const period = getPeriod(c, today);
+                                        const period = getPeriod(c, today, frequencyForList);
                                         const decl = c.declarations.find(d => d.period === period);
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         const isElite = !!decl?.is_paid && isDeclared;
@@ -1434,6 +1448,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onView={handleOpenClientDetails}
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
                                 />
                             )}
                         </section>
@@ -1451,6 +1466,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onView={handleOpenClientDetails}
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
                                 />
                             );
                         }
@@ -1464,6 +1480,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         onView={handleOpenClientDetails}
                                         onQuickAction={handleQuickAction}
                                         onUploadReceipt={handleUploadReceipt}
+                                        frequency={frequencyForList}
                                     />
                                 ) : (
                                     <div className="py-20 text-center">

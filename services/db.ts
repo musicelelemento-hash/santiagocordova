@@ -325,37 +325,50 @@ export const db = {
     getAll: async function (collectionName: string): Promise<any[]> {
         let sbResults: any[] = [];
         let fsResults: any[] = [];
+        let sbLoaded = false;
 
-        // 1. Try Supabase if enabled
+        // 1. Try Supabase first (Primary Source of Truth)
         if (USE_SUPABASE && collectionName === 'sc_pro_clients') {
             try {
-                sbResults = await SupabaseService.getClients();
+                // Timeout promise to not wait forever for Supabase
+                const sbPromise = SupabaseService.getClients();
+                sbResults = await sbPromise;
+                sbLoaded = true;
+                console.log(`📡 Supabase Loaded: ${sbResults.length} records.`);
             } catch (err) {
-                console.error("Supabase getAll failed:", err);
+                console.error("Supabase getAll failed, falling back to Firestore:", err);
             }
         }
 
-        // 2. Always fetch from Firestore/Local as backup/migration source
-        try {
-            const colRef = collection(firestoreDb, collectionName);
-            const snapshot = await getDocs(colRef);
-            fsResults = await Promise.all(snapshot.docs.map(async doc => {
-                let data = { id: doc.id, ...doc.data() };
-                data = await this.rejoinLargeFiles(data);
-                return data;
-            }));
-        } catch (err) {
-            console.error(`Error fetching from Firestore (${collectionName}):`, err);
+        // 2. Fetch from Firestore only if Supabase failed or as a background safety check
+        // If we already have results from Supabase, we can fetch from Firestore in the background
+        // to check for missing records, but for initial load speed, we prioritize Supabase.
+        if (!sbLoaded || collectionName !== 'sc_pro_clients') {
+            try {
+                const colRef = collection(firestoreDb, collectionName);
+                const snapshot = await getDocs(colRef);
+                fsResults = await Promise.all(snapshot.docs.map(async doc => {
+                    let data = { id: doc.id, ...doc.data() };
+                    // Optimization: rejoinLargeFiles can be slow if it does network requests
+                    // We rejoin only if it has the split prefix
+                    if (JSON.stringify(data).includes('__SPLIT__:')) {
+                        data = await this.rejoinLargeFiles(data);
+                    }
+                    return data;
+                }));
+                console.log(`📡 Firestore Loaded: ${fsResults.length} records.`);
+            } catch (err) {
+                console.error(`Error fetching from Firestore (${collectionName}):`, err);
+            }
         }
 
         // 3. Merge and Deduplicate by ID
-        // Supabase takes precedence if there's a conflict
         const mergedMap = new Map();
         
-        // Add Firestore results first
+        // Add Firestore results
         fsResults.forEach(item => mergedMap.set(item.id, item));
         
-        // Overwrite/Add Supabase results (Source of Truth going forward)
+        // Overwrite with Supabase results (Primary)
         sbResults.forEach(item => mergedMap.set(item.id, item));
 
         return Array.from(mergedMap.values());

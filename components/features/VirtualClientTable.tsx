@@ -5,6 +5,7 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 import { Client, ServiceFeesConfig, DeclarationStatus, TaxRegime } from '../../types';
 import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, getNextPeriod, safeFormat, requiresIva } from '../../services/sri';
 import { getClientServiceFee } from '../../services/clientService';
+import { TaxFrequency } from '../../services/complianceEngine';
 import { isPast, differenceInHours } from 'date-fns';
 import * as LucideIcons from 'lucide-react';
 
@@ -14,10 +15,11 @@ interface VirtualClientTableProps {
     onView: (client: Client) => void;
     onQuickAction: (client: Client, action: 'declare' | 'pay' | 'deactivate') => void;
     onUploadReceipt: (client: Client, period?: string) => void;
+    frequency?: TaxFrequency | 'all';
 }
 
 const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualClientTableProps>) => {
-    const { clients, serviceFees, onView, onQuickAction, onUploadReceipt } = data;
+    const { clients, serviceFees, onView, onQuickAction, onUploadReceipt, frequency } = data;
     const client = clients[index];
     
     const fee = getClientServiceFee(client, serviceFees);
@@ -26,7 +28,7 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
     const month = today.getMonth();
 
     // SMART PERIOD LOGIC
-    const campaignP = getPeriod(client, today);
+    const campaignP = getPeriod(client, today, (frequency === 'all' || frequency === 'Anual') ? undefined : frequency);
     const campaignDecl = (client.declarations || []).find(d => d.period === campaignP);
     const isCampaignDone = campaignDecl?.status === DeclarationStatus.Enviada || campaignDecl?.status === DeclarationStatus.Pagada || !!campaignDecl?.proof_file;
     const isCampaignPaid = !!campaignDecl?.is_paid;

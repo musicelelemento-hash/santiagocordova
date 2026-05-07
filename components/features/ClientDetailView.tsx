@@ -55,22 +55,16 @@ const getRecentPeriods = (client: Client, count: number): string[] => {
         else if (ivaFreq === 'Semestral') { currentDate = subMonths(currentDate, 6); }
         else { currentDate = subYears(currentDate, 1); }
     }
-    while (periods.length < count && client.regime === TaxRegime.RimpeNegocioPopular) {
-        const period = getPeriod(client, currentDate);
-        if (!periods.includes(period)) { periods.push(period); }
-        currentDate = subYears(currentDate, 1);
-    }
     return periods.slice(0, count).reverse();
 };
 
 const getStatusIndicator = (client: Pick<Client, 'taxProfile' | 'regime'>): string => {
-    if (client.regime === TaxRegime.RimpeEmprendedor) return 'Semestral';
     const profile = client.taxProfile;
-    if (!profile) return 'Mensual';
-    if (profile.ivaFrequency === 'Mensual' && !profile.hasActiveDevolucionIva) return 'Mensual';
-    if (profile.ivaFrequency === 'Semestral') return 'Semestral';
-    if (profile.ivaFrequency === 'Ninguno' && profile.requiresAnnualRenta) return 'Renta';
-    if (profile.hasActiveDevolucionIva) return 'Devolucion';
+    const frequency = profile?.ivaFrequency || (client.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : 'Mensual');
+    
+    if (frequency === 'Semestral') return 'Semestral';
+    if (frequency === 'Ninguno' && profile?.requiresAnnualRenta) return 'Renta';
+    if (profile?.hasActiveDevolucionIva) return 'Devolucion';
     return 'Mensual';
 };
 
@@ -103,7 +97,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         toast.success("Copiado al portapapeles");
     };
 
-    const { whatsappTemplates, setTasks, clients, cloudStatus, setCloudStatus, removeClient } = useAppStore();
+    const { whatsappTemplates, setTasks, clients, cloudStatus, setCloudStatus, removeClient, updateClient } = useAppStore();
     const [editedClient, setEditedClient] = useState(client);
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'vault' | 'settings'>('profile');
@@ -122,6 +116,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [signaturePasswordVisible, setSignaturePasswordVisible] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isAnalyzingPdf, setIsAnalyzingPdf] = useState(false);
@@ -406,6 +401,12 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const owner = clients.find(c => c.ruc === mismatchData.ruc);
         if (owner) { onBack(); setTimeout(() => setMismatchData(null), 100); }
         else { toast.info("Cliente no existe."); setMismatchData(null); }
+    };
+
+    const handleSoftDelete = () => {
+        updateClient(client.id, { isDeleted: true });
+        toast.success(`${client.name} enviado a la papelera`);
+        onBack();
     };
 
     const handleSave = () => {
@@ -718,6 +719,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                             onWhatsApp={handleWhatsApp}
                             onOpenSRI={handleOpenSRI}
                             onShare={handleShareViaWhatsApp}
+                            onDelete={() => setIsDeleteConfirmOpen(true)}
                             nextDeadline={nextDeadline}
                         />
 
@@ -786,6 +788,36 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     <div className="text-center p-4">
                         <p>El RUC no coincide con {client.name}.</p>
                         <button onClick={handleJumpToOwner} className="w-full py-4 bg-brand-navy text-white font-semibold rounded-2xl mt-4">Ver Ficha Correcta</button>
+                    </div>
+                </Modal>
+
+                {/* Modal confirmación de papelera */}
+                <Modal isOpen={isDeleteConfirmOpen} onClose={() => setIsDeleteConfirmOpen(false)} title="Enviar a Papelera">
+                    <div className="p-6 text-center space-y-6">
+                        <div className="w-16 h-16 bg-rose-50 dark:bg-rose-500/10 rounded-3xl flex items-center justify-center mx-auto border border-rose-100 dark:border-rose-500/20">
+                            <Trash2 size={28} className="text-rose-500" strokeWidth={1.5} />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-2">{client.name}</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                                Este cliente se moverá a la papelera. Podrás restaurarlo desde la pestaña <strong>Papelera</strong> en el directorio de clientes.
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsDeleteConfirmOpen(false)}
+                                className="flex-1 py-3 rounded-2xl bg-slate-100 dark:bg-surface-low/50 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-200 dark:hover:bg-surface-low transition-all active:scale-95"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSoftDelete}
+                                className="flex-1 py-3 rounded-2xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 shadow-lg shadow-rose-200 dark:shadow-rose-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                            >
+                                <Trash2 size={16} strokeWidth={2.5} />
+                                Enviar a Papelera
+                            </button>
+                        </div>
                     </div>
                 </Modal>
             </div>

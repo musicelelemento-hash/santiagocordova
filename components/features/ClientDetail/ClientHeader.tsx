@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, User, Crown, TrendingUp, Landmark, ShieldCheck, AlertTriangle, Clock, MapPin, Building, Briefcase, Info, Copy, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X } from 'lucide-react';
+import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent } from 'lucide-react';
 import { Client, DeclarationStatus, TaxRegime } from '../../../types';
 import { safeFormat, getDaysUntilDue } from '../../../services/sri';
 
@@ -18,10 +18,38 @@ interface ClientHeaderProps {
     onWhatsApp?: () => void;
     onOpenSRI?: () => void;
     onShare?: () => void;
+    onDelete?: () => void;
     nextDeadline: Date | null;
 }
 
-// Modular Sub-components are styled with the Analytical Architect design system
+// Badge visual para el régimen fiscal
+const RegimeBadge = ({ regime }: { regime: TaxRegime }) => {
+    const config: Record<TaxRegime, { label: string; cls: string; icon: React.ReactNode }> = {
+        [TaxRegime.RimpeNegocioPopular]: {
+            label: 'RIMPE Negocio Popular',
+            cls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30',
+            icon: <FileText size={12} strokeWidth={2.5} />
+        },
+        [TaxRegime.RimpeEmprendedor]: {
+            label: 'RIMPE Emprendedor',
+            cls: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-primary/10 dark:text-primary-low dark:border-primary/30',
+            icon: <Activity size={12} strokeWidth={2.5} />
+        },
+        [TaxRegime.General]: {
+            label: 'Régimen General',
+            cls: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-white/5 dark:text-slate-300 dark:border-white/10',
+            icon: <BadgePercent size={12} strokeWidth={2.5} />
+        },
+    };
+    const { label, cls, icon } = config[regime] || config[TaxRegime.General];
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold border ${cls}`}>
+            {icon}
+            {label}
+        </span>
+    );
+};
+
 export const ClientHeader: React.FC<ClientHeaderProps> = ({
     client,
     onBack,
@@ -37,153 +65,172 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
     onWhatsApp,
     onOpenSRI,
     onShare,
+    onDelete,
     nextDeadline
 }) => {
     return (
-        <div className="relative mb-12 sm:mb-20">
-            {/* Top Action Bar - High Contrast & Strategic */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12 pb-8 border-b border-outline-variant/10">
-                <div className="flex items-center gap-4">
+        <div className="relative mb-10 sm:mb-16">
+            {/* ── Barra de acción superior ───────────────────── */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-outline-variant/10">
+                {/* Izquierda: Navegación + edición */}
+                <div className="flex items-center gap-3 flex-wrap">
                     <button
                         onClick={onBack}
-                        className="group flex items-center gap-3 px-6 py-3.5 bg-surface-container-low/50 backdrop-blur-md rounded-2xl border border-outline-variant/10 text-on-surface-variant font-mono font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-surface-container-high hover:text-on-surface transition-all active:scale-95 shadow-sm"
+                        className="group flex items-center gap-2 px-4 py-2.5 bg-surface-container-low/50 backdrop-blur-md rounded-xl border border-outline-variant/10 text-on-surface-variant text-xs font-bold uppercase tracking-wider hover:bg-surface-container-high hover:text-on-surface transition-all active:scale-95"
                     >
                         <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" strokeWidth={2.5} />
-                        BACK_NAV
+                        Volver
                     </button>
-                    
-                    <div className="h-6 w-[1px] bg-outline-variant/20 hidden md:block"></div>
 
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={onToggleEdit}
-                            className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl transition-all font-mono font-bold text-[10px] uppercase tracking-[0.2em] active:scale-95 border ${isEditing ? 'bg-primary border-primary text-on-primary shadow-lg shadow-primary/20' : 'bg-surface-container-low/50 border-outline-variant/10 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}`}
-                        >
-                            {isEditing ? <Save size={14} strokeWidth={2.5} /> : <Edit size={14} strokeWidth={2.5} />}
-                            {isEditing ? 'SAVE_DATA' : 'EDIT_MODE'}
-                        </button>
+                    <div className="h-5 w-px bg-outline-variant/20 hidden md:block" />
 
-                        <button
-                            onClick={onWhatsApp}
-                            className="p-3.5 bg-surface-container-low/50 text-on-surface-variant rounded-2xl border border-outline-variant/10 hover:bg-emerald-500/10 hover:text-emerald-500 transition-all active:scale-95 shadow-sm"
-                            title="Direct Sync / WhatsApp"
-                        >
-                            <MessageCircle size={18} strokeWidth={2} />
-                        </button>
+                    <button
+                        onClick={onToggleEdit}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all text-xs font-bold uppercase tracking-wider active:scale-95 border ${
+                            isEditing
+                                ? 'bg-primary border-primary text-on-primary shadow-lg shadow-primary/20'
+                                : 'bg-surface-container-low/50 border-outline-variant/10 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                        }`}
+                    >
+                        {isEditing ? <Save size={14} strokeWidth={2.5} /> : <Edit size={14} strokeWidth={2.5} />}
+                        {isEditing ? 'Guardar' : 'Editar'}
+                    </button>
 
-                        <button
-                            onClick={onOpenSRI}
-                            className="p-3.5 bg-surface-container-low/50 text-on-surface-variant rounded-2xl border border-outline-variant/10 hover:bg-primary/10 hover:text-primary transition-all active:scale-95 shadow-sm"
-                            title="External Access / SRI"
-                        >
-                             <ExternalLink size={18} strokeWidth={2} />
-                        </button>
-                    </div>
+                    <button
+                        onClick={onWhatsApp}
+                        className="p-2.5 bg-surface-container-low/50 text-on-surface-variant rounded-xl border border-outline-variant/10 hover:bg-emerald-500/10 hover:text-emerald-500 transition-all active:scale-95"
+                        title="Abrir WhatsApp"
+                    >
+                        <MessageCircle size={16} strokeWidth={2} />
+                    </button>
+
+                    <button
+                        onClick={onOpenSRI}
+                        className="p-2.5 bg-surface-container-low/50 text-on-surface-variant rounded-xl border border-outline-variant/10 hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
+                        title="Acceder al SRI"
+                    >
+                        <ExternalLink size={16} strokeWidth={2} />
+                    </button>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3 px-4 py-2.5 bg-surface-container-highest/30 backdrop-blur-xl border border-outline-variant/20 text-on-surface-variant rounded-xl text-[10px] font-mono font-bold uppercase tracking-[0.2em] shadow-inner">
+                {/* Derecha: RUC + Papelera */}
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-surface-container-highest/30 backdrop-blur-xl border border-outline-variant/20 text-on-surface-variant rounded-xl text-xs font-mono font-bold">
                         <Smartphone size={12} className="text-primary/60" strokeWidth={2.5} />
-                        RUC://<span className="text-on-surface font-black ml-1">{client.ruc}</span>
+                        <span className="text-on-surface font-black">{client.ruc}</span>
                     </div>
-                    
-                    <div className="px-6 py-3.5 bg-on-surface text-surface rounded-2xl text-[9px] font-mono font-black uppercase tracking-[0.4em] shadow-xl">
-                        TACTICAL_CORE
-                    </div>
+
+                    {onDelete && (
+                        <button
+                            onClick={onDelete}
+                            title="Enviar a papelera"
+                            className="p-2.5 bg-surface-container-low/50 text-slate-400 rounded-xl border border-outline-variant/10 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-500/30 transition-all active:scale-95 group"
+                        >
+                            <Trash2 size={16} strokeWidth={2} className="group-hover:animate-bounce" />
+                        </button>
+                    )}
                 </div>
             </div>
 
-            {/* Profile Hero Card - THE PRISTINE CORE */}
-            <div className="bg-surface-container-lowest/30 backdrop-blur-3xl rounded-[4rem] p-10 sm:p-16 relative overflow-hidden shadow-2xl border border-outline-variant/10 group">
-                {/* Ambient Tactical Layers */}
-                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none group-hover:bg-primary/10 transition-all duration-1000 translate-x-1/4 -translate-y-1/4"></div>
-                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none group-hover:bg-emerald-500/10 transition-all duration-1000 -translate-x-1/4 translate-y-1/4"></div>
-                
-                <div className="flex flex-col lg:flex-row gap-12 sm:gap-16 relative z-10 items-center lg:items-start text-center lg:text-left">
+            {/* ── Hero del cliente ───────────────────────────── */}
+            <div className="bg-surface-container-lowest/30 backdrop-blur-3xl rounded-3xl p-8 sm:p-12 relative overflow-hidden border border-outline-variant/10 group shadow-sm">
+                {/* Fondo ambiental sutil */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-primary/8 transition-all duration-1000 translate-x-1/4 -translate-y-1/4" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[80px] pointer-events-none -translate-x-1/4 translate-y-1/4" />
+
+                <div className="flex flex-col lg:flex-row gap-8 sm:gap-10 relative z-10 items-center lg:items-start text-center lg:text-left">
+                    {/* Avatar */}
                     <div className="flex-shrink-0">
-                        <div className="relative group/avatar">
-                            {/* Tactical Avatar Frame */}
-                            <div className="w-48 h-48 md:w-60 md:h-60 bg-surface-container-low/50 backdrop-blur-md rounded-[3.5rem] border border-outline-variant/10 p-4 shadow-inner transition-all duration-700 group-hover/avatar:shadow-2xl group-hover/avatar:scale-[1.02] flex items-center justify-center relative overflow-hidden">
-                                <div className="w-full h-full bg-surface-container-high/30 rounded-[2.8rem] flex items-center justify-center relative overflow-hidden group-hover/avatar:bg-white/5 transition-colors">
-                                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent"></div>
-                                    <User size={90} strokeWidth={1} className="text-on-surface-variant/20 group-hover/avatar:text-primary/40 group-hover/avatar:scale-110 transition-all duration-1000" />
-                                </div>
-                                
-                                {/* Orbital Data Ring */}
-                                <div className="absolute inset-0 border-2 border-dashed border-primary/10 rounded-[3.5rem] animate-[spin_60s_linear_infinite]"></div>
+                        <div className="relative">
+                            <div className="w-28 h-28 sm:w-36 sm:h-36 bg-surface-container-low/50 backdrop-blur-md rounded-3xl border border-outline-variant/10 flex items-center justify-center relative overflow-hidden shadow-inner">
+                                <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent" />
+                                <User size={56} strokeWidth={1} className="text-on-surface-variant/20 group-hover:text-primary/30 group-hover:scale-110 transition-all duration-700" />
                             </div>
-                            
-                            {/* Vital Tactical Badge */}
-                            <div className={`absolute -bottom-4 -right-4 w-16 h-16 rounded-[1.8rem] flex items-center justify-center shadow-2xl border-4 border-surface-container-lowest transition-all duration-700 ${isFullyPaid ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white animate-pulse'}`}>
-                                {isFullyPaid ? <ShieldCheck size={32} strokeWidth={1.5} /> : <AlertTriangle size={32} strokeWidth={1.5} />}
+                            {/* Badge de estado de pago */}
+                            <div className={`absolute -bottom-3 -right-3 w-12 h-12 rounded-2xl flex items-center justify-center border-4 border-white dark:border-slate-900 shadow-xl transition-all duration-700 ${
+                                isFullyPaid ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
+                            }`}>
+                                {isFullyPaid
+                                    ? <ShieldCheck size={22} strokeWidth={1.5} />
+                                    : <AlertTriangle size={22} strokeWidth={1.5} />
+                                }
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex-grow flex flex-col justify-center min-w-0 w-full pt-4">
+                    {/* Datos del cliente */}
+                    <div className="flex-grow flex flex-col justify-center min-w-0 w-full">
                         {isEditing && editedClient && setEditedClient ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-premium ml-2">NOMINACIÓN FISCAL</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nombre / Razón Social</label>
                                     <input
                                         type="text"
                                         value={editedClient.name}
                                         onChange={e => setEditedClient({ ...editedClient, name: e.target.value })}
-                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-100 text-slate-900 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/30 outline-none transition-all font-premium font-black text-xl shadow-sm"
+                                        className="w-full px-5 py-3 bg-slate-50 dark:bg-surface-low/50 rounded-2xl border border-slate-100 dark:border-white/10 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none transition-all font-bold text-base shadow-sm"
                                     />
                                 </div>
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] font-premium ml-2">IDENTIFICADOR RUC</label>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">RUC / Cédula</label>
                                     <input
                                         type="text"
                                         value={editedClient.ruc}
                                         onChange={e => setEditedClient({ ...editedClient, ruc: e.target.value })}
-                                        className="w-full px-8 py-5 bg-slate-50 rounded-2xl border border-slate-100 text-blue-600 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/30 outline-none transition-all font-mono font-black tracking-widest text-xl shadow-sm"
+                                        className="w-full px-5 py-3 bg-slate-50 dark:bg-surface-low/50 rounded-2xl border border-slate-100 dark:border-white/10 text-primary font-mono font-bold tracking-widest focus:ring-2 focus:ring-primary/20 focus:border-primary/30 outline-none transition-all text-base shadow-sm"
                                     />
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-6">
-                                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
-                                    <div className="px-4 py-1.5 bg-primary/5 text-primary border border-primary/20 rounded-full text-[9px] font-mono font-black uppercase tracking-widest">
-                                        SYSTEM_{(client.regime || 'General').toUpperCase()}
+                            <div className="space-y-4">
+                                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+                                    <RegimeBadge regime={client.regime} />
+                                    {client.isActive === false && (
+                                        <span className="px-3 py-1.5 rounded-xl text-[10px] font-bold bg-slate-100 text-slate-400 border border-slate-200 dark:bg-white/5 dark:text-slate-500 dark:border-white/10">
+                                            Inactivo
+                                        </span>
+                                    )}
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.6)]" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Activo</span>
                                     </div>
-                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                                    <span className="text-[10px] font-mono font-bold text-on-surface-variant/60 uppercase tracking-[0.2em]">CORE_ENGINE_ACTIVE</span>
                                 </div>
-                                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-on-surface tracking-tight leading-[1.05] break-words uppercase font-premium">
+
+                                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-on-surface tracking-tight leading-tight break-words">
                                     {client.name}
                                 </h1>
-                                <p className="text-[10px] font-mono font-bold text-on-surface-variant/40 uppercase tracking-[0.6em] mt-2">ACCOUNTING_STRATEGY // SANTIAGO CORDOVA</p>
+                                {client.tradeName && (
+                                    <p className="text-sm text-slate-400 font-medium">{client.tradeName}</p>
+                                )}
                             </div>
                         )}
 
-                        {/* Tactical Metrics Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-12 pt-12 mt-12 border-t border-outline-variant/10">
-                            <div className="space-y-1.5 group/item cursor-default">
-                                <p className="text-[9px] font-mono font-bold text-on-surface-variant/50 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">DUE_DATE</p>
-                                <p className="text-lg font-mono font-black text-on-surface tracking-tighter">
-                                    {nextDeadline ? safeFormat(nextDeadline, 'dd/MM/yy') : '00/00/00'}
+                        {/* Métricas clave */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 mt-8 border-t border-outline-variant/10">
+                            <div className="space-y-1 text-center lg:text-left">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Próximo Vencimiento</p>
+                                <p className="text-base font-mono font-black text-on-surface">
+                                    {nextDeadline ? safeFormat(nextDeadline, 'dd/MM/yy') : '—'}
                                 </p>
                             </div>
-                            <div className="space-y-1.5 group/item cursor-default">
-                                <p className="text-[9px] font-mono font-bold text-on-surface-variant/50 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">T_REMAINING</p>
-                                <p className={`text-lg font-mono font-black tracking-tighter ${nextDeadline && getDaysUntilDue(nextDeadline) < 5 ? 'text-rose-500' : 'text-on-surface'}`}>
-                                    {nextDeadline ? `${getDaysUntilDue(nextDeadline)}d` : '--'}
+                            <div className="space-y-1 text-center lg:text-left">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Días Restantes</p>
+                                <p className={`text-base font-mono font-black ${nextDeadline && getDaysUntilDue(nextDeadline) < 5 ? 'text-rose-500' : 'text-on-surface'}`}>
+                                    {nextDeadline ? `${getDaysUntilDue(nextDeadline)}d` : '—'}
                                 </p>
                             </div>
-                            <div className="space-y-1.5 group/item cursor-default">
-                                <p className="text-[9px] font-mono font-bold text-on-surface-variant/50 uppercase tracking-[0.2em] group-hover:text-primary transition-colors">COMPLIANCE_STATUS</p>
+                            <div className="space-y-1 text-center lg:text-left">
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Estado Fiscal</p>
                                 <div className="flex items-center gap-2 justify-center lg:justify-start">
-                                    <div className={`w-2 h-2 rounded-full ${isFullyDeclared ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.5)]'}`}></div>
-                                    <p className="text-lg font-mono font-black text-on-surface uppercase tracking-tighter">
-                                        {isFullyDeclared ? 'VERIFIED' : 'PENDING'}
+                                    <div className={`w-2 h-2 rounded-full ${isFullyDeclared ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' : 'bg-rose-500 animate-pulse'}`} />
+                                    <p className="text-sm font-bold text-on-surface">
+                                        {isFullyDeclared ? 'Al Día' : 'Pendiente'}
                                     </p>
                                 </div>
                             </div>
-                            <div className="space-y-1.5 lg:pl-10 lg:border-l lg:border-outline-variant/10 group/item cursor-default">
-                                <p className="text-[9px] font-mono font-bold text-primary uppercase tracking-[0.25em]">TOTAL_DEBT</p>
-                                <p className={`text-4xl font-mono font-black tracking-tighter group-hover:scale-105 transition-transform origin-left ${totalDebt > 0 ? 'text-primary' : 'text-on-surface/20'}`}>
+                            <div className="space-y-1 lg:pl-6 lg:border-l lg:border-outline-variant/10 text-center lg:text-left">
+                                <p className="text-[9px] font-bold text-primary uppercase tracking-widest">Deuda Servicios</p>
+                                <p className={`text-3xl font-mono font-black ${totalDebt > 0 ? 'text-primary' : 'text-slate-300 dark:text-slate-600'}`}>
                                     ${totalDebt.toFixed(2)}
                                 </p>
                             </div>
@@ -192,6 +239,5 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                 </div>
             </div>
         </div>
-
     );
 };

@@ -2,14 +2,15 @@ import React from 'react';
 import { Client, TaxRegime, ServiceFeesConfig, Declaration } from '../../../../types';
 import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay } from '../../../../services/sri';
 import { getClientServiceFee } from '../../../../services/clientService';
-import * as LucideIcons from 'lucide-react';
-import { DynamicStatusIndicator } from '../DynamicStatusIndicator';
-import { DeclarationProgressBar } from '../DeclarationProgressBar';
+import {
+    ShieldCheck, AlertTriangle, DollarSign, Eye, EyeOff, Globe,
+    Share2, MessageCircle, Settings, Activity, FileText, CalendarDays,
+    BadgePercent, CheckCircle2, Clock, ArrowRight, Zap, Info
+} from 'lucide-react';
 import { TaxObligationCard } from '../TaxObligationCard';
 import { PaymentHistoryChart } from '../PaymentHistoryChart';
 import { FacturadorCard } from '../FacturadorCard';
 import { ClientNotes } from '../ClientNotes';
-import { SidebarAction } from '../SidebarAction';
 
 interface ProfileTabProps {
     client: Client;
@@ -34,6 +35,84 @@ interface ProfileTabProps {
     handleElderlyRefundAction: (action: any) => void;
 }
 
+// ── Badge de régimen con su descripción ─────────────────────────
+const RegimeInfoPanel = ({ client }: { client: Client }) => {
+    const isNegocioPopular = client.regime === TaxRegime.RimpeNegocioPopular;
+    const isEmprendedor = client.regime === TaxRegime.RimpeEmprendedor;
+    const isGeneral = client.regime === TaxRegime.General;
+    const freq = client.taxProfile?.ivaFrequency || 'Mensual';
+
+    let icon = <BadgePercent size={18} strokeWidth={1.5} />;
+    let title = 'Régimen General';
+    let description = `Declaración IVA ${freq} · Renta anual si supera $14,000`;
+    let chipCls = 'bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-300';
+
+    if (isNegocioPopular) {
+        icon = <FileText size={18} strokeWidth={1.5} />;
+        title = 'RIMPE Negocio Popular';
+        description = 'Una sola declaración anual · Impuesto a la Renta RIMPE · Sin IVA';
+        chipCls = 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400';
+    } else if (isEmprendedor) {
+        icon = <Activity size={18} strokeWidth={1.5} />;
+        title = 'RIMPE Emprendedor';
+        description = 'Declaración semestral · Impuesto a la Renta anual';
+        chipCls = 'bg-blue-50 text-blue-700 dark:bg-primary/10 dark:text-primary-low';
+    }
+
+    return (
+        <div className={`flex items-start gap-4 px-5 py-4 rounded-2xl border border-slate-100 dark:border-white/10 ${chipCls} bg-opacity-50`}>
+            <div className="mt-0.5 flex-shrink-0">{icon}</div>
+            <div>
+                <p className="text-xs font-bold">{title}</p>
+                <p className="text-[11px] opacity-75 mt-0.5 leading-relaxed">{description}</p>
+            </div>
+        </div>
+    );
+};
+
+// ── Estado del servicio (pagado / pendiente de cobro) ────────────
+const ServicePaymentStatus = ({ isFullyAlDia, complianceStats, client, serviceFees, handleQuickPay, setConfirmation }: any) => {
+    const ivaIsPaid = complianceStats?.iva?.is_paid ?? false;
+    const rentaIsPaid = complianceStats?.renta?.is_paid ?? false;
+    const needsIva = complianceStats?.iva?.needed ?? false;
+    const needsRenta = complianceStats?.renta?.needed ?? false;
+
+    const allPaid = (!needsIva || ivaIsPaid) && (!needsRenta || rentaIsPaid);
+
+    return (
+        <div className={`rounded-2xl p-5 border flex items-center justify-between gap-4 transition-all ${
+            allPaid
+                ? 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-500/20'
+                : 'bg-amber-50 dark:bg-amber-500/5 border-amber-100 dark:border-amber-500/20'
+        }`}>
+            <div className="flex items-center gap-4">
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    allPaid ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
+                }`}>
+                    {allPaid ? <CheckCircle2 size={20} strokeWidth={2.5} /> : <Clock size={20} strokeWidth={2} />}
+                </div>
+                <div>
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                        {allPaid ? 'Servicios al Día' : 'Cobro Pendiente'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        {allPaid ? 'Todos los servicios han sido cobrados' : 'Hay servicios declarados sin cobrar'}
+                    </p>
+                </div>
+            </div>
+            {!allPaid && needsIva && !ivaIsPaid && complianceStats?.iva?.isDeclared && (
+                <button
+                    onClick={() => handleQuickPay(complianceStats.iva.period)}
+                    className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-xl text-xs font-bold hover:bg-amber-600 active:scale-95 transition-all shadow-md"
+                >
+                    <DollarSign size={14} strokeWidth={2.5} />
+                    Cobrar IVA
+                </button>
+            )}
+        </div>
+    );
+};
+
 export const ProfileTab: React.FC<ProfileTabProps> = ({
     client,
     editedClient,
@@ -55,78 +134,51 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     handleRentaRefundAction,
     handleElderlyRefundAction
 }) => {
+    const isNegocioPopular = editedClient.regime === TaxRegime.RimpeNegocioPopular;
+
     return (
-        <div className="space-y-6 sm:space-y-16 animate-in fade-in slide-in-from-bottom-10 h-full duration-1000">
-            {/* The Tactical Main View: Grid Architecture (Alpha + Beta) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-16">
-                
-                {/* Sector Alfa: Compliance Intelligence (8/12) */}
-                <div className="lg:col-span-8 space-y-6 sm:space-y-16">
-                    
-                    {/* High-Impact Compliance Score - THE KPI HERO */}
-                    <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[2.5rem] sm:rounded-[4rem] p-6 sm:p-16 relative overflow-hidden shadow-architect border border-surface-low dark:border-white/10 group">
-                        {/* Dynamic Background Mesh */}
-                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(var(--primary-rgb),0.08),transparent_70%)]"></div>
-                        <div className="absolute inset-0 bg-noise opacity-[0.02] pointer-events-none"></div>
-                        
-                        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-8 sm:gap-12">
-                            <div className="space-y-8 sm:space-y-10 group-hover:translate-x-3 transition-transform duration-1000">
-                                    <div className="flex items-center justify-between gap-4">
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-1.5 h-6 bg-primary rounded-full"></div>
-                                                <h2 className="text-sm font-black text-on-surface uppercase tracking-[0.5em] font-premium">DIRECTIVA DE CUMPLIMIENTO</h2>
-                                            </div>
-                                            <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.3em] font-premium opacity-40">FISCAL SCORE & RISK CONTROL v2.1</p>
-                                        </div>
-                                        <DynamicStatusIndicator client={editedClient} />
-                                    </div>
-                                <div className="flex flex-col gap-8">
-                                    <div className="flex items-baseline gap-4">
-                                        <span className="text-4xl sm:text-6xl font-black text-primary tracking-tighter transition-all duration-700 font-premium group-hover:scale-105 active:opacity-40 select-none">
-                                            {isFullyAlDia ? 100 : 88}<span className="text-2xl sm:text-4xl ml-1 sm:ml-2">%</span>
-                                        </span>
-                                        <div className="h-0.5 flex-grow max-w-[60px] sm:max-w-[80px] bg-primary/20 rounded-full mb-3 sm:mb-8"></div>
-                                    </div>
-                                    
-                                    <DeclarationProgressBar client={editedClient} className="mt-4" />
-                                </div>
-                                <p className="text-[9px] sm:text-[11px] font-black text-on-surface-variant uppercase tracking-[0.3em] sm:tracking-[0.4em] font-premium">REPUTACIÓN FISCAL ÓPTIMA</p>
-                            </div>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
 
-                            <div className="relative flex justify-center text-center">
-                                <span className={`absolute -top-10 sm:-top-20 left-1/2 -translate-x-1/2 text-[80px] sm:text-[150px] lg:text-[200px] font-black leading-none tracking-tighter transition-all duration-1000 group-hover:scale-125 select-none font-premium ${isFullyAlDia ? 'text-tertiary opacity-10 dark:opacity-20' : 'text-primary opacity-5 dark:opacity-15'}`}>
-                                    {isFullyAlDia ? 'A+' : 'A'}
-                                </span>
-                                <div className="relative z-10 space-y-4">
-                                    <div className={`px-6 sm:px-8 py-3 sm:py-4 rounded-2xl border-0 text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em] shadow-2xl font-premium backdrop-blur-xl transition-all duration-500 ${isFullyAlDia ? 'bg-tertiary/10 text-tertiary shadow-tertiary/20 border border-tertiary/30' : 'bg-primary text-on-primary shadow-primary/40'}`}>
-                                        {isFullyAlDia ? 'COMPLIANCE VERIFIED' : 'ACTION REQUIRED'}
-                                    </div>
-                                    <div className="flex items-center justify-center gap-3 text-on-surface-variant/90">
-                                        <LucideIcons.TrendingUp size={16} />
-                                        <span className="text-[9px] font-bold uppercase tracking-widest font-premium">PROYECCIÓN POSITIVA</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            {/* ── Fila 1: Grid principal ──────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                    {/* Tactical Executive Dashboard */}
-                    <div className="space-y-6 sm:space-y-10 group/executive">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-[10px] sm:text-[11px] font-black text-on-surface-variant uppercase tracking-[0.25em] sm:tracking-[0.3em] font-premium relative flex items-center gap-3 sm:gap-4">
-                                OBLIGACIONES EJECUTIVAS
-                                <div className="h-[1px] w-8 sm:w-12 bg-on-surface-variant/10"></div>
+                {/* ── Columna izquierda: Obligaciones fiscales (2/3) ── */}
+                <div className="lg:col-span-2 space-y-6">
+
+                    {/* Info del régimen */}
+                    <RegimeInfoPanel client={editedClient} />
+
+                    {/* Estado del servicio */}
+                    <ServicePaymentStatus
+                        isFullyAlDia={isFullyAlDia}
+                        complianceStats={complianceStats}
+                        client={client}
+                        serviceFees={serviceFees}
+                        handleQuickPay={handleQuickPay}
+                        setConfirmation={setConfirmation}
+                    />
+
+                    {/* Sección: Obligaciones tributarias */}
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <Zap size={13} className="text-primary" strokeWidth={2.5} />
+                                Obligaciones Tributarias
                             </h3>
-                            <button onClick={() => setActiveTab('history')} className="text-[8px] sm:text-[9px] font-black text-primary uppercase tracking-[0.15em] hover:tracking-[0.25em] transition-all font-premium">HISTORIAL</button>
+                            <button
+                                onClick={() => setActiveTab('history')}
+                                className="text-[10px] font-bold text-primary hover:text-primary/70 uppercase tracking-wider flex items-center gap-1 transition-colors"
+                            >
+                                Ver historial <ArrowRight size={12} strokeWidth={2.5} />
+                            </button>
                         </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-10">
-                            {/* IVA Obligation Vector */}
-                            {complianceStats?.iva.needed && (
+
+                        <div className="space-y-4">
+                            {/* IVA — Solo si NO es RIMPE Negocio Popular */}
+                            {!isNegocioPopular && complianceStats?.iva?.needed && (
                                 <TaxObligationCard
                                     type="iva"
-                                    title="IMPUESTO AL VALOR AGREGADO (IVA)"
+                                    title={`IVA ${editedClient.taxProfile?.ivaFrequency === 'Semestral' ? 'Semestral' : 'Mensual'}`}
                                     period={complianceStats.iva.period}
                                     isDeclared={complianceStats.iva.isDeclared}
                                     isPaid={complianceStats.iva.is_paid}
@@ -138,11 +190,11 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                 />
                             )}
 
-                            {/* RENTA Obligation Vector */}
-                            {complianceStats?.renta.needed && (
+                            {/* Renta Anual */}
+                            {complianceStats?.renta?.needed && (
                                 <TaxObligationCard
                                     type="renta"
-                                    title="IMPUESTO A LA RENTA (ANUAL)"
+                                    title={isNegocioPopular ? 'Impuesto a la Renta RIMPE (Anual)' : 'Impuesto a la Renta (Anual)'}
                                     period={complianceStats.renta.period}
                                     isDeclared={complianceStats.renta.isDeclared}
                                     isPaid={complianceStats.renta.is_paid}
@@ -154,11 +206,22 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                 />
                             )}
 
-                            {/* Special Vectors: Refunds */}
+                            {/* RIMPE NP: sin IVA, mostrar aviso */}
+                            {isNegocioPopular && !complianceStats?.renta?.needed && (
+                                <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-500/5 rounded-2xl border border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-400">
+                                    <Info size={16} strokeWidth={2} className="mt-0.5 flex-shrink-0" />
+                                    <p className="text-xs font-medium leading-relaxed">
+                                        RIMPE Negocio Popular no declara IVA. Solo tiene una declaración anual de Impuesto a la Renta RIMPE.
+                                        Verifique que el perfil fiscal esté configurado correctamente.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Devolución IVA Tercera Edad */}
                             {editedClient.taxProfile?.hasActiveDevolucionIva && (
                                 <TaxObligationCard
                                     type="refund"
-                                    title="DEVOLUCIÓN IVA (TERCERA EDAD)"
+                                    title="Devolución IVA (Tercera Edad)"
                                     status={editedClient.elderlyDevolucionIvaStatus as any}
                                     resolutionFile={editedClient.elderlyDevolucionIvaResolutionFile}
                                     onAction={handleElderlyRefundAction}
@@ -166,10 +229,11 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                 />
                             )}
 
+                            {/* Devolución Renta */}
                             {editedClient.taxProfile?.requiresAnnualRenta && editedClient.rentaRefundStatus && (
                                 <TaxObligationCard
                                     type="renta_refund"
-                                    title="DEVOLUCIÓN IMPUESTO RENTA"
+                                    title="Devolución Impuesto a la Renta"
                                     status={editedClient.rentaRefundStatus as any}
                                     isPaid={editedClient.rentaRefundPaid}
                                     onAction={handleRentaRefundAction}
@@ -179,116 +243,118 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         </div>
                     </div>
 
-                    {/* Analytics Integration */}
-                    <div className="bg-surface-lowest dark:bg-surface/30 rounded-[3rem] sm:rounded-[3.5rem] p-6 sm:p-10 border border-surface-low dark:border-white/5 shadow-architect overflow-hidden relative group backdrop-blur-2xl">
-                        <div className="absolute top-0 right-0 p-4 sm:p-8">
-                            <LucideIcons.Activity size={24} className="text-primary/20" />
-                        </div>
-                        <div className="flex items-center gap-4 mb-6 sm:mb-10">
-                            <h3 className="text-[9px] sm:text-[10px] font-black text-on-surface-variant dark:text-slate-300 uppercase tracking-[0.3em] font-premium">ANALÍTICA DE HONORARIOS</h3>
-                        </div>
+                    {/* Gráfico de honorarios */}
+                    <div className="bg-white dark:bg-surface/30 rounded-2xl p-6 border border-slate-100 dark:border-white/5 shadow-sm">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+                            <Activity size={13} className="text-primary" strokeWidth={2.5} />
+                            Historial de Honorarios
+                        </h3>
                         <PaymentHistoryChart client={client} />
                     </div>
                 </div>
 
-                {/* Sector Beta: Tactical Vault & Data (4/12) */}
-                <div className="lg:col-span-4 space-y-6 sm:space-y-12">
-                    
-                    {/* Tactical Access Card */}
-                    <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low dark:border-white/10 shadow-architect relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-6 sm:p-8 opacity-10 group-hover:opacity-40 transition-all duration-1000 group-hover:scale-110 group-hover:-rotate-12">
-                            <LucideIcons.Key size={48} className="text-secondary" />
-                        </div>
-                        
-                        <div className="flex items-center gap-4 sm:gap-5 mb-8 sm:mb-12 relative z-10">
-                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-[1.2rem] sm:rounded-[1.5rem] bg-secondary-fixed/10 flex items-center justify-center text-secondary dark:text-secondary-fixed shadow-inner">
-                                <LucideIcons.Lock size={20} className="sm:w-[24px] sm:h-[24px]" />
-                            </div>
-                            <div>
-                                <h3 className="text-xs sm:text-sm font-black text-on-surface uppercase tracking-[0.2em] font-premium">BÓVEDA TÁCTICA</h3>
-                                <p className="text-[8px] sm:text-[9px] font-black text-on-surface-variant/70 uppercase tracking-[0.3em] mt-1 font-premium">CREDENTIAL SECURITY MGR</p>
-                            </div>
-                        </div>
+                {/* ── Columna derecha: Datos y acciones (1/3) ──────── */}
+                <div className="space-y-5">
 
-                        <div className="space-y-5 sm:space-y-6 relative z-10">
-                            <div className="p-6 sm:p-8 bg-surface dark:bg-surface-low/50 rounded-[1.5rem] sm:rounded-[2rem] border border-surface-low dark:border-white/5 group/pass shadow-sm hover:border-primary/30 transition-all">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="text-[8px] sm:text-[9px] font-black text-on-surface-variant dark:text-slate-400 uppercase tracking-[0.3em] font-premium">CLAVE PORTAL SRI</div>
-                                    <div className="p-1 px-2.5 bg-primary/10 rounded-full text-[8px] font-black text-primary uppercase tracking-widest font-premium animate-pulse">ENCRIPTADO</div>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <code className="text-base sm:text-lg font-black tracking-[0.2em] sm:tracking-[0.3em] text-primary font-premium selection:bg-primary selection:text-white truncate pr-4">
-                                        {passwordVisible ? client.sriPassword : '••••••••••••'}
-                                    </code>
-                                    <button 
-                                        onClick={() => setPasswordVisible(!passwordVisible)}
-                                        className="p-2 sm:p-3 hover:bg-primary/10 rounded-xl text-on-surface-variant dark:text-slate-400 hover:text-primary transition-all active:scale-90"
-                                        title={passwordVisible ? "Ocultar" : "Mostrar"}
-                                    >
-                                        {passwordVisible ? <LucideIcons.EyeOff size={16} /> : <LucideIcons.Eye size={16} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 sm:gap-5">
-                                <button 
-                                    onClick={handleOpenSRI}
-                                    className="flex flex-col items-center gap-3 sm:gap-4 p-6 sm:p-8 bg-surface dark:bg-surface-low/50 hover:bg-primary/5 dark:hover:bg-primary/10 border border-surface-low dark:border-white/5 hover:border-primary/20 rounded-[2rem] sm:rounded-[2.5rem] transition-all group/btn shadow-sm active:scale-95"
-                                >
-                                    <LucideIcons.Globe size={20} className="sm:w-[24px] sm:h-[24px] text-primary group-hover/btn:scale-125 transition-all duration-700" />
-                                    <span className="text-[8px] sm:text-[9px] font-black text-on-surface-variant dark:text-slate-400 group-hover/btn:text-primary uppercase tracking-[0.2em] font-premium">LOG-IN SRI</span>
-                                </button>
-                                <button 
-                                    onClick={handleShareViaWhatsApp}
-                                    className="flex flex-col items-center gap-3 sm:gap-4 p-6 sm:p-8 bg-surface dark:bg-surface-low/50 hover:bg-tertiary-fixed/10 dark:hover:bg-tertiary/10 border border-surface-low dark:border-white/5 hover:border-tertiary/20 rounded-[2rem] sm:rounded-[2.5rem] transition-all group/btn shadow-sm active:scale-95"
-                                >
-                                    <LucideIcons.Share2 size={20} className="sm:w-[24px] sm:h-[24px] text-tertiary group-hover/btn:scale-125 transition-all duration-700" />
-                                    <span className="text-[8px] sm:text-[9px] font-black text-on-surface-variant dark:text-slate-400 group-hover/btn:text-tertiary uppercase tracking-[0.2em] font-premium">DIFUNDIR</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-
-
-                    {/* Operational Commands */}
-                    <div className="bg-surface-lowest dark:bg-surface/40 backdrop-blur-3xl rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 border border-surface-low dark:border-white/10 shadow-architect space-y-6 sm:space-y-10 group overflow-hidden relative">
-                        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors"></div>
-                        <h3 className="text-[9px] sm:text-[10px] font-black text-on-surface-variant dark:text-slate-300 uppercase tracking-[0.4em] font-premium relative z-10">COMANDOS OPERACIONALES</h3>
-                        
-                        <div className="space-y-3 sm:space-y-5 relative z-10">
-                            <button onClick={handleWhatsApp} className="w-full flex items-center justify-between p-4 sm:p-7 bg-surface dark:bg-surface-low/50 hover:bg-primary/5 border border-surface-low dark:border-white/5 hover:border-primary/10 rounded-2xl sm:rounded-[2rem] transition-all group/opt shadow-sm active:scale-[0.98]">
-                                <div className="flex items-center gap-3 sm:gap-5">
-                                    <div className="p-2 sm:p-4 bg-primary/10 rounded-xl sm:rounded-2xl text-primary group-hover/opt:rotate-12 transition-transform">
-                                        <LucideIcons.MessageCircle size={18} className="sm:w-[20px] sm:h-[20px]" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="text-[10px] sm:text-xs font-black text-on-surface dark:text-slate-200 uppercase tracking-widest font-premium">ENLACE WHATSAPP</div>
-                                        <div className="text-[7px] sm:text-[9px] text-on-surface-variant dark:text-slate-400 font-bold uppercase tracking-widest mt-1 sm:mt-1.5 font-premium opacity-60">COMUNICACIÓN DIRECTA</div>
-                                    </div>
-                                </div>
-                                <LucideIcons.ArrowRight size={16} className="sm:w-[18px] sm:h-[18px] text-on-surface-variant/40 group-hover/opt:translate-x-3 group-hover/opt:text-primary transition-all duration-500" />
+                    {/* Clave SRI */}
+                    <div className="bg-white dark:bg-surface/40 rounded-2xl p-5 border border-slate-100 dark:border-white/10 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Clave SRI</p>
+                        <div className="flex items-center justify-between gap-3 p-3.5 bg-slate-50 dark:bg-surface-low/50 rounded-xl border border-slate-100 dark:border-white/5">
+                            <code className="text-sm font-bold text-primary tracking-wider font-mono truncate">
+                                {passwordVisible ? client.sriPassword : '•'.repeat(Math.min(client.sriPassword?.length || 8, 12))}
+                            </code>
+                            <button
+                                onClick={() => setPasswordVisible(!passwordVisible)}
+                                className="p-2 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-all active:scale-90 flex-shrink-0"
+                            >
+                                {passwordVisible ? <EyeOff size={15} strokeWidth={2} /> : <Eye size={15} strokeWidth={2} />}
                             </button>
+                        </div>
 
-                            <button onClick={() => setActiveTab('settings')} className="w-full flex items-center justify-between p-4 sm:p-7 bg-surface dark:bg-surface-low/50 hover:bg-secondary/5 border border-surface-low dark:border-white/5 hover:border-secondary/10 rounded-2xl sm:rounded-[2rem] transition-all group/opt shadow-sm active:scale-[0.98]">
-                                <div className="flex items-center gap-3 sm:gap-5">
-                                    <div className="p-2 sm:p-4 bg-secondary/10 rounded-xl sm:rounded-2xl text-secondary group-hover/opt:rotate-[30deg] transition-transform">
-                                        <LucideIcons.Settings size={18} className="sm:w-[20px] sm:h-[20px]" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="text-[10px] sm:text-xs font-black text-on-surface dark:text-slate-200 uppercase tracking-widest font-premium">PARAMETRÍA TÉCNICA</div>
-                                        <div className="text-[7px] sm:text-[9px] text-on-surface-variant dark:text-slate-400 font-bold uppercase tracking-widest mt-1 sm:mt-1.5 font-premium opacity-60">ESTRUCTURACIÓN FISCAL</div>
-                                    </div>
-                                </div>
-                                <LucideIcons.ArrowRight size={16} className="sm:w-[18px] sm:h-[18px] text-on-surface-variant/40 group-hover/opt:translate-x-3 group-hover/opt:text-secondary transition-all duration-500" />
+                        <div className="grid grid-cols-2 gap-3 mt-4">
+                            <button
+                                onClick={handleOpenSRI}
+                                className="flex flex-col items-center gap-2 p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-primary/5 dark:hover:bg-primary/10 border border-slate-100 dark:border-white/5 hover:border-primary/20 rounded-xl transition-all group active:scale-95"
+                            >
+                                <Globe size={18} className="text-primary group-hover:scale-110 transition-transform" strokeWidth={1.5} />
+                                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 group-hover:text-primary uppercase tracking-wider">Ingresar SRI</span>
+                            </button>
+                            <button
+                                onClick={handleShareViaWhatsApp}
+                                className="flex flex-col items-center gap-2 p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-emerald-500/5 dark:hover:bg-emerald-500/10 border border-slate-100 dark:border-white/5 hover:border-emerald-200 dark:hover:border-emerald-500/30 rounded-xl transition-all group active:scale-95"
+                            >
+                                <Share2 size={18} className="text-emerald-500 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
+                                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 uppercase tracking-wider">Compartir</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* Executive Notes */}
-                    <ClientNotes 
-                        clientId={client.id} 
-                        notes={client.structuredNotes || []} 
+                    {/* Acciones rápidas */}
+                    <div className="bg-white dark:bg-surface/40 rounded-2xl p-5 border border-slate-100 dark:border-white/10 shadow-sm space-y-3">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Acciones</p>
+
+                        <button
+                            onClick={handleWhatsApp}
+                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-emerald-500/5 dark:hover:bg-emerald-500/10 border border-slate-100 dark:border-white/5 hover:border-emerald-200 dark:hover:border-emerald-500/30 rounded-xl transition-all group active:scale-[0.98]"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg text-emerald-500 group-hover:scale-110 transition-transform">
+                                    <MessageCircle size={15} strokeWidth={2} />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">WhatsApp</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Contactar cliente</p>
+                                </div>
+                            </div>
+                            <ArrowRight size={14} className="text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('settings')}
+                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-primary/5 dark:hover:bg-primary/10 border border-slate-100 dark:border-white/5 hover:border-primary/20 rounded-xl transition-all group active:scale-[0.98]"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-slate-100 dark:bg-white/5 rounded-lg text-slate-500 group-hover:bg-primary/10 group-hover:text-primary group-hover:scale-110 transition-all">
+                                    <Settings size={15} strokeWidth={2} />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Configuración Fiscal</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Régimen, tarifas, opciones</p>
+                                </div>
+                            </div>
+                            <ArrowRight size={14} className="text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('history')}
+                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-primary/5 dark:hover:bg-primary/10 border border-slate-100 dark:border-white/5 hover:border-primary/20 rounded-xl transition-all group active:scale-[0.98]"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-slate-100 dark:bg-white/5 rounded-lg text-slate-500 group-hover:bg-primary/10 group-hover:text-primary group-hover:scale-110 transition-all">
+                                    <CalendarDays size={15} strokeWidth={2} />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Historial de Declaraciones</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Ver todos los períodos</p>
+                                </div>
+                            </div>
+                            <ArrowRight size={14} className="text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                        </button>
+                    </div>
+
+                    {/* Facturador (si tiene) */}
+                    {editedClient.facturadorConfig && (
+                        <FacturadorCard
+                            config={editedClient.facturadorConfig}
+                            isEditing={isEditing}
+                            onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
+                        />
+                    )}
+
+                    {/* Notas del cliente */}
+                    <ClientNotes
+                        clientId={client.id}
+                        notes={client.structuredNotes || []}
                     />
                 </div>
             </div>

@@ -70,54 +70,42 @@ const sanitizeSingleClient = (c: any): Client => {
     updatedAt: c.updatedAt,
   };
 
-  // Quick Validation (Zod Lite)
-  const result = ClientSchema.safeParse(client);
-  return (result.success ? result.data : client) as Client;
+  return client as Client;
 };
 
 const sanitizeClients = (rawClients: any[]): Client[] => {
   if (!Array.isArray(rawClients)) return [];
 
-  const mappedClients = rawClients.map(c => sanitizeSingleClient(c));
-
-  // Elite 500k: Strict Validation with Zod
-  const validatedClients = mappedClients.map(client => {
-    const result = ClientSchema.safeParse(client);
-    if (!result.success) {
-      // Silenced warning to keep console clean for production
-      // console.warn(`Data inconsistency for client ${client.ruc}:`, result.error.format());
-      return client; // Fallback to current data
-    }
-    return result.data as Client;
-  });
-
-  // Deduplicate by RUC
+  // Deduplicate and sanitize in a single pass
   const uniqueClients = new Map<string, Client>();
 
-  validatedClients.forEach(client => {
+  for (let i = 0; i < rawClients.length; i++) {
+    const raw = rawClients[i];
+    const sanitized = sanitizeSingleClient(raw);
+    
     // If no RUC, use ID as key so it doesn't collide
-    const key = (client.ruc && client.ruc.trim() !== '') ? client.ruc.trim() : client.id;
+    const key = (sanitized.ruc && sanitized.ruc.trim() !== '') ? sanitized.ruc.trim() : sanitized.id;
 
     if (!uniqueClients.has(key)) {
-      uniqueClients.set(key, client);
+      uniqueClients.set(key, sanitized);
     } else {
       const existing = uniqueClients.get(key)!;
       // Resolve collision: Keep the one with the most declaration history.
-      const clientHistoryStr = client.declarations ? client.declarations.length : 0;
+      const clientHistoryStr = sanitized.declarations ? sanitized.declarations.length : 0;
       const existingHistoryStr = existing.declarations ? existing.declarations.length : 0;
 
       if (clientHistoryStr > existingHistoryStr) {
-        uniqueClients.set(key, client);
+        uniqueClients.set(key, sanitized);
       } else if (clientHistoryStr === existingHistoryStr) {
         // If same history length, prefer the one that is NOT deleted or is active
-        if (client.isActive && !existing.isActive) {
-          uniqueClients.set(key, client);
-        } else if (!client.isDeleted && existing.isDeleted) {
-          uniqueClients.set(key, client);
+        if (sanitized.isActive && !existing.isActive) {
+          uniqueClients.set(key, sanitized);
+        } else if (!sanitized.isDeleted && existing.isDeleted) {
+          uniqueClients.set(key, sanitized);
         }
       }
     }
-  });
+  }
 
   return Array.from(uniqueClients.values());
 };
@@ -240,7 +228,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (clientIndex === -1) return;
 
     const nowIso = new Date().toISOString();
-    const updatedClient = { ...currentClients[clientIndex], ...updates, isDeleted: false, updatedAt: nowIso };
+    // IMPORTANT: Do NOT force isDeleted:false here — let updates control it
+    const updatedClient = { ...currentClients[clientIndex], ...updates, updatedAt: nowIso };
     const newClients = [...currentClients];
     newClients[clientIndex] = updatedClient;
 
@@ -669,63 +658,103 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   loadFromDB: async () => {
     try {
-      // 1. Cargar lo que esté en IndexedDB primero (Urgente para UI)
-      const [localClients, tasks, webOrders, sriCredentials, serviceFees, reminderConfig, cloudAuditLogs] = await Promise.all([
+      const t0 = performance.now();
+
+      // ── FASE 1: Carga local instantánea (IndexedDB) ──────────
+      // Prioridad: mostrar la UI lo antes posible con datos locales
+      const [localClients, tasks, webOrders, sriCredentials, serviceFees, reminderConfig] = await Promise.all([
         db.getLocal('clients'),
         db.get<Task[]>('tasks'),
         db.get<WebOrder[]>('webOrders'),
         db.get<Record<string, string>>('sriCredentials'),
         db.get<ServiceFeesConfig>('serviceFees'),
         db.get<ReminderConfig>('reminderConfig'),
-        SupabaseService.getAuditLogs(200).catch(() => [])
       ]);
 
-      // 2. Intentar ráfaga inicial de Firebase Granular (Prioridad Nube para Cyber-café)
-      let finalClients = localClients || [];
+      const localData = localClients && Array.isArray(localClients) && localClients.length > 0
+        ? localClients
+        : null;
 
-      // Si estamos online o en un lugar nuevo, forzar carga de nube granual
-      try {
-        const granularClients = await (db as any).getAll('sc_pro_clients');
-        
-        // LEGACY FALLBACK: Si no hay suficientes clientes granulares, intentamos recuperar la sabana original de sc_pro_backup
-        let legacyClients: Client[] = [];
-        if (!granularClients || granularClients.length < 5) {
-          try {
-            console.log("☁️ Data Migration: Buscando en sc_pro_backup legacy...");
-            const oldBackup = await db.get<Client[]>('clients');
-            if (oldBackup && Array.isArray(oldBackup)) {
-              legacyClients = oldBackup;
-              console.log(`☁️ Recuperados ${legacyClients.length} clientes del backup legacy!`);
-            }
-          } catch (e) {
-            console.warn("No legacy backup found.", e);
-          }
-        }
-        
-        const mergedCloudClients = [...legacyClients, ...(granularClients || [])];
-
-        if (mergedCloudClients.length > 0) {
-          console.log(`☁️ Cloud Refresh: Cargados ${mergedCloudClients.length} clientes en total.`);
-          finalClients = sanitizeClients(mergedCloudClients);
-          // Si la nube tiene datos, actualizamos el local inmediatamente
-          db.setLocal('clients', finalClients);
-        }
-      } catch (cloudErr) {
-        console.warn("⚠️ Cloud Fetch failed on start, using local/mock:", cloudErr);
+      // Mostrar datos locales INMEDIATAMENTE si existen
+      if (localData) {
+        set({
+          clients: localData,
+          tasks: tasks || [],
+          webOrders: webOrders || [],
+          serviceFees: serviceFees ? { ...INITIAL_SERVICE_FEES, ...serviceFees, ivaSemestral: (serviceFees.ivaSemestral === 5 ? 10 : serviceFees.ivaSemestral) } : INITIAL_SERVICE_FEES,
+          reminderConfig: sanitizeReminderConfig(reminderConfig),
+          isLoaded: true
+        });
+        console.log(`⚡ Fase 1 (Local): ${localData.length} clientes en ${(performance.now() - t0).toFixed(0)}ms`);
       }
 
-      set({
-        clients: finalClients.length > 0 ? finalClients : mockClients,
-        tasks: tasks || [],
-        webOrders: webOrders || [],
-        serviceFees: serviceFees ? { ...INITIAL_SERVICE_FEES, ...serviceFees, ivaSemestral: (serviceFees.ivaSemestral === 5 ? 10 : serviceFees.ivaSemestral) } : INITIAL_SERVICE_FEES,
-        reminderConfig: sanitizeReminderConfig(reminderConfig),
-        auditLogs: cloudAuditLogs || [],
-        isLoaded: true
-      });
+      // ── FASE 2: Sincronización con la nube (background) ──────
+      // Esto NO bloquea la UI — el usuario ya puede trabajar
+      const cloudRefresh = async () => {
+        try {
+          const t1 = performance.now();
+          
+          // Audit logs en paralelo con datos de clientes
+          const [granularClients, cloudAuditLogs] = await Promise.all([
+            (db as any).getAll('sc_pro_clients').catch(() => []),
+            SupabaseService.getAuditLogs(200).catch(() => [])
+          ]);
 
-      // Persistir lo que encontramos si estaba vacío
-      if (finalClients.length > 0) db.setLocal('clients', finalClients);
+          // LEGACY FALLBACK: Solo si no hay suficientes clientes granulares
+          let legacyClients: Client[] = [];
+          if (!granularClients || granularClients.length < 5) {
+            try {
+              const oldBackup = await db.get<Client[]>('clients');
+              if (oldBackup && Array.isArray(oldBackup)) {
+                legacyClients = oldBackup;
+                console.log(`☁️ Legacy fallback: ${legacyClients.length} clientes recuperados.`);
+              }
+            } catch (e) {
+              // Silent — legacy no es crítico
+            }
+          }
+
+          const mergedCloudClients = [...legacyClients, ...(granularClients || [])];
+
+          if (mergedCloudClients.length > 0) {
+            const cloudClients = sanitizeClients(mergedCloudClients);
+            
+            // Solo actualizar si la nube tiene datos diferentes/más completos
+            const currentClients = get().clients;
+            if (cloudClients.length >= currentClients.length || currentClients.length === 0) {
+              set({ clients: cloudClients, auditLogs: cloudAuditLogs || [] });
+              db.setLocal('clients', cloudClients);
+              console.log(`☁️ Fase 2 (Nube): ${cloudClients.length} clientes sincronizados en ${(performance.now() - t1).toFixed(0)}ms`);
+            } else {
+              // La nube tiene menos — solo actualizar audit logs
+              set({ auditLogs: cloudAuditLogs || [] });
+              console.log(`☁️ Fase 2: Nube tiene menos datos (${cloudClients.length} vs ${currentClients.length} local). Manteniendo local.`);
+            }
+          } else if (!localData) {
+            // Sin datos locales ni en la nube — usar mock
+            set({ clients: mockClients, isLoaded: true });
+          }
+        } catch (cloudErr) {
+          console.warn("⚠️ Cloud Fetch failed, using local data:", cloudErr);
+        }
+      };
+
+      // Si no había datos locales, esperar a la nube
+      if (!localData) {
+        await cloudRefresh();
+        if (!get().isLoaded) {
+          set({
+            isLoaded: true,
+            tasks: tasks || [],
+            webOrders: webOrders || [],
+            serviceFees: serviceFees ? { ...INITIAL_SERVICE_FEES, ...serviceFees, ivaSemestral: (serviceFees.ivaSemestral === 5 ? 10 : serviceFees.ivaSemestral) } : INITIAL_SERVICE_FEES,
+            reminderConfig: sanitizeReminderConfig(reminderConfig),
+          });
+        }
+      } else {
+        // Datos locales existen — nube en background
+        cloudRefresh();
+      }
 
     } catch (error) {
       console.error("Critical Load Error:", error);
