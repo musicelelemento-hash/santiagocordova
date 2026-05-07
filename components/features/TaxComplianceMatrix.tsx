@@ -32,18 +32,23 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         if (frequency === 'Mensual') {
             for (let i = 0; i < 12; i++) {
                 const date = subMonths(today, i + 1);
-                result.push(format(date, 'yyyy-MM'));
+                const p = format(date, 'yyyy-MM');
+                if (p >= '2026-01') result.push(p);
             }
         } else if (frequency === 'Semestral') {
             const currentYear = today.getFullYear();
             const currentMonth = today.getMonth();
             
             if (currentMonth >= 6) { // Estamos en el periodo de declarar S1
-                result.push(`${currentYear}-S1`);
-                result.push(`${currentYear - 1}-S2`);
+                const p1 = `${currentYear}-S1`;
+                const p2 = `${currentYear - 1}-S2`;
+                if (p1 >= '2026-S1') result.push(p1);
+                if (p2 >= '2026-S1') result.push(p2);
             } else { // Estamos en el periodo de declarar S2 del año pasado
-                result.push(`${currentYear - 1}-S2`);
-                result.push(`${currentYear - 1}-S1`);
+                const p1 = `${currentYear - 1}-S2`;
+                const p2 = `${currentYear - 1}-S1`;
+                if (p1 >= '2026-S1') result.push(p1);
+                if (p2 >= '2026-S1') result.push(p2);
             }
         }
         return result;

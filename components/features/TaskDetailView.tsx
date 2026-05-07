@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Task, TaskStatus, Client } from '../../types';
-import { Edit } from 'lucide-react';
+import { Edit, CheckCircle, X, DollarSign, RotateCcw } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { safeFormat } from '../../services/sri';
 
 interface TaskDetailViewProps {
@@ -218,13 +219,26 @@ export const TaskDetailView: React.FC<TaskDetailViewProps> = ({ task, onSave, on
                     </div>
                 )}
 
-                {!isEditing && editedTask.status !== TaskStatus.Completada && editedTask.status !== TaskStatus.Pagada && (
-                    <div className="mt-6">
+                {!isEditing && editedTask.status !== TaskStatus.Completada && editedTask.status !== TaskStatus.Pagada && editedTask.status !== TaskStatus.Cancelada && (
+                    <div className="mt-6 flex gap-3">
                         <button
                             onClick={handleCompleteTask}
-                            className="w-full p-3 bg-emerald-400 text-white font-medium rounded-lg hover:bg-emerald-400 transition-transform transform hover:scale-105"
+                            className="flex-1 p-3 bg-emerald-400 text-white font-medium rounded-lg hover:bg-emerald-500 transition-transform transform hover:scale-105"
                         >
-                            Marcar como Completada
+                            Completar
+                        </button>
+                        <button
+                            onClick={() => onSave({ ...editedTask, status: TaskStatus.Pagada })}
+                            className="flex-1 p-3 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-transform transform hover:scale-105"
+                        >
+                            Marcar Pagada
+                        </button>
+                        <button
+                            onClick={() => onSave({ ...editedTask, status: TaskStatus.Cancelada })}
+                            className="p-3 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-100 transition-all active:scale-90"
+                            title="Cancelar Tarea"
+                        >
+                            <LucideIcons.X size={20} />
                         </button>
                     </div>
                 )}

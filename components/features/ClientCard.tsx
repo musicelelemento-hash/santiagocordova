@@ -11,7 +11,7 @@ interface ClientCardProps {
     client: Client;
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
+    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
     onUploadReceipt?: (client: Client, period?: string) => void;
     onPreview?: (client: Client, declaration: Declaration) => void;
     compact?: boolean;
@@ -135,7 +135,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleAction = (e: React.MouseEvent, action: 'declare' | 'pay' | 'restore' | 'purge', customPeriod?: string) => {
+    const handleAction = (e: React.MouseEvent, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'restore' | 'purge', customPeriod?: string) => {
         e.stopPropagation();
         if (onQuickAction) onQuickAction(client, action, customPeriod);
     };

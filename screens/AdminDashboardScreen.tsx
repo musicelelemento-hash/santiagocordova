@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Screen, Client, DeclarationStatus, TaxRegime } from '../types';
+import { Screen, Client, DeclarationStatus, TaxRegime, Declaration } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay } from '../services/sri';
 import { isPast, isToday, isTomorrow, format, subMonths } from 'date-fns';
@@ -218,17 +218,22 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         if (!isSemestral) { // Monthly (Default or Mensual filter)
             for (let i = 0; i < 6; i++) {
                 const date = subMonths(today, i + 1);
-                result.push(format(date, 'yyyy-MM'));
+                const p = format(date, 'yyyy-MM');
+                if (p >= '2026-01') result.push(p);
             }
         } else { // Semestral
             const currentYear = today.getFullYear();
             const currentMonth = today.getMonth();
             if (currentMonth >= 6) {
-                result.push(`${currentYear}-S1`);
-                result.push(`${currentYear - 1}-S2`);
+                const p1 = `${currentYear}-S1`;
+                const p2 = `${currentYear - 1}-S2`;
+                if (p1 >= '2026-S1') result.push(p1);
+                if (p2 >= '2026-S1') result.push(p2);
             } else {
-                result.push(`${currentYear - 1}-S2`);
-                result.push(`${currentYear - 1}-S1`);
+                const p1 = `${currentYear - 1}-S2`;
+                const p2 = `${currentYear - 1}-S1`;
+                if (p1 >= '2026-S1') result.push(p1);
+                if (p2 >= '2026-S1') result.push(p2);
             }
         }
         return result;
@@ -253,7 +258,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
 
     // ... (handleAction remains same) ...
-    const handleAction = (client: Client, action: 'declare' | 'pay' | 'deactivate', customPeriod?: string) => {
+    const handleAction = (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate' | 'restore' | 'purge', customPeriod?: string) => {
         const today = new Date();
         const period = customPeriod || getPeriod(client, today);
         const nowIso = today.toISOString();
@@ -263,31 +268,70 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             toast.success(`${client.name} desactivado`);
             return;
         }
+        if (action === 'restore') {
+            updateClient(client.id, { isDeleted: false, isActive: true });
+            toast.success(`${client.name} restaurado`);
+            return;
+        }
+        if (action === 'purge') {
+            return;
+        }
 
-        setClients(prev => prev.map(c => {
-            if (c.id !== client.id) return c;
+        const updatedHistory = [...client.declarations];
+        const idx = updatedHistory.findIndex(d => d.period === period);
+        
+        let newStatus: DeclarationStatus;
+        let updates: Partial<Declaration> = { updatedAt: nowIso };
 
-            const history = [...c.declarations];
-            const idx = history.findIndex(d => d.period === period);
-            const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
+        switch (action) {
+            case 'declare':
+                newStatus = DeclarationStatus.Enviada;
+                updates.declaredAt = nowIso;
+                break;
+            case 'pay':
+                newStatus = DeclarationStatus.Pagada;
+                updates.paidAt = nowIso;
+                updates.is_paid = true;
+                updates.transactionId = `Q-${Date.now().toString().slice(-4)}`;
+                break;
+            case 'cancel':
+                newStatus = DeclarationStatus.Cancelada;
+                break;
+            case 'revert':
+                newStatus = DeclarationStatus.Pendiente;
+                updates.is_paid = false;
+                updates.paidAt = undefined;
+                updates.declaredAt = undefined;
+                updates.transactionId = undefined;
+                break;
+            default:
+                newStatus = DeclarationStatus.Pendiente;
+        }
 
-            const newEntry = {
-                period,
-                status: newStatus,
-                updatedAt: nowIso,
-                ...(action === 'declare' ? { declaredAt: nowIso } : {}),
-                ...(action === 'pay' ? { paidAt: nowIso, transactionId: `Q-${Date.now().toString().slice(-4)}` } : {})
-            };
+        const newEntry = {
+            period,
+            status: newStatus,
+            ...updates
+        };
 
-            if (idx > -1) {
-                history[idx] = { ...history[idx], ...newEntry };
-            } else {
-                history.push(newEntry);
-            }
-            return { ...c, declarations: history };
-        }));
+        if (idx > -1) {
+            updatedHistory[idx] = { ...updatedHistory[idx], ...newEntry };
+        } else {
+            updatedHistory.push(newEntry as Declaration);
+        }
 
-        toast.success(action === 'declare' ? 'Declaración registrada' : 'Pago registrado');
+        updateClient(client.id, { declarations: updatedHistory });
+
+        const actionLabels: Record<string, string> = {
+            declare: 'Declaración registrada',
+            pay: 'Pago registrado',
+            cancel: 'Declaración cancelada',
+            revert: 'Acción revertida'
+        };
+        
+        if (actionLabels[action]) {
+            toast.success(actionLabels[action]);
+        }
     };
 
     const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

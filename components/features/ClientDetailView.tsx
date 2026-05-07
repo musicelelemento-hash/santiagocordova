@@ -49,6 +49,13 @@ const getRecentPeriods = (client: Client, count: number): string[] => {
 
     for (let i = 0; i < count; i++) {
         const period = getPeriod(client, currentDate);
+        
+        // Filter: only 2026+
+        const isBeforeStart = period.includes('-S') ? period < '2026-S1' : 
+                             (period.length === 4 ? period < '2026' : period < '2026-01');
+        
+        if (isBeforeStart) break;
+
         if (!periods.includes(period)) periods.push(period);
 
         if (ivaFreq === 'Mensual') { currentDate = subMonths(currentDate, 1); }
@@ -536,6 +543,39 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         onSave({ ...editedClient, declarations: updatedHistory });
     };
 
+    const handleRevertDeclaration = (period: string) => {
+        const updatedHistory = (editedClient.declarations || []).map(dec => 
+            dec.period === period 
+                ? { 
+                    ...dec, 
+                    status: DeclarationStatus.Pendiente, 
+                    declaredAt: undefined, 
+                    proof_file: undefined,
+                    updatedAt: new Date().toISOString() 
+                } 
+                : dec
+        );
+        onSave({ ...editedClient, declarations: updatedHistory });
+    };
+
+    const handleCancelDeclaration = (period: string) => {
+        const updatedHistory = [...(editedClient.declarations || [])];
+        const idx = updatedHistory.findIndex(d => d.period === period);
+        const now = new Date().toISOString();
+
+        if (idx > -1) {
+            updatedHistory[idx] = { ...updatedHistory[idx], status: DeclarationStatus.Cancelada, updatedAt: now };
+        } else {
+            updatedHistory.push({
+                period,
+                status: DeclarationStatus.Cancelada,
+                is_paid: false,
+                updatedAt: now
+            });
+        }
+        onSave({ ...editedClient, declarations: updatedHistory });
+    };
+
     const handlePrintReceipt = () => {
         const content = receiptRef.current?.innerHTML;
         if (content) {
@@ -599,6 +639,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             handleExtraAction={handleExtraAction}
             handleRentaRefundAction={handleRentaRefundAction}
             handleElderlyRefundAction={handleElderlyRefundAction}
+            handleRevertDeclaration={handleRevertDeclaration}
+            handleCancelDeclaration={handleCancelDeclaration}
         />
     );
 
@@ -623,6 +665,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             handleQuickPay={handleQuickPay}
             setUploadingTarget={setUploadingTarget}
             proofInputRef={proofInputRef}
+            handleRevertDeclaration={handleRevertDeclaration}
+            handleCancelDeclaration={handleCancelDeclaration}
         />
     );
 

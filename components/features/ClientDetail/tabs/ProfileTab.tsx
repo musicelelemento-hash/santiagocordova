@@ -33,6 +33,8 @@ interface ProfileTabProps {
     handleExtraAction: (type: 'renta' | 'anexo' | 'devolucion', action: 'declare' | 'pay') => void;
     handleRentaRefundAction: (action: any) => void;
     handleElderlyRefundAction: (action: any) => void;
+    handleRevertDeclaration: (period: string) => void;
+    handleCancelDeclaration: (period: string) => void;
 }
 
 // ── Badge de régimen con su descripción ─────────────────────────
@@ -132,7 +134,9 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     passwordVisible,
     setPasswordVisible,
     handleRentaRefundAction,
-    handleElderlyRefundAction
+    handleElderlyRefundAction,
+    handleRevertDeclaration,
+    handleCancelDeclaration
 }) => {
     const isNegocioPopular = editedClient.regime === TaxRegime.RimpeNegocioPopular;
 
@@ -186,6 +190,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     dueDate={getDueDateForPeriod(client, complianceStats.iva.period) || undefined}
                                     onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats.iva.period })}
                                     onPay={() => handleQuickPay(complianceStats.iva.period)}
+                                    onRevertDeclaration={() => handleRevertDeclaration(complianceStats.iva.period)}
+                                    onCancel={() => handleCancelDeclaration(complianceStats.iva.period)}
                                     onUpload={() => { setUploadingTarget({ type: 'iva', period: complianceStats.iva.period }); proofInputRef.current?.click(); }}
                                 />
                             )}
@@ -202,6 +208,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     dueDate={getDueDateForPeriod(client, complianceStats.renta.period) || undefined}
                                     onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats.renta.period })}
                                     onPay={() => handleQuickPay(complianceStats.renta.period)}
+                                    onRevertDeclaration={() => handleRevertDeclaration(complianceStats.renta.period)}
+                                    onCancel={() => handleCancelDeclaration(complianceStats.renta.period)}
                                     onUpload={() => { setUploadingTarget({ type: 'renta', period: complianceStats.renta.period }); proofInputRef.current?.click(); }}
                                 />
                             )}

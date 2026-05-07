@@ -245,7 +245,11 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
         });
     }
 
-    return obligations;
+    return obligations.filter(ob => {
+        if (ob.period.length === 4) return ob.period >= '2026';
+        if (ob.period.includes('-S')) return ob.period >= '2026-S1';
+        return ob.period >= '2026-01';
+    });
 };
 
 /**
@@ -399,6 +403,16 @@ export const getHistoricalScore = (client: Client, months: number = 6): number[]
     for (let i = months - 1; i >= 0; i--) {
         const refDate = subMonths(now, i);
         const period = getPeriod(client, refDate);
+        
+        // Skip periods before 2026
+        const isBeforeStart = period.includes('-S') ? period < '2026-S1' : 
+                             (period.length === 4 ? period < '2026' : period < '2026-01');
+        
+        if (isBeforeStart) {
+            scores.push(100); // Consider compliant if before system start
+            continue;
+        }
+
         const decl = (client.declarations || []).find(d => d.period === period);
         const declared = isDeclared(decl);
         scores.push(declared ? 100 : 0);

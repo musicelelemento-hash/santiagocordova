@@ -4,6 +4,7 @@ export enum TaskStatus {
     EnProceso = 'En Proceso',
     Completada = 'Completada',
     Pagada = 'Pagada',
+    Cancelada = 'Cancelada',
 }
 
 export interface Task {

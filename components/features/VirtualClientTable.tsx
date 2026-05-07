@@ -13,7 +13,7 @@ interface VirtualClientTableProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
     onView: (client: Client) => void;
-    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'deactivate') => void;
+    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate') => void;
     onUploadReceipt: (client: Client, period?: string) => void;
     frequency?: TaxFrequency | 'all';
 }

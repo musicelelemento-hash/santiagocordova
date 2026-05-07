@@ -12,6 +12,8 @@ interface DeclarationHistoryTableProps {
     onPay: (period: string) => void;
     onUpload: (period: string) => void;
     onWhatsApp?: (period: string) => void;
+    onCancel?: (period: string) => void;
+    onRevertDeclaration?: (period: string) => void;
 }
 
 const StatusBadge: React.FC<{ status: DeclarationStatus; hasProof: boolean }> = ({ status, hasProof }) => {
@@ -52,7 +54,9 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
     onDeclare,
     onPay,
     onUpload,
-    onWhatsApp
+    onWhatsApp,
+    onCancel,
+    onRevertDeclaration
 }) => {
     const sortedHistory = [...(history || [])].sort((a, b) => b.period.localeCompare(a.period));
 
@@ -143,6 +147,15 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                             <LucideIcons.MessageCircle size={15} strokeWidth={2} />
                                         </button>
                                     )}
+                                    {onCancel && decl.status !== DeclarationStatus.Cancelada && (
+                                        <button
+                                            onClick={() => onCancel(decl.period)}
+                                            title="Cancelar"
+                                            className="w-9 h-9 flex items-center justify-center bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-400 hover:bg-rose-500 hover:text-white hover:border-transparent rounded-xl transition-all active:scale-95 shadow-sm"
+                                        >
+                                            <LucideIcons.X size={15} strokeWidth={2} />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => onPay(decl.period)}
                                         title="Registrar pago"
@@ -177,6 +190,16 @@ export const DeclarationHistoryTable: React.FC<DeclarationHistoryTableProps> = (
                                     className="w-9 h-9 flex items-center justify-center bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-400 hover:bg-blue-600 hover:text-white hover:border-transparent rounded-xl transition-all active:scale-95 shadow-sm"
                                 >
                                     <LucideIcons.Send size={15} strokeWidth={2} />
+                                </button>
+                            )}
+
+                            {decl.status === DeclarationStatus.Enviada && onRevertDeclaration && (
+                                <button
+                                    onClick={() => onRevertDeclaration(decl.period)}
+                                    title="Revertir declaración"
+                                    className="w-9 h-9 flex items-center justify-center bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 text-slate-400 hover:bg-amber-500 hover:text-white hover:border-transparent rounded-xl transition-all active:scale-95 shadow-sm"
+                                >
+                                    <LucideIcons.RotateCcw size={15} strokeWidth={2} />
                                 </button>
                             )}
 

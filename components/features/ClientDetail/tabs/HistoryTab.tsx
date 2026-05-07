@@ -16,6 +16,8 @@ interface HistoryTabProps {
     handleQuickPay: (period: string) => void;
     setUploadingTarget: (target: { type: string; period?: string } | null) => void;
     proofInputRef: React.RefObject<HTMLInputElement>;
+    handleCancelDeclaration: (period: string) => void;
+    handleRevertDeclaration: (period: string) => void;
 }
 
 export const HistoryTab: React.FC<HistoryTabProps> = ({
@@ -29,7 +31,9 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
     setConfirmation,
     handleQuickPay,
     setUploadingTarget,
-    proofInputRef
+    proofInputRef,
+    handleCancelDeclaration,
+    handleRevertDeclaration
 }) => {
     const totalDeclared = (client.declarations || []).filter(d => d.status === 'Enviada' || d.status === 'Pagada').length;
     const totalPaid = (client.declarations || []).filter(d => d.is_paid).length;
@@ -118,6 +122,8 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
                     onPay={handleQuickPay}
                     onUpload={(p) => { setUploadingTarget({ type: 'iva', period: p }); proofInputRef.current?.click(); }}
                     onWhatsApp={(period) => handleWhatsAppPaymentRequest(period, 'IVA')}
+                    onCancel={handleCancelDeclaration}
+                    onRevertDeclaration={handleRevertDeclaration}
                 />
             </div>
         </div>

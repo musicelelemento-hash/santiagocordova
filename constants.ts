@@ -1,6 +1,8 @@
-
 import { Client, Task, DeclarationStatus, TaskStatus, Declaration, TaxRegime, RentaCategory } from './types';
 import { v4 as uuidv4 } from 'uuid';
+
+export const SYSTEM_START_YEAR = 2026;
+export const SYSTEM_START_MONTH = 1; // January
 
 // Tabla oficial de vencimientos según el noveno dígito del RUC
 // Aplicable para: Régimen General, RIMPE Emprendedor y RIMPE Negocio Popular

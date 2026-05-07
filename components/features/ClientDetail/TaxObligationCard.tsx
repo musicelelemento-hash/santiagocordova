@@ -20,6 +20,8 @@ interface TaxObligationCardProps {
     resolutionFile?: StoredFile;
     declarationDate?: string;
     onRevertPayment?: () => void;
+    onRevertDeclaration?: () => void;
+    onCancel?: () => void;
     dueDate?: Date;
     isOverdue?: boolean;
 }
@@ -39,6 +41,8 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
     onAction,
     resolutionFile,
     onRevertPayment,
+    onRevertDeclaration,
+    onCancel,
     dueDate,
     isOverdue
 }) => {
@@ -68,6 +72,7 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
         if (isCompleted) { label = '✓ Completo'; cls = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20'; }
         else if (status === 'Solicitado') { label = 'En Trámite'; cls = 'bg-blue-50 text-blue-700 dark:bg-primary/10 dark:text-primary-low border-blue-100 dark:border-primary/20'; }
         else if (status === 'En Proceso') { label = 'Procesando'; cls = 'bg-blue-50 text-blue-700 dark:bg-primary/10 dark:text-primary-low border-blue-100 dark:border-primary/20'; }
+        else if (status === DeclarationStatus.Cancelada || status === 'Cancelado') { label = '✖ Cancelado'; cls = 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20'; }
         else if (isDeclared && !isPaid) { label = 'Cobro Pendiente'; cls = 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border-amber-100 dark:border-amber-500/20'; }
         else if (overdueStatus) { label = '⚠ Vencido'; cls = 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20 animate-pulse'; }
 
@@ -106,12 +111,32 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                 </div>
 
                 {isDeclared ? (
-                    <div className="flex items-center gap-2 text-blue-600 dark:text-primary-low bg-blue-50 dark:bg-primary/10 px-4 py-2 rounded-xl border border-blue-100 dark:border-primary/20 text-xs font-bold">
-                        <LucideIcons.CheckCircle2 size={14} strokeWidth={2.5} />
-                        Declarado
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 text-blue-600 dark:text-primary-low bg-blue-50 dark:bg-primary/5 px-4 py-2 rounded-xl border border-blue-100 dark:border-primary/20 text-xs font-bold">
+                            <LucideIcons.CheckCircle2 size={14} strokeWidth={2.5} />
+                            Declarado
+                        </div>
+                        {onRevertDeclaration && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onRevertDeclaration(); }}
+                                title="Revertir declaración"
+                                className="p-2 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-500/20 text-slate-300 hover:text-rose-500 transition-all active:scale-90"
+                            >
+                                <LucideIcons.RotateCcw size={14} strokeWidth={2} />
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <div className="flex items-center gap-2 w-full sm:w-auto">
+                        {onCancel && status !== DeclarationStatus.Cancelada && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onCancel(); }}
+                                title="Cancelar declaración"
+                                className="p-2.5 bg-white dark:bg-surface-low/50 border border-slate-200 dark:border-white/10 rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-300 transition-all active:scale-90"
+                            >
+                                <LucideIcons.X size={16} strokeWidth={2} />
+                            </button>
+                        )}
                         <button
                             onClick={onDeclare}
                             className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 ${
@@ -180,6 +205,15 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                                 className="p-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 active:scale-95 shadow-md shadow-emerald-200 dark:shadow-emerald-500/20 transition-all"
                             >
                                 <LucideIcons.MessageCircle size={16} strokeWidth={2.5} />
+                            </button>
+                        )}
+                        {!isPaid && onCancel && status !== DeclarationStatus.Cancelada && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onCancel(); }}
+                                title="Cancelar pago/servicio"
+                                className="p-2.5 bg-white dark:bg-surface-low/50 border border-slate-200 dark:border-white/10 rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-300 transition-all active:scale-90"
+                            >
+                                <LucideIcons.X size={16} strokeWidth={2} />
                             </button>
                         )}
                         <button
