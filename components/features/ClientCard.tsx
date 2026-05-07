@@ -19,6 +19,7 @@ interface ClientCardProps {
     frequency?: 'Mensual' | 'Semestral' | 'Anual' | 'all';
 }
 
+
 export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency }) => {
     const [copied, setCopied] = React.useState(false);
     const [isHovered, setIsHovered] = React.useState(false);
@@ -31,28 +32,22 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     // Lógica de Estado
     const isPaid = !!activeDecl?.is_paid;
     const isDeclared = !!activeDecl?.proof_file || activeDecl?.status === DeclarationStatus.Enviada;
-    const fee = getClientServiceFee(client, serviceFees);
-    const isVip = true;
+    const fee = getClientServiceFee(client, serviceFees, currentPeriod);
     const dueDate = getDueDateForPeriod(client, currentPeriod);
 
     // Cálculos de Tiempo
-    const daysUntilDue = dueDate ? differenceInCalendarDays(dueDate, today) : 99;
+    const daysUntilDue = dueDate ? differenceInCalendarDays(dueDate, today) : null;
     const isOverdue = dueDate && isPast(dueDate) && !isDeclared;
-    const isUrgent = daysUntilDue <= 3 && !isDeclared;
+    const isUrgent = daysUntilDue !== null && daysUntilDue <= 3 && !isDeclared;
 
     // Renta Extra Buttons Logic
-    const currentMonth = today.getMonth() + 1;
-    const currentYear = today.getFullYear();
-    const rentaStartMonth = serviceFees.rentaButtonsStartMonth || 1;
     const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
-
-    // For annual income in year Y, the period name is Y-1. E.g. in 2025 declaring 2024.
+    const currentYear = today.getFullYear();
     const rentaPeriod = (currentYear - 1).toString();
     const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
-    const isRentaDeclared = !!rentaDecl?.proof_file || false || rentaDecl?.status === DeclarationStatus.Enviada;
-    const isRentaPaid = false || !!rentaDecl?.is_paid;
+    const isRentaDeclared = !!rentaDecl?.proof_file || rentaDecl?.status === DeclarationStatus.Enviada;
+    const isRentaPaid = !!rentaDecl?.is_paid;
     const isRentaFullyDone = isRentaDeclared && isRentaPaid;
-    const showRentaExtraButtons = !compact && needsRenta && currentMonth >= rentaStartMonth;
 
     const isFullyPaid = isPaid && (isRentaPaid || !needsRenta);
     const isFullyDeclared = isDeclared && (isRentaDeclared || !needsRenta);
@@ -61,72 +56,24 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     // ORDEN DE TRABAJO (Prioridad)
     const hasWorkOrder = (client.declarations || []).some(d => d.is_paid && d.status === DeclarationStatus.Pendiente);
 
-    // REFRESH PULSE LOGIC (Discrete Heartbeat)
+    // REFRESH PULSE LOGIC
     const isRefundAlertActive = 
         (client.rentaRefundStatus === 'Solicitado' && client.rentaRefundRequestedAt && differenceInHours(today, new Date(client.rentaRefundRequestedAt)) >= 6) ||
         (client.rentaRefundStatus === 'Esperando Confirmación');
 
     // Elite Tactical Design System
-    const cardThemes = {
-        elite: {
-            bg: 'bg-emerald-50/50 dark:bg-emerald-400/5',
-            border: 'border-emerald-200/50 dark:border-emerald-400/20',
-            glow: 'shadow-[0_0_20px_rgba(16,185,129,0.1)]',
-            icon: 'text-emerald-400',
-            text: 'text-emerald-700 dark:text-emerald-400',
-            title: 'text-slate-800 dark:text-emerald-400'
-        },
-        vip: {
-            bg: 'bg-gradient-to-br from-[#0B2149] to-[#122A5A] text-white outline outline-amber-400/20',
-            border: 'border-amber-400/30',
-            glow: 'shadow-[0_0_25px_rgba(245,158,11,0.15)]',
-            icon: 'text-amber-400',
-            text: 'text-slate-200',
-            title: 'text-white'
-        },
-        alert: {
-            bg: 'bg-rose-50/50 dark:bg-rose-900/10',
-            border: 'border-rose-200/50 dark:border-rose-400/20',
-            glow: 'shadow-[0_0_20px_rgba(239,68,68,0.1)]',
-            icon: 'text-rose-400',
-            text: 'text-rose-700 dark:text-rose-400',
-            title: 'text-slate-900 dark:text-rose-300'
-        },
-        command: {
-            bg: 'bg-white dark:bg-slate-900',
-            border: 'border-slate-200 dark:border-white/5',
-            glow: 'shadow-sm',
-            icon: 'text-sky-400',
-            text: 'text-slate-500 dark:text-slate-400',
-            title: 'text-slate-800 dark:text-white'
-        },
-        deleted: {
-            bg: 'bg-slate-50 opacity-60 grayscale',
-            border: 'border-slate-200 border-dashed',
-            glow: 'shadow-none',
-            icon: 'text-slate-400',
-            text: 'text-slate-400',
-            title: 'text-slate-500'
-        }
+    const getStatusInfo = () => {
+        if (client.isDeleted) return { color: 'bg-slate-100 text-slate-500 border-slate-200', text: 'Archivado', icon: LucideIcons.Trash2 };
+        if (!client.isActive) return { color: 'bg-slate-50 text-slate-400 border-slate-100', text: 'Inactivo', icon: LucideIcons.Power };
+        if (isFullyAlDia) return { color: 'bg-emerald-50 text-emerald-600 border-emerald-200', text: 'Al Día', icon: LucideIcons.ShieldCheck };
+        if (hasWorkOrder) return { color: 'bg-blue-50 text-blue-600 border-blue-200 animate-pulse', text: 'Orden de Trabajo', icon: LucideIcons.Zap };
+        if (isOverdue) return { color: 'bg-rose-50 text-rose-600 border-rose-200 shadow-[0_0_15px_rgba(244,63,94,0.1)]', text: 'Vencido', icon: LucideIcons.AlertCircle };
+        if (isDeclared && !isPaid) return { color: 'bg-amber-50 text-amber-600 border-amber-200', text: 'Cobro Pendiente', icon: LucideIcons.DollarSign };
+        if (isUrgent) return { color: 'bg-orange-50 text-orange-600 border-orange-200', text: 'Vence Pronto', icon: LucideIcons.Clock };
+        return { color: 'bg-slate-100 text-slate-500 border-slate-200', text: 'Pendiente', icon: LucideIcons.Calendar };
     };
 
-    const theme = !client.isActive && client.isDeleted ? cardThemes.deleted : (isFullyAlDia ? cardThemes.elite : (variant === 'tactical' ? cardThemes.vip : cardThemes.command));
-    const titleColor = theme.title;
-    const textColor = theme.text;
-
-    // Indicador de Estado (Semáforo Táctico)
-    let statusBadge = { color: 'bg-white/5 text-slate-500 border-white/10', text: 'Pendiente', icon: LucideIcons.Clock };
-    if (client.isDeleted) statusBadge = { color: 'bg-white/5 text-slate-500 border-white/10', text: 'Archivado', icon: LucideIcons.Trash2 };
-    else if (!client.isActive) statusBadge = { color: 'bg-white/5 text-slate-400 border-white/5', text: 'Inactivo', icon: LucideIcons.Lock };
-    else if (isFullyAlDia) statusBadge = { color: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', text: 'Al Día', icon: LucideIcons.ShieldCheck };
-    else if (hasWorkOrder) statusBadge = { color: 'bg-primary/10 text-primary border-primary/20', text: 'En Proceso', icon: LucideIcons.Zap };
-    else if (isOverdue) statusBadge = { color: 'bg-rose-400/10 text-rose-400 border-rose-400/20', text: 'Vencido', icon: LucideIcons.AlertTriangle };
-    else if (isDeclared && !isPaid) statusBadge = { color: 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20', text: 'Por Cobrar', icon: LucideIcons.Timer };
-    else if (isUrgent) statusBadge = { color: 'bg-amber-400/10 text-amber-400 border-amber-400/20', text: 'Vence Pronto', icon: LucideIcons.Timer };
-
-    // ALERTA DE PDF FALTANTE
-    const isMissingPdf = isDeclared && !activeDecl?.proof_file;
-    const isRentaMissingPdf = isRentaDeclared && !rentaDecl?.proof_file;
+    const statusBadge = getStatusInfo();
 
     const handleCopy = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -140,129 +87,133 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
         if (onQuickAction) onQuickAction(client, action, customPeriod);
     };
 
-    const handleWhatsAppPayment = (e: React.MouseEvent, periodType: 'IVA' | 'Renta') => {
-        e.stopPropagation();
-        if (!client.phones?.length) return;
-        const phone = client.phones[0].replace(/\D/g, '');
-        const fullPhone = phone.startsWith('593') ? phone : `593${phone.substring(1)}`;
-        const periodLabel = periodType === 'IVA' ? formatPeriodForDisplay(currentPeriod) : formatPeriodForDisplay(rentaPeriod);
-        const message = `Hola ${client.name}, le saludamos de Soluciones Contables Pro. Le recordamos que tiene pendiente el pago de sus honorarios por la declaración de ${periodLabel}. ¿Nos podría ayudar con la transferencia? ¡Gracias!`;
-        window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
-    };
-
-
     return (
         <div
             onClick={() => onView(client)}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className={`
-                relative rounded-[2rem] transition-all duration-500 cursor-pointer overflow-hidden group
-                ${isHovered ? 'bg-surface-low border-primary/20 -translate-y-1' : 'bg-surface-lowest border-transparent'}
-                shadow-sm border-2
-                ${hasWorkOrder ? 'ring-2 ring-primary/30' : ''}
-                ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-tertiary/30' : ''}
-                ${variant === 'zen' ? 'max-h-[140px]' : ''}
+                relative rounded-3xl transition-all duration-500 cursor-pointer overflow-hidden group/card
+                ${isHovered ? 'shadow-premium -translate-y-1.5 border-primary/20 bg-white dark:bg-surface-low' : 'shadow-sm border-transparent bg-white/60 dark:bg-surface/40'}
+                border-2 backdrop-blur-xl
+                ${hasWorkOrder ? 'ring-2 ring-primary/20 bg-blue-50/10' : ''}
+                ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-emerald-500/20' : ''}
             `}
         >
             {/* Tonal Accent Strip */}
-            <div className={`absolute top-0 left-0 right-0 h-[4px] ${isFullyAlDia ? 'bg-tertiary' : (isOverdue ? 'bg-primary' : 'bg-surface-low')}`}></div>
+            <div className={`absolute top-0 left-0 right-0 h-1.5 transition-all duration-700 ${
+                isFullyAlDia ? 'bg-emerald-500' : 
+                isOverdue ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' : 
+                isUrgent ? 'bg-amber-500' :
+                'bg-slate-200 dark:bg-white/10'
+            }`}></div>
             
-            <div className={`${compact ? 'p-3' : 'p-4 px-5'} relative z-10 flex flex-col md:flex-row md:items-center h-full justify-between gap-4`}>
-                <div className="flex items-center gap-4 flex-1 min-w-0">
+            <div className={`${compact ? 'p-4' : 'p-6'} relative z-10 flex flex-col sm:flex-row sm:items-center h-full justify-between gap-6`}>
+                {/* Identity Zone */}
+                <div className="flex items-center gap-5 flex-1 min-w-0">
                     <div className="relative shrink-0">
-                        <div className={`w-12 h-12 rounded-[1.25rem] flex items-center justify-center font-bold text-sm transition-all duration-700 ${isFullyAlDia ? 'bg-tertiary/10 text-tertiary' : 'bg-primary/10 text-primary'}`}>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-lg transition-all duration-700 shadow-inner ${
+                            isFullyAlDia ? 'bg-emerald-500 text-white shadow-emerald-200' : 
+                            isOverdue ? 'bg-rose-500 text-white shadow-rose-200' :
+                            'bg-slate-900 dark:bg-primary text-white shadow-slate-200'
+                        }`}>
                             {client.name.substring(0, 2).toUpperCase()}
                         </div>
-                        {/* Zen 3.1 Compliance Dot */}
-                        <div 
-                            className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-surface-lowest shadow-sm z-20 ${
-                                compliance.overallColor === 'red' ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.4)]' :
-                                compliance.overallColor === 'orange' ? 'bg-orange-500' :
-                                compliance.overallColor === 'yellow' ? 'bg-amber-400' :
-                                compliance.overallColor === 'green' ? 'bg-emerald-500' :
-                                'bg-slate-300'
-                            }`}
-                            title={`Salud Fiscal: ${compliance.score}%`}
-                        />
+                        
+                        {/* Health Ring Indicator */}
+                        <div className="absolute -bottom-1 -right-1 flex items-center justify-center">
+                            <div className={`w-6 h-6 rounded-full border-4 border-white dark:border-surface-low flex items-center justify-center text-[8px] font-black shadow-sm ${
+                                compliance.overallColor === 'green' ? 'bg-emerald-500 text-white' :
+                                compliance.overallColor === 'red' ? 'bg-rose-500 text-white' :
+                                'bg-amber-400 text-slate-900'
+                            }`}>
+                                {compliance.score}
+                            </div>
+                        </div>
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                            <h3 className="font-premium font-bold text-base truncate text-on-surface leading-tight" title={client.name}>
+                        <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-premium font-extrabold text-lg truncate text-slate-900 dark:text-slate-100 tracking-tight" title={client.name}>
                                 {client.tradeName || client.name}
                             </h3>
                             {client.hasElderlyDevolucionIva && (
-                                <span className="shrink-0 text-[8px] px-1.5 py-0.5 bg-tertiary/20 text-tertiary rounded-md font-bold tracking-widest uppercase font-premium">
-                                    Sr
+                                <span className="shrink-0 text-[9px] px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg font-black tracking-widest uppercase font-premium">
+                                    3ra Edad
                                 </span>
                             )}
                         </div>
                         <div className="flex items-center gap-3">
-                            <button onClick={handleCopy} className="flex items-center gap-1.5 transition-all text-on-surface-variant hover:text-primary">
-                                <span className="font-mono text-[9px] font-bold tracking-widest">{client.ruc}</span>
-                                {copied ? <LucideIcons.Check size={10} className="text-tertiary" /> : <LucideIcons.Copy size={10} className="opacity-30" />}
+                            <button onClick={handleCopy} className="group/copy flex items-center gap-2 px-2 py-1 rounded-md transition-all hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 hover:text-slate-900 dark:hover:text-white">
+                                <span className="font-mono text-[10px] font-black tracking-widest uppercase">{client.ruc}</span>
+                                {copied ? <LucideIcons.Check size={12} className="text-emerald-500" /> : <LucideIcons.Copy size={12} className="opacity-0 group-hover/copy:opacity-100 transition-opacity" />}
                             </button>
+                            {!compact && (
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-white/5 px-2 py-0.5 rounded-md border border-slate-100 dark:border-white/5">
+                                    <LucideIcons.CreditCard size={10} />
+                                    ${fee.toFixed(2)}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
 
-                {/* Status and Actions Group */}
-                <div className="flex items-center gap-4 md:gap-6">
-                    {/* Tax Indicators - Vertical Sparks */}
-                    {!client.isDeleted && variant !== 'digital' && (
-                        <div className="flex items-center gap-3 mr-2">
-                            {activeDecl && (
-                                <div className="flex flex-col items-center">
-                                    <span className={`text-[8px] font-bold uppercase tracking-tighter opacity-40 mb-1 ${isPaid ? 'text-tertiary opacity-100' : (isOverdue ? 'text-rose-500 opacity-100' : '')}`}>IVA</span>
-                                    <div className={`w-2.5 h-2.5 rounded-full ${isPaid ? 'bg-tertiary' : (isOverdue ? 'bg-rose-500 h-3 w-3 shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'bg-surface-low')}`} />
-                                </div>
-                            )}
+                {/* Pulse & Action Zone */}
+                <div className="flex items-center justify-between sm:justify-end gap-4 md:gap-8 border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100 dark:border-white/5">
+                    {/* Visual Status Sparks */}
+                    {!client.isDeleted && !compact && (
+                        <div className="flex items-center gap-4 px-4 border-x border-slate-100 dark:border-white/5 h-10">
+                            <div className="flex flex-col items-center">
+                                <span className={`text-[8px] font-black uppercase tracking-widest mb-1 ${isPaid ? 'text-emerald-500' : (isOverdue ? 'text-rose-500' : 'text-slate-300')}`}>IVA</span>
+                                <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isPaid ? 'bg-emerald-500 scale-125' : (isOverdue ? 'bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'bg-slate-200 dark:bg-white/10')}`} />
+                            </div>
                             {needsRenta && (
                                 <div className="flex flex-col items-center">
-                                    <span className={`text-[8px] font-bold uppercase tracking-tighter opacity-40 mb-1 ${isRentaFullyDone ? 'text-tertiary opacity-100' : ''}`}>REN</span>
-                                    <div className={`w-2.5 h-2.5 rounded-full ${isRentaFullyDone ? 'bg-tertiary' : 'bg-surface-low'}`} />
+                                    <span className={`text-[8px] font-black uppercase tracking-widest mb-1 ${isRentaFullyDone ? 'text-emerald-500' : 'text-slate-300'}`}>RENTA</span>
+                                    <div className={`w-2 h-2 rounded-full transition-all duration-500 ${isRentaFullyDone ? 'bg-emerald-500 scale-125' : 'bg-slate-200 dark:bg-white/10'}`} />
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* Badge - Always visible but more compact */}
-                    <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase tracking-wider font-premium ${statusBadge.color.replace('bg-white/5', 'bg-surface-low').replace('border-white/10', 'border-outline-variant/5')}`}>
-                        <statusBadge.icon size={11} strokeWidth={2.5} />
-                        {statusBadge.text}
-                    </div>
-
-                    {/* Actions - Permanently visible buttons, but subtle if not hovered */}
-                    {client.isActive && !client.isDeleted && (
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={(e) => !isDeclared && handleAction(e, 'declare')}
-                                disabled={isDeclared}
-                                className={`flex items-center justify-center h-9 w-9 sm:w-auto sm:px-3 rounded-xl border transition-all font-bold text-[10px] uppercase font-premium ${
-                                    isDeclared 
-                                    ? 'bg-surface-low text-on-surface-variant opacity-40 border-transparent' 
-                                    : 'bg-primary text-white border-primary hover:scale-105 active:scale-95 shadow-sm'
-                                }`}
-                                title="Declarar en SRI"
-                            >
-                                <LucideIcons.Zap size={14} className={isDeclared ? '' : 'fill-current'} />
-                                <span className={compact ? 'hidden' : 'hidden md:inline ml-1.5'}>SRI</span>
-                            </button>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
-                                className={`flex items-center justify-center h-9 w-9 sm:w-auto sm:px-3 rounded-xl border transition-all font-bold text-[10px] uppercase font-premium ${
-                                    activeDecl?.proof_file 
-                                    ? 'bg-tertiary text-white border-tertiary shadow-sm' 
-                                    : 'bg-surface-lowest text-on-surface-variant border-outline-variant/20 hover:border-primary hover:text-primary'
-                                } active:scale-95`}
-                                title={activeDecl?.proof_file ? 'Ver Comprobante' : 'Cargar Comprobante'}
-                            >
-                                {activeDecl?.proof_file ? <LucideIcons.FileCheck size={14} /> : <LucideIcons.Upload size={14} />}
-                                <span className={compact ? 'hidden' : 'hidden md:inline ml-1.5'}>{activeDecl?.proof_file ? 'VER' : 'PDF'}</span>
-                            </button>
+                    {/* Badge & Quick Actions */}
+                    <div className="flex items-center gap-4">
+                        <div className={`flex items-center gap-2.5 px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-[0.1em] font-premium transition-all duration-500 ${statusBadge.color}`}>
+                            <statusBadge.icon size={12} strokeWidth={3} />
+                            <span className="hidden sm:inline">{statusBadge.text}</span>
+                            {daysUntilDue !== null && !isDeclared && !isOverdue && (
+                                <span className="ml-1 opacity-60">-{daysUntilDue}d</span>
+                            )}
                         </div>
-                    )}
+
+                        {client.isActive && !client.isDeleted && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={(e) => !isDeclared && handleAction(e, 'declare')}
+                                    disabled={isDeclared}
+                                    className={`group/btn flex items-center justify-center h-11 w-11 sm:w-auto sm:px-5 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-widest font-premium ${
+                                        isDeclared 
+                                        ? 'bg-slate-50 text-slate-300 border-slate-100 dark:bg-white/5 dark:border-transparent opacity-50' 
+                                        : 'bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary hover:scale-105 active:scale-95 shadow-lg shadow-slate-200 dark:shadow-primary/20'
+                                    }`}
+                                >
+                                    <LucideIcons.Zap size={15} className={isDeclared ? '' : 'fill-current group-hover/btn:animate-pulse'} />
+                                    <span className="hidden md:inline ml-2">SRI</span>
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
+                                    className={`flex items-center justify-center h-11 w-11 sm:w-auto sm:px-5 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-widest font-premium ${
+                                        activeDecl?.proof_file 
+                                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-200' 
+                                        : 'bg-white dark:bg-white/5 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-emerald-500 hover:text-emerald-500'
+                                    } active:scale-95`}
+                                >
+                                    {activeDecl?.proof_file ? <LucideIcons.FileCheck size={16} /> : <LucideIcons.UploadCloud size={16} />}
+                                    <span className="hidden md:inline ml-2">{activeDecl?.proof_file ? 'VER' : 'PDF'}</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

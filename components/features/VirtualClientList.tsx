@@ -48,7 +48,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
 export const VirtualClientList: React.FC<VirtualClientListProps> = (props) => {
     // Determine item size based on variant (default to zen for dashboard)
     const variant = props.variant || 'zen';
-    const itemSize = variant === 'zen' ? 130 : 280;
+    const itemSize = variant === 'zen' ? 150 : 300;
 
     return (
         <div className="w-full h-full" style={{ minHeight: '600px' }}>
