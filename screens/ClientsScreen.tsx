@@ -18,6 +18,7 @@ import { ClientCard } from '../components/features/ClientCard';
 import { extractDataFromDeclarationPdf, fileToBase64 } from '../services/pdfExtraction';
 import { StoredFile } from '../types';
 import { BulkUploadReportModal, BulkUploadResult } from '../components/features/BulkUploadReportModal';
+import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 
 const OBLIGATION_GROUPS = [
@@ -74,6 +75,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
     const [isWorkspaceView, setIsWorkspaceView] = useState(false);
     const [isCobrosView, setIsCobrosView] = useState(false);
+    const [isAlertasView, setIsAlertasView] = useState(false);
+    const [isMatrixView, setIsMatrixView] = useState(false);
 
     // Smart Tabs Logic
     const getInitialGroupTab = () => {
@@ -101,10 +104,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     }, [sortOption]);
 
     useEffect(() => {
-        if (activeGroupTab === 'matrix') {
-            setIsWorkspaceView(false);
-            setIsCobrosView(false);
-        }
+        setIsMatrixView(activeGroupTab === 'matrix');
+        setIsWorkspaceView(['all', 'mensual', 'semestral', 'al-dia', 'ordenes', 'trash'].includes(activeGroupTab));
+        setIsCobrosView(activeGroupTab === 'cobros');
+        setIsAlertasView(activeGroupTab === 'vencidos');
     }, [activeGroupTab]);
 
     useEffect(() => {
@@ -722,44 +725,59 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     return (
         <div className="bg-surface-lowest min-h-screen">
             {/* ZENITH CLIENT MANAGEMENT - ARCHITECTURAL HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 relative z-10 px-1 sm:px-0 mb-8 sm:mb-12 animate-fade-in">
-                <div className="animate-fade-in-left w-full sm:w-auto">
+            <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 relative z-10 px-1 sm:px-0 mb-8 sm:mb-12"
+            >
+                <div>
                     <div className="flex items-center justify-between sm:justify-start gap-4 mb-4">
-                        <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-primary/5 border border-primary/10 shadow-architect">
-                            <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.4)]"></div>
+                        <div className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-primary/5 border border-primary/10 shadow-tactical">
+                            <motion.div 
+                                animate={{ opacity: [0.4, 1, 0.4] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                className="w-2 h-2 rounded-full bg-primary shadow-[0_0_12px_rgba(43,106,255,0.6)]"
+                            ></motion.div>
                             <span className="text-[10px] font-bold text-primary uppercase tracking-[0.25em] font-premium">SISTEMA CORE</span>
                         </div>
                         <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.2em] opacity-40 sm:block hidden font-premium">• PROTOCOLO ZENITH</span>
                     </div>
-                    <h2 className="text-4xl sm:text-6xl font-premium font-bold text-on-surface leading-[1.1] tracking-tighter mb-3">
+                    <h2 className="text-4xl sm:text-6xl font-premium font-extrabold text-on-surface leading-[1.05] tracking-tighter mb-4">
                         Directorio <span className="text-primary italic font-light">Tributario</span>
                     </h2>
                     <div className="flex items-center gap-4 text-on-surface-variant text-[10px] font-bold uppercase tracking-[0.2em] font-premium">
-                        <div className="flex items-center gap-2 px-3 py-1 bg-surface-low rounded-lg border border-outline-variant/30">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-low/50 backdrop-blur-md rounded-lg border border-outline-variant/30">
                             <LucideIcons.Shield size={12} className="text-tertiary" />
                             <span>MANTENIMIENTO ACTIVOS</span>
                         </div>
-                        <span className="px-3 py-1 bg-tertiary/10 text-tertiary rounded-lg border border-tertiary/20">{sortedClients.length} EXPEDIENTES</span>
+                        <span className="px-3 py-1.5 bg-tertiary/10 text-tertiary rounded-lg border border-tertiary/20">{sortedClients.length} EXPEDIENTES</span>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 w-full md:w-auto animate-fade-in-right">
-                    <button
+                <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={handleBulkUpload}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-5 rounded-3xl bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.2em] border border-outline-variant hover:bg-surface-medium transition-all duration-500 shadow-architect font-premium"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-5 rounded-[1.5rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.2em] border border-outline-variant hover:bg-surface-medium transition-all duration-500 shadow-sm font-premium"
                     >
                         <LucideIcons.UploadCloud size={18} />
                         CARGA MASIVA
-                    </button>
+                    </motion.button>
                     
-                    <button onClick={() => setIsModalOpen(true)}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-5 rounded-3xl bg-primary text-white shadow-architect-lg font-bold text-[11px] uppercase tracking-[0.2em] transition-all duration-500 hover:scale-[1.03] active:scale-95 font-premium"
+                    <motion.button 
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-10 py-5 rounded-[1.5rem] bg-primary text-white shadow-tactical font-bold text-[11px] uppercase tracking-[0.2em] transition-all duration-500 font-premium relative overflow-hidden group"
                     >
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
                         <LucideIcons.PlusCircle size={18} strokeWidth={2.5} />
                         NUEVO CLIENTE
-                    </button>
+                    </motion.button>
                 </div>
-            </div>
+            </motion.div>
 
             {/* ACTIVE FILTER BANNER - Architect Mode */}
             {initialFilter && (
@@ -788,18 +806,32 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 </div>
             )}
             {/* ZENITH SEARCH & FILTERS - ARCHITECTURAL CONTROL */}
-            <div className="bg-surface-low p-4 rounded-[2.5rem] border border-outline-variant/30 flex flex-col lg:flex-row gap-6 items-center mb-8 mx-1 sm:mx-0 shadow-architect">
-                <div className="flex p-1.5 bg-surface-medium rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar border border-outline-variant/20">
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="bg-surface p-5 rounded-[2rem] border border-outline-variant/30 flex flex-col lg:flex-row gap-6 items-center mb-8 mx-1 sm:mx-0 shadow-md relative overflow-hidden"
+            >
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
+                
+                <div className="flex p-1.5 bg-surface-low rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar border border-outline-variant/20">
                     <button 
                         onClick={() => {
                             setIsWorkspaceView(!isWorkspaceView);
                             if (!isWorkspaceView) setIsCobrosView(false);
                         }}
-                        className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 shrink-0 font-premium
+                        className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 shrink-0 font-premium relative
                             ${isWorkspaceView 
-                                ? 'bg-primary text-white shadow-architect' 
-                                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-low'}`}
+                                ? 'bg-primary text-white shadow-tactical' 
+                                : 'text-on-surface-variant hover:bg-surface-medium'}`}
                     >
+                        {isWorkspaceView && (
+                            <motion.div 
+                                layoutId="active-pill"
+                                className="absolute inset-0 bg-primary rounded-xl -z-10"
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                            />
+                        )}
                         <LucideIcons.ShieldAlert size={16} />
                         ALERTAS
                     </button>
@@ -808,11 +840,18 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             setIsCobrosView(!isCobrosView);
                             if (!isCobrosView) setIsWorkspaceView(false);
                         }}
-                        className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 shrink-0 font-premium
+                        className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 shrink-0 font-premium relative
                             ${isCobrosView 
-                                ? 'bg-tertiary text-white shadow-architect' 
-                                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-low'}`}
+                                ? 'bg-tertiary text-white shadow-tactical' 
+                                : 'text-on-surface-variant hover:bg-surface-medium'}`}
                     >
+                        {isCobrosView && (
+                            <motion.div 
+                                layoutId="active-pill"
+                                className="absolute inset-0 bg-tertiary rounded-xl -z-10"
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                            />
+                        )}
                         <LucideIcons.DollarSign size={16} />
                         CÉLULA COBROS
                     </button>
@@ -1102,210 +1141,85 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             }
 
             {/* Client Grid or List */}
-            {
-                activeGroupTab === 'matrix' ? (
-                    <div className="animate-fade-in pb-20 no-print">
-                        <TaxComplianceMatrix 
-                            clients={sortedClients}
-                            onViewClient={handleOpenClientDetails}
-                            onUploadReceipt={handleUploadReceipt}
-                            onPreviewReceipt={(client) => {
-                                setSelectedClient(client);
-                                setIsClientDetailsOpen(true);
-                            }}
-                            theme="dark"
-                        />
-                    </div>
+            {/* Contenido Dinámico Consolidado - Zenith Command Center */}
+            <AnimatePresence mode="wait">
+                {isMatrixView ? (
+                    <motion.div
+                        key="matrix"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 1.05 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="pb-20"
+                    >
+                        <TaxComplianceMatrix clients={sortedClients} />
+                    </motion.div>
                 ) : isWorkspaceView ? (
-                    <div className="space-y-8 pb-20">
-                        {/* SECCIÓN POR DECLARAR (ÓRDENES DE TRABAJO) */}
-                        <section className="animate-fade-in px-1">
-                            <div className="flex items-center justify-between mb-5">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                                        <LucideIcons.Clock size={18} />
-                                    </div>
-                                    <h3 className="text-[11px] font-bold text-slate-700 dark:text-white uppercase tracking-[0.2em]">
-                                        Órdenes de Trabajo <span className="text-slate-400 font-medium ml-1">· POR DECLARAR</span>
-                                    </h3>
-                                </div>
-                                <span className="text-xs font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-500/20 shadow-sm">
-                                    {sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        return !!decl?.is_paid && !decl?.proof_file;
-                                    }).length} PENDIENTES
-                                </span>
-                            </div>
-                            {viewMode === 'list' ? (
-                                <VirtualClientTable
-                                    clients={sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        return !!decl?.is_paid && !decl?.proof_file;
-                                    })}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                />
-                            ) : (
-                                <VirtualClientList
-                                    clients={sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        return !!decl?.is_paid && !decl?.proof_file;
-                                    })}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                />
-                            )}
-                            {sortedClients.filter(c => {
-                                const today = new Date();
-                                const period = getPeriod(c, today);
-                                const decl = c.declarations.find(d => d.period === period);
-                                return !!decl?.is_paid && !decl?.proof_file;
-                            }).length === 0 && (
-                                <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-                                    <p className="text-slate-400 text-xs font-medium uppercase">No hay órdenes de trabajo pendientes</p>
-                                </div>
-                            )}
-                        </section>
-
-                        {/* SECCIÓN DECLARADOS */}
-                        <section className="animate-fade-in px-1">
-                            <div className="flex items-center justify-between mb-5">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                                        <LucideIcons.CheckCircle2 size={18} />
-                                    </div>
-                                    <h3 className="text-[11px] font-bold text-slate-700 dark:text-white uppercase tracking-[0.2em]">
-                                        Flujo de Cumplimiento <span className="text-slate-400 font-medium ml-1">· COMPLETADOS</span>
-                                    </h3>
-                                </div>
-                                <span className="text-xs font-bold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20 shadow-sm">
-                                    {sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        return !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                    }).length} FINALIZADOS
-                                </span>
-                            </div>
-                            {viewMode === 'list' ? (
-                                <VirtualClientTable
-                                    clients={sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        return !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                    })}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                />
-                            ) : (
-                                <VirtualClientList
-                                    clients={sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        return !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                    })}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                />
-                            )}
-                        </section>
-
-                        {/* RESTANTES - PENDIENTE DE GESTIÓN INICIAL */}
-                        <section className="animate-fade-in px-1">
-                            <div className="flex items-center justify-between mb-5 opacity-80">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
-                                        <LucideIcons.CircleDashed size={18} />
-                                    </div>
-                                    <h3 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">
-                                        Protocolo Base <span className="text-slate-400 font-medium ml-1">· GESTIÓN PENDIENTE</span>
-                                    </h3>
-                                </div>
-                                <span className="text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">
-                                    {sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        const isWorkOrder = !!decl?.is_paid && !decl?.proof_file;
-                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                        return !isWorkOrder && !isDeclared;
-                                    }).length} EN ESPERA
-                                </span>
-                            </div>
-                            {viewMode === 'list' ? (
-                                <VirtualClientTable
-                                    clients={sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        const isWorkOrder = !!decl?.is_paid && !decl?.proof_file;
-                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                        return !isWorkOrder && !isDeclared;
-                                    })}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                    frequency={frequencyForList}
-                                />
-                            ) : (
-                                <VirtualClientList
-                                    clients={sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        const isWorkOrder = !!decl?.is_paid && !decl?.proof_file;
-                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                        return !isWorkOrder && !isDeclared;
-                                    })}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                    frequency={frequencyForList}
-                                />
-                            )}
-                        </section>
-                    </div>
+                    <motion.div
+                        key="workspace"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.4 }}
+                        className="pb-20"
+                    >
+                        {viewMode === 'list' ? (
+                            <VirtualClientTable
+                                clients={sortedClients}
+                                serviceFees={serviceFees}
+                                onView={handleOpenClientDetails}
+                                onQuickAction={handleQuickAction}
+                                onUploadReceipt={handleUploadReceipt}
+                                frequency={frequencyForList}
+                            />
+                        ) : (
+                            <VirtualClientList
+                                clients={sortedClients}
+                                serviceFees={serviceFees}
+                                onView={handleOpenClientDetails}
+                                onQuickAction={handleQuickAction}
+                                onUploadReceipt={handleUploadReceipt}
+                                frequency={frequencyForList}
+                            />
+                        )}
+                    </motion.div>
                 ) : isCobrosView ? (
-                    <div className="space-y-8 pb-20">
+                    <motion.div
+                        key="cobros"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.4 }}
+                        className="space-y-12 pb-20"
+                    >
                         {/* SECCIÓN COBRO PENDIENTE */}
-                        <section className="animate-fade-in px-1">
-                            <div className="flex items-center justify-between mb-5">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-xl bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400">
-                                        <LucideIcons.DollarSign size={18} />
+                        <section className="px-1">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-2xl bg-orange-500/10 text-orange-500 shadow-sm border border-orange-500/20">
+                                        <LucideIcons.DollarSign size={20} />
                                     </div>
-                                    <h3 className="text-[11px] font-bold text-slate-700 dark:text-white uppercase tracking-[0.2em]">
-                                        Recaudación <span className="text-slate-400 font-medium ml-1">· COBROS PENDIENTES</span>
-                                    </h3>
+                                    <div>
+                                        <h3 className="text-[10px] font-bold text-orange-500 uppercase tracking-[0.3em] font-premium mb-1">
+                                            RECAUDACIÓN CRÍTICA
+                                        </h3>
+                                        <p className="text-lg font-bold text-on-surface uppercase tracking-tight font-premium">
+                                            COBROS PENDIENTES DE LIQUIDACIÓN
+                                        </p>
+                                    </div>
                                 </div>
-                                <span className="text-xs font-bold bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 px-3 py-1 rounded-full border border-orange-200 dark:border-orange-500/20 shadow-sm">
+                                <div className="flex items-center gap-3 px-4 py-2 bg-orange-500/10 rounded-xl border border-orange-500/20 text-orange-500 font-bold text-xs font-premium">
+                                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
                                     {sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today, frequencyForList);
                                         const decl = c.declarations.find(d => d.period === period);
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         return isDeclared && !decl?.is_paid;
-                                    }).length} POR RECAUDAR
-                                </span>
+                                    }).length} PENDIENTES
+                                </div>
                             </div>
+                            
                             {viewMode === 'list' ? (
                                 <VirtualClientTable
                                     clients={sortedClients.filter(c => {
@@ -1336,165 +1250,105 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onUploadReceipt={handleUploadReceipt}
                                     frequency={frequencyForList}
                                 />
-                            )}
-                            {sortedClients.filter(c => {
-                                const today = new Date();
-                                const period = getPeriod(c, today, frequencyForList);
-                                const decl = c.declarations.find(d => d.period === period);
-                                const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                return isDeclared && !decl?.is_paid;
-                            }).length === 0 && (
-                                <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-                                    <p className="text-slate-400 text-xs font-medium uppercase">No hay cobros pendientes</p>
-                                </div>
                             )}
                         </section>
 
                         {/* SECCIÓN AL DÍA (ELITE) */}
-                        <section className="animate-fade-in">
-                            <div className="flex items-center gap-2 mb-4 px-2">
-                                <LucideIcons.ShieldCheck className="text-emerald-400" size={18} />
-                                <h3 className="text-sm font-semibold text-slate-700 dark:text-white uppercase tracking-widest">
-                                    Elite / Al Día
-                                    <span className="ml-2 text-xs bg-emerald-100 text-emerald-500 px-2 py-0.5 rounded-full">
-                                        {sortedClients.filter(c => {
-                                            const today = new Date();
-                                            const period = getPeriod(c, today, frequencyForList);
-                                            const decl = c.declarations.find(d => d.period === period);
-                                            return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
-                                        }).length}
-                                    </span>
-                                </h3>
-                            </div>
-                            {viewMode === 'list' ? (
-                                <VirtualClientTable
-                                    clients={sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
-                                    })}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                    frequency={frequencyForList}
-                                />
-                            ) : (
-                                <VirtualClientList
-                                    clients={sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
-                                    })}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                    frequency={frequencyForList}
-                                />
-                            )}
-                        </section>
-
-                        {/* EL RESTO */}
-                        <section className="animate-fade-in">
-                            <div className="flex items-center gap-2 mb-4 px-2">
-                                <LucideIcons.Clock className="text-slate-400" size={18} />
-                                <h3 className="text-sm font-semibold text-slate-400 dark:text-gray-500 uppercase tracking-widest">
-                                    En Proceso / Pendientes
-                                    <span className="ml-2 text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">
-                                        {sortedClients.filter(c => {
-                                            const today = new Date();
-                                            const period = getPeriod(c, today, frequencyForList);
-                                            const decl = c.declarations.find(d => d.period === period);
-                                            const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                            const isElite = !!decl?.is_paid && isDeclared;
-                                            const isCobroPending = isDeclared && !decl?.is_paid;
-                                            return !isElite && !isCobroPending;
-                                        }).length}
-                                    </span>
-                                </h3>
-                            </div>
-                            {viewMode === 'list' ? (
-                                <VirtualClientTable
-                                    clients={sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                        const isElite = !!decl?.is_paid && isDeclared;
-                                        const isCobroPending = isDeclared && !decl?.is_paid;
-                                        return !isElite && !isCobroPending;
-                                    })}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                    frequency={frequencyForList}
-                                />
-                            ) : (
-                                <VirtualClientList
-                                    clients={sortedClients.filter(c => {
-                                        const today = new Date();
-                                        const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
-                                        const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
-                                        const isElite = !!decl?.is_paid && isDeclared;
-                                        const isCobroPending = isDeclared && !decl?.is_paid;
-                                        return !isElite && !isCobroPending;
-                                    })}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                    frequency={frequencyForList}
-                                />
-                            )}
-                        </section>
-                    </div>
-                ) : (
-                    (() => {
-                        const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
-                        const finalMode = isMobileViewport ? 'cards' : viewMode;
-
-                        if (finalMode === 'list') {
-                            return (
-                                <VirtualClientTable
-                                    clients={sortedClients}
-                                    serviceFees={serviceFees}
-                                    onView={handleOpenClientDetails}
-                                    onQuickAction={handleQuickAction}
-                                    onUploadReceipt={handleUploadReceipt}
-                                    frequency={frequencyForList}
-                                />
-                            );
-                        }
-
-                        return (
-                            <div className="animate-fade-in">
-                                {sortedClients.length > 0 ? (
-                                    <VirtualClientList
-                                        clients={sortedClients}
-                                        serviceFees={serviceFees}
-                                        onView={handleOpenClientDetails}
-                                        onQuickAction={handleQuickAction}
-                                        onUploadReceipt={handleUploadReceipt}
-                                        frequency={frequencyForList}
-                                    />
-                                ) : (
-                                    <div className="py-20 text-center">
-                                        <div className="inline-flex p-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 mb-4">
-                                            <LucideIcons.Search size={32} />
-                                        </div>
-                                        <p className="text-slate-500 font-medium">No se encontraron clientes con este filtro.</p>
+                        <section>
+                            <div className="flex items-center justify-between mb-8 opacity-60 hover:opacity-100 transition-opacity">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                        <LucideIcons.ShieldCheck size={20} />
                                     </div>
-                                )}
+                                    <div>
+                                        <h3 className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em] font-premium mb-1">
+                                            SEGURIDAD NIVEL ELITE
+                                        </h3>
+                                        <p className="text-lg font-bold text-on-surface uppercase tracking-tight font-premium">
+                                            EXPEDIENTES EN ARMONÍA TOTAL
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                        );
-                    })()
-                )
-            }
+                            {viewMode === 'list' ? (
+                                <VirtualClientTable
+                                    clients={sortedClients.filter(c => {
+                                        const today = new Date();
+                                        const period = getPeriod(c, today, frequencyForList);
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
+                                    })}
+                                    serviceFees={serviceFees}
+                                    onView={handleOpenClientDetails}
+                                    onQuickAction={handleQuickAction}
+                                    onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
+                                />
+                            ) : (
+                                <VirtualClientList
+                                    clients={sortedClients.filter(c => {
+                                        const today = new Date();
+                                        const period = getPeriod(c, today, frequencyForList);
+                                        const decl = c.declarations.find(d => d.period === period);
+                                        return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
+                                    })}
+                                    serviceFees={serviceFees}
+                                    onView={handleOpenClientDetails}
+                                    onQuickAction={handleQuickAction}
+                                    onUploadReceipt={handleUploadReceipt}
+                                    frequency={frequencyForList}
+                                />
+                            )}
+                        </section>
+                    </motion.div>
+                ) : isAlertasView ? (
+                    <motion.div
+                        key="alerts"
+                        initial={{ opacity: 0, scale: 1.05 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.4 }}
+                        className="space-y-12 pb-20"
+                    >
+                        {/* ALERTAS CRÍTICAS - TACTICAL VIEW */}
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20">
+                                    <LucideIcons.AlertTriangle size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-[10px] font-bold text-primary uppercase tracking-[0.3em] font-premium mb-1">
+                                        VENCIMIENTOS TÁCTICOS
+                                    </h3>
+                                    <p className="text-lg font-bold text-on-surface uppercase tracking-tight font-premium">
+                                        OBLIGACIONES REQUIRIENDO ACCIÓN INMEDIATA
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {viewMode === 'list' ? (
+                            <VirtualClientTable
+                                clients={sortedClients}
+                                serviceFees={serviceFees}
+                                onView={handleOpenClientDetails}
+                                onQuickAction={handleQuickAction}
+                                onUploadReceipt={handleUploadReceipt}
+                                frequency={frequencyForList}
+                            />
+                        ) : (
+                            <VirtualClientList
+                                clients={sortedClients}
+                                serviceFees={serviceFees}
+                                onView={handleOpenClientDetails}
+                                onQuickAction={handleQuickAction}
+                                onUploadReceipt={handleUploadReceipt}
+                                frequency={frequencyForList}
+                            />
+                        )}
+                    </motion.div>
+                ) : null}
+            </AnimatePresence>
 
             <input
                 type="file"
