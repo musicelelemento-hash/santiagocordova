@@ -20,6 +20,7 @@ import { StoredFile } from '../types';
 import { BulkUploadReportModal, BulkUploadResult } from '../components/features/BulkUploadReportModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
+import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
 
 const OBLIGATION_GROUPS = [
     { id: 'all', label: 'Todos', icon: LucideIcons.Users, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
@@ -77,6 +78,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [isCobrosView, setIsCobrosView] = useState(false);
     const [isAlertasView, setIsAlertasView] = useState(false);
     const [isMatrixView, setIsMatrixView] = useState(false);
+    const [previewItem, setPreviewItem] = useState<{ client: Client, declaration: Declaration } | null>(null);
 
     // Smart Tabs Logic
     const getInitialGroupTab = () => {
@@ -913,7 +915,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         )}
                     </div>
                 </div>
-            </div>
+            </motion.div>
             {/* ZENITH GROWTH HUB - SILENT ANALYSIS */}
             <div className="mb-8 relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 via-slate-400/5 to-transparent rounded-[2rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
@@ -1152,7 +1154,17 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         transition={{ duration: 0.4, ease: "easeOut" }}
                         className="pb-20"
                     >
-                        <TaxComplianceMatrix clients={sortedClients} />
+                        <TaxComplianceMatrix 
+                            clients={sortedClients} 
+                            onViewClient={handleOpenClientDetails}
+                            onUploadReceipt={(client, period) => {
+                                setReceiptUploadState({ client, period });
+                                receiptFileInputRef.current?.click();
+                            }}
+                            onPreviewReceipt={(client, declaration) => {
+                                setPreviewItem({ client, declaration });
+                            }}
+                        />
                     </motion.div>
                 ) : isWorkspaceView ? (
                     <motion.div
@@ -1431,6 +1443,23 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         sriCredentials={sriCredentials} 
                     />
                 </div>
+            )}
+
+            {previewItem && (
+                <PdfPreviewModal
+                    isOpen={!!previewItem}
+                    onClose={() => setPreviewItem(null)}
+                    client={previewItem.client}
+                    declaration={previewItem.declaration}
+                    onDownload={() => {
+                        if (previewItem.declaration.proof_file) {
+                            const link = document.createElement('a');
+                            link.href = previewItem.declaration.proof_file.content || '';
+                            link.download = previewItem.declaration.proof_file.name;
+                            link.click();
+                        }
+                    }}
+                />
             )}
         </div >
     );

@@ -296,6 +296,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
     };
 
     return (
+        <div className="bg-[#020617] min-h-screen text-slate-200 selection:bg-[#00A896]/30 selection:text-white font-sans overflow-x-hidden">
             {/* --- ULTRA PREMIUM: Global Overlays --- */}
             <AnimatePresence>
                 {showBiometric && (
