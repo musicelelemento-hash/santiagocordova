@@ -27,12 +27,18 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         onClick={(e) => e.stopPropagation()}
         style={{ maxHeight: '90vh' }}
       >
-        <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <h3 className="text-2xl sm:text-3xl font-display text-gold">{title}</h3>
-          <button onClick={onClose} className="p-1 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-            <X size={24} />
+        {title ? (
+          <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <h3 className="text-2xl sm:text-3xl font-display text-gold">{title}</h3>
+            <button onClick={onClose} className="p-1 rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+        ) : (
+          <button onClick={onClose} className="absolute top-4 right-4 z-[60] p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors">
+            <X size={20} />
           </button>
-        </div>
+        )}
         <div className="mt-4 overflow-y-auto pr-2">
           {children}
         </div>
