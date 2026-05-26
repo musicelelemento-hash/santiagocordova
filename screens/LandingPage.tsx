@@ -320,10 +320,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         </div>
                         {/* Fake system logs */}
                         <div className="absolute bottom-10 left-10 text-[8px] font-mono text-[#00A896]/40 uppercase leading-relaxed text-hud">
-                            AUTH_TOKEN: 0x82...3F <br />
-                            SECURE_ENCLAVE: ACTIVE <br />
-                            PROTOCOL: ZENITH_V2.4 <br />
-                            STATUS: VERIFYING_IDENTITY
+                            TOKEN_AUTENTICACION: 0x82...3F <br />
+                            ENCLAVE_SEGURO: ACTIVO <br />
+                            PROTOCOLO: ZENITH_V2.4 <br />
+                            ESTADO: VERIFICANDO_IDENTIDAD
                         </div>
                     </motion.div>
                 )}
@@ -357,7 +357,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         </div>
                         <div className={`hidden sm:flex flex-col transition-all duration-700 ${scrolled ? 'opacity-80 scale-95 origin-left' : ''}`}>
                             <span className="text-sm font-display font-semibold tracking-tight leading-none text-white whitespace-nowrap">SANTIAGO CORDOVA</span>
-                            <span className="text-[11px] font-medium text-[#00A896] tracking-[0.2em] uppercase glow-text">Elite Tax Services</span>
+                            <span className="text-[11px] font-medium text-[#00A896] tracking-[0.2em] uppercase glow-text">Asesoría Fiscal de Élite</span>
                         </div>
                     </div>
 
@@ -554,17 +554,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em]">Protocolo Zenith v2.4 Activo</span>
                         </div>
                     </Reveal>
-                    <h1 className="text-6xl sm:text-8xl md:text-[11rem] font-editorial tracking-tighter leading-[0.8] mb-12">
-                        <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40 drop-shadow-2xl block text-reveal text-reveal-active">ESTRATEGIA</span>
+                    <h1 className="text-5xl sm:text-7xl md:text-[8.5rem] font-editorial tracking-tighter leading-[0.8] mb-12">
+                        <span className="text-transparent bg-clip-text bg-gradient-to-b from-white to-white/40 drop-shadow-2xl block text-reveal text-reveal-active">ING. SANTIAGO</span>
                         <span className="relative inline-block mt-4">
                             <span className="absolute -inset-4 blur-[100px] bg-[#00A896]/40 animate-pulse"></span>
-                            <span className="relative liquid-gold-text text-reveal text-reveal-active [transition-delay:500ms]">MAGNIFICADA</span>
+                            <span className="relative liquid-gold-text text-reveal text-reveal-active [transition-delay:500ms]">CÓRDOVA</span>
                         </span>
                     </h1>
 
                     <Reveal delay={200}>
                         <p className="text-xl md:text-2xl text-slate-400 max-w-2xl mx-auto mb-12 font-light tracking-wide leading-relaxed text-balance">
-                            Arquitectura financiera de alta precisión para líderes que exigen <span className="text-white font-medium border-b border-[#00A896]">rendimiento absoluto</span> y control total sobre su patrimonio.
+                            Soluciones tributarias de precisión y consultoría fiscal de élite para líderes y empresas que exigen <span className="text-white font-medium border-b border-[#00A896]">rendimiento absoluto</span> y blindaje patrimonial.
                         </p>
                     </Reveal>
 
@@ -664,7 +664,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 </p>
                                 <div className="mt-auto pt-6 border-t border-white/5">
                                     <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                        <span>Status</span>
+                                        <span>Estado</span>
                                         <span className="text-[#00A896]">Activo</span>
                                     </div>
                                 </div>
@@ -878,11 +878,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 
                 <div className="max-w-7xl mx-auto px-6 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
                     <div className="text-slate-600 text-[10px] font-bold tracking-[0.3em] uppercase">
-                        © 2026. <span className="text-[#00A896]">SANTIAGO CORDOVA</span> • ALL RIGHTS RESERVED
+                        © 2026. <span className="text-[#00A896]">SANTIAGO CÓRDOVA</span> • TODOS LOS DERECHOS RESERVADOS
                     </div>
                     <div className="flex gap-8">
                         <div className="text-slate-600 text-[10px] font-bold tracking-[0.3em] uppercase">
-                            DESIGNED BY <span className="text-white">SUPRA MUSIC INC.</span>
+                            DISEÑADO POR <span className="text-white">SUPRA MUSIC INC.</span>
                         </div>
                     </div>
                 </div>

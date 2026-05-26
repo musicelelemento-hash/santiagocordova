@@ -413,7 +413,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                         </div>
                         <div className="text-left">
                             <span className="text-sm font-display font-semibold tracking-tight leading-none block text-white whitespace-nowrap">SANTIAGO CORDOVA</span>
-                            <span className="text-[10px] font-bold text-[#00A896] tracking-[0.2em] uppercase leading-none mt-1 block">Elite Tax Services</span>
+                            <span className="text-[10px] font-bold text-[#00A896] tracking-[0.2em] uppercase leading-none mt-1 block">Asesoría Fiscal de Élite</span>
                         </div>
                     </button>
 
@@ -460,10 +460,10 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                         <LucideIcons.Globe size={12} /> Ecosistema Digital 2026
                     </div>
                     <h1 className="text-5xl md:text-8xl font-editorial tracking-tight text-white mb-6 leading-none">
-                        SOLUCIONES A SU <br /> <span className="text-shimmer-elite">MEDIDA.</span>
+                        PORTAFOLIO DE <br /> <span className="text-shimmer-elite">SERVICIOS.</span>
                     </h1>
                     <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mt-4 font-light tracking-wide leading-relaxed">
-                        Optimiza tu perfil tributario con nuestro simulador interactivo y selecciona el plan ideal de gestión del SRI o firma electrónica.
+                        Diseñado por el Ing. Santiago Córdova. Optimiza tu perfil tributario con nuestro simulador interactivo y contrata firmas electrónicas o declaraciones de forma ágil y segura.
                     </p>
                 </div>
             </div>
