@@ -52,11 +52,21 @@ export async function searchClient(query: string) {
             
             // 1. Header (UI Style)
             response += `👤 *${c.name}*\n`;
+            if (c.trade_name) response += `🏢 *Comercial:* ${c.trade_name}\n`;
             response += `🆔 \`${ruc}\` | 📅 Vence: Día ${dueDay}\n`;
             
             // Add contact info
             if (c.email) response += `📧 *Email:* ${c.email}\n`;
             if (c.phones && c.phones.length > 0) response += `📞 *Telf:* ${c.phones.join(', ')}\n`;
+            if (c.address) response += `📍 *Dirección:* ${c.address}\n`;
+            if (c.economicActivity) response += `💼 *Actividad:* ${c.economicActivity}\n`;
+
+            // Passwords (Critical for Bot to "know everything")
+            if (c.sri_password) response += `🔑 *Clave SRI:* ${c.sri_password}\n`;
+            if (c.iessPassword) response += `🔑 *Clave IESS:* ${c.iessPassword}\n`;
+            if (c.electronicSignaturePassword) response += `🔑 *Clave Firma Elec:* ${c.electronicSignaturePassword}\n`;
+            if (c.signatureExpirationDate) response += `⏳ *Caducidad Firma:* ${c.signatureExpirationDate}\n`;
+            if (c.sharedAccessKey) response += `🔗 *Clave Compartida:* ${c.sharedAccessKey}\n`;
 
             // 2. Obligaciones SRI
             const isEmprendedor = c.regime === 'Rimpe Emprendedor';
@@ -65,6 +75,7 @@ export async function searchClient(query: string) {
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
 
             let sriStatus = "⚖️ *SRI:* ";
+            sriStatus += `${c.regime || 'Régimen General'} | `;
             if (ivaFreq !== 'Ninguno') {
                 sriStatus += `IVA ${ivaFreq}: 📊 | `;
             }

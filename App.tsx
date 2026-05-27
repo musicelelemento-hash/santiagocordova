@@ -328,6 +328,8 @@ const App: React.FC = () => {
       currentUser={publicUser}
       onLogin={setPublicUser}
       onLogout={() => setPublicUser(null)}
+      theme={theme}
+      toggleTheme={toggleTheme}
     />
   );
   if (appState === 'login') return <LoginScreen onSuccess={handleLoginSuccess} onBack={() => setAppState('landing')} clients={clients} />;
