@@ -785,17 +785,17 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 key={tab.id}
                                 onClick={() => setFilter(tab.id as any)}
                                 className={`
-                                    relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all duration-500 whitespace-nowrap group/tab font-premium
+                                    relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all duration-500 whitespace-nowrap group/tab font-premium hover:scale-105 active:scale-95
                                     ${isActive
-                                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl scale-105 sm:scale-105 z-10'
+                                        ? 'text-white shadow-xl shadow-emerald-500/10 scale-105 z-10'
                                         : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'
                                     }
                                 `}
                             >
-                                <tab.icon size={14} className={`${isActive ? 'text-white' : tab.color || 'text-slate-500 group-hover/tab:text-emerald-400'} transition-colors`} />
+                                <tab.icon size={14} className={`relative z-10 ${isActive ? 'text-white' : tab.color || 'text-slate-500 group-hover/tab:text-emerald-400'} transition-colors`} />
                                 <span className="relative z-10">{tab.label}</span>
                                 {isActive && (
-                                    <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500 to-emerald-400 rounded-full"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500 to-teal-600 rounded-full"></div>
                                 )}
                             </button>
                         );
@@ -960,7 +960,6 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 onChange={onMatrixFileChange}
                 className="hidden"
             />
-            <ChatBot />
         </div>
     );
 };
