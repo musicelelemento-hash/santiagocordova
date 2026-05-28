@@ -923,8 +923,10 @@ export async function getClientField(identifier: string, field: string): Promise
         const value = (c as any)[field];
         const label = FIELD_LABELS[field] || field;
 
-        if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0))
-            return `📋 *${c.name}* — ${label}: _(vacío)_`;
+        if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
+            const shortLabel = label.toLowerCase();
+            return `📋 *${c.name}* — ${label}: _(vacío)_\n\n💡 _Tip: Puedes agregarla escribiendo: "edita ${shortLabel} de ${c.name} a [nuevo valor]"_ Baku.`;
+        }
 
         const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
         return `📋 *${c.name}* — ${label}: \`${displayValue}\``;
