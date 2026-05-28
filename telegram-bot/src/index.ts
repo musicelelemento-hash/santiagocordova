@@ -175,18 +175,21 @@ bot.on('message:text', async (ctx) => {
 async function handleAgentResponse(ctx: any, response: string) {
     const chatId = ctx.chat.id.toString();
     let isAudio = false;
-    let finalResponse = response;
+    let textResponse = response;
+    let audioResponse = response;
     
     // Check if the agent decided to reply with audio (be flexible with whitespace/case)
-    if (finalResponse.toUpperCase().includes('[AUDIO]')) {
+    if (response.toUpperCase().includes('[AUDIO]')) {
       isAudio = true;
-      finalResponse = finalResponse.replace(/\[AUDIO\]/gi, '').trim();
+      const parts = response.split(/\[AUDIO\]/i);
+      textResponse = parts[0].trim();
+      audioResponse = parts[1] ? parts[1].trim() : parts[0].trim();
     }
 
     const userText = (ctx.message?.text || ctx.message?.caption || "").toLowerCase();
     const isVoiceInput = !!(ctx.message && ctx.message.voice);
 
-    console.log(`🎙️ handleAgentResponse | isVoiceInput: ${isVoiceInput} | LLM Response starts with [AUDIO]: ${response.toUpperCase().startsWith('[AUDIO]')}`);
+    console.log(`🎙️ handleAgentResponse | isVoiceInput: ${isVoiceInput} | LLM Response contains [AUDIO]: ${response.toUpperCase().includes('[AUDIO]')}`);
 
     if (userText.includes('audio') || userText.includes('nota de voz') || userText.includes('háblame') || userText.includes('hablame') || userText.includes('escuche') || userText.includes('escuchar')) {
       isAudio = true;
@@ -201,16 +204,21 @@ async function handleAgentResponse(ctx: any, response: string) {
 
     console.log(`🎙️ Final isAudio decision: ${isAudio}`);
 
+    // If audio is requested but there is no [AUDIO] tag, and the response is very long, we don't want to speak the whole thing
+    if (isAudio && !response.toUpperCase().includes('[AUDIO]') && textResponse.length > 300) {
+      audioResponse = "Santiago, te he dejado los detalles por escrito en Telegram para no dictarte una lista muy larga. Baku.";
+    }
+
     // Send text response with icon
-    await ctx.reply(`${finalResponse}\n\n${STATUS_ICON}`);
+    await ctx.reply(`${textResponse}\n\n${STATUS_ICON}`);
     
     // Send audio if requested OR if input was voice (forced audio)
     if (isAudio) {
       console.log("🎙️ Attempting record_voice action...");
       await ctx.replyWithChatAction('record_voice');
       try {
-        console.log("🎙️ Generating TTS...");
-        const voiceInputFile = await textToSpeech(finalResponse);
+        console.log(`🎙️ Generating TTS for: "${audioResponse.substring(0, 60)}..."`);
+        const voiceInputFile = await textToSpeech(audioResponse);
         console.log("🎙️ Sending voice message...");
         await ctx.replyWithAudio(voiceInputFile, { caption: "Baku Voice" });
       } catch (ttsErr: any) {

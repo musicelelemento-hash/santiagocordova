@@ -2,7 +2,7 @@ import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
 import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
-import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks } from './database_ops';
+import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -32,7 +32,11 @@ REGLAS DE ORO:
 1. RESPUESTAS: Concisas, técnicas y basadas en DATOS de Supabase.
 2. WHATSAPP: Si el usuario pide hablar directamente, indica que Santiago está atendiendo casos de alta prioridad.
 3. PERSONALIDAD: Firma siempre como "Baku." al final.
-4. SEGURIDAD: Solo Santiago (el soberano) tiene acceso a los datos financieros sensibles.`;
+4. SEGURIDAD: Solo Santiago (el soberano) tiene acceso a los datos financieros sensibles.
+
+REGLA DE AUDIO: Si vas a hablar (porque el usuario te habló por voz o te pidió audio), SIEMPRE debes incluir '[AUDIO]' al final de tu mensaje, seguido únicamente de un resumen hablado natural, fluido y breve (máximo 1-2 oraciones). Todo el detalle técnico, tablas o listas largas de nombres deben ir ANTES de '[AUDIO]' en formato de texto para que no se dicten nombres de forma monótona en la nota de voz.
+Ejemplo:
+'Aquí tienes la lista completa de vencimientos: [tabla de texto] [AUDIO] Santiago, te he dejado la lista detallada de vencimientos en texto. Son 5 en total para esta semana.'`;
 
 // Tool logic implementation
 const availableTools: Record<string, (args: any, chatId: string) => Promise<string>> = {
@@ -122,6 +126,9 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
         const memories = await getMemories(chatId, limit);
         if (memories.length === 0) return "No hay memorias importantes guardadas todavía. Baku.";
         return memories.map(m => `📌 [${m.category}] ${m.content}`).join('\n');
+    },
+    get_clients_tax_status_report: async (args: any, chatId: string) => {
+        return await getClientsStatusReport();
     }
 };
 
@@ -130,18 +137,18 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
  * Deep cleans to remove any proprietary fields like 'refusal'.
  * Also truncates very long tool responses to save tokens.
  */
-function cleanMessages(messages: any[]): any[] {
+function cleanMessages(messages: any[], maxToolLength: number = 600, maxGeneralLength: number = 1500): any[] {
     return messages.map(m => {
         const clean: any = { role: m.role };
         
         // Ensure content is string or null
         if (m.content !== undefined && m.content !== null) {
             let text = String(m.content);
-            // REDUCCIÓN AGRESIVA PARA EVITAR 429 (Groq TPD)
-            if (m.role === 'tool' && text.length > 600) {
-                text = text.substring(0, 600) + '... [Resumen Baku]';
-            } else if (text.length > 1500) {
-                text = text.substring(0, 1500) + '... [Truncado]';
+            // REDUCCIÓN DINÁMICA SEGÚN MODELO ACTIVO
+            if (m.role === 'tool' && text.length > maxToolLength) {
+                text = text.substring(0, maxToolLength) + '... [Resumen Baku]';
+            } else if (text.length > maxGeneralLength) {
+                text = text.substring(0, maxGeneralLength) + '... [Truncado]';
             }
             clean.content = text;
         } else {
@@ -204,15 +211,16 @@ const toolDefinitions = [
     { type: "function", function: { name: "complete_task", description: "Completa o borra tarea.", parameters: { type: "object", properties: { taskId: { type: "string" }, action: { type: "string", enum: ["complete", "delete"] } }, required: ["taskId", "action"] } } },
     { type: "function", function: { name: "update_client_profile", description: "Update campos perfil.", parameters: { type: "object", properties: { ruc: { type: "string" }, updates: { type: "object" } }, required: ["ruc", "updates"] } } },
     { type: "function", function: { name: "save_memory", description: "Guarda memoria LP.", parameters: { type: "object", properties: { content: { type: "string" }, category: { type: "string", enum: ["preferencias", "semanal", "fiscal", "general"] }, monthsToKeep: { type: "number" } }, required: ["content"] } } },
-    { type: "function", function: { name: "get_memories", description: "Recupera memoria LP.", parameters: { type: "object", properties: { limit: { type: "number" } } } } }
+    { type: "function", function: { name: "get_memories", description: "Recupera memoria LP.", parameters: { type: "object", properties: { limit: { type: "number" } } } } },
+    { type: "function", function: { name: "get_clients_tax_status_report", description: "Obtiene reporte detallado de clientes SRI: quiénes son mensuales, quiénes semestrales, quiénes ya declararon y quiénes faltan.", parameters: { type: "object", properties: {} } } }
 ];
 
 export async function processChatWithAgentLoop(chatId: string, userMessage: string): Promise<string> {
     // 1. Save user message to DB
     await saveMessage(chatId, 'user', userMessage);
 
-    // 2. Fetch history (Ultra-minimal to save TPD)
-    const history = await getChatHistory(chatId, 2);
+    // 2. Fetch history (Increased to 10 messages for better context since Gemini has high limits)
+    const history = await getChatHistory(chatId, 10);
     
     // 3. Fetch long-term memories
     const memories = await getMemories(chatId, 3);
@@ -220,10 +228,10 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
         ? `\nMEMORIAS:\n${memories.map(m => `- ${m.content}`).join('\n')}`
         : "";
 
-    const messages: any[] = cleanMessages([
+    const messages: any[] = [
         { role: 'system', content: SYSTEM_PROMPT + memoryContext },
         ...history
-    ]);
+    ];
 
     let loopCount = 0;
     const MAX_LOOPS = 10; // Increased to handle complex tool chains
@@ -235,88 +243,67 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
 
         let response;
         let lastError = "";
-        
-        // --- 1. TRY OPENROUTER GEMINI 2.0 (Main - Generous limits) ---
-        try {
-            console.log("📡 Attempting Primary (Gemini 2.0 Flash via OpenRouter)...");
-            response = await openRouterClient.chat.completions.create({
-                messages: cleanMessages(messages) as any,
-                model: 'google/gemini-2.0-flash-001',
-                tools: toolDefinitions as any,
-                tool_choice: "auto",
-                max_tokens: 1024
-            });
-            console.log(`✅ Gemini Primary Success`);
-        } catch (error: any) {
-            console.error('⚠️ Gemini Primary Error:', error.message);
-            lastError = `Gemini: ${error.message}`;
-            
-            // --- 2. TRY GROQ (Fallback 1 - Strict limits) ---
+               // --- 1. TRY DIRECT GOOGLE GEMINI 2.0 (Fast, direct, OpenAI-compatible, generous limits) ---
+        if (GEMINI_API_KEY) {
             try {
-                console.log(`📡 Groq Fallback 1: llama-3.3-70b-versatile...`);
-                response = await groqClient.chat.completions.create({
-                    messages: cleanMessages(messages) as any,
-                    model: 'llama-3.3-70b-versatile',
+                console.log("📡 Attempting Primary (Direct Google Gemini 2.0 Flash)...");
+                const directGoogleClient = new OpenAI({
+                    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
+                    apiKey: GEMINI_API_KEY,
+                });
+                response = await directGoogleClient.chat.completions.create({
+                    messages: cleanMessages(messages, 15000, 20000) as any,
+                    model: 'gemini-2.0-flash',
                     tools: toolDefinitions as any,
                     tool_choice: "auto",
-                    max_tokens: 1024
+                    max_tokens: 1500
                 });
-                console.log(`✅ Groq Success`);
-            } catch (paidError: any) {
-                console.error(`⚠️ Groq Error:`, paidError.message);
-                lastError += ` | Groq: ${paidError.message}`;
-                
-                // --- 3. TRY OPENROUTER FREE POOL (Free Emergency) ---
-                const freeModels = [
-                    'google/gemini-2.0-flash-001',
-                    'google/gemini-2.0-flash-lite-preview-02-05:free',
-                    'meta-llama/llama-3.1-8b-instruct:free',
-                    'meta-llama/llama-3.1-405b-instruct',
-                    'qwen/qwen-2.5-72b-instruct:free',
-                    'deepseek/deepseek-chat:free'
-                ];
+                console.log(`✅ Direct Gemini Success`);
+            } catch (error: any) {
+                console.error('⚠️ Direct Gemini Error:', error.message);
+                lastError = `DirectGemini: ${error.message}`;
+            }
+        }
 
-                for (const freeModel of freeModels) {
-                    try {
-                        console.log(`📡 OpenRouter Fallback 2: ${freeModel}...`);
-                        response = await openRouterClient.chat.completions.create({
-                            messages: cleanMessages(messages) as any,
-                            model: freeModel,
-                            tools: toolDefinitions as any,
-                            tool_choice: "auto",
-                            max_tokens: 800
-                        });
-                        console.log(`✅ Success with ${freeModel}`);
-                        break; 
-                    } catch (freeError: any) {
-                        console.warn(`⚠️ ${freeModel} failed:`, freeError.message);
-                        lastError += ` | ${freeModel}: ${freeError.message}`;
-                    }
-                }
+        // --- 2. TRY OPENROUTER GEMINI 2.0 (Fallback if direct fails or key not set) ---
+        if (!response) {
+            try {
+                console.log("📡 Attempting Secondary (Gemini 2.0 Flash via OpenRouter)...");
+                response = await openRouterClient.chat.completions.create({
+                    messages: cleanMessages(messages, 15000, 20000) as any,
+                    model: 'google/gemini-2.0-flash-001',
+                    tools: toolDefinitions as any,
+                    tool_choice: "auto",
+                    max_tokens: 1500
+                });
+                console.log(`✅ OpenRouter Gemini Success`);
+            } catch (error: any) {
+                console.error('⚠️ OpenRouter Gemini Error:', error.message);
+                lastError += ` | OpenRouterGemini: ${error.message}`;
+            }
+        }
 
-                if (!response && GEMINI_API_KEY) {
-                    // --- 4. DIRECT GOOGLE FALLBACK (If key available) ---
-                    try {
-                        console.log("📡 Attempting Direct Google Gemini...");
-                        // Use systemInstruction for proper persona adherence
-                        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-                        const model = genAI.getGenerativeModel({ 
-                            model: "gemini-1.5-flash",
-                            systemInstruction: SYSTEM_PROMPT 
-                        });
-                        
-                        const conversationContext = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
-                        const result = await model.generateContent(conversationContext);
-                        const text = result.response.text();
-                        return text; 
-                    } catch (gError: any) {
-                        lastError += ` | GeminiDirect: ${gError.message}`;
-                    }
+        if (!response) {
+            // --- 3. DIRECT GOOGLE FALLBACK (SDK wrapper as last resort) ---
+            if (GEMINI_API_KEY) {
+                try {
+                    console.log("📡 Attempting Direct Google SDK (Gemini 1.5 Flash)...");
+                    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+                    const model = genAI.getGenerativeModel({ 
+                        model: "gemini-1.5-flash",
+                        systemInstruction: SYSTEM_PROMPT 
+                    });
+                    
+                    const conversationContext = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
+                    const result = await model.generateContent(conversationContext);
+                    const text = result.response.text();
+                    return text; 
+                } catch (gError: any) {
+                    lastError += ` | GeminiDirectSDK: ${gError.message}`;
                 }
-
-                if (!response) {
-                    return `Santiago, saturación crítica de IA. Baku está cansada.\n\nFallas:\n- Groq: Superó TPD (100k).\n- OpenRouter: ${lastError.substring(0, 100)}...\n\nSugerencia: Recarga $5 en OpenRouter o espera 20 min. Baku.`;
-                }
+            }
+            if (!response) {
+                return `Santiago, saturación crítica de IA. Baku está cansada.\n\nFallas:\n- Gemini (Directo/OpenRouter): ${lastError.substring(0, 150)}...\n\nSugerencia: Recarga $5 en OpenRouter o revisa tu GEMINI_API_KEY. Baku.`;
             }
         }
 

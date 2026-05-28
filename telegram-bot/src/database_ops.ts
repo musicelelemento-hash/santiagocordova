@@ -37,11 +37,19 @@ export async function searchClient(query: string) {
             return `No he podido encontrar a ningún cliente con el nombre o RUC "${query}" en la base de datos de PostgreSQL. ¿Podrías verificar el nombre?`;
         }
 
-        // Limit to top 5 matches
         const totalMatches = clients.length;
-        const resultsToSummarize = clients.slice(0, 5);
+        if (totalMatches > 1) {
+            let response = `He localizado ${totalMatches} expediente(s) que coinciden con tu búsqueda:\n\n`;
+            clients.slice(0, 10).forEach((c: any) => {
+                response += `👤 *${c.name}*\n🆔 RUC: \`${c.ruc || ''}\` | Régimen: ${c.regime || 'Régimen General'}\n\n`;
+            });
+            if (totalMatches > 10) response += `_... y ${totalMatches - 10} clientes más._\n\n`;
+            response += `Escribe el RUC o el nombre exacto del cliente que deseas consultar en detalle. Baku.`;
+            return response;
+        }
 
-        let response = `He localizado ${totalMatches} expediente(s) en la base de datos SQL${totalMatches > 5 ? ' (mostrando los primeros 5)' : ''}:\n\n`;
+        const resultsToSummarize = clients;
+        let response = `He localizado el expediente en la base de datos SQL:\n\n`;
 
         const SRI_DUE_DATES: Record<number, number> = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18, 6: 20, 7: 22, 8: 24, 9: 26, 0: 28 };
 
@@ -771,6 +779,96 @@ export async function clearTasks() {
         return "✅ **PODER DE LIMPIEZA:** Todas las tareas eliminadas de Supabase. Baku.";
     } catch (error: any) {
         return "Error al vaciar tareas: " + error.message;
+    }
+}
+
+/**
+ * Generates a detailed status report of active clients:
+ * - Who is monthly (IVA frequency)
+ * - Who is semiannual (IVA frequency)
+ * - Who is already declared
+ * - Who is missing declarations
+ */
+export async function getClientsStatusReport() {
+    console.log(`📊 Generating detailed clients status report from Supabase...`);
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('*, declarations(*)')
+            .eq('is_deleted', false);
+
+        if (error) throw error;
+        if (!clients || clients.length === 0) return "No hay clientes registrados en la base de datos.";
+
+        const mensuales: string[] = [];
+        const semestrales: string[] = [];
+        const populares: string[] = [];
+        const alDia: string[] = [];
+        const faltaDeclarar: string[] = [];
+
+        clients.forEach((c: any) => {
+            const regime = c.regime || 'Régimen General';
+            const isPopular = regime === 'Rimpe Negocio Popular';
+            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+
+            // Classify by frequency
+            if (ivaFreq === 'Mensual') {
+                mensuales.push(c.name);
+            } else if (ivaFreq === 'Semestral') {
+                semestrales.push(c.name);
+            } else {
+                populares.push(c.name);
+            }
+
+            // Classify by declaration status (latest IVA period)
+            const declarations = c.declarations || [];
+            const needsIva = regime !== 'Rimpe Negocio Popular' && ivaFreq !== 'Ninguno';
+            
+            // Get latest IVA declaration
+            const lastIva = declarations
+                .filter((d: any) => d.type === 'IVA')
+                .sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+            
+            const isIvaDeclared = !needsIva || (lastIva?.status === 'Enviada' || lastIva?.status === 'Pagada' || !!lastIva?.proof_file);
+
+            // Get latest Renta declaration (if required)
+            const needsRenta = c.tax_profile?.requiresAnnualRenta ?? (isPopular || isEmprendedor);
+            const lastRenta = declarations
+                .filter((d: any) => d.type === 'RENTA')
+                .sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+            const isRentaDeclared = !needsRenta || (lastRenta?.status === 'Enviada' || lastRenta?.status === 'Pagada');
+
+            const isFullyUpToDate = isIvaDeclared && isRentaDeclared;
+            const periodStr = lastIva ? ` (${lastIva.period})` : '';
+
+            if (isFullyUpToDate) {
+                alDia.push(`${c.name}${periodStr}`);
+            } else {
+                const pendingDetails: string[] = [];
+                if (!isIvaDeclared) pendingDetails.push("IVA");
+                if (!isRentaDeclared) pendingDetails.push("Renta");
+                faltaDeclarar.push(`${c.name} [Falta: ${pendingDetails.join(', ')}]`);
+            }
+        });
+
+        let report = `📊 *REPORTE OPERATIVO DE CLIENTES (SRI):*\n`;
+        report += `------------------------------------\n\n`;
+        
+        report += `📅 *FRECUENCIA DE IVA:*\n`;
+        report += `🗓️ *Mensuales (${mensuales.length}):*\n${mensuales.map(n => `- ${n}`).join('\n') || 'Ninguno'}\n\n`;
+        report += `🗓️ *Semestrales (${semestrales.length}):*\n${semestrales.map(n => `- ${n}`).join('\n') || 'Ninguno'}\n\n`;
+        report += `🗓️ *Exentos/Popular (${populares.length}):*\n${populares.map(n => `- ${n}`).join('\n') || 'Ninguno'}\n\n`;
+        
+        report += `------------------------------------\n\n`;
+        report += `🛡️ *ESTADO DE CUMPLIMIENTO (ÚLTIMO PERIODO):*\n`;
+        report += `✅ *Al Día / Declarados (${alDia.length}):*\n${alDia.map(n => `- ${n}`).join('\n') || 'Ninguno'}\n\n`;
+        report += `🚨 *Faltan por Declarar (${faltaDeclarar.length}):*\n${faltaDeclarar.map(n => `- ${n}`).join('\n') || 'Ninguno'}\n\n`;
+
+        return report;
+    } catch (error: any) {
+        console.error("Error in getClientsStatusReport:", error);
+        return `Error al generar el reporte operativo: ${error.message}`;
     }
 }
 
