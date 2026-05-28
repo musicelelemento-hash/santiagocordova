@@ -111,7 +111,7 @@ export async function searchClient(query: string) {
             
             const ivaFee = c.fee_structure?.[ivaFreq.toLowerCase()] ?? (ivaFreq === 'Semestral' ? 10 : 5);
             
-            const allDeclarations = c.declarations || [];
+            const allDeclarations = c.declaration_history || [];
             const pendingIvaCount = allDeclarations.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)).length;
             
             if (pendingIvaCount > 0) {
@@ -163,7 +163,7 @@ export async function getDebtorClients() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, declarations')
+            .select('*')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -183,8 +183,8 @@ export async function getDebtorClients() {
             const isEmprendedor = regime === 'Rimpe Emprendedor';
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             
-            const pendingDeclarations = c.declarations?.filter((d: any) => d.status === 'Pendiente') || [];
-            const unpaidDeclarations = c.declarations?.filter((d: any) => !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada')) || [];
+            const pendingDeclarations = c.declaration_history?.filter((d: any) => d.status === 'Pendiente') || [];
+            const unpaidDeclarations = c.declaration_history?.filter((d: any) => !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada')) || [];
             
             let clientDebt = 0;
             const ivaFee = c.fee_structure?.[ivaFreq.toLowerCase()] ?? (ivaFreq === 'Semestral' ? 10 : 5);
@@ -288,7 +288,7 @@ export async function getUpcomingDeadlines() {
             const typeLabel = isPopular ? 'Popular' : (c.tax_profile?.ivaFrequency === 'Semestral' || isEmprendedor ? 'Semst.' : 'Mens.');
             
             // Check if already declared for the likely current period
-            const latest = c.declarations?.[0];
+            const latest = c.declaration_history?.[0];
             const isDone = latest?.status === 'Enviada' || latest?.status === 'Pagada' || !!latest?.proof_file;
 
             response += `🔔 *Día ${dueDay}:* ${c.name.split(' ')[0]} | ${typeLabel} | ${isDone ? '✅' : '❌'}\n`;
@@ -357,7 +357,7 @@ export async function getFinancialSummary() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, declarations');
+            .select('*');
 
         if (error) throw error;
         if (!clients) return "No hay datos de clientes para analizar. Baku.";
@@ -370,7 +370,7 @@ export async function getFinancialSummary() {
         let declarationsDoneThisMonth = 0;
 
         clients.forEach(c => {
-            const declarations = c.declarations || [];
+            const declarations = c.declaration_history || [];
             
             // 1. Calculate Revenue (Actually Paid this month)
             const paidThisMonth = declarations.filter((d: any) => 
@@ -423,7 +423,7 @@ export async function getDatabaseSummary() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, declarations')
+            .select('*')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -443,7 +443,7 @@ export async function getDatabaseSummary() {
             const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
             const needsIva = c.regime !== 'Rimpe Negocio Popular' && ivaFreq !== 'Ninguno';
             
-            const declarations = c.declarations || [];
+            const declarations = c.declaration_history || [];
             const lastIva = declarations.filter((d: any) => d.type === 'IVA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
             
             const isIvaDeclared = !needsIva || (lastIva?.status === 'Enviada' || lastIva?.status === 'Pagada' || !!lastIva?.proof_file);
@@ -476,7 +476,7 @@ export async function getDatabaseSummary() {
 
         const pendingRentaCount = clients.filter(c => {
             const needsRenta = c.tax_profile?.requiresAnnualRenta ?? (c.regime === 'Rimpe Negocio Popular' || c.regime === 'Rimpe Emprendedor');
-            const lastRenta = (c.declarations || []).filter((d: any) => d.type === 'RENTA')[0];
+            const lastRenta = (c.declaration_history || []).filter((d: any) => d.type === 'RENTA')[0];
             return needsRenta && !lastRenta?.is_paid;
         }).length;
 
@@ -485,7 +485,7 @@ export async function getDatabaseSummary() {
         // Identificar frentes de acción inmediatos
         const urgentlyPending = clients.filter(c => {
             const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
-            const lastIva = (c.declarations || []).filter((d: any) => d.type === 'IVA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+            const lastIva = (c.declaration_history || []).filter((d: any) => d.type === 'IVA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
             return (ivaFreq !== 'Ninguno' && (!lastIva || (lastIva.status !== 'Enviada' && lastIva.status !== 'Pagada' && !lastIva.proof_file)));
         }).slice(0, 5).map(c => c.name.split(' ')[0]).join(', ');
 
@@ -559,7 +559,7 @@ export async function createClient(data: {
 export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string): Promise<string> {
     console.log(`💰 Marking ${type} ${period || ''} as paid in Supabase for client ${ruc}`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('*, declarations').eq('ruc', ruc);
+        const { data: clients, error } = await supabase.from('clients').select('*').eq('ruc', ruc);
         if (error) throw error;
         if (!clients || clients.length === 0) return `No se encontró al cliente con RUC ${ruc}.`;
 
@@ -568,38 +568,52 @@ export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HO
         if (type === 'RENTA') {
             // Find current period renta
             const periodToMark = period || new Date().getFullYear().toString();
-            const { error: updErr } = await supabase
-                .from('declarations')
-                .update({ is_paid: true, paid_at: new Date().toISOString() })
-                .eq('client_id', client.id)
-                .eq('type', 'RENTA')
-                .eq('period', periodToMark);
-
+            let history = [...(client.declaration_history || [])];
+            let found = false;
+            
+            for (let d of history) {
+                if (d.type === 'RENTA' && d.period === periodToMark) {
+                    d.is_paid = true;
+                    d.paid_at = new Date().toISOString();
+                    d.status = 'Pagada';
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return `No se encontró una declaración de RENTA para el periodo ${periodToMark}.`;
+            
+            const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
             if (updErr) throw updErr;
             await logAuditAction('Cobro Registrado (Bot)', `Renta ${periodToMark} - RUC: ${ruc}`, 'finance', 'info');
             return `✅ Cobro de **Renta Anual (${periodToMark})** para ${client.name} marcado como pagado en Supabase. Baku.`;
         }
 
         if (type === 'IVA' || type === 'HONORARIOS') {
-            // Find declarations to mark
-            let query = supabase.from('declarations').update({ is_paid: true, paid_at: new Date().toISOString() }).eq('client_id', client.id);
+            let history = [...(client.declaration_history || [])];
+            let targetIdx = -1;
             
             if (period) {
-                query = query.eq('period', period);
+                targetIdx = history.findIndex(d => d.type === type && d.period === period);
             } else {
                 // Mark oldest unpaid
-                const oldest = (client.declarations || [])
-                    .filter((d: any) => !d.is_paid && d.status !== 'Pendiente')
+                const oldest = history
+                    .filter((d: any) => d.type === type && !d.is_paid && d.status !== 'Pendiente')
                     .sort((a: any, b: any) => a.period.localeCompare(b.period))[0];
-                
-                if (!oldest) return `No hay pagos pendientes de ${type} para ${client.name}.`;
-                query = query.eq('id', oldest.id);
+                if (oldest) {
+                    targetIdx = history.indexOf(oldest);
+                }
             }
-
-            const { error: updErr } = await query;
+            
+            if (targetIdx === -1) return `No hay pagos pendientes de ${type} para ${client.name}.`;
+            
+            history[targetIdx].is_paid = true;
+            history[targetIdx].paid_at = new Date().toISOString();
+            history[targetIdx].status = 'Pagada';
+            
+            const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
             if (updErr) throw updErr;
-            await logAuditAction('Cobro Registrado (Bot)', `${type} ${period || 'antiguo'} - RUC: ${ruc}`, 'finance', 'info');
-            return `✅ Cobro de **${type}** para ${client.name} actualizado en Supabase. Baku.`;
+            await logAuditAction('Cobro Registrado (Bot)', `${type} ${history[targetIdx].period} - RUC: ${ruc}`, 'finance', 'info');
+            return `✅ Cobro de **${type}** (${history[targetIdx].period}) para ${client.name} actualizado en Supabase. Baku.`;
         }
 
         return "Tipo de pago no reconocido. Baku.";
@@ -615,17 +629,34 @@ export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HO
 export async function markPaymentAsUnpaid(ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string): Promise<string> {
     console.log(`⏪ Reverting ${type} ${period || ''} to unpaid in Supabase for ${ruc}`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('id, name, declarations').eq('ruc', ruc);
+        const { data: clients, error } = await supabase.from('clients').select('*').eq('ruc', ruc);
         if (error) throw error;
         if (!clients || clients.length === 0) return `No se encontró al cliente RUC ${ruc}.`;
 
         const client = clients[0];
-        let query = supabase.from('declarations').update({ is_paid: false, paid_at: null }).eq('client_id', client.id);
-
-        if (type === 'RENTA') query = query.eq('type', 'RENTA');
-        if (period) query = query.eq('period', period);
-
-        const { error: updErr } = await query;
+        let history = [...(client.declaration_history || [])];
+        let found = false;
+        
+        for (let d of history) {
+            let match = false;
+            if (type === 'RENTA' && d.type === 'RENTA') {
+                if (!period || d.period === period) match = true;
+            } else if (d.type === type && d.period === period) {
+                match = true;
+            }
+            
+            if (match) {
+                d.is_paid = false;
+                d.paid_at = null;
+                if (d.proof_file) d.status = 'Enviada';
+                else d.status = 'Enviada'; // Default to enviada if reverting payment
+                found = true;
+            }
+        }
+        
+        if (!found) return `No se encontraron pagos de ${type} para revertir en el periodo especificado.`;
+        
+        const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
         if (updErr) throw updErr;
 
         await logAuditAction('Reversión de Cobro (Bot)', `${type} ${period || 'antiguo'} - RUC: ${ruc}`, 'finance', 'warning');
@@ -695,7 +726,7 @@ export async function getCredentialStatus() {
 export async function detectTaxInconsistencies() {
     console.log(`🛡️ Running Escudo Fiscal analysis in Supabase...`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('*, declarations').eq('is_deleted', false);
+        const { data: clients, error } = await supabase.from('clients').select('*').eq('is_deleted', false);
         if (error) throw error;
         if (!clients || clients.length === 0) return "La base de datos está vacía.";
         
@@ -721,7 +752,7 @@ export async function detectTaxInconsistencies() {
             if (c.ruc && c.ruc.length !== 13) problems.push("❌ RUC inválido (no tiene 13 dígitos)");
 
             // 5. Critical Pending (SRI)
-            const pendingDecs = c.declarations?.filter((d: any) => d.status === 'Pendiente').length || 0;
+            const pendingDecs = c.declaration_history?.filter((d: any) => d.status === 'Pendiente').length || 0;
             if (pendingDecs > 6) problems.push(`🔥 ${pendingDecs} declaraciones pendientes`);
 
             if (problems.length > 0) {
@@ -809,7 +840,7 @@ export async function getClientsStatusReport() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, declarations')
+            .select('*')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -837,7 +868,7 @@ export async function getClientsStatusReport() {
             }
 
             // Classify by declaration status (latest IVA period)
-            const declarations = c.declarations || [];
+            const declarations = c.declaration_history || [];
             const needsIva = regime !== 'Rimpe Negocio Popular' && ivaFreq !== 'Ninguno';
             
             // Get latest IVA declaration
