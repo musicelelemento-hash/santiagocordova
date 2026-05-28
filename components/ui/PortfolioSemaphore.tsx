@@ -38,15 +38,23 @@ export const PortfolioSemaphore: React.FC<PortfolioSemaphoreProps> = ({
                     const isActive = activeFilter === cat.key;
                     const percentage = summary.total > 0 ? Math.round((count / summary.total) * 100) : 0;
 
+                    const activeColors: Record<ComplianceColor, string> = {
+                        green: 'border-emerald-500/50 shadow-emerald-500/10 dark:border-emerald-400/40 dark:shadow-emerald-400/5 text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.04] dark:bg-emerald-400/[0.02]',
+                        yellow: 'border-amber-500/50 shadow-amber-500/10 dark:border-amber-400/40 dark:shadow-amber-400/5 text-amber-600 dark:text-amber-400 bg-amber-500/[0.04] dark:bg-amber-400/[0.02]',
+                        orange: 'border-orange-500/50 shadow-orange-500/10 dark:border-orange-400/40 dark:shadow-orange-400/5 text-orange-600 dark:text-orange-400 bg-orange-500/[0.04] dark:bg-orange-400/[0.02]',
+                        red: 'border-rose-500/50 shadow-rose-500/10 dark:border-rose-400/40 dark:shadow-rose-400/5 text-rose-600 dark:text-rose-400 bg-rose-500/[0.04] dark:bg-rose-400/[0.02]',
+                        gray: 'border-slate-400/50 shadow-slate-400/10 dark:border-slate-600/40 dark:shadow-slate-600/5 text-slate-500 dark:text-slate-400 bg-slate-500/[0.04] dark:bg-slate-400/[0.02]',
+                    };
+
                     return (
                         <button
                             key={cat.key}
                             onClick={() => onFilterChange?.(cat.key)}
                             className={`
-                                relative group overflow-hidden p-4 rounded-[1.5rem] border transition-all duration-300 text-left
+                                relative group overflow-hidden p-4 rounded-[1.5rem] border transition-all duration-500 text-left hover:scale-[1.01] active:scale-[0.99]
                                 ${isActive 
-                                    ? `bg-white dark:bg-slate-900 border-slate-900 dark:border-white shadow-xl scale-[1.02] z-10` 
-                                    : `glass-zen border-transparent hover:border-slate-200 dark:hover:border-white/10`
+                                    ? `bg-white dark:bg-surface shadow-xl scale-[1.02] z-10 ${activeColors[cat.key]}` 
+                                    : `glass-zen border-transparent hover:border-slate-200 dark:hover:border-white/10 text-slate-600 dark:text-slate-300`
                                 }
                             `}
                         >
@@ -54,13 +62,13 @@ export const PortfolioSemaphore: React.FC<PortfolioSemaphoreProps> = ({
                                 <div className={`p-2 rounded-xl transition-all ${styles.bg} ${styles.text}`}>
                                     <cat.icon size={18} strokeWidth={2.5} />
                                 </div>
-                                <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+                                <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? 'text-slate-800 dark:text-white' : 'text-slate-400'}`}>
                                     {percentage}%
                                 </span>
                             </div>
                             
                             <div className="relative z-10">
-                                <p className={`text-[9px] font-black uppercase tracking-[0.1em] mb-1 ${isActive ? 'text-slate-500' : 'text-slate-400'}`}>
+                                <p className={`text-[9px] font-black uppercase tracking-[0.1em] mb-1 ${isActive ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500'}`}>
                                     {cat.label}
                                 </p>
                                 <p className={`text-2xl font-black tracking-tighter leading-none font-premium ${isActive ? 'text-slate-900 dark:text-white' : styles.text}`}>
