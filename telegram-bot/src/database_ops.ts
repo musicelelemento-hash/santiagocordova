@@ -875,3 +875,106 @@ export async function getClientsStatusReport() {
     }
 }
 
+// ─────────────────────────────────────────────
+// LIGHTWEIGHT SINGLE-FIELD READ — minimal tokens
+// ─────────────────────────────────────────────
+const FIELD_LABELS: Record<string, string> = {
+    sri_password:                 'Clave SRI',
+    email:                        'Email',
+    phones:                       'Teléfonos',
+    address:                      'Dirección',
+    regime:                       'Régimen',
+    ruc:                          'RUC',
+    name:                         'Nombre',
+    trade_name:                   'Nombre Comercial',
+    iessPassword:                 'Clave IESS',
+    electronicSignaturePassword:  'Clave Firma Electrónica',
+    signatureExpirationDate:      'Caducidad Firma',
+    sharedAccessKey:              'Clave Compartida',
+    notes:                        'Notas',
+    economicActivity:             'Actividad Económica',
+};
+
+export async function getClientField(identifier: string, field: string): Promise<string> {
+    console.log(`🔍 [Lightweight] getClientField: "${identifier}" → field "${field}"`);
+    try {
+        const { data: rawClients, error } = await supabase
+            .from('clients')
+            .select(`id, name, ruc, ${field}`)
+            .or(`ruc.ilike.%${identifier}%,name.ilike.%${identifier}%`)
+            .eq('is_deleted', false)
+            .limit(3);
+        const clients = rawClients as any[] | null;
+
+        if (error) throw error;
+        if (!clients || clients.length === 0)
+            return `❌ No encontré ningún cliente con "${identifier}". Baku.`;
+
+        if (clients.length > 1) {
+            const list = clients.map((c: any) => `• ${c.name} (\`${c.ruc}\`)`).join('\n');
+            return `Encontré ${clients.length} clientes. ¿Cuál necesitas?\n${list}`;
+        }
+
+        const c = clients[0];
+        const value = (c as any)[field];
+        const label = FIELD_LABELS[field] || field;
+
+        if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0))
+            return `📋 *${c.name}* — ${label}: _(vacío)_`;
+
+        const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
+        return `📋 *${c.name}* — ${label}: \`${displayValue}\``;
+    } catch (err: any) {
+        return `Error al leer campo: ${err.message}. Baku.`;
+    }
+}
+
+// ─────────────────────────────────────────────
+// LIGHTWEIGHT SINGLE-FIELD WRITE — minimal tokens
+// ─────────────────────────────────────────────
+export async function quickUpdateClient(identifier: string, field: string, value: any): Promise<string> {
+    console.log(`✏️ [Lightweight] quickUpdateClient: "${identifier}" → ${field} = "${value}"`);
+    try {
+        // Find client ID first (lightweight select)
+        const { data: clients, error: findErr } = await supabase
+            .from('clients')
+            .select('id, name, ruc')
+            .or(`ruc.ilike.%${identifier}%,name.ilike.%${identifier}%`)
+            .eq('is_deleted', false)
+            .limit(3);
+
+        if (findErr) throw findErr;
+        if (!clients || clients.length === 0)
+            return `❌ No encontré "${identifier}" en la base de datos. Baku.`;
+
+        if (clients.length > 1) {
+            const list = clients.map((c: any) => `• ${c.name} (\`${c.ruc}\`)`).join('\n');
+            return `Encontré ${clients.length} coincidencias. ¿Cuál edito?\n${list}\nResponde con el nombre exacto o RUC. Baku.`;
+        }
+
+        const client = clients[0];
+
+        // Parse value: phones should be an array
+        let parsedValue = value;
+        if (field === 'phones') {
+            parsedValue = Array.isArray(value) ? value : [String(value)];
+        }
+
+        const { error: updateErr } = await supabase
+            .from('clients')
+            .update({ [field]: parsedValue, updated_at: new Date().toISOString() })
+            .eq('id', client.id);
+
+        if (updateErr) throw updateErr;
+
+        const label = FIELD_LABELS[field] || field;
+        await logAuditAction(
+            'Edición Rápida (Bot)',
+            `${client.name} — ${label}: "${parsedValue}"`,
+            'client', 'info'
+        );
+        return `✅ *${client.name}* — ${label} actualizado a: \`${parsedValue}\`. Baku.`;
+    } catch (err: any) {
+        return `Error al actualizar: ${err.message}. Baku.`;
+    }
+}

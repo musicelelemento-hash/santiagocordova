@@ -2,7 +2,7 @@ import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
 import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
-import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport } from './database_ops';
+import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -42,6 +42,14 @@ REGLAS DE ORO:
 REGLA DE AUDIO: Si vas a hablar (porque el usuario te habló por voz o te pidió audio), SIEMPRE debes incluir '[AUDIO]' al final de tu mensaje, seguido únicamente de un resumen hablado natural, fluido y breve (máximo 1-2 oraciones). Todo el detalle técnico, tablas o listas largas de nombres deben ir ANTES de '[AUDIO]' en formato de texto para que no se dicten nombres de forma monótona en la nota de voz.
 Ejemplo:
 'Aquí tienes la lista completa de vencimientos: [tabla de texto] [AUDIO] Santiago, te he dejado la lista detallada de vencimientos en texto. Son 5 en total para esta semana.'
+
+REGLA DE EFICIENCIA (MUY IMPORTANTE):
+- Si Santiago pregunta por UN SOLO dato de un cliente (clave, email, teléfono, régimen, etc.), usa SIEMPRE 'get_client_field'. NO uses 'search_client' para consultas de campo único.
+- Si Santiago quiere editar UN SOLO dato, usa SIEMPRE 'quick_update_client'. NO uses 'update_client_profile'.
+- Usa 'search_client' SOLO cuando necesites el perfil completo del cliente.
+- Ejemplos de campo único: "clave de Juan" → get_client_field(Juan, sri_password). "edita el email de Pedro a x@y.com" → quick_update_client(Pedro, email, x@y.com).
+
+CAMPOS DISPONIBLES: sri_password, email, phones, address, regime, name, trade_name, iessPassword, electronicSignaturePassword, signatureExpirationDate, sharedAccessKey, notes, economicActivity.
 
 MODO SECRETARIA (FORMULARIO CONVERSACIONAL): Cuando Santiago te pida crear un nuevo cliente, actúa como una secretaria ejecutiva. NO intentes inventar los datos ni los pidas todos de golpe en un solo mensaje. Ve pidiéndolos uno por uno de forma conversacional:
 1. Nombre completo del cliente.
@@ -148,6 +156,12 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
     },
     get_clients_tax_status_report: async (args: any, chatId: string) => {
         return await getClientsStatusReport();
+    },
+    get_client_field: async ({ identifier, field }: { identifier: string, field: string }, chatId: string) => {
+        return await getClientField(identifier, field);
+    },
+    quick_update_client: async ({ identifier, field, value }: { identifier: string, field: string, value: any }, chatId: string) => {
+        return await quickUpdateClient(identifier, field, value);
     },
     generate_cobro_message: async ({ ruc, clientName, amount, period, paymentInfo }: { ruc: string, clientName?: string, amount?: number, period?: string, paymentInfo?: string }, chatId: string) => {
         // Build a professional WhatsApp payment reminder message
@@ -264,6 +278,8 @@ const toolDefinitions = [
     { type: "function", function: { name: "save_memory", description: "Guarda memoria LP.", parameters: { type: "object", properties: { content: { type: "string" }, category: { type: "string", enum: ["preferencias", "semanal", "fiscal", "general"] }, monthsToKeep: { type: "number" } }, required: ["content"] } } },
     { type: "function", function: { name: "get_memories", description: "Recupera memoria LP.", parameters: { type: "object", properties: { limit: { type: "number" } } } } },
     { type: "function", function: { name: "get_clients_tax_status_report", description: "Obtiene reporte detallado de clientes SRI: quiénes son mensuales, quiénes semestrales, quiénes ya declararon y quiénes faltan.", parameters: { type: "object", properties: {} } } },
+    { type: "function", function: { name: "get_client_field", description: "Lee UN SOLO campo de un cliente. PREFERIR sobre search_client para consultas de campo único. Campos: sri_password, email, phones, address, regime, name, trade_name, iessPassword, electronicSignaturePassword, signatureExpirationDate, sharedAccessKey, notes, economicActivity.", parameters: { type: "object", properties: { identifier: { type: "string", description: "Nombre o RUC del cliente" }, field: { type: "string", description: "Campo exacto a leer" } }, required: ["identifier", "field"] } } },
+    { type: "function", function: { name: "quick_update_client", description: "Edita UN SOLO campo de un cliente de forma directa. PREFERIR sobre update_client_profile para ediciones simples.", parameters: { type: "object", properties: { identifier: { type: "string", description: "Nombre o RUC del cliente" }, field: { type: "string", description: "Campo a actualizar" }, value: { description: "Nuevo valor" } }, required: ["identifier", "field", "value"] } } },
     { type: "function", function: { name: "generate_cobro_message", description: "Genera mensaje profesional de cobro listo para enviar por WhatsApp. Úsalo cuando Santiago pida 'generar mensaje de cobro', 'redactar cobro', 'mensaje para cobrar' a un cliente.", parameters: { type: "object", properties: { ruc: { type: "string", description: "RUC del cliente (opcional si se da nombre)" }, clientName: { type: "string", description: "Nombre del cliente" }, amount: { type: "number", description: "Monto a cobrar en USD" }, period: { type: "string", description: "Periodo de la deuda ej: Mayo 2026" }, paymentInfo: { type: "string", description: "Método de pago preferido (opcional)" } }, required: ["amount"] } } },
     { type: "function", function: { name: "get_signature_alerts", description: "Revisa el estado de las credenciales SRI de todos los clientes y alerta sobre contraseñas próximas a expirar o vencidas.", parameters: { type: "object", properties: {} } } }
 ];
