@@ -9,7 +9,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 require('dotenv').config();
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY!;
-const GROQ_API_KEY = process.env.GROQ_API_KEY;;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 const openRouterClient = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
@@ -19,6 +19,12 @@ const openRouterClient = new OpenAI({
         'X-Title': 'SantiagoBot',
     },
 });
+
+// Groq uses OpenAI-compatible API with full tool-calling support
+const groqOpenAIClient = GROQ_API_KEY ? new OpenAI({
+    baseURL: 'https://api.groq.com/openai/v1',
+    apiKey: GROQ_API_KEY,
+}) : null;
 
 export const BOT_NAME = "SantiagoBot";
 export const STATUS_ICON = "⚡🛡️ [BAKU ELITE v6.0]";
@@ -331,29 +337,19 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
         }
 
         if (!response) {
-            // --- 3. GROQ (Free tier, no credits, fast — best free fallback) ---
-            if (GROQ_API_KEY) {
+            // --- 3. GROQ via OpenAI-compatible client (supports tool calling, free, no credits) ---
+            if (groqOpenAIClient) {
                 try {
-                    console.log("📡 Attempting Groq Fallback (Llama 3.3 70B)...");
-                    const groqClient = new Groq({ apiKey: GROQ_API_KEY });
-                    const groqMsgs = cleanMessages(messages, 4000, 6000)
-                        .filter((m: any) => m.role !== 'tool')
-                        .map((m: any) => ({
-                            role: (m.role === 'assistant' ? 'assistant' : m.role === 'system' ? 'system' : 'user') as any,
-                            content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) || ''
-                        }));
-                    const groqRes = await groqClient.chat.completions.create({
-                        messages: groqMsgs,
+                    console.log("📡 Attempting Groq (Llama 3.3 70B via OpenAI client with tools)...");
+                    response = await groqOpenAIClient.chat.completions.create({
+                        messages: cleanMessages(messages, 5000, 7000) as any,
                         model: 'llama-3.3-70b-versatile',
+                        tools: toolDefinitions as any,
+                        tool_choice: "auto",
                         max_tokens: 1200,
                         temperature: 0.5,
                     });
-                    const groqText = groqRes.choices[0]?.message?.content || '';
-                    if (groqText) {
-                        console.log('✅ Groq Fallback Success');
-                        await saveMessage(chatId, 'assistant', groqText);
-                        return groqText;
-                    }
+                    console.log('✅ Groq Tool-Calling Success');
                 } catch (groqError: any) {
                     console.error('⚠️ Groq Error:', groqError.message);
                     lastError += ` | Groq: ${groqError.message}`;
