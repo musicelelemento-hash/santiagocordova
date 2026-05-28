@@ -17,11 +17,12 @@ async function logAuditAction(action: string, details: string, type: string, sev
 }
 
 async function findClients(query: string, selectFields: string) {
-    const { data: clients, error } = await supabase
+    const { data: rawClients, error } = await supabase
         .from('clients')
         .select(selectFields)
         .eq('is_deleted', false);
     if (error) throw error;
+    const clients = rawClients as any[] | null;
     if (!clients) return [];
     
     const queryLower = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
