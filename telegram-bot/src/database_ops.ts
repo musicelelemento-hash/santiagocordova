@@ -16,7 +16,7 @@ async function logAuditAction(action: string, details: string, type: string, sev
     }
 }
 
-async function findClients(query: string, selectFields: string) {
+export async function findClients(query: string, selectFields: string) {
     const { data: rawClients, error } = await supabase
         .from('clients')
         .select(selectFields)
@@ -53,7 +53,7 @@ export async function searchClient(query: string) {
         if (totalMatches > 1) {
             let response = `He localizado ${totalMatches} expediente(s) que coinciden con tu búsqueda:\n\n`;
             clients.slice(0, 10).forEach((c: any) => {
-                response += `👤 *${c.name}*\n🆔 RUC: \`${c.ruc || ''}\` | Régimen: ${c.regime || 'Régimen General'}\n\n`;
+                response += `👤 *${c.name}*\n🆔 RUC: \`${c.ruc || ''}\`${c.trade_name ? ` | Comercial: *${c.trade_name}*` : ''} | Régimen: ${c.regime || 'Régimen General'}\n\n`;
             });
             if (totalMatches > 10) response += `_... y ${totalMatches - 10} clientes más._\n\n`;
             response += `Escribe el RUC o el nombre exacto del cliente que deseas consultar en detalle. Baku.`;
@@ -79,13 +79,13 @@ export async function searchClient(query: string) {
             if (c.email) response += `📧 *Email:* ${c.email}\n`;
             if (c.phones && c.phones.length > 0) response += `📞 *Telf:* ${c.phones.join(', ')}\n`;
             if (c.address) response += `📍 *Dirección:* ${c.address}\n`;
-            if (c.economicActivity) response += `💼 *Actividad:* ${c.economicActivity}\n`;
+            if (c.economic_activity) response += `💼 *Actividad:* ${c.economic_activity}\n`;
 
             // Passwords (Critical for Bot to "know everything")
             if (c.sri_password) response += `🔑 *Clave SRI:* ${c.sri_password}\n`;
-            if (c.iessPassword) response += `🔑 *Clave IESS:* ${c.iessPassword}\n`;
-            if (c.electronicSignaturePassword) response += `🔑 *Clave Firma Elec:* ${c.electronicSignaturePassword}\n`;
-            if (c.signatureExpirationDate) response += `⏳ *Caducidad Firma:* ${c.signatureExpirationDate}\n`;
+            if (c.iess_password) response += `🔑 *Clave IESS:* ${c.iess_password}\n`;
+            if (c.signature_password) response += `🔑 *Clave Firma Elec:* ${c.signature_password}\n`;
+            if (c.signature_expiration) response += `⏳ *Caducidad Firma:* ${c.signature_expiration}\n`;
             if (c.sharedAccessKey) response += `🔗 *Clave Compartida:* ${c.sharedAccessKey}\n`;
 
             // 2. Obligaciones SRI
@@ -948,20 +948,38 @@ const FIELD_LABELS: Record<string, string> = {
     economicActivity:             'Actividad Económica',
 };
 
+const FIELD_DB_MAPPING: Record<string, string> = {
+    sri_password:                 'sri_password',
+    email:                        'email',
+    phones:                       'phones',
+    address:                      'address',
+    regime:                       'regime',
+    ruc:                          'ruc',
+    name:                         'name',
+    trade_name:                   'trade_name',
+    iessPassword:                 'iess_password',
+    electronicSignaturePassword:  'signature_password',
+    signatureExpirationDate:      'signature_expiration',
+    notes:                        'notes',
+    economicActivity:             'economic_activity',
+    sharedAccessKey:              'shared_access_key',
+};
+
 export async function getClientField(identifier: string, field: string): Promise<string> {
     console.log(`🔍 [Lightweight] getClientField: "${identifier}" → field "${field}"`);
     try {
-        const clients = await findClients(identifier, `id, name, ruc, ${field}`);
+        const dbField = FIELD_DB_MAPPING[field] || field;
+        const clients = await findClients(identifier, `id, name, ruc, trade_name, ${dbField}`);
         if (!clients || clients.length === 0)
             return `❌ No encontré ningún cliente con "${identifier}". Baku.`;
 
         if (clients.length > 1) {
-            const list = clients.map((c: any) => `• ${c.name} (\`${c.ruc}\`)`).join('\n');
+            const list = clients.map((c: any) => `• ${c.name} (RUC: \`${c.ruc}\`${c.trade_name ? ` | Comercial: *${c.trade_name}*` : ''})`).join('\n');
             return `Encontré ${clients.length} clientes. ¿Cuál necesitas?\n${list}`;
         }
 
         const c = clients[0];
-        const value = (c as any)[field];
+        const value = (c as any)[dbField];
         const label = FIELD_LABELS[field] || field;
 
         if (value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
@@ -976,32 +994,30 @@ export async function getClientField(identifier: string, field: string): Promise
     }
 }
 
-// ─────────────────────────────────────────────
-// LIGHTWEIGHT SINGLE-FIELD WRITE — minimal tokens
-// ─────────────────────────────────────────────
 export async function quickUpdateClient(identifier: string, field: string, value: any): Promise<string> {
     console.log(`✏️ [Lightweight] quickUpdateClient: "${identifier}" → ${field} = "${value}"`);
     try {
-        const clients = await findClients(identifier, 'id, name, ruc');
+        const clients = await findClients(identifier, 'id, name, ruc, trade_name');
         if (!clients || clients.length === 0)
             return `❌ No encontré "${identifier}" en la base de datos. Baku.`;
 
         if (clients.length > 1) {
-            const list = clients.map((c: any) => `• ${c.name} (\`${c.ruc}\`)`).join('\n');
+            const list = clients.map((c: any) => `• ${c.name} (RUC: \`${c.ruc}\`${c.trade_name ? ` | Comercial: *${c.trade_name}*` : ''})`).join('\n');
             return `Encontré ${clients.length} coincidencias. ¿Cuál edito?\n${list}\nResponde con el nombre exacto o RUC. Baku.`;
         }
 
         const client = clients[0];
 
+        const dbField = FIELD_DB_MAPPING[field] || field;
         // Parse value: phones should be an array
         let parsedValue = value;
-        if (field === 'phones') {
+        if (dbField === 'phones') {
             parsedValue = Array.isArray(value) ? value : [String(value)];
         }
 
         const { error: updateErr } = await supabase
             .from('clients')
-            .update({ [field]: parsedValue, updated_at: new Date().toISOString() })
+            .update({ [dbField]: parsedValue, updated_at: new Date().toISOString() })
             .eq('id', client.id);
 
         if (updateErr) throw updateErr;
@@ -1017,3 +1033,132 @@ export async function quickUpdateClient(identifier: string, field: string, value
         return `Error al actualizar: ${err.message}. Baku.`;
     }
 }
+
+export async function markPaymentsList(
+    identifier: string,
+    type: 'IVA' | 'RENTA' | 'HONORARIOS',
+    periods: string[]
+): Promise<string> {
+    console.log(`💰 Marking payments ${type} for periods [${periods.join(', ')}] as paid for client ${identifier}`);
+    try {
+        const matches = await findClients(identifier, '*');
+        if (!matches || matches.length === 0) return `❌ No encontré ningún cliente con "${identifier}". Baku.`;
+        if (matches.length > 1) {
+            const list = matches.map((c: any) => `• ${c.name} (\`${c.ruc}\`)`).join('\n');
+            return `Encontré ${matches.length} clientes. ¿Cuál deseas actualizar?\n${list}`;
+        }
+
+        const client = matches[0];
+        let history = [...(client.declaration_history || [])];
+        const nowStr = new Date().toISOString();
+        const updatedPeriods: string[] = [];
+
+        // For monthly/semiannual fees, the type is usually stored as 'IVA' or 'RENTA' in declaration_history.
+        // If type is 'HONORARIOS', we default to 'IVA' in the records as monthly fees are bound to IVA periods.
+        const dbType = type === 'HONORARIOS' ? 'IVA' : type;
+
+        for (const period of periods) {
+            let entry = history.find(d => d.type === dbType && d.period === period);
+            if (entry) {
+                entry.is_paid = true;
+                entry.paid_at = nowStr;
+                entry.updatedAt = nowStr;
+                // If it was already sent/declared, update its status to Pagada
+                if (entry.status === 'Enviada') {
+                    entry.status = 'Pagada';
+                }
+            } else {
+                // If it doesn't exist, create a new one as 'Pendiente' but prepaid
+                history.push({
+                    type: dbType,
+                    period,
+                    status: 'Pendiente',
+                    is_paid: true,
+                    paid_at: nowStr,
+                    declaredAt: null,
+                    updatedAt: nowStr,
+                    proof_file: null,
+                    amount: 0
+                });
+            }
+            updatedPeriods.push(period);
+        }
+
+        // Sort history by period for sanity
+        history.sort((a: any, b: any) => a.period.localeCompare(b.period));
+
+        const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
+        if (updErr) throw updErr;
+
+        await logAuditAction('Cobro Registrado (Bot)', `${type} [${updatedPeriods.join(', ')}] - RUC: ${client.ruc}`, 'finance', 'info');
+        return `✅ Pago de **${type}** para los periodos **${updatedPeriods.join(', ')}** del cliente **${client.name}** registrado como PAGADO en Supabase. Baku.`;
+    } catch (error: any) {
+        console.error("Error marking payments list:", error);
+        return "Error al registrar pagos: " + error.message;
+    }
+}
+
+export async function markDeclaration(
+    identifier: string,
+    type: 'IVA' | 'RENTA',
+    period: string,
+    method: 'pdf' | 'click'
+): Promise<string> {
+    console.log(`📑 Marking declaration ${type} for period ${period} using ${method} for client ${identifier}`);
+    try {
+        const matches = await findClients(identifier, '*');
+        if (!matches || matches.length === 0) return `❌ No encontré ningún cliente con "${identifier}". Baku.`;
+        if (matches.length > 1) {
+            const list = matches.map((c: any) => `• ${c.name} (\`${c.ruc}\`)`).join('\n');
+            return `Encontré ${matches.length} clientes. ¿Cuál deseas actualizar?\n${list}`;
+        }
+
+        const client = matches[0];
+        let history = [...(client.declaration_history || [])];
+        const nowStr = new Date().toISOString();
+        
+        const proof_file = method === 'pdf' ? {
+            name: 'manual_upload.pdf',
+            metadata: {
+                formType: type,
+                uploadedAt: nowStr
+            }
+        } : null;
+
+        // Try to find if an entry for this period and type already exists
+        let entryIdx = history.findIndex(d => d.type === type && d.period === period);
+
+        if (entryIdx !== -1) {
+            // Update existing entry
+            history[entryIdx].status = history[entryIdx].is_paid ? 'Pagada' : 'Enviada';
+            history[entryIdx].declaredAt = nowStr;
+            history[entryIdx].updatedAt = nowStr;
+            history[entryIdx].proof_file = proof_file;
+        } else {
+            // Create a new entry
+            history.push({
+                type,
+                period,
+                status: 'Enviada',
+                is_paid: false,
+                declaredAt: nowStr,
+                updatedAt: nowStr,
+                proof_file,
+                amount: 0
+            });
+        }
+
+        // Sort history by period for sanity
+        history.sort((a: any, b: any) => a.period.localeCompare(b.period));
+
+        const { error: updErr } = await supabase.from('clients').update({ declaration_history: history, updated_at: new Date().toISOString() }).eq('id', client.id);
+        if (updErr) throw updErr;
+
+        await logAuditAction('Declaración Registrada (Bot)', `${type} ${period} (${method}) - RUC: ${client.ruc}`, 'sri', 'info');
+        return `✅ Declaración de **${type}** (${period}) para ${client.name} registrada como **Enviada** (vía ${method === 'pdf' ? 'PDF' : 'clic'}) en Supabase. Baku.`;
+    } catch (error: any) {
+        console.error("Error marking declaration:", error);
+        return "Error al registrar declaración: " + error.message;
+    }
+}
+

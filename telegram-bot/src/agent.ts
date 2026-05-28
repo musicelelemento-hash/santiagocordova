@@ -2,9 +2,10 @@ import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
 import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
-import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient } from './database_ops';
+import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient, findClients } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { pendingDialogs } from './index';
 
 require('dotenv').config();
 
@@ -102,7 +103,65 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
         return await createClient(args);
     },
     mark_payment_as_paid: async ({ ruc, type, period }: { ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string }, chatId: string) => {
-        return await markPaymentAsPaid(ruc, type, period);
+        const matches = await findClients(ruc, '*');
+        if (matches.length === 0) return `❌ No encontré ningún cliente con "${ruc}". Baku.`;
+        if (matches.length > 1) {
+            pendingDialogs.set(chatId, {
+                type: 'mark_payment',
+                chatId,
+                step: 'select_client',
+                candidates: matches,
+                data: {}
+            });
+            const list = matches.map((c: any, i: number) => `${i + 1}. **${c.name}** (RUC: \`${c.ruc || 'N/A'}\`${c.trade_name ? ` | Comercial: *${c.trade_name}*` : ''}${c.regime ? ` | Régimen: *${c.regime}*` : ''})`).join('\n');
+            return `Encontré varios clientes. He iniciado el flujo de confirmación. Por favor, selecciona el número:\n\n${list}\n\nEscribe **cancelar** para salir. Baku.`;
+        }
+
+        const client = matches[0];
+        const regime = client.regime || 'Régimen General';
+        const isPopular = regime === 'Rimpe Negocio Popular';
+        const isEmprendedor = regime === 'Rimpe Emprendedor';
+        const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+
+        pendingDialogs.set(chatId, {
+            type: 'mark_payment',
+            chatId,
+            step: 'ask_payment_period',
+            client,
+            data: period ? { periods: [period] } : {}
+        });
+
+        return `He iniciado el flujo interactivo de pago para **${client.name}** (IVA: ${ivaFrequency}). ¿Qué período(s) deseas marcar como pagado? (Escribe el período o 'adelantado'). Baku.`;
+    },
+    mark_declaration: async ({ ruc, type, period }: { ruc: string, type?: 'IVA' | 'RENTA', period?: string }, chatId: string) => {
+        const matches = await findClients(ruc, '*');
+        if (matches.length === 0) return `❌ No encontré ningún cliente con "${ruc}". Baku.`;
+        if (matches.length > 1) {
+            pendingDialogs.set(chatId, {
+                type: 'mark_declaration',
+                chatId,
+                step: 'select_client',
+                candidates: matches,
+                data: {}
+            });
+            const list = matches.map((c: any, i: number) => `${i + 1}. **${c.name}** (RUC: \`${c.ruc || 'N/A'}\`${c.trade_name ? ` | Comercial: *${c.trade_name}*` : ''}${c.regime ? ` | Régimen: *${c.regime}*` : ''})`).join('\n');
+            return `Encontré varios clientes. He iniciado el flujo de confirmación. Por favor, selecciona el número:\n\n${list}\n\nEscribe **cancelar** para salir. Baku.`;
+        }
+
+        const client = matches[0];
+        pendingDialogs.set(chatId, {
+            type: 'mark_declaration',
+            chatId,
+            step: type ? 'ask_declaration_period' : 'ask_declaration_type',
+            client,
+            data: { type, periods: period ? [period] : undefined }
+        });
+
+        if (type) {
+            return `He iniciado el flujo interactivo de declaración de **${type}** para **${client.name}**. ¿Para qué período es la declaración? Baku.`;
+        } else {
+            return `He iniciado el flujo interactivo de declaración para **${client.name}**. ¿Qué tipo de declaración es? Responde **IVA** o **RENTA**. Baku.`;
+        }
     },
     mark_payment_as_unpaid: async ({ ruc, type, period }: { ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string }, chatId: string) => {
         return await markPaymentAsUnpaid(ruc, type, period);
@@ -265,6 +324,7 @@ const toolDefinitions = [
     { type: "function", function: { name: "get_upcoming_deadlines", description: "Vencimientos SRI 7 días." } },
     { type: "function", function: { name: "create_client", description: "Nuevo cliente.", parameters: { type: "object", properties: { ruc: { type: "string" }, name: { type: "string" }, regime: { type: "string", enum: ["Régimen General", "Rimpe Emprendedor", "Rimpe Negocio Popular"] }, sriPassword: { type: "string" }, email: { type: "string" }, phones: { type: "array", items: { type: "string" } } }, required: ["ruc", "name", "regime", "sriPassword"] } } },
     { type: "function", function: { name: "mark_payment_as_paid", description: "Marca pago (IVA/RENTA/HONORARIOS).", parameters: { type: "object", properties: { ruc: { type: "string" }, type: { type: "string", enum: ["IVA", "RENTA", "HONORARIOS"] }, period: { type: "string", description: "YYYY-MM" } }, required: ["ruc", "type"] } } },
+    { type: "function", function: { name: "mark_declaration", description: "Inicia el flujo interactivo de declaración del SRI (IVA/RENTA) para un cliente.", parameters: { type: "object", properties: { ruc: { type: "string" }, type: { type: "string", enum: ["IVA", "RENTA"] }, period: { type: "string", description: "YYYY-MM" } }, required: ["ruc"] } } },
     { type: "function", function: { name: "mark_payment_as_unpaid", description: "Revierte pago a PENDIENTE (IVA/RENTA/HONORARIOS).", parameters: { type: "object", properties: { ruc: { type: "string" }, type: { type: "string", enum: ["IVA", "RENTA", "HONORARIOS"] }, period: { type: "string", description: "YYYY-MM" } }, required: ["ruc", "type"] } } },
     { type: "function", function: { name: "check_sri_credentials", description: "Salud credenciales SRI." } },
     { type: "function", function: { name: "clear_chat_history", description: "Limpia historial chat.", parameters: { type: "object", properties: {} } } },
