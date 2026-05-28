@@ -255,7 +255,7 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
             try {
                 console.log("📡 Attempting Primary (Direct Google Gemini 2.0 Flash)...");
                 const directGoogleClient = new OpenAI({
-                    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
+                    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
                     apiKey: GEMINI_API_KEY,
                 });
                 response = await directGoogleClient.chat.completions.create({
@@ -291,7 +291,25 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
         }
 
         if (!response) {
-            // --- 3. DIRECT GOOGLE FALLBACK (SDK wrapper as last resort) ---
+            // --- 3. TRY OPENROUTER FREE FALLBACK (Llama 3.3 70B Free - Zero credits required) ---
+            try {
+                console.log("📡 Attempting OpenRouter Free Fallback (Llama 3.3 70B Free)...");
+                response = await openRouterClient.chat.completions.create({
+                    messages: cleanMessages(messages, 4000, 5000) as any,
+                    model: 'meta-llama/llama-3.3-70b-instruct:free',
+                    tools: toolDefinitions as any,
+                    tool_choice: "auto",
+                    max_tokens: 1000
+                });
+                console.log(`✅ OpenRouter Free Fallback Success`);
+            } catch (freeError: any) {
+                console.error('⚠️ OpenRouter Free Fallback Error:', freeError.message);
+                lastError += ` | OpenRouterFree: ${freeError.message}`;
+            }
+        }
+
+        if (!response) {
+            // --- 4. DIRECT GOOGLE FALLBACK (SDK wrapper as last resort) ---
             if (GEMINI_API_KEY) {
                 try {
                     console.log("📡 Attempting Direct Google SDK (Gemini 1.5 Flash)...");
