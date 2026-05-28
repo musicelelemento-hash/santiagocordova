@@ -898,18 +898,25 @@ export async function getClientsStatusReport() {
             }
         });
 
+        const formatList = (arr: string[], max = 15) => {
+            if (arr.length === 0) return 'Ninguno';
+            let res = arr.slice(0, max).map(n => `- ${n}`).join('\n');
+            if (arr.length > max) res += `\n_...y ${arr.length - max} más._`;
+            return res;
+        };
+
         let report = `📊 *REPORTE OPERATIVO DE CLIENTES (SRI):*\n`;
         report += `------------------------------------\n\n`;
         
         report += `📅 *FRECUENCIA DE IVA:*\n`;
-        report += `🗓️ *Mensuales (${mensuales.length}):*\n${mensuales.map(n => `- ${n}`).join('\n') || 'Ninguno'}\n\n`;
-        report += `🗓️ *Semestrales (${semestrales.length}):*\n${semestrales.map(n => `- ${n}`).join('\n') || 'Ninguno'}\n\n`;
-        report += `🗓️ *Exentos/Popular (${populares.length}):*\n${populares.map(n => `- ${n}`).join('\n') || 'Ninguno'}\n\n`;
+        report += `🗓️ *Mensuales (${mensuales.length}):*\n${formatList(mensuales)}\n\n`;
+        report += `🗓️ *Semestrales (${semestrales.length}):*\n${formatList(semestrales)}\n\n`;
+        report += `🗓️ *Exentos/Popular (${populares.length}):*\n${formatList(populares)}\n\n`;
         
         report += `------------------------------------\n\n`;
         report += `🛡️ *ESTADO DE CUMPLIMIENTO (ÚLTIMO PERIODO):*\n`;
-        report += `✅ *Al Día / Declarados (${alDia.length}):*\n${alDia.map(n => `- ${n}`).join('\n') || 'Ninguno'}\n\n`;
-        report += `🚨 *Faltan por Declarar (${faltaDeclarar.length}):*\n${faltaDeclarar.map(n => `- ${n}`).join('\n') || 'Ninguno'}\n\n`;
+        report += `✅ *Al Día / Declarados (${alDia.length}):*\n${formatList(alDia)}\n\n`;
+        report += `🚨 *Faltan por Declarar (${faltaDeclarar.length}):*\n${formatList(faltaDeclarar, 25)}\n\n`;
 
         return report;
     } catch (error: any) {
