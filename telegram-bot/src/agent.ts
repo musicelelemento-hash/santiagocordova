@@ -1,4 +1,3 @@
-import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
 import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
@@ -8,10 +7,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 require('dotenv').config();
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY!;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY!;
 
-const groqClient = new Groq({ apiKey: GROQ_API_KEY });
 const openRouterClient = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: OPENROUTER_API_KEY,
@@ -22,7 +19,7 @@ const openRouterClient = new OpenAI({
 });
 
 export const BOT_NAME = "SantiagoBot";
-export const STATUS_ICON = "⚡🛡️ [STITCH ELITE v5.0]";
+export const STATUS_ICON = "⚡🛡️ [BAKU ELITE v6.0]";
 
 const SYSTEM_PROMPT = `Baku: Comandante de Operaciones de Santiago y Asistente Contable Elite.
 ERES: El núcleo de inteligencia de Soluciones Contables Pro. Tu tono es ejecutivo, analítico, eficiente y de lealtad absoluta al Ing. Santiago Córdova.
@@ -43,7 +40,14 @@ MODO SECRETARIA (FORMULARIO CONVERSACIONAL): Cuando Santiago te pida crear un nu
 2. Número de RUC (valida que tenga 13 dígitos y sea numérico).
 3. Clave del SRI.
 4. Régimen fiscal (Régimen General, Rimpe Emprendedor o Rimpe Negocio Popular).
-Una vez que tengas recopilados todos estos datos a lo largo de la conversación, ejecuta la herramienta 'create_client'.`;
+5. (Opcional) Email de contacto.
+6. (Opcional) Teléfono de contacto.
+Una vez que tengas recopilados los datos obligatorios (1-4), ejecuta la herramienta 'create_client'.
+
+HABILIDAD: MENSAJES DE COBRO: Cuando Santiago diga "genera el mensaje de cobro para [cliente] por $[monto]" o similar, usa la herramienta 'generate_cobro_message' para crear un mensaje profesional listo para copiar y enviar por WhatsApp. Pide el monto si no lo dice.
+
+HABILIDAD: ALERTAS DE CREDENCIALES: Cuando Santiago pregunte "¿alguna clave va a vencer?" o "revisa credenciales", usa 'get_signature_alerts' para escanear todas las claves SRI y alertar sobre las que estén próximas a expirar.`;
+
 
 // Tool logic implementation
 const availableTools: Record<string, (args: any, chatId: string) => Promise<string>> = {
@@ -136,6 +140,38 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
     },
     get_clients_tax_status_report: async (args: any, chatId: string) => {
         return await getClientsStatusReport();
+    },
+    generate_cobro_message: async ({ ruc, clientName, amount, period, paymentInfo }: { ruc: string, clientName?: string, amount?: number, period?: string, paymentInfo?: string }, chatId: string) => {
+        // Build a professional WhatsApp payment reminder message
+        let client: any = null;
+        if (ruc || clientName) {
+            const searchResult = await searchClient(ruc || clientName || '');
+            const nameDisplay = clientName || ruc;
+            if (amount && amount > 0) {
+                const periodStr = period ? ` correspondiente al periodo ${period}` : '';
+                const payment = paymentInfo || 'transferencia bancaria o efectivo';
+                return `💬 *MENSAJE DE COBRO LISTO (copiar y enviar por WhatsApp):*
+
+---
+Estimado/a *${nameDisplay}*, le saluda la secretaría de *Soluciones Contables Pro*.
+
+Le comunicamos que se encuentra pendiente el pago de sus honorarios por un valor de *$${amount.toFixed(2)}*${periodStr}.
+
+Por favor, realice el pago por medio de ${payment} a la mayor brevedad posible para mantener sus declaraciones al día y evitar recargos por mora.
+
+Quedamos atentos ante cualquier consulta. ¡Muchas gracias!
+
+*Ing. Santiago Córdova*
+*Soluciones Contables Pro*
+---
+
+_Baku._`;
+            }
+        }
+        return `❌ Para generar el mensaje de cobro necesito al menos el nombre/RUC del cliente y el monto pendiente. Ejemplo: "Genera el mensaje de cobro para William Cuenca por $15". Baku.`;
+    },
+    get_signature_alerts: async (args: any, chatId: string) => {
+        return await getCredentialStatus();
     }
 };
 
@@ -219,7 +255,9 @@ const toolDefinitions = [
     { type: "function", function: { name: "update_client_profile", description: "Update campos perfil.", parameters: { type: "object", properties: { ruc: { type: "string" }, updates: { type: "object" } }, required: ["ruc", "updates"] } } },
     { type: "function", function: { name: "save_memory", description: "Guarda memoria LP.", parameters: { type: "object", properties: { content: { type: "string" }, category: { type: "string", enum: ["preferencias", "semanal", "fiscal", "general"] }, monthsToKeep: { type: "number" } }, required: ["content"] } } },
     { type: "function", function: { name: "get_memories", description: "Recupera memoria LP.", parameters: { type: "object", properties: { limit: { type: "number" } } } } },
-    { type: "function", function: { name: "get_clients_tax_status_report", description: "Obtiene reporte detallado de clientes SRI: quiénes son mensuales, quiénes semestrales, quiénes ya declararon y quiénes faltan.", parameters: { type: "object", properties: {} } } }
+    { type: "function", function: { name: "get_clients_tax_status_report", description: "Obtiene reporte detallado de clientes SRI: quiénes son mensuales, quiénes semestrales, quiénes ya declararon y quiénes faltan.", parameters: { type: "object", properties: {} } } },
+    { type: "function", function: { name: "generate_cobro_message", description: "Genera mensaje profesional de cobro listo para enviar por WhatsApp. Úsalo cuando Santiago pida 'generar mensaje de cobro', 'redactar cobro', 'mensaje para cobrar' a un cliente.", parameters: { type: "object", properties: { ruc: { type: "string", description: "RUC del cliente (opcional si se da nombre)" }, clientName: { type: "string", description: "Nombre del cliente" }, amount: { type: "number", description: "Monto a cobrar en USD" }, period: { type: "string", description: "Periodo de la deuda ej: Mayo 2026" }, paymentInfo: { type: "string", description: "Método de pago preferido (opcional)" } }, required: ["amount"] } } },
+    { type: "function", function: { name: "get_signature_alerts", description: "Revisa el estado de las credenciales SRI de todos los clientes y alerta sobre contraseñas próximas a expirar o vencidas.", parameters: { type: "object", properties: {} } } }
 ];
 
 export async function processChatWithAgentLoop(chatId: string, userMessage: string): Promise<string> {

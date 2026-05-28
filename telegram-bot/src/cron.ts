@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { Bot } from 'grammy';
-import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients } from './database_ops';
+import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getCredentialStatus } from './database_ops';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { syncToSheets } from './google-sync';
 import { supabase } from './supabase';
@@ -102,9 +102,10 @@ ${debtorReport}
 
 Instrucciones de redacción:
 1. Comienza de forma profesional y firme (ej: "Comandante, listos para recuperar flujo de caja esta semana" o "Lunes Financiero activado").
-2. Explica de forma concisa quiénes son los principales deudores y cuánto suman los honorarios pendientes de cobrar.
+2. Explica de forma concisa quiénes son los principales deudores y cuánto suman los honorarios pendientes de cobrar. Incluye el nombre COMPLETO de cada deudor.
 3. Sugiere enviar recordatorios a los clientes clave que tengan deudas mayores.
-4. Mantén un formato estructurado con emojis de finanzas y negritas estratégicas.
+4. Recuérdale que puede pedirte: "Genera el mensaje de cobro para [nombre] por $[monto]" y tú generarás el WhatsApp listo para copiar.
+5. Mantén un formato estructurado con emojis de finanzas y negritas estratégicas.
 `;
             const result = await model.generateContent(prompt);
             const aiResponse = result.response.text();
@@ -134,4 +135,28 @@ Instrucciones de redacción:
     }, {
         timezone: "America/Guayaquil"
     });
+
+    // 🔐 Viernes Credencial: Alerta de claves SRI por caducar cada Viernes a las 09:00 AM
+    cron.schedule('0 9 * * 5', async () => {
+        console.log("⏰ Ejecutando revisión de credenciales SRI (Viernes 09:00 AM)...");
+        const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
+        const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
+        try {
+            const credReport = await getCredentialStatus();
+            // Only send if there are issues (report won't contain '✅ Credenciales SRI OK' if issues exist)
+            if (!credReport.startsWith('✅ Credenciales SRI OK')) {
+                const alertMsg = `🔐 *VIERNES CREDENCIAL — Alerta Automática*\n\n${credReport}\n\n_Santiago, revisa estas credenciales antes de que afecten las declaraciones. Baku._`;
+                await bot.api.sendMessage(adminChatId, alertMsg);
+                console.log("✅ Alerta de credenciales enviada a Santiago.");
+            } else {
+                console.log("✅ Viernes Credencial: Sin alertas. Todas las claves OK.");
+            }
+        } catch (error) {
+            console.error("❌ Error en Viernes Credencial cron:", error);
+        }
+    }, {
+        timezone: "America/Guayaquil"
+    });
+
+    console.log("✅ Baku Elite CronJobs inicializados: 03:30 AM (Reporte), 08:00 AM Lunes (Financiero), 09:00 AM Viernes (Credenciales), 00:00 AM (Backup).");
 }

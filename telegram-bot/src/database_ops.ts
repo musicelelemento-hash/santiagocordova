@@ -207,13 +207,16 @@ export async function getDebtorClients() {
 ---
 `;
 
-        debtors.slice(0, 10).forEach((c: any) => {
-            response += `👤 *${c.name.split(' ')[0]}* | ${c.typeLabel}\n`;
-            response += `   💼 Cobro Honorarios: ${c.clientDebt > 0 ? `$${c.clientDebt} (Total) ❌` : '✅'}\n`;
+        debtors.slice(0, 15).forEach((c: any) => {
+            const phone = c.phones && c.phones.length > 0 ? c.phones[0] : null;
+            response += `👤 *${c.name}* | \`${c.ruc}\` | ${c.typeLabel}\n`;
+            if (phone) response += `   📞 ${phone}\n`;
+            response += `   💼 Honorarios: ${c.clientDebt > 0 ? `$${c.clientDebt} ❌` : '✅'}\n`;
             response += `   ⚖️ Declaración SRI: ${c.pendingDecCount > 0 ? `${c.pendingDecCount} pend. ❌` : '✅'}\n`;
         });
 
-        if (debtors.length > 10) response += `\n_...y ${debtors.length - 10} clientes más._`;
+        if (debtors.length > 15) response += `\n_...y ${debtors.length - 15} clientes más._`;
+
 
         return response;
     } catch (error: any) {
