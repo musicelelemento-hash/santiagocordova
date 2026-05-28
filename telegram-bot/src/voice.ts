@@ -52,22 +52,16 @@ export async function transcribeAudioUrl(fileUrl: string): Promise<string> {
     }
 }
 
-async function googleCloudTTS(text: string): Promise<InputFile> {
-    console.log("🎙️ Using Google Cloud TTS as fallback...");
-    
-    // Safety: Ensure ttsClient is initialized with correct credentials structure
-    if (!ttsClient) {
-        const credentials = getServiceAccount();
-        ttsClient = new TextToSpeechClient(credentials ? { credentials } : {});
+async function googleTranslateTTS(text: string): Promise<InputFile> {
+    console.log("🎙️ Using Google Translate TTS (Free, no billing)...");
+    try {
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=es-ES&client=tw-ob&q=${encodeURIComponent(text)}`;
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
+        return new InputFile(Buffer.from(response.data), 'response.mp3');
+    } catch (e: any) {
+        console.error("❌ Google Translate TTS failed:", e.message);
+        throw e;
     }
-
-    const [response] = await ttsClient.synthesizeSpeech({
-        input: { text },
-        voice: { languageCode: 'es-US', name: 'es-US-Studio-B', ssmlGender: 'FEMALE' },
-        audioConfig: { audioEncoding: 'MP3' },
-    });
-
-    return new InputFile(response.audioContent as Buffer, 'response.mp3');
 }
 
 export function updateVoiceConfig(key?: string, voiceId?: string) {
@@ -81,7 +75,7 @@ export function getVoiceStatus() {
     return {
         elevenLabs: !!ELEVENLABS_API_KEY,
         voiceId: ELEVENLABS_VOICE_ID,
-        googleCloud: !!credentials
+        googleCloud: false
     };
 }
 
@@ -119,15 +113,15 @@ export async function textToSpeech(text: string): Promise<InputFile> {
                     errorMsg = errorDetail.detail?.message || errorMsg;
                 } catch(e) {}
             }
-            console.error("⚠️ ElevenLabs failed, falling back to Google Cloud...", errorMsg);
+            console.error("⚠️ ElevenLabs failed, falling back to Google Translate...", errorMsg);
         }
     }
 
-    // Fallback to Google Cloud TTS
+    // Fallback to Google Translate TTS
     try {
-        return await googleCloudTTS(cleanText);
+        return await googleTranslateTTS(cleanText);
     } catch (e: any) {
-        console.error("❌ Google Cloud TTS failed:", e.message);
+        console.error("❌ Google Translate TTS failed:", e.message);
         throw e;
     }
 }
