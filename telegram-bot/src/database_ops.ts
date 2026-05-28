@@ -556,14 +556,17 @@ export async function createClient(data: {
 /**
  * Marks a specific payment as paid. Baku.
  */
-export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string): Promise<string> {
-    console.log(`💰 Marking ${type} ${period || ''} as paid in Supabase for client ${ruc}`);
+export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string): Promise<string> {
+    console.log(`💰 Marking ${type} ${period || ''} as paid in Supabase for client ${identifier}`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('*').eq('ruc', ruc);
-        if (error) throw error;
-        if (!clients || clients.length === 0) return `No se encontró al cliente con RUC ${ruc}.`;
+        const matches = await findClients(identifier, '*');
+        if (!matches || matches.length === 0) return `❌ No encontré ningún cliente con "${identifier}". Baku.`;
+        if (matches.length > 1) {
+            const list = matches.map((c: any) => `• ${c.name} (\`${c.ruc}\`)`).join('\n');
+            return `Encontré ${matches.length} clientes. ¿Cuál quieres marcar como pagado?\n${list}`;
+        }
 
-        const client = clients[0];
+        const client = matches[0];
 
         if (type === 'RENTA') {
             // Find current period renta
@@ -584,7 +587,7 @@ export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HO
             
             const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
             if (updErr) throw updErr;
-            await logAuditAction('Cobro Registrado (Bot)', `Renta ${periodToMark} - RUC: ${ruc}`, 'finance', 'info');
+            await logAuditAction('Cobro Registrado (Bot)', `Renta ${periodToMark} - RUC: ${client.ruc}`, 'finance', 'info');
             return `✅ Cobro de **Renta Anual (${periodToMark})** para ${client.name} marcado como pagado en Supabase. Baku.`;
         }
 
@@ -612,7 +615,7 @@ export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HO
             
             const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
             if (updErr) throw updErr;
-            await logAuditAction('Cobro Registrado (Bot)', `${type} ${history[targetIdx].period} - RUC: ${ruc}`, 'finance', 'info');
+            await logAuditAction('Cobro Registrado (Bot)', `${type} ${history[targetIdx].period} - RUC: ${client.ruc}`, 'finance', 'info');
             return `✅ Cobro de **${type}** (${history[targetIdx].period}) para ${client.name} actualizado en Supabase. Baku.`;
         }
 

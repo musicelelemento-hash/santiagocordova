@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient } from './database_ops';
+import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -168,6 +168,24 @@ async function tryDirectCommand(text: string): Promise<string | null> {
     // "edita el teléfono de X a Y"
     const editTelMatch = t.match(/(?:edita|cambia|actualiza)\s+(?:el\s+)?(?:tel[eé]fono|tel|cel(?:ular)?)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
     if (editTelMatch) return await quickUpdateClient(editTelMatch[1].trim(), 'phones', editTelMatch[2].trim());
+
+    // --- PAYMENT shortcuts ---
+    // "marca como pagado a X" / "X me acaba de cancelar" / "X pagó" / "X canceló" / "registra pago de X"
+    // Pattern: optional context + client name + payment verb
+    const pagoMatch = t.match(/(?:a\s+)?(.+?)\s+(?:me\s+)?(?:acaba\s+de\s+)?(?:cancel[oó]|pag[oó]|liquid[oó]|cancel[a]r?|pagar?)(?:\s+(?:marca|registra|anota)\s+como\s+pagado)?/);
+    const marcaPagoMatch = t.match(/(?:marca|registra|anota)\s+(?:como\s+)?pagado\s+(?:a\s+)?(.+)|(?:a\s+)?(.+?)\s+(?:ya\s+)?pag[oó]/);
+    
+    const payClient = marcaPagoMatch ? (marcaPagoMatch[1] || marcaPagoMatch[2])?.trim() : null;
+    if (payClient && payClient.length > 2) {
+        return await markPaymentAsPaid(payClient, 'IVA');
+    }
+    if (pagoMatch && /cancel[oó]|pag[oó]|liquid[oó]/.test(t) && pagoMatch[1]?.length > 2) {
+        const name = pagoMatch[1].trim();
+        // Avoid false positive on report queries
+        if (!/quien|falta|debe|cuantos/.test(name)) {
+            return await markPaymentAsPaid(name, 'IVA');
+        }
+    }
 
     // --- REPORT shortcuts ---
     // "quien me debe" / "deudores" / "quien debe"
