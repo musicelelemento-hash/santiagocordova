@@ -1,6 +1,6 @@
 
 export type Screen = 'home' | 'clients' | 'tasks' | 'reports' | 'settings' | 'cobranza' | 'calendar' | 'web_orders' | 'scanner' | 'audit_log';
-export type Theme = 'light' | 'dark' | 'midnight';
+export type Theme = 'light' | 'dark';
 
 export interface AuditLog {
     id: string;

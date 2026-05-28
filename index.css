@@ -2,25 +2,25 @@
 
 :root {
     /* Zenith Protocol - Obsidian & Azure Design Tokens */
-    --primary: 221 100% 54%;    /* Vivid Azure #2B6AFF */
-    --primary-container: 221 100% 97%;
+    --primary: 221.2 83.2% 53.3%;    /* Vivid Azure #2B6AFF */
+    --primary-container: 221.2 100% 97%;
     --on-primary: 0 0% 100%;
     
-    --secondary: 262 83% 58%;   /* Electric Violet */
-    --secondary-container: 262 100% 97%;
+    --secondary: 262.1 83.3% 57.8%;   /* Electric Violet */
+    --secondary-container: 262.1 100% 97%;
     
-    --tertiary: 165 95% 38%;    /* Kinetic Emerald #04B17B */
-    --tertiary-container: 165 100% 97%;
+    --tertiary: 142.1 76.2% 36.3%;    /* Kinetic Emerald #04B17B */
+    --tertiary-container: 142.1 100% 97%;
     
-    --background: 210 40% 98.5%; /* Pristine Slate 50 */
-    --foreground: 222 47% 10%;   /* Deep Obsidian 950 */
+    --background: 210 40% 98.2%; /* Pristine Slate 50 */
+    --foreground: 224 71.4% 4.1%;   /* Deep Obsidian 950 */
     
     --surface: 0 0% 100%;        /* Brilliant White */
-    --surface-low: 210 40% 96.5%; 
-    --surface-lowest: 210 40% 94.5%; 
+    --surface-low: 210 40% 96%; 
+    --surface-lowest: 210 40% 94%; 
     
-    --outline-variant: 222 47% 92%;
-    --border: 222 47% 91%;
+    --outline-variant: 220 14.3% 95.9%;
+    --border: 214.3 31.8% 91.4%;
 
     --radius-sm: 0.75rem;
     --radius-md: 1.25rem;
@@ -39,26 +39,26 @@
     --gradient-obsidian: linear-gradient(135deg, #020617 0%, #0F172A 100%);
     
     /* Premium Glassmorphism 2.0 */
-    --glass-border: hsla(0, 0%, 100%, 0.1);
-    --glass-bg: hsla(222, 47%, 4%, 0.6);
+    --glass-border: hsla(0, 0%, 100%, 0.15);
+    --glass-bg: hsla(224, 71.4%, 4.1%, 0.6);
 }
 
 .dark {
-    /* Zenith Protocol - Midnight Obsidian v4.0 */
-    --background: 222 47% 2%;    /* Deepest Obsidian #020617 */
-    --surface: 222 47% 4%;      /* Tactical Surface #050a1b */
-    --surface-low: 222 47% 6%; 
-    --surface-lowest: 222 47% 8%; 
+    /* Zenith Protocol - Midnight Obsidian v5.0 */
+    --background: 224 71.4% 4.1%;    /* Deepest Obsidian Navy #020617 */
+    --surface: 224 71.4% 6.5%;      /* Tactical Surface #050a1b */
+    --surface-low: 224 71.4% 8.5%; 
+    --surface-lowest: 224 71.4% 11%; 
     
-    --foreground: 210 40% 98%;   /* Soft Slate for comfort */
-    --on-surface: 210 40% 98%;
-    --on-surface-variant: 215 20% 65%;
+    --foreground: 210 20% 98%;   /* Soft Slate for comfort */
+    --on-surface: 210 20% 98%;
+    --on-surface-variant: 217.9 10.6% 64.9%;
     
-    --border: 222 47% 12%;
-    --outline-variant: 222 47% 15%;
+    --border: 224 71.4% 15%;
+    --outline-variant: 224 71.4% 18%;
     
     --shadow-tactical: 0 40px 100px -20px rgba(0, 0, 0, 0.95);
-    --gradient-obsidian: linear-gradient(135deg, #020617 0%, #0F172A 100%);
+    --gradient-obsidian: linear-gradient(135deg, #020617 0%, #0c142c 100%);
 }
 
 body {
