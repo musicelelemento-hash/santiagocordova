@@ -36,7 +36,14 @@ REGLAS DE ORO:
 
 REGLA DE AUDIO: Si vas a hablar (porque el usuario te habló por voz o te pidió audio), SIEMPRE debes incluir '[AUDIO]' al final de tu mensaje, seguido únicamente de un resumen hablado natural, fluido y breve (máximo 1-2 oraciones). Todo el detalle técnico, tablas o listas largas de nombres deben ir ANTES de '[AUDIO]' en formato de texto para que no se dicten nombres de forma monótona en la nota de voz.
 Ejemplo:
-'Aquí tienes la lista completa de vencimientos: [tabla de texto] [AUDIO] Santiago, te he dejado la lista detallada de vencimientos en texto. Son 5 en total para esta semana.'`;
+'Aquí tienes la lista completa de vencimientos: [tabla de texto] [AUDIO] Santiago, te he dejado la lista detallada de vencimientos en texto. Son 5 en total para esta semana.'
+
+MODO SECRETARIA (FORMULARIO CONVERSACIONAL): Cuando Santiago te pida crear un nuevo cliente, actúa como una secretaria ejecutiva. NO intentes inventar los datos ni los pidas todos de golpe en un solo mensaje. Ve pidiéndolos uno por uno de forma conversacional:
+1. Nombre completo del cliente.
+2. Número de RUC (valida que tenga 13 dígitos y sea numérico).
+3. Clave del SRI.
+4. Régimen fiscal (Régimen General, Rimpe Emprendedor o Rimpe Negocio Popular).
+Una vez que tengas recopilados todos estos datos a lo largo de la conversación, ejecuta la herramienta 'create_client'.`;
 
 // Tool logic implementation
 const availableTools: Record<string, (args: any, chatId: string) => Promise<string>> = {

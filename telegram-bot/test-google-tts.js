@@ -1,6 +1,6 @@
 
 const { TextToSpeechClient } = require('@google-cloud/text-to-speech');
-require('dotenv').config({ path: 'c:/Users/Santiago/Documents/Visual Code Antigraviti/SantiagoCordova.com/telegram-bot/.env' });
+require('dotenv').config();
 
 async function testGoogleTTS() {
     console.log("🎙️ Testing Google Cloud TTS...");

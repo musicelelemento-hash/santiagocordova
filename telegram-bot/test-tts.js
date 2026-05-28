@@ -1,10 +1,10 @@
 
 const axios = require('axios');
-require('dotenv').config({ path: 'c:/Users/Santiago/Documents/Visual Code Antigraviti/SantiagoCordova.com/telegram-bot/.env' });
+require('dotenv').config();
 
 async function testTTS() {
     const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-    const ELEVENLABS_VOICE_ID = 'pNInz6obpgDQGKAiW9jL'; // Adam (Free/Pre-made)
+    const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGKAiW9jL';
     
     if (!ELEVENLABS_API_KEY) {
         console.error("❌ No ELEVENLABS_API_KEY found in .env");
