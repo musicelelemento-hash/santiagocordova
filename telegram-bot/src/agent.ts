@@ -1,3 +1,4 @@
+import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
 import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
@@ -8,6 +9,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 require('dotenv').config();
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY!;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;;
 
 const openRouterClient = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
@@ -329,46 +331,96 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
         }
 
         if (!response) {
-            // --- 3. TRY OPENROUTER FREE FALLBACK (Llama 3.3 70B Free - Zero credits required) ---
-            try {
-                console.log("📡 Attempting OpenRouter Free Fallback (Llama 3.3 70B Free)...");
-                response = await openRouterClient.chat.completions.create({
-                    messages: cleanMessages(messages, 4000, 5000) as any,
-                    model: 'meta-llama/llama-3.3-70b-instruct:free',
-                    tools: toolDefinitions as any,
-                    tool_choice: "auto",
-                    max_tokens: 1000
-                });
-                console.log(`✅ OpenRouter Free Fallback Success`);
-            } catch (freeError: any) {
-                console.error('⚠️ OpenRouter Free Fallback Error:', freeError.message);
-                lastError += ` | OpenRouterFree: ${freeError.message}`;
+            // --- 3. GROQ (Free tier, no credits, fast — best free fallback) ---
+            if (GROQ_API_KEY) {
+                try {
+                    console.log("📡 Attempting Groq Fallback (Llama 3.3 70B)...");
+                    const groqClient = new Groq({ apiKey: GROQ_API_KEY });
+                    const groqMsgs = cleanMessages(messages, 4000, 6000)
+                        .filter((m: any) => m.role !== 'tool')
+                        .map((m: any) => ({
+                            role: (m.role === 'assistant' ? 'assistant' : m.role === 'system' ? 'system' : 'user') as any,
+                            content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content) || ''
+                        }));
+                    const groqRes = await groqClient.chat.completions.create({
+                        messages: groqMsgs,
+                        model: 'llama-3.3-70b-versatile',
+                        max_tokens: 1200,
+                        temperature: 0.5,
+                    });
+                    const groqText = groqRes.choices[0]?.message?.content || '';
+                    if (groqText) {
+                        console.log('✅ Groq Fallback Success');
+                        await saveMessage(chatId, 'assistant', groqText);
+                        return groqText;
+                    }
+                } catch (groqError: any) {
+                    console.error('⚠️ Groq Error:', groqError.message);
+                    lastError += ` | Groq: ${groqError.message}`;
+                }
             }
         }
 
         if (!response) {
-            // --- 4. DIRECT GOOGLE FALLBACK (SDK wrapper as last resort) ---
+            // --- 4. OPENROUTER FREE MODELS (try multiple, no credits needed) ---
+            const freeModels = [
+                'meta-llama/llama-3.3-70b-instruct:free',
+                'mistralai/mistral-7b-instruct:free',
+                'google/gemma-3-27b-it:free',
+            ];
+            for (const freeModel of freeModels) {
+                if (response) break;
+                try {
+                    console.log(`📡 Attempting OpenRouter Free: ${freeModel}...`);
+                    response = await openRouterClient.chat.completions.create({
+                        messages: cleanMessages(messages, 3000, 4000) as any,
+                        model: freeModel,
+                        tools: toolDefinitions as any,
+                        tool_choice: "auto",
+                        max_tokens: 900
+                    });
+                    console.log(`✅ OpenRouter Free Success (${freeModel})`);
+                } catch (freeError: any) {
+                    console.error(`⚠️ OpenRouter Free Error (${freeModel}):`, freeError.message);
+                    lastError += ` | ${freeModel.split('/')[1]}: ${freeError.message}`;
+                }
+            }
+        }
+
+        if (!response) {
+            // --- 5. GOOGLE SDK (Gemini 1.5 Flash last resort) ---
             if (GEMINI_API_KEY) {
                 try {
-                    console.log("📡 Attempting Direct Google SDK (Gemini 1.5 Flash)...");
+                    console.log("📡 Attempting Google SDK (Gemini 1.5 Flash)...");
                     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-                    const model = genAI.getGenerativeModel({ 
+                    const model = genAI.getGenerativeModel({
                         model: "gemini-1.5-flash",
-                        systemInstruction: SYSTEM_PROMPT 
+                        systemInstruction: SYSTEM_PROMPT
                     });
-                    
                     const conversationContext = messages.map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
                     const result = await model.generateContent(conversationContext);
                     const text = result.response.text();
-                    return text; 
+                    if (text) {
+                        await saveMessage(chatId, 'assistant', text);
+                        return text;
+                    }
                 } catch (gError: any) {
-                    lastError += ` | GeminiDirectSDK: ${gError.message}`;
+                    lastError += ` | GeminiSDK: ${gError.message}`;
                 }
             }
-            if (!response) {
-                return `Santiago, saturación crítica de IA. Baku está cansada.\n\nFallas:\n- Gemini (Directo/OpenRouter): ${lastError.substring(0, 150)}...\n\nSugerencia: Recarga $5 en OpenRouter o revisa tu GEMINI_API_KEY. Baku.`;
-            }
         }
+
+        if (!response) {
+            // Build actionable error message
+            const tips: string[] = [];
+            if (!GEMINI_API_KEY) tips.push("• *GEMINI_API_KEY* no está configurada en Render");
+            else tips.push("• *GEMINI_API_KEY* activa pero da error 400 — posiblemente caducada o inválida");
+            if (!GROQ_API_KEY) tips.push("• *GROQ_API_KEY* no está configurada (crea una gratis en console.groq.com)");
+            tips.push("• *OpenRouter* sin créditos — recargar $5 en openrouter.ai para Gemini, o solo configurar GROQ_API_KEY");
+            return `⚠️ *Baku sin conexión de IA.*\n\n*Diagnóstico:*\n${tips.join('\n')}\n\n_Baku._`;
+        }
+
+
 
         if (!response || !response.choices || response.choices.length === 0 || !response.choices[0].message) {
             return "Lo siento, Santiago, mi conexión con los servidores de inteligencia se interrumpió o no recibí una respuesta válida. Intenta de nuevo. Baku.";
