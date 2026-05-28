@@ -182,8 +182,8 @@ async function tryDirectCommand(text: string): Promise<string | null> {
     if (/(?:vencimiento|vence\s+(?:esta|la)\s+semana|pr[oó]ximos?\s+vencimientos?|cuando\s+vence)/.test(t))
         return await getUpcomingDeadlines();
 
-    // "resumen" / "estado general" / "como va todo"
-    if (/(?:^resumen$|estado\s+general|c[oó]mo\s+va\s+(?:todo|la\s+cartera)|panorama\s+general)/.test(t))
+    // "resumen" / "estado general" / "como va todo" / "cuantos clientes"
+    if (/(?:^resumen$|estado\s+general|c[oó]mo\s+va\s+(?:todo|la\s+cartera)|panorama\s+general|cu[aá]ntos\s+clientes)/.test(t))
         return await getDatabaseSummary();
 
     return null; // No shortcut matched — send to AI

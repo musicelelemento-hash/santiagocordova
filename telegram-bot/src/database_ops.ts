@@ -16,22 +16,33 @@ async function logAuditAction(action: string, details: string, type: string, sev
     }
 }
 
+async function findClients(query: string, selectFields: string) {
+    const { data: clients, error } = await supabase
+        .from('clients')
+        .select(selectFields)
+        .eq('is_deleted', false);
+    if (error) throw error;
+    if (!clients) return [];
+    
+    const queryLower = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const parts = queryLower.split(' ').filter(p => p.length > 0);
+    
+    return clients.filter((c: any) => {
+        const nameMatch = c.name ? c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
+        const tradeMatch = c.trade_name ? c.trade_name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : '';
+        const rucMatch = c.ruc ? c.ruc : '';
+        return parts.every(part => nameMatch.includes(part) || tradeMatch.includes(part) || rucMatch.includes(part));
+    });
+}
+
 /**
  * Searches for a client by RUC or Name in the 'sc_pro_backup' collection
  */
 export async function searchClient(query: string) {
     console.log(`🔍 Searching client with query: ${query}`);
     try {
-        const queryLower = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        
-        // Try searching by RUC exactly first
-        let { data: clients, error } = await supabase
-            .from('clients')
-            .select('*, declarations(*)')
-            .or(`ruc.ilike.%${query}%,name.ilike.%${query}%,trade_name.ilike.%${query}%`)
-            .eq('is_deleted', false);
-
-        if (error) throw error;
+        // Accents-insensitive search
+        const clients = await findClients(query, '*, declarations');
 
         if (!clients || clients.length === 0) {
             return `No he podido encontrar a ningún cliente con el nombre o RUC "${query}" en la base de datos de PostgreSQL. ¿Podrías verificar el nombre?`;
@@ -151,7 +162,7 @@ export async function getDebtorClients() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, declarations(*)')
+            .select('*, declarations')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -345,7 +356,7 @@ export async function getFinancialSummary() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, declarations(*)');
+            .select('*, declarations');
 
         if (error) throw error;
         if (!clients) return "No hay datos de clientes para analizar. Baku.";
@@ -411,7 +422,7 @@ export async function getDatabaseSummary() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, declarations(*)')
+            .select('*, declarations')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -547,7 +558,7 @@ export async function createClient(data: {
 export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string): Promise<string> {
     console.log(`💰 Marking ${type} ${period || ''} as paid in Supabase for client ${ruc}`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('*, declarations(*)').eq('ruc', ruc);
+        const { data: clients, error } = await supabase.from('clients').select('*, declarations').eq('ruc', ruc);
         if (error) throw error;
         if (!clients || clients.length === 0) return `No se encontró al cliente con RUC ${ruc}.`;
 
@@ -603,7 +614,7 @@ export async function markPaymentAsPaid(ruc: string, type: 'IVA' | 'RENTA' | 'HO
 export async function markPaymentAsUnpaid(ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string): Promise<string> {
     console.log(`⏪ Reverting ${type} ${period || ''} to unpaid in Supabase for ${ruc}`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('id, name, declarations(*)').eq('ruc', ruc);
+        const { data: clients, error } = await supabase.from('clients').select('id, name, declarations').eq('ruc', ruc);
         if (error) throw error;
         if (!clients || clients.length === 0) return `No se encontró al cliente RUC ${ruc}.`;
 
@@ -683,7 +694,7 @@ export async function getCredentialStatus() {
 export async function detectTaxInconsistencies() {
     console.log(`🛡️ Running Escudo Fiscal analysis in Supabase...`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('*, declarations(*)').eq('is_deleted', false);
+        const { data: clients, error } = await supabase.from('clients').select('*, declarations').eq('is_deleted', false);
         if (error) throw error;
         if (!clients || clients.length === 0) return "La base de datos está vacía.";
         
@@ -797,7 +808,7 @@ export async function getClientsStatusReport() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*, declarations(*)')
+            .select('*, declarations')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -898,15 +909,7 @@ const FIELD_LABELS: Record<string, string> = {
 export async function getClientField(identifier: string, field: string): Promise<string> {
     console.log(`🔍 [Lightweight] getClientField: "${identifier}" → field "${field}"`);
     try {
-        const { data: rawClients, error } = await supabase
-            .from('clients')
-            .select(`id, name, ruc, ${field}`)
-            .or(`ruc.ilike.%${identifier}%,name.ilike.%${identifier}%`)
-            .eq('is_deleted', false)
-            .limit(3);
-        const clients = rawClients as any[] | null;
-
-        if (error) throw error;
+        const clients = await findClients(identifier, `id, name, ruc, ${field}`);
         if (!clients || clients.length === 0)
             return `❌ No encontré ningún cliente con "${identifier}". Baku.`;
 
@@ -935,15 +938,7 @@ export async function getClientField(identifier: string, field: string): Promise
 export async function quickUpdateClient(identifier: string, field: string, value: any): Promise<string> {
     console.log(`✏️ [Lightweight] quickUpdateClient: "${identifier}" → ${field} = "${value}"`);
     try {
-        // Find client ID first (lightweight select)
-        const { data: clients, error: findErr } = await supabase
-            .from('clients')
-            .select('id, name, ruc')
-            .or(`ruc.ilike.%${identifier}%,name.ilike.%${identifier}%`)
-            .eq('is_deleted', false)
-            .limit(3);
-
-        if (findErr) throw findErr;
+        const clients = await findClients(identifier, 'id, name, ruc');
         if (!clients || clients.length === 0)
             return `❌ No encontré "${identifier}" en la base de datos. Baku.`;
 
