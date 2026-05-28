@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData } from './database_ops';
+import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -120,6 +120,75 @@ bot.command('testcron', async (ctx) => {
     await triggerProactiveReport(bot);
 });
 
+
+// ─────────────────────────────────────────────────────────
+// PRE-AI SHORTCUT ENGINE — Zero tokens, instant responses
+// ─────────────────────────────────────────────────────────
+async function tryDirectCommand(text: string): Promise<string | null> {
+    const t = text.toLowerCase().trim();
+
+    // --- FIELD READ shortcuts ---
+    // "clave de X" / "clave sri de X" / "sri de X"
+    const claveMatch = t.match(/(?:clave\s*(?:sri)?|sri)\s+de\s+(.+)/);
+    if (claveMatch) return await getClientField(claveMatch[1].trim(), 'sri_password');
+
+    // "clave iess de X"
+    const iessMatch = t.match(/clave\s+iess\s+de\s+(.+)/);
+    if (iessMatch) return await getClientField(iessMatch[1].trim(), 'iessPassword');
+
+    // "clave firma de X" / "firma de X"
+    const firmaMatch = t.match(/(?:clave\s+)?firma(?:\s+electr[oó]nica)?\s+de\s+(.+)/);
+    if (firmaMatch) return await getClientField(firmaMatch[1].trim(), 'electronicSignaturePassword');
+
+    // "email de X" / "correo de X"
+    const emailMatch = t.match(/(?:email|correo)\s+de\s+(.+)/);
+    if (emailMatch) return await getClientField(emailMatch[1].trim(), 'email');
+
+    // "teléfono de X" / "tel de X" / "celular de X"
+    const telMatch = t.match(/(?:tel[eé]fono|tel|cel(?:ular)?)\s+de\s+(.+)/);
+    if (telMatch) return await getClientField(telMatch[1].trim(), 'phones');
+
+    // "ruc de X"
+    const rucMatch = t.match(/ruc\s+de\s+(.+)/);
+    if (rucMatch) return await getClientField(rucMatch[1].trim(), 'ruc');
+
+    // "régimen de X" / "tipo de X"
+    const regimenMatch = t.match(/(?:r[eé]gimen|tipo)\s+de\s+(.+)/);
+    if (regimenMatch) return await getClientField(regimenMatch[1].trim(), 'regime');
+
+    // --- FIELD WRITE shortcuts ---
+    // "edita/cambia/actualiza la clave de X a/por Y"
+    const editClaveMatch = t.match(/(?:edita|cambia|actualiza|pon|poner)\s+(?:la\s+)?clave\s+(?:sri\s+)?de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
+    if (editClaveMatch) return await quickUpdateClient(editClaveMatch[1].trim(), 'sri_password', editClaveMatch[2].trim());
+
+    // "edita el email de X a Y"
+    const editEmailMatch = t.match(/(?:edita|cambia|actualiza)\s+(?:el\s+)?(?:email|correo)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
+    if (editEmailMatch) return await quickUpdateClient(editEmailMatch[1].trim(), 'email', editEmailMatch[2].trim());
+
+    // "edita el teléfono de X a Y"
+    const editTelMatch = t.match(/(?:edita|cambia|actualiza)\s+(?:el\s+)?(?:tel[eé]fono|tel|cel(?:ular)?)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
+    if (editTelMatch) return await quickUpdateClient(editTelMatch[1].trim(), 'phones', editTelMatch[2].trim());
+
+    // --- REPORT shortcuts ---
+    // "quien me debe" / "deudores" / "quien debe"
+    if (/(?:quien(?:es)?\s+(?:me\s+)?deb[e|en]|deudores|cartera\s+vencida|cobros\s+pendientes)/.test(t))
+        return await getDebtorClients();
+
+    // "quien falta" / "falta declarar" / "pendientes sri" / "quien no ha declarado"
+    if (/(?:quien(?:es)?\s+falt[a|an]|falta\s+declarar|pendientes\s+(?:de\s+)?(?:sri|declarar)|quien\s+no\s+ha\s+declarado|no\s+han\s+declarado)/.test(t))
+        return await getClientsStatusReport();
+
+    // "vencimientos" / "vence esta semana" / "proximos vencimientos"
+    if (/(?:vencimiento|vence\s+(?:esta|la)\s+semana|pr[oó]ximos?\s+vencimientos?|cuando\s+vence)/.test(t))
+        return await getUpcomingDeadlines();
+
+    // "resumen" / "estado general" / "como va todo"
+    if (/(?:^resumen$|estado\s+general|c[oó]mo\s+va\s+(?:todo|la\s+cartera)|panorama\s+general)/.test(t))
+        return await getDatabaseSummary();
+
+    return null; // No shortcut matched — send to AI
+}
+
 // Handle all incoming text messages
 bot.on('message:text', async (ctx) => {
   const chatId = ctx.chat.id.toString();
@@ -154,18 +223,26 @@ bot.on('message:text', async (ctx) => {
     return;
   }
 
-  // Indicate bot is thinking/searching
-  const thinkingMsg = await ctx.reply(`${STATUS_ICON} Analizando solicitud...`);
+  const thinkingMsg = await ctx.reply(`⚡ Procesando...`);
 
   try {
-    const response = await processChatWithAgentLoop(chatId, text);
-    // Delete thinking message
+    // Try direct command first (zero tokens)
+    const directResult = await tryDirectCommand(text);
     try { await ctx.api.deleteMessage(chatId, thinkingMsg.message_id); } catch(e) {}
+
+    if (directResult) {
+        // Direct result from DB — no AI needed
+        await ctx.reply(directResult, { parse_mode: 'Markdown' });
+        return;
+    }
+
+    // No shortcut matched — use full AI agent loop
+    const response = await processChatWithAgentLoop(chatId, text);
     await handleAgentResponse(ctx, response);
   } catch (err: any) {
     console.error(`❌ Error in agent loop for chat ${chatId}:`, err);
     try { await ctx.api.deleteMessage(chatId, thinkingMsg.message_id); } catch(e) {}
-    await ctx.reply('⚠️ Santiago, he tenido un inconveniente técnico procesando tu solicitud. Por favor, intenta de nuevo o verifica mi conexión.');
+    await ctx.reply('⚠️ Santiago, he tenido un inconveniente técnico. Por favor, intenta de nuevo.');
   }
 });
 
