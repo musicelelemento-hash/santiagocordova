@@ -229,6 +229,18 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         if (requiresAnexosGastos && !notes.includes('ANEXO_GASTOS')) notes += '\n[REQ: ANEXO_GASTOS]';
         if (hasActiveDevolucionIva && !notes.includes('DEVOLUCION_RET')) notes += '\n[REQ: DEVOLUCION_RET]';
 
+        // Forzar congruencia de ivaFrequency y requiresAnnualRenta según régimen al guardar
+        let finalIvaFrequency = ivaFrequency;
+        let finalRequiresAnnualRenta = requiresAnnualRenta;
+        
+        if (clientData.regime === TaxRegime.RimpeNegocioPopular) {
+            finalIvaFrequency = 'Ninguno';
+            finalRequiresAnnualRenta = true;
+        } else if (clientData.regime === TaxRegime.RimpeEmprendedor) {
+            finalIvaFrequency = 'Semestral';
+            finalRequiresAnnualRenta = true;
+        }
+
         const finalClient: Client = {
             id: clientData.id || uuidv4(),
             ...clientData as Client,
@@ -237,8 +249,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             notes: notes.trim(),
             signatureExpirationDate: clientData.signatureExpirationDate,
             taxProfile: {
-                ivaFrequency,
-                requiresAnnualRenta,
+                ivaFrequency: finalIvaFrequency,
+                requiresAnnualRenta: finalRequiresAnnualRenta,
                 requiresAnexosGastos,
                 hasActiveDevolucionIva,
                 hasActiveElderlyDevolucionIva: clientData.taxProfile?.hasActiveElderlyDevolucionIva ?? false,
@@ -246,13 +258,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 requiresAnexoPvp
             },
             fee_structure: {
-                monthly: ivaFrequency === 'Mensual' ? mFee : (clientData.fee_structure?.monthly ?? 5),
-                semestral: ivaFrequency === 'Semestral' ? mFee : (clientData.fee_structure?.semestral ?? 10),
+                monthly: finalIvaFrequency === 'Mensual' ? mFee : (clientData.fee_structure?.monthly ?? 5),
+                semestral: finalIvaFrequency === 'Semestral' ? mFee : (clientData.fee_structure?.semestral ?? 10),
                 annual: aFee
             },
             declarations: clientData.declarations || [
                 {
-                    period: getPeriod({ ...clientData, regime: clientData.regime || TaxRegime.General } as Client, new Date()),
+                    period: getPeriod({ ...clientData, regime: clientData.regime || TaxRegime.General } as Client, new Date(), finalIvaFrequency),
                     status: DeclarationStatus.Pendiente,
                     updatedAt: new Date().toISOString()
                 }

@@ -220,6 +220,47 @@ export const SupabaseService = {
   },
 
   mapClientFromDb(db: any): Client {
+    // Normalizar el régimen robustamente para evitar discrepancias de snake_case o texto
+    let normalizedRegime = db.regime as TaxRegime;
+    if (db.regime) {
+      const r = db.regime.toString().toUpperCase().replace(/_/g, ' ');
+      if (r.includes('POPULAR')) {
+        normalizedRegime = TaxRegime.RimpeNegocioPopular;
+      } else if (r.includes('EMPRENDEDOR')) {
+        normalizedRegime = TaxRegime.RimpeEmprendedor;
+      } else if (r.includes('GENERAL')) {
+        normalizedRegime = TaxRegime.General;
+      }
+    }
+
+    // Normalizar y blindar el taxProfile
+    const rawTaxProfile = db.tax_profile || {};
+    const taxProfile = {
+      ivaFrequency: rawTaxProfile.ivaFrequency || (
+        normalizedRegime === TaxRegime.RimpeEmprendedor ? 'Semestral' :
+        (normalizedRegime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual')
+      ),
+      requiresAnnualRenta: rawTaxProfile.requiresAnnualRenta ?? (
+        normalizedRegime === TaxRegime.RimpeEmprendedor ||
+        normalizedRegime === TaxRegime.RimpeNegocioPopular ||
+        normalizedRegime === TaxRegime.General
+      ),
+      requiresAnexosGastos: !!rawTaxProfile.requiresAnexosGastos,
+      hasActiveDevolucionIva: !!rawTaxProfile.hasActiveDevolucionIva,
+      hasActiveElderlyDevolucionIva: !!rawTaxProfile.hasActiveElderlyDevolucionIva,
+      requiresIce: !!rawTaxProfile.requiresIce,
+      requiresAnexoPvp: !!rawTaxProfile.requiresAnexoPvp
+    };
+
+    // Forzar consistencia estricta según el régimen
+    if (normalizedRegime === TaxRegime.RimpeNegocioPopular) {
+      taxProfile.ivaFrequency = 'Ninguno';
+      taxProfile.requiresAnnualRenta = true;
+    } else if (normalizedRegime === TaxRegime.RimpeEmprendedor) {
+      taxProfile.ivaFrequency = 'Semestral';
+      taxProfile.requiresAnnualRenta = true;
+    }
+
     return {
       id: db.id,
       ruc: db.ruc,
@@ -230,14 +271,14 @@ export const SupabaseService = {
       email: db.email,
       address: db.address,
       notes: db.notes,
-      regime: db.regime as TaxRegime,
+      regime: normalizedRegime,
       // isVip logic removed, all treated as VIP
 
       rentaCategory: db.renta_category as RentaCategory,
       economicActivity: db.economic_activity,
       isActive: db.is_active,
       isDeleted: db.is_deleted,
-      taxProfile: db.tax_profile,
+      taxProfile: taxProfile as any,
       fee_structure: db.fee_structure,
       customServiceFee: db.custom_service_fee,
       isArtisan: db.is_artisan,

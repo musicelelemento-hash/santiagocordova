@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import crypto from 'crypto';
+import { getFirestore } from './firebase-admin-init';
 
 async function logAuditAction(action: string, details: string, type: string, severity: string) {
     try {
@@ -1281,3 +1282,27 @@ export async function markDeclaration(
     }
 }
 
+/**
+ * Retreives an SRI credential directly from the synchronized Firebase store,
+ * bypassing the need to query the entire client database.
+ */
+export async function get_sri_credential(ruc: string): Promise<string> {
+    console.log(`🔑 Fetching SRI credential for RUC ${ruc} from Firebase...`);
+    try {
+        const firestore = getFirestore();
+        const docRef = firestore.collection("sc_pro_backup").doc("sriCredentials");
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
+            const data = docSnap.data()?.data || {};
+            // Look up the exact RUC key
+            const password = data[ruc];
+            if (password) {
+                return `🔑 Clave SRI para RUC ${ruc}:\n\`${password}\`\n\n_Obtenido de la bóveda sincronizada de contraseñas. Baku._`;
+            }
+        }
+        return `❌ No se encontró la clave SRI para el RUC ${ruc} en la bóveda de contraseñas.`;
+    } catch (error: any) {
+        console.error("Error fetching SRI credential from Firebase:", error);
+        return `Error al consultar la bóveda de contraseñas: ${error.message}`;
+    }
+}

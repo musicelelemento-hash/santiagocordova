@@ -9,6 +9,50 @@ import { ClientSchema } from '../services/schemas/clientSchema';
 import { SupabaseService } from '../services/supabaseClientService';
 
 const sanitizeSingleClient = (c: any): Client => {
+  // Normalizar el régimen de forma robusta
+  let normalizedRegime = c.regime as TaxRegime;
+  if (c.regime) {
+    const r = c.regime.toString().toUpperCase().replace(/_/g, ' ');
+    if (r.includes('POPULAR')) {
+      normalizedRegime = TaxRegime.RimpeNegocioPopular;
+    } else if (r.includes('EMPRENDEDOR')) {
+      normalizedRegime = TaxRegime.RimpeEmprendedor;
+    } else if (r.includes('GENERAL')) {
+      normalizedRegime = TaxRegime.General;
+    }
+  }
+
+  // Pre-calcular el taxProfile con fallbacks correctos
+  const rawTaxProfile = c.taxProfile || {};
+  const taxProfile = {
+    ivaFrequency: rawTaxProfile.ivaFrequency || (
+      normalizedRegime === TaxRegime.RimpeEmprendedor || c.category?.includes('Semestral') 
+        ? 'Semestral' 
+        : (normalizedRegime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual')
+    ),
+    requiresAnnualRenta: rawTaxProfile.requiresAnnualRenta ?? (
+      c.rentaCategory === 'Suscripción Renta' || 
+      c.category?.includes('Renta') || 
+      c.category?.includes('Popular') || 
+      normalizedRegime === TaxRegime.RimpeEmprendedor || 
+      normalizedRegime === TaxRegime.RimpeNegocioPopular
+    ),
+    requiresAnexosGastos: rawTaxProfile.requiresAnexosGastos ?? false,
+    hasActiveDevolucionIva: rawTaxProfile.hasActiveDevolucionIva ?? (c.category?.includes('Devolución') || false),
+    hasActiveElderlyDevolucionIva: rawTaxProfile.hasActiveElderlyDevolucionIva ?? false,
+    requiresIce: rawTaxProfile.requiresIce ?? false,
+    requiresAnexoPvp: rawTaxProfile.requiresAnexoPvp ?? false,
+  };
+
+  // Forzar consistencia estricta e inviolable según el régimen
+  if (normalizedRegime === TaxRegime.RimpeNegocioPopular) {
+    taxProfile.ivaFrequency = 'Ninguno';
+    taxProfile.requiresAnnualRenta = true;
+  } else if (normalizedRegime === TaxRegime.RimpeEmprendedor) {
+    taxProfile.ivaFrequency = 'Semestral';
+    taxProfile.requiresAnnualRenta = true;
+  }
+
   const client = {
     id: c.id || uuidv4(),
     ruc: c.ruc || '',
@@ -51,19 +95,8 @@ const sanitizeSingleClient = (c: any): Client => {
     rentaRefundStatus: c.rentaRefundStatus || 'Pendiente',
     hasElderlyDevolucionIva: !!c.hasElderlyDevolucionIva,
     elderlyDevolucionIvaStatus: c.elderlyDevolucionIvaStatus || 'Pendiente',
-    taxProfile: {
-      ivaFrequency: c.taxProfile?.ivaFrequency || (
-        c.regime === TaxRegime.RimpeEmprendedor || c.category?.includes('Semestral') 
-          ? 'Semestral' 
-          : (c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual')
-      ),
-      requiresAnnualRenta: c.taxProfile?.requiresAnnualRenta ?? (c.rentaCategory === 'Suscripción Renta' || c.category?.includes('Renta') || c.category?.includes('Popular') || c.regime === TaxRegime.RimpeEmprendedor || c.regime === TaxRegime.RimpeNegocioPopular),
-      requiresAnexosGastos: c.taxProfile?.requiresAnexosGastos ?? false,
-      hasActiveDevolucionIva: c.taxProfile?.hasActiveDevolucionIva ?? (c.category?.includes('Devolución') || false),
-      hasActiveElderlyDevolucionIva: c.taxProfile?.hasActiveElderlyDevolucionIva ?? false,
-      requiresIce: c.taxProfile?.requiresIce ?? false,
-      requiresAnexoPvp: c.taxProfile?.requiresAnexoPvp ?? false,
-    },
+    taxProfile,
+    regime: normalizedRegime,
     advanceCredits: c.advanceCredits || 0,
     isDeleted: !!c.isDeleted,
     createdAt: c.createdAt,

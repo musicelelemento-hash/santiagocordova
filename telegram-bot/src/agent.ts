@@ -2,7 +2,7 @@ import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
 import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
-import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient, findClients } from './database_ops';
+import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient, findClients, get_sri_credential } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { pendingDialogs } from './index';
@@ -279,6 +279,9 @@ _Baku._`;
     },
     get_signature_alerts: async (args: any, chatId: string) => {
         return await getCredentialStatus();
+    },
+    get_sri_credential: async ({ ruc }: { ruc: string }, chatId: string) => {
+        return await get_sri_credential(ruc);
     }
 };
 
@@ -367,7 +370,8 @@ const toolDefinitions = [
     { type: "function", function: { name: "get_client_field", description: "Lee UN SOLO campo de un cliente. PREFERIR sobre search_client para consultas de campo único. Campos: sri_password, email, phones, address, regime, name, trade_name, iessPassword, electronicSignaturePassword, signatureExpirationDate, sharedAccessKey, notes, economicActivity.", parameters: { type: "object", properties: { identifier: { type: "string", description: "Nombre o RUC del cliente" }, field: { type: "string", description: "Campo exacto a leer" } }, required: ["identifier", "field"] } } },
     { type: "function", function: { name: "quick_update_client", description: "Edita UN SOLO campo de un cliente de forma directa. PREFERIR sobre update_client_profile para ediciones simples.", parameters: { type: "object", properties: { identifier: { type: "string", description: "Nombre o RUC del cliente" }, field: { type: "string", description: "Campo a actualizar" }, value: { description: "Nuevo valor" } }, required: ["identifier", "field", "value"] } } },
     { type: "function", function: { name: "generate_cobro_message", description: "Genera mensaje profesional de cobro listo para enviar por WhatsApp. Úsalo cuando Santiago pida 'generar mensaje de cobro', 'redactar cobro', 'mensaje para cobrar' a un cliente.", parameters: { type: "object", properties: { ruc: { type: "string", description: "RUC del cliente (opcional si se da nombre)" }, clientName: { type: "string", description: "Nombre del cliente" }, amount: { type: "number", description: "Monto a cobrar en USD" }, period: { type: "string", description: "Periodo de la deuda ej: Mayo 2026" }, paymentInfo: { type: "string", description: "Método de pago preferido (opcional)" } }, required: ["amount"] } } },
-    { type: "function", function: { name: "get_signature_alerts", description: "Revisa el estado de las credenciales SRI de todos los clientes y alerta sobre contraseñas próximas a expirar o vencidas.", parameters: { type: "object", properties: {} } } }
+    { type: "function", function: { name: "get_signature_alerts", description: "Revisa el estado de las credenciales SRI de todos los clientes y alerta sobre contraseñas próximas a expirar o vencidas.", parameters: { type: "object", properties: {} } } },
+    { type: "function", function: { name: "get_sri_credential", description: "Busca la clave SRI de un cliente que no está en el sistema, pero sí en la base de datos de claves locales importadas. Úsalo si el RUC no está en la base de datos principal pero necesitas su clave.", parameters: { type: "object", properties: { ruc: { type: "string", description: "El número de RUC completo (13 dígitos)" } }, required: ["ruc"] } } }
 ];
 
 export async function processChatWithAgentLoop(chatId: string, userMessage: string): Promise<string> {
