@@ -294,13 +294,20 @@ export const db = {
     bulkUpdate: async function (collectionName: string, records: any[]): Promise<void> {
         if (!records || records.length === 0) return;
 
-        if (USE_SUPABASE && collectionName === 'sc_pro_clients') {
+        if (USE_SUPABASE) {
             try {
                 const safeRecords = await Promise.all(records.map(r => this.splitLargeFiles(collectionName, r.id, r)));
-                await SupabaseService.bulkUpsertClients(safeRecords);
-                console.log(`📡 Supabase Bulk Sync Success: ${records.length} records.`);
+                if (collectionName === 'sc_pro_clients') {
+                    await SupabaseService.bulkUpsertClients(safeRecords);
+                } else if (collectionName === 'sc_pro_tasks') {
+                    // Requires bulkUpsertTasks in SupabaseService
+                    for (const task of safeRecords) {
+                        await SupabaseService.upsertTask(task);
+                    }
+                }
+                console.log(`📡 Supabase Bulk Sync Success: ${records.length} records for ${collectionName}.`);
             } catch (err) {
-                console.error("Supabase bulk update failed:", err);
+                console.error(`Supabase bulk update failed for ${collectionName}:`, err);
             }
         }
 

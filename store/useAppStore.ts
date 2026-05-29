@@ -64,10 +64,10 @@ const sanitizeSingleClient = (c: any): Client => {
     phones: Array.isArray(c.phones) ? c.phones : [c.phone || ''],
     address: c.address || '',
     economicActivity: c.economicActivity || '',
-    declarations: Array.isArray(c.declarations) ? c.declarations : (Array.isArray(c.declarations) ? c.declarations.map((d: any) => ({
+    declarations: Array.isArray(c.declarations) ? c.declarations.map((d: any) => ({
       ...d,
-      is_paid: typeof d.is_paid === 'boolean' ? d.is_paid : typeof d.is_paid === 'boolean' ? d.is_paid : d.status === DeclarationStatus.Pagada
-    })) : []),
+      is_paid: typeof d.is_paid === 'boolean' ? d.is_paid : d.status === DeclarationStatus.Pagada
+    })) : [],
     isActive: typeof c.isActive === 'boolean' ? c.isActive : true,
     // Bóveda de Datos
     isArtisan: !!c.isArtisan,
@@ -80,9 +80,9 @@ const sanitizeSingleClient = (c: any): Client => {
     sharedAccessKey: c.sharedAccessKey || '',
     notes: c.notes || '',
     // Fee Structure Preservation
-    fee_structure: c.fee_structure || c.fee_structure ? {
-      ...(c.fee_structure || c.fee_structure),
-      semestral: ((c.fee_structure || c.fee_structure).semestral === 5 || !(c.fee_structure || c.fee_structure).semestral) ? 10 : (c.fee_structure || c.fee_structure).semestral
+    fee_structure: c.fee_structure ? {
+      ...c.fee_structure,
+      semestral: (c.fee_structure.semestral === 5 || !c.fee_structure.semestral) ? 10 : c.fee_structure.semestral
     } : undefined,
     rentaCategory: c.rentaCategory || undefined,
     signatureExpirationDate: c.signatureExpirationDate || '',
@@ -253,6 +253,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     const newTasks = typeof value === 'function' ? value(currentTasks) : value;
     set({ tasks: newTasks });
     db.setLocal('tasks', newTasks);
+
+    // FIX: Sync tasks to cloud. Since setTasks overwrites the array, we bulk sync or update individual tasks.
+    // For safety, we use bulkUpdate (will require db.ts support for sc_pro_tasks)
+    get().setCloudStatus('saving');
+    db.bulkUpdate('sc_pro_tasks', newTasks)
+      .then(() => get().setCloudStatus('saved'))
+      .catch(err => {
+        console.error("Cloud sync failed for tasks:", err);
+        get().setCloudStatus('error');
+      });
   },
 
   updateClient: async (id, updates) => {
@@ -727,10 +737,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         try {
           const t1 = performance.now();
           
-          // Audit logs en paralelo con datos de clientes
-          const [granularClients, cloudAuditLogs] = await Promise.all([
+          // Audit logs en paralelo con datos de clientes y tareas
+          const [granularClients, cloudAuditLogs, cloudTasks] = await Promise.all([
             (db as any).getAll('sc_pro_clients').catch(() => []),
-            SupabaseService.getAuditLogs(200).catch(() => [])
+            SupabaseService.getAuditLogs(200).catch(() => []),
+            (db as any).getAll('sc_pro_tasks').catch(() => [])
           ]);
 
           // LEGACY FALLBACK: Solo si no hay suficientes clientes granulares
@@ -755,9 +766,14 @@ export const useAppStore = create<AppState>((set, get) => ({
             // Solo actualizar si la nube tiene datos diferentes/más completos
             const currentClients = get().clients;
             if (cloudClients.length >= currentClients.length || currentClients.length === 0) {
-              set({ clients: cloudClients, auditLogs: cloudAuditLogs || [] });
+              set({ 
+                clients: cloudClients, 
+                auditLogs: cloudAuditLogs || [],
+                ...(cloudTasks && cloudTasks.length > 0 ? { tasks: cloudTasks } : {})
+              });
               db.setLocal('clients', cloudClients);
-              console.log(`☁️ Fase 2 (Nube): ${cloudClients.length} clientes sincronizados en ${(performance.now() - t1).toFixed(0)}ms`);
+              if (cloudTasks && cloudTasks.length > 0) db.setLocal('tasks', cloudTasks);
+              console.log(`☁️ Fase 2 (Nube): ${cloudClients.length} clientes, ${cloudTasks?.length || 0} tareas sincronizadas en ${(performance.now() - t1).toFixed(0)}ms`);
             } else {
               // La nube tiene menos — solo actualizar audit logs
               set({ auditLogs: cloudAuditLogs || [] });
