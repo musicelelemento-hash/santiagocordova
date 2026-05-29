@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration } from './database_ops';
+import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -179,7 +179,15 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         if (!identifier || identifier.length < 2) return false;
         const clients = await findClients(identifier, '*');
         if (clients.length === 0) {
-            await ctx.reply(`❌ No encontré ningún cliente con "${identifier}". Baku.`);
+            // Fallback: check SRI vault for 13-digit RUCs when field is 'sri_password'
+            if (field === 'sri_password' && identifier.trim().length === 13 && /^\d+$/.test(identifier.trim())) {
+                const backupCred = await get_sri_credential(identifier.trim());
+                if (!backupCred.includes('\u274c No se encontr')) {
+                    await ctx.reply(backupCred, { parse_mode: 'Markdown' });
+                    return true;
+                }
+            }
+            await ctx.reply(`\u274c No encontr\u00e9 ning\u00fan cliente con "${identifier}". Baku.`);
             return true;
         }
         if (clients.length === 1) {
