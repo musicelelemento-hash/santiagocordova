@@ -229,17 +229,10 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         if (requiresAnexosGastos && !notes.includes('ANEXO_GASTOS')) notes += '\n[REQ: ANEXO_GASTOS]';
         if (hasActiveDevolucionIva && !notes.includes('DEVOLUCION_RET')) notes += '\n[REQ: DEVOLUCION_RET]';
 
-        // Forzar congruencia de ivaFrequency y requiresAnnualRenta según régimen al guardar
+        // Ya no forzamos la congruencia estricta para permitir que el usuario sobrescriba
+        // la frecuencia de IVA si el cliente tiene casos especiales (ej. Rimpe que declara mensual)
         let finalIvaFrequency = ivaFrequency;
         let finalRequiresAnnualRenta = requiresAnnualRenta;
-        
-        if (clientData.regime === TaxRegime.RimpeNegocioPopular) {
-            finalIvaFrequency = 'Ninguno';
-            finalRequiresAnnualRenta = true;
-        } else if (clientData.regime === TaxRegime.RimpeEmprendedor) {
-            finalIvaFrequency = 'Semestral';
-            finalRequiresAnnualRenta = true;
-        }
 
         const finalClient: Client = {
             id: clientData.id || uuidv4(),
@@ -533,12 +526,11 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 ].map(opt => (
                                     <button
                                          key={opt.id}
-                                         disabled={clientData.regime === TaxRegime.RimpeEmprendedor || clientData.regime === TaxRegime.RimpeNegocioPopular}
                                          onClick={() => {
                                              setIvaFrequency(opt.id as any);
                                              if (opt.id === 'Semestral' && monthlyFee === "5") setMonthlyFee("10");
                                          }}
-                                         className={`p-2.5 rounded-xl text-xs font-medium border transition-all ${ivaFrequency === opt.id || (clientData.regime === TaxRegime.RimpeEmprendedor && opt.id === 'Semestral') || (clientData.regime === TaxRegime.RimpeNegocioPopular && opt.id === 'Ninguno') ? 'bg-blue-50 border-sky-400 text-blue-700 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'} ${(clientData.regime === TaxRegime.RimpeEmprendedor && opt.id !== 'Semestral') || (clientData.regime === TaxRegime.RimpeNegocioPopular && opt.id !== 'Ninguno') ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                         className={`p-2.5 rounded-xl text-xs font-medium border transition-all ${ivaFrequency === opt.id ? 'bg-blue-50 border-sky-400 text-blue-700 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-sky-300'}`}
                                      >
                                          {opt.label}
                                      </button>

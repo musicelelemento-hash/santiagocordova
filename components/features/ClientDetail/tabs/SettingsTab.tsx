@@ -145,7 +145,38 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                     { value: 'RIMPE_EMPRENDEDOR', label: 'RIMPE Emprendedor' },
                                     { value: 'REGIMEN_GENERAL', label: 'Régimen General' }
                                 ]}
-                                onChange={(val) => setEditedClient({ ...editedClient, regime: val as TaxRegime })} 
+                                onChange={(val) => {
+                                    const regime = val as TaxRegime;
+                                    setEditedClient(prev => ({
+                                        ...prev, 
+                                        regime,
+                                        taxProfile: {
+                                            ...(prev.taxProfile || { ivaFrequency: 'Mensual', requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }),
+                                            ivaFrequency: regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : (regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : 'Mensual'),
+                                            requiresAnnualRenta: true
+                                        }
+                                    }));
+                                }} 
+                            />
+
+                            <TaxProfileField 
+                                label="Frecuencia Declaración IVA" 
+                                value={editedClient.taxProfile?.ivaFrequency || 'Mensual'} 
+                                icon={LucideIcons.CalendarDays} 
+                                isEditing={isEditing} 
+                                type="select"
+                                options={[
+                                    { value: 'Mensual', label: 'Mensual' },
+                                    { value: 'Semestral', label: 'Semestral' },
+                                    { value: 'Ninguno', label: 'Ninguno / Exento' }
+                                ]}
+                                onChange={(val) => setEditedClient({ 
+                                    ...editedClient, 
+                                    taxProfile: { 
+                                        ...(editedClient.taxProfile || { requiresAnnualRenta: false, requiresAnexosGastos: false, hasActiveDevolucionIva: false, hasActiveElderlyDevolucionIva: false, requiresIce: false, requiresAnexoPvp: false }), 
+                                        ivaFrequency: val as 'Mensual' | 'Semestral' | 'Ninguno' 
+                                    } 
+                                })} 
                             />
                             
                             <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5 space-y-5">
