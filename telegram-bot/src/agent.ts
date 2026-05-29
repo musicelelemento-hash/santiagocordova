@@ -49,6 +49,7 @@ REGLA DE EFICIENCIA (MUY IMPORTANTE):
 - Si Santiago quiere editar UN SOLO dato, usa SIEMPRE 'quick_update_client'. NO uses 'update_client_profile'.
 - Usa 'search_client' SOLO cuando necesites el perfil completo del cliente.
 - Ejemplos de campo único: "clave de Juan" → get_client_field(Juan, sri_password). "edita el email de Pedro a x@y.com" → quick_update_client(Pedro, email, x@y.com).
+- Si te piden la clave de un RUC que no está en la base principal de clientes (ej. "dame la clave del RUC XXXXXX"), asume que debes buscar en la bóveda de respaldo y usa la herramienta 'get_sri_credential(ruc)'.
 
 CAMPOS DISPONIBLES: sri_password, email, phones, address, regime, name, trade_name, iessPassword, electronicSignaturePassword, signatureExpirationDate, sharedAccessKey, notes, economicActivity.
 
@@ -291,7 +292,7 @@ _Baku._`;
  * Also truncates very long tool responses to save tokens.
  */
 function cleanMessages(messages: any[], maxToolLength: number = 600, maxGeneralLength: number = 1500): any[] {
-    return messages.map(m => {
+    const cleaned = messages.map(m => {
         const clean: any = { role: m.role };
         
         // Ensure content is string or null
@@ -335,8 +336,35 @@ function cleanMessages(messages: any[], maxToolLength: number = 600, maxGeneralL
         if (m.tool_call_id) clean.tool_call_id = m.tool_call_id;
         if (m.name) clean.name = m.name;
         
+        
         return clean;
     });
+    
+    // Validate tool_calls sequence to prevent 400 Bad Request
+    for (let i = 0; i < cleaned.length; i++) {
+        if (cleaned[i].role === 'assistant' && cleaned[i].tool_calls) {
+            // Check if the next message is a tool response
+            let hasMatchingToolResponse = false;
+            for (let j = i + 1; j < cleaned.length; j++) {
+                if (cleaned[j].role === 'tool') {
+                    // Check if it matches any of the tool calls
+                    if (cleaned[i].tool_calls.some((tc: any) => tc.id === cleaned[j].tool_call_id)) {
+                        hasMatchingToolResponse = true;
+                        break;
+                    }
+                } else if (cleaned[j].role === 'user' || cleaned[j].role === 'assistant') {
+                    // Sequence broken
+                    break;
+                }
+            }
+            if (!hasMatchingToolResponse) {
+                // Remove dangling tool_calls to avoid 400 errors
+                delete cleaned[i].tool_calls;
+            }
+        }
+    }
+    
+    return cleaned;
 }
 
 // Tool Definitions for LLM
