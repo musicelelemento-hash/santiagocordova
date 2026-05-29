@@ -888,3 +888,124 @@ h1, h2, h3, h4 {
 .animate-delay-400 { animation-delay: 400ms; }
 .animate-delay-500 { animation-delay: 500ms; }
 
+/* --- MISSING ANIMATION: spin (needed by animate-spin-slow) --- */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* --- MISSING: fade-in-up (used by PortfolioSemaphore) --- */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* --- MISSING: glass-tactical-dock (Floating Dock Navigation) --- */
+.glass-tactical-dock {
+    background: rgba(2, 6, 23, 0.88);
+    backdrop-filter: blur(50px) saturate(200%) brightness(1.1);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 
+        0 32px 80px -20px rgba(0, 0, 0, 0.7),
+        0 0 0 0.5px rgba(255, 255, 255, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* Light mode dock */
+:root:not(.dark) .glass-tactical-dock,
+.glass-tactical-dock:not(.dark *) {
+    background: rgba(255, 255, 255, 0.90);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow:
+        0 20px 60px -15px rgba(0, 0, 0, 0.15),
+        0 0 0 0.5px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* --- MISSING: glass-elite (Inbox Tabs) --- */
+.glass-elite {
+    background: hsla(var(--surface), 0.95);
+    backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid hsla(var(--foreground), 0.08);
+    box-shadow:
+        0 20px 50px -10px rgba(0, 0, 0, 0.08),
+        inset 0 0.5px 0 rgba(255, 255, 255, 0.08);
+}
+
+.dark .glass-elite {
+    background: hsla(222, 47%, 5%, 0.85);
+    border: 1px solid hsla(0, 0%, 100%, 0.07);
+    box-shadow:
+        0 30px 80px -20px rgba(0, 0, 0, 0.6),
+        inset 0 0.5px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* --- PREMIUM KPI CARD GLOW on hover --- */
+.kpi-card-hover {
+    transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.kpi-card-hover:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08), 0 0 0 1px hsla(var(--primary), 0.15);
+}
+
+/* --- ACCENT LINES for section separators --- */
+.accent-gradient-line {
+    height: 1px;
+    background: linear-gradient(to right, transparent, hsla(var(--primary), 0.4), transparent);
+}
+
+/* --- PREMIUM DOCK TAB ACTIVE GLOW --- */
+.dock-tab-glow-emerald {
+    box-shadow: 0 4px 20px -4px rgba(16, 185, 129, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.2);
+}
+
+/* --- SURFACE SHIMMER (KPI loading placeholders) --- */
+@keyframes surface-shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+.surface-shimmer {
+    background: linear-gradient(90deg, 
+        hsla(var(--surface), 1) 0%, 
+        hsla(var(--surface-lowest), 1) 40%, 
+        hsla(var(--surface), 1) 80%
+    );
+    background-size: 400% 100%;
+    animation: surface-shimmer 2.5s ease-in-out infinite;
+}
+
+/* --- TACTICAL STATUS INDICATOR DOT --- */
+.status-dot-live {
+    position: relative;
+}
+.status-dot-live::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.4;
+    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes ping {
+    75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+/* --- ENHANCED SCROLLBAR for light mode --- */
+.light ::-webkit-scrollbar-track {
+    background: hsl(210, 40%, 96%);
+}
+.light ::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, #6366f1, #2B6AFF);
+    border: 3px solid hsl(210, 40%, 96%);
+}
+

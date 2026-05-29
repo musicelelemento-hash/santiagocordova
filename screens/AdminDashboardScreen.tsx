@@ -506,32 +506,34 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     
                     <div className="flex flex-col lg:flex-row justify-between items-center gap-5 sm:gap-8 relative z-10">
                         {/* Brand & Command Status */}
-                        <div className="flex items-center gap-6 sm:gap-8 self-start lg:self-center w-full lg:w-auto overflow-hidden">
+                        <div className="flex items-center gap-5 sm:gap-7 self-start lg:self-center w-full lg:w-auto overflow-hidden">
                             <div className="flex flex-col min-w-0">
                                 <div className="flex items-center gap-2 mb-1 sm:mb-2">
-                                    <div className="w-3 h-1 bg-slate-900 dark:bg-white rounded-full"></div>
-                                    <span className="text-xs sm:text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.4em] font-premium">ADMINISTRACIÓN CENTRAL</span>
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                                    <span className="text-[10px] sm:text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.35em] font-premium">Gestión Interna · Activo</span>
                                 </div>
-                                <h1 className="text-xl sm:text-5xl font-sans font-semibold text-slate-900 dark:text-white tracking-tighter leading-tight mb-1 truncate">
-                                    Gestión <span className="text-primary italic font-light">Tributaria</span>
+                                <h1 className="text-xl sm:text-[2.75rem] font-sans font-bold text-slate-900 dark:text-white tracking-[-0.04em] leading-[1.1] mb-1.5 truncate">
+                                    Panel <span className="text-primary">Tributario</span>
                                 </h1>
-                                <p className="text-xs sm:text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                    <LucideIcons.Shield size={10} /> SISTEMA v2.5
-                                </p>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 rounded-full border border-emerald-200 dark:border-emerald-500/20">
+                                        <LucideIcons.Shield size={9} className="text-emerald-600 dark:text-emerald-400" />
+                                        <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-premium">Sistema v2.5</span>
+                                    </div>
+                                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tech-font">{kpis.total} clientes</span>
+                                </div>
                             </div>
-                            <div className="h-10 w-[1px] bg-slate-200 dark:bg-white/10 hidden sm:block shrink-0"></div>
-                            <div className="flex-col hidden sm:flex shrink-0">
-                                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.15em] mb-1.5 opacity-60">Status de Red</span>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 group-hover:scale-110 transition-transform">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-slate-900 dark:bg-white animate-pulse"></div>
-                                        <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tighter font-premium">SYNC ACTIVE</span>
+                            <div className="h-12 w-[1px] bg-slate-200 dark:bg-white/10 hidden sm:block shrink-0"></div>
+                            <div className="flex-col hidden sm:flex shrink-0 gap-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="relative w-2 h-2 rounded-full bg-emerald-400">
+                                        <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-50"></div>
                                     </div>
-                                    <div className="h-4 w-[1px] bg-white/10"></div>
-                                    <div className="flex items-center gap-2">
-                                        <LucideIcons.Clock size={14} className="text-slate-500" />
-                                        <span className="text-xs font-semibold text-slate-500 tech-font">14MS</span>
-                                    </div>
+                                    <span className="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-widest font-premium">Sync Activo</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <LucideIcons.Database size={11} className="text-slate-400" />
+                                    <span className="text-[10px] font-semibold text-slate-400 tech-font">Supabase Live</span>
                                 </div>
                             </div>
                         </div>
@@ -610,66 +612,76 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     />
 
                     {/* METRICS DOCK: High-Density Swiper on Mobile */}
-                    <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-6 mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-slate-100 dark:border-white/5 overflow-x-auto sm:overflow-x-visible no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0 snap-x snap-mandatory pb-4 sm:pb-0">
-                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen group cursor-pointer" onClick={() => setFilter('all')}>
-                            <div className="p-3 sm:p-4 bg-slate-100 dark:bg-white/5 text-slate-400 rounded-2xl group-hover:bg-slate-900 dark:group-hover:bg-white group-hover:text-white dark:group-hover:text-slate-900 transition-all shadow-sm border border-slate-200 dark:border-white/5 shrink-0">
-                                <LucideIcons.Users size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
+                    <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-5 mt-6 sm:mt-10 pt-6 sm:pt-8 border-t border-slate-100 dark:border-white/[0.05] overflow-x-auto sm:overflow-x-visible no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0 snap-x snap-mandatory pb-4 sm:pb-0">
+                        {/* KPI 1: Clientes */}
+                        <div className="flex-none w-[230px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen kpi-card-hover rounded-2xl group cursor-pointer" onClick={() => setFilter('all')}>
+                            <div className="p-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 rounded-xl group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300 shadow-sm border border-indigo-100 dark:border-indigo-500/20 shrink-0">
+                                <LucideIcons.Users size={18} strokeWidth={2} />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[11px] sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5">Total Clientes</p>
-                                <p className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white tracking-tighter leading-none">{kpis.total}</p>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.18em] mb-1">Total Clientes</p>
+                                <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none font-premium">{kpis.total}</p>
                             </div>
                         </div>
-                        <div className="flex-none w-[240px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen group cursor-pointer" onClick={() => setFilter('all')}>
-                            <div className={`p-3 sm:p-4 rounded-2xl bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-white/5 transition-all shadow-sm shrink-0`}>
-                                <LucideIcons.TrendingUp size={20} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
+                        {/* KPI 2: Facturación */}
+                        <div className="flex-none w-[230px] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen kpi-card-hover rounded-2xl group cursor-pointer" onClick={() => setFilter('all')}>
+                            <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-sm border border-emerald-100 dark:border-emerald-500/20 shrink-0">
+                                <LucideIcons.TrendingUp size={18} strokeWidth={2} />
                             </div>
                             <div className="min-w-0">
-                                <p className="text-[11px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-0.5 font-premium">Facturación Est.</p>
-                                <p className={`text-xl sm:text-3xl font-black tracking-tighter leading-none font-premium text-emerald-600 dark:text-emerald-400`}>${Math.round(kpis.projectedIncome)}</p>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.18em] mb-1">Facturación Est.</p>
+                                <p className="text-2xl sm:text-3xl font-black tracking-tighter leading-none font-premium text-emerald-600 dark:text-emerald-400">${Math.round(kpis.projectedIncome)}</p>
                             </div>
                         </div>
-                        <div className="flex-none w-[85%] sm:w-auto snap-center flex items-center gap-5 p-4 glass-zen group cursor-pointer" onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true, title: 'Auditoría de Bóveda' } })}>
-                            <div className={`p-3.5 sm:p-4 rounded-2xl transition-all shadow-sm border shrink-0 ${clients.filter(c => 
-                                    c.declarations?.some(d => 
-                                        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
-                                    )
-                                ).length > 0 ? 'bg-amber-50 text-amber-500 border-amber-100 dark:bg-amber-900/20 dark:border-amber-800/20' : 'bg-slate-50 text-slate-400 border-slate-100 dark:bg-slate-800 dark:border-white/5'}`}>
-                                <LucideIcons.Vault size={22} className="sm:w-[24px] sm:h-[24px]" strokeWidth={2} />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-xs sm:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.15em] mb-1">Archivo Digital</p>
-                                <p className={`text-2xl sm:text-3xl font-semibold tracking-tighter leading-none ${clients.filter(c => 
-                                    c.declarations?.some(d => 
-                                        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
-                                    )
-                                ).length > 0 ? 'text-amber-500' : 'text-slate-400'}`}>{clients.filter(c => 
-                                    c.declarations?.some(d => 
-                                        (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
-                                    )
-                                ).length}</p>
-                            </div>
-                        </div>
-                        <div className="flex-none w-[90%] sm:w-auto sm:col-span-1 snap-center flex flex-col justify-center p-4 sm:p-5 glass-zen relative overflow-hidden group/progress">
-                             <div className="relative z-10 w-full">
-                                <div className="flex justify-between items-end mb-2 sm:mb-3">
-                                    <div className="flex flex-col">
-                                        <span className="text-[11px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-0.5 sm:mb-1 font-premium">LOGRO FISCAL</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-premium">{complianceSummary.averageScore}%</span>
-                                            <span className="text-xs sm:text-xs font-black text-slate-400 uppercase tracking-widest hidden sm:inline font-premium">Eficiencia</span>
-                                        </div>
+                        {/* KPI 3: Bóveda */}
+                        {(() => {
+                            const missingPdfCount = clients.filter(c =>
+                                c.declarations?.some(d =>
+                                    (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
+                                )
+                            ).length;
+                            const hasMissing = missingPdfCount > 0;
+                            return (
+                                <div className="flex-none w-[85%] sm:w-auto snap-center flex items-center gap-4 p-4 glass-zen kpi-card-hover rounded-2xl group cursor-pointer" onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true, title: 'Auditoría de Bóveda' } })}>
+                                    <div className={`p-3 rounded-xl transition-all duration-300 shadow-sm border shrink-0 ${
+                                        hasMissing
+                                        ? 'bg-amber-50 text-amber-500 border-amber-100 dark:bg-amber-500/10 dark:border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white'
+                                        : 'bg-slate-50 text-slate-400 border-slate-100 dark:bg-white/5 dark:border-white/5 group-hover:bg-slate-900 group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-slate-900'
+                                    }`}>
+                                        <LucideIcons.Vault size={18} strokeWidth={2} />
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[11px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase mb-0.5 sm:mb-1 font-premium">{completados.length} / {allResults.length}</span>
-                                        <LucideIcons.CheckCircle2 size={14} className="text-slate-900 dark:text-white" />
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.18em] mb-1">Archivo Digital</p>
+                                        <p className={`text-2xl sm:text-3xl font-black tracking-tighter leading-none font-premium ${hasMissing ? 'text-amber-500' : 'text-slate-400 dark:text-slate-600'}`}>{missingPdfCount}</p>
                                     </div>
                                 </div>
-                                <div className="w-full h-1.5 bg-slate-100 dark:bg-black/20 rounded-full overflow-hidden">
-                                    <div 
-                                        className="h-full bg-slate-900 dark:bg-white transition-all duration-1000 ease-out"
+                            );
+                        })()}
+                        {/* KPI 4: Logro Fiscal */}
+                        <div className="flex-none w-[90%] sm:w-auto sm:col-span-1 snap-center flex flex-col justify-center p-4 sm:p-5 glass-zen kpi-card-hover rounded-2xl relative overflow-hidden group/progress">
+                             <div className="relative z-10 w-full">
+                                <div className="flex justify-between items-end mb-3">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.18em] mb-1">Logro Fiscal</span>
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-premium">{complianceSummary.averageScore}%</span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">Eficiencia</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{completados.length}/{allResults.length}</span>
+                                        <LucideIcons.CheckCircle2 size={13} className="text-emerald-500" />
+                                    </div>
+                                </div>
+                                <div className="w-full h-1.5 bg-slate-100 dark:bg-black/25 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                                            complianceSummary.averageScore >= 80 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
+                                            complianceSummary.averageScore >= 50 ? 'bg-gradient-to-r from-amber-400 to-orange-400' :
+                                            'bg-gradient-to-r from-rose-500 to-red-400'
+                                        }`}
                                         style={{ width: `${complianceSummary.averageScore}%` }}
-                                    ></div>
+                                    />
                                 </div>
                              </div>
                         </div>
@@ -785,17 +797,17 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 key={tab.id}
                                 onClick={() => setFilter(tab.id as any)}
                                 className={`
-                                    relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all duration-500 whitespace-nowrap group/tab font-premium hover:scale-105 active:scale-95
+                                    relative flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap group/tab font-premium hover:scale-105 active:scale-95
                                     ${isActive
-                                        ? 'text-white shadow-xl shadow-emerald-500/10 scale-105 z-10'
-                                        : 'text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10'
+                                        ? 'text-white scale-[1.04] z-10 dock-tab-glow-emerald'
+                                        : 'text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-white/10'
                                     }
                                 `}
                             >
-                                <tab.icon size={14} className={`relative z-10 ${isActive ? 'text-white' : tab.color || 'text-slate-500 group-hover/tab:text-emerald-400'} transition-colors`} />
-                                <span className="relative z-10">{tab.label}</span>
+                                <tab.icon size={14} className={`relative z-10 transition-colors duration-300 ${isActive ? 'text-white' : tab.color || 'text-slate-500 group-hover/tab:text-emerald-400'}`} />
+                                <span className="relative z-10 font-premium">{tab.label}</span>
                                 {isActive && (
-                                    <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500 to-teal-600 rounded-full"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500 via-emerald-400 to-teal-500 rounded-full" style={{boxShadow:'0 2px 12px -2px rgba(16,185,129,0.5)'}}></div>
                                 )}
                             </button>
                         );
