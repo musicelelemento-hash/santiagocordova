@@ -14,10 +14,11 @@ interface VirtualClientListProps {
     onPreview?: (client: Client, declaration: Declaration) => void;
     variant?: 'tactical' | 'zen';
     frequency?: 'Mensual' | 'Semestral' | 'Anual' | 'all';
+    customPeriod?: string;
 }
 
 const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualClientListProps>) => {
-    const { clients, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, variant = 'zen', frequency } = data;
+    const { clients, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, variant = 'zen', frequency, customPeriod } = data;
     const client = clients[index];
 
     const itemStyle = {
@@ -40,6 +41,7 @@ const ClientRow = memo(({ data, index, style }: ListChildComponentProps<VirtualC
                 variant={variant}
                 compact={variant === 'zen'}
                 frequency={frequency}
+                customPeriod={customPeriod}
             />
         </div>
     );

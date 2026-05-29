@@ -17,16 +17,17 @@ interface ClientCardProps {
     compact?: boolean;
     variant?: 'tactical' | 'zen' | 'digital';
     frequency?: 'Mensual' | 'Semestral' | 'Anual' | 'all';
+    customPeriod?: string;
 }
 
 
-export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency }) => {
+export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency, customPeriod }) => {
     const [copied, setCopied] = React.useState(false);
     const [isHovered, setIsHovered] = React.useState(false);
 
     const today = new Date();
     const compliance = getClientCompliance(client, today, frequency);
-    const currentPeriod = getPeriod(client, today, frequency);
+    const currentPeriod = customPeriod || getPeriod(client, today, frequency);
     const activeDecl = client.declarations.find(d => d.period === currentPeriod);
 
     // Lógica de Estado

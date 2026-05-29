@@ -1009,3 +1009,74 @@ h1, h2, h3, h4 {
     border: 3px solid hsl(210, 40%, 96%);
 }
 
+/* ── GRADIENT RADIAL UTILITY (replaces missing Tailwind plugin) ── */
+.bg-gradient-radial {
+    background-image: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+/* ── DASHBOARD HERO: Premium card entrance ── */
+@keyframes dashboardHeroIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.995);
+        filter: blur(2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+.dashboard-hero-card {
+    animation: dashboardHeroIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── KPI ROW: Individual divider hover ── */
+.kpi-row-cell {
+    transition: background-color 0.25s ease;
+    position: relative;
+}
+
+.kpi-row-cell::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 1.5rem;
+    right: 1.5rem;
+    height: 2px;
+    background: linear-gradient(to right, transparent, hsl(var(--primary)), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 1px;
+}
+
+.kpi-row-cell:hover::after {
+    opacity: 0.5;
+}
+
+/* ── FILTER DOCK: Active tab gradient animation ── */
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.dock-tab-active-animate {
+    background-size: 200% 200%;
+    animation: gradientShift 4s ease infinite;
+}
+
+/* ── INBOX TABS: Slide indicator ── */
+.inbox-tab-indicator {
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    border-radius: 1px;
+    background: hsl(var(--primary));
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
