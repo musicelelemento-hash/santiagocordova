@@ -404,9 +404,11 @@ export async function getUpcomingDeadlines() {
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             const typeLabel = isPopular ? 'Popular' : (ivaFreq === 'Semestral' ? 'Semst.' : 'Mens.');
             
-            // Check if already declared for the likely current period (latest in history)
-            const latest = c.declaration_history?.[0];
-            const isDone = latest?.status === 'Enviada' || latest?.status === 'Pagada' || !!latest?.proof_file;
+            // BUG FIX: Sort declaration_history descending to get the ACTUAL latest record
+            const latestDecl = (c.declaration_history || [])
+                .filter((d: any) => d.status !== 'Pendiente')
+                .sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+            const isDone = latestDecl?.status === 'Enviada' || latestDecl?.status === 'Pagada' || !!latestDecl?.proof_file;
 
             response += `🔔 *Día ${dueDay}:* ${c.name.split(' ')[0]} | ${typeLabel} | ${isDone ? '✅ Declarado' : '❌ Pendiente'}\n`;
         });
@@ -474,7 +476,8 @@ export async function getFinancialSummary() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*');
+            .select('*')
+            .eq('is_deleted', false);  // BUG FIX: exclude deleted clients from financial summary
 
         if (error) throw error;
         if (!clients) return "No hay datos de clientes para analizar. Baku.";
@@ -572,7 +575,8 @@ export async function getDatabaseSummary() {
             const isIvaDeclared = !needsIva || (lastIva?.status === 'Enviada' || lastIva?.status === 'Pagada' || !!lastIva?.proof_file);
             const isIvaPaid = !needsIva || (lastIva?.is_paid || lastIva?.status === 'Pagada');
 
-            const needsRenta = c.tax_profile?.requiresAnnualRenta ?? (c.regime === 'Rimpe Negocio Popular' || c.regime === 'Rimpe Emprendedor');
+            // BUG FIX: requiresAnnualRenta defaults to true for ALL regimes, not just Popular/Emprendedor
+            const needsRenta = c.tax_profile?.requiresAnnualRenta ?? true;
             // Check for RENTA type declaration
             const lastRenta = declarations.filter((d: any) => d.type === 'RENTA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
             const isRentaDeclared = !needsRenta || (lastRenta?.status === 'Enviada' || lastRenta?.status === 'Pagada');

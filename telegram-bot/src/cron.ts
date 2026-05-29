@@ -59,7 +59,8 @@ Genera el mensaje directamente para Telegram.
         const result = await model.generateContent(prompt);
         const aiResponse = result.response.text();
 
-        await bot.api.sendMessage(adminChatId, aiResponse);
+        // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
+        await bot.api.sendMessage(adminChatId, aiResponse, { parse_mode: 'Markdown' });
         console.log("✅ Reporte proactivo enviado a Santiago.");
     } catch (error) {
         console.error("❌ Error en reporte proactivo:", error);
@@ -110,7 +111,8 @@ Instrucciones de redacción:
             const result = await model.generateContent(prompt);
             const aiResponse = result.response.text();
 
-            await bot.api.sendMessage(adminChatId, aiResponse);
+            // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
+            await bot.api.sendMessage(adminChatId, aiResponse, { parse_mode: 'Markdown' });
             console.log("✅ Reporte semanal de deudores enviado a Santiago.");
         } catch (error) {
             console.error("❌ Error en Lunes Financiero cron:", error);
@@ -146,7 +148,8 @@ Instrucciones de redacción:
             // Only send if there are issues (report won't contain '✅ Credenciales SRI OK' if issues exist)
             if (!credReport.startsWith('✅ Credenciales SRI OK')) {
                 const alertMsg = `🔐 *VIERNES CREDENCIAL — Alerta Automática*\n\n${credReport}\n\n_Santiago, revisa estas credenciales antes de que afecten las declaraciones. Baku._`;
-                await bot.api.sendMessage(adminChatId, alertMsg);
+                // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
+                await bot.api.sendMessage(adminChatId, alertMsg, { parse_mode: 'Markdown' });
                 console.log("✅ Alerta de credenciales enviada a Santiago.");
             } else {
                 console.log("✅ Viernes Credencial: Sin alertas. Todas las claves OK.");
