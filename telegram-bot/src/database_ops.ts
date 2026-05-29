@@ -110,6 +110,12 @@ export async function searchClient(query: string) {
         const clients = await findClients(query, '*');
 
         if (!clients || clients.length === 0) {
+            if (query.trim().length === 13 && /^\d+$/.test(query.trim())) {
+                const backupCred = await get_sri_credential(query.trim());
+                if (!backupCred.includes('❌ No se encontró')) {
+                    return `⚠️ El cliente RUC ${query} no está en tu base de datos principal, pero encontré lo siguiente en la bóveda de importación rápida:\n\n${backupCred}`;
+                }
+            }
             return `No he podido encontrar a ningún cliente con el nombre o RUC "${query}" en la base de datos de PostgreSQL. ¿Podrías verificar el nombre?`;
         }
 
@@ -1090,8 +1096,15 @@ export async function getClientField(identifier: string, field: string): Promise
     try {
         const dbField = FIELD_DB_MAPPING[field] || field;
         const clients = await findClients(identifier, `id, name, ruc, trade_name, ${dbField}`);
-        if (!clients || clients.length === 0)
+        if (!clients || clients.length === 0) {
+            if (field === 'sri_password' && identifier.trim().length === 13 && /^\d+$/.test(identifier.trim())) {
+                const backupCred = await get_sri_credential(identifier.trim());
+                if (!backupCred.includes('❌ No se encontró')) {
+                    return `⚠️ El cliente RUC ${identifier} no está registrado en tu base principal, pero encontré esto en la bóveda:\n\n${backupCred}`;
+                }
+            }
             return `❌ No encontré ningún cliente con "${identifier}". Baku.`;
+        }
 
         if (clients.length > 1) {
             const list = clients.map((c: any) => `• ${c.name} (RUC: \`${c.ruc}\`${c.trade_name ? ` | Comercial: *${c.trade_name}*` : ''})`).join('\n');
