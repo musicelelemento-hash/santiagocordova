@@ -36,14 +36,77 @@ export async function findClients(query: string, selectFields: string) {
     });
 }
 
+export interface ClientObligationsInfo {
+    regime: string;
+    ivaFrequency: 'Mensual' | 'Semestral' | 'Ninguno';
+    requiresAnnualRenta: boolean;
+    dueDayOfMonth: number | 'N/A';
+    ivaPeriodLabel: string;
+    rentaPeriodLabel: string;
+    obligationsDescription: string;
+}
+
+export function getClientObligations(client: any): ClientObligationsInfo {
+    const regime = client.regime || 'Régimen General';
+    const isPopular = regime === 'Rimpe Negocio Popular';
+    const isEmprendedor = regime === 'Rimpe Emprendedor';
+    
+    const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+    const requiresAnnualRenta = client.tax_profile?.requiresAnnualRenta ?? true;
+    
+    const ruc = client.ruc || "";
+    const ninthDigit = ruc.length >= 9 ? parseInt(ruc[8]) : -1;
+    const SRI_DUE_DATES: Record<number, number> = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18, 6: 20, 7: 22, 8: 24, 9: 26, 0: 28 };
+    const dueDayOfMonth = ninthDigit !== -1 ? SRI_DUE_DATES[ninthDigit] : 'N/A';
+    
+    let ivaPeriodLabel = 'N/A';
+    if (ivaFrequency === 'Mensual') {
+        ivaPeriodLabel = 'Mensual';
+    } else if (ivaFrequency === 'Semestral') {
+        ivaPeriodLabel = 'Semestral (Julio/Enero)';
+    } else {
+        ivaPeriodLabel = 'Exento / Ninguno';
+    }
+    
+    let rentaPeriodLabel = requiresAnnualRenta ? 'Anual (Marzo)' : 'No requiere';
+    if (isPopular && requiresAnnualRenta) {
+        rentaPeriodLabel = 'Anual Simplificada (Mayo)';
+    }
+
+    let obligationsDescription = "";
+    if (ivaFrequency === 'Mensual' && requiresAnnualRenta) {
+        obligationsDescription = "IVA Mensual y Renta Anual";
+    } else if (ivaFrequency === 'Semestral' && requiresAnnualRenta) {
+        obligationsDescription = "IVA Semestral y Renta Anual";
+    } else if (ivaFrequency === 'Mensual') {
+        obligationsDescription = "Solo IVA Mensual";
+    } else if (ivaFrequency === 'Semestral') {
+        obligationsDescription = "Solo IVA Semestral";
+    } else if (requiresAnnualRenta) {
+        obligationsDescription = "Solo Renta Anual";
+    } else {
+        obligationsDescription = "Sin Obligaciones registradas";
+    }
+
+    return {
+        regime,
+        ivaFrequency,
+        requiresAnnualRenta,
+        dueDayOfMonth,
+        ivaPeriodLabel,
+        rentaPeriodLabel,
+        obligationsDescription
+    };
+}
+
 /**
  * Searches for a client by RUC or Name in the 'sc_pro_backup' collection
  */
 export async function searchClient(query: string) {
     console.log(`🔍 Searching client with query: ${query}`);
     try {
-        // Accents-insensitive search
-        const clients = await findClients(query, '*, declarations');
+        // Query '*' to avoid column 'declarations' does not exist error (actual DB column is declaration_history)
+        const clients = await findClients(query, '*');
 
         if (!clients || clients.length === 0) {
             return `No he podido encontrar a ningún cliente con el nombre o RUC "${query}" en la base de datos de PostgreSQL. ¿Podrías verificar el nombre?`;
@@ -63,84 +126,93 @@ export async function searchClient(query: string) {
         const resultsToSummarize = clients;
         let response = `He localizado el expediente en la base de datos SQL:\n\n`;
 
-        const SRI_DUE_DATES: Record<number, number> = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18, 6: 20, 7: 22, 8: 24, 9: 26, 0: 28 };
-
         resultsToSummarize.forEach((c: any) => {
             const ruc = c.ruc || "";
-            const ninthDigit = ruc.length >= 9 ? parseInt(ruc[8]) : -1;
-            const dueDay = ninthDigit !== -1 ? SRI_DUE_DATES[ninthDigit] : "N/A";
+            const obligations = getClientObligations(c);
             
-            // 1. Header (UI Style)
+            // Block 1: Header / Metadata
             response += `👤 *${c.name}*\n`;
             if (c.trade_name) response += `🏢 *Comercial:* ${c.trade_name}\n`;
-            response += `🆔 \`${ruc}\` | 📅 Vence: Día ${dueDay}\n`;
+            response += `🆔 RUC: \`${ruc}\` | 📅 Vence: Día *${obligations.dueDayOfMonth}* de cada período\n`;
             
-            // Add contact info
             if (c.email) response += `📧 *Email:* ${c.email}\n`;
             if (c.phones && c.phones.length > 0) response += `📞 *Telf:* ${c.phones.join(', ')}\n`;
             if (c.address) response += `📍 *Dirección:* ${c.address}\n`;
             if (c.economic_activity) response += `💼 *Actividad:* ${c.economic_activity}\n`;
 
-            // Passwords (Critical for Bot to "know everything")
             if (c.sri_password) response += `🔑 *Clave SRI:* ${c.sri_password}\n`;
             if (c.iess_password) response += `🔑 *Clave IESS:* ${c.iess_password}\n`;
             if (c.signature_password) response += `🔑 *Clave Firma Elec:* ${c.signature_password}\n`;
             if (c.signature_expiration) response += `⏳ *Caducidad Firma:* ${c.signature_expiration}\n`;
             if (c.sharedAccessKey) response += `🔗 *Clave Compartida:* ${c.sharedAccessKey}\n`;
 
-            // 2. Obligaciones SRI
-            const isEmprendedor = c.regime === 'Rimpe Emprendedor';
-            const isPopular = c.regime === 'Rimpe Negocio Popular';
-            const reqRenta = c.tax_profile?.requiresAnnualRenta ?? (isEmprendedor || isPopular);
-            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
-
-            let sriStatus = "⚖️ *SRI:* ";
-            sriStatus += `${c.regime || 'Régimen General'} | `;
-            if (ivaFreq !== 'Ninguno') {
-                sriStatus += `IVA ${ivaFreq}: 📊 | `;
+            // Block 2: SRI Obligations Overview
+            response += `\n⚖️ *OBLIGACIONES SRI:* ${obligations.obligationsDescription}\n`;
+            response += `   • Régimen: *${obligations.regime}*\n`;
+            if (obligations.ivaFrequency !== 'Ninguno') {
+                response += `   • IVA: *${obligations.ivaFrequency}* (Vence el día ${obligations.dueDayOfMonth} del período siguiente)\n`;
+            } else {
+                response += `   • IVA: *Exento (No declara)*\n`;
             }
-            if (reqRenta) {
-                sriStatus += `Renta: 📊 | `;
-            }
-            response += sriStatus.slice(0, -3) + "\n";
+            response += `   • Renta: *${obligations.rentaPeriodLabel}*\n`;
 
-            // 3. Honorarios (Suma Transparente)
+            // Block 3: State of declarations and payment of fees
             let totalToPay = 0;
             let feeBreakdown = "";
-            const isCortesia = (c.name || "").includes("Daniel Cordova") || (c.name || "").includes("Ramirez Aleida") || (c.name || "").includes("Aleida Ramirez");
+            const isCortesia = (c.name || "").toLowerCase().includes("daniel cordova") || 
+                               (c.name || "").toLowerCase().includes("aleida ramirez") || 
+                               (c.name || "").toLowerCase().includes("ramirez aleida");
             
-            const ivaFee = c.fee_structure?.[ivaFreq.toLowerCase()] ?? (ivaFreq === 'Semestral' ? 10 : 5);
+            const feeKey = obligations.ivaFrequency === 'Mensual' ? 'monthly' 
+                           : obligations.ivaFrequency === 'Semestral' ? 'semestral' 
+                           : undefined;
+            const ivaFee = feeKey ? (c.fee_structure?.[feeKey] ?? (obligations.ivaFrequency === 'Semestral' ? 10 : 5)) : 0;
+            const rentaFee = c.fee_structure?.annual ?? 10;
             
             const allDeclarations = c.declaration_history || [];
-            const pendingIvaCount = allDeclarations.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)).length;
             
-            if (pendingIvaCount > 0) {
-                const sumIva = pendingIvaCount * ivaFee;
+            const pendingDeclarations = allDeclarations.filter((d: any) => d.status === 'Pendiente');
+            const declaredDeclarations = allDeclarations.filter((d: any) => d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file);
+            
+            const unpaidIva = allDeclarations.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file));
+            const unpaidRenta = allDeclarations.filter((d: any) => d.type === 'RENTA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file));
+
+            if (unpaidIva.length > 0) {
+                const sumIva = unpaidIva.length * ivaFee;
                 totalToPay += sumIva;
-                feeBreakdown += `$${sumIva} IVA (${pendingIvaCount} pend.) + `;
+                feeBreakdown += `$${sumIva} IVA (${unpaidIva.length} pend.) + `;
             }
 
-            const unPaidRentaCount = allDeclarations.filter((d: any) => d.type === 'RENTA' && !d.is_paid).length;
+            if (unpaidRenta.length > 0) {
+                const sumRenta = unpaidRenta.length * rentaFee;
+                totalToPay += sumRenta;
+                feeBreakdown += `$${sumRenta} Renta (${unpaidRenta.length} pend.) + `;
+            }
+
+            response += `\n📑 *ESTADO DE DECLARACIONES SRI:*\n`;
+            if (declaredDeclarations.length > 0) {
+                const latestIva = declaredDeclarations.filter((d: any) => d.type === 'IVA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+                const latestRenta = declaredDeclarations.filter((d: any) => d.type === 'RENTA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+                if (latestIva) response += `   • Último IVA: *${latestIva.period}* → ✅ Declarado (SRI)\n`;
+                if (latestRenta) response += `   • Última Renta: *${latestRenta.period}* → ✅ Declarada (SRI)\n`;
+            }
             
-            if (reqRenta && unPaidRentaCount > 0) {
-                const rentaFee = c.fee_structure?.annual ?? 10;
-                totalToPay += (rentaFee * unPaidRentaCount);
-                if (unPaidRentaCount === 1) {
-                    feeBreakdown += `$${rentaFee} Renta + `;
-                } else {
-                    feeBreakdown += `$${rentaFee * unPaidRentaCount} Renta (${unPaidRentaCount} pend.) + `;
-                }
-            }
-
-            if (totalToPay > 0) {
-                response += `💰 *Honorarios:* $${totalToPay} (${feeBreakdown.slice(0, -3)}) ❌\n`;
-            } else if (isCortesia) {
-                response += `💰 *Honorarios:* Cortesía 🎁 ✅\n`;
+            if (pendingDeclarations.length > 0) {
+                response += `   ⚠️ *Falta Declarar al SRI:* ` + pendingDeclarations.map((d: any) => `*${d.type} ${d.period}*`).join(', ') + ` ❌\n`;
             } else {
-                response += `💰 *Honorarios:* ¡Todo al día! ✅\n`;
+                response += `   • SRI: ¡Todas las declaraciones al día! ✅\n`;
             }
 
-            if (c.notes) response += `📝 _${c.notes}_\n`;
+            response += `\n💰 *HONORARIOS AL CONTADOR:*\n`;
+            if (totalToPay > 0) {
+                response += `   • Deuda Total: *$${totalToPay}* (${feeBreakdown.slice(0, -3)}) ❌ PENDIENTE\n`;
+            } else if (isCortesia) {
+                response += `   • Deuda Total: Cortesía 🎁 ✅\n`;
+            } else {
+                response += `   • Deuda Total: ¡Al día! ✅ Sin deudas de honorarios.\n`;
+            }
+
+            if (c.notes) response += `\n📝 _Notas:_ ${c.notes}\n`;
             response += `--------------------------\n`;
         });
 
@@ -150,7 +222,7 @@ export async function searchClient(query: string) {
 
         return response;
     } catch (error: any) {
-        console.error("Error searching in Firestore:", error);
+        console.error("Error searching in Supabase:", error);
         return "Error al consultar la base de datos: " + error.message;
     }
 }
@@ -184,11 +256,17 @@ export async function getDebtorClients() {
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             
             const pendingDeclarations = c.declaration_history?.filter((d: any) => d.status === 'Pendiente') || [];
-            const unpaidDeclarations = c.declaration_history?.filter((d: any) => !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada')) || [];
             
-            let clientDebt = 0;
-            const ivaFee = c.fee_structure?.[ivaFreq.toLowerCase()] ?? (ivaFreq === 'Semestral' ? 10 : 5);
-            clientDebt += unpaidDeclarations.length * ivaFee;
+            const unpaidIva = c.declaration_history?.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
+            const unpaidRenta = c.declaration_history?.filter((d: any) => d.type === 'RENTA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
+            
+            const feeKey = ivaFreq === 'Mensual' ? 'monthly' 
+                           : ivaFreq === 'Semestral' ? 'semestral' 
+                           : undefined;
+            const ivaFee = feeKey ? (c.fee_structure?.[feeKey] ?? (ivaFreq === 'Semestral' ? 10 : 5)) : 0;
+            const rentaFee = c.fee_structure?.annual ?? 10;
+            
+            let clientDebt = (unpaidIva.length * ivaFee) + (unpaidRenta.length * rentaFee);
 
             if (clientDebt > 0 || pendingDeclarations.length > 0) {
                 totalDebt += clientDebt;
@@ -253,6 +331,7 @@ export async function getUpcomingDeadlines() {
         
         const today = new Date();
         const currentDay = today.getDate();
+        const currentMonth = today.getMonth() + 1; // 1-indexed (1: Ene, 7: Jul, etc.)
         
         const upcoming = clients.filter((c: any) => {
             const ruc = c.ruc || "";
@@ -260,13 +339,43 @@ export async function getUpcomingDeadlines() {
             if (ninthDigit === -1) return false;
             
             const dueDay = SRI_DUE_DATES[ninthDigit];
-            return dueDay >= currentDay && dueDay <= currentDay + 7;
+            const isDueSoon = dueDay >= currentDay && dueDay <= currentDay + 7;
+            if (!isDueSoon) return false;
+
+            // Determine if they actually have an obligation due this month
+            const regime = c.regime || 'Régimen General';
+            const isPopular = regime === 'Rimpe Negocio Popular';
+            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+            const reqRenta = c.tax_profile?.requiresAnnualRenta ?? true;
+
+            const hasIvaThisMonth = ivaFreq === 'Mensual' || 
+                                    (ivaFreq === 'Semestral' && (currentMonth === 7 || currentMonth === 1));
+            
+            const hasRentaThisMonth = reqRenta && (
+                (isPopular && currentMonth === 5) || // Popular Renta in May
+                (!isPopular && currentMonth === 3)   // General / Emprendedor Renta in March
+            );
+
+            return hasIvaThisMonth || hasRentaThisMonth;
         });
 
         if (upcoming.length === 0) return "📅 No hay vencimientos del SRI programados para los próximos 7 días.";
 
-        const monthlyCount = upcoming.filter((c: any) => c.tax_profile?.ivaFrequency === 'Mensual' && c.regime === 'Régimen General').length;
-        const semiannualCount = upcoming.filter((c: any) => c.tax_profile?.ivaFrequency === 'Semestral' || c.regime === 'Rimpe Emprendedor').length;
+        const monthlyCount = upcoming.filter((c: any) => {
+            const isEmprendedor = c.regime === 'Rimpe Emprendedor';
+            const isPopular = c.regime === 'Rimpe Negocio Popular';
+            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+            return ivaFreq === 'Mensual';
+        }).length;
+
+        const semiannualCount = upcoming.filter((c: any) => {
+            const isEmprendedor = c.regime === 'Rimpe Emprendedor';
+            const isPopular = c.regime === 'Rimpe Negocio Popular';
+            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+            return ivaFreq === 'Semestral';
+        }).length;
+
         const popularCount = upcoming.filter((c: any) => c.regime === 'Rimpe Negocio Popular').length;
 
         let response = `📅 *RESUMEN DE VENCIMIENTOS (7 DÍAS):*
@@ -285,13 +394,14 @@ export async function getUpcomingDeadlines() {
             const dueDay = SRI_DUE_DATES[parseInt(String(c.ruc).charAt(8))];
             const isEmprendedor = c.regime === 'Rimpe Emprendedor';
             const isPopular = c.regime === 'Rimpe Negocio Popular';
-            const typeLabel = isPopular ? 'Popular' : (c.tax_profile?.ivaFrequency === 'Semestral' || isEmprendedor ? 'Semst.' : 'Mens.');
+            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+            const typeLabel = isPopular ? 'Popular' : (ivaFreq === 'Semestral' ? 'Semst.' : 'Mens.');
             
-            // Check if already declared for the likely current period
+            // Check if already declared for the likely current period (latest in history)
             const latest = c.declaration_history?.[0];
             const isDone = latest?.status === 'Enviada' || latest?.status === 'Pagada' || !!latest?.proof_file;
 
-            response += `🔔 *Día ${dueDay}:* ${c.name.split(' ')[0]} | ${typeLabel} | ${isDone ? '✅' : '❌'}\n`;
+            response += `🔔 *Día ${dueDay}:* ${c.name.split(' ')[0]} | ${typeLabel} | ${isDone ? '✅ Declarado' : '❌ Pendiente'}\n`;
         });
 
         return response;
@@ -379,9 +489,12 @@ export async function getFinancialSummary() {
             
             paidThisMonth.forEach((d: any) => {
                 const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
+                const feeKey = ivaFreq === 'Mensual' ? 'monthly' 
+                               : ivaFreq === 'Semestral' ? 'semestral' 
+                               : undefined;
                 const fee = d.type === 'RENTA' 
                     ? (c.fee_structure?.annual || 10) 
-                    : (c.fee_structure?.[ivaFreq.toLowerCase()] || (ivaFreq === 'Semestral' ? 10 : 5));
+                    : (feeKey ? (c.fee_structure?.[feeKey] || (ivaFreq === 'Semestral' ? 10 : 5)) : 0);
                 totalRevenue += fee;
             });
 
@@ -392,9 +505,12 @@ export async function getFinancialSummary() {
             
             pending.forEach((d: any) => {
                 const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
+                const feeKey = ivaFreq === 'Mensual' ? 'monthly' 
+                               : ivaFreq === 'Semestral' ? 'semestral' 
+                               : undefined;
                 const fee = d.type === 'RENTA' 
                     ? (c.fee_structure?.annual || 10) 
-                    : (c.fee_structure?.[ivaFreq.toLowerCase()] || (ivaFreq === 'Semestral' ? 10 : 5));
+                    : (feeKey ? (c.fee_structure?.[feeKey] || (ivaFreq === 'Semestral' ? 10 : 5)) : 0);
                 pendingCollections += fee;
             });
 
@@ -459,7 +575,10 @@ export async function getDatabaseSummary() {
                 if (!isIvaDeclared) pendingDeclarations++;
                 if (isIvaDeclared && !isIvaPaid) {
                     pendingIvaPayments++;
-                    const ivaFee = c.fee_structure?.[ivaFreq.toLowerCase()] || (ivaFreq === 'Semestral' ? 10 : 5);
+                    const feeKey = ivaFreq === 'Mensual' ? 'monthly' 
+                                   : ivaFreq === 'Semestral' ? 'semestral' 
+                                   : undefined;
+                    const ivaFee = feeKey ? (c.fee_structure?.[feeKey] || (ivaFreq === 'Semestral' ? 10 : 5)) : 0;
                     totalFeesAmount += ivaFee;
                 }
             }
@@ -537,7 +656,7 @@ export async function createClient(data: {
             phones: data.phones || [],
             is_active: true,
             tax_profile: {
-                ivaFrequency: data.regime.includes('Rimpe') ? 'Semestral' : 'Mensual',
+                ivaFrequency: data.regime === 'Rimpe Negocio Popular' ? 'Ninguno' : data.regime === 'Rimpe Emprendedor' ? 'Semestral' : 'Mensual',
                 requiresAnnualRenta: true
             }
         };
