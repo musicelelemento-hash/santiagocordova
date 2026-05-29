@@ -21,6 +21,7 @@ import { BulkUploadReportModal, BulkUploadResult } from '../components/features/
 import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
+import { getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
 
 const OBLIGATION_GROUPS = [
     { id: 'all', label: 'Todos', icon: LucideIcons.Users, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
@@ -175,37 +176,32 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         const today = new Date();
 
         clients.filter(c => !c.isDeleted).forEach(client => {
-            const period = getPeriod(client, today);
-            const decl = client.declarations.find(d => d.period === period);
-            const dueDate = getDueDateForPeriod(client, period);
+            const debtSummary = getClientDebtSummary(client, serviceFees, today);
+            const undeclaredSummary = getClientUndeclaredSummary(client, today);
 
-            const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
-            const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && ivaFreq !== 'Ninguno';
-            const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proof_file);
-            const isIvaPaid = !needsIva || (decl?.is_paid || decl?.status === 'Pagada');
-
+            const isVencido = undeclaredSummary.overduePeriodsCount > 0;
+            const isCobroPending = debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
+            
+            const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
             const currentYear = today.getFullYear();
             const rentaPeriod = (currentYear - 1).toString();
-            const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
             const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
-            const isRentaDeclared = !needsRenta || (!!rentaDecl?.proof_file || rentaDecl?.status === 'Enviada' || rentaDecl?.status === 'Pagada' || false);
-            const isRentaPaid = !needsRenta || (!!rentaDecl?.is_paid || rentaDecl?.status === 'Pagada' || false);
+            const isRentaPaid = !!rentaDecl?.is_paid;
+            const isRentaDeclared = !!rentaDecl?.proof_file || rentaDecl?.status === DeclarationStatus.Enviada;
 
-            const fullyDeclared = isIvaDeclared && isRentaDeclared;
-            const fullyPaid = isIvaPaid && isRentaPaid;
+            const isFullyPaid = !debtSummary.hasPendingPayment && (isRentaPaid || !needsRenta);
+            const isFullyDeclared = !undeclaredSummary.hasPendingObligation && (isRentaDeclared || !needsRenta);
+            const isElite = isFullyPaid && isFullyDeclared;
 
-            const isVencido = dueDate ? (isPast(dueDate) && !isIvaDeclared) : false;
-            const isWorkOrder = !fullyDeclared && fullyPaid;
-            const isCobroPending = fullyDeclared && !fullyPaid;
-            const isElite = fullyDeclared && fullyPaid;
+            const hasWorkOrder = (client.declarations || []).some(d => d.is_paid && d.status === DeclarationStatus.Pendiente);
 
             if (isVencido) stats.vencidos++;
-            else if (isWorkOrder) stats.ordenes++;
+            else if (hasWorkOrder) stats.ordenes++;
             else if (isCobroPending) stats.cobros++;
             else if (isElite) stats.elite++;
         });
         return stats;
-    }, [clients]);
+    }, [clients, serviceFees]);
 
     useEffect(() => {
         if (initialClientData) {
@@ -249,72 +245,35 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             if (activeGroupTab === 'vencidos') {
                 const today = new Date();
-                const period = getPeriod(client, today);
-                const decl = client.declarations.find(d => d.period === period);
-                const dueDate = getDueDateForPeriod(client, period);
-
-                const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
-                const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && ivaFreq !== 'Ninguno';
-                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proof_file);
-
-                return !!dueDate && isPast(dueDate) && !isIvaDeclared;
+                const undeclaredSummary = getClientUndeclaredSummary(client, today);
+                return undeclaredSummary.overduePeriodsCount > 0;
             }
 
             if (activeGroupTab === 'ordenes') {
-                const today = new Date();
-                const period = getPeriod(client, today);
-                const decl = client.declarations.find(d => d.period === period);
-
-                const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
-                const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && ivaFreq !== 'Ninguno';
-                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proof_file);
-                const isIvaPaid = !needsIva || (decl?.is_paid || decl?.status === 'Pagada');
-
-                if (isIvaPaid && !isIvaDeclared) return true;
-
-                const currentYear = today.getFullYear();
-                const rentaPeriod = (currentYear - 1).toString();
-                const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
-                const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
-                const isRentaDeclared = !needsRenta || (!!rentaDecl?.proof_file || rentaDecl?.status === 'Enviada' || rentaDecl?.status === 'Pagada' || false);
-                const isRentaPaid = !needsRenta || (!!rentaDecl?.is_paid || rentaDecl?.status === 'Pagada' || false);
-
-                if (isRentaPaid && !isRentaDeclared) return true;
-                return false;
+                return (client.declarations || []).some(d => d.is_paid && d.status === DeclarationStatus.Pendiente);
             }
 
             if (activeGroupTab === 'cobros') {
                 const today = new Date();
-                const period = getPeriod(client, today);
-                const decl = client.declarations.find(d => d.period === period);
-
-                const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
-                const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && ivaFreq !== 'Ninguno';
-                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proof_file);
-                const isIvaPaid = !needsIva || (decl?.is_paid || decl?.status === 'Pagada');
-
-                if (isIvaDeclared && !isIvaPaid) return true;
-                return false;
+                const debtSummary = getClientDebtSummary(client, serviceFees, today);
+                const undeclaredSummary = getClientUndeclaredSummary(client, today);
+                // Declared but unpaid (no unfiled pending SRI obligations)
+                return debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
             }
 
             if (activeGroupTab === 'al-dia') {
                 const today = new Date();
-                const period = getPeriod(client, today);
-                const decl = client.declarations.find(d => d.period === period);
-
-                const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
-                const needsIva = client.regime !== TaxRegime.RimpeNegocioPopular && ivaFreq !== 'Ninguno';
-                const isIvaDeclared = !needsIva || (decl?.status === 'Enviada' || decl?.status === 'Pagada' || !!decl?.proof_file);
-                const isIvaPaid = !needsIva || (decl?.is_paid || decl?.status === 'Pagada');
-
+                const debtSummary = getClientDebtSummary(client, serviceFees, today);
+                const undeclaredSummary = getClientUndeclaredSummary(client, today);
+                
+                const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
                 const currentYear = today.getFullYear();
                 const rentaPeriod = (currentYear - 1).toString();
-                const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
                 const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
-                const isRentaDeclared = !needsRenta || (!!rentaDecl?.proof_file || rentaDecl?.status === 'Enviada' || rentaDecl?.status === 'Pagada' || false);
-                const isRentaPaid = !needsRenta || (!!rentaDecl?.is_paid || rentaDecl?.status === 'Pagada' || false);
+                const isRentaPaid = !needsRenta || !!rentaDecl?.is_paid;
+                const isRentaDeclared = !needsRenta || !!rentaDecl?.proof_file || rentaDecl?.status === DeclarationStatus.Enviada;
 
-                return isIvaDeclared && isIvaPaid && isRentaDeclared && isRentaPaid;
+                return !debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation && isRentaPaid && isRentaDeclared;
             }
 
             if (activeGroupTab === 'mensual') {

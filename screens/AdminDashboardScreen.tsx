@@ -14,8 +14,9 @@ import { ChatBot } from '../components/features/ChatBot';
 import { VirtualClientList } from '../components/features/VirtualClientList';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 import { ComplianceReportExport } from '../components/features/ComplianceReportExport';
+import { ClientWorkspaceModal } from '../components/features/ClientWorkspaceModal';
 import { IvaFrequency } from '../types';
-import { getComplianceSummary, getClientCompliance, ComplianceColor } from '../services/complianceEngine';
+import { getComplianceSummary, getClientCompliance, ComplianceColor, getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
 import { PortfolioSemaphore } from '../components/ui/PortfolioSemaphore';
 
 interface AdminDashboardScreenProps {
@@ -31,7 +32,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [filter, setFilter] = useState<'all' | 'mensual' | 'semestral' | 'vip' | 'urgent' | 'rimpe' | 'popular' | 'renta' | 'overdue' | 'prepaid' | 'no-iva' | 'no-renta' | 'boveda' | 'digital-mando' | ComplianceColor>(() => {
         return (sessionStorage.getItem('dashboard_filter') as any) || 'digital-mando';
     });
-    const [inboxTab, setInboxTab] = useState<'pendientes' | 'completados'>('pendientes');
+    const [inboxTab, setInboxTab] = useState<'pendientes' | 'cobros' | 'completados'>(() => {
+        return (sessionStorage.getItem('dashboard_inbox_tab') as any) || 'pendientes';
+    });
+
+    React.useEffect(() => {
+        sessionStorage.setItem('dashboard_inbox_tab', inboxTab);
+    }, [inboxTab]);
     const [searchTerm, setSearchTerm] = useState(() => {
         return sessionStorage.getItem('dashboard_search') || '';
     });
@@ -50,6 +57,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [isProcessing, setIsProcessing] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
     const [matrixUploadSelection, setMatrixUploadSelection] = useState<{ client: Client, period: string } | null>(null);
+    const [workspaceClient, setWorkspaceClient] = useState<{ client: Client, period?: string } | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const matrixFileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -80,9 +88,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // --- SINGLE PASS PERFORMANCE ENGINE (Upgraded to Zen v3.1) ---
+    // --- SINGLE PASS PERFORMANCE ENGINE (Upgraded to Zen v3.2 with multi-period) ---
     const { 
-        urgentPriorities, pendientes, completados, allResults, 
+        urgentPriorities, pendientes, cobros, completados, allResults, 
         kpis, expiringSignatures, activeRentaRefunds, complianceSummary
     } = useMemo(() => {
         const today = new Date();
@@ -98,9 +106,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
         const summary = getComplianceSummary(clients, today, currentFreq);
 
-
         const urgents: Client[] = [];
         const peds: Client[] = [];
+        const cobs: Client[] = [];
         const comps: Client[] = [];
         const filtered: Client[] = [];
         const signExp: Client[] = [];
@@ -110,6 +118,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         let prepaidCount = 0;
         let totalIncome = 0;
         let activeCount = 0;
+        
+        // Financial Debt KPI
+        let totalDebtSum = 0;
+        let debtClientsCount = 0;
 
         for (const c of clients) {
             if (c.isDeleted || !c.isActive) continue;
@@ -140,6 +152,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             if (compliance.overdueCount > 0) overdueCount++;
             if (ivaDecl?.is_paid && ivaDecl?.status === DeclarationStatus.Pendiente) prepaidCount++;
             totalIncome += (c.fee_structure?.monthly ?? c.customServiceFee ?? 0);
+
+            // Debt details
+            const debtSummary = getClientDebtSummary(c, serviceFees, today);
+            const undeclaredSummary = getClientUndeclaredSummary(c, today);
+            if (debtSummary.hasPendingPayment) {
+                totalDebtSum += debtSummary.totalDebt;
+                debtClientsCount++;
+            }
 
             // Special Lists
             if (c.signatureExpirationDate) {
@@ -187,10 +207,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 filtered.push(c);
                 
                 // 3. Categorization (Inbox)
-                const isDone = compliance.score === 100 && compliance.overdueCount === 0;
+                const isFullyAlDia = !debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
+                const isCobroPending = debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
 
-                if (isDone) {
+                if (isFullyAlDia) {
                     comps.push(c);
+                } else if (isCobroPending) {
+                    cobs.push(c);
                 } else {
                     if (compliance.urgentCount > 0 || compliance.overdueCount > 0) urgents.push(c);
                     else peds.push(c);
@@ -199,31 +222,36 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         }
 
         // Final Sort for filtered results
-        filtered.sort((a, b) => {
-            const digitA = parseInt(a.ruc[8], 10);
-            const digitB = parseInt(b.ruc[8], 10);
-            const sortA = digitA === 0 ? 10 : digitA;
-            const sortB = digitB === 0 ? 10 : digitB;
-            if (sortA !== sortB) return sortA - sortB;
-            return a.name.localeCompare(b.name);
-        });
+        const sortClients = (arr: Client[]) => {
+            return [...arr].sort((a, b) => {
+                const digitA = parseInt(a.ruc[8], 10);
+                const digitB = parseInt(b.ruc[8], 10);
+                const sortA = digitA === 0 ? 10 : digitA;
+                const sortB = digitB === 0 ? 10 : digitB;
+                if (sortA !== sortB) return sortA - sortB;
+                return a.name.localeCompare(b.name);
+            });
+        };
 
         return { 
-            urgentPriorities: urgents, 
-            pendientes: peds, 
-            completados: comps, 
-            allResults: filtered,
+            urgentPriorities: sortClients(urgents), 
+            pendientes: sortClients(peds), 
+            cobros: sortClients(cobs),
+            completados: sortClients(comps), 
+            allResults: sortClients(filtered),
             kpis: { 
                 total: activeCount, 
                 overdue: overdueCount, 
                 prepaid: prepaidCount, 
-                projectedIncome: totalIncome 
+                projectedIncome: totalIncome,
+                pendingCollectionsAmount: totalDebtSum,
+                pendingCollectionsCount: debtClientsCount
             },
             expiringSignatures: signExp,
             activeRentaRefunds: refunds,
             complianceSummary: summary
         };
-    }, [clients, searchTerm, filter, selectedRegime, selectedObligation, selectedPeriod]);
+    }, [clients, searchTerm, filter, selectedRegime, selectedObligation, selectedPeriod, serviceFees]);
 
     // Data for Matrix Mode
     const matrixPeriods = useMemo(() => {
@@ -270,7 +298,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     }, [clients, filter]);
 
 
-    const activeList = searchTerm ? allResults : (inboxTab === 'pendientes' ? (filter === 'all' || filter === 'mensual' ? [...urgentPriorities, ...pendientes] : allResults) : completados);
+    const activeList = searchTerm 
+        ? allResults 
+        : (inboxTab === 'pendientes' 
+            ? (filter === 'all' || filter === 'mensual' || filter === 'digital-mando' ? [...urgentPriorities, ...pendientes] : allResults) 
+            : inboxTab === 'cobros'
+                ? (filter === 'all' || filter === 'mensual' || filter === 'digital-mando' ? cobros : allResults)
+                : (filter === 'all' || filter === 'mensual' || filter === 'digital-mando' ? completados : allResults));
 
 
     // ... (handleAction remains same) ...
@@ -718,29 +752,36 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 );
                             })()}
 
-                            {/* KPI 4: Logro Fiscal */}
+                            {/* KPI 4: Cartera por Cobrar */}
                             <div className="flex-none w-[60vw] sm:w-auto snap-center flex flex-col justify-center p-6 sm:p-7 relative overflow-hidden">
                                 <div className="relative z-10">
-                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2">Logro Fiscal</p>
+                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2">Por Cobrar</p>
                                     <div className="flex items-baseline gap-2 mb-3">
                                         <span className={`text-3xl font-black tracking-tighter leading-none ${
-                                            complianceSummary.averageScore >= 80 ? 'text-emerald-600 dark:text-emerald-400' :
-                                            complianceSummary.averageScore >= 50 ? 'text-amber-500' :
-                                            'text-rose-500'
-                                        }`}>{complianceSummary.averageScore}%</span>
-                                        <span className="text-xs text-slate-400 font-medium">{completados.length} / {allResults.length}</span>
+                                            kpis.pendingCollectionsAmount > 0 ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'
+                                        }`}>${Math.round(kpis.pendingCollectionsAmount)}</span>
+                                        <span className="text-xs text-slate-400 font-medium">{kpis.pendingCollectionsCount} c. activos</span>
                                     </div>
-                                    <div className="w-full h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
-                                        <div
-                                            className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                                                complianceSummary.averageScore >= 80 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
-                                                complianceSummary.averageScore >= 50 ? 'bg-gradient-to-r from-amber-400 to-orange-400' :
-                                                'bg-gradient-to-r from-rose-500 to-red-400'
-                                            }`}
-                                            style={{ width: `${complianceSummary.averageScore}%` }}
-                                        />
-                                    </div>
-                                    <p className="text-[10px] text-slate-400 mt-1.5">eficiencia declaraciones</p>
+                                    {(() => {
+                                        const collectedPercent = kpis.projectedIncome > 0
+                                            ? Math.max(0, Math.round(((kpis.projectedIncome - kpis.pendingCollectionsAmount) / kpis.projectedIncome) * 100))
+                                            : 100;
+                                        return (
+                                            <>
+                                                <div className="w-full h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                                                            collectedPercent >= 80 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
+                                                            collectedPercent >= 50 ? 'bg-gradient-to-r from-amber-400 to-orange-400' :
+                                                            'bg-gradient-to-r from-rose-500 to-red-400'
+                                                        }`}
+                                                        style={{ width: `${collectedPercent}%` }}
+                                                    />
+                                                </div>
+                                                <p className="text-[10px] text-slate-400 mt-1.5">{collectedPercent}% cobrado de facturación</p>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -1086,7 +1127,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <LucideIcons.Flashlight size={14} strokeWidth={2.5} />
                             </div>
                             <div className="text-left">
-                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 leading-none mb-0.5">Pendientes</div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 leading-none mb-0.5">Pendientes SRI</div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-base font-black tracking-tight leading-none">En Proceso</span>
                                     <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
@@ -1094,6 +1135,35 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             ? 'bg-rose-100 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400'
                                             : 'bg-slate-200 dark:bg-white/10 text-slate-500'
                                     }`}>{pendientes.length + urgentPriorities.length}</span>
+                                </div>
+                            </div>
+                        </button>
+
+                        {/* Tab: Cobros */}
+                        <button
+                            onClick={() => setInboxTab('cobros')}
+                            className={`relative flex-1 sm:flex-none flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 ${
+                                inboxTab === 'cobros'
+                                    ? 'bg-white dark:bg-slate-800 shadow-md text-slate-900 dark:text-white'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                            }`}
+                        >
+                            <div className={`p-2 rounded-lg transition-all duration-300 ${
+                                inboxTab === 'cobros'
+                                    ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20'
+                                    : 'bg-transparent text-slate-400'
+                            }`}>
+                                <LucideIcons.DollarSign size={14} strokeWidth={2.5} />
+                            </div>
+                            <div className="text-left">
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 leading-none mb-0.5">Por Cobrar</div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-base font-black tracking-tight leading-none">Honorarios</span>
+                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+                                        inboxTab === 'cobros'
+                                            ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                                            : 'bg-slate-200 dark:bg-white/10 text-slate-500'
+                                    }`}>{cobros.length}</span>
                                 </div>
                             </div>
                         </button>
@@ -1117,7 +1187,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <div className="text-left">
                                 <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 leading-none mb-0.5">Completados</div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-base font-black tracking-tight leading-none">Declarados</span>
+                                    <span className="text-base font-black tracking-tight leading-none">Al Día</span>
                                     <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
                                         inboxTab === 'completados'
                                             ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
@@ -1196,7 +1266,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 {viewMode === 'matrix' ? (
                     <TaxComplianceMatrix 
                         clients={matrixClients}
-                        onViewClient={(c) => navigate('clients', { clientIdToView: c.id })}
+                        onViewClient={(c) => setWorkspaceClient({ client: c })}
                         onUploadReceipt={handleUploadFromMatrix}
                         onPreviewReceipt={(c, d) => setPreviewState({ isOpen: true, client: c, declaration: d })}
                         theme={theme}
@@ -1206,7 +1276,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         clients={activeList}
                         serviceFees={serviceFees}
                         onQuickAction={handleAction}
-                        onView={(c) => navigate('clients', { clientIdToView: c.id })}
+                        onView={(c) => setWorkspaceClient({ client: c, period: selectedPeriod !== 'all' ? selectedPeriod : undefined })}
                         frequency={filter === 'semestral' ? 'Semestral' : (filter === 'mensual' ? 'Mensual' : 'all')}
                         customPeriod={selectedPeriod !== 'all' ? selectedPeriod : undefined}
                     />
@@ -1260,6 +1330,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 onClose={() => setIsBulkModalOpen(false)}
                 results={bulkResults as any}
             />
+
+            <ClientWorkspaceModal
+                isOpen={!!workspaceClient}
+                onClose={() => setWorkspaceClient(null)}
+                client={workspaceClient?.client || null}
+                initialPeriod={workspaceClient?.period}
+            />
+
             {/* Renta Refund Floating Orb */}
             {activeRentaRefunds.length > 0 && (
                 <div className="fixed bottom-24 right-6 z-50 animate-bounce-slow">

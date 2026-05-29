@@ -25,6 +25,7 @@ export async function findClients(query: string, selectFields: string) {
     if (error) throw error;
     const clients = rawClients as any[] | null;
     if (!clients) return [];
+    if (!query) return clients;
     
     const queryLower = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const parts = queryLower.split(' ').filter(p => p.length > 0);

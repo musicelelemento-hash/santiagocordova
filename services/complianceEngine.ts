@@ -493,3 +493,116 @@ export const getSriDueDay = (ruc: string): number | null => {
     if (digit === -1) return null;
     return SRI_DUE_DATES[digit] ?? null;
 };
+
+// ─────────────────────────────────────────────────────────
+// ELITE MULTI-PERIOD COMPLIANCE ENGINE EXTENSION
+// ─────────────────────────────────────────────────────────
+
+import { isPast } from 'date-fns';
+import { getClientServiceFee } from './clientService';
+
+export const getActivePeriodsForClient = (client: Client, date: Date = new Date()): string[] => {
+    const periods: string[] = [];
+    const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
+    
+    // We check monthly or semestral periods
+    if (requiresIva(client) && ivaFreq !== 'Ninguno') {
+        let currentDate = date;
+        for (let i = 0; i < 24; i++) {
+            const period = getPeriod(client, currentDate);
+            const isBeforeStart = period.includes('-S') ? period < '2026-S1' : period < '2026-01';
+            if (isBeforeStart) break;
+            if (!periods.includes(period)) {
+                periods.push(period);
+            }
+            if (ivaFreq === 'Mensual') {
+                currentDate = subMonths(currentDate, 1);
+            } else if (ivaFreq === 'Semestral') {
+                currentDate = subMonths(currentDate, 6);
+            }
+        }
+    }
+    
+    // We check Renta periods (2025 onwards, since 2025 renta is filed in 2026)
+    const needsRenta = client.taxProfile?.requiresAnnualRenta ??
+        (client.regime === TaxRegime.RimpeEmprendedor ||
+         client.regime === TaxRegime.RimpeNegocioPopular ||
+         client.regime === TaxRegime.General);
+    if (needsRenta) {
+        const currentYear = getYear(date);
+        for (let year = currentYear - 1; year >= 2025; year--) {
+            periods.push(year.toString());
+        }
+    }
+    
+    return periods;
+};
+
+export interface ClientDebtSummary {
+    totalDebt: number;
+    unpaidPeriodsCount: number;
+    unpaidPeriods: string[];
+    hasPendingPayment: boolean;
+}
+
+export interface ClientUndeclaredSummary {
+    undeclaredPeriodsCount: number;
+    undeclaredPeriods: string[];
+    hasPendingObligation: boolean;
+    overduePeriodsCount: number;
+    overduePeriods: string[];
+}
+
+export const getClientDebtSummary = (client: Client, fees: any, date: Date = new Date()): ClientDebtSummary => {
+    const activePeriods = getActivePeriodsForClient(client, date);
+    const unpaidPeriods: string[] = [];
+    let totalDebt = 0;
+    
+    activePeriods.forEach(period => {
+        const decl = (client.declarations || []).find(d => d.period === period);
+        const declared = isDeclared(decl);
+        const paid = isPaid(decl);
+        
+        // A pending collection (Cobro Pendiente) is a period that is declared but not paid
+        if (declared && !paid) {
+            unpaidPeriods.push(period);
+            const amount = decl?.amount || getClientServiceFee(client, fees, period);
+            totalDebt += amount;
+        }
+    });
+    
+    return {
+        totalDebt,
+        unpaidPeriodsCount: unpaidPeriods.length,
+        unpaidPeriods,
+        hasPendingPayment: unpaidPeriods.length > 0
+    };
+};
+
+export const getClientUndeclaredSummary = (client: Client, date: Date = new Date()): ClientUndeclaredSummary => {
+    const activePeriods = getActivePeriodsForClient(client, date);
+    const undeclaredPeriods: string[] = [];
+    const overduePeriods: string[] = [];
+    
+    activePeriods.forEach(period => {
+        const decl = (client.declarations || []).find(d => d.period === period);
+        const declared = isDeclared(decl);
+        
+        if (!declared) {
+            undeclaredPeriods.push(period);
+            const dueDate = getDueDateForPeriod(client, period);
+            if (dueDate && isPast(dueDate)) {
+                overduePeriods.push(period);
+            }
+        }
+    });
+    
+    return {
+        undeclaredPeriodsCount: undeclaredPeriods.length,
+        undeclaredPeriods,
+        hasPendingObligation: undeclaredPeriods.length > 0,
+        overduePeriodsCount: overduePeriods.length,
+        overduePeriods
+    };
+};
+

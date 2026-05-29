@@ -580,7 +580,7 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
         try {
             const matches = await findClients(text, '*');
             if (matches.length === 0) {
-                await ctx.reply(`❌ No encontré ningún cliente con "${text}". Intenta con otro nombre, o escribe **cancelar** para salir. Baku.`);
+                await ctx.reply(`❌ No encontré ningún cliente con "${text}".\n\n💡 _Tip: Escribe SOLO el nombre (ej: "Juan") o RUC, sin otras palabras._\nEscribe **cancelar** para salir del modo registro. Baku.`);
                 return;
             }
             if (dialog.type === 'mark_payment') {
@@ -838,23 +838,27 @@ bot.on('message:text', async (ctx) => {
   const chatId = ctx.chat.id.toString();
   const text = ctx.message.text.trim();
 
-  // 1. Check if there is a pending dialog first
+  // 1. Try direct command (zero AI tokens — instant, with inline keyboard disambiguation)
+  // This is placed FIRST so users can escape stuck dialogs by using a shortcut command.
+  try {
+    const directHandled = await tryDirectCommand(text, chatId, ctx);
+    if (directHandled) {
+        if (pendingDialogs.has(chatId)) pendingDialogs.delete(chatId);
+        return;
+    }
+  } catch (err: any) {
+    console.error(`❌ Error in direct command for chat ${chatId}:`, err);
+  }
+
+  // 2. Check if there is a pending dialog
   if (pendingDialogs.has(chatId)) {
       await handleDialogStep(chatId, text, ctx);
       return;
   }
 
-  // 2. Check if a dialog is triggered by this message
+  // 3. Check if a dialog is triggered by this message
   const triggered = await handleDialogTriggers(chatId, text, ctx);
   if (triggered) return;
-
-  // 3. Try direct command (zero AI tokens — instant, with inline keyboard disambiguation)
-  try {
-    const directHandled = await tryDirectCommand(text, chatId, ctx);
-    if (directHandled) return;
-  } catch (err: any) {
-    console.error(`❌ Error in direct command for chat ${chatId}:`, err);
-  }
 
   // Handle "SÍ GUARDAR" confirmation
   if (text.toUpperCase() === 'SÍ GUARDAR' || text.toUpperCase() === 'SI GUARDAR') {

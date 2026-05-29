@@ -5,7 +5,7 @@ import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, safeFormat } fr
 import { getClientServiceFee } from '../../services/clientService';
 import { isPast, differenceInCalendarDays, differenceInHours } from 'date-fns';
 import * as LucideIcons from 'lucide-react';
-import { getClientCompliance } from '../../services/complianceEngine';
+import { getClientCompliance, getClientDebtSummary, getClientUndeclaredSummary } from '../../services/complianceEngine';
 
 interface ClientCardProps {
     client: Client;
@@ -30,16 +30,22 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     const currentPeriod = customPeriod || getPeriod(client, today, frequency);
     const activeDecl = client.declarations.find(d => d.period === currentPeriod);
 
-    // Lógica de Estado
-    const isPaid = !!activeDecl?.is_paid;
-    const isDeclared = !!activeDecl?.proof_file || activeDecl?.status === DeclarationStatus.Enviada;
+    // Lógica de Estado Multi-período Táctica
+    const debtSummary = getClientDebtSummary(client, serviceFees, today);
+    const undeclaredSummary = getClientUndeclaredSummary(client, today);
+
+    // Un cliente tiene cobro de IVA pendiente en el periodo actual
+    const isPaid = !debtSummary.hasPendingPayment;
+    // Un cliente tiene la declaración de IVA enviada en el periodo actual
+    const isDeclared = !undeclaredSummary.hasPendingObligation;
+    
     const fee = getClientServiceFee(client, serviceFees, currentPeriod);
     const dueDate = getDueDateForPeriod(client, currentPeriod);
 
     // Cálculos de Tiempo
     const daysUntilDue = dueDate ? differenceInCalendarDays(dueDate, today) : null;
-    const isOverdue = dueDate && isPast(dueDate) && !isDeclared;
-    const isUrgent = daysUntilDue !== null && daysUntilDue <= 3 && !isDeclared;
+    const isOverdue = undeclaredSummary.overduePeriodsCount > 0;
+    const isUrgent = daysUntilDue !== null && daysUntilDue <= 3 && undeclaredSummary.hasPendingObligation;
 
     // Renta Extra Buttons Logic
     const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
@@ -50,8 +56,9 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     const isRentaPaid = !!rentaDecl?.is_paid;
     const isRentaFullyDone = isRentaDeclared && isRentaPaid;
 
-    const isFullyPaid = isPaid && (isRentaPaid || !needsRenta);
-    const isFullyDeclared = isDeclared && (isRentaDeclared || !needsRenta);
+    // Is fully paid and declared across the ENTIRE history (2026+)
+    const isFullyPaid = !debtSummary.hasPendingPayment && (isRentaPaid || !needsRenta);
+    const isFullyDeclared = !undeclaredSummary.hasPendingObligation && (isRentaDeclared || !needsRenta);
     const isFullyAlDia = isFullyPaid && isFullyDeclared;
 
     // ORDEN DE TRABAJO (Prioridad)
@@ -69,7 +76,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
         if (isFullyAlDia) return { color: 'bg-emerald-50 text-emerald-600 border-emerald-200', text: 'Al Día', icon: LucideIcons.ShieldCheck };
         if (hasWorkOrder) return { color: 'bg-blue-50 text-blue-600 border-blue-200 animate-pulse', text: 'Orden de Trabajo', icon: LucideIcons.Zap };
         if (isOverdue) return { color: 'bg-rose-50 text-rose-600 border-rose-200 shadow-[0_0_15px_rgba(244,63,94,0.1)]', text: 'Vencido', icon: LucideIcons.AlertCircle };
-        if (isDeclared && !isPaid) return { color: 'bg-amber-50 text-amber-600 border-amber-200', text: 'Cobro Pendiente', icon: LucideIcons.DollarSign };
+        if (debtSummary.hasPendingPayment) return { color: 'bg-amber-50 text-amber-600 border-amber-200', text: 'Cobro Pendiente', icon: LucideIcons.DollarSign };
         if (isUrgent) return { color: 'bg-orange-50 text-orange-600 border-orange-200', text: 'Vence Pronto', icon: LucideIcons.Clock };
         return { color: 'bg-slate-100 text-slate-500 border-slate-200', text: 'Pendiente', icon: LucideIcons.Calendar };
     };
@@ -156,6 +163,24 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                 </div>
                             )}
                         </div>
+
+                        {/* Micro-resumen de deudas o pendientes */}
+                        {client.isActive && !client.isDeleted && (
+                            <div className="mt-2 flex flex-wrap gap-2 items-center text-[10px] font-bold font-premium text-slate-500 dark:text-slate-400">
+                                {debtSummary.hasPendingPayment && (
+                                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-sm transition-all duration-300 animate-fade-in">
+                                        <LucideIcons.DollarSign size={10} strokeWidth={3} className="text-amber-500" />
+                                        <span>Debe ${debtSummary.totalDebt.toFixed(2)} ({debtSummary.unpaidPeriods.map(formatPeriodForDisplay).join(', ')})</span>
+                                    </span>
+                                )}
+                                {undeclaredSummary.hasPendingObligation && (
+                                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-sm transition-all duration-300 animate-fade-in">
+                                        <LucideIcons.AlertCircle size={10} strokeWidth={3} className="text-rose-500" />
+                                        <span>Pendiente SRI: {undeclaredSummary.undeclaredPeriods.map(formatPeriodForDisplay).join(', ')}</span>
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
