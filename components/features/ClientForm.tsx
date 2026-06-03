@@ -81,6 +81,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
     // Default = current month so new clients start fresh without backlog
     const getDefaultStartPeriod = () => {
         const now = new Date();
+        now.setMonth(now.getMonth() - 1);
         const y = now.getFullYear();
         const m = String(now.getMonth() + 1).padStart(2, '0');
         return `${y}-${m}`;
@@ -520,7 +521,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                 </label>
                             </div>
                             <p className="text-[11px] text-emerald-600/70 dark:text-emerald-500/70 mb-3 leading-relaxed">
-                                Todos los períodos anteriores a esta fecha se ignorarán. Para un cliente nuevo, deja el mes actual.
+                                Todos los períodos anteriores a esta fecha se ignorarán. Se sugiere empezar desde el mes anterior para incluir la declaración activa actual.
                             </p>
                             <input
                                 type="month"
