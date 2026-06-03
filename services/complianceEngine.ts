@@ -245,10 +245,30 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
         });
     }
 
+    // Determine the earliest period this client should have obligations for.
+    // clientStartPeriod takes precedence over the global system floor.
+    const clientFloor = client.clientStartPeriod || null;
+    const globalFloorMonthly = '2026-01';
+    const globalFloorSemestral = '2026-S1';
+    const globalFloorAnnual = '2026';
+
     return obligations.filter(ob => {
-        if (ob.period.length === 4) return ob.period >= '2026';
-        if (ob.period.includes('-S')) return ob.period >= '2026-S1';
-        return ob.period >= '2026-01';
+        if (ob.period.length === 4) {
+            const floor = clientFloor?.length === 4 ? clientFloor : globalFloorAnnual;
+            return ob.period >= floor;
+        }
+        if (ob.period.includes('-S')) {
+            // For semestral clientStartPeriod like '2026-S2', use it directly
+            const floor = clientFloor?.includes('-S') ? clientFloor
+                : clientFloor ? clientFloor.substring(0, 4) + '-S1' // fallback to start of year
+                : globalFloorSemestral;
+            return ob.period >= floor;
+        }
+        // Monthly
+        const floor = (clientFloor && !clientFloor.includes('-S') && clientFloor.length === 7)
+            ? clientFloor
+            : globalFloorMonthly;
+        return ob.period >= floor;
     });
 };
 
@@ -506,11 +526,18 @@ export const getActivePeriodsForClient = (client: Client, date: Date = new Date(
     const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
     
     // We check monthly or semestral periods
+    // Determine the floor period for this client
+    const clientStartPeriod = client.clientStartPeriod || null;
+    const floorMonthly = (clientStartPeriod && !clientStartPeriod.includes('-S') && clientStartPeriod.length === 7)
+        ? clientStartPeriod : '2026-01';
+    const floorSemestral = clientStartPeriod?.includes('-S') ? clientStartPeriod
+        : clientStartPeriod ? clientStartPeriod.substring(0, 4) + '-S1' : '2026-S1';
+
     if (requiresIva(client) && ivaFreq !== 'Ninguno') {
         let currentDate = date;
         for (let i = 0; i < 24; i++) {
             const period = getPeriod(client, currentDate);
-            const isBeforeStart = period.includes('-S') ? period < '2026-S1' : period < '2026-01';
+            const isBeforeStart = period.includes('-S') ? period < floorSemestral : period < floorMonthly;
             if (isBeforeStart) break;
             if (!periods.includes(period)) {
                 periods.push(period);

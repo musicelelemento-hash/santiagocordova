@@ -174,6 +174,7 @@ export interface Client {
     elderlyDevolucionIvaResolutionFile?: StoredFile;
     createdAt?: string;
     updatedAt?: string;
+    clientStartPeriod?: string; // Primer período a declarar (ej: '2026-05'). Si no está, se usa el límite global del sistema.
     advanceCredits?: number;
     facturadorConfig?: FacturadorConfig;
 }

@@ -333,7 +333,15 @@ const App: React.FC = () => {
     />
   );
   if (appState === 'login') return <LoginScreen onSuccess={handleLoginSuccess} onBack={() => setAppState('landing')} clients={clients} />;
-  if (appState === 'client_portal' && loggedClient) return <ClientPortalScreen client={loggedClient} onLogout={() => { setLoggedClient(null); setAppState('landing'); }} serviceFees={serviceFees} />;
+  if (appState === 'client_portal' && loggedClient) return <ClientPortalScreen
+    client={loggedClient}
+    onLogout={() => { setLoggedClient(null); setAppState('landing'); }}
+    serviceFees={serviceFees}
+    onUpdateClient={(updatedClient) => {
+      setLoggedClient(updatedClient);
+      setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+    }}
+  />;
   if (appState === 'music') return <MusicPage onBack={() => setAppState('landing')} />;
 
   return (

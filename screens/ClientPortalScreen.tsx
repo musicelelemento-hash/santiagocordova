@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Client, DeclarationStatus, ServiceFeesConfig, TaxObligationType, Declaration } from '../types';
+import { Client, DeclarationStatus, ServiceFeesConfig, TaxObligationType, Declaration, StoredFile } from '../types';
 import { formatPeriodForDisplay, safeFormat } from '../services/sri';
 import { getClientServiceFee } from '../services/clientService';
 import { getClientCompliance, COMPLIANCE_COLORS } from '../services/complianceEngine';
 import { Logo } from '../components/ui/Logo';
 
 // ─────────────────────────────────────────────────────────
-// UI SUB-COMPONENTS (Elite Zen v3.1)
+// UI SUB-COMPONENTS (Elite Zen v3.2)
 // ─────────────────────────────────────────────────────────
 
 const HealthGauge = ({ score, color }: { score: number, color: string }) => {
@@ -139,30 +139,225 @@ const TimelineItem = ({ ob }: { ob: any }) => {
     );
 };
 
+// ─────────────────────────────────────────────────────────
+// VAULT CREDENTIAL CARD
+// ─────────────────────────────────────────────────────────
+const CredentialCard = ({ label, icon: Icon, value, hint }: { label: string; icon: any; value?: string; hint?: string }) => {
+    const [visible, setVisible] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        if (value) {
+            navigator.clipboard.writeText(value);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    return (
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:border-teal-200 hover:shadow-lg transition-all">
+            <div className="w-12 h-12 bg-slate-50 group-hover:bg-teal-50 text-slate-400 group-hover:text-teal-600 rounded-2xl flex items-center justify-center transition-colors flex-shrink-0">
+                <Icon size={22} />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+                {value ? (
+                    <p className="font-mono text-sm font-bold text-slate-800 truncate">
+                        {visible ? value : '••••••••••••'}
+                    </p>
+                ) : (
+                    <p className="text-sm text-slate-300 italic">{hint || 'No registrado'}</p>
+                )}
+            </div>
+            {value && (
+                <div className="flex gap-2 flex-shrink-0">
+                    <button
+                        onClick={() => setVisible(v => !v)}
+                        className="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-400 flex items-center justify-center transition-all"
+                    >
+                        {visible ? <LucideIcons.EyeOff size={14} /> : <LucideIcons.Eye size={14} />}
+                    </button>
+                    <button
+                        onClick={handleCopy}
+                        className="w-9 h-9 rounded-xl bg-slate-50 hover:bg-teal-50 text-slate-400 hover:text-teal-600 flex items-center justify-center transition-all"
+                    >
+                        {copied ? <LucideIcons.Check size={14} className="text-teal-500" /> : <LucideIcons.Copy size={14} />}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ─────────────────────────────────────────────────────────
+// CHANGE PASSWORD MODAL
+// ─────────────────────────────────────────────────────────
+interface ChangePasswordModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (newPassword: string) => void;
+    currentPassword: string;
+}
+
+const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClose, onSave, currentPassword }) => {
+    const [current, setCurrent] = useState('');
+    const [newPass, setNewPass] = useState('');
+    const [confirm, setConfirm] = useState('');
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState(false);
+
+    const reset = () => {
+        setCurrent(''); setNewPass(''); setConfirm('');
+        setError(''); setSuccess(false);
+        setShowCurrent(false); setShowNew(false); setShowConfirm(false);
+    };
+
+    const handleClose = () => { reset(); onClose(); };
+
+    const handleSubmit = () => {
+        setError('');
+        if (current !== currentPassword) {
+            setError('La clave SRI actual no es correcta.');
+            return;
+        }
+        if (newPass.length < 6) {
+            setError('La nueva clave debe tener al menos 6 caracteres.');
+            return;
+        }
+        if (newPass !== confirm) {
+            setError('Las claves nuevas no coinciden.');
+            return;
+        }
+        onSave(newPass);
+        setSuccess(true);
+        setTimeout(() => handleClose(), 1800);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in-up">
+            <div className="bg-white rounded-[3rem] p-10 w-full max-w-md shadow-2xl shadow-slate-900/20 border border-slate-100 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 bg-teal-500/5 rounded-full blur-[60px] -mr-16 -mt-16 pointer-events-none" />
+                <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <LucideIcons.KeyRound size={28} className="text-teal-600" />
+                    </div>
+                    <h3 className="text-2xl font-display font-semibold text-slate-900 mb-1">Cambiar Clave SRI</h3>
+                    <p className="text-slate-400 text-sm">Solo tú puedes actualizar esta credencial.</p>
+                </div>
+
+                {success ? (
+                    <div className="text-center py-6">
+                        <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <LucideIcons.CheckCircle size={36} className="text-emerald-500" />
+                        </div>
+                        <p className="text-emerald-600 font-bold text-lg">¡Clave actualizada!</p>
+                    </div>
+                ) : (
+                    <div className="space-y-5">
+                        {/* Current password */}
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Clave Actual</label>
+                            <div className="relative">
+                                <input
+                                    type={showCurrent ? 'text' : 'password'}
+                                    value={current}
+                                    onChange={e => setCurrent(e.target.value)}
+                                    className="w-full px-5 py-4 pr-12 rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
+                                    placeholder="Clave SRI vigente"
+                                />
+                                <button onClick={() => setShowCurrent(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                    {showCurrent ? <LucideIcons.EyeOff size={16} /> : <LucideIcons.Eye size={16} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* New password */}
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Nueva Clave</label>
+                            <div className="relative">
+                                <input
+                                    type={showNew ? 'text' : 'password'}
+                                    value={newPass}
+                                    onChange={e => setNewPass(e.target.value)}
+                                    className="w-full px-5 py-4 pr-12 rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
+                                    placeholder="Mínimo 6 caracteres"
+                                />
+                                <button onClick={() => setShowNew(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                    {showNew ? <LucideIcons.EyeOff size={16} /> : <LucideIcons.Eye size={16} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Confirm */}
+                        <div>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Confirmar Nueva Clave</label>
+                            <div className="relative">
+                                <input
+                                    type={showConfirm ? 'text' : 'password'}
+                                    value={confirm}
+                                    onChange={e => setConfirm(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                                    className="w-full px-5 py-4 pr-12 rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 font-mono text-sm focus:outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all"
+                                    placeholder="Repite la nueva clave"
+                                />
+                                <button onClick={() => setShowConfirm(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                    {showConfirm ? <LucideIcons.EyeOff size={16} /> : <LucideIcons.Eye size={16} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div className="flex items-center gap-3 px-4 py-3 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-sm">
+                                <LucideIcons.AlertCircle size={16} className="flex-shrink-0" />
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="flex gap-3 pt-2">
+                            <button onClick={handleClose} className="flex-1 py-4 rounded-2xl border border-slate-200 text-slate-500 text-sm font-bold uppercase tracking-widest hover:bg-slate-50 transition-all">
+                                Cancelar
+                            </button>
+                            <button onClick={handleSubmit} className="flex-1 py-4 rounded-2xl bg-slate-900 text-white text-sm font-bold uppercase tracking-widest hover:bg-teal-600 transition-all active:scale-95 shadow-xl shadow-slate-200">
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// ─────────────────────────────────────────────────────────
+// MAIN COMPONENT PROPS
+// ─────────────────────────────────────────────────────────
 interface ClientPortalScreenProps {
     client: Client;
     onLogout: () => void;
     serviceFees: ServiceFeesConfig;
+    onUpdateClient?: (updatedClient: Client) => void;
 }
 
-export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, onLogout, serviceFees }) => {
+export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, onLogout, serviceFees, onUpdateClient }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'vault' | 'timeline'>('overview');
-    const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
-    
-    const compliance = useMemo(() => getClientCompliance(client, new Date()), [client]);
+    const [showChangePassword, setShowChangePassword] = useState(false);
+    const [localClient, setLocalClient] = useState<Client>(client);
+
+    const compliance = useMemo(() => getClientCompliance(localClient, new Date()), [localClient]);
     const healthConfig = COMPLIANCE_COLORS[compliance.overallColor] || COMPLIANCE_COLORS.gray;
-    
-    const fee = getClientServiceFee(client, serviceFees);
+
+    const fee = getClientServiceFee(localClient, serviceFees);
     const totalDebt = useMemo(() => {
-        const pending = client.declarations?.filter(d => !d.is_paid && d.status !== 'Pendiente') || [];
+        const pending = localClient.declarations?.filter(d => !d.is_paid && d.status !== 'Pendiente') || [];
         return pending.length * fee;
-    }, [client.declarations, fee]);
+    }, [localClient.declarations, fee]);
 
-    const toggleKeyVisibility = (key: string) => {
-        setVisibleKeys(prev => ({ ...prev, [key]: !prev[key] }));
-    };
-
-    const handleOpenInNewTab = (decl: Declaration) => {
+    const handleOpenInNewTab = (decl: Declaration | { proof_file?: StoredFile }) => {
         if (!decl.proof_file?.content) return;
         const base64Data = decl.proof_file.content.split(',')[1];
         const byteCharacters = atob(base64Data);
@@ -177,27 +372,43 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
         setTimeout(() => URL.revokeObjectURL(url), 100);
     };
 
-    const handleDownloadPdf = (decl: Declaration) => {
-        if (!decl.proof_file?.content) return;
+    const handleDownloadFile = (file: StoredFile) => {
+        if (!file.content) return;
         const link = document.createElement('a');
-        link.href = decl.proof_file.content;
-        link.download = decl.proof_file.name;
+        link.href = file.content;
+        link.download = file.name;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
     const handleRucPreview = () => {
-        const file = client.rucCertificate || client.rucPdf;
-        if (file) {
-            handleOpenInNewTab({
-                period: 'Expediente',
-                status: DeclarationStatus.Pagada,
-                updatedAt: new Date().toISOString(),
-                proof_file: file
-            } as Declaration);
-        }
+        const file = localClient.rucCertificate || localClient.rucPdf;
+        if (file) handleOpenInNewTab({ proof_file: file });
     };
+
+    const handleSavePassword = (newPassword: string) => {
+        const updated = { ...localClient, sriPassword: newPassword };
+        setLocalClient(updated);
+        if (onUpdateClient) onUpdateClient(updated);
+    };
+
+    // ── Vault data helpers ──────────────────────────────────
+    const hasSignatureFile = !!(localClient.signatureFile);
+    const hasRucFile = !!(localClient.rucCertificate || localClient.rucPdf);
+    const hasRentaRefundProof = !!(localClient.rentaRefundProof);
+    const vaultFiles: StoredFile[] = localClient.vault || [];
+
+    // Signature expiry helpers
+    const signatureExpiry = localClient.signatureExpirationDate
+        ? new Date(localClient.signatureExpirationDate)
+        : null;
+    const today = new Date();
+    const signatureDaysLeft = signatureExpiry
+        ? Math.ceil((signatureExpiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        : null;
+    const signatureExpired = signatureDaysLeft !== null && signatureDaysLeft <= 0;
+    const signatureWarning = signatureDaysLeft !== null && signatureDaysLeft > 0 && signatureDaysLeft <= 60;
 
     return (
         <div className="min-h-screen bg-[#FDFDFD] font-body text-slate-900 selection:bg-teal-500/10 selection:text-teal-600">
@@ -219,11 +430,11 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
 
                     <div className="flex items-center gap-8">
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-slate-800 tracking-tight leading-tight">{client.name}</p>
-                            <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mt-0.5">{client.ruc}</p>
+                            <p className="text-sm font-bold text-slate-800 tracking-tight leading-tight">{localClient.name}</p>
+                            <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mt-0.5">{localClient.ruc}</p>
                         </div>
-                        <button 
-                            onClick={onLogout} 
+                        <button
+                            onClick={onLogout}
                             className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all active:scale-95 border border-slate-100"
                         >
                             <LucideIcons.LogOut size={20} />
@@ -238,7 +449,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                     <div className="inline-flex p-1.5 bg-slate-100/40 rounded-[2rem] border border-slate-200/50 backdrop-blur-md shadow-inner">
                         {[
                             { id: 'overview', label: 'Centro de Mando', icon: LucideIcons.LayoutDashboard },
-                            { id: 'vault', label: 'Expedientes', icon: LucideIcons.Layers },
+                            { id: 'vault', label: 'Bóveda', icon: LucideIcons.ShieldCheck },
                             { id: 'timeline', label: 'Cronograma', icon: LucideIcons.Activity },
                         ].map((tab) => (
                             <button
@@ -257,7 +468,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                 </div>
 
                 {/* ─────────────────────────────────────────────────────────
-                    CENTRO DE MANDO (OVERVIEW) 
+                    CENTRO DE MANDO (OVERVIEW)
                 ────────────────────────────────────────────────────────── */}
                 {activeTab === 'overview' && (
                     <div className="space-y-16 animate-fade-in-up">
@@ -269,7 +480,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 <div className="space-y-8">
                                     <div className="inline-flex items-center gap-2 px-5 py-2 bg-slate-50 text-slate-500 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] border border-slate-100/60 transition-colors hover:border-teal-200">
                                         <div className={`w-2 h-2 rounded-full ${healthConfig.dot}`}></div>
-                                        {client.regime}
+                                        {localClient.regime}
                                     </div>
                                     <h2 className="text-5xl sm:text-7xl font-display font-medium text-slate-900 tracking-tighter leading-[1.05] mb-2">
                                         Estatus<br /><span className="text-slate-400">Garantizado.</span>
@@ -290,8 +501,8 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                         </section>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                             <BankCardPremium clientName={client.name} />
-                             
+                             <BankCardPremium clientName={localClient.name} />
+
                              <div className="bg-white p-12 rounded-[4rem] border border-slate-100 shadow-premium flex flex-col items-center justify-center text-center group">
                                 <div className="w-20 h-20 bg-teal-50 text-teal-600 rounded-3xl flex items-center justify-center mb-8 transition-transform group-hover:scale-110 shadow-lg shadow-teal-100/20">
                                     <LucideIcons.MessageSquareQuote size={32} />
@@ -314,78 +525,247 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
-                    EXPEDIENTES (VAULT)
+                    BÓVEDA (VAULT) – Credenciales + Documentos
                 ────────────────────────────────────────────────────────── */}
                 {activeTab === 'vault' && (
-                    <div className="space-y-12 animate-fade-in-up">
-                        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
-                            <div>
-                                <h3 className="text-4xl font-display font-medium tracking-tight text-slate-900 mb-2">Bóveda de Documentos</h3>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-[0.3em]">Total {client.declarations.length} Registros Certificados</p>
-                            </div>
-                            
-                            <div className="flex gap-4">
-                                <div 
-                                    onClick={() => (client.rucCertificate || client.rucPdf) && handleRucPreview()}
-                                    className={`px-8 py-4 rounded-2xl border flex items-center gap-4 transition-all group ${client.rucCertificate || client.rucPdf ? 'bg-white border-slate-200 cursor-pointer hover:border-teal-500 hover:shadow-xl hover:shadow-teal-100/20' : 'bg-slate-50 border-slate-100 opacity-50'}`}
+                    <div className="space-y-14 animate-fade-in-up">
+
+                        {/* ── SECCIÓN: Credenciales de Acceso ───────────────────── */}
+                        <section>
+                            <div className="flex items-center justify-between mb-8 px-2">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Accesos Digitales</p>
+                                    <h3 className="text-3xl font-display font-medium text-slate-900 tracking-tight">Credenciales</h3>
+                                </div>
+                                {/* Cambiar clave SRI */}
+                                <button
+                                    onClick={() => setShowChangePassword(true)}
+                                    className="flex items-center gap-3 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-teal-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
                                 >
-                                    <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110">
-                                        <LucideIcons.FileUp size={18} />
+                                    <LucideIcons.KeyRound size={14} />
+                                    Cambiar Clave SRI
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <CredentialCard
+                                    label="Clave SRI"
+                                    icon={LucideIcons.Lock}
+                                    value={localClient.sriPassword}
+                                    hint="No registrada"
+                                />
+                                <CredentialCard
+                                    label="Clave Firma Electrónica (.p12)"
+                                    icon={LucideIcons.KeySquare}
+                                    value={localClient.electronicSignaturePassword}
+                                    hint="No registrada"
+                                />
+                                <CredentialCard
+                                    label="Clave IESS"
+                                    icon={LucideIcons.ShieldEllipsis}
+                                    value={localClient.iessPassword}
+                                    hint="No registrada"
+                                />
+                                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5">
+                                    <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center flex-shrink-0">
+                                        <LucideIcons.Fingerprint size={22} />
                                     </div>
-                                    <div className="text-left">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Certificado RUC</p>
-                                        <p className="text-xs font-bold text-slate-900">Visualizar Digital</p>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Estado Firma Electrónica</p>
+                                        {signatureExpiry ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-sm font-bold ${signatureExpired ? 'text-rose-500' : signatureWarning ? 'text-amber-500' : 'text-emerald-600'}`}>
+                                                    {signatureExpired
+                                                        ? '⚠ Firma vencida'
+                                                        : signatureWarning
+                                                            ? `Vence en ${signatureDaysLeft} días`
+                                                            : `Vigente · ${signatureDaysLeft}d restantes`}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-slate-300 italic">Sin fecha registrada</p>
+                                        )}
+                                        {signatureExpiry && (
+                                            <p className="text-[10px] text-slate-400 mt-0.5">
+                                                Vencimiento: {safeFormat(signatureExpiry.toISOString(), 'dd/MM/yyyy')}
+                                            </p>
+                                        )}
                                     </div>
+                                    {signatureExpiry && (
+                                        <div className={`w-3 h-3 rounded-full flex-shrink-0 ${signatureExpired ? 'bg-rose-400' : signatureWarning ? 'bg-amber-400' : 'bg-emerald-400'} animate-pulse`} />
+                                    )}
                                 </div>
                             </div>
-                        </header>
+                        </section>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {client.declarations.length > 0 ? [...client.declarations].reverse().map((decl, idx) => {
-                                const isPaid = decl.status === 'Pagada' || !!decl.is_paid;
-                                return (
-                                    <div key={idx} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-premium transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-200/50 group">
-                                        <div className="flex justify-between items-start mb-8">
-                                            <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
-                                                <LucideIcons.FileCheck size={28} />
-                                            </div>
-                                            <div className={`px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border ${isPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
-                                                {decl.status}
-                                            </div>
+                        {/* ── SECCIÓN: Archivos Principales ─────────────────────── */}
+                        <section>
+                            <div className="mb-8 px-2">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Documentos Certificados</p>
+                                <h3 className="text-3xl font-display font-medium text-slate-900 tracking-tight">Expediente Digital</h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {/* Firma electrónica .p12 */}
+                                <div
+                                    onClick={() => hasSignatureFile && handleDownloadFile(localClient.signatureFile!)}
+                                    className={`bg-white p-8 rounded-[3rem] border transition-all group ${hasSignatureFile
+                                        ? 'border-slate-100 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1'
+                                        : 'border-dashed border-slate-200 opacity-50'}`}
+                                >
+                                    <div className="w-14 h-14 bg-violet-50 text-violet-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                        <LucideIcons.FileKey size={26} />
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Firma Electrónica</p>
+                                    <h4 className="text-lg font-display font-semibold text-slate-900 mb-2">
+                                        {hasSignatureFile ? localClient.signatureFile!.name : 'Token .P12'}
+                                    </h4>
+                                    <p className="text-xs text-slate-400">
+                                        {hasSignatureFile ? 'Clic para descargar' : 'No cargado aún'}
+                                    </p>
+                                    {hasSignatureFile && (
+                                        <div className="mt-4 flex items-center gap-2 text-teal-600 text-xs font-bold">
+                                            <LucideIcons.Download size={13} /> Descargar .p12
                                         </div>
+                                    )}
+                                </div>
 
-                                        <div className="space-y-1 mb-8">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{decl.type || 'IVA'}</p>
-                                            <h4 className="text-2xl font-display font-medium text-slate-900">{formatPeriodForDisplay(decl.period)}</h4>
-                                            <p className="text-xs text-slate-400 font-medium">{safeFormat(decl.updatedAt, 'MMMM dd, yyyy')}</p>
+                                {/* Certificado RUC */}
+                                <div
+                                    onClick={() => hasRucFile && handleRucPreview()}
+                                    className={`bg-white p-8 rounded-[3rem] border transition-all group ${hasRucFile
+                                        ? 'border-slate-100 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1'
+                                        : 'border-dashed border-slate-200 opacity-50'}`}
+                                >
+                                    <div className="w-14 h-14 bg-sky-50 text-sky-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                        <LucideIcons.FileText size={26} />
+                                    </div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Certificado RUC</p>
+                                    <h4 className="text-lg font-display font-semibold text-slate-900 mb-2">
+                                        {(localClient.rucCertificate || localClient.rucPdf)?.name || 'Documento RUC'}
+                                    </h4>
+                                    <p className="text-xs text-slate-400">
+                                        {hasRucFile ? 'Clic para visualizar' : 'No cargado aún'}
+                                    </p>
+                                    {hasRucFile && (
+                                        <div className="mt-4 flex items-center gap-2 text-teal-600 text-xs font-bold">
+                                            <LucideIcons.ExternalLink size={13} /> Ver PDF
                                         </div>
+                                    )}
+                                </div>
 
-                                        <div className="flex gap-3 pt-6 border-t border-slate-50">
-                                            <button 
-                                                onClick={() => handleOpenInNewTab(decl)}
-                                                className="flex-1 h-12 bg-slate-900 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-teal-600 transition-all active:scale-95 flex items-center justify-center gap-2"
-                                            >
-                                                <LucideIcons.ExternalLink size={14} /> Abrir
-                                            </button>
-                                            <button 
-                                                onClick={() => handleDownloadPdf(decl)}
-                                                className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-white hover:text-slate-900 hover:border-slate-200 border border-transparent transition-all"
-                                            >
-                                                <LucideIcons.Download size={16} />
-                                            </button>
+                                {/* Resolución Devolución IVA / Renta */}
+                                {hasRentaRefundProof && (
+                                    <div
+                                        onClick={() => handleOpenInNewTab({ proof_file: localClient.rentaRefundProof })}
+                                        className="bg-white p-8 rounded-[3rem] border border-slate-100 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1 transition-all group"
+                                    >
+                                        <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                            <LucideIcons.BadgeDollarSign size={26} />
+                                        </div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Devolución Renta/IVA</p>
+                                        <h4 className="text-lg font-display font-semibold text-slate-900 mb-2">{localClient.rentaRefundProof!.name}</h4>
+                                        <div className="mt-4 flex items-center gap-2 text-teal-600 text-xs font-bold">
+                                            <LucideIcons.ExternalLink size={13} /> Ver Resolución
                                         </div>
                                     </div>
-                                );
-                            }) : (
-                                <div className="col-span-full py-32 text-center bg-slate-50/50 rounded-[4rem] border-2 border-dashed border-slate-200">
-                                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl shadow-slate-200/50">
-                                        <LucideIcons.CloudOff size={36} className="text-slate-200" />
+                                )}
+
+                                {/* Archivos del vault general */}
+                                {vaultFiles.map((file, idx) => (
+                                    <div
+                                        key={idx}
+                                        onClick={() => {
+                                            if (file.type === 'pdf' || file.name.endsWith('.pdf')) {
+                                                handleOpenInNewTab({ proof_file: file });
+                                            } else {
+                                                handleDownloadFile(file);
+                                            }
+                                        }}
+                                        className="bg-white p-8 rounded-[3rem] border border-slate-100 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1 transition-all group"
+                                    >
+                                        <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                            <LucideIcons.File size={26} />
+                                        </div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Documento</p>
+                                        <h4 className="text-lg font-display font-semibold text-slate-900 mb-2 truncate">{file.name}</h4>
+                                        <div className="mt-4 flex items-center gap-2 text-teal-600 text-xs font-bold">
+                                            {file.name.endsWith('.pdf') ? <><LucideIcons.ExternalLink size={13} /> Ver PDF</> : <><LucideIcons.Download size={13} /> Descargar</>}
+                                        </div>
                                     </div>
-                                    <h4 className="text-2xl font-display font-medium text-slate-900 mb-2">Bóveda Vacía</h4>
+                                ))}
+                            </div>
+
+                            {!hasSignatureFile && !hasRucFile && vaultFiles.length === 0 && !hasRentaRefundProof && (
+                                <div className="py-24 text-center bg-slate-50/60 rounded-[4rem] border-2 border-dashed border-slate-200 mt-4">
+                                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-slate-200/50">
+                                        <LucideIcons.FolderOpen size={32} className="text-slate-200" />
+                                    </div>
+                                    <h4 className="text-2xl font-display font-medium text-slate-700 mb-2">Sin documentos aún</h4>
+                                    <p className="text-slate-400 font-medium max-w-xs mx-auto">Su asesor cargará sus documentos certificados a medida que los procese.</p>
+                                </div>
+                            )}
+                        </section>
+
+                        {/* ── SECCIÓN: Declaraciones PDF ────────────────────────── */}
+                        <section>
+                            <div className="mb-8 px-2">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Historial Tributario</p>
+                                <h3 className="text-3xl font-display font-medium text-slate-900 tracking-tight">Declaraciones</h3>
+                            </div>
+
+                            {localClient.declarations && localClient.declarations.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {[...localClient.declarations].reverse().map((decl, idx) => {
+                                        const isPaid = decl.status === 'Pagada' || !!decl.is_paid;
+                                        const hasPdf = !!decl.proof_file?.content;
+                                        return (
+                                            <div key={idx} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-premium transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-200/50 group">
+                                                <div className="flex justify-between items-start mb-8">
+                                                    <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
+                                                        <LucideIcons.FileCheck size={28} />
+                                                    </div>
+                                                    <div className={`px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border ${isPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                                        {decl.status}
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-1 mb-8">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{decl.type || 'IVA'}</p>
+                                                    <h4 className="text-2xl font-display font-medium text-slate-900">{formatPeriodForDisplay(decl.period)}</h4>
+                                                    <p className="text-xs text-slate-400 font-medium">{safeFormat(decl.updatedAt, 'MMMM dd, yyyy')}</p>
+                                                </div>
+
+                                                <div className="flex gap-3 pt-6 border-t border-slate-50">
+                                                    <button
+                                                        onClick={() => handleOpenInNewTab(decl)}
+                                                        disabled={!hasPdf}
+                                                        className={`flex-1 h-12 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2 ${hasPdf ? 'bg-slate-900 text-white hover:bg-teal-600 shadow-md' : 'bg-slate-50 text-slate-300 cursor-not-allowed'}`}
+                                                    >
+                                                        <LucideIcons.ExternalLink size={14} /> Abrir
+                                                    </button>
+                                                    <button
+                                                        onClick={() => decl.proof_file && handleDownloadFile(decl.proof_file)}
+                                                        disabled={!hasPdf}
+                                                        className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all ${hasPdf ? 'bg-slate-50 text-slate-400 hover:bg-white hover:text-slate-900 hover:border-slate-200 border-transparent' : 'bg-slate-50 text-slate-200 border-transparent cursor-not-allowed'}`}
+                                                    >
+                                                        <LucideIcons.Download size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="py-20 text-center bg-slate-50/60 rounded-[4rem] border-2 border-dashed border-slate-200">
+                                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-slate-200/50">
+                                        <LucideIcons.CloudOff size={32} className="text-slate-200" />
+                                    </div>
+                                    <h4 className="text-2xl font-display font-medium text-slate-900 mb-2">Sin declaraciones</h4>
                                     <p className="text-slate-400 font-medium">No se han sincronizado expedientes para este ejercicio fiscal.</p>
                                 </div>
                             )}
-                        </div>
+                        </section>
                     </div>
                 )}
 
@@ -399,7 +779,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 <span className="inline-block px-4 py-1.5 bg-teal-50 text-teal-600 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] mb-4 border border-teal-100">Planificación 2024</span>
                                 <h3 className="text-5xl font-display font-medium text-slate-900 tracking-tight">Timeline Fiscal</h3>
                                 <p className="text-slate-400 text-sm mt-5 font-medium leading-relaxed max-w-sm mx-auto">
-                                    Próximos hitos obligatorios según el calendario regulatorio para su terminación de RUC (<span className="text-slate-900 font-bold">{client.ruc[8]}</span>).
+                                    Próximos hitos obligatorios según el calendario regulatorio para su terminación de RUC (<span className="text-slate-900 font-bold">{localClient.ruc[8]}</span>).
                                 </p>
                             </header>
 
@@ -407,7 +787,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 {compliance.obligations.filter(ob => ob.color !== 'gray').map((ob, idx) => (
                                     <TimelineItem key={idx} ob={ob} />
                                 ))}
-                                
+
                                 {compliance.obligations.filter(ob => ob.color === 'gray').length > 0 && (
                                     <div className="mt-8 pt-8 border-t border-slate-50">
                                         <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest text-center mb-8">Periodos Completados o Futuros</p>
@@ -433,6 +813,14 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                     </div>
                 )}
             </main>
+
+            {/* Modal cambio de clave SRI */}
+            <ChangePasswordModal
+                isOpen={showChangePassword}
+                onClose={() => setShowChangePassword(false)}
+                onSave={handleSavePassword}
+                currentPassword={localClient.sriPassword}
+            />
         </div>
     );
 };

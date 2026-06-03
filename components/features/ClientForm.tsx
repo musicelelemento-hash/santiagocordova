@@ -4,7 +4,7 @@ import { validateIdentifier, validateSriPassword, getPeriod } from '../../servic
 import { extractDataFromSriPdf, fileToBase64 } from '../../services/pdfExtraction';
 import {
     User, Mail, Phone, MapPin, FileText, Plus, X, Upload, Check, Loader, Lock, Briefcase, Camera, ScanText, Sparkles, Building2, Receipt, Palette,
-    ScanLine, CreditCard, Key, EyeOff, Eye, Calendar, DollarSign, Zap, Coins, ToggleRight, ToggleLeft, CheckCircle, AlertTriangle, Save, Users
+    ScanLine, CreditCard, Key, EyeOff, Eye, Calendar, DollarSign, Zap, Coins, ToggleRight, ToggleLeft, CheckCircle, AlertTriangle, Save, Users, CalendarCheck
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '../../context/ToastContext';
@@ -76,6 +76,18 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
     const [hasActiveDevolucionIva, setHasActiveDevolucionIva] = useState(initialTaxProfile.hasActiveDevolucionIva);
     const [requiresIce, setRequiresIce] = useState(initialData?.taxProfile?.requiresIce ?? false);
     const [requiresAnexoPvp, setRequiresAnexoPvp] = useState(initialData?.taxProfile?.requiresAnexoPvp ?? false);
+
+    // "Al día desde": first billing period for this client (YYYY-MM for monthly, YYYY-S1/S2 for semestral)
+    // Default = current month so new clients start fresh without backlog
+    const getDefaultStartPeriod = () => {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}`;
+    };
+    const [clientStartPeriod, setClientStartPeriod] = useState<string>(
+        initialData?.clientStartPeriod || getDefaultStartPeriod()
+    );
 
     const [monthlyFee, setMonthlyFee] = useState<string>(
         (clientData.fee_structure?.monthly ?? 5).toString()
@@ -240,6 +252,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             phones: (clientData.phones || []).filter(p => p.trim() !== ''),
             isActive: isActive,
             notes: notes.trim(),
+            clientStartPeriod: clientStartPeriod || getDefaultStartPeriod(),
             signatureExpirationDate: clientData.signatureExpirationDate,
             taxProfile: {
                 ivaFrequency: finalIvaFrequency,
@@ -496,6 +509,25 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Al día desde: primer período a declarar */}
+                        <div className="relative bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800/30 rounded-2xl p-4">
+                            <div className="flex items-center gap-3 mb-3">
+                                <CalendarCheck size={16} className="text-emerald-600" />
+                                <label className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">
+                                    Al día desde (primer período a declarar)
+                                </label>
+                            </div>
+                            <p className="text-[11px] text-emerald-600/70 dark:text-emerald-500/70 mb-3 leading-relaxed">
+                                Todos los períodos anteriores a esta fecha se ignorarán. Para un cliente nuevo, deja el mes actual.
+                            </p>
+                            <input
+                                type="month"
+                                value={clientStartPeriod}
+                                onChange={e => setClientStartPeriod(e.target.value)}
+                                className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-700 rounded-xl text-sm font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/40 transition-all"
+                            />
                         </div>
                         
                         <div className="relative">

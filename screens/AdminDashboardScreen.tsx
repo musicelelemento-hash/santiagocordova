@@ -58,6 +58,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
     const [matrixUploadSelection, setMatrixUploadSelection] = useState<{ client: Client, period: string } | null>(null);
     const [workspaceClient, setWorkspaceClient] = useState<{ client: Client, period?: string } | null>(null);
+    const [showMarkAllModal, setShowMarkAllModal] = useState(false);
+    const [markAllMode, setMarkAllMode] = useState<'declared' | 'paid' | 'both'>('both');
+    const [isBulkMarking, setIsBulkMarking] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const matrixFileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -382,6 +385,60 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         if (actionLabels[action]) {
             toast.success(actionLabels[action]);
         }
+    };
+
+    // ── BULK MARK ALL AS DECLARED & PAID ──────────────────────────────
+    const handleMarkAllDeclaredAndPaid = async () => {
+        const today = new Date();
+        const nowIso = today.toISOString();
+        setIsBulkMarking(true);
+
+        let count = 0;
+        for (const client of activeList) {
+            const period = getPeriod(client, today);
+            const history = [...(client.declarations || [])];
+            const idx = history.findIndex(d => d.period === period);
+
+            const updates: Partial<Declaration> = { updatedAt: nowIso };
+            let newStatus = history[idx]?.status || DeclarationStatus.Pendiente;
+
+            if (markAllMode === 'declared' || markAllMode === 'both') {
+                newStatus = DeclarationStatus.Enviada;
+                updates.declaredAt = updates.declaredAt || history[idx]?.declaredAt || nowIso;
+            }
+            if (markAllMode === 'paid' || markAllMode === 'both') {
+                newStatus = DeclarationStatus.Pagada;
+                updates.is_paid = true;
+                updates.paidAt = nowIso;
+                updates.transactionId = updates.transactionId || `BLK-${Date.now().toString().slice(-4)}`;
+                // Si marcamos como pagado, también debe estar declarado
+                updates.declaredAt = updates.declaredAt || history[idx]?.declaredAt || nowIso;
+                if (markAllMode === 'both') newStatus = DeclarationStatus.Pagada;
+            }
+
+            const newEntry: Partial<Declaration> = {
+                period,
+                status: newStatus,
+                ...updates
+            };
+
+            if (idx > -1) {
+                history[idx] = { ...history[idx], ...newEntry };
+            } else {
+                history.push(newEntry as Declaration);
+            }
+
+            updateClient(client.id, { declarations: history });
+            count++;
+        }
+
+        // Small delay for UX feedback
+        await new Promise(r => setTimeout(r, 300));
+        setIsBulkMarking(false);
+        setShowMarkAllModal(false);
+
+        const modeLabel = markAllMode === 'declared' ? 'declarados' : markAllMode === 'paid' ? 'con pago al día' : 'declarados y con pago al día';
+        toast.success(`✅ ${count} clientes marcados como ${modeLabel}`);
     };
 
     const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1205,6 +1262,17 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         </span>
                         <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
                         <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600">{allResults.length} en vista</span>
+                        <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
+                        {/* ── BOTÓN MARCAR TODOS AL DÍA ── */}
+                        <button
+                            onClick={() => setShowMarkAllModal(true)}
+                            disabled={activeList.length === 0}
+                            title="Marcar todos como declarados y pagados al día"
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        >
+                            <LucideIcons.CheckCheck size={13} />
+                            Marcar Todos
+                        </button>
                     </div>
                 </div>
             )}
@@ -1301,6 +1369,95 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     </div>
                 )}
             </div>
+
+            {/* ── MODAL CONFIRMAR MARCAR TODOS AL DÍA ── */}
+            {showMarkAllModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-fade-in-up">
+                    <div className="relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl border border-slate-100 dark:border-white/10 overflow-hidden">
+                        {/* Glow */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-500/10 rounded-full blur-[60px] -ml-16 -mb-16 pointer-events-none" />
+
+                        <div className="relative z-10">
+                            {/* Icon */}
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30 flex-shrink-0">
+                                    {isBulkMarking
+                                        ? <LucideIcons.Loader2 size={26} className="text-white animate-spin" />
+                                        : <LucideIcons.CheckCheck size={26} className="text-white" />
+                                    }
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Acción Masiva</h3>
+                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">
+                                        {activeList.length} clientes en vista
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Selector de modo */}
+                            <div className="mb-6 space-y-2">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">¿Qué deseas marcar?</p>
+                                {([
+                                    { id: 'both', label: 'Declarados + Pagados al Día', desc: 'Marca la declaración SRI como enviada Y los honorarios como cobrados', icon: LucideIcons.ShieldCheck, color: 'emerald' },
+                                    { id: 'declared', label: 'Solo Declarados', desc: 'Registra la declaración SRI como enviada al fisco', icon: LucideIcons.FileCheck, color: 'blue' },
+                                    { id: 'paid', label: 'Solo Pagados', desc: 'Marca los honorarios profesionales como cobrados', icon: LucideIcons.DollarSign, color: 'amber' },
+                                ] as const).map(opt => {
+                                    const isActive = markAllMode === opt.id;
+                                    const colorMap = {
+                                        emerald: isActive ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-emerald-300',
+                                        blue: isActive ? 'bg-blue-500 border-blue-500 text-white' : 'bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-blue-300',
+                                        amber: isActive ? 'bg-amber-500 border-amber-500 text-white' : 'bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-amber-300',
+                                    };
+                                    return (
+                                        <button
+                                            key={opt.id}
+                                            onClick={() => setMarkAllMode(opt.id)}
+                                            className={`w-full flex items-start gap-3 p-4 rounded-2xl border-2 transition-all duration-200 text-left ${colorMap[opt.color]}`}
+                                        >
+                                            <opt.icon size={18} className={`shrink-0 mt-0.5 ${isActive ? 'text-white' : ''}`} />
+                                            <div>
+                                                <p className={`text-xs font-black uppercase tracking-wider ${isActive ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>{opt.label}</p>
+                                                <p className={`text-[10px] mt-0.5 leading-relaxed ${isActive ? 'text-white/80' : 'text-slate-400'}`}>{opt.desc}</p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Warning */}
+                            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/30 rounded-2xl mb-6">
+                                <LucideIcons.AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+                                <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold leading-relaxed">
+                                    Esta acción modifica el período actual de <strong>{activeList.length} clientes</strong>. Solo afecta a los que están en la vista activa.
+                                </p>
+                            </div>
+
+                            {/* Buttons */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowMarkAllModal(false)}
+                                    disabled={isBulkMarking}
+                                    className="flex-1 py-4 rounded-2xl border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-white/5 transition-all disabled:opacity-50"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleMarkAllDeclaredAndPaid}
+                                    disabled={isBulkMarking || activeList.length === 0}
+                                    className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-black uppercase tracking-widest hover:from-emerald-600 hover:to-teal-600 transition-all active:scale-95 shadow-xl shadow-emerald-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isBulkMarking ? (
+                                        <><LucideIcons.Loader2 size={16} className="animate-spin" /> Procesando...</>
+                                    ) : (
+                                        <><LucideIcons.CheckCheck size={16} /> Confirmar</>  
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Hidden component for Print Export */}
             <ComplianceReportExport 
