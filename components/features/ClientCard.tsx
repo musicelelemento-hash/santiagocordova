@@ -18,10 +18,11 @@ interface ClientCardProps {
     variant?: 'tactical' | 'zen' | 'digital';
     frequency?: 'Mensual' | 'Semestral' | 'Anual' | 'all';
     customPeriod?: string;
+    isTrashView?: boolean;
 }
 
 
-export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency, customPeriod }) => {
+export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency, customPeriod, isTrashView = false }) => {
     const [copied, setCopied] = React.useState(false);
     const [isHovered, setIsHovered] = React.useState(false);
 
@@ -212,32 +213,51 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             )}
                         </div>
 
-                        {client.isActive && !client.isDeleted && (
+                        {isTrashView ? (
                             <div className="flex items-center gap-2">
                                 <button
-                                    onClick={(e) => !isDeclared && handleAction(e, 'declare')}
-                                    disabled={isDeclared}
-                                    className={`group/btn flex items-center justify-center h-11 w-11 sm:w-auto sm:px-5 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-widest font-premium ${
-                                        isDeclared 
-                                        ? 'bg-slate-50 text-slate-300 border-slate-100 dark:bg-white/5 dark:border-transparent opacity-50' 
-                                        : 'bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary hover:scale-105 active:scale-95 shadow-lg shadow-slate-200 dark:shadow-primary/20'
-                                    }`}
+                                    onClick={(e) => handleAction(e, 'restore')}
+                                    className="flex items-center justify-center h-11 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/25"
                                 >
-                                    <LucideIcons.Zap size={15} className={isDeclared ? '' : 'fill-current group-hover/btn:animate-pulse'} />
-                                    <span className="hidden md:inline ml-2">SRI</span>
+                                    <LucideIcons.RotateCcw size={14} className="mr-2" />
+                                    Restaurar
                                 </button>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
-                                    className={`flex items-center justify-center h-11 w-11 sm:w-auto sm:px-5 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-widest font-premium ${
-                                        activeDecl?.proof_file 
-                                        ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-200' 
-                                        : 'bg-white dark:bg-white/5 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-emerald-500 hover:text-emerald-500'
-                                    } active:scale-95`}
+                                    onClick={(e) => handleAction(e, 'purge')}
+                                    className="flex items-center justify-center h-11 px-4 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 shadow-lg shadow-rose-500/25"
                                 >
-                                    {activeDecl?.proof_file ? <LucideIcons.FileCheck size={16} /> : <LucideIcons.UploadCloud size={16} />}
-                                    <span className="hidden md:inline ml-2">{activeDecl?.proof_file ? 'VER' : 'PDF'}</span>
+                                    <LucideIcons.Trash2 size={14} className="mr-2" />
+                                    Eliminar
                                 </button>
                             </div>
+                        ) : (
+                            client.isActive && !client.isDeleted && (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={(e) => !isDeclared && handleAction(e, 'declare')}
+                                        disabled={isDeclared}
+                                        className={`group/btn flex items-center justify-center h-11 w-11 sm:w-auto sm:px-5 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-widest font-premium ${
+                                            isDeclared 
+                                            ? 'bg-slate-50 text-slate-300 border-slate-100 dark:bg-white/5 dark:border-transparent opacity-50' 
+                                            : 'bg-slate-900 dark:bg-primary text-white border-slate-900 dark:border-primary hover:scale-105 active:scale-95 shadow-lg shadow-slate-200 dark:shadow-primary/20'
+                                        }`}
+                                    >
+                                        <LucideIcons.Zap size={15} className={isDeclared ? '' : 'fill-current group-hover/btn:animate-pulse'} />
+                                        <span className="hidden md:inline ml-2">SRI</span>
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
+                                        className={`flex items-center justify-center h-11 w-11 sm:w-auto sm:px-5 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-widest font-premium ${
+                                            activeDecl?.proof_file 
+                                            ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-200' 
+                                            : 'bg-white dark:bg-white/5 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-emerald-500 hover:text-emerald-500'
+                                        } active:scale-95`}
+                                    >
+                                        {activeDecl?.proof_file ? <LucideIcons.FileCheck size={16} /> : <LucideIcons.UploadCloud size={16} />}
+                                        <span className="hidden md:inline ml-2">{activeDecl?.proof_file ? 'VER' : 'PDF'}</span>
+                                    </button>
+                                </div>
+                            )
                         )}
                     </div>
                 </div>

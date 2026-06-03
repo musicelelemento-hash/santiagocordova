@@ -56,10 +56,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     clearClientToView,
     sriCredentialsProp
 }) => {
-    const { clients, setClients, updateClient, addClient, serviceFees, sriCredentials: storeCredentials } = useAppStore();
+    const { clients, setClients, updateClient, addClient, removeClient, restoreClient, purgeTrash, serviceFees, sriCredentials: storeCredentials } = useAppStore();
     const sriCredentials = sriCredentialsProp || storeCredentials;
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('clients_search') || '');
+    const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isClientDetailsOpen, setIsClientDetailsOpen] = useState(false);
@@ -254,11 +255,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             }
 
             if (activeGroupTab === 'cobros') {
-                const today = new Date();
-                const debtSummary = getClientDebtSummary(client, serviceFees, today);
-                const undeclaredSummary = getClientUndeclaredSummary(client, today);
-                // Declared but unpaid (no unfiled pending SRI obligations)
-                return debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
+                return true;
             }
 
             if (activeGroupTab === 'al-dia') {
@@ -403,7 +400,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         setTimeout(() => setSelectedClient(null), 300);
     };
 
-    const handleQuickAction = (client: Client, action: 'declare' | 'pay' | 'deactivate', customPeriod?: string) => {
+    const handleQuickAction = (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', customPeriod?: string) => {
         const today = new Date();
         const period = customPeriod || getPeriod(client, today);
         const nowIso = today.toISOString();
@@ -411,6 +408,20 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         if (action === 'deactivate') {
             updateClient(client.id, { isActive: false });
             toast.success(`${client.name} desactivado`);
+            return;
+        }
+
+        if (action === 'restore') {
+            restoreClient(client.id);
+            toast.success(`${client.name} restaurado correctamente`);
+            return;
+        }
+
+        if (action === 'purge') {
+            if (window.confirm(`¿Está seguro de eliminar permanentemente a ${client.name}? Esta acción no se puede deshacer.`)) {
+                removeClient(client.id, true);
+                toast.success(`${client.name} eliminado permanentemente`);
+            }
             return;
         }
 
@@ -444,6 +455,32 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         }
 
         toast.success(action === 'declare' ? 'Declaración registrada' : 'Pago registrado');
+    };
+
+    const handleExportCSV = () => {
+        const headers = ["RUC", "Nombre", "WhatsApp", "Email", "Régimen", "Frecuencia IVA", "Estado", "Al día desde"];
+        const rows = sortedClients.map(c => [
+            c.ruc,
+            c.name,
+            c.phones?.join('; ') || '',
+            c.email || '',
+            c.regime,
+            c.taxProfile?.ivaFrequency || 'Mensual',
+            c.isActive ? 'Activo' : 'Inactivo',
+            c.clientStartPeriod || ''
+        ]);
+        
+        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+            + [headers.join(','), ...rows.map(e => e.map(val => `"${val.replace(/"/g, '""')}"`).join(','))].join('\n');
+            
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Clientes_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Exportación CSV descargada");
     };
 
     const handleUploadReceipt = (client: Client, period?: string) => {
@@ -775,46 +812,24 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             >
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
                 
-                <div className="flex p-1.5 bg-surface-low rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar border border-outline-variant/20">
+                <div className="flex gap-2 w-full lg:w-auto">
                     <button 
-                        onClick={() => {
-                            setIsWorkspaceView(!isWorkspaceView);
-                            if (!isWorkspaceView) setIsCobrosView(false);
-                        }}
-                        className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 shrink-0 font-premium relative
-                            ${isWorkspaceView 
-                                ? 'bg-primary text-white shadow-tactical' 
-                                : 'text-on-surface-variant hover:bg-surface-medium'}`}
+                        onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+                        className={`flex items-center justify-center gap-2.5 px-6 py-4.5 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all border font-premium
+                            ${isFilterPanelOpen 
+                                ? 'bg-primary text-white border-primary shadow-tactical shadow-primary/20' 
+                                : 'bg-surface-medium text-on-surface-variant border-outline-variant/30 hover:text-on-surface hover:border-slate-350'}`}
                     >
-                        {isWorkspaceView && (
-                            <motion.div 
-                                layoutId="active-pill"
-                                className="absolute inset-0 bg-primary rounded-xl -z-10"
-                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                            />
-                        )}
-                        <LucideIcons.ShieldAlert size={16} />
-                        ALERTAS
+                        <LucideIcons.Filter size={16} />
+                        Filtros
                     </button>
-                    <button 
-                        onClick={() => {
-                            setIsCobrosView(!isCobrosView);
-                            if (!isCobrosView) setIsWorkspaceView(false);
-                        }}
-                        className={`flex-1 lg:flex-none flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 shrink-0 font-premium relative
-                            ${isCobrosView 
-                                ? 'bg-tertiary text-white shadow-tactical' 
-                                : 'text-on-surface-variant hover:bg-surface-medium'}`}
+                    <button
+                        onClick={handleExportCSV}
+                        className="flex items-center justify-center gap-2.5 px-6 py-4.5 rounded-2xl bg-surface-medium text-on-surface-variant border border-outline-variant/30 hover:text-on-surface hover:border-slate-350 transition-all text-[10px] font-bold uppercase tracking-[0.2em] font-premium"
+                        title="Exportar a CSV"
                     >
-                        {isCobrosView && (
-                            <motion.div 
-                                layoutId="active-pill"
-                                className="absolute inset-0 bg-tertiary rounded-xl -z-10"
-                                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                            />
-                        )}
-                        <LucideIcons.DollarSign size={16} />
-                        CÉLULA COBROS
+                        <LucideIcons.Download size={16} className="text-emerald-550" />
+                        Exportar
                     </button>
                 </div>
 
@@ -860,7 +875,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-architect border border-outline-variant/30 p-2 z-50">
                                 {[
                                     { id: '9th_digit', label: 'Vencimiento' },
-                                    { id: 'name', label: 'Alfabético' }
+                                    { id: 'name', label: 'Alfabético' },
+                                    { id: 'pending_obligations', label: 'SRI Pendientes' },
+                                    { id: 'pending_payments', label: 'Cobros Pendientes' }
                                 ].map(opt => (
                                     <button 
                                         key={opt.id}
@@ -875,6 +892,64 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     </div>
                 </div>
             </motion.div>
+
+            {/* Expandable Advanced Filters Panel */}
+            <AnimatePresence>
+                {isFilterPanelOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-surface border border-outline-variant/30 rounded-[2.5rem] p-6 mb-8 mx-1 sm:mx-0 shadow-inner flex flex-col md:flex-row gap-6 items-start md:items-center relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/10 to-transparent"></div>
+                        <div className="flex-1 w-full">
+                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-3">Filtrar por Régimen</label>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { id: 'all', label: 'Todos los Regímenes' },
+                                    { id: TaxRegime.General, label: 'General' },
+                                    { id: TaxRegime.RimpeEmprendedor, label: 'Rimpe Emprendedor' },
+                                    { id: TaxRegime.RimpeNegocioPopular, label: 'Rimpe Negocio Popular' }
+                                ].map(opt => (
+                                    <button
+                                        key={opt.id}
+                                        onClick={() => setRegimeFilter(opt.id as any)}
+                                        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border uppercase tracking-wider
+                                            ${regimeFilter === opt.id 
+                                                ? 'bg-primary border-primary text-white shadow-md' 
+                                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-white/5 text-slate-500 hover:border-slate-300 dark:hover:border-white/10 dark:text-slate-400'}`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="w-full md:w-auto shrink-0">
+                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-3">Filtrar por Estado</label>
+                            <div className="flex bg-slate-100 dark:bg-black/40 p-1.5 rounded-xl border border-slate-200 dark:border-white/5">
+                                {[
+                                    { id: 'all', label: 'Todos' },
+                                    { id: 'active', label: 'Activos' },
+                                    { id: 'inactive', label: 'Inactivos' }
+                                ].map(opt => (
+                                    <button
+                                        key={opt.id}
+                                        onClick={() => setFilterOption(opt.id as any)}
+                                        className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all
+                                            ${filterOption === opt.id 
+                                                ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' 
+                                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'}`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {/* ZENITH GROWTH HUB - SILENT ANALYSIS */}
             <div className="mb-8 relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 via-slate-400/5 to-transparent rounded-[2rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
@@ -1008,13 +1083,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             {/* PRODUCTIVIDAD TABS (Zen Flow) */}
             <div className="mb-6 flex overflow-x-auto no-scrollbar gap-1.5 p-1 bg-slate-100 dark:bg-black/40 rounded-2xl border border-slate-200 dark:border-white/5">
                 {[
-                    { id: 'all', label: 'Legión', count: clients.length, icon: LucideIcons.Users },
-                    { id: 'mensual', label: 'Mensual', count: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual').length, icon: LucideIcons.Calendar },
-                    { id: 'semestral', label: 'Semestral', count: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Semestral').length, icon: LucideIcons.Clock },
-                    { id: 'vencidos', label: 'Deterioro', count: globalStats.vencidos, icon: LucideIcons.AlertCircle },
+                    { id: 'all', label: 'Todos', count: clients.filter(c => !c.isDeleted).length, icon: LucideIcons.Users },
+                    { id: 'mensual', label: 'IVA Mensual', count: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual').length, icon: LucideIcons.Calendar },
+                    { id: 'semestral', label: 'IVA Semestral', count: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Semestral').length, icon: LucideIcons.Clock },
+                    { id: 'vencidos', label: 'Vencidos / Alertas', count: globalStats.vencidos, icon: LucideIcons.AlertCircle },
                     { id: 'ordenes', label: 'Órdenes', count: globalStats.ordenes, icon: LucideIcons.Zap },
-                    { id: 'cobros', label: 'Caja', count: globalStats.cobros, icon: LucideIcons.DollarSign },
-                    { id: 'al-dia', label: 'Orden', count: globalStats.elite, icon: LucideIcons.ShieldCheck }
+                    { id: 'cobros', label: 'Por Cobrar', count: globalStats.cobros, icon: LucideIcons.DollarSign },
+                    { id: 'al-dia', label: 'Al Día', count: globalStats.elite, icon: LucideIcons.ShieldCheck },
+                    { id: 'matrix', label: 'Matriz Fiscal', count: clients.filter(c => !c.isDeleted).length, icon: LucideIcons.LayoutGrid },
+                    { id: 'trash', label: 'Papelera', count: clients.filter(c => c.isDeleted).length, icon: LucideIcons.Trash2 }
                 ].map((tab) => (
                     <button
                         key={tab.id}
@@ -1101,6 +1178,32 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 )
             }
 
+            {/* PAPELERA BANNER */}
+            {activeGroupTab === 'trash' && sortedClients.length > 0 && (
+                <div className="mb-8 p-6 bg-rose-50 dark:bg-rose-950/20 border border-rose-250 dark:border-rose-800/30 rounded-3xl flex justify-between items-center animate-fade-in shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-500">
+                            <LucideIcons.Trash2 size={20} />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-rose-750 dark:text-rose-450 uppercase tracking-widest">Papelera de Reciclaje</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Los clientes aquí eliminados no serán tomados en cuenta para las métricas fiscales.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => {
+                            if (window.confirm("¿Está seguro de eliminar permanentemente todos los clientes en la papelera? Esta acción no se puede deshacer.")) {
+                                purgeTrash();
+                                toast.success("Papelera vaciada por completo");
+                            }
+                        }}
+                        className="px-6 py-3 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-all"
+                    >
+                        Vaciar Papelera
+                    </button>
+                </div>
+            )}
+
             {/* Client Grid or List */}
             {/* Contenido Dinámico Consolidado - Zenith Command Center */}
             <AnimatePresence mode="wait">
@@ -1142,6 +1245,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 onQuickAction={handleQuickAction}
                                 onUploadReceipt={handleUploadReceipt}
                                 frequency={frequencyForList}
+                                isTrashView={activeGroupTab === 'trash'}
                             />
                         ) : (
                             <VirtualClientList
@@ -1151,6 +1255,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 onQuickAction={handleQuickAction}
                                 onUploadReceipt={handleUploadReceipt}
                                 frequency={frequencyForList}
+                                isTrashView={activeGroupTab === 'trash'}
                             />
                         )}
                     </motion.div>
