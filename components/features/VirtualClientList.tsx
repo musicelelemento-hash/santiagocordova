@@ -57,18 +57,24 @@ export const VirtualClientList: React.FC<VirtualClientListProps> = (props) => {
     return (
         <div className="w-full h-full" style={{ minHeight: '600px' }}>
             <AutoSizer>
-                {({ height, width }) => (
-                    <List
-                        height={height}
-                        itemCount={props.clients.length}
-                        itemSize={itemSize}
-                        width={width}
-                        itemData={props}
-                        className="no-scrollbar"
-                    >
-                        {ClientRow}
-                    </List>
-                )}
+                {({ height, width }) => {
+                    const isMobile = width < 768;
+                    const dynamicItemSize = isMobile ? 380 : 180;
+                    const finalItemSize = variant === 'zen' ? dynamicItemSize : 300;
+
+                    return (
+                        <List
+                            height={height}
+                            itemCount={props.clients.length}
+                            itemSize={finalItemSize}
+                            width={width}
+                            itemData={props}
+                            className="no-scrollbar"
+                        >
+                            {ClientRow}
+                        </List>
+                    );
+                }}
             </AutoSizer>
         </div>
     );
