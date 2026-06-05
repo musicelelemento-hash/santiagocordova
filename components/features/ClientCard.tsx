@@ -152,11 +152,25 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                 </span>
                             )}
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                             <button onClick={handleCopy} className="group/copy flex items-center gap-2 px-2 py-1 rounded-md transition-all hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 hover:text-slate-900 dark:hover:text-white">
                                 <span className="font-mono text-[10px] font-black tracking-widest uppercase">{client.ruc}</span>
                                 {copied ? <LucideIcons.Check size={12} className="text-emerald-500" /> : <LucideIcons.Copy size={12} className="opacity-0 group-hover/copy:opacity-100 transition-opacity" />}
                             </button>
+                            
+                            {/* Campaign Intelligence Badge */}
+                            {dueDate && !client.isDeleted && client.isActive && (
+                                <div className={`flex items-center gap-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md border shadow-sm ${
+                                    isDeclared ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20' :
+                                    isOverdue ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20' :
+                                    isUrgent ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20' :
+                                    'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20'
+                                }`}>
+                                    <LucideIcons.CalendarDays size={10} />
+                                    <span>Dígito {client.ruc[8]} • {isDeclared ? 'Cumplido' : `Vence ${safeFormat(dueDate, 'dd MMM')}`}</span>
+                                </div>
+                            )}
+
                             {!compact && (
                                 <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-white/5 px-2 py-0.5 rounded-md border border-slate-100 dark:border-white/5">
                                     <LucideIcons.CreditCard size={10} />

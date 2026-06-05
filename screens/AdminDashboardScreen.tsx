@@ -5,6 +5,7 @@ import { Screen, Client, DeclarationStatus, TaxRegime, Declaration } from '../ty
 import { useAppStore } from '../store/useAppStore';
 import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay } from '../services/sri';
 import { isPast, isToday, isTomorrow, format, subMonths } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { ClientCard } from '../components/features/ClientCard';
 import { useToast } from '../context/ToastContext';
 import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
@@ -514,6 +515,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         return { todayDigit, tomorrowDigit };
     }, []);
 
+    const campaignInfo = useMemo(() => {
+        const today = new Date();
+        const prevMonth = subMonths(today, 1);
+        const currentMonthName = format(prevMonth, 'MMMM', { locale: es }).toUpperCase();
+        const currentYear = today.getFullYear();
+        
+        return {
+            activeCampaign: `Mensual: ${currentMonthName} ${currentYear}`,
+            nextCampaign: `Próximamente: Semestral S1`
+        };
+    }, []);
+
     const stitchSuggestions = useMemo(() => {
         const suggestions: { title: string, desc: string, priority: 'high' | 'medium' | 'low', action: () => void }[] = [];
 
@@ -644,6 +657,31 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     </div>
                 </div>
             )}
+
+            {/* ── SMART CAMPAIGN BANNER ── */}
+            <div className="relative z-30 animate-fade-in px-4 sm:px-0">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/20 border border-blue-400/30">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%222%22%20cy%3D%222%22%20r%3D%221%22%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.1%22%2F%3E%3C%2Fsvg%3E')] opacity-50" />
+                    <div className="px-5 py-3.5 sm:px-6 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-md border border-white/20">
+                                <LucideIcons.CalendarDays size={20} className="text-white" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-blue-200 uppercase tracking-[0.2em] mb-0.5">Campaña Activa SRI</p>
+                                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">{campaignInfo.activeCampaign}</h2>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <div className="hidden sm:block w-px h-8 bg-white/20" />
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg border border-white/10 backdrop-blur-sm flex-1 sm:flex-none">
+                                <LucideIcons.ArrowRightCircle size={14} className="text-blue-300" />
+                                <span className="text-[10px] font-bold text-blue-100 uppercase tracking-widest">{campaignInfo.nextCampaign}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             {/* ── BACKGROUND ORBS ── */}
             <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-400/3 dark:bg-blue-500/5 blur-[150px] rounded-full pointer-events-none" />
