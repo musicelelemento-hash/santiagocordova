@@ -18,6 +18,8 @@ import { ClientWorkspaceModal } from '../components/features/ClientWorkspaceModa
 import { IvaFrequency } from '../types';
 import { getComplianceSummary, getClientCompliance, ComplianceColor, getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
 import { PortfolioSemaphore } from '../components/ui/PortfolioSemaphore';
+import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+
 
 interface AdminDashboardScreenProps {
     navigate: (screen: Screen, options?: any) => void;
@@ -25,11 +27,13 @@ interface AdminDashboardScreenProps {
 }
 
 export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navigate, theme = 'dark' }) => {
-    const { clients, setClients, serviceFees, updateClient } = useAppStore();
+    const { clients, setClients, serviceFees, updateClient, removeClient, restoreClient, purgeTrash } = useAppStore();
     const { toast } = useToast();
 
+    const [expandAnalytics, setExpandAnalytics] = useState(false);
+
     // Auto-detección de Campaña Mensual
-    const [filter, setFilter] = useState<'all' | 'mensual' | 'semestral' | 'vip' | 'urgent' | 'rimpe' | 'popular' | 'renta' | 'overdue' | 'prepaid' | 'no-iva' | 'no-renta' | 'boveda' | 'digital-mando' | ComplianceColor>(() => {
+    const [filter, setFilter] = useState<'all' | 'mensual' | 'semestral' | 'vip' | 'urgent' | 'rimpe' | 'popular' | 'renta' | 'overdue' | 'prepaid' | 'no-iva' | 'no-renta' | 'boveda' | 'digital-mando' | 'trash' | ComplianceColor>(() => {
         return (sessionStorage.getItem('dashboard_filter') as any) || 'digital-mando';
     });
     const [inboxTab, setInboxTab] = useState<'pendientes' | 'cobros' | 'completados'>(() => {
@@ -127,8 +131,6 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         let debtClientsCount = 0;
 
         for (const c of clients) {
-            if (c.isDeleted || !c.isActive) continue;
-
             // Apply selectedRegime and selectedObligation filters
             if (selectedRegime !== 'all' && c.regime !== selectedRegime) continue;
             
@@ -140,40 +142,43 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 if (!reqRenta) continue;
             }
 
-            activeCount++;
-
-            // 1. KPI & Special Lists Calculations
-            const compliance = getClientCompliance(c, today, currentFreq);
             const currentP = getPeriod(c, today);
-
-            const dueDate = getDueDateForPeriod(c, currentP);
             const declarations = c.declarations || [];
-            
             const ivaDecl = declarations.find(dh => dh.period === currentP);
-            
-            // Stats
-            if (compliance.overdueCount > 0) overdueCount++;
-            if (ivaDecl?.is_paid && ivaDecl?.status === DeclarationStatus.Pendiente) prepaidCount++;
-            totalIncome += (c.fee_structure?.monthly ?? c.customServiceFee ?? 0);
-
-            // Debt details
+            const compliance = getClientCompliance(c, today, currentFreq);
             const debtSummary = getClientDebtSummary(c, serviceFees, today);
             const undeclaredSummary = getClientUndeclaredSummary(c, today);
-            if (debtSummary.hasPendingPayment) {
-                totalDebtSum += debtSummary.totalDebt;
-                debtClientsCount++;
-            }
 
-            // Special Lists
-            if (c.signatureExpirationDate) {
-                const expDate = new Date(c.signatureExpirationDate);
-                if (!isNaN(expDate.getTime()) && expDate <= next15Days) signExp.push(c);
-            }
-            if (c.hasRentaRefund && (c.rentaRefundStatus === 'Solicitado' || c.rentaRefundStatus === 'Pendiente')) {
-                refunds.push(c);
+            // 1. KPI & Special Lists Calculations (ONLY FOR ACTIVE, NON-DELETED CLIENTS)
+            if (!c.isDeleted && c.isActive) {
+                activeCount++;
+                if (compliance.overdueCount > 0) overdueCount++;
+                if (ivaDecl?.is_paid && ivaDecl?.status === DeclarationStatus.Pendiente) prepaidCount++;
+                totalIncome += (c.fee_structure?.monthly ?? c.customServiceFee ?? 0);
+
+                if (debtSummary.hasPendingPayment) {
+                    totalDebtSum += debtSummary.totalDebt;
+                    debtClientsCount++;
+                }
+
+                if (c.signatureExpirationDate) {
+                    const expDate = new Date(c.signatureExpirationDate);
+                    if (!isNaN(expDate.getTime()) && expDate <= next15Days) signExp.push(c);
+                }
+                if (c.hasRentaRefund && (c.rentaRefundStatus === 'Solicitado' || c.rentaRefundStatus === 'Pendiente')) {
+                    refunds.push(c);
+                }
             }
 
             // 2. Filter logic for "allResults" (workspaceData)
+            // Lógica de Papelera: Si estamos en la pestaña trash, solo mostrar isDeleted.
+            // Si NO estamos en trash, ocultar isDeleted (y también !c.isActive).
+            if (filter === 'trash') {
+                if (!c.isDeleted) continue;
+            } else {
+                if (c.isDeleted || !c.isActive) continue;
+            }
+
             const searchMatch = !searchTerm || 
                 c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                 c.ruc.includes(searchTerm) || 
@@ -204,22 +209,26 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 filterMatch = !!(ivaDecl && !ivaDecl.proof_file && (ivaDecl.status === DeclarationStatus.Enviada || ivaDecl.status === DeclarationStatus.Pagada));
             } else if (filter === 'digital-mando') {
                 filterMatch = c.taxProfile?.ivaFrequency !== 'Ninguno';
+            } else if (filter === 'trash') {
+                filterMatch = true;
             }
 
             if (filterMatch) {
                 filtered.push(c);
                 
-                // 3. Categorization (Inbox)
-                const isFullyAlDia = !debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
-                const isCobroPending = debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
+                // 3. Categorization (Inbox) - ONLY FOR ACTIVE (NON-DELETED) CLIENTS
+                if (!c.isDeleted) {
+                    const isFullyAlDia = !debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
+                    const isCobroPending = debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
 
-                if (isFullyAlDia) {
-                    comps.push(c);
-                } else if (isCobroPending) {
-                    cobs.push(c);
-                } else {
-                    if (compliance.urgentCount > 0 || compliance.overdueCount > 0) urgents.push(c);
-                    else peds.push(c);
+                    if (isFullyAlDia) {
+                        comps.push(c);
+                    } else if (isCobroPending) {
+                        cobs.push(c);
+                    } else {
+                        if (compliance.urgentCount > 0 || compliance.overdueCount > 0) urgents.push(c);
+                        else peds.push(c);
+                    }
                 }
             }
         }
@@ -301,13 +310,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     }, [clients, filter]);
 
 
-    const activeList = searchTerm 
+    const activeList = (searchTerm || filter === 'trash') 
         ? allResults 
         : (inboxTab === 'pendientes' 
-            ? (filter === 'all' || filter === 'mensual' || filter === 'digital-mando' ? [...urgentPriorities, ...pendientes] : allResults) 
-            : inboxTab === 'cobros'
-                ? (filter === 'all' || filter === 'mensual' || filter === 'digital-mando' ? cobros : allResults)
-                : (filter === 'all' || filter === 'mensual' || filter === 'digital-mando' ? completados : allResults));
+            ? [...urgentPriorities, ...pendientes] 
+            : inboxTab === 'cobros' ? cobros : completados);
 
 
     // ... (handleAction remains same) ...
@@ -322,11 +329,15 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             return;
         }
         if (action === 'restore') {
-            updateClient(client.id, { isDeleted: false, isActive: true });
-            toast.success(`${client.name} restaurado`);
+            restoreClient(client.id);
+            toast.success(`${client.name} restaurado correctamente`);
             return;
         }
         if (action === 'purge') {
+            if (window.confirm(`¿Está seguro de eliminar permanentemente a ${client.name}? Esta acción no se puede deshacer.`)) {
+                removeClient(client.id, true);
+                toast.success(`${client.name} eliminado permanentemente`);
+            }
             return;
         }
 
@@ -810,9 +821,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             })()}
 
                             {/* KPI 4: Cartera por Cobrar */}
-                            <div className="flex-none w-[60vw] sm:w-auto snap-center flex flex-col justify-center p-6 sm:p-7 relative overflow-hidden">
+                            <button
+                                onClick={() => navigate('cobranza')}
+                                className="group flex-none w-[60vw] sm:w-auto snap-center flex flex-col justify-center p-6 sm:p-7 relative overflow-hidden hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                                 <div className="relative z-10">
-                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2">Por Cobrar</p>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 group-hover:scale-110 transition-transform">
+                                            <LucideIcons.Wallet size={14} />
+                                        </div>
+                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Por Cobrar</p>
+                                    </div>
                                     <div className="flex items-baseline gap-2 mb-3">
                                         <span className={`text-3xl font-black tracking-tighter leading-none ${
                                             kpis.pendingCollectionsAmount > 0 ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'
@@ -835,11 +855,70 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                         style={{ width: `${collectedPercent}%` }}
                                                     />
                                                 </div>
-                                                <p className="text-[10px] text-slate-400 mt-1.5">{collectedPercent}% cobrado de facturación</p>
+                                                <div className="flex items-center justify-between mt-1.5">
+                                                    <p className="text-[10px] text-slate-400">{collectedPercent}% cobrado de facturación</p>
+                                                    <LucideIcons.ArrowRight size={12} className="text-rose-400 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                                                </div>
                                             </>
                                         );
                                     })()}
                                 </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ── ZEN ANALYTICS PANEL ── */}
+            <div className="relative z-20 px-4 sm:px-0 no-print">
+                <div className="bg-white dark:bg-[hsl(222,47%,4%)] rounded-2xl border border-slate-200/70 dark:border-white/[0.06] shadow-sm overflow-hidden">
+                    <button 
+                        onClick={() => setExpandAnalytics(!expandAnalytics)}
+                        className="w-full px-6 py-4 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.02] hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
+                                <LucideIcons.BarChart2 size={16} />
+                            </div>
+                            <span className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Inteligencia de Negocio</span>
+                        </div>
+                        <LucideIcons.ChevronDown size={18} className={`text-slate-400 transition-transform duration-500 ${expandAnalytics ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandAnalytics ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                        <div className="p-6 border-t border-slate-100 dark:border-white/[0.05]">
+                            <div className="h-[250px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RechartsBarChart
+                                        data={[
+                                            { name: 'Activos', value: kpis.total, color: '#3b82f6' },
+                                            { name: 'Al Día', value: completados.length, color: '#10b981' },
+                                            { name: 'Pendientes', value: pendientes.length, color: '#f59e0b' },
+                                            { name: 'Urgentes', value: urgentPriorities.length, color: '#f43f5e' }
+                                        ]}
+                                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                    >
+                                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip 
+                                            cursor={{fill: 'transparent'}}
+                                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '12px', color: '#fff', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }}
+                                            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                                        />
+                                        <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                                            {
+                                                [
+                                                    { name: 'Activos', value: kpis.total, color: '#3b82f6' },
+                                                    { name: 'Al Día', value: completados.length, color: '#10b981' },
+                                                    { name: 'Pendientes', value: pendientes.length, color: '#f59e0b' },
+                                                    { name: 'Urgentes', value: urgentPriorities.length, color: '#f43f5e' }
+                                                ].map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))
+                                            }
+                                        </Bar>
+                                    </RechartsBarChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
                     </div>
@@ -1347,6 +1426,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         onView={(c) => setWorkspaceClient({ client: c, period: selectedPeriod !== 'all' ? selectedPeriod : undefined })}
                         frequency={filter === 'semestral' ? 'Semestral' : (filter === 'mensual' ? 'Mensual' : 'all')}
                         customPeriod={selectedPeriod !== 'all' ? selectedPeriod : undefined}
+                        isTrashView={filter === 'trash'}
                     />
                 ) : (
                     <div className="py-32 text-center">
