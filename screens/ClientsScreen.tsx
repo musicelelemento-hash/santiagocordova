@@ -803,78 +803,70 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     </div>
                 </div>
             )}
-            {/* ZENITH SEARCH & FILTERS - ARCHITECTURAL CONTROL */}
-            <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="bg-surface p-5 rounded-[2rem] border border-outline-variant/30 flex flex-col lg:flex-row gap-6 items-center mb-8 mx-1 sm:mx-0 shadow-md relative overflow-hidden"
-            >
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
-                
-                <div className="flex gap-2 w-full lg:w-auto">
-                    <button 
-                        onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
-                        className={`flex items-center justify-center gap-2.5 px-6 py-4.5 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all border font-premium
-                            ${isFilterPanelOpen 
-                                ? 'bg-primary text-white border-primary shadow-tactical shadow-primary/20' 
-                                : 'bg-surface-medium text-on-surface-variant border-outline-variant/30 hover:text-on-surface hover:border-slate-350'}`}
-                    >
-                        <LucideIcons.Filter size={16} />
-                        Filtros
-                    </button>
-                    <button
-                        onClick={handleExportCSV}
-                        className="flex items-center justify-center gap-2.5 px-6 py-4.5 rounded-2xl bg-surface-medium text-on-surface-variant border border-outline-variant/30 hover:text-on-surface hover:border-slate-350 transition-all text-[10px] font-bold uppercase tracking-[0.2em] font-premium"
-                        title="Exportar a CSV"
-                    >
-                        <LucideIcons.Download size={16} className="text-emerald-550" />
-                        Exportar
-                    </button>
-                </div>
-
+            {/* TACTICAL COMMAND BAR - Unificado */}
+            <div className="bg-surface p-4 sm:p-5 rounded-[2rem] border border-outline-variant/30 flex flex-col xl:flex-row gap-5 items-center mb-8 mx-1 sm:mx-0 shadow-sm relative z-20">
+                {/* Search Input */}
                 <div className="relative flex-1 w-full group">
                     <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
                         <LucideIcons.Search className="text-on-surface-variant/40 group-focus-within:text-primary transition-colors" size={20} />
                     </div>
                     <input 
                         type="text"
-                        placeholder="BUSCAR EXPEDIENTE POR NOMBRE, RUC O MATRIZ..."
-                        className="w-full bg-surface-medium border border-outline-variant/30 rounded-2xl py-5 pl-16 pr-6 text-xs font-bold text-on-surface placeholder:text-on-surface-variant/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-premium tracking-widest shadow-inner uppercase"
+                        placeholder="BUSCAR EXPEDIENTE..."
+                        className="w-full bg-surface-medium border border-outline-variant/30 rounded-2xl py-4.5 pl-14 pr-6 text-xs font-bold text-on-surface placeholder:text-on-surface-variant/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-premium tracking-widest uppercase"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
 
-                <div className="flex items-center gap-3 w-full lg:w-auto">
-                    <div className="flex bg-surface-medium p-1 rounded-2xl border border-outline-variant/20 shadow-inner">
-                        <button 
-                            onClick={() => setViewMode('list')}
-                            className={`p-3.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-surface-low text-primary shadow-architect' : 'text-on-surface-variant'}`}
+                {/* Tactical Segmented Control for Tabs */}
+                <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 w-full xl:w-auto shrink-0">
+                    {[
+                        { id: 'all', label: 'Todos', icon: LucideIcons.Users },
+                        { id: 'al-dia', label: 'Al Día', icon: LucideIcons.ShieldCheck },
+                        { id: 'vencidos', label: 'Alertas', icon: LucideIcons.AlertTriangle },
+                        { id: 'cobros', label: 'Cobros', icon: LucideIcons.DollarSign },
+                        { id: 'mensual', label: 'Mensual', icon: LucideIcons.Calendar },
+                        { id: 'semestral', label: 'Semestral', icon: LucideIcons.Clock },
+                    ].map((tab) => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveGroupTab(tab.id as any)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all shrink-0
+                                ${activeGroupTab === tab.id 
+                                    ? 'bg-primary text-white shadow-md' 
+                                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'}`}
                         >
-                            <LucideIcons.LayoutList size={20} />
+                            <tab.icon size={14} className={activeGroupTab === tab.id ? 'text-white' : 'text-slate-400'} />
+                            <span>{tab.label}</span>
                         </button>
-                        <button 
-                            onClick={() => setViewMode('cards')}
-                            className={`p-3.5 rounded-xl transition-all ${viewMode === 'cards' ? 'bg-surface-low text-primary shadow-architect' : 'text-on-surface-variant'}`}
-                        >
-                            <LucideIcons.LayoutGrid size={20} />
-                        </button>
-                    </div>
+                    ))}
+                </div>
 
+                {/* Actions & Toggles */}
+                <div className="flex items-center gap-3 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                    <button 
+                        onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
+                        className={`p-3.5 rounded-xl transition-all border
+                            ${isFilterPanelOpen 
+                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' 
+                                : 'bg-surface-medium text-slate-500 border-outline-variant/30 hover:text-slate-700'}`}
+                        title="Filtros Avanzados"
+                    >
+                        <LucideIcons.Filter size={18} />
+                    </button>
                     <div className="relative" ref={sortMenuRef}>
                         <button
                             onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-                            className="flex items-center gap-3 px-6 py-4.5 bg-surface-medium border border-outline-variant/30 rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant hover:text-on-surface transition-all font-premium shadow-architect h-full"
+                            className="p-3.5 bg-surface-medium border border-outline-variant/30 rounded-xl text-slate-500 hover:text-slate-700 transition-all"
+                            title="Ordenar"
                         >
-                            <LucideIcons.ArrowUpDown size={16} className="text-primary" />
-                            ORDENAR
+                            <LucideIcons.ArrowUpDown size={18} />
                         </button>
-                        
                         {isSortMenuOpen && (
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-architect border border-outline-variant/30 p-2 z-50">
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-white/5 p-2 z-50">
                                 {[
-                                    { id: '9th_digit', label: 'Vencimiento' },
+                                    { id: '9th_digit', label: 'Por Vencimiento' },
                                     { id: 'name', label: 'Alfabético' },
                                     { id: 'pending_obligations', label: 'SRI Pendientes' },
                                     { id: 'pending_payments', label: 'Cobros Pendientes' }
@@ -882,7 +874,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     <button 
                                         key={opt.id}
                                         onClick={() => { setSortOption(opt.id as any); setIsSortMenuOpen(false); }} 
-                                        className={`w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${sortOption === opt.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5'}`}
+                                        className={`w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest rounded-xl transition-all ${sortOption === opt.id ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5'}`}
                                     >
                                         {opt.label}
                                     </button>
@@ -890,8 +882,22 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             </div>
                         )}
                     </div>
+                    <div className="flex bg-surface-medium p-1 rounded-xl border border-outline-variant/20">
+                        <button 
+                            onClick={() => setViewMode('list')}
+                            className={`p-2.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
+                        >
+                            <LucideIcons.LayoutList size={16} />
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('cards')}
+                            className={`p-2.5 rounded-lg transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
+                        >
+                            <LucideIcons.LayoutGrid size={16} />
+                        </button>
+                    </div>
                 </div>
-            </motion.div>
+            </div>
 
             {/* Expandable Advanced Filters Panel */}
             <AnimatePresence>
@@ -900,35 +906,33 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-surface border border-outline-variant/30 rounded-[2.5rem] p-6 mb-8 mx-1 sm:mx-0 shadow-inner flex flex-col md:flex-row gap-6 items-start md:items-center relative overflow-hidden"
+                        className="bg-surface border border-outline-variant/30 rounded-[2rem] p-6 mb-8 mx-1 sm:mx-0 flex flex-col md:flex-row gap-6 items-start md:items-center overflow-hidden"
                     >
-                        <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/10 to-transparent"></div>
                         <div className="flex-1 w-full">
-                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-3">Filtrar por Régimen</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Filtro de Régimen Tributario</label>
                             <div className="flex flex-wrap gap-2">
                                 {[
-                                    { id: 'all', label: 'Todos los Regímenes' },
+                                    { id: 'all', label: 'Todos' },
                                     { id: TaxRegime.General, label: 'General' },
-                                    { id: TaxRegime.RimpeEmprendedor, label: 'Rimpe Emprendedor' },
-                                    { id: TaxRegime.RimpeNegocioPopular, label: 'Rimpe Negocio Popular' }
+                                    { id: TaxRegime.RimpeEmprendedor, label: 'Rimpe Emp.' },
+                                    { id: TaxRegime.RimpeNegocioPopular, label: 'Rimpe N.P.' }
                                 ].map(opt => (
                                     <button
                                         key={opt.id}
                                         onClick={() => setRegimeFilter(opt.id as any)}
-                                        className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all border uppercase tracking-wider
+                                        className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border
                                             ${regimeFilter === opt.id 
-                                                ? 'bg-primary border-primary text-white shadow-md' 
-                                                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-white/5 text-slate-500 hover:border-slate-300 dark:hover:border-white/10 dark:text-slate-400'}`}
+                                                ? 'bg-slate-800 text-white border-slate-800 dark:bg-white dark:text-black dark:border-white shadow-md' 
+                                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-500'}`}
                                     >
                                         {opt.label}
                                     </button>
                                 ))}
                             </div>
                         </div>
-
-                        <div className="w-full md:w-auto shrink-0">
-                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-3">Filtrar por Estado</label>
-                            <div className="flex bg-slate-100 dark:bg-black/40 p-1.5 rounded-xl border border-slate-200 dark:border-white/5">
+                        <div className="w-full md:w-auto">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Filtro de Estado</label>
+                            <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-white/10">
                                 {[
                                     { id: 'all', label: 'Todos' },
                                     { id: 'active', label: 'Activos' },
@@ -937,10 +941,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     <button
                                         key={opt.id}
                                         onClick={() => setFilterOption(opt.id as any)}
-                                        className={`px-4 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all
+                                        className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all
                                             ${filterOption === opt.id 
-                                                ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' 
-                                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'}`}
+                                                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm' 
+                                                : 'text-slate-400'}`}
                                     >
                                         {opt.label}
                                     </button>
@@ -950,165 +954,45 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     </motion.div>
                 )}
             </AnimatePresence>
-            {/* ZENITH GROWTH HUB - SILENT ANALYSIS */}
-            <div className="mb-8 relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/10 via-slate-400/5 to-transparent rounded-[2rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-                
-                <button 
-                    onClick={() => setIsAnalysisExpanded(!isAnalysisExpanded)}
-                    className="relative w-full glass-zen p-4 sm:p-8 rounded-[2rem] border border-slate-200 dark:border-white/10 overflow-hidden text-left transition-all duration-700 hover:border-primary/20"
-                >
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-8 relative z-10">
-                        <div className="flex items-center gap-6">
-                            <div className="relative shrink-0">
-                                <div className="absolute -inset-2 bg-primary/10 rounded-full blur-xl"></div>
-                                <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full border-4 border-slate-100 dark:border-white/5 flex items-center justify-center relative bg-white/50 dark:bg-black/20 backdrop-blur-xl">
-                                    <svg className="w-full h-full -rotate-90">
-                                        <circle
-                                            cx="50%" cy="50%" r="42%"
-                                            stroke="currentColor" strokeWidth="4" fill="transparent"
-                                            className="text-slate-100 dark:text-white/5"
-                                        />
-                                        <circle
-                                            cx="50%" cy="50%" r="42%"
-                                            stroke="currentColor" strokeWidth="4" fill="transparent"
-                                            strokeDasharray="264"
-                                            strokeDashoffset={264 - (264 * (globalStats.elite / (globalStats.total || 1)))}
-                                            className="text-primary transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(134,167,137,0.3)]"
-                                            strokeLinecap="round"
-                                        />
-                                    </svg>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-sm sm:text-2xl font-bold text-primary leading-none">
-                                            {Math.round((globalStats.elite / (globalStats.total || 1)) * 100)}%
-                                        </span>
-                                        <span className="text-[6px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">ORDEN</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="min-w-0">
-                                <span className="text-xs sm:text-xs font-bold text-primary uppercase tracking-[0.2em] mb-1 block">Indicador de Salud Fiscal</span>
-                                <h3 className="text-xl sm:text-3xl font-semibold text-slate-900 dark:text-white leading-tight tracking-tighter mb-2 text-balance">
-                                    Armonía <span className="text-primary italic font-light">Global</span> de Cartera
-                                </h3>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-1.5 py-1 px-3 rounded-full bg-primary/10 border border-primary/20">
-                                        <LucideIcons.BarChart3 size={12} className="text-primary" />
-                                        <span className="text-xs sm:text-xs font-semibold text-emerald-400 uppercase tracking-widest">Analytics Online</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-8 bg-slate-100/50 dark:bg-white/2 p-3 sm:p-0 rounded-2xl sm:bg-transparent">
-                            <div className="flex items-center gap-6">
-                                <div className="flex flex-col items-start sm:items-end">
-                                    <span className="text-xs sm:text-xs font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Alertas</span>
-                                    <span className="text-sm sm:text-xl font-bold text-rose-400 font-mono">
-                                        {globalStats.vencidos}
-                                    </span>
-                                </div>
-                                <div className="w-px h-6 sm:h-8 bg-slate-200 dark:bg-white/10"></div>
-                                <div className="flex flex-col items-start sm:items-end">
-                                    <span className="text-xs sm:text-xs font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Gestionados</span>
-                                    <span className="text-sm sm:text-xl font-bold text-primary font-mono">
-                                        {globalStats.elite}
-                                    </span>
-                                </div>
+            {/* MINI HEALTH DASHBOARD (Only visible when Al Día, Vencidos or Por Cobrar is selected to provide context) */}
+            {['all', 'al-dia', 'vencidos', 'cobros', 'ordenes'].includes(activeGroupTab) && (
+                <div className="mb-8 flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 p-5 rounded-3xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/30">
+                                <LucideIcons.ShieldCheck size={20} />
                             </div>
-                            <div className={`p-2 rounded-xl transition-all duration-500 ${isAnalysisExpanded ? 'rotate-180 bg-primary text-white shadow-lg' : 'bg-white/50 dark:bg-white/5 text-slate-400'}`}>
-                                <LucideIcons.ChevronDown size={18} />
+                            <div>
+                                <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Cartera en Orden</p>
+                                <p className="text-xl font-black text-slate-800 dark:text-white">{globalStats.elite} Clientes</p>
                             </div>
                         </div>
                     </div>
-                </button>
-            
-                {isAnalysisExpanded && (
-                    <div className="p-6 sm:p-10 border-t border-slate-100 dark:border-white/5 bg-slate-50/20 dark:bg-black/20 animate-fade-in-down">
-                        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                            {/* Compliance Radar - Zen Mode */}
-                            <div className="flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-white/5 shadow-sm">
-                                <div className="relative">
-                                    <svg className="w-32 h-32 transform -rotate-90">
-                                        <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-50 dark:text-slate-800" />
-                                        <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="6" fill="transparent"
-                                            strokeDasharray={364}
-                                            strokeDashoffset={364 - (364 * (globalStats.elite / (globalStats.total || 1)))}
-                                            strokeLinecap="round"
-                                            className="text-primary transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(134,167,137,0.3)]"
-                                        />
-                                    </svg>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                                        <span className="text-2xl font-bold text-slate-800 dark:text-white font-mono">{Math.round((globalStats.elite / (globalStats.total || 1)) * 100)}%</span>
-                                        <span className="text-xs font-bold uppercase text-slate-400 tracking-widest mt-1">Nivel Zen</span>
-                                    </div>
-                                </div>
+                    <div className="flex-1 p-5 rounded-3xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/30">
+                                <LucideIcons.AlertTriangle size={20} />
                             </div>
-
-                            {/* Client Distribution Grid */}
-                            <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                {[
-                                    { id: 'mensual', label: 'Mensuales', value: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual').length, icon: LucideIcons.Calendar, color: 'primary' },
-                                    { id: 'semestral', label: 'Semestrales', value: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Semestral').length, icon: LucideIcons.Clock, color: 'slate' },
-                                    { id: 'vencidos', label: 'Alertas', value: globalStats.vencidos, icon: LucideIcons.AlertTriangle, color: 'rose' },
-                                    { id: 'ordenes', label: 'Pendientes', value: globalStats.ordenes, icon: LucideIcons.Zap, color: 'amber' },
-                                    { id: 'cobros', label: 'Tesorería', value: globalStats.cobros, icon: LucideIcons.DollarSign, color: 'primary' },
-                                    { id: 'al-dia', label: 'En Orden', value: globalStats.elite, icon: LucideIcons.ShieldCheck, color: 'primary' }
-                                ].map(stat => (
-                                    <button 
-                                        key={stat.id}
-                                        onClick={(e) => { e.stopPropagation(); setActiveGroupTab(stat.id as any); }}
-                                        className={`group flex flex-col p-5 rounded-2xl border transition-all duration-500 relative overflow-hidden ${activeGroupTab === stat.id ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/10' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-white/5 hover:border-primary/20'}`}
-                                    >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className={`p-2 rounded-xl ${activeGroupTab === stat.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-slate-100 dark:bg-white/5 text-slate-400'} transition-all`}>
-                                                <stat.icon size={16} />
-                                            </div>
-                                            <span className={`text-[11px] font-bold uppercase tracking-widest ${activeGroupTab === stat.id ? 'text-primary' : 'text-slate-400'}`}>{stat.label}</span>
-                                        </div>
-                                        <div className="flex items-baseline gap-1">
-                                            <span className={`text-2xl font-bold font-mono ${activeGroupTab === stat.id ? 'text-primary' : 'text-slate-700 dark:text-slate-300'}`}>{stat.value}</span>
-                                            <span className="text-xs font-medium text-slate-400 uppercase">Fichas</span>
-                                        </div>
-                                        {activeGroupTab === stat.id && (
-                                            <div className="absolute bottom-0 left-0 h-1 bg-primary w-full"></div>
-                                        )}
-                                    </button>
-                                ))}
+                            <div>
+                                <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">Alertas SRI</p>
+                                <p className="text-xl font-black text-slate-800 dark:text-white">{globalStats.vencidos} Clientes</p>
                             </div>
                         </div>
                     </div>
-                )}
-            </div>
-            {/* PRODUCTIVIDAD TABS (Zen Flow) */}
-            <div className="mb-6 flex overflow-x-auto no-scrollbar gap-1.5 p-1 bg-slate-100 dark:bg-black/40 rounded-2xl border border-slate-200 dark:border-white/5">
-                {[
-                    { id: 'all', label: 'Todos', count: clients.filter(c => !c.isDeleted).length, icon: LucideIcons.Users },
-                    { id: 'mensual', label: 'IVA Mensual', count: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual').length, icon: LucideIcons.Calendar },
-                    { id: 'semestral', label: 'IVA Semestral', count: clients.filter(c => !c.isDeleted && (c.taxProfile?.ivaFrequency || 'Mensual') === 'Semestral').length, icon: LucideIcons.Clock },
-                    { id: 'vencidos', label: 'Vencidos / Alertas', count: globalStats.vencidos, icon: LucideIcons.AlertCircle },
-                    { id: 'ordenes', label: 'Órdenes', count: globalStats.ordenes, icon: LucideIcons.Zap },
-                    { id: 'cobros', label: 'Por Cobrar', count: globalStats.cobros, icon: LucideIcons.DollarSign },
-                    { id: 'al-dia', label: 'Al Día', count: globalStats.elite, icon: LucideIcons.ShieldCheck },
-                    { id: 'matrix', label: 'Matriz Fiscal', count: clients.filter(c => !c.isDeleted).length, icon: LucideIcons.LayoutGrid },
-                    { id: 'trash', label: 'Papelera', count: clients.filter(c => c.isDeleted).length, icon: LucideIcons.Trash2 }
-                ].map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveGroupTab(tab.id as any)}
-                        className={`group relative flex items-center gap-2 px-6 py-3 rounded-xl text-xs sm:text-[11px] font-bold uppercase tracking-widest transition-all duration-500 shrink-0
-                            ${activeGroupTab === tab.id 
-                                ? 'bg-white dark:bg-slate-800 text-primary shadow-sm ring-1 ring-primary/20' 
-                                : 'text-slate-400 hover:text-slate-600 dark:hover:text-white'}`}
-                    >
-                        <tab.icon size={14} className={activeGroupTab === tab.id ? 'text-primary' : 'text-slate-400 transition-colors'} />
-                        <span className="inline">{tab.label}</span>
-                        <span className={`px-1.5 py-0.5 rounded-md text-[11px] font-mono ${activeGroupTab === tab.id ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-500'}`}>
-                            {tab.count}
-                        </span>
-                    </button>
-                ))}
-            </div>
+                    <div className="flex-1 p-5 rounded-3xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-amber-500 text-white rounded-xl shadow-lg shadow-amber-500/30">
+                                <LucideIcons.DollarSign size={20} />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Cobros Pendientes</p>
+                                <p className="text-xl font-black text-slate-800 dark:text-white">{globalStats.cobros} Clientes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* IVA MENSUAL PROGRESS WORKFLOW - Zen Mode */}
             {
