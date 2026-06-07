@@ -1424,7 +1424,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 ref={receiptFileInputRef}
                 onChange={processReceiptFile}
                 accept="application/pdf"
-                className="hidden"
+                className="sr-only"
             />
 
             <input
@@ -1433,7 +1433,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 onChange={processBulkReceiptFiles}
                 accept="application/pdf"
                 multiple
-                className="hidden"
+                className="sr-only"
             />
 
             <Modal

@@ -314,7 +314,7 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
                     <p className="text-white font-bold tracking-widest uppercase">Procesando Documento...</p>
                 </div>
             )}
-            <input type="file" ref={proofInputRef} className="hidden" onChange={handleProofUpload} accept=".pdf,image/*" />
+            <input type="file" ref={proofInputRef} className="sr-only" onChange={handleProofUpload} accept=".pdf,image/*" />
         </div>
     );
 };

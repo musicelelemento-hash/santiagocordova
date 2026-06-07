@@ -701,8 +701,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     );
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 md:p-8 bg-slate-100/40 backdrop-blur-3xl overflow-hidden animate-in fade-in duration-700">
-            <div className="bg-slate-50 w-full h-full md:max-h-[92vh] md:max-w-7xl md:rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] flex flex-col relative overflow-hidden group/modal">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 md:p-6 bg-slate-100/40 backdrop-blur-3xl overflow-hidden animate-in fade-in duration-700">
+            <div className="bg-slate-50 w-full h-full md:max-h-[96vh] md:max-w-[95vw] lg:max-w-[1400px] md:rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] flex flex-col relative overflow-hidden group/modal">
                 
                 {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed) */}
                 <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
@@ -753,28 +753,31 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </button>
 
                 <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth relative">
-                    <div className="p-5 sm:p-14 pb-40 relative z-10">
-                        <ClientHeader
-                            client={client}
-                            onBack={onBack}
-                            totalDebt={totalDebt}
-                            isFullyPaid={isFullyPaid}
-                            isFullyDeclared={isFullyDeclared}
-                            complianceStats={complianceStats}
-                            isEditing={isEditing}
-                            onToggleEdit={() => isEditing ? handleSave() : setIsEditing(true)}
-                            editedClient={editedClient}
-                            setEditedClient={setEditedClient}
-                            onCopy={handleCopy}
-                            onWhatsApp={handleWhatsApp}
-                            onOpenSRI={handleOpenSRI}
-                            onShare={handleShareViaWhatsApp}
-                            onDelete={() => setIsDeleteConfirmOpen(true)}
-                            nextDeadline={nextDeadline}
-                        />
+                    <div className="p-5 sm:p-14 pb-40 relative z-10 flex flex-col lg:flex-row gap-8 lg:gap-12">
+                        {/* LEFT COLUMN - Profile Header (Sticky on Desktop) */}
+                        <div className="w-full lg:w-1/3 xl:w-1/4 lg:sticky lg:top-14 self-start">
+                            <ClientHeader
+                                client={client}
+                                onBack={onBack}
+                                totalDebt={totalDebt}
+                                isFullyPaid={isFullyPaid}
+                                isFullyDeclared={isFullyDeclared}
+                                complianceStats={complianceStats}
+                                isEditing={isEditing}
+                                onToggleEdit={() => isEditing ? handleSave() : setIsEditing(true)}
+                                editedClient={editedClient}
+                                setEditedClient={setEditedClient}
+                                onCopy={handleCopy}
+                                onWhatsApp={handleWhatsApp}
+                                onOpenSRI={handleOpenSRI}
+                                onShare={handleShareViaWhatsApp}
+                                onDelete={() => setIsDeleteConfirmOpen(true)}
+                                nextDeadline={nextDeadline}
+                            />
+                        </div>
 
-                        {/* Main Tactical Viewport */}
-                        <div className="animate-in fade-in slide-in-from-bottom-10 duration-1000 min-h-[700px] relative z-10">
+                        {/* RIGHT COLUMN - Main Content */}
+                        <div className="w-full lg:w-2/3 xl:w-3/4 animate-in fade-in slide-in-from-bottom-10 duration-1000 min-h-[700px] relative z-10">
                             {activeTab === 'profile' && renderProfileTab()}
                             {activeTab === 'history' && renderHistoryTab()}
                             {activeTab === 'vault' && renderVaultTab()}
@@ -800,7 +803,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         <button onClick={handleSave} className="px-10 py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95">GUARDAR DATOS</button>
                     </div>
                 </div>
-                <input type="file" ref={proofInputRef} className="hidden" onChange={handleProofUpload} accept=".pdf,image/*" />
+                <input type="file" ref={proofInputRef} className="sr-only" onChange={handleProofUpload} accept=".pdf,image/*" />
                 <input type="file" ref={fileInputRef} className="hidden" onChange={handlePdfUpdate} accept=".pdf" />
 
                 <PdfPreviewModal
