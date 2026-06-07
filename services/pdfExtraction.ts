@@ -109,7 +109,14 @@ export const extractDataFromSriPdf = async (file: File): Promise<SriExtractionRe
       actividad_economica: textOnly.match(/ACTIVIDADES ECONÓMICAS\s*([^:]+?)(?=\s*(?:ESTABLECIMIENTOS|OBLIGACIONES|$))/)?.[1]?.trim() || '',
       es_artesano: textOnly.includes("ARTESANO") && !textOnly.includes("NO REGISTRA"),
       cantidad_establecimientos: parseInt(textOnly.match(/ESTABLECIMIENTOS\s*ABIERTOS\s*(\d+)/)?.[1] || '1'),
-      isCertificate: textOnly.includes("CERTIFICADO DE RUC")
+      isCertificate: (
+        textOnly.includes("CERTIFICADO DE RUC") ||
+        textOnly.includes("REGISTRO UNICO DE CONTRIBUYENTES") ||
+        textOnly.includes("REGISTRO ÚNICO DE CONTRIBUYENTES") ||
+        (textOnly.includes("SERVICIO DE RENTAS INTERNAS") && textOnly.includes("NUMERO RUC")) ||
+        (textOnly.includes("SERVICIO DE RENTAS INTERNAS") && textOnly.includes("NÚMERO RUC")) ||
+        (ruc.length === 13 && textOnly.includes("OBLIGACIONES TRIBUTARIAS"))
+      )
     };
 
   } catch (error) {

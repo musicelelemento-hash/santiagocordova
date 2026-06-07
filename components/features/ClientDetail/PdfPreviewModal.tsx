@@ -14,9 +14,16 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
     if (!isOpen || !declaration || !declaration.proof_file) return null;
 
     const pdfData = declaration.proof_file;
-    const base64Content = pdfData.content.includes(',') ? pdfData.content.split(',')[1] : pdfData.content;
-    const blob = new Blob([Uint8Array.from(atob(base64Content), c => c.charCodeAt(0))], { type: 'application/pdf' });
-    const pdfUrl = URL.createObjectURL(blob);
+    
+    // Extraer base64 puro (sin el prefijo data:...)
+    const base64Content = pdfData.content
+        ? (pdfData.content.includes(',') ? pdfData.content.split(',')[1] : pdfData.content)
+        : null;
+    
+    // Usar data URI directamente — más compatible que createObjectURL con base64 grande
+    const pdfSrc = base64Content
+        ? `data:application/pdf;base64,${base64Content}`
+        : null;
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300">
@@ -31,11 +38,18 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
                 
                 {/* PDF Viewer Area */}
                 <div className="flex-1 bg-slate-100 relative rounded-t-[2rem] md:rounded-l-[2rem] md:rounded-tr-none overflow-hidden">
-                    <iframe 
-                        src={`${pdfUrl}#toolbar=0`} 
-                        className="w-full h-full border-none"
-                        title={pdfData.name}
-                    ></iframe>
+                    {pdfSrc ? (
+                        <iframe 
+                            src={`${pdfSrc}#toolbar=0`} 
+                            className="w-full h-full border-none"
+                            title={pdfData.name}
+                        />
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-400">
+                            <FileText size={48} className="text-slate-300" />
+                            <p className="text-sm font-bold">No hay contenido disponible para previsualizar</p>
+                        </div>
+                    )}
                     
                     {/* Top action bar over PDF */}
                     <div className="absolute top-6 left-6 right-6 flex justify-between items-center pointer-events-none">

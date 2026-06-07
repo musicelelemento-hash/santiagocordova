@@ -579,19 +579,38 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             try {
                 let isRucCert = false;
                 let data: any = null;
+                let sriData: any = null;
 
+                // Paso 1: SIEMPRE intentar extracción como certificado de RUC
                 try {
-                    // Intentar extraer como certificado de RUC primero
-                    data = await extractDataFromSriPdf(file);
-                    if (data.isCertificate) {
-                        isRucCert = true;
-                    } else {
-                        throw new Error("No es certificado de RUC");
-                    }
-                } catch (e) {
-                    // Si falla, extraer como comprobante de declaración
-                    data = await extractDataFromDeclarationPdf(file);
+                    sriData = await extractDataFromSriPdf(file);
+                } catch (_e) {
+                    sriData = null;
                 }
+
+                // Paso 2: Decidir si es un certificado de RUC
+                // Un certificado es válido si tiene RUC y la bandera isCertificate === true
+                // O si tiene RUC y no tiene datos de declaración (formType desconocido)
+                if (sriData && sriData.ruc && sriData.isCertificate === true) {
+                    isRucCert = true;
+                    data = sriData;
+                }
+
+                // Paso 3: Si NO es certificado de RUC, intentar como declaración
+                if (!isRucCert) {
+                    try {
+                        data = await extractDataFromDeclarationPdf(file);
+                    } catch (declErr: any) {
+                        // Si tampoco es declaración, pero tiene datos de RUC, tratarlo como RUC de todas formas
+                        if (sriData && sriData.ruc) {
+                            isRucCert = true;
+                            data = sriData;
+                        } else {
+                            throw declErr; // No es ni RUC ni declaración
+                        }
+                    }
+                }
+
 
                 const base64 = await fileToBase64(file);
 
