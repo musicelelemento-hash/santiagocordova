@@ -191,7 +191,7 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Quick Stats */}
+                    {/* Quick Stats & Quick Actions */}
                     <div className="flex gap-4 mt-6">
                         <div className={`flex-1 p-4 rounded-2xl border ${pendingCount > 0 ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20' : 'bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10'}`}>
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Deuda Pendiente</p>
@@ -206,6 +206,17 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
                                 {needsRenta ? 'Renta Anual' : 'Sin Renta'}
                             </p>
                         </div>
+                        <button 
+                            onClick={() => {
+                                onClose();
+                                // Evento custom para abrir Vault (requerirá capturarlo en AdminDashboardScreen -> navigate)
+                                window.dispatchEvent(new CustomEvent('open-client-vault', { detail: { clientId: client.id } }));
+                            }}
+                            className="flex flex-col items-center justify-center gap-2 flex-1 p-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 border border-slate-800 dark:border-white/10 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-slate-900/20 dark:shadow-white/20 group"
+                        >
+                            <LucideIcons.Lock size={20} className="group-hover:-translate-y-1 transition-transform" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Bóveda</span>
+                        </button>
                     </div>
                 </div>
 

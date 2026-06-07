@@ -22,6 +22,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
 import { getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
+import { useCampaignContext } from '../hooks/useCampaignContext';
+import { CampaignBanner } from '../components/ui/CampaignBanner';
 
 const OBLIGATION_GROUPS = [
     { id: 'all', label: 'Todos', icon: LucideIcons.Users, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
@@ -45,6 +47,7 @@ interface ClientsScreenProps {
     clientToView: Client | null;
     clearClientToView: () => void;
     sriCredentialsProp?: Record<string, string>;
+    initialTab?: 'profile' | 'history' | 'vault' | 'settings';
 }
 
 export const ClientsScreen: React.FC<ClientsScreenProps> = ({
@@ -54,11 +57,14 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     clearInitialClientData,
     clientToView,
     clearClientToView,
-    sriCredentialsProp
+    sriCredentialsProp,
+    initialTab
 }) => {
     const { clients, setClients, updateClient, addClient, removeClient, restoreClient, purgeTrash, serviceFees, sriCredentials: storeCredentials } = useAppStore();
     const sriCredentials = sriCredentialsProp || storeCredentials;
     const { toast } = useToast();
+    // ── CAMPAÑA INTELIGENTE ──
+    const campaign = useCampaignContext();
     const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('clients_search') || '');
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -803,6 +809,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     </div>
                 </div>
             )}
+            {/* CAMPAIGN CONTEXT BANNER — visible solo cuando hay campaña activa */}
+            {campaign.phase !== 'mensual_preparacion' && (
+                <div className="mb-4 mx-1 sm:mx-0 animate-fade-in">
+                    <CampaignBanner campaign={campaign} compact={false} className="shadow-sm" />
+                </div>
+            )}
+
             {/* TACTICAL COMMAND BAR - Unificado */}
             <div className="bg-surface p-4 sm:p-5 rounded-[2rem] border border-outline-variant/30 flex flex-col xl:flex-row gap-5 items-center mb-8 mx-1 sm:mx-0 shadow-sm relative z-20">
                 {/* Search Input */}
@@ -819,28 +832,124 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     />
                 </div>
 
-                {/* Tactical Segmented Control for Tabs */}
+                {/* Tactical Segmented Control for Tabs - CONTEXTUAL por campaña */}
                 <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 w-full xl:w-auto shrink-0">
                     {[
-                        { id: 'all', label: 'Todos', icon: LucideIcons.Users },
-                        { id: 'al-dia', label: 'Al Día', icon: LucideIcons.ShieldCheck },
-                        { id: 'vencidos', label: 'Alertas', icon: LucideIcons.AlertTriangle },
-                        { id: 'cobros', label: 'Cobros', icon: LucideIcons.DollarSign },
-                        { id: 'mensual', label: 'Mensual', icon: LucideIcons.Calendar },
-                        { id: 'semestral', label: 'Semestral', icon: LucideIcons.Clock },
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveGroupTab(tab.id as any)}
-                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all shrink-0
-                                ${activeGroupTab === tab.id 
-                                    ? 'bg-primary text-white shadow-md' 
-                                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'}`}
-                        >
-                            <tab.icon size={14} className={activeGroupTab === tab.id ? 'text-white' : 'text-slate-400'} />
-                            <span>{tab.label}</span>
-                        </button>
-                    ))}
+                        // Tabs fijas — siempre visibles
+                        { id: 'all', label: 'Todos', icon: LucideIcons.Users, always: true },
+                        { id: 'al-dia', label: 'Al Día', icon: LucideIcons.ShieldCheck, always: true },
+                        { id: 'vencidos', label: 'Alertas', icon: LucideIcons.AlertTriangle, always: true },
+                        { id: 'cobros', label: 'Cobros', icon: LucideIcons.DollarSign, always: true },
+                        // Tabs contextuales — visibles según campaña activa
+                        {
+                            id: 'mensual',
+                            label: campaign.showMensualTab ? `Mensual` : 'IVA Mensual',
+                            icon: campaign.showMensualTab ? LucideIcons.Zap : LucideIcons.Calendar,
+                            always: false,
+                            showWhen: campaign.showMensualTab || activeGroupTab === 'mensual',
+                            isCampaignActive: campaign.showMensualTab,
+                            campaignColor: 'violet',
+                            badge: campaign.showMensualTab ? globalStats.vencidos : undefined,
+                        },
+                        {
+                            id: 'semestral',
+                            label: 'Semestral',
+                            icon: LucideIcons.CalendarRange,
+                            always: false,
+                            // Semestral visible en julio, enero, o si ya está seleccionado
+                            showWhen: campaign.showSemestralTab || campaign.isSemestralMonth || activeGroupTab === 'semestral',
+                            isCampaignActive: campaign.isSemestralMonth,
+                            campaignColor: 'blue',
+                            badge: campaign.isSemestralMonth ? (
+                                clients.filter(c => !c.isDeleted && c.isActive && c.taxProfile?.ivaFrequency === 'Semestral').length
+                            ) : undefined,
+                        },
+                        {
+                            id: 'renta',
+                            label: 'Renta',
+                            icon: LucideIcons.ShieldCheck,
+                            always: false,
+                            // Renta visible en mar-jun, o si ya está seleccionado
+                            showWhen: campaign.showRentaTab || campaign.isRentaMonth || activeGroupTab === 'renta',
+                            isCampaignActive: campaign.isRentaMonth,
+                            campaignColor: 'emerald',
+                        },
+                        // Matriz y papelera siempre disponibles
+                        { id: 'matrix', label: 'Matriz', icon: LucideIcons.LayoutGrid, always: true },
+                        { id: 'trash', label: 'Papelera', icon: LucideIcons.Trash2, always: true },
+                    ]
+                    .filter(tab => tab.always || (tab as any).showWhen || activeGroupTab === tab.id)
+                    .map((tab) => {
+                        const isActive = activeGroupTab === tab.id;
+                        const isCampaignActive = (tab as any).isCampaignActive;
+                        const campaignColor = (tab as any).campaignColor;
+                        const badge = (tab as any).badge;
+
+                        const getTabStyle = () => {
+                            if (isActive) return 'bg-primary text-white shadow-md';
+                            if (isCampaignActive) {
+                                const colorMap: Record<string, string> = {
+                                    violet: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 ring-1 ring-violet-400/40',
+                                    blue: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 ring-1 ring-blue-400/40',
+                                    emerald: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 ring-1 ring-emerald-400/40',
+                                };
+                                return colorMap[campaignColor] || 'text-slate-500 hover:text-slate-700';
+                            }
+                            return 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5';
+                        };
+
+                        const getIconColor = () => {
+                            if (isActive) return 'text-white';
+                            if (isCampaignActive) {
+                                const colorMap: Record<string, string> = {
+                                    violet: 'text-violet-500',
+                                    blue: 'text-blue-500',
+                                    emerald: 'text-emerald-500',
+                                };
+                                return colorMap[campaignColor] || 'text-slate-400';
+                            }
+                            return 'text-slate-400';
+                        };
+
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveGroupTab(tab.id as any)}
+                                className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${getTabStyle()}`}
+                            >
+                                {/* Pulse ring para campaña activa */}
+                                {isCampaignActive && !isActive && (
+                                    <div className="absolute inset-0 rounded-xl animate-pulse opacity-30"
+                                        style={{
+                                            background: campaignColor === 'blue' ? 'rgba(59,130,246,0.15)' :
+                                                        campaignColor === 'emerald' ? 'rgba(16,185,129,0.15)' :
+                                                        'rgba(139,92,246,0.15)'
+                                        }}
+                                    />
+                                )}
+                                <tab.icon size={14} className={getIconColor()} />
+                                <span>{tab.label}</span>
+                                {/* Badge de conteo si hay campaña activa */}
+                                {badge !== undefined && badge > 0 && (
+                                    <span className={`flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-black ${
+                                        isActive
+                                            ? 'bg-white/25 text-white'
+                                            : campaignColor === 'blue' ? 'bg-blue-500 text-white'
+                                            : campaignColor === 'violet' ? 'bg-violet-500 text-white'
+                                            : 'bg-emerald-500 text-white'
+                                    }`}>{badge}</span>
+                                )}
+                                {/* Punto pulsante para semestral en mes activo */}
+                                {isCampaignActive && !isActive && badge === undefined && (
+                                    <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                                        campaignColor === 'blue' ? 'bg-blue-400' :
+                                        campaignColor === 'emerald' ? 'bg-emerald-400' :
+                                        'bg-violet-400'
+                                    }`} />
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 {/* Actions & Toggles */}
@@ -1388,7 +1497,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         onSave={handleUpdateClient} 
                         onBack={handleCloseClientDetails} 
                         serviceFees={serviceFees} 
-                        sriCredentials={sriCredentials} 
+                        sriCredentials={sriCredentialsProp || sriCredentials}
+                        initialTab={initialTab}
                     />
                 </div>
             )}

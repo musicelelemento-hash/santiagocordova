@@ -93,9 +93,10 @@ interface ClientDetailViewProps {
     onBack: () => void;
     serviceFees: ServiceFeesConfig;
     sriCredentials?: Record<string, string>;
+    initialTab?: 'profile' | 'history' | 'vault' | 'settings';
 }
 
-export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client, onSave, onBack, serviceFees, sriCredentials }) => {
+export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client, onSave, onBack, serviceFees, sriCredentials, initialTab }) => {
     if (!client) return <div className="p-10 text-center">No se ha seleccionado un cliente válido.</div>;
 
     const { toast } = useToast();
@@ -107,7 +108,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const { whatsappTemplates, setTasks, clients, cloudStatus, setCloudStatus, removeClient, updateClient } = useAppStore();
     const [editedClient, setEditedClient] = useState(client);
     const [isEditing, setIsEditing] = useState(false);
-    const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'vault' | 'settings'>('profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'vault' | 'settings'>(initialTab || 'profile');
     const [vaultViewMode, setVaultViewMode] = useState<'gallery' | 'list' | 'table'>('gallery');
 
     const [obligation, setObligation] = useState(getStatusIndicator(client));
@@ -151,8 +152,13 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 : (client.fee_structure?.monthly ?? 5)
             ).toString());
             setAnnualFee((client.fee_structure?.annual ?? 10).toString());
+            
+            // Si nos pasan initialTab (ej. por navegación)
+            if (initialTab) {
+                setActiveTab(initialTab);
+            }
         }
-    }, [client, isEditing]);
+    }, [client, isEditing, initialTab]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {

@@ -20,6 +20,8 @@ import { IvaFrequency } from '../types';
 import { getComplianceSummary, getClientCompliance, ComplianceColor, getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
 import { PortfolioSemaphore } from '../components/ui/PortfolioSemaphore';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useCampaignContext } from '../hooks/useCampaignContext';
+import { CampaignBanner, CampaignProgress } from '../components/ui/CampaignBanner';
 
 
 interface AdminDashboardScreenProps {
@@ -44,6 +46,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     React.useEffect(() => {
         sessionStorage.setItem('dashboard_inbox_tab', inboxTab);
     }, [inboxTab]);
+
+    React.useEffect(() => {
+        const handleOpenVault = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail && customEvent.detail.clientId) {
+                // Navegamos a Clientes pasándole el ID para abrir y un parámetro 'openVault'
+                navigate('clients', { clientIdToView: customEvent.detail.clientId, initialTab: 'vault' });
+            }
+        };
+        window.addEventListener('open-client-vault', handleOpenVault);
+        return () => window.removeEventListener('open-client-vault', handleOpenVault);
+    }, [navigate]);
     const [searchTerm, setSearchTerm] = useState(() => {
         return sessionStorage.getItem('dashboard_search') || '';
     });
@@ -515,17 +529,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         return { todayDigit, tomorrowDigit };
     }, []);
 
-    const campaignInfo = useMemo(() => {
-        const today = new Date();
-        const prevMonth = subMonths(today, 1);
-        const currentMonthName = format(prevMonth, 'MMMM', { locale: es }).toUpperCase();
-        const currentYear = today.getFullYear();
-        
-        return {
-            activeCampaign: `Mensual: ${currentMonthName} ${currentYear}`,
-            nextCampaign: `Próximamente: Semestral S1`
-        };
-    }, []);
+    // ── CAMPAÑA INTELIGENTE (reemplaza campaignInfo estático) ──
+    const campaign = useCampaignContext();
 
     const stitchSuggestions = useMemo(() => {
         const suggestions: { title: string, desc: string, priority: 'high' | 'medium' | 'low', action: () => void }[] = [];
@@ -658,28 +663,16 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 </div>
             )}
 
-            {/* ── SMART CAMPAIGN BANNER ── */}
+            {/* ── SMART CAMPAIGN BANNER (inteligente, basado en fechas reales) ── */}
             <div className="relative z-30 animate-fade-in px-4 sm:px-0">
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/20 border border-blue-400/30">
-                    <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%222%22%20cy%3D%222%22%20r%3D%221%22%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.1%22%2F%3E%3C%2Fsvg%3E')] opacity-50" />
-                    <div className="px-5 py-3.5 sm:px-6 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
-                        <div className="flex items-center gap-4">
-                            <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-md border border-white/20">
-                                <LucideIcons.CalendarDays size={20} className="text-white" />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-black text-blue-200 uppercase tracking-[0.2em] mb-0.5">Campaña Activa SRI</p>
-                                <h2 className="text-base sm:text-lg font-black text-white tracking-tight">{campaignInfo.activeCampaign}</h2>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                            <div className="hidden sm:block w-px h-8 bg-white/20" />
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-lg border border-white/10 backdrop-blur-sm flex-1 sm:flex-none">
-                                <LucideIcons.ArrowRightCircle size={14} className="text-blue-300" />
-                                <span className="text-[10px] font-bold text-blue-100 uppercase tracking-widest">{campaignInfo.nextCampaign}</span>
-                            </div>
-                        </div>
-                    </div>
+                <CampaignBanner campaign={campaign} />
+                {/* Progress bar de avance de la campaña */}
+                <div className="mt-2 px-1">
+                    <CampaignProgress
+                        campaign={campaign}
+                        total={allResults.length > 0 ? allResults.length : kpis.total}
+                        completed={completados.length}
+                    />
                 </div>
             </div>
 
@@ -1239,18 +1232,25 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 </div>
             )}
 
-            {/* ── FILTER DOCK ELITE ── */}
+            {/* ── FILTER DOCK INTELIGENTE (contextual por campaña) ── */}
             <div className="sticky bottom-4 sm:static z-[100] px-4 sm:px-0">
                 <div className="glass-tactical-dock rounded-2xl sm:rounded-full p-2 flex items-center gap-1 sm:gap-1.5 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.25)] border border-white/10 dark:border-white/5 backdrop-blur-3xl no-scrollbar overflow-x-auto scroll-smooth">
                     {[
-                        { id: 'all', label: 'Directorio', icon: LucideIcons.Users, gradient: 'from-slate-500 to-slate-600' },
-                        { id: 'digital-mando', label: 'Mando Digital', icon: LucideIcons.Activity, gradient: 'from-sky-500 to-blue-600', color: 'text-sky-400' },
-                        { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.CalendarCheck, gradient: 'from-violet-500 to-purple-600' },
-                        { id: 'semestral', label: 'IVA Semestral', icon: LucideIcons.CalendarClock, gradient: 'from-blue-500 to-indigo-600' },
-                        { id: 'renta', label: 'Renta Anual', icon: LucideIcons.ShieldCheck, gradient: 'from-emerald-500 to-teal-600' },
-                        { id: 'urgent', label: 'Crítico', icon: LucideIcons.Zap, gradient: 'from-rose-500 to-red-600', color: 'text-rose-400' },
-                    ].map(tab => {
+                        { id: 'all', label: 'Directorio', icon: LucideIcons.Users, gradient: 'from-slate-500 to-slate-600', always: true },
+                        { id: 'digital-mando', label: 'Mando Digital', icon: LucideIcons.Activity, gradient: 'from-sky-500 to-blue-600', color: 'text-sky-400', always: true },
+                        // IVA Mensual: visible siempre pero con badge de campaña si está activa
+                        { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.CalendarCheck, gradient: 'from-violet-500 to-purple-600', always: false, showWhen: campaign.showMensualTab },
+                        // IVA Semestral: solo visible en julio y enero (campaña semestral activa)
+                        { id: 'semestral', label: 'IVA Semestral', icon: LucideIcons.CalendarRange, gradient: 'from-blue-500 to-indigo-600', always: false, showWhen: campaign.showSemestralTab, highlight: campaign.isSemestralMonth },
+                        // Renta: solo visible en marzo-junio
+                        { id: 'renta', label: 'Renta Anual', icon: LucideIcons.ShieldCheck, gradient: 'from-emerald-500 to-teal-600', always: false, showWhen: campaign.showRentaTab, highlight: campaign.isRentaMonth },
+                        { id: 'urgent', label: 'Crítico', icon: LucideIcons.Zap, gradient: 'from-rose-500 to-red-600', color: 'text-rose-400', always: true },
+                    ]
+                    // Mostrar siempre los que tienen always=true. Los contextuales solo si showWhen=true (o están activos)
+                    .filter(tab => tab.always || tab.showWhen || filter === tab.id)
+                    .map(tab => {
                         const isActive = filter === tab.id;
+                        const isHighlighted = (tab as any).highlight && !isActive;
                         return (
                             <button
                                 key={tab.id}
@@ -1258,6 +1258,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 className={`relative flex items-center gap-2 px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-300 whitespace-nowrap hover:scale-[1.03] active:scale-95 shrink-0 ${
                                     isActive
                                         ? 'text-white shadow-lg'
+                                        : isHighlighted
+                                        ? 'text-blue-500 dark:text-blue-400 hover:bg-blue-500/10'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/[0.07]'
                                 }`}
                             >
@@ -1266,17 +1268,50 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         style={{ boxShadow: `0 4px 15px -4px rgba(0,0,0,0.35)` }}
                                     />
                                 )}
+                                {/* Ring de campaña activa (semestral/renta) */}
+                                {isHighlighted && !isActive && (
+                                    <div className="absolute inset-0 rounded-xl sm:rounded-full ring-1 ring-blue-400/40 animate-pulse" />
+                                )}
                                 <tab.icon size={13} className={`relative z-10 transition-all duration-300 ${
-                                    isActive ? 'text-white' : (tab.color || 'text-slate-500 group-hover:text-emerald-400')
+                                    isActive ? 'text-white' : (tab.color || 'text-slate-500')
                                 }`} />
                                 <span className="relative z-10">{tab.label}</span>
-                                {isActive && urgentPriorities.length > 0 && tab.id === 'urgent' && (
-                                    <span className="relative z-10 ml-0.5 flex items-center justify-center w-4 h-4 rounded-full bg-white/20 text-white text-[9px] font-black">{urgentPriorities.length}</span>
+                                {/* Badge de urgentes en tab Crítico */}
+                                {urgentPriorities.length > 0 && tab.id === 'urgent' && (
+                                    <span className={`relative z-10 ml-0.5 flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-black ${
+                                        isActive ? 'bg-white/20 text-white' : 'bg-rose-500/15 text-rose-500'
+                                    }`}>{urgentPriorities.length}</span>
+                                )}
+                                {/* Indicador de campaña semestral activa */}
+                                {isHighlighted && tab.id === 'semestral' && (
+                                    <span className="relative z-10 ml-0.5 w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                                )}
+                                {/* Indicador de campaña renta activa */}
+                                {isHighlighted && tab.id === 'renta' && (
+                                    <span className="relative z-10 ml-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                                 )}
                             </button>
                         );
                     })}
                 </div>
+
+                {/* Indicador contextual del dígito SRI (bajo el dock) */}
+                {campaign.todaySriDigit !== null && (
+                    <div className="mt-2 flex items-center justify-center gap-2">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/8 dark:bg-rose-500/10 border border-rose-500/20 text-[10px] font-black text-rose-500 uppercase tracking-widest">
+                            <div className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+                            <span>Auto-ordenado por vencimiento SRI · Dígito {campaign.todaySriDigit} vence hoy</span>
+                        </div>
+                    </div>
+                )}
+                {campaign.phase === 'mensual_preparacion' && campaign.daysUntilOpen !== null && (
+                    <div className="mt-2 flex items-center justify-center gap-2">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-500/8 dark:bg-slate-500/10 border border-slate-200 dark:border-white/[0.06] text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            <LucideIcons.Clock size={11} />
+                            <span>Próxima campaña abre en {campaign.daysUntilOpen} días · Preparación activa</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
 

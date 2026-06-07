@@ -234,6 +234,13 @@ const App: React.FC = () => {
       setPreviousScreen(null);
     }
 
+    // Guardamos tab temporal en window para usarlo en el renderScreen (solución ligera para no alterar más AppState ahora)
+    if (options.initialTab) {
+        (window as any).__TEMP_INITIAL_TAB__ = options.initialTab;
+    } else {
+        delete (window as any).__TEMP_INITIAL_TAB__;
+    }
+
     setActiveScreen(screen);
     setClientFilter(options.clientFilter || null);
     setTaskFilter(options.taskFilter || null);
@@ -283,6 +290,9 @@ const App: React.FC = () => {
               setPreviousScreen(null);
             }
           }} 
+          // Pasamos initialTab del estado/options guardado o usar una variable del estado si hace falta
+          // (Lo mejor es añadir el tab al estado del app o en options)
+          initialTab={(window as any).__TEMP_INITIAL_TAB__}
         />
       );
       case 'calendar': return <CalendarScreen navigate={navigate} />;

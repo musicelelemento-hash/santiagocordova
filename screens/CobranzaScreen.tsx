@@ -16,6 +16,8 @@ import { printSalesNote } from '../services/printService';
 import { PieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer, Legend } from 'recharts';
 
 import { useAppStore } from '../store/useAppStore';
+import { useCampaignContext } from '../hooks/useCampaignContext';
+import { CampaignBanner } from '../components/ui/CampaignBanner';
 
 interface CobranzaScreenProps {
     reminderConfigProp?: ReminderConfig;
@@ -60,6 +62,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
     const [isReceiptOpen, setIsReceiptOpen] = useState(false);
     const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
+    
+    // Fiscal Context
+    const campaignContext = useCampaignContext();
 
     // Referencia para impresión
     const receiptRef = useRef<HTMLDivElement>(null);
@@ -132,14 +137,25 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     }, [clients, serviceFees, isRecalculating]);
 
     const currentList = useMemo(() => {
-        let list = activeTab === 'receivable' ? financialData.receivable
-            : activeTab === 'projected' ? financialData.projected
-                : financialData.collected;
+        let list = activeTab === 'receivable' ? [...financialData.receivable]
+            : activeTab === 'projected' ? [...financialData.projected]
+                : [...financialData.collected];
+                
         if (searchTerm) {
             const lower = searchTerm.toLowerCase();
             list = list.filter(i => i.clientName.toLowerCase().includes(lower) || i.ruc.includes(lower));
         }
-        return list;
+        
+        // Auto-Ordenamiento Lógico
+        return list.sort((a, b) => {
+            if (activeTab === 'collected') {
+                // Más recientes primero
+                return b.dateReference.getTime() - a.dateReference.getTime();
+            } else {
+                // Urgencia (los que tienen daysDiff más alto están más vencidos)
+                return (b.daysDiff || 0) - (a.daysDiff || 0);
+            }
+        });
     }, [financialData, activeTab, searchTerm]);
 
     const chartData = [
@@ -226,6 +242,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         LIQUIDAR SELECCIÓN <span className="text-brand-teal">({selectedItems.size})</span>
                     </button>
                 </div>
+            </div>
+
+            {/* CAMPAIGN CONTEXT BANNER */}
+            <div className="relative z-10 sm:px-0">
+                <CampaignBanner campaign={campaignContext} compact />
             </div>
 
             {/* FINANCIAL INTELLIGENCE HUB (Status Sphere) */}
