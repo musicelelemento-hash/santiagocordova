@@ -257,41 +257,63 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             const declarations = client.declarations || [];
                                             
                                             // Determine if this cell is generally "Done" (all obligations met)
-                                            const allObligationsDone = obligations.every(ob => {
+                                            const allObligationsDone = obligations.length > 0 && obligations.every(ob => {
                                                 const d = declarations.find(dh => dh.period === p && dh.type === ob.type);
                                                 return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && d.proof_file;
                                             });
 
                                             return (
-                                                <td key={p} className={`px-2 py-4 border-r border-slate-200/50 dark:border-white/5 last:border-r-0 transition-colors ${allObligationsDone ? 'bg-emerald-500/5 dark:bg-emerald-500/10' : ''}`}>
-                                                    <div className="flex flex-wrap justify-center gap-1.5 min-w-[60px]">
+                                                <td key={p} className={`px-2 py-4 border-r border-slate-200/50 dark:border-white/5 last:border-r-0 transition-colors ${allObligationsDone ? 'bg-emerald-50 dark:bg-emerald-900/10' : ''}`}>
+                                                    <div className="flex flex-wrap justify-center gap-2 min-w-[70px]">
                                                         {obligations.map(ob => {
                                                             const d = declarations.find(dh => dh.period === p && dh.type === ob.type);
                                                             const hasProof = !!d?.proof_file;
-                                                            const isDone = (d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada) && hasProof;
+                                                            const isPaid = d?.status === DeclarationStatus.Pagada;
+                                                            const isSent = d?.status === DeclarationStatus.Enviada || isPaid;
                                                             
+                                                            const isDone = isSent && hasProof;
+                                                            const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
+
                                                             return (
                                                                 <div 
                                                                     key={`${p}-${ob.type}`}
-                                                                    className={`group/ob relative p-1 rounded-md transition-all ${isDone ? 'bg-emerald-500/10' : 'bg-slate-100 dark:bg-white/5'}`}
-                                                                    title={`${ob.label}: ${d?.status || 'Pendiente'}`}
+                                                                    className={`group/ob relative flex flex-col items-center justify-center w-12 h-14 rounded-xl cursor-pointer transition-all duration-300 border ${
+                                                                        isDone ? 'bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/30 hover:bg-emerald-600 hover:scale-110 z-10' : 
+                                                                        isSent && !hasProof ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 border-amber-300 hover:bg-amber-200' :
+                                                                        isOverdue ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-500 border-rose-200 hover:bg-rose-100' :
+                                                                        'bg-slate-50 dark:bg-white/5 text-slate-400 border-slate-200 dark:border-white/10 hover:bg-slate-100 hover:text-slate-600'
+                                                                    }`}
+                                                                    title={isDone ? `Ver PDF de ${ob.label}` : `Subir PDF para ${ob.label}`}
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         if (hasProof) onPreviewReceipt(client, d!);
                                                                         else onUploadReceipt(client, p);
                                                                     }}
                                                                 >
-                                                                    <div className="flex flex-col items-center">
-                                                                        <span className="text-[7px] font-black mb-0.5 opacity-40 group-hover/ob:opacity-100">{ob.type}</span>
-                                                                        {getStatusIcon(d)}
-                                                                        {d && !hasProof && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && (
-                                                                            <div className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
-                                                                        )}
-                                                                    </div>
+                                                                    <span className={`text-[8px] font-black tracking-wider uppercase mb-1 ${isDone ? 'opacity-90' : 'opacity-60'}`}>{ob.type}</span>
+                                                                    
+                                                                    {isDone ? (
+                                                                        <LucideIcons.FileCheck size={16} strokeWidth={2.5} className={isPaid ? 'text-white drop-shadow-md' : 'text-emerald-100'} />
+                                                                    ) : isSent ? (
+                                                                        <LucideIcons.AlertCircle size={16} strokeWidth={2.5} />
+                                                                    ) : isOverdue ? (
+                                                                        <LucideIcons.XCircle size={16} strokeWidth={2.5} />
+                                                                    ) : (
+                                                                        <LucideIcons.UploadCloud size={16} strokeWidth={2} className="opacity-50 group-hover/ob:opacity-100" />
+                                                                    )}
+
+                                                                    {isDone && isPaid && (
+                                                                        <div className="absolute -top-1.5 -right-1.5 bg-sky-500 text-white rounded-full p-0.5 shadow-sm" title="Honorarios Pagados">
+                                                                            <LucideIcons.DollarSign size={8} strokeWidth={4} />
+                                                                        </div>
+                                                                    )}
+                                                                    {!hasProof && isOverdue && (
+                                                                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse border-2 border-white dark:border-slate-900" />
+                                                                    )}
                                                                 </div>
                                                             );
                                                         })}
-                                                        {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-slate-200/20" />}
+                                                        {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-slate-200/50 dark:bg-white/10 my-6" />}
                                                     </div>
                                                 </td>
                                             );
@@ -313,26 +335,49 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             {/* Legend */}
             <div className="flex flex-wrap items-center gap-6 px-4 no-print pb-10">
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Pagada / OK</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]" />
-                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Enviada SBN</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
-                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">En Proceso</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <LucideIcons.Paperclip size={14} className="text-emerald-500" />
-                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Respaldo Digital</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 flex items-center justify-center bg-rose-500/10 text-rose-500 rounded-lg border border-rose-500/20">
-                        <LucideIcons.Upload size={14} />
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/30">
+                        <LucideIcons.FileCheck size={14} strokeWidth={3} />
                     </div>
-                    <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest font-premium animate-pulse">Puntaje de Alerta: Sin PDF</span>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest font-premium">Completado</span>
+                        <span className="text-[8px] font-bold text-slate-400">PDF + Declarado</span>
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-600 border border-amber-300 flex items-center justify-center">
+                        <LucideIcons.AlertCircle size={14} strokeWidth={3} />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest font-premium">Sin Respaldo</span>
+                        <span className="text-[8px] font-bold text-slate-400">Declarado, falta PDF</span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-500 border border-rose-200 flex items-center justify-center relative">
+                        <LucideIcons.XCircle size={14} strokeWidth={3} />
+                        <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse border-2 border-white dark:border-slate-900" />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest font-premium">Vencido</span>
+                        <span className="text-[8px] font-bold text-slate-400">Acción requerida urgente</span>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <div className="relative">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/30">
+                            <LucideIcons.FileCheck size={14} strokeWidth={3} />
+                        </div>
+                        <div className="absolute -top-1.5 -right-1.5 bg-sky-500 text-white rounded-full p-0.5 shadow-sm">
+                            <LucideIcons.DollarSign size={10} strokeWidth={4} />
+                        </div>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest font-premium">Honorario Pagado</span>
+                        <span className="text-[8px] font-bold text-slate-400">Cobro registrado con éxito</span>
+                    </div>
                 </div>
             </div>
 

@@ -34,6 +34,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const { toast } = useToast();
 
     const [expandAnalytics, setExpandAnalytics] = useState(false);
+    const [expandSegmentation, setExpandSegmentation] = useState(false);
 
     // Auto-detección de Campaña Mensual
     const [filter, setFilter] = useState<'all' | 'mensual' | 'semestral' | 'vip' | 'urgent' | 'rimpe' | 'popular' | 'renta' | 'overdue' | 'prepaid' | 'no-iva' | 'no-renta' | 'boveda' | 'digital-mando' | 'trash' | ComplianceColor>(() => {
@@ -752,11 +753,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
                                         disabled={isProcessing}
-                                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-5 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-slate-900/15 dark:shadow-none disabled:opacity-50 relative overflow-hidden group/btn"
+                                        className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-blue-600 dark:bg-blue-500 text-white font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-blue-700 dark:hover:bg-blue-400 transition-all duration-300 shadow-lg shadow-blue-500/25 font-premium disabled:opacity-50 group"
                                     >
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700" />
-                                        {isProcessing ? <LucideIcons.Loader2 size={15} className="animate-spin" /> : <LucideIcons.Upload size={15} />}
-                                        <span className="hidden sm:inline">Carga PDF</span>
+                                        {isProcessing ? <LucideIcons.Loader2 size={16} className="animate-spin" /> : <LucideIcons.UploadCloud size={16} className="group-hover:-translate-y-0.5 transition-transform" />}
+                                        <span className="hidden sm:inline">SUBIR PDFs / RUCs</span>
                                     </button>
                                     <div className="flex items-center bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200 dark:border-white/10">
                                         <button onClick={() => setViewMode('list')} title="Vista Lista" className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 opacity-50 hover:opacity-80'}`}>
@@ -957,36 +957,47 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             </div>
 
             {/* ── PANEL DE CONTROL: Segmentación de Cartera ── */}
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200/70 dark:border-white/[0.06] bg-white dark:bg-[hsl(222,47%,4%)] shadow-sm p-6 sm:p-8 space-y-6 z-20 no-print">
-                {/* Subtle accent line top */}
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/15">
-                            <LucideIcons.SlidersHorizontal size={18} className="text-blue-500 dark:text-blue-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-white tracking-tight">Segmentación de Cartera</h3>
-                            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Filtra por régimen, obligación y período fiscal</p>
+            <div className="relative overflow-hidden rounded-2xl border border-slate-200/70 dark:border-white/[0.06] bg-white dark:bg-[hsl(222,47%,4%)] shadow-sm z-20 no-print">
+                <button 
+                    onClick={() => setExpandSegmentation(!expandSegmentation)}
+                    className="w-full px-6 py-4 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.02] hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors relative"
+                >
+                    {/* Subtle accent line top */}
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-left">
+                        <div className="flex items-center gap-4">
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/15">
+                                <LucideIcons.SlidersHorizontal size={16} className="text-blue-500 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Segmentación de Cartera</h3>
+                                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Filtra por régimen, obligación y período fiscal</p>
+                            </div>
                         </div>
                     </div>
-                    {(selectedRegime !== 'all' || selectedObligation !== 'all' || selectedPeriod !== 'all') && (
-                        <button
-                            onClick={() => {
-                                setSelectedRegime('all');
-                                setSelectedObligation('all');
-                                setSelectedPeriod('all');
-                            }}
-                            className="self-start sm:self-center flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-200 dark:border-rose-500/20 text-[10px] font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
-                        >
-                            <LucideIcons.FilterX size={12} />
-                            Limpiar filtros
-                        </button>
-                    )}
-                </div>
+                    <LucideIcons.ChevronDown size={18} className={`text-slate-400 transition-transform duration-500 ${expandSegmentation ? 'rotate-180' : ''}`} />
+                </button>
 
+                <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandSegmentation ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <div className="p-6 sm:p-8 space-y-6 border-t border-slate-100 dark:border-white/[0.05]">
+                        <div className="flex justify-end mb-2">
+                            {(selectedRegime !== 'all' || selectedObligation !== 'all' || selectedPeriod !== 'all') && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedRegime('all');
+                                        setSelectedObligation('all');
+                                        setSelectedPeriod('all');
+                                    }}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-200 dark:border-rose-500/20 text-[10px] font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+                                >
+                                    <LucideIcons.FilterX size={12} />
+                                    Limpiar filtros
+                                </button>
+                            )}
+                        </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* 1. REGÍMENES */}
                     <div className="space-y-3">
                         <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] font-premium flex items-center gap-1.5">
@@ -1136,6 +1147,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     </div>
                                 );
                             })()}
+                        </div>
+                    </div>
                         </div>
                     </div>
                 </div>
@@ -1496,10 +1509,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         clients={activeList}
                         serviceFees={serviceFees}
                         onQuickAction={handleAction}
-                        onView={(c) => setWorkspaceClient({ client: c, period: selectedPeriod !== 'all' ? selectedPeriod : undefined })}
                         frequency={filter === 'semestral' ? 'Semestral' : (filter === 'mensual' ? 'Mensual' : 'all')}
                         customPeriod={selectedPeriod !== 'all' ? selectedPeriod : undefined}
                         isTrashView={filter === 'trash'}
+                        onPreview={(c, d) => setPreviewState({ isOpen: true, client: c, declaration: d })}
                     />
                 ) : (
                     <div className="py-32 text-center">

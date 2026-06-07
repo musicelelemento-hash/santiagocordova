@@ -102,36 +102,37 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className={`
-                relative rounded-[2rem] transition-all duration-500 cursor-pointer overflow-hidden group/card
-                bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl border border-slate-200/50 dark:border-white/10
-                ${isHovered ? '-translate-y-1.5 border-primary/40 shadow-[0_15px_40px_-10px_rgba(43,106,255,0.15)] dark:shadow-[0_15px_40px_-10px_rgba(43,106,255,0.2)]' : 'shadow-xl shadow-slate-200/30 dark:shadow-none'}
-                ${hasWorkOrder ? 'ring-1 ring-primary/30 bg-primary/[0.02]' : ''}
+                relative rounded-[1.5rem] transition-all duration-500 cursor-pointer overflow-hidden group/card
+                bg-gradient-to-br from-white to-blue-50/30 dark:from-slate-900 dark:to-blue-950/20
+                backdrop-blur-xl border border-blue-100/50 dark:border-blue-800/30
+                ${isHovered ? '-translate-y-1 shadow-xl shadow-blue-900/5 dark:shadow-blue-900/20 border-blue-200 dark:border-blue-700/50' : 'shadow-sm shadow-slate-200/50 dark:shadow-none'}
+                ${hasWorkOrder ? 'ring-1 ring-blue-400/30 bg-blue-50/10' : ''}
                 ${isRefundAlertActive ? 'animate-heartbeat ring-1 ring-emerald-500/30' : ''}
             `}
         >
             {/* Tonal Accent Strip */}
-            <div className={`absolute top-0 left-0 right-0 h-[3px] transition-all duration-700 opacity-90 ${
-                isFullyAlDia ? 'bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-[0_0_20px_rgba(16,185,129,0.5)]' : 
-                isOverdue ? 'bg-gradient-to-r from-rose-400 to-rose-600 shadow-[0_0_20px_rgba(244,63,94,0.5)]' : 
-                isUrgent ? 'bg-gradient-to-r from-amber-400 to-amber-600 shadow-[0_0_20px_rgba(245,158,11,0.5)]' :
-                'bg-gradient-to-r from-slate-200 to-slate-300 dark:from-white/10 dark:to-white/5'
+            <div className={`absolute top-0 left-0 right-0 h-[4px] transition-all duration-700 opacity-90 ${
+                isFullyAlDia ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 
+                isOverdue ? 'bg-gradient-to-r from-rose-400 to-rose-500' : 
+                isUrgent ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+                'bg-gradient-to-r from-blue-300 to-blue-500 dark:from-blue-600 dark:to-blue-400'
             }`}></div>
             
             <div className={`p-5 sm:p-6 relative z-10 flex flex-col md:flex-row md:items-center h-full justify-between gap-6`}>
                 {/* 1. Identity & Contact Zone */}
                 <div className="flex items-start md:items-center gap-5 flex-1 min-w-0 md:border-r border-slate-100 dark:border-white/5 md:pr-6">
                     <div className="relative shrink-0 mt-1 md:mt-0">
-                        <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-black text-xl transition-all duration-700 shadow-inner ${
-                            isFullyAlDia ? 'bg-emerald-500 text-white shadow-emerald-200' : 
-                            isOverdue ? 'bg-rose-500 text-white shadow-rose-200' :
-                            'bg-slate-900 dark:bg-primary text-white shadow-slate-200'
+                        <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-[1.25rem] flex items-center justify-center font-black text-xl sm:text-2xl transition-all duration-700 shadow-inner ${
+                            isFullyAlDia ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-emerald-200/50' : 
+                            isOverdue ? 'bg-gradient-to-br from-rose-400 to-rose-600 text-white shadow-rose-200/50' :
+                            'bg-gradient-to-br from-blue-500 to-blue-700 text-white shadow-blue-200/50'
                         }`}>
                             {client.name.substring(0, 2).toUpperCase()}
                         </div>
                         
                         {/* Health Ring Indicator */}
-                        <div className="absolute -bottom-1 -right-1 flex items-center justify-center">
-                            <div className={`w-6 h-6 rounded-full border-4 border-white dark:border-surface-low flex items-center justify-center text-[8px] font-black shadow-sm ${
+                        <div className="absolute -bottom-1.5 -right-1.5 flex items-center justify-center">
+                            <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full border-4 border-white dark:border-slate-900 flex items-center justify-center text-[9px] sm:text-[10px] font-black shadow-sm ${
                                 compliance.overallColor === 'green' ? 'bg-emerald-500 text-white' :
                                 compliance.overallColor === 'red' ? 'bg-rose-500 text-white' :
                                 'bg-amber-400 text-slate-900'
@@ -143,22 +144,22 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     
                     <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                            <h3 className="font-display font-bold text-xl sm:text-2xl truncate text-slate-900 dark:text-white tracking-tight" title={client.name}>
+                            <h3 className="font-display font-bold text-lg sm:text-xl truncate text-slate-800 dark:text-slate-100 tracking-tight" title={client.name}>
                                 {client.tradeName || client.name}
                             </h3>
-                            <span className="shrink-0 text-[8px] sm:text-[9px] px-2 py-0.5 bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-300 rounded-lg font-black tracking-widest uppercase font-premium">
+                            <span className="shrink-0 text-[9px] px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-md font-bold tracking-wider uppercase">
                                 {client.regime.replace('RIMPE - ', 'R-').substring(0, 15)}
                             </span>
                             {client.hasElderlyDevolucionIva && (
-                                <span className="shrink-0 text-[8px] sm:text-[9px] px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg font-black tracking-widest uppercase font-premium">
+                                <span className="shrink-0 text-[9px] px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-md font-bold tracking-wider uppercase">
                                     3ra Edad
                                 </span>
                             )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 mb-2 sm:mb-3">
-                            <button onClick={handleCopy} className="group/copy flex items-center gap-1.5 px-2 py-1 rounded-md transition-all hover:bg-slate-100 dark:hover:bg-white/5 text-slate-500 hover:text-slate-900 dark:hover:text-white">
-                                <span className="font-mono text-[10px] sm:text-[11px] font-black tracking-widest uppercase">{client.ruc}</span>
+                            <button onClick={handleCopy} className="group/copy flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-md transition-all hover:bg-slate-100 dark:hover:bg-white/5 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-300">
+                                <span className="font-mono text-[11px] sm:text-xs font-semibold tracking-wider">{client.ruc}</span>
                                 {copied ? <LucideIcons.Check size={12} className="text-emerald-500" /> : <LucideIcons.Copy size={12} className="opacity-0 group-hover/copy:opacity-100 transition-opacity" />}
                             </button>
                         </div>
@@ -167,7 +168,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             {client.phones && client.phones[0] && (
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/${client.phones![0].replace(/\D/g,'')}`, '_blank'); }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors text-[10px] font-bold uppercase tracking-wider"
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors text-[10px] font-semibold uppercase tracking-wider"
                                 >
                                     <LucideIcons.MessageCircle size={12} />
                                     <span>WhatsApp</span>
@@ -176,7 +177,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             {client.email && (
                                 <button 
                                     onClick={(e) => { e.stopPropagation(); window.location.href = `mailto:${client.email}`; }}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-[10px] font-bold uppercase tracking-wider"
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors text-[10px] font-semibold uppercase tracking-wider"
                                 >
                                     <LucideIcons.Mail size={12} />
                                     <span>Email</span>
@@ -186,62 +187,73 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     </div>
                 </div>
 
-                {/* 2. Intelligence Zone */}
-                <div className="flex flex-col justify-center gap-3 flex-1 md:border-r border-slate-100 dark:border-white/5 md:pr-6 py-2 md:py-0">
+                {/* 2. Intelligence Zone (Obligaciones & Pagos) */}
+                <div className="flex flex-col justify-center gap-2.5 flex-1 md:border-r border-slate-100 dark:border-white/5 md:pr-6 py-2 md:py-0">
+                    <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 hidden md:block">
+                        Estado Express
+                    </div>
+                    
                     {dueDate && !client.isDeleted && client.isActive && (
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border shadow-sm w-fit ${
-                            isDeclared ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20' :
-                            isOverdue ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20' :
-                            isUrgent ? 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20' :
-                            'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20'
+                        <div className={`flex items-center justify-between px-3 py-2 rounded-lg border w-full sm:w-auto ${
+                            isDeclared ? 'bg-emerald-50/50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20' :
+                            isOverdue ? 'bg-rose-50/50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-100 dark:border-rose-500/20' :
+                            isUrgent ? 'bg-amber-50/50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-500/20' :
+                            'bg-blue-50/50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-500/20'
                         }`}>
-                            <LucideIcons.CalendarDays size={14} />
-                            <div className="flex flex-col">
-                                <span className="text-[8px] font-black uppercase tracking-[0.2em] opacity-70">Campaña SRI • Dígito {client.ruc[8]}</span>
-                                <span className="text-[11px] font-bold">{isDeclared ? 'Cumplido' : `Vence ${safeFormat(dueDate, 'dd MMM')}`}</span>
+                            <div className="flex items-center gap-2">
+                                <LucideIcons.CalendarDays size={14} className="opacity-70" />
+                                <span className="text-[11px] font-medium">Próx. Vencimiento</span>
                             </div>
+                            <span className="text-[11px] font-bold">{isDeclared ? 'Cumplido' : safeFormat(dueDate, 'dd MMM yyyy')}</span>
                         </div>
                     )}
                     
-                    <div className="flex flex-wrap gap-2">
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-slate-100 dark:border-white/5">
-                            <LucideIcons.CreditCard size={12} className="opacity-70" />
-                            ${fee.toFixed(2)}/mes
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                             <div className="flex items-center gap-2">
+                                <LucideIcons.CreditCard size={14} className="text-slate-400" />
+                                <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">Honorarios</span>
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">${fee.toFixed(2)}/mes</span>
                         </div>
 
-                        {debtSummary.hasPendingPayment && (
-                            <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-sm transition-all duration-300">
-                                <LucideIcons.DollarSign size={12} strokeWidth={3} className="text-amber-500" />
-                                <span>Debe ${debtSummary.totalDebt.toFixed(2)}</span>
-                            </span>
-                        )}
-                        {undeclaredSummary.hasPendingObligation && (
-                            <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shadow-sm transition-all duration-300">
-                                <LucideIcons.AlertCircle size={12} strokeWidth={3} className="text-rose-500" />
-                                <span>Falta SRI ({undeclaredSummary.overduePeriodsCount})</span>
-                            </span>
+                        {(debtSummary.hasPendingPayment || undeclaredSummary.hasPendingObligation) && (
+                            <div className="flex flex-wrap gap-2 mt-1">
+                                {debtSummary.hasPendingPayment && (
+                                    <span className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md bg-amber-50 text-amber-700 border border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 transition-all duration-300">
+                                        <LucideIcons.DollarSign size={12} strokeWidth={2.5} />
+                                        <span className="text-[10px] font-bold uppercase tracking-wide">Debe ${debtSummary.totalDebt.toFixed(2)}</span>
+                                    </span>
+                                )}
+                                {undeclaredSummary.hasPendingObligation && (
+                                    <span className="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md bg-rose-50 text-rose-700 border border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20 transition-all duration-300">
+                                        <LucideIcons.AlertCircle size={12} strokeWidth={2.5} />
+                                        <span className="text-[10px] font-bold uppercase tracking-wide">Falta SRI ({undeclaredSummary.overduePeriodsCount})</span>
+                                    </span>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>
 
                 {/* 3. Action Zone */}
                 <div className="flex flex-col items-start sm:items-end justify-center gap-3 flex-shrink-0 w-full md:w-auto">
-                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-[0.1em] font-premium w-fit ${statusBadge.color}`}>
-                        <statusBadge.icon size={12} strokeWidth={3} />
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-[10px] font-bold uppercase tracking-wider w-fit ${statusBadge.color.replace('bg-', 'bg-opacity-20 bg-')}`}>
+                        <statusBadge.icon size={12} strokeWidth={2.5} />
                         <span>{statusBadge.text}</span>
                         {daysUntilDue !== null && !isDeclared && !isOverdue && (
-                            <span className="ml-1 opacity-60">-{daysUntilDue}d</span>
+                            <span className="ml-1 opacity-60">({daysUntilDue}d)</span>
                         )}
                     </div>
 
                     {isTrashView ? (
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                            <button onClick={(e) => handleAction(e, 'restore')} className="flex-1 sm:flex-none flex items-center justify-center h-10 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/25 transition-transform active:scale-95">
-                                <LucideIcons.RotateCcw size={14} className="mr-2" />
+                        <div className="flex items-center gap-2 w-full sm:w-auto mt-2">
+                            <button onClick={(e) => handleAction(e, 'restore')} className="flex-1 sm:flex-none flex items-center justify-center h-10 px-4 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] uppercase tracking-wider transition-transform active:scale-95">
+                                <LucideIcons.RotateCcw size={14} className="mr-1.5" />
                                 Restaurar
                             </button>
-                            <button onClick={(e) => handleAction(e, 'purge')} className="flex-1 sm:flex-none flex items-center justify-center h-10 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-rose-500/25 transition-transform active:scale-95">
-                                <LucideIcons.Trash2 size={14} className="mr-2" />
+                            <button onClick={(e) => handleAction(e, 'purge')} className="flex-1 sm:flex-none flex items-center justify-center h-10 px-4 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] uppercase tracking-wider transition-transform active:scale-95">
+                                <LucideIcons.Trash2 size={14} className="mr-1.5" />
                                 Eliminar
                             </button>
                         </div>
@@ -251,25 +263,25 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                 <button
                                     onClick={(e) => !isDeclared && handleAction(e, 'declare')}
                                     disabled={isDeclared}
-                                    className={`group/btn flex-1 sm:flex-none flex items-center justify-center h-11 sm:w-auto sm:px-6 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-widest ${
+                                    className={`group/btn flex-1 sm:flex-none flex items-center justify-center h-10 sm:w-auto sm:px-5 rounded-lg border transition-all font-bold text-[10px] uppercase tracking-wider ${
                                         isDeclared 
-                                        ? 'bg-slate-50 text-slate-300 border-slate-100 dark:bg-white/5 dark:border-white/5 dark:text-slate-600 opacity-60 cursor-not-allowed' 
-                                        : 'bg-slate-900 dark:bg-primary text-white border-transparent hover:scale-105 active:scale-95 shadow-xl shadow-slate-300/50 dark:shadow-primary/20 hover:shadow-primary/30'
+                                        ? 'bg-slate-50 text-slate-400 border-slate-200 dark:bg-white/5 dark:border-white/10 dark:text-slate-500 opacity-60 cursor-not-allowed' 
+                                        : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white border-transparent hover:shadow-md hover:shadow-blue-500/20 active:scale-95'
                                     }`}
                                 >
-                                    <LucideIcons.Zap size={16} className={isDeclared ? '' : 'fill-current group-hover/btn:animate-pulse'} />
-                                    <span className="ml-2">Declarar SRI</span>
+                                    <LucideIcons.Zap size={14} className={isDeclared ? '' : 'fill-current'} />
+                                    <span className="ml-1.5">Declarar SRI</span>
                                 </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
-                                    className={`flex items-center justify-center h-11 w-14 sm:w-auto sm:px-5 rounded-2xl border transition-all font-black text-[10px] uppercase tracking-widest ${
+                                    className={`flex items-center justify-center h-10 w-12 sm:w-auto sm:px-4 rounded-lg border transition-all font-bold text-[10px] uppercase tracking-wider ${
                                         activeDecl?.proof_file 
-                                        ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500 hover:text-white shadow-lg shadow-emerald-500/10' 
-                                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-primary/50 hover:text-primary dark:hover:text-primary hover:bg-primary/5'
+                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:border-emerald-500/30' 
+                                        : 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/30 hover:bg-blue-50 dark:hover:bg-blue-500/10'
                                     } active:scale-95`}
                                 >
-                                    {activeDecl?.proof_file ? <LucideIcons.FileCheck size={18} /> : <LucideIcons.UploadCloud size={18} />}
-                                    <span className="hidden sm:inline ml-2">{activeDecl?.proof_file ? 'VER COMP.' : 'SUBIR PDF'}</span>
+                                    {activeDecl?.proof_file ? <LucideIcons.FileCheck size={16} /> : <LucideIcons.UploadCloud size={16} />}
+                                    <span className="hidden sm:inline ml-1.5">{activeDecl?.proof_file ? 'VER COMP.' : 'SUBIR PDF'}</span>
                                 </button>
                             </div>
                         )

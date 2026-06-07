@@ -15,7 +15,7 @@ import { useToast } from '../context/ToastContext';
 import { VirtualClientList } from '../components/features/VirtualClientList';
 import { VirtualClientTable } from '../components/features/VirtualClientTable';
 import { ClientCard } from '../components/features/ClientCard';
-import { extractDataFromDeclarationPdf, fileToBase64 } from '../services/pdfExtraction';
+import { extractDataFromDeclarationPdf, fileToBase64, extractDataFromSriPdf } from '../services/pdfExtraction';
 import { StoredFile } from '../types';
 import { BulkUploadReportModal, BulkUploadResult } from '../components/features/BulkUploadReportModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -577,11 +577,94 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
         for (const file of files) {
             try {
-                const data = await extractDataFromDeclarationPdf(file);
+                let isRucCert = false;
+                let data: any = null;
+
+                try {
+                    // Intentar extraer como certificado de RUC primero
+                    data = await extractDataFromSriPdf(file);
+                    if (data.isCertificate) {
+                        isRucCert = true;
+                    } else {
+                        throw new Error("No es certificado de RUC");
+                    }
+                } catch (e) {
+                    // Si falla, extraer como comprobante de declaración
+                    data = await extractDataFromDeclarationPdf(file);
+                }
+
                 const base64 = await fileToBase64(file);
 
                 let targetClient = clients.find(c => c.ruc === data.ruc);
-                
+
+                // --- MANEJO DE CERTIFICADO DE RUC ---
+                if (isRucCert) {
+                    if (!targetClient) {
+                        const newClient: Client = {
+                            id: uuidv4(),
+                            name: data.apellidos_nombres,
+                            ruc: data.ruc,
+                            sriPassword: '',
+                            regime: data.regimen,
+                            isActive: true,
+                            phones: [data.contacto.celular].filter(Boolean),
+                            email: data.contacto.email,
+                            address: data.direccion,
+                            notes: `Creado desde Certificado de RUC`,
+                            needsVerification: true,
+                            verificationReason: 'Registrado automáticamente por Carga Masiva (RUC)',
+                            taxProfile: {
+                                ivaFrequency: data.obligaciones_tributarias === 'semestral' ? 'Semestral' : 'Mensual',
+                                requiresAnnualRenta: data.lista_obligaciones.includes('Impuesto a la Renta'),
+                                requiresAnexosGastos: false,
+                                hasActiveDevolucionIva: false,
+                                hasActiveElderlyDevolucionIva: false,
+                                requiresIce: false,
+                                requiresAnexoPvp: false
+                            },
+                            declarations: [],
+                            vault: []
+                        };
+                        addClient(newClient);
+                        targetClient = newClient;
+                        
+                        results.push({
+                            fileName: file.name,
+                            status: 'new_client',
+                            clientName: data.apellidos_nombres,
+                            ruc: data.ruc,
+                            period: 'RUC',
+                            type: 'CERTIFICADO RUC',
+                            phones: [data.contacto.celular].filter(Boolean)
+                        });
+                    } else {
+                        // Actualizar cliente existente con datos frescos del RUC
+                        updateClient(targetClient.id, {
+                            name: data.apellidos_nombres,
+                            regime: data.regimen,
+                            phones: targetClient.phones && targetClient.phones.length > 0 ? targetClient.phones : [data.contacto.celular].filter(Boolean),
+                            email: targetClient.email || data.contacto.email,
+                            address: targetClient.address || data.direccion,
+                            taxProfile: {
+                                ...targetClient.taxProfile,
+                                ivaFrequency: targetClient.taxProfile?.ivaFrequency || (data.obligaciones_tributarias === 'semestral' ? 'Semestral' : 'Mensual'),
+                            }
+                        });
+
+                        results.push({
+                            fileName: file.name,
+                            status: 'success',
+                            clientName: data.apellidos_nombres,
+                            ruc: data.ruc,
+                            period: 'RUC',
+                            type: 'CERTIFICADO RUC',
+                            phones: targetClient.phones
+                        });
+                    }
+                    continue; // Skip declaration logic for this file
+                }
+
+                // --- MANEJO DE COMPROBANTE DE DECLARACIÓN ---
                 if (!targetClient) {
                     // AUTO-REGISTRO: Crear nuevo cliente desde el comprobante
                     const newClient: Client = {
@@ -767,7 +850,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-5 rounded-[1.5rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.2em] border border-outline-variant hover:bg-surface-medium transition-all duration-500 shadow-sm font-premium"
                     >
                         <LucideIcons.UploadCloud size={18} />
-                        CARGA MASIVA
+                        SUBIR PDFs / RUCs
                     </motion.button>
                     
                     <motion.button 
