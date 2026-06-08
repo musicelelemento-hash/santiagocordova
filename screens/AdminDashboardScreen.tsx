@@ -72,6 +72,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         declaration: null
     });
     const [bulkResults, setBulkResults] = useState<BulkProcessResult[]>([]);
+    const [recentUploads, setRecentUploads] = useState<BulkProcessResult[]>([]);
+    const [dragActive, setDragActive] = useState(false);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
     const [isTacticalVisible, setIsTacticalVisible] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -476,12 +478,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         toast.success(`✅ ${count} clientes marcados como ${modeLabel}`);
     };
 
-    const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
+    const processFiles = async (files: File[]) => {
         if (files.length === 0) return;
 
         setIsProcessing(true);
-        toast.info(`Iniciando procesamiento de ${files.length} archivos...`);
+        toast.info(`Iniciando procesamiento de ${files.length} archivo(s)...`);
 
         try {
             const results = await processBulkPdfs(files, (curr, total) => {
@@ -489,12 +490,39 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             });
             setBulkResults(results as any);
             setIsBulkModalOpen(true);
-            toast.success("Procesamiento masivo completado");
+            setRecentUploads(prev => [...(results as any), ...prev].slice(0, 20));
+            toast.success("Procesamiento completado");
         } catch (error) {
-            toast.error("Error en el procesamiento masivo");
+            toast.error("Error en el procesamiento");
         } finally {
             setIsProcessing(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+    };
+
+    const handleBulkUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        await processFiles(files);
+    };
+
+    const handleDrag = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            const files = Array.from(e.dataTransfer.files);
+            await processFiles(files);
         }
     };
 
@@ -520,6 +548,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             const results = await processBulkPdfs([file], () => {});
             setBulkResults(results as any);
             setIsBulkModalOpen(true);
+            setRecentUploads(prev => [...(results as any), ...prev].slice(0, 20));
             toast.success("Documento procesado");
         } catch (error) {
             toast.error("Error al procesar el documento");
@@ -683,6 +712,167 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         completed={completados.length}
                     />
                 </div>
+            </div>
+
+            {/* ── UNIDAD DE PROCESAMIENTO DIGITAL (DRAG & DROP ZONE) ── */}
+            <div className="relative z-30 px-4 sm:px-0 no-print">
+                <div 
+                    onDragEnter={handleDrag}
+                    onDragOver={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDrop={handleDrop}
+                    className={`relative overflow-hidden rounded-2xl border transition-all duration-500 p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[160px] ${
+                        dragActive 
+                            ? 'bg-blue-600/10 border-blue-500 scale-[1.01] shadow-lg shadow-blue-500/20' 
+                            : 'bg-white/80 dark:bg-[hsl(222,47%,4%)] border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/10 hover:shadow-md'
+                    }`}
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    {/* Background glows */}
+                    <div className="absolute inset-0 pointer-events-none opacity-30">
+                        <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl" />
+                        <div className="absolute bottom-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl" />
+                    </div>
+
+                    <input type="file" multiple accept=".pdf" ref={fileInputRef} onChange={handleBulkUpload} className="hidden" />
+
+                    {isProcessing ? (
+                        <div className="flex flex-col items-center gap-3 relative z-10 py-4">
+                            <LucideIcons.Loader2 className="animate-spin text-blue-500" size={36} />
+                            <div className="space-y-1">
+                                <p className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Procesando Inteligencia de Documentos...</p>
+                                <p className="text-xs text-slate-400 animate-pulse">Analizando estructura PDF SRI & extracción de metadatos</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-4 relative z-10 py-2">
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/30 dark:border-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400">
+                                <LucideIcons.UploadCloud size={24} className="animate-pulse" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <p className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Unidad de Procesamiento Digital</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg leading-relaxed">
+                                    Arrastre y suelte sus PDFs aquí (RUCs o Comprobantes), o haga clic para buscar.
+                                </p>
+                                <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200/20 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-md">
+                                        📄 Certificados RUC (Registro)
+                                    </span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/20 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-md">
+                                        🧾 Comprobantes SRI (Declaración)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* HISTORIAL RECIENTE DENTRO DEL WIDGET */}
+                {recentUploads.length > 0 && (
+                    <div className="mt-4 bg-white/70 dark:bg-[hsl(222,47%,3%)] rounded-2xl border border-slate-200/60 dark:border-white/[0.05] p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-white/[0.04]">
+                            <div className="flex items-center gap-2">
+                                <LucideIcons.History size={14} className="text-slate-400" />
+                                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Cargas Recientes de la Sesión</h4>
+                            </div>
+                            <button 
+                                onClick={() => setRecentUploads([])}
+                                className="text-[9px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300"
+                            >
+                                Limpiar Historial
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                            {recentUploads.map((res, i) => {
+                                const matchedClient = clients.find(c => c.ruc === res.ruc);
+                                const isNew = res.status === 'new_client';
+                                const isDup = res.status === 'duplicate';
+                                const isErr = res.status === 'error';
+                                
+                                return (
+                                    <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] rounded-xl hover:border-slate-200 dark:hover:border-white/10 transition-all">
+                                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                                isErr ? 'bg-rose-500/10 text-rose-500' :
+                                                isDup ? 'bg-amber-500/10 text-amber-500' :
+                                                isNew ? 'bg-sky-500/10 text-sky-500' : 'bg-emerald-500/10 text-emerald-500'
+                                            }`}>
+                                                {isErr ? <LucideIcons.FileWarning size={14} /> :
+                                                 isDup ? <LucideIcons.Copy size={14} /> :
+                                                 isNew ? <LucideIcons.UserPlus size={14} /> : <LucideIcons.CheckCircle2 size={14} />}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate uppercase">
+                                                        {res.clientName || res.fileName}
+                                                    </span>
+                                                    <span className={`text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded uppercase ${
+                                                        isErr ? 'bg-rose-500/15 text-rose-500' :
+                                                        isDup ? 'bg-amber-500/15 text-amber-500' :
+                                                        isNew ? 'bg-sky-500/15 text-sky-500' : 'bg-emerald-500/15 text-emerald-500'
+                                                    }`}>
+                                                        {isErr ? 'Error' : isDup ? 'Duplicado' : isNew ? 'Nuevo Cliente' : 'Exitoso'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400 font-mono">
+                                                    <span>{res.ruc || 'S/RUC'}</span>
+                                                    {res.period && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span className="text-blue-500 dark:text-blue-400 uppercase font-bold">{res.period}</span>
+                                                        </>
+                                                    )}
+                                                    {res.amount !== undefined && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span className="text-emerald-500 font-bold">${res.amount.toFixed(2)}</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                {res.error && (
+                                                    <p className="text-[10px] text-rose-500 italic mt-1">{res.error}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                                            {/* WhatsApp Notification Button */}
+                                            {!isErr && matchedClient && matchedClient.phones && matchedClient.phones[0] && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const greeting = new Date().getHours() >= 12 ? (new Date().getHours() >= 19 ? "Buenas noches" : "Buenas tardes") : "Buen día";
+                                                        const statusMsg = res.isPaid 
+                                                            ? "Le informo que los honorarios por este trámite ya se encuentran cancelados. ¡Muchas gracias!"
+                                                            : "Le informo que el pago de honorarios por este trámite se encuentra pendiente de registro.";
+                                                        const message = `¡Hola ${res.clientName}! 👋 ${greeting}. Le informo que su declaración de ${res.type || 'Impuestos'} del periodo ${res.period || ''} fue procesada con éxito. Adjunto el comprobante de la declaración.\n\n${statusMsg}\n\n¡Gracias por su confianza!`;
+                                                        const phone = matchedClient.phones![0].replace(/\D/g, '');
+                                                        const fullPhone = phone.startsWith('593') ? phone : `593${phone.substring(1)}`;
+                                                        window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                                                    }}
+                                                    className="p-2 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-500 rounded-lg border border-emerald-500/20 transition-all text-xs"
+                                                    title="Notificar por WhatsApp"
+                                                >
+                                                    <LucideIcons.MessageCircle size={14} />
+                                                </button>
+                                            )}
+                                            {/* Client Detail Workspace Button */}
+                                            {matchedClient && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setWorkspaceClient({ client: matchedClient, period: res.period }); }}
+                                                    className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500 hover:text-white text-blue-500 rounded-lg border border-blue-500/20 transition-all text-[9px] font-black uppercase tracking-wider"
+                                                >
+                                                    Expediente
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* ── BACKGROUND ORBS ── */}
@@ -1517,6 +1707,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         clients={activeList}
                         serviceFees={serviceFees}
                         onQuickAction={handleAction}
+                        onView={(c) => setWorkspaceClient({ client: c })}
+                        onUploadReceipt={handleUploadFromMatrix}
                         frequency={filter === 'semestral' ? 'Semestral' : (filter === 'mensual' ? 'Mensual' : 'all')}
                         customPeriod={selectedPeriod !== 'all' ? selectedPeriod : undefined}
                         isTrashView={filter === 'trash'}
