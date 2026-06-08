@@ -5,7 +5,7 @@ import { getClientServiceFee } from '../../../../services/clientService';
 import {
     ShieldCheck, AlertTriangle, DollarSign, Eye, EyeOff, Globe,
     Share2, MessageCircle, Settings, Activity, FileText, CalendarDays,
-    BadgePercent, CheckCircle2, Clock, ArrowRight, Zap, Info
+    BadgePercent, CheckCircle2, Clock, ArrowRight, Zap, Info, RefreshCcw
 } from 'lucide-react';
 import { TaxObligationCard } from '../TaxObligationCard';
 import { PaymentHistoryChart } from '../PaymentHistoryChart';
@@ -35,6 +35,7 @@ interface ProfileTabProps {
     handleElderlyRefundAction: (action: any) => void;
     handleRevertDeclaration: (period: string) => void;
     handleCancelDeclaration: (period: string) => void;
+    onChangeIvaFrequency?: () => void;
 }
 
 // ── Badge de régimen con su descripción ─────────────────────────
@@ -136,7 +137,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     handleRentaRefundAction,
     handleElderlyRefundAction,
     handleRevertDeclaration,
-    handleCancelDeclaration
+    handleCancelDeclaration,
+    onChangeIvaFrequency,
 }) => {
     const isNegocioPopular = editedClient.regime === TaxRegime.RimpeNegocioPopular;
 
@@ -336,6 +338,27 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                             </div>
                             <ArrowRight size={14} className="text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                         </button>
+
+                        {/* ── Cambio de frecuencia IVA ── */}
+                        {editedClient.taxProfile?.ivaFrequency !== 'Ninguno' && onChangeIvaFrequency && (
+                            <button
+                                onClick={onChangeIvaFrequency}
+                                className="w-full flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/15 border border-indigo-100 dark:border-indigo-500/20 hover:border-indigo-300 dark:hover:border-indigo-500/40 rounded-xl transition-all group active:scale-[0.98]"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg text-indigo-500 group-hover:scale-110 transition-transform">
+                                        <RefreshCcw size={15} strokeWidth={2} />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300">Cambiar Frecuencia IVA</p>
+                                        <p className="text-[10px] text-indigo-500/70 dark:text-indigo-400/70 mt-0.5">
+                                            Actual: <strong>{editedClient.taxProfile?.ivaFrequency}</strong> · Artesanos / Cambios de régimen
+                                        </p>
+                                    </div>
+                                </div>
+                                <ArrowRight size={14} className="text-indigo-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                            </button>
+                        )}
 
                         <button
                             onClick={() => setActiveTab('history')}

@@ -40,6 +40,7 @@ import { ProfileTab } from './ClientDetail/tabs/ProfileTab';
 import { HistoryTab } from './ClientDetail/tabs/HistoryTab';
 import { VaultTab } from './ClientDetail/tabs/VaultTab';
 import { SettingsTab } from './ClientDetail/tabs/SettingsTab';
+import { IvaFrequencyChangeModal } from './ClientDetail/IvaFrequencyChangeModal';
 
 const getRecentPeriods = (client: Client, count: number): string[] => {
     if (!client) return [];
@@ -125,6 +126,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [signaturePasswordVisible, setSignaturePasswordVisible] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+    const [showFrequencyModal, setShowFrequencyModal] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isAnalyzingPdf, setIsAnalyzingPdf] = useState(false);
@@ -649,6 +651,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             handleElderlyRefundAction={handleElderlyRefundAction}
             handleRevertDeclaration={handleRevertDeclaration}
             handleCancelDeclaration={handleCancelDeclaration}
+            onChangeIvaFrequency={() => setShowFrequencyModal(true)}
         />
     );
 
@@ -875,6 +878,19 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         </div>
                     </div>
                 </Modal>
+                {/* ── Modal Cambio Frecuencia IVA ── */}
+                {showFrequencyModal && (
+                    <IvaFrequencyChangeModal
+                        client={editedClient}
+                        onConfirm={(updatedClient) => {
+                            setEditedClient(updatedClient);
+                            onSave(updatedClient);
+                            setShowFrequencyModal(false);
+                            toast.success(`✅ Frecuencia IVA cambiada a ${updatedClient.taxProfile?.ivaFrequency} · Período de inicio: ${updatedClient.clientStartPeriod}`);
+                        }}
+                        onCancel={() => setShowFrequencyModal(false)}
+                    />
+                )}
             </div>
         </div>
     );
