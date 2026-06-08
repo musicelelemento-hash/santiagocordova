@@ -537,6 +537,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             const entry: Declaration = {
                 period,
+                type: period.includes('-') ? 'IVA' : 'RENTA',
                 status: DeclarationStatus.Enviada,
                 updatedAt: nowIso,
                 declaredAt: nowIso,
@@ -761,6 +762,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
                 const entry: Declaration = {
                     period,
+                    type: period.includes('-') ? 'IVA' : 'RENTA',
                     status: DeclarationStatus.Enviada,
                     updatedAt: nowIso,
                     declaredAt: nowIso,

@@ -75,7 +75,7 @@ export const mockClients: Client[] = [
     },
     {
         id: uuidv4(),
-        ruc: '0702706813002', // Placeholder RUC for CHAVEZ CORDOVA GUIDO ERMEL
+        ruc: '0702706821001', // Validated RUC for CHAVEZ CORDOVA GUIDO ERMEL (ends in 001, correct check-digit)
         name: 'CHAVEZ CORDOVA GUIDO ERMEL',
         sriPassword: 'Guido2026*',
         regime: TaxRegime.General,
@@ -96,7 +96,8 @@ export const mockClients: Client[] = [
             iceMonthly: 10, 
             iceAnexo: 5, 
             anexoPvp: 10 
-        }
+        },
+        clientStartPeriod: '2026-05' // Starts fresh with the May 2026 campaign (no past backlog)
     }
 ];
 

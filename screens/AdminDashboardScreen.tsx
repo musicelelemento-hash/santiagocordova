@@ -127,7 +127,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             filter === 'mensual' ? 'Mensual' :
             filter === 'semestral' ? 'Semestral' :
             filter === 'renta' ? 'Anual' : 
-            filter === 'digital-mando' ? 'Mensual' : 'all';
+            filter === 'digital-mando' ? 'all' : 'all';
 
         const summary = getComplianceSummary(clients, today, currentFreq);
 
@@ -226,7 +226,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             } else if (filter === 'boveda') {
                 filterMatch = !!(ivaDecl && !ivaDecl.proof_file && (ivaDecl.status === DeclarationStatus.Enviada || ivaDecl.status === DeclarationStatus.Pagada));
             } else if (filter === 'digital-mando') {
-                filterMatch = c.taxProfile?.ivaFrequency !== 'Ninguno';
+                filterMatch = true;
             } else if (filter === 'trash') {
                 filterMatch = true;
             }
@@ -341,6 +341,20 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         : (inboxTab === 'pendientes' 
             ? [...urgentPriorities, ...pendientes] 
             : inboxTab === 'cobros' ? cobros : completados);
+
+    const rentaPeriod = useMemo(() => (new Date().getFullYear() - 1).toString(), []);
+
+    const mensualClients = useMemo(() => 
+        filter === 'digital-mando' ? activeList.filter(c => (c.taxProfile?.ivaFrequency || 'Mensual') === 'Mensual') : []
+    , [activeList, filter]);
+
+    const semestralClients = useMemo(() => 
+        filter === 'digital-mando' ? activeList.filter(c => c.taxProfile?.ivaFrequency === 'Semestral') : []
+    , [activeList, filter]);
+
+    const anualClients = useMemo(() => 
+        filter === 'digital-mando' ? activeList.filter(c => c.taxProfile?.ivaFrequency === 'Ninguno' || (!c.taxProfile?.ivaFrequency && c.regime === TaxRegime.RimpeNegocioPopular)) : []
+    , [activeList, filter]);
 
 
     // ... (handleAction remains same) ...
@@ -1762,6 +1776,132 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         onPreviewReceipt={(c, d) => setPreviewState({ isOpen: true, client: c, declaration: d })}
                         theme={theme}
                     />
+                ) : filter === 'digital-mando' ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 sm:px-0">
+                        {/* Mensual Column */}
+                        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[2rem] border border-slate-200/50 dark:border-white/5 p-5 flex flex-col h-[650px] shadow-xl">
+                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200/50 dark:border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/20">
+                                        <LucideIcons.CalendarRange size={16} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Mensual</h3>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">IVA Mensual</p>
+                                    </div>
+                                </div>
+                                <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 rounded-md text-[10px] font-black text-slate-600 dark:text-slate-400">
+                                    {mensualClients.length}
+                                </span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto space-y-3 pr-1.5 custom-scrollbar">
+                                {mensualClients.length > 0 ? (
+                                    mensualClients.map(c => (
+                                        <ClientCard 
+                                            key={c.id}
+                                            client={c}
+                                            serviceFees={serviceFees}
+                                            onView={(client) => setWorkspaceClient({ client })}
+                                            onQuickAction={handleAction}
+                                            onUploadReceipt={handleUploadFromMatrix}
+                                            onPreview={(client, d) => setPreviewState({ isOpen: true, client, declaration: d })}
+                                            variant="zen"
+                                            compact={true}
+                                            frequency="Mensual"
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full text-slate-400 py-10">
+                                        <LucideIcons.Inbox size={28} className="text-slate-300 dark:text-slate-700 mb-2" />
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Sin Clientes</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Semestral Column */}
+                        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[2rem] border border-slate-200/50 dark:border-white/5 p-5 flex flex-col h-[650px] shadow-xl">
+                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200/50 dark:border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20">
+                                        <LucideIcons.Layers size={16} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Semestral</h3>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">IVA Semestral</p>
+                                    </div>
+                                </div>
+                                <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 rounded-md text-[10px] font-black text-slate-600 dark:text-slate-400">
+                                    {semestralClients.length}
+                                </span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto space-y-3 pr-1.5 custom-scrollbar">
+                                {semestralClients.length > 0 ? (
+                                    semestralClients.map(c => (
+                                        <ClientCard 
+                                            key={c.id}
+                                            client={c}
+                                            serviceFees={serviceFees}
+                                            onView={(client) => setWorkspaceClient({ client })}
+                                            onQuickAction={handleAction}
+                                            onUploadReceipt={handleUploadFromMatrix}
+                                            onPreview={(client, d) => setPreviewState({ isOpen: true, client, declaration: d })}
+                                            variant="zen"
+                                            compact={true}
+                                            frequency="Semestral"
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full text-slate-400 py-10">
+                                        <LucideIcons.Inbox size={28} className="text-slate-300 dark:text-slate-700 mb-2" />
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Sin Clientes</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Anual Column */}
+                        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-[2rem] border border-slate-200/50 dark:border-white/5 p-5 flex flex-col h-[650px] shadow-xl">
+                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200/50 dark:border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+                                        <LucideIcons.Award size={16} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Anual</h3>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Renta / Únicas</p>
+                                    </div>
+                                </div>
+                                <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/10 rounded-md text-[10px] font-black text-slate-600 dark:text-slate-400">
+                                    {anualClients.length}
+                                </span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto space-y-3 pr-1.5 custom-scrollbar">
+                                {anualClients.length > 0 ? (
+                                    anualClients.map(c => (
+                                        <ClientCard 
+                                            key={c.id}
+                                            client={c}
+                                            serviceFees={serviceFees}
+                                            onView={(client) => setWorkspaceClient({ client })}
+                                            onQuickAction={handleAction}
+                                            onUploadReceipt={handleUploadFromMatrix}
+                                            onPreview={(client, d) => setPreviewState({ isOpen: true, client, declaration: d })}
+                                            variant="zen"
+                                            compact={true}
+                                            frequency="Anual"
+                                            customPeriod={rentaPeriod}
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full text-slate-400 py-10">
+                                        <LucideIcons.Inbox size={28} className="text-slate-300 dark:text-slate-700 mb-2" />
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Sin Clientes</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 ) : activeList.length > 0 ? (
                     <VirtualClientList
                         clients={activeList}
@@ -1769,7 +1909,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         onQuickAction={handleAction}
                         onView={(c) => setWorkspaceClient({ client: c })}
                         onUploadReceipt={handleUploadFromMatrix}
-                        frequency={filter === 'semestral' ? 'Semestral' : (filter === 'mensual' || filter === 'digital-mando') ? 'Mensual' : 'all'}
+                        frequency={filter === 'semestral' ? 'Semestral' : filter === 'mensual' ? 'Mensual' : 'all'}
                         customPeriod={selectedPeriod !== 'all' ? selectedPeriod : undefined}
                         isTrashView={filter === 'trash'}
                         onPreview={(c, d) => setPreviewState({ isOpen: true, client: c, declaration: d })}

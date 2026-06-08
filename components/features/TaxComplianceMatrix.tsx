@@ -258,20 +258,26 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             
                                             // Determine if this cell is generally "Done" (all obligations met)
                                             const allObligationsDone = obligations.length > 0 && obligations.every(ob => {
-                                                const d = declarations.find(dh => dh.period === p && dh.type === ob.type);
-                                                return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && d.proof_file;
+                                                const d = declarations.find(dh => 
+                                                    dh.period === p && 
+                                                    (dh.type === ob.type || (!dh.type && (ob.type === 'IVA' || ob.type === 'RENTA')))
+                                                );
+                                                return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada || !!d.proof_file) && d.proof_file;
                                             });
 
                                             return (
                                                 <td key={p} className={`px-2 py-4 border-r border-slate-200/50 dark:border-white/5 last:border-r-0 transition-colors ${allObligationsDone ? 'bg-emerald-50 dark:bg-emerald-900/10' : ''}`}>
                                                     <div className="flex flex-wrap justify-center gap-2 min-w-[70px]">
                                                         {obligations.map(ob => {
-                                                            const d = declarations.find(dh => dh.period === p && dh.type === ob.type);
+                                                            const d = declarations.find(dh => 
+                                                                dh.period === p && 
+                                                                (dh.type === ob.type || (!dh.type && (ob.type === 'IVA' || ob.type === 'RENTA')))
+                                                            );
                                                             const hasProof = !!d?.proof_file;
-                                                            const isPaid = d?.status === DeclarationStatus.Pagada;
-                                                            const isSent = d?.status === DeclarationStatus.Enviada || isPaid;
+                                                            const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid;
+                                                            const isSent = d?.status === DeclarationStatus.Enviada || isPaid || hasProof;
                                                             
-                                                            const isDone = isSent && hasProof;
+                                                            const isDone = hasProof;
                                                             const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
 
                                                             return (

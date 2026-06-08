@@ -703,6 +703,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const t0 = performance.now();
 
+      const selfHealChavez = (clientsList: Client[]) => {
+        const idx = clientsList.findIndex(c => c.ruc === '0702706813002' || (c.ruc === '0702706821001' && !c.clientStartPeriod));
+        if (idx !== -1) {
+          const client = clientsList[idx];
+          console.log("🛠️ selfHealChavez: Corrigiendo datos de Chavez...");
+          setTimeout(() => {
+            get().updateClient(client.id, { 
+              ruc: '0702706821001', 
+              clientStartPeriod: '2026-05' 
+            });
+          }, 500);
+        }
+      };
+
       // ── FASE 1: Carga local instantánea (IndexedDB) ──────────
       // Prioridad: mostrar la UI lo antes posible con datos locales
       const [localClients, tasks, webOrders, sriCredentials, serviceFees, reminderConfig] = await Promise.all([
@@ -729,6 +743,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           isLoaded: true
         });
         console.log(`⚡ Fase 1 (Local): ${localData.length} clientes en ${(performance.now() - t0).toFixed(0)}ms`);
+        selfHealChavez(localData);
       }
 
       // ── FASE 2: Sincronización con la nube (background) ──────

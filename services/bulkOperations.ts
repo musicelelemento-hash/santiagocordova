@@ -1,6 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { Client, TaxRegime, DeclarationStatus, StoredFile } from '../types';
+import { Client, TaxRegime, DeclarationStatus, StoredFile, TaxObligationType } from '../types';
 import { extractDataFromSriPdf, extractDataFromDeclarationPdf, fileToBase64 } from './pdfExtraction';
 import { useAppStore } from '../store/useAppStore';
 
@@ -154,6 +154,7 @@ export const processBulkPdfs = async (
                 } else {
                     const newDec = {
                         period: decPeriod,
+                        type: (decPeriod.includes('-') ? 'IVA' : 'RENTA') as TaxObligationType,
                         status: DeclarationStatus.Enviada,
                         updatedAt: new Date().toISOString(),
                         declaredAt: (data as any).declarationDate || new Date().toISOString(),
