@@ -431,12 +431,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             return;
         }
 
-        let updatedClient = client;
-
-        const history = [...client.declarations];
+        // CRITICAL FIX: Leer siempre el cliente FRESCO del store, no el snapshot del card
+        const freshClient = clients.find(c => c.id === client.id) || client;
+        const history = [...(freshClient.declarations || [])];
         const idx = history.findIndex(d => d.period === period);
         const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
 
+        const existingEntry = history[idx];
         const newEntry = {
             period,
             status: newStatus,
@@ -446,9 +447,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         };
 
         if (idx > -1) {
-            history[idx] = { ...history[idx], ...newEntry };
+            history[idx] = { ...existingEntry, ...newEntry };
         } else {
-            history.push(newEntry);
+            history.push(newEntry as Declaration);
         }
 
         const updates: Partial<Client> = { declarations: history };
@@ -515,7 +516,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             const period = receiptUploadState.period || data.period || getPeriod(receiptUploadState.client, today);
             const nowIso = today.toISOString();
 
-            const history = [...receiptUploadState.client.declarations];
+            // CRITICAL FIX: Leer siempre el cliente FRESCO del store
+            const freshClient = clients.find(c => c.id === receiptUploadState.client.id) || receiptUploadState.client;
+            const history = [...(freshClient.declarations || [])];
             const idx = history.findIndex(d => d.period === period);
 
             const proofFileObj: StoredFile = {
@@ -553,7 +556,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             const updates: Partial<Client> = { declarations: history };
 
-            updateClient(receiptUploadState.client.id, updates);
+            updateClient(freshClient.id, updates);
             toast.success('¡Comprobante validado! Obligación marcada como HECHA (Cobro Pendiente)');
 
         } catch (err) {
