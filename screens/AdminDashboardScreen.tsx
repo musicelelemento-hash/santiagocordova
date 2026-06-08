@@ -233,11 +233,19 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 filtered.push(c);
                 
                 // 3. Categorization (Inbox) - ONLY FOR ACTIVE (NON-DELETED) CLIENTS
+                // CORRECCIÓN: Usamos el periodo actual (campaña) para determinar si está "Al Día"
+                // en lugar del historial global, evitando que periodos viejos bloqueen el progreso.
                 if (!c.isDeleted) {
-                    const isFullyAlDia = !debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
-                    const isCobroPending = debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation;
+                    const currentPeriodIsDeclared = ivaDecl?.status === DeclarationStatus.Enviada
+                        || ivaDecl?.status === DeclarationStatus.Pagada
+                        || !!ivaDecl?.proof_file;
+                    const currentPeriodIsPaid = !!ivaDecl?.is_paid;
 
-                    if (isFullyAlDia) {
+                    // "Completado" = el periodo actual está declarado (independientemente del historial)
+                    const isCurrentPeriodDone = currentPeriodIsDeclared;
+                    const isCobroPending = currentPeriodIsDeclared && !currentPeriodIsPaid;
+
+                    if (isCurrentPeriodDone && !isCobroPending) {
                         comps.push(c);
                     } else if (isCobroPending) {
                         cobs.push(c);
