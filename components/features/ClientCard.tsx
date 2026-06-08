@@ -36,9 +36,9 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     const undeclaredSummary = getClientUndeclaredSummary(client, today);
 
     // Un cliente tiene cobro de IVA pendiente en el periodo actual
-    const isPaid = !debtSummary.hasPendingPayment;
+    const isPaid = !!activeDecl?.is_paid;
     // Un cliente tiene la declaración de IVA enviada en el periodo actual
-    const isDeclared = !undeclaredSummary.hasPendingObligation;
+    const isDeclared = activeDecl?.status === DeclarationStatus.Enviada || activeDecl?.status === DeclarationStatus.Pagada || !!activeDecl?.proof_file;
     
     const fee = getClientServiceFee(client, serviceFees, currentPeriod);
     const dueDate = getDueDateForPeriod(client, currentPeriod);
