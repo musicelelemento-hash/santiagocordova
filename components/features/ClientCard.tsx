@@ -31,6 +31,12 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     const currentPeriod = customPeriod || getPeriod(client, today, frequency);
     const activeDecl = client.declarations.find(d => d.period === currentPeriod);
 
+    // ── MODO CAMPAÑA vs MODO GLOBAL ──────────────────────────────────
+    // Si se especifica un `frequency` (Mensual/Semestral), evaluamos SOLO el periodo
+    // actual de esa campaña. Esto evita que meses históricos sin declarar (ej: enero)
+    // pinten de rojo a un cliente que ya tiene el mes actual declarado.
+    const isCampaignMode = frequency === 'Mensual' || frequency === 'Semestral';
+
     // Lógica de Estado Multi-período Táctica
     const debtSummary = getClientDebtSummary(client, serviceFees, today);
     const undeclaredSummary = getClientUndeclaredSummary(client, today);
@@ -45,8 +51,15 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
 
     // Cálculos de Tiempo
     const daysUntilDue = dueDate ? differenceInCalendarDays(dueDate, today) : null;
-    const isOverdue = undeclaredSummary.overduePeriodsCount > 0;
-    const isUrgent = daysUntilDue !== null && daysUntilDue <= 3 && undeclaredSummary.hasPendingObligation;
+
+    // En modo campaña: isOverdue solo si el PERIODO ACTUAL está vencido y sin declarar
+    // En modo global: revisa todo el historial (comportamiento original)
+    const isOverdue = isCampaignMode
+        ? (!isDeclared && dueDate !== null && differenceInCalendarDays(dueDate, today) < 0)
+        : undeclaredSummary.overduePeriodsCount > 0;
+
+    const isUrgent = daysUntilDue !== null && daysUntilDue <= 3 && 
+        (isCampaignMode ? !isDeclared : undeclaredSummary.hasPendingObligation);
 
     // Renta Extra Buttons Logic
     const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
@@ -57,10 +70,18 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     const isRentaPaid = !!rentaDecl?.is_paid;
     const isRentaFullyDone = isRentaDeclared && isRentaPaid;
 
-    // Is fully paid and declared across the ENTIRE history (2026+)
-    const isFullyPaid = !debtSummary.hasPendingPayment && (isRentaPaid || !needsRenta);
-    const isFullyDeclared = !undeclaredSummary.hasPendingObligation && (isRentaDeclared || !needsRenta);
-    const isFullyAlDia = isFullyPaid && isFullyDeclared;
+    // En modo campaña mensual/semestral: "Al Día" = periodo actual declarado (y cobrado o sin deuda del periodo)
+    // En modo global: revisa todo el historial
+    const isFullyPaid = isCampaignMode
+        ? (isPaid || !isDeclared) // si el periodo actual está pagado (o no declarado aún, eso no cuenta)
+        : !debtSummary.hasPendingPayment && (isRentaPaid || !needsRenta);
+    const isFullyDeclared = isCampaignMode
+        ? isDeclared  // en campaña, "declarado" = el periodo de campaña está hecho
+        : !undeclaredSummary.hasPendingObligation && (isRentaDeclared || !needsRenta);
+    
+    // Al Día: En modo campaña = el mes/semestre actual está declarado
+    //         En modo global  = historial completo limpio
+    const isFullyAlDia = isCampaignMode ? isDeclared : (isFullyPaid && isFullyDeclared);
 
     // ORDEN DE TRABAJO (Prioridad)
     const hasWorkOrder = (client.declarations || []).some(d => d.is_paid && d.status === DeclarationStatus.Pendiente);

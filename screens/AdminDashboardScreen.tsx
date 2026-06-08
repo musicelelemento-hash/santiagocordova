@@ -38,7 +38,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
     // Auto-detección de Campaña Mensual
     const [filter, setFilter] = useState<'all' | 'mensual' | 'semestral' | 'vip' | 'urgent' | 'rimpe' | 'popular' | 'renta' | 'overdue' | 'prepaid' | 'no-iva' | 'no-renta' | 'boveda' | 'digital-mando' | 'trash' | ComplianceColor>(() => {
-        return (sessionStorage.getItem('dashboard_filter') as any) || 'digital-mando';
+        return (sessionStorage.getItem('dashboard_filter') as any) || 'mensual';
     });
     const [inboxTab, setInboxTab] = useState<'pendientes' | 'cobros' | 'completados'>(() => {
         return (sessionStorage.getItem('dashboard_inbox_tab') as any) || 'pendientes';
@@ -1528,7 +1528,64 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
             {/* ── INBOX TABS ELITE ── */}
             {!searchTerm && (
-                <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 z-10 relative px-4 sm:px-0">
+                <div className="flex flex-col gap-3 z-10 relative px-4 sm:px-0">
+                    {/* ── MESA DE TRABAJO HEADER ── */}
+                    {(filter === 'mensual' || filter === 'digital-mando' || filter === 'semestral' || filter === 'renta') && (
+                        <div className="flex items-center justify-between px-1">
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+                                    <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.25em]">
+                                        Mesa de Trabajo
+                                    </span>
+                                </div>
+                                {/* Badge del periodo activo */}
+                                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20">
+                                    <LucideIcons.CalendarCheck size={11} className="text-violet-500" />
+                                    <span className="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest">
+                                        {filter === 'semestral' 
+                                            ? `Semestral ${campaign.activePeriodLabel}`
+                                            : filter === 'renta'
+                                            ? `Renta Anual ${new Date().getFullYear() - 1}`
+                                            : campaign.activePeriodLabel 
+                                                ? formatPeriodForDisplay(campaign.activePeriodLabel).toUpperCase()
+                                                : 'IVA Mensual'
+                                        }
+                                    </span>
+                                </div>
+                                {/* Mini progreso */}
+                                {allResults.length > 0 && (
+                                    <div className="hidden sm:flex items-center gap-2">
+                                        <div className="w-20 h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000"
+                                                style={{ width: `${Math.round((completados.length / allResults.length) * 100)}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-[10px] font-bold text-slate-400">
+                                            {Math.round((completados.length / allResults.length) * 100)}% listo
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                            {/* Acciones rápidas */}
+                            <div className="hidden sm:flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600">{allResults.length} en vista</span>
+                                <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
+                                <button
+                                    onClick={() => setShowMarkAllModal(true)}
+                                    disabled={activeList.length === 0}
+                                    title="Marcar todos como declarados y pagados al día"
+                                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                >
+                                    <LucideIcons.CheckCheck size={13} />
+                                    Marcar Todos
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
                     <div className="flex items-center gap-2 w-full sm:w-auto bg-slate-100/80 dark:bg-white/[0.04] p-1.5 rounded-2xl border border-slate-200 dark:border-white/[0.06]">
                         {/* Tab: Pendientes */}
                         <button
@@ -1605,7 +1662,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <LucideIcons.ShieldCheck size={14} strokeWidth={2.5} />
                             </div>
                             <div className="text-left">
-                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 leading-none mb-0.5">Completados</div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 leading-none mb-0.5">Procesados</div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-base font-black tracking-tight leading-none">Al Día</span>
                                     <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
@@ -1618,24 +1675,27 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         </button>
                     </div>
 
-                    <div className="ml-auto hidden sm:flex items-center gap-3 text-slate-400">
-                        <LucideIcons.CalendarDays size={14} className="text-slate-400" />
-                        <span className="text-xs font-semibold uppercase tracking-widest">
-                            {formatPeriodForDisplay(getPeriod({ ruc: '0000000000001' } as any, new Date())).split(' ')[0]}
-                        </span>
-                        <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
-                        <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600">{allResults.length} en vista</span>
-                        <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
-                        {/* ── BOTÓN MARCAR TODOS AL DÍA ── */}
-                        <button
-                            onClick={() => setShowMarkAllModal(true)}
-                            disabled={activeList.length === 0}
-                            title="Marcar todos como declarados y pagados al día"
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                        >
-                            <LucideIcons.CheckCheck size={13} />
-                            Marcar Todos
-                        </button>
+                    {/* Acciones no-campaña o mobile fallback */}
+                    {!(filter === 'mensual' || filter === 'digital-mando' || filter === 'semestral' || filter === 'renta') && (
+                        <div className="ml-auto hidden sm:flex items-center gap-3 text-slate-400">
+                            <LucideIcons.CalendarDays size={14} className="text-slate-400" />
+                            <span className="text-xs font-semibold uppercase tracking-widest">
+                                {formatPeriodForDisplay(getPeriod({ ruc: '0000000000001' } as any, new Date())).split(' ')[0]}
+                            </span>
+                            <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
+                            <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600">{allResults.length} en vista</span>
+                            <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
+                            <button
+                                onClick={() => setShowMarkAllModal(true)}
+                                disabled={activeList.length === 0}
+                                title="Marcar todos como declarados y pagados al día"
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            >
+                                <LucideIcons.CheckCheck size={13} />
+                                Marcar Todos
+                            </button>
+                        </div>
+                    )}
                     </div>
                 </div>
             )}
@@ -1709,7 +1769,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         onQuickAction={handleAction}
                         onView={(c) => setWorkspaceClient({ client: c })}
                         onUploadReceipt={handleUploadFromMatrix}
-                        frequency={filter === 'semestral' ? 'Semestral' : (filter === 'mensual' ? 'Mensual' : 'all')}
+                        frequency={filter === 'semestral' ? 'Semestral' : (filter === 'mensual' || filter === 'digital-mando') ? 'Mensual' : 'all'}
                         customPeriod={selectedPeriod !== 'all' ? selectedPeriod : undefined}
                         isTrashView={filter === 'trash'}
                         onPreview={(c, d) => setPreviewState({ isOpen: true, client: c, declaration: d })}
