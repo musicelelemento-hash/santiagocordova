@@ -261,7 +261,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                         client.isActive && !client.isDeleted && (
                             <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
                                 <button
-                                    onClick={(e) => !isDeclared && handleAction(e, 'declare')}
+                                    onClick={(e) => !isDeclared && handleAction(e, 'declare', currentPeriod)}
                                     disabled={isDeclared}
                                     className={`group/btn flex-1 sm:flex-none flex items-center justify-center h-10 sm:w-auto sm:px-5 rounded-lg border transition-all font-bold text-[10px] uppercase tracking-wider ${
                                         isDeclared 

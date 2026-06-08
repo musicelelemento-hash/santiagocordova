@@ -492,9 +492,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
     const handleUploadReceipt = (client: Client, period?: string) => {
         setReceiptUploadState({ client, period });
-        setTimeout(() => {
-            receiptFileInputRef.current?.click();
-        }, 100);
+        receiptFileInputRef.current?.click();
     };
 
     const processReceiptFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
