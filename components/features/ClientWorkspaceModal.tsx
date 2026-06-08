@@ -273,6 +273,7 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
                                 status={ivaDecl?.status}
                                 isDeclared={ivaDecl?.status === DeclarationStatus.Enviada || ivaDecl?.status === DeclarationStatus.Pagada}
                                 isPaid={ivaDecl?.is_paid}
+                                hasProofFile={!!ivaDecl?.proof_file}
                                 amount={ivaDecl?.amount ?? getClientServiceFee(client, serviceFees, activePeriod)}
                                 dueDate={getDueDateForPeriod(client, activePeriod) || undefined}
                                 onDeclare={() => handleAction('declare', activePeriod, 'iva')}
@@ -295,6 +296,7 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
                                 status={rentaDecl?.status}
                                 isDeclared={rentaDecl?.status === DeclarationStatus.Enviada || rentaDecl?.status === DeclarationStatus.Pagada}
                                 isPaid={rentaDecl?.is_paid}
+                                hasProofFile={!!rentaDecl?.proof_file}
                                 amount={client.fee_structure?.annual ?? 10}
                                 dueDate={getDueDateForPeriod(client, rentaPeriod) || undefined}
                                 onDeclare={() => handleAction('declare', rentaPeriod, 'renta')}

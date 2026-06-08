@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Task, TaskStatus, Client, TaxRegime, Screen } from '../types';
+import { Task, TaskStatus, Client, TaxRegime, Screen, DeclarationStatus } from '../types';
 import { 
     Plus, Search, X, CheckCircle, FileText, User, 
     ArrowRight, UploadCloud, Smartphone, LayoutDashboard, 
@@ -14,6 +14,8 @@ import { getIdentifierSortKey, getPeriod, getDueDateForPeriod, formatPeriodForDi
 import { TaskDetailView } from '../components/features/TaskDetailView';
 import { useTranscription } from '../hooks/useTranscription';
 import { useAppStore } from '../store/useAppStore';
+import { useToast } from '../context/ToastContext';
+import { extractDataFromDeclarationPdf, fileToBase64 } from '../services/pdfExtraction';
 
 interface TasksScreenProps {
     navigate: (screen: Screen) => void;
@@ -41,6 +43,12 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [isNonClient, setIsNonClient] = useState(false);
     const [newTask, setNewTask] = useState<Partial<Task>>({ status: TaskStatus.Pendiente, clientId: '' });
+    const { toast } = useToast();
+
+    // Add state for direct PDF upload on auto tasks
+    const [uploadingTask, setUploadingTask] = useState<Task | null>(null);
+    const [isAnalyzingPdf, setIsAnalyzingPdf] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // State for the "Add Client" modal within TasksScreen
     const [isAddClientModalOpen, setIsAddClientModalOpen] = useState(false);
@@ -192,6 +200,73 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
         } else {
             setIsNonClient(false);
             setNewTask(prev => ({ ...prev, clientId: value, nonClientName: '', nonClientRuc: '', sriPassword: '' }));
+        }
+    };
+
+    const handleAutoTaskUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !uploadingTask) return;
+
+        setIsAnalyzingPdf(true);
+        try {
+            const data = await extractDataFromDeclarationPdf(file);
+            const base64 = await fileToBase64(file);
+            
+            const client = clients.find(c => c.id === uploadingTask.clientId);
+            if (!client) throw new Error("Cliente no encontrado");
+
+            // Extract period from auto-decl-clientId-period ID
+            const parts = uploadingTask.id.split('-');
+            // ID format: auto-decl-[clientId]-[period(can contain dashes)]
+            // A simpler way: we know the period from the task title OR we can just use data.period if it's reliable
+            // Since data.period comes from PDF, let's use it, but verify it matches the client's pending
+            const targetPeriod = data.period || uploadingTask.id.substring(uploadingTask.id.lastIndexOf('-') + 1); // rough fallback
+
+            const updatedHistory = [...(client.declarations || [])];
+            const idx = updatedHistory.findIndex(d => d.period === data.period || d.period === targetPeriod);
+
+            const storedFile = {
+                name: file.name,
+                type: 'pdf',
+                size: file.size,
+                lastModified: Date.now(),
+                content: base64,
+                metadata: {
+                    amount: data.amount,
+                    period: data.period,
+                    formType: data.formType,
+                    sriId: data.id
+                }
+            };
+
+            if (idx !== -1) {
+                updatedHistory[idx] = {
+                    ...updatedHistory[idx],
+                    status: DeclarationStatus.Pagada, // Since it's an auto task, it was already paid
+                    is_paid: true,
+                    proof_file: storedFile,
+                    updatedAt: new Date().toISOString()
+                };
+            } else {
+                updatedHistory.push({
+                    period: data.period || targetPeriod,
+                    status: DeclarationStatus.Pagada,
+                    is_paid: true,
+                    proof_file: storedFile,
+                    updatedAt: new Date().toISOString()
+                } as any);
+            }
+
+            const updatedClient = { ...client, declarations: updatedHistory };
+            setClients(clients.map(c => c.id === client.id ? updatedClient : c));
+            
+            toast.success("Comprobante subido y obligación completada");
+        } catch (err: any) {
+            toast.error(err.message || "Error al procesar el PDF");
+        } finally {
+            setIsAnalyzingPdf(false);
+            setUploadingTask(null);
+            if (fileInputRef.current) fileInputRef.current.value = '';
         }
     };
 
@@ -398,13 +473,24 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                     <div className="flex items-center gap-3">
                                         {isAuto && (
                                             <button 
-                                                onClick={(e) => { e.stopPropagation(); setSelectedTask(task); }} 
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    setUploadingTask(task); 
+                                                    fileInputRef.current?.click(); 
+                                                }} 
                                                 className="flex items-center gap-3 px-8 py-3.5 bg-sky-500 text-white text-xs font-semibold uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-sky-500/40 hover:scale-105 hover:bg-sky-400 active:scale-95 transition-all"
+                                                disabled={isAnalyzingPdf && uploadingTask?.id === task.id}
                                             >
-                                                <UploadCloud size={16} /> DECLARAR
+                                                {(isAnalyzingPdf && uploadingTask?.id === task.id) ? (
+                                                    <span className="animate-pulse">PROCESANDO...</span>
+                                                ) : (
+                                                    <><UploadCloud size={16} /> SUBIR PDF</>
+                                                )}
                                             </button>
                                         )}
-                                        <div className="p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:border-sky-400/30 transition-all">
+                                        <div className="p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:border-sky-400/30 transition-all"
+                                             onClick={(e) => { e.stopPropagation(); setSelectedTask(task); }}
+                                        >
                                             <ArrowRight size={20} className="text-slate-500 group-hover:text-sky-400 group-hover:translate-x-1 transition-all" />
                                         </div>
                                     </div>
@@ -505,6 +591,14 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                     <Target size={40} className="text-slate-500" />
                 </div>
             </div>
+
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="application/pdf" 
+                onChange={handleAutoTaskUpload} 
+            />
         </div>
     );
 };

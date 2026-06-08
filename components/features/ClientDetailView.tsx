@@ -177,7 +177,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const decl = (editedClient.declarations || []).find(d => d.period === currentPeriod);
 
         const isIvaPaid = !!decl?.is_paid;
-        const isIvaDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada;
+        const hasIvaProof = !!decl?.proof_file;
+        const isIvaDeclared = hasIvaProof || decl?.status === DeclarationStatus.Enviada || decl?.status === DeclarationStatus.Pagada;
 
         const currentYear = getYear(new Date());
         const needsRenta = editedClient.taxProfile?.requiresAnnualRenta ?? (editedClient.regime === TaxRegime.RimpeEmprendedor || editedClient.regime === TaxRegime.RimpeNegocioPopular);
@@ -185,8 +186,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const rentaDecl = (editedClient.declarations || []).find(d => d.period === rentaPeriod);
 
         const isRentaPaid = !!rentaDecl?.is_paid;
+        const hasRentaProof = !!rentaDecl?.proof_file;
         const isRentaDeclared = (
-            rentaDecl?.proof_file ||
+            hasRentaProof ||
             rentaDecl?.status === DeclarationStatus.Enviada ||
             rentaDecl?.status === DeclarationStatus.Pagada
         );
@@ -254,8 +256,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             isFullyPaid: fullyPaid,
             isFullyDeclared: fullyDeclared,
             complianceStats: {
-                iva: { period: currentPeriod, isDeclared: isIvaDeclared, is_paid: isIvaPaid, needed: requiresIva(editedClient) },
-                renta: { period: rentaPeriod, isDeclared: isRentaDeclared, is_paid: isRentaPaid, needed: needsRenta }
+                iva: { period: currentPeriod, isDeclared: isIvaDeclared, is_paid: isIvaPaid, needed: requiresIva(editedClient), hasProofFile: hasIvaProof },
+                renta: { period: rentaPeriod, isDeclared: isRentaDeclared, is_paid: isRentaPaid, needed: needsRenta, hasProofFile: hasRentaProof }
             },
             isWorkOrder: (!fullyDeclared && fullyPaid),
             isFullyAlDia: (fullyDeclared && fullyPaid)

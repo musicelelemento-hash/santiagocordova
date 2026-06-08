@@ -11,6 +11,7 @@ interface TaxObligationCardProps {
     isPaid?: boolean;
     isDeclared?: boolean;
     amount?: number;
+    hasProofFile?: boolean;
     description?: string;
     onDeclare?: () => void;
     onPay?: () => void;
@@ -34,6 +35,7 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
     isPaid,
     isDeclared: initialIsDeclared,
     amount = 0,
+    hasProofFile,
     onDeclare,
     onPay,
     onUpload,
@@ -116,6 +118,15 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                             <LucideIcons.CheckCircle2 size={14} strokeWidth={2.5} />
                             Declarado
                         </div>
+                        {!hasProofFile && onUpload && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); onUpload(); }}
+                                title="Subir comprobante PDF"
+                                className="p-2.5 bg-blue-100 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800/50 rounded-xl text-blue-600 dark:text-blue-400 hover:text-white hover:bg-blue-600 transition-all active:scale-90"
+                            >
+                                <LucideIcons.UploadCloud size={16} strokeWidth={2} />
+                            </button>
+                        )}
                         {onRevertDeclaration && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onRevertDeclaration(); }}

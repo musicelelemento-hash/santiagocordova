@@ -187,6 +187,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     isDeclared={complianceStats.iva.isDeclared}
                                     isPaid={complianceStats.iva.is_paid}
                                     amount={getClientServiceFee(client, serviceFees, complianceStats.iva.period)}
+                                    hasProofFile={complianceStats.iva.hasProofFile}
                                     dueDate={getDueDateForPeriod(client, complianceStats.iva.period) || undefined}
                                     onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats.iva.period })}
                                     onPay={() => handleQuickPay(complianceStats.iva.period)}
@@ -205,6 +206,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     isDeclared={complianceStats.renta.isDeclared}
                                     isPaid={complianceStats.renta.is_paid}
                                     amount={editedClient.fee_structure?.annual ?? 10}
+                                    hasProofFile={complianceStats.renta.hasProofFile}
                                     dueDate={getDueDateForPeriod(client, complianceStats.renta.period) || undefined}
                                     onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats.renta.period })}
                                     onPay={() => handleQuickPay(complianceStats.renta.period)}
@@ -232,6 +234,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     title="Devolución IVA (Tercera Edad)"
                                     status={editedClient.elderlyDevolucionIvaStatus as any}
                                     resolutionFile={editedClient.elderlyDevolucionIvaResolutionFile}
+                                    hasProofFile={!!editedClient.elderlyDevolucionIvaResolutionFile}
                                     onAction={handleElderlyRefundAction}
                                     onUpload={() => { setUploadingTarget({ type: 'devolucionIvaTerceraEdad' }); proofInputRef.current?.click(); }}
                                 />
@@ -244,6 +247,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     title="Devolución Impuesto a la Renta"
                                     status={editedClient.rentaRefundStatus as any}
                                     isPaid={editedClient.rentaRefundPaid}
+                                    hasProofFile={!!editedClient.rentaRefundResolutionFile}
                                     onAction={handleRentaRefundAction}
                                     onUpload={() => { setUploadingTarget({ type: 'devolucionRenta' }); proofInputRef.current?.click(); }}
                                 />
