@@ -23,6 +23,27 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 }) => {
     const [frequency, setFrequency] = useState<IvaFrequency>('Mensual');
     const [searchTerm, setSearchTerm] = useState('');
+    const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
+
+    const handleCopyRuc = (ruc: string) => {
+        navigator.clipboard.writeText(ruc).then(() => {
+            setCopiedRuc(ruc);
+            setTimeout(() => setCopiedRuc(null), 2000);
+        }).catch(() => {
+            // Fallback for older browsers
+            const ta = document.createElement('textarea');
+            ta.value = ruc;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            setCopiedRuc(ruc);
+            setTimeout(() => setCopiedRuc(null), 2000);
+        });
+    };
 
     const today = new Date();
 
@@ -243,9 +264,18 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     {client.ruc[8]}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-black text-slate-900 dark:text-white truncate max-w-[200px]" title={client.name}>
-                                                        {client.tradeName || client.name}
-                                                    </span>
+                                                    {/* Clicking the name copies RUC */}
+                                                    <button
+                                                        title="Clic para copiar RUC"
+                                                        onClick={(e) => { e.stopPropagation(); handleCopyRuc(client.ruc); }}
+                                                        className={`text-left text-sm font-black truncate max-w-[200px] transition-colors ${
+                                                            copiedRuc === client.ruc
+                                                                ? 'text-emerald-500'
+                                                                : 'text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary'
+                                                        }`}
+                                                    >
+                                                        {copiedRuc === client.ruc ? '✓ RUC copiado' : (client.tradeName || client.name)}
+                                                    </button>
                                                     <span className="text-[9px] font-mono font-bold text-slate-400 tracking-widest mt-1">
                                                         {client.ruc}
                                                     </span>
