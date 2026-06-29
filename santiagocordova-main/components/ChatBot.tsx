@@ -1,1 +1,0 @@
-// Componente eliminado por falta de uso en la versión actual

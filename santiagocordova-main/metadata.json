@@ -1,8 +1,0 @@
-{
-  "name": "Web Santiago Cordova",
-  "description": "Dashboard de Gestión Contable y Tributaria para Santiago Cordova. Inteligencia artificial para declaraciones SRI y control de clientes.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
-}
