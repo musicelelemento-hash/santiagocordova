@@ -16,6 +16,7 @@ import { useTranscription } from '../hooks/useTranscription';
 import { useAppStore } from '../store/useAppStore';
 import { useToast } from '../context/ToastContext';
 import { extractDataFromDeclarationPdf, fileToBase64 } from '../services/pdfExtraction';
+import { useDebounce } from '../hooks/useDebounce';
 
 interface TasksScreenProps {
     navigate: (screen: Screen) => void;
@@ -38,6 +39,7 @@ const newClientInitialState: Partial<Client> = {
 export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, clearTaskFilter, initialTaskData, clearInitialTaskData }) => {
     const { tasks, setTasks, clients, setClients, serviceFees } = useAppStore();
     const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const [activeTab, setActiveTab] = useState<'all' | 'orders'>('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -106,10 +108,10 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
     const filteredTasks = useMemo(() => {
         const manualTasks = tasks.filter(task => {
             const clientName = task.clientId ? getClientName(task.clientId) : (task.nonClientName || 'Externo');
-            const searchMatch = searchTerm === '' ||
-                task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (task.nonClientRuc && task.nonClientRuc.includes(searchTerm));
+            const searchMatch = debouncedSearchTerm === '' ||
+                task.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                clientName.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+                (task.nonClientRuc && task.nonClientRuc.includes(debouncedSearchTerm));
             const filterMatch = !taskFilter?.clientId || task.clientId === taskFilter.clientId;
             return searchMatch && filterMatch;
         });
@@ -143,7 +145,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
             if (!isAAuto && isBAuto) return 1;
             return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
         });
-    }, [tasks, searchTerm, clients, taskFilter, serviceFees, activeTab]);
+    }, [tasks, debouncedSearchTerm, clients, taskFilter, serviceFees, activeTab]);
 
     const stats = useMemo(() => {
         const today = new Date();

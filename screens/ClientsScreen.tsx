@@ -24,6 +24,7 @@ import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewM
 import { getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
 import { useCampaignContext } from '../hooks/useCampaignContext';
 import { CampaignBanner } from '../components/ui/CampaignBanner';
+import { useDebounce } from '../hooks/useDebounce';
 
 const OBLIGATION_GROUPS = [
     { id: 'all', label: 'Todos', icon: LucideIcons.Users, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
@@ -66,6 +67,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     // ── CAMPAÑA INTELIGENTE ──
     const campaign = useCampaignContext();
     const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('clients_search') || '');
+    const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -232,7 +234,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 (filterOption === 'inactive' && !(client.isActive ?? true));
             if (!statusMatch) return false;
 
-            const terms = searchTerm.toLowerCase().split(/\s+/).filter(t => t.length > 0);
+            const terms = debouncedSearchTerm.toLowerCase().split(/\s+/).filter(t => t.length > 0);
             const clientName = client.name.toLowerCase();
             const clientRuc = client.ruc;
             const clientTrade = (client.tradeName || "").toLowerCase();
@@ -248,7 +250,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             if (!searchMatch) return false;
 
             // SI HAY BÚSQUEDA ACTIVADA, saltamos los filtros de pestañas para mostrar resultados globales
-            if (searchTerm) return true;
+            if (debouncedSearchTerm) return true;
 
             if (activeGroupTab === 'vencidos') {
                 const today = new Date();
@@ -309,7 +311,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             return true;
         });
-    }, [clients, searchTerm, filterOption, activeGroupTab, regimeFilter, initialFilter]);
+    }, [clients, debouncedSearchTerm, filterOption, activeGroupTab, regimeFilter, initialFilter]);
 
     // --- LÓGICA DE ORDENAMIENTO MEJORADA ---
     const sortedClients = useMemo(() => {
