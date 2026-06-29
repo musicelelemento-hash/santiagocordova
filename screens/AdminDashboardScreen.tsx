@@ -634,6 +634,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
         return suggestions.slice(0, 3);
     }, [tacticalInfo, urgentPriorities, expiringSignatures, activeRentaRefunds]);
+    return (
+        <div className="space-y-6 animate-fade-in pb-20 relative aurora-zen min-h-screen">
             {showIntelligencePanels ? (
                 <>
                     {/* ── SUGGESTION HUB ELITE ── */}
@@ -942,15 +944,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         </div>
                     </div>
                 </div>
-            )} </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-            </div>
+            )}
 
-            {/* ── BACKGROUND ORBS ── */}
             <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-400/3 dark:bg-blue-500/5 blur-[150px] rounded-full pointer-events-none" />
             <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-emerald-400/3 dark:bg-emerald-500/5 blur-[130px] rounded-full pointer-events-none" />
 
