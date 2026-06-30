@@ -91,6 +91,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [recentUploads, setRecentUploads] = useState<BulkProcessResult[]>([]);
     const [dragActive, setDragActive] = useState(false);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+    const [showUploader, setShowUploader] = useState(false);
     const [isTacticalVisible, setIsTacticalVisible] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
@@ -636,322 +637,6 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     }, [tacticalInfo, urgentPriorities, expiringSignatures, activeRentaRefunds]);
     return (
         <div className="space-y-6 animate-fade-in pb-20 relative aurora-zen min-h-screen">
-            {showIntelligencePanels ? (
-                <>
-                    {/* ── SUGGESTION HUB ELITE ── */}
-                    {stitchSuggestions.length > 0 && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in relative z-30 px-4 sm:px-0">
-                            {stitchSuggestions.map((s, idx) => (
-                                <div
-                                    key={idx}
-                                    onClick={s.action}
-                                    className="group relative overflow-hidden rounded-2xl cursor-pointer border transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl"
-                                    style={{
-                                        background: s.priority === 'high'
-                                            ? 'linear-gradient(135deg, rgba(244,63,94,0.08) 0%, rgba(244,63,94,0.02) 100%)'
-                                            : s.priority === 'medium'
-                                            ? 'linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(251,191,36,0.02) 100%)'
-                                            : 'linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.02) 100%)',
-                                        borderColor: s.priority === 'high' ? 'rgba(244,63,94,0.2)' : s.priority === 'medium' ? 'rgba(251,191,36,0.2)' : 'rgba(59,130,246,0.2)'
-                                    }}
-                                >
-                                    <div className={`absolute top-0 left-0 w-full h-0.5 ${
-                                        s.priority === 'high' ? 'bg-gradient-to-r from-rose-500 to-rose-400' :
-                                        s.priority === 'medium' ? 'bg-gradient-to-r from-amber-500 to-amber-400' :
-                                        'bg-gradient-to-r from-blue-500 to-blue-400'
-                                    }`} />
-                                    <div className="p-5 relative z-10">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] ${
-                                                s.priority === 'high' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                                                s.priority === 'medium' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                                                'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                                            }`}>
-                                                <div className={`w-1 h-1 rounded-full animate-pulse ${
-                                                    s.priority === 'high' ? 'bg-rose-400' : s.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-400'
-                                                }`} />
-                                                {s.priority === 'high' ? 'Crítico' : s.priority === 'medium' ? 'Aviso' : 'Sugerencia'}
-                                            </div>
-                                        </div>
-                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5 leading-tight">{s.title}</h4>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{s.desc}</p>
-                                        <div className="flex items-center gap-1.5 mt-3 text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 text-emerald-400">
-                                            <span>Ver más</span>
-                                            <LucideIcons.ArrowRight size={12} />
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* ── TACTICAL ALERT BANNER ELITE ── */}
-                    {isTacticalVisible && tacticalInfo.todayDigit !== null && (
-                        <div className="relative z-30 animate-fade-in-down px-4 sm:px-0 group/tactical">
-                            <div className="relative overflow-hidden rounded-2xl border border-rose-500/20 bg-gradient-to-r from-rose-500/[0.06] via-rose-500/[0.03] to-transparent backdrop-blur-xl">
-                                <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-rose-500 via-rose-400/50 to-transparent" />
-                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-400 via-rose-500 to-rose-400/0 rounded-l-2xl" />
-                                <div className="pl-6 pr-4 py-4 sm:py-5 flex items-center justify-between">
-                                    <div className="flex items-center gap-5">
-                                        <div className="relative shrink-0">
-                                            <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-3 rounded-xl text-white shadow-lg shadow-rose-500/30 relative z-10">
-                                                <LucideIcons.ShieldAlert size={20} strokeWidth={2.5} />
-                                            </div>
-                                            <div className="absolute inset-0 bg-rose-400 rounded-xl animate-ping opacity-20" />
-                                        </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-rose-400 uppercase tracking-[0.4em] mb-1">⚡ Alerta Tributaria Activa</span>
-                                            <div className="flex items-baseline gap-3">
-                                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em]">Dígito vence hoy:</span>
-                                                <span className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tighter leading-none" style={{fontVariantNumeric: 'tabular-nums'}}>{tacticalInfo.todayDigit}</span>
-                                                {tacticalInfo.tomorrowDigit !== null && (
-                                                    <div className="flex flex-col hidden sm:flex">
-                                                        <span className="text-[9px] text-slate-400 uppercase tracking-widest">Mañana</span>
-                                                        <span className="text-xl font-black text-slate-400 dark:text-slate-500 tracking-tight">{tacticalInfo.tomorrowDigit}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        {urgentPriorities.length > 0 && (
-                                            <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-                                                <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-                                                <span className="text-xs font-black text-rose-400 uppercase tracking-widest">{urgentPriorities.length} urgentes</span>
-                                            </div>
-                                        )}
-                                        <button
-                                            onClick={() => setIsTacticalVisible(false)}
-                                            className="p-2 hover:bg-rose-400/10 rounded-lg transition-colors text-slate-400 hover:text-rose-400 opacity-40 group-hover/tactical:opacity-100"
-                                        >
-                                            <LucideIcons.X size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ── SMART CAMPAIGN BANNER (inteligente, basado en fechas reales) ── */}
-                    <div className="relative z-30 animate-fade-in px-4 sm:px-0">
-                        <CampaignBanner campaign={campaign} />
-                        <div className="mt-2 px-1">
-                            <CampaignProgress
-                                campaign={campaign}
-                                total={allResults.length > 0 ? allResults.length : kpis.total}
-                                completed={completados.length}
-                            />
-                        </div>
-                    </div>
-
-                    {/* ── UNIDAD DE PROCESAMIENTO DIGITAL (DRAG & DROP ZONE) ── */}
-                    <div className="relative z-30 px-4 sm:px-0 no-print">
-                        <div 
-                            onDragEnter={handleDrag}
-                            onDragOver={handleDrag}
-                            onDragLeave={handleDrag}
-                            onDrop={handleDrop}
-                            className={`relative overflow-hidden rounded-2xl border transition-all duration-500 p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[160px] ${
-                                dragActive 
-                                    ? 'bg-blue-600/10 border-blue-500 scale-[1.01] shadow-lg shadow-blue-500/20' 
-                                    : 'bg-white/80 dark:bg-[hsl(222,47%,4%)] border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/10 hover:shadow-md'
-                            }`}
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            {/* Background glows */}
-                            <div className="absolute inset-0 pointer-events-none opacity-30">
-                                <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl" />
-                                <div className="absolute bottom-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl" />
-                            </div>
-
-                            <input type="file" multiple accept=".pdf" ref={fileInputRef} onChange={handleBulkUpload} className="hidden" />
-
-                            {isProcessing ? (
-                                <div className="flex flex-col items-center gap-3 relative z-10 py-4">
-                                    <LucideIcons.Loader2 className="animate-spin text-blue-500" size={36} />
-                                    <div className="space-y-1">
-                                        <p className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Procesando Inteligencia de Documentos...</p>
-                                        <p className="text-xs text-slate-400 animate-pulse">Analizando estructura PDF SRI & extracción de metadatos</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center gap-4 relative z-10 py-2">
-                                    <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/30 dark:border-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400">
-                                        <LucideIcons.UploadCloud size={24} className="animate-pulse" />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <p className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Unidad de Procesamiento Digital</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg leading-relaxed">
-                                            Arrastre y suelte sus PDFs aquí (RUCs o Comprobantes), o haga clic para buscar.
-                                        </p>
-                                        <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-                                            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200/20 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-md">
-                                                📄 Certificados RUC (Registro)
-                                            </span>
-                                            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/20 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-md">
-                                                🧾 Comprobantes SRI (Declaración)
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </>
-            ) : (
-                /* ── MINI SUMMARY RIBBON (Minimalist Mode) ── */
-                <div className="relative z-30 px-4 sm:px-0 no-print">
-                    <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl transition-all duration-300">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <LucideIcons.Sparkles size={12} className="text-blue-500 animate-pulse" />
-                                Resumen Operativo
-                            </span>
-                            
-                            {tacticalInfo.todayDigit !== null && (
-                                <span className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-full text-[10px] font-bold">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                                    Vence Hoy: Dígito {tacticalInfo.todayDigit}
-                                </span>
-                            )}
-                            
-                            {stitchSuggestions.length > 0 && (
-                                <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-full text-[10px] font-bold">
-                                    💡 {stitchSuggestions.length} sugerencias
-                                </span>
-                            )}
-                            
-                            <span className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-bold">
-                                📊 Avance Campaña: {completados.length}/{allResults.length > 0 ? allResults.length : kpis.total}
-                            </span>
-                        </div>
-                        
-                        <button
-                            onClick={() => setShowIntelligencePanels(true)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all"
-                        >
-                            <LucideIcons.Eye size={12} />
-                            Mostrar Paneles
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* HISTORIAL RECIENTE DENTRO DEL WIDGET (Siempre visible si contiene elementos) */}
-            {recentUploads.length > 0 && (
-                <div className="relative z-30 px-4 sm:px-0 no-print">
-                    <div className="bg-white/70 dark:bg-[hsl(222,47%,3%)] rounded-2xl border border-slate-200/60 dark:border-white/[0.05] p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-white/[0.04]">
-                            <div className="flex items-center gap-2">
-                                <LucideIcons.History size={14} className="text-slate-400" />
-                                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Cargas Recientes de la Sesión</h4>
-                            </div>
-                            <button 
-                                onClick={() => setRecentUploads([])}
-                                className="text-[9px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300"
-                            >
-                                Limpiar Historial
-                            </button>
-                        </div>
-                        
-                        <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
-                            {recentUploads.map((res, i) => {
-                                const matchedClient = clients.find(c => c.ruc === res.ruc);
-                                const isNew = res.status === 'new_client';
-                                const isDup = res.status === 'duplicate';
-                                const isErr = res.status === 'error';
-                                
-                                return (
-                                    <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] rounded-xl hover:border-slate-200 dark:hover:white/10 transition-all">
-                                        <div className="flex items-start gap-3 min-w-0 flex-1">
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                                                isErr ? 'bg-rose-500/10 text-rose-500' :
-                                                isDup ? 'bg-amber-500/10 text-amber-500' :
-                                                isNew ? 'bg-sky-500/10 text-sky-500' : 'bg-emerald-500/10 text-emerald-500'
-                                            }`}>
-                                                {isErr ? <LucideIcons.FileWarning size={14} /> :
-                                                 isDup ? <LucideIcons.Copy size={14} /> :
-                                                 isNew ? <LucideIcons.UserPlus size={14} /> : <LucideIcons.CheckCircle2 size={14} />}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate uppercase">
-                                                        {res.clientName || res.fileName}
-                                                    </span>
-                                                    <span className={`text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded uppercase ${
-                                                        isErr ? 'bg-rose-500/15 text-rose-500' :
-                                                        isDup ? 'bg-amber-500/15 text-amber-500' :
-                                                        isNew ? 'bg-sky-500/15 text-sky-500' : 'bg-emerald-500/15 text-emerald-500'
-                                                    }`}>
-                                                        {isErr ? 'Error' : isDup ? 'Duplicado' : isNew ? 'Nuevo Cliente' : 'Exitoso'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400 font-mono">
-                                                    <span>{res.ruc || 'S/RUC'}</span>
-                                                    {res.period && (
-                                                        <>
-                                                            <span>•</span>
-                                                            <span className="text-blue-500 dark:text-blue-400 uppercase font-bold">{res.period}</span>
-                                                        </>
-                                                    )}
-                                                    {res.amount !== undefined && (
-                                                        <>
-                                                            <span>•</span>
-                                                            <span className="text-emerald-500 font-bold">${res.amount.toFixed(2)}</span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                                {res.error && (
-                                                    <p className="text-[10px] text-rose-500 italic mt-1">{res.error}</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                                            {/* WhatsApp Notification Button */}
-                                            {!isErr && matchedClient && matchedClient.phones && matchedClient.phones[0] && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const greeting = new Date().getHours() >= 12 ? (new Date().getHours() >= 19 ? "Buenas noches" : "Buenas tardes") : "Buen día";
-                                                        const statusMsg = res.isPaid 
-                                                            ? "Le informo que los honorarios por este trámite ya se encuentran cancelados. ¡Muchas gracias!"
-                                                            : "Le informo que el pago de honorarios por este trámite se encuentra pendiente de registro.";
-                                                        const message = `¡Hola ${res.clientName}! 👋 ${greeting}. Le informo que su declaración de ${res.type || 'Impuestos'} del periodo ${res.period || ''} fue procesada con éxito. Adjunto el comprobante de la declaración.\n\n${statusMsg}\n\n¡Gracias por su confianza!`;
-                                                        const phone = matchedClient.phones![0].replace(/\D/g, '');
-                                                        const fullPhone = phone.startsWith('593') ? phone : `593${phone.substring(1)}`;
-                                                        window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
-                                                    }}
-                                                    className="p-2 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-500 rounded-lg border border-emerald-500/20 transition-all text-xs"
-                                                    title="Notificar por WhatsApp"
-                                                >
-                                                    <LucideIcons.MessageCircle size={14} />
-                                                </button>
-                                            )}
-                                            {/* Client Detail Workspace Button */}
-                                            {matchedClient && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setWorkspaceClient({ client: matchedClient, period: res.period }); }}
-                                                    className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500 hover:text-white text-blue-500 rounded-lg border border-blue-500/20 transition-all text-[9px] font-black uppercase tracking-wider"
-                                                >
-                                                    Expediente
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-400/3 dark:bg-blue-500/5 blur-[150px] rounded-full pointer-events-none" />
-            <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-emerald-400/3 dark:bg-emerald-500/5 blur-[130px] rounded-full pointer-events-none" />
-
-            {/* ══════════════════════════════════════════════════════
-                MANDO CENTRAL — HERO PREMIUM
-            ══════════════════════════════════════════════════════ */}
             <div className="relative z-20 px-4 sm:px-0">
                 <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 dark:border-white/[0.06] bg-white dark:bg-[hsl(222,47%,4%)] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] dark:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
 
@@ -1030,9 +715,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         {showIntelligencePanels ? <LucideIcons.EyeOff size={16} /> : <LucideIcons.Eye size={16} />}
                                     </button>
                                     <button
-                                        onClick={() => fileInputRef.current?.click()}
+                                        onClick={() => setShowUploader(p => !p)}
                                         disabled={isProcessing}
-                                        className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-blue-600 dark:bg-blue-500 text-white font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-blue-700 dark:hover:bg-blue-400 transition-all duration-300 shadow-lg shadow-blue-500/25 font-premium disabled:opacity-50 group"
+                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl font-bold text-[11px] uppercase tracking-[0.2em] hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-50 group font-premium ${
+                                            showUploader 
+                                                ? 'bg-emerald-600 dark:bg-emerald-500 text-white shadow-emerald-500/25' 
+                                                : 'bg-blue-600 dark:bg-blue-500 text-white shadow-blue-500/25'
+                                        }`}
                                     >
                                         {isProcessing ? <LucideIcons.Loader2 size={16} className="animate-spin" /> : <LucideIcons.UploadCloud size={16} className="group-hover:-translate-y-0.5 transition-transform" />}
                                         <span className="hidden sm:inline">SUBIR PDFs / RUCs</span>
@@ -1178,6 +867,330 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     </div>
                 </div>
             </div>
+
+            {showIntelligencePanels ? (
+                <>
+                    {/* ── SUGGESTION HUB ELITE ── */}
+                    {stitchSuggestions.length > 0 && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in relative z-30 px-4 sm:px-0">
+                            {stitchSuggestions.map((s, idx) => (
+                                <div
+                                    key={idx}
+                                    onClick={s.action}
+                                    className="group relative overflow-hidden rounded-2xl cursor-pointer border transition-all duration-500 hover:-translate-y-0.5 hover:shadow-xl"
+                                    style={{
+                                        background: s.priority === 'high'
+                                            ? 'linear-gradient(135deg, rgba(244,63,94,0.08) 0%, rgba(244,63,94,0.02) 100%)'
+                                            : s.priority === 'medium'
+                                            ? 'linear-gradient(135deg, rgba(251,191,36,0.08) 0%, rgba(251,191,36,0.02) 100%)'
+                                            : 'linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.02) 100%)',
+                                        borderColor: s.priority === 'high' ? 'rgba(244,63,94,0.2)' : s.priority === 'medium' ? 'rgba(251,191,36,0.2)' : 'rgba(59,130,246,0.2)'
+                                    }}
+                                >
+                                    <div className={`absolute top-0 left-0 w-full h-0.5 ${
+                                        s.priority === 'high' ? 'bg-gradient-to-r from-rose-500 to-rose-400' :
+                                        s.priority === 'medium' ? 'bg-gradient-to-r from-amber-500 to-amber-400' :
+                                        'bg-gradient-to-r from-blue-500 to-blue-400'
+                                    }`} />
+                                    <div className="p-5 relative z-10">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] ${
+                                                s.priority === 'high' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
+                                                s.priority === 'medium' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                                                'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                            }`}>
+                                                <div className={`w-1 h-1 rounded-full animate-pulse ${
+                                                    s.priority === 'high' ? 'bg-rose-400' : s.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-400'
+                                                }`} />
+                                                {s.priority === 'high' ? 'Crítico' : s.priority === 'medium' ? 'Aviso' : 'Sugerencia'}
+                                            </div>
+                                        </div>
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5 leading-tight">{s.title}</h4>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{s.desc}</p>
+                                        <div className="flex items-center gap-1.5 mt-3 text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 text-emerald-400">
+                                            <span>Ver más</span>
+                                            <LucideIcons.ArrowRight size={12} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* ── TACTICAL ALERT BANNER ELITE ── */}
+                    {isTacticalVisible && tacticalInfo.todayDigit !== null && (
+                        <div className="relative z-30 animate-fade-in-down px-4 sm:px-0 group/tactical">
+                            <div className="relative overflow-hidden rounded-2xl border border-rose-500/20 bg-gradient-to-r from-rose-500/[0.06] via-rose-500/[0.03] to-transparent backdrop-blur-xl">
+                                <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-rose-500 via-rose-400/50 to-transparent" />
+                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-rose-400 via-rose-500 to-rose-400/0 rounded-l-2xl" />
+                                <div className="pl-6 pr-4 py-4 sm:py-5 flex items-center justify-between">
+                                    <div className="flex items-center gap-5">
+                                        <div className="relative shrink-0">
+                                            <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-3 rounded-xl text-white shadow-lg shadow-rose-500/30 relative z-10">
+                                                <LucideIcons.ShieldAlert size={20} strokeWidth={2.5} />
+                                            </div>
+                                            <div className="absolute inset-0 bg-rose-400 rounded-xl animate-ping opacity-20" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-rose-400 uppercase tracking-[0.4em] mb-1">⚡ Alerta Tributaria Activa</span>
+                                            <div className="flex items-baseline gap-3">
+                                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em]">Dígito vence hoy:</span>
+                                                <span className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tighter leading-none" style={{fontVariantNumeric: 'tabular-nums'}}>{tacticalInfo.todayDigit}</span>
+                                                {tacticalInfo.tomorrowDigit !== null && (
+                                                    <div className="flex flex-col hidden sm:flex">
+                                                        <span className="text-[9px] text-slate-400 uppercase tracking-widest">Mañana</span>
+                                                        <span className="text-xl font-black text-slate-400 dark:text-slate-500 tracking-tight">{tacticalInfo.tomorrowDigit}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        {urgentPriorities.length > 0 && (
+                                            <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl">
+                                                <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+                                                <span className="text-xs font-black text-rose-400 uppercase tracking-widest">{urgentPriorities.length} urgentes</span>
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => setIsTacticalVisible(false)}
+                                            className="p-2 hover:bg-rose-400/10 rounded-lg transition-colors text-slate-400 hover:text-rose-400 opacity-40 group-hover/tactical:opacity-100"
+                                        >
+                                            <LucideIcons.X size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── SMART CAMPAIGN BANNER (inteligente, basado en fechas reales) ── */}
+                    <div className="relative z-30 animate-fade-in px-4 sm:px-0">
+                        <CampaignBanner campaign={campaign} />
+                        <div className="mt-2 px-1">
+                            <CampaignProgress
+                                campaign={campaign}
+                                total={allResults.length > 0 ? allResults.length : kpis.total}
+                                completed={completados.length}
+                            />
+                        </div>
+                    </div>
+
+                </>
+            ) : (
+                /* ── MINI SUMMARY RIBBON (Minimalist Mode) ── */
+                <div className="relative z-30 px-4 sm:px-0 no-print">
+                    <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl transition-all duration-300">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                <LucideIcons.Sparkles size={12} className="text-blue-500 animate-pulse" />
+                                Resumen Operativo
+                            </span>
+                            
+                            {tacticalInfo.todayDigit !== null && (
+                                <span className="flex items-center gap-1.5 px-2.5 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-full text-[10px] font-bold">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                                    Vence Hoy: Dígito {tacticalInfo.todayDigit}
+                                </span>
+                            )}
+                            
+                            {stitchSuggestions.length > 0 && (
+                                <span className="flex items-center gap-1 px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-full text-[10px] font-bold">
+                                    💡 {stitchSuggestions.length} sugerencias
+                                </span>
+                            )}
+                            
+                            <span className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-bold">
+                                📊 Avance Campaña: {completados.length}/{allResults.length > 0 ? allResults.length : kpis.total}
+                            </span>
+                        </div>
+                        
+                        <button
+                            onClick={() => setShowIntelligencePanels(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all"
+                        >
+                            <LucideIcons.Eye size={12} />
+                            Mostrar Paneles
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── UNIDAD DE PROCESAMIENTO DIGITAL (DRAG & DROP ZONE) ── */}
+            {showUploader && (
+            <div className="relative z-30 px-4 sm:px-0 no-print">
+                <div 
+                    onDragEnter={handleDrag}
+                    onDragOver={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDrop={handleDrop}
+                    className={`relative overflow-hidden rounded-2xl border transition-all duration-500 p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[160px] ${
+                        dragActive 
+                            ? 'bg-blue-600/10 border-blue-500 scale-[1.01] shadow-lg shadow-blue-500/20' 
+                            : 'bg-white/80 dark:bg-[hsl(222,47%,4%)] border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/10 hover:shadow-md'
+                    }`}
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    {/* Background glows */}
+                    <div className="absolute inset-0 pointer-events-none opacity-30">
+                        <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl" />
+                        <div className="absolute bottom-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl" />
+                    </div>
+
+                    <input type="file" multiple accept=".pdf" ref={fileInputRef} onChange={handleBulkUpload} className="hidden" />
+
+                    {isProcessing ? (
+                        <div className="flex flex-col items-center gap-3 relative z-10 py-4">
+                            <LucideIcons.Loader2 className="animate-spin text-blue-500" size={36} />
+                            <div className="space-y-1">
+                                <p className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Procesando Inteligencia de Documentos...</p>
+                                <p className="text-xs text-slate-400 animate-pulse">Analizando estructura PDF SRI & extracción de metadatos</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-4 relative z-10 py-2">
+                            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/30 dark:border-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400">
+                                <LucideIcons.UploadCloud size={24} className="animate-pulse" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <p className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Unidad de Procesamiento Digital</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg leading-relaxed">
+                                    Arrastre y suelte sus PDFs aquí (RUCs o Comprobantes), o haga clic para buscar.
+                                </p>
+                                <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+                                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200/20 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-md">
+                                        📄 Certificados RUC (Registro)
+                                    </span>
+                                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/20 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-md">
+                                        🧾 Comprobantes SRI (Declaración)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            )}
+
+
+
+            {/* HISTORIAL RECIENTE DENTRO DEL WIDGET (Siempre visible si contiene elementos) */}
+            {recentUploads.length > 0 && (
+                <div className="relative z-30 px-4 sm:px-0 no-print">
+                    <div className="bg-white/70 dark:bg-[hsl(222,47%,3%)] rounded-2xl border border-slate-200/60 dark:border-white/[0.05] p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-white/[0.04]">
+                            <div className="flex items-center gap-2">
+                                <LucideIcons.History size={14} className="text-slate-400" />
+                                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Cargas Recientes de la Sesión</h4>
+                            </div>
+                            <button 
+                                onClick={() => setRecentUploads([])}
+                                className="text-[9px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300"
+                            >
+                                Limpiar Historial
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                            {recentUploads.map((res, i) => {
+                                const matchedClient = clients.find(c => c.ruc === res.ruc);
+                                const isNew = res.status === 'new_client';
+                                const isDup = res.status === 'duplicate';
+                                const isErr = res.status === 'error';
+                                
+                                return (
+                                    <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] rounded-xl hover:border-slate-200 dark:hover:white/10 transition-all">
+                                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                                isErr ? 'bg-rose-500/10 text-rose-500' :
+                                                isDup ? 'bg-amber-500/10 text-amber-500' :
+                                                isNew ? 'bg-sky-500/10 text-sky-500' : 'bg-emerald-500/10 text-emerald-500'
+                                            }`}>
+                                                {isErr ? <LucideIcons.FileWarning size={14} /> :
+                                                 isDup ? <LucideIcons.Copy size={14} /> :
+                                                 isNew ? <LucideIcons.UserPlus size={14} /> : <LucideIcons.CheckCircle2 size={14} />}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate uppercase">
+                                                        {res.clientName || res.fileName}
+                                                    </span>
+                                                    <span className={`text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded uppercase ${
+                                                        isErr ? 'bg-rose-500/15 text-rose-500' :
+                                                        isDup ? 'bg-amber-500/15 text-amber-500' :
+                                                        isNew ? 'bg-sky-500/15 text-sky-500' : 'bg-emerald-500/15 text-emerald-500'
+                                                    }`}>
+                                                        {isErr ? 'Error' : isDup ? 'Duplicado' : isNew ? 'Nuevo Cliente' : 'Exitoso'}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400 font-mono">
+                                                    <span>{res.ruc || 'S/RUC'}</span>
+                                                    {res.period && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span className="text-blue-500 dark:text-blue-400 uppercase font-bold">{res.period}</span>
+                                                        </>
+                                                    )}
+                                                    {res.amount !== undefined && (
+                                                        <>
+                                                            <span>•</span>
+                                                            <span className="text-emerald-500 font-bold">${res.amount.toFixed(2)}</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                {res.error && (
+                                                    <p className="text-[10px] text-rose-500 italic mt-1">{res.error}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                                            {/* WhatsApp Notification Button */}
+                                            {!isErr && matchedClient && matchedClient.phones && matchedClient.phones[0] && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const greeting = new Date().getHours() >= 12 ? (new Date().getHours() >= 19 ? "Buenas noches" : "Buenas tardes") : "Buen día";
+                                                        const statusMsg = res.isPaid 
+                                                            ? "Le informo que los honorarios por este trámite ya se encuentran cancelados. ¡Muchas gracias!"
+                                                            : "Le informo que el pago de honorarios por este trámite se encuentra pendiente de registro.";
+                                                        const message = `¡Hola ${res.clientName}! 👋 ${greeting}. Le informo que su declaración de ${res.type || 'Impuestos'} del periodo ${res.period || ''} fue procesada con éxito. Adjunto el comprobante de la declaración.\n\n${statusMsg}\n\n¡Gracias por su confianza!`;
+                                                        const phone = matchedClient.phones![0].replace(/\D/g, '');
+                                                        const fullPhone = phone.startsWith('593') ? phone : `593${phone.substring(1)}`;
+                                                        window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                                                    }}
+                                                    className="p-2 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-500 rounded-lg border border-emerald-500/20 transition-all text-xs"
+                                                    title="Notificar por WhatsApp"
+                                                >
+                                                    <LucideIcons.MessageCircle size={14} />
+                                                </button>
+                                            )}
+                                            {/* Client Detail Workspace Button */}
+                                            {matchedClient && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setWorkspaceClient({ client: matchedClient, period: res.period }); }}
+                                                    className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500 hover:text-white text-blue-500 rounded-lg border border-blue-500/20 transition-all text-[9px] font-black uppercase tracking-wider"
+                                                >
+                                                    Expediente
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-400/3 dark:bg-blue-500/5 blur-[150px] rounded-full pointer-events-none" />
+            <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-emerald-400/3 dark:bg-emerald-500/5 blur-[130px] rounded-full pointer-events-none" />
+
+            {/* ══════════════════════════════════════════════════════
+                MANDO CENTRAL — HERO PREMIUM
+            ══════════════════════════════════════════════════════ */}
+
 
             {/* ── ZEN ANALYTICS PANEL ── */}
             <div className="relative z-20 px-4 sm:px-0 no-print">
@@ -1528,7 +1541,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             <div className="sticky bottom-4 sm:static z-[100] px-4 sm:px-0">
                 <div className="glass-tactical-dock rounded-2xl sm:rounded-full p-2 flex items-center gap-1 sm:gap-1.5 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.25)] border border-white/10 dark:border-white/5 backdrop-blur-3xl no-scrollbar overflow-x-auto scroll-smooth">
                     {[
-                        { id: 'all', label: 'Directorio', icon: LucideIcons.Users, gradient: 'from-slate-500 to-slate-600', always: true },
+                        
                         { id: 'digital-mando', label: 'Mando Digital', icon: LucideIcons.Activity, gradient: 'from-sky-500 to-blue-600', color: 'text-sky-400', always: true },
                         // IVA Mensual: visible siempre pero con badge de campaña si está activa
                         { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.CalendarCheck, gradient: 'from-violet-500 to-purple-600', always: false, showWhen: campaign.showMensualTab },
