@@ -398,6 +398,23 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         setSelectedClient(updatedClient);
     };
 
+    const handleTogglePaymentFromMatrix = (client: Client, period: string, type: 'IVA' | 'RENTA', isPaid: boolean) => {
+        const now = new Date().toISOString();
+        const updatedHistory = [...(client.declarations || [])];
+        const idx = updatedHistory.findIndex(d => d.period === period && (d.type === type || (!d.type && (type === 'IVA' || type === 'RENTA'))));
+        if (idx !== -1) {
+            updatedHistory[idx] = {
+                ...updatedHistory[idx],
+                is_paid: isPaid,
+                paidAt: isPaid ? now : undefined,
+                status: isPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                updatedAt: now
+            };
+            updateClient(client.id, { declarations: updatedHistory });
+            toast.success(isPaid ? 'Pago registrado' : 'Pago revertido');
+        }
+    };
+
     const handleOpenClientDetails = (client: Client) => {
         setSelectedClient(client);
         setIsClientDetailsOpen(true);
@@ -1321,6 +1338,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             onPreviewReceipt={(client, declaration) => {
                                 setPreviewItem({ client, declaration });
                             }}
+                            onTogglePayment={handleTogglePaymentFromMatrix}
                         />
                     </motion.div>
                 ) : isWorkspaceView ? (

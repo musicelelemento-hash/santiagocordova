@@ -11,6 +11,7 @@ interface TaxComplianceMatrixProps {
     onViewClient: (client: Client) => void;
     onUploadReceipt: (client: Client, period: string) => void;
     onPreviewReceipt: (client: Client, declaration: Declaration) => void;
+    onTogglePayment?: (client: Client, period: string, type: 'IVA' | 'RENTA', isPaid: boolean) => void;
     theme?: 'light' | 'dark';
 }
 
@@ -19,6 +20,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     onViewClient, 
     onUploadReceipt, 
     onPreviewReceipt,
+    onTogglePayment,
     theme = 'dark'
 }) => {
     const [frequency, setFrequency] = useState<IvaFrequency>('Mensual');
@@ -347,10 +349,21 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         <LucideIcons.UploadCloud size={16} strokeWidth={2} className="opacity-50 group-hover/ob:opacity-100" />
                                                                     )}
 
-                                                                    {isDone && isPaid && (
-                                                                        <div className="absolute -top-1.5 -right-1.5 bg-sky-500 text-white rounded-full p-0.5 shadow-sm" title="Honorarios Pagados">
+                                                                    {isDone && (
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                if (onTogglePayment) onTogglePayment(client, p, ob.type as any, !isPaid);
+                                                                            }}
+                                                                            className={`absolute -top-1.5 -right-1.5 rounded-full p-0.5 shadow-sm transition-all hover:scale-125 z-20 ${
+                                                                                isPaid 
+                                                                                    ? 'bg-sky-500 text-white shadow-sky-500/20' 
+                                                                                    : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-300/30 dark:border-slate-700/30'
+                                                                            }`}
+                                                                            title={isPaid ? "Marcar Honorario como Pendiente" : "Marcar Honorario como Pagado"}
+                                                                        >
                                                                             <LucideIcons.DollarSign size={8} strokeWidth={4} />
-                                                                        </div>
+                                                                        </button>
                                                                     )}
                                                                     {!hasProof && isOverdue && (
                                                                         <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-pulse border-2 border-white dark:border-slate-900" />

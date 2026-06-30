@@ -572,6 +572,23 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         matrixFileInputRef.current?.click();
     };
 
+    const handleTogglePaymentFromMatrix = (client: Client, period: string, type: 'IVA' | 'RENTA', isPaid: boolean) => {
+        const now = new Date().toISOString();
+        const updatedHistory = [...(client.declarations || [])];
+        const idx = updatedHistory.findIndex(d => d.period === period && (d.type === type || (!d.type && (type === 'IVA' || type === 'RENTA'))));
+        if (idx !== -1) {
+            updatedHistory[idx] = {
+                ...updatedHistory[idx],
+                is_paid: isPaid,
+                paidAt: isPaid ? now : undefined,
+                status: isPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                updatedAt: now
+            };
+            updateClient(client.id, { declarations: updatedHistory });
+            toast.success(isPaid ? 'Pago registrado' : 'Pago revertido');
+        }
+    };
+
     const onMatrixFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || !matrixUploadSelection) return;
@@ -1895,6 +1912,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         onViewClient={(c) => setWorkspaceClient({ client: c })}
                         onUploadReceipt={handleUploadFromMatrix}
                         onPreviewReceipt={(c, d) => setPreviewState({ isOpen: true, client: c, declaration: d })}
+                        onTogglePayment={handleTogglePaymentFromMatrix}
                         theme={theme}
                     />
                 ) : filter === 'digital-mando' ? (

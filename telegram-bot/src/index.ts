@@ -1,4 +1,4 @@
-import { Bot, InlineKeyboard } from 'grammy';
+import { Bot, InlineKeyboard, InputFile } from 'grammy';
 require('dotenv').config();
 import { processChatWithAgentLoop, BOT_NAME, STATUS_ICON } from './agent';
 import { clearChatHistory } from './database';
@@ -12,6 +12,7 @@ import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
 import { startCronJobs, triggerProactiveReport } from './cron';
+import { supabase } from './supabase';
 
 
 const pendingPdfs = new Map<string, { buffer: Buffer, data: ValidatedPDF }>();
@@ -191,8 +192,32 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
             return true;
         }
         if (clients.length === 1) {
-            const result = await getClientField(clients[0].ruc, field);
+            const client = clients[0];
+            const result = await getClientField(client.ruc, field);
             await ctx.reply(result, { parse_mode: 'Markdown' });
+            
+            // Si solicitó la clave de firma electrónica, enviamos también el archivo p12 adjunto
+            if (field === 'electronicSignaturePassword') {
+                try {
+                    const { data: dbClient } = await supabase
+                        .from('clients')
+                        .select('signature_file')
+                        .eq('id', client.id)
+                        .single();
+
+                    const sigFile = dbClient?.signature_file;
+                    if (sigFile && sigFile.content && sigFile.name) {
+                        const buffer = Buffer.from(sigFile.content, 'base64');
+                        await ctx.replyWithDocument(new InputFile(buffer, sigFile.name), {
+                            caption: `📂 Archivo de firma electrónica (.p12) de *${client.name}*`,
+                            parse_mode: 'Markdown'
+                        });
+                        console.log(`✅ Archivo de firma electrónica enviado para ${client.name}`);
+                    }
+                } catch (fileErr) {
+                    console.error("Error al obtener o enviar el archivo de firma:", fileErr);
+                }
+            }
             return true;
         }
         // Multiple matches → inline keyboard, preserves field context

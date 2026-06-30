@@ -60,7 +60,12 @@ Genera el mensaje directamente para Telegram.
         const aiResponse = result.response.text();
 
         // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
-        await bot.api.sendMessage(adminChatId, aiResponse, { parse_mode: 'Markdown' });
+        try {
+            await bot.api.sendMessage(adminChatId, aiResponse, { parse_mode: 'Markdown' });
+        } catch (markdownError) {
+            console.warn("⚠️ Failed to send cron report with Markdown, falling back to plain text:", markdownError);
+            await bot.api.sendMessage(adminChatId, aiResponse);
+        }
         console.log("✅ Reporte proactivo enviado a Santiago.");
     } catch (error) {
         console.error("❌ Error en reporte proactivo:", error);
@@ -112,7 +117,12 @@ Instrucciones de redacción:
             const aiResponse = result.response.text();
 
             // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
-            await bot.api.sendMessage(adminChatId, aiResponse, { parse_mode: 'Markdown' });
+            try {
+                await bot.api.sendMessage(adminChatId, aiResponse, { parse_mode: 'Markdown' });
+            } catch (markdownError) {
+                console.warn("⚠️ Failed to send debtor report with Markdown, falling back to plain text:", markdownError);
+                await bot.api.sendMessage(adminChatId, aiResponse);
+            }
             console.log("✅ Reporte semanal de deudores enviado a Santiago.");
         } catch (error) {
             console.error("❌ Error en Lunes Financiero cron:", error);
@@ -149,7 +159,12 @@ Instrucciones de redacción:
             if (!credReport.startsWith('✅ Credenciales SRI OK')) {
                 const alertMsg = `🔐 *VIERNES CREDENCIAL — Alerta Automática*\n\n${credReport}\n\n_Santiago, revisa estas credenciales antes de que afecten las declaraciones. Baku._`;
                 // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
-                await bot.api.sendMessage(adminChatId, alertMsg, { parse_mode: 'Markdown' });
+                try {
+                    await bot.api.sendMessage(adminChatId, alertMsg, { parse_mode: 'Markdown' });
+                } catch (markdownError) {
+                    console.warn("⚠️ Failed to send credentials alert with Markdown, falling back to plain text:", markdownError);
+                    await bot.api.sendMessage(adminChatId, alertMsg);
+                }
                 console.log("✅ Alerta de credenciales enviada a Santiago.");
             } else {
                 console.log("✅ Viernes Credencial: Sin alertas. Todas las claves OK.");
