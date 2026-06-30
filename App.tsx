@@ -28,7 +28,7 @@ import { Modal } from './components/ui/Modal';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useAppStore } from './store/useAppStore';
-import { ChatBot } from './components/features/ChatBot';
+
 
 type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music';
 
@@ -356,7 +356,7 @@ const App: React.FC = () => {
 
   return (
     <ToastProvider>
-      <div className={`font-body min-h-screen flex ${theme === 'dark' ? 'bg-background bg-aurora dark' : 'bg-slate-50'} text-slate-800 dark:text-slate-100 transition-colors duration-500 relative overflow-hidden`}>
+      <div className={`font-body min-h-screen flex ${theme === 'dark' ? 'bg-background dark' : 'bg-slate-50'} text-slate-800 dark:text-slate-100 transition-colors duration-500 relative overflow-hidden`}>
         {/* Decorative background elements - Enhanced for Dark Elite */}
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-sky-500/15 via-primary/5 to-transparent blur-[150px] -z-10 animate-aurora pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-emerald-500/10 via-sky-600/5 to-transparent blur-[120px] -z-10 animate-aurora pointer-events-none"></div>
@@ -481,10 +481,7 @@ const App: React.FC = () => {
           onAction={handleCommandAction}
         />
         
-        {/* Elite AI Assistant */}
-        <div className="no-print">
-          <ChatBot />
-        </div>
+
       </div>
     </ToastProvider>
   );
