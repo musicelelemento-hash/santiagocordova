@@ -916,12 +916,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     </div>
                 </div>
             )}
-            {/* CAMPAIGN CONTEXT BANNER — visible solo cuando hay campaña activa */}
-            {campaign.phase !== 'mensual_preparacion' && (
-                <div className="mb-4 mx-1 sm:mx-0 animate-fade-in">
-                    <CampaignBanner campaign={campaign} compact={false} className="shadow-sm" />
-                </div>
-            )}
+
 
             {/* TACTICAL COMMAND BAR - Unificado */}
             <div className="bg-surface p-4 sm:p-5 rounded-[2rem] border border-outline-variant/30 flex flex-col xl:flex-row gap-5 items-center mb-8 mx-1 sm:mx-0 shadow-sm relative z-20">

@@ -22,6 +22,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     theme = 'dark'
 }) => {
     const [frequency, setFrequency] = useState<IvaFrequency>('Mensual');
+    const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
     const [searchTerm, setSearchTerm] = useState('');
     const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
 
@@ -51,29 +52,25 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const periods = useMemo(() => {
         const result = [];
         if (frequency === 'Mensual') {
-            for (let i = 0; i < 12; i++) {
-                const date = subMonths(today, i + 1);
-                const p = format(date, 'yyyy-MM');
-                if (p >= '2026-01') result.push(p);
+            const maxMonth = selectedYear === today.getFullYear() ? today.getMonth() + 1 : 12;
+            for (let m = maxMonth; m >= 1; m--) {
+                const monthStr = m < 10 ? `0${m}` : `${m}`;
+                result.push(`${selectedYear}-${monthStr}`);
             }
         } else if (frequency === 'Semestral') {
             const currentYear = today.getFullYear();
-            const currentMonth = today.getMonth();
-            
-            if (currentMonth >= 6) { // Estamos en el periodo de declarar S1
-                const p1 = `${currentYear}-S1`;
-                const p2 = `${currentYear - 1}-S2`;
-                if (p1 >= '2026-S1') result.push(p1);
-                if (p2 >= '2026-S1') result.push(p2);
-            } else { // Estamos en el periodo de declarar S2 del año pasado
-                const p1 = `${currentYear - 1}-S2`;
-                const p2 = `${currentYear - 1}-S1`;
-                if (p1 >= '2026-S1') result.push(p1);
-                if (p2 >= '2026-S1') result.push(p2);
+            if (selectedYear < currentYear) {
+                result.push(`${selectedYear}-S2`);
+                result.push(`${selectedYear}-S1`);
+            } else {
+                if (today.getMonth() >= 6) {
+                    result.push(`${selectedYear}-S2`);
+                }
+                result.push(`${selectedYear}-S1`);
             }
         }
         return result;
-    }, [frequency]);
+    }, [frequency, selectedYear]);
 
     const filteredClients = useMemo(() => {
         return clients.filter(c => 
@@ -113,19 +110,31 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 bg-slate-100 dark:bg-black/20 p-1.5 rounded-2xl border border-slate-200/50 dark:border-white/5">
-                    <button
-                        onClick={() => setFrequency('Mensual')}
-                        className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${frequency === 'Mensual' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-black/20 p-1.5 rounded-2xl border border-slate-200/50 dark:border-white/5">
+                        <button
+                            onClick={() => setFrequency('Mensual')}
+                            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${frequency === 'Mensual' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                            Mensual
+                        </button>
+                        <button
+                            onClick={() => setFrequency('Semestral')}
+                            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${frequency === 'Semestral' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                        >
+                            Semestral
+                        </button>
+                    </div>
+
+                    <select
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+                        className="bg-slate-100 dark:bg-black/25 text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl border border-slate-200 dark:border-white/10 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-sm"
                     >
-                        Mensual
-                    </button>
-                    <button
-                        onClick={() => setFrequency('Semestral')}
-                        className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${frequency === 'Semestral' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
-                    >
-                        Semestral
-                    </button>
+                        {[2026, 2025, 2024].map(y => (
+                            <option key={y} value={y} className="bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white">{y}</option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
@@ -209,7 +218,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 <table className="w-full min-w-[800px] text-left border-collapse">
                     <thead>
                         <tr className="bg-slate-50/50 dark:bg-white/5 border-b border-slate-200/50 dark:border-white/5">
-                            <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] sticky left-0 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-md z-10 w-64 border-r border-slate-200/50 dark:border-white/10">Cliente</th>
+                            <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] sticky left-0 bg-slate-50 dark:bg-slate-900 z-10 w-64 border-r border-slate-200/50 dark:border-white/10">Cliente</th>
                             {periods.map(p => (
                                 <th key={p} className="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center border-r border-slate-200/50 dark:border-white/5 last:border-r-0">
                                     {formatPeriodForDisplay(p).replace('IVA ', '')}
@@ -244,7 +253,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     )}
                                     <tr className="hover:bg-slate-50/50 dark:hover:bg-white/5 transition-colors group/row">
                                         <td 
-                                            className="px-8 py-5 sticky left-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 border-r border-slate-200/50 dark:border-white/10 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-800 transition-colors"
+                                            className="px-8 py-5 sticky left-0 bg-white dark:bg-slate-900 z-10 border-r border-slate-200/50 dark:border-white/10 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-800 transition-colors"
                                             onClick={() => onViewClient(client)}
                                         >
                                             <div className="flex items-center gap-3 cursor-pointer group/name relative">
