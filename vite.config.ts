@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => {
       alias: {
         // Fix: Replace __dirname with path.resolve('.') for ES Module compatibility
         '@': path.resolve('.'),
+        'lucide-react': path.resolve('./node_modules/lucide-react/dist/esm/lucide-react.js')
       }
     },
     build: {
