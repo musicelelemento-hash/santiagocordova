@@ -110,9 +110,9 @@ export function useCampaignContext(overrideDate?: Date): CampaignContext {
 
     // ── DETECCIÓN DE FASE ────────────────────────────────────────────────────
 
-    // Semestral S1 → se declara en JULIO y AGOSTO
+    // Semestral S1 → se declara en JULIO y AGOSTO (desde el día 1 de julio)
     // El período S1 cubre enero-junio del año en curso
-    if ((month === 7 && day >= 10) || month === 8) {
+    if (month === 7 || month === 8) {
       const deadline = new Date(year, 7, 28); // 28 de agosto
       const daysRemaining = differenceInDays(deadline, today);
       const periodLabel = `S1 ${year}`;
@@ -142,9 +142,9 @@ export function useCampaignContext(overrideDate?: Date): CampaignContext {
       };
     }
 
-    // Semestral S2 → se declara en ENERO y FEBRERO
+    // Semestral S2 → se declara en ENERO y FEBRERO (desde el día 1 de enero)
     // El período S2 cubre julio-diciembre del año anterior
-    if ((month === 1 && day >= 10) || month === 2) {
+    if (month === 1 || month === 2) {
       const deadline = new Date(year, 1, 28); // 28 de febrero
       const daysRemaining = differenceInDays(deadline, today);
       const periodLabel = `S2 ${year - 1}`;
