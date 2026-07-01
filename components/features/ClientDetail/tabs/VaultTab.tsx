@@ -61,11 +61,30 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             </div>
 
             {/* Top Security Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <VaultCard icon={LucideIcons.ScanLine} label="Certificado RUC" file={editedClient.rucCertificate} onUpload={(f) => setEditedClient({ ...editedClient, rucCertificate: f })} />
                 <VaultCard icon={LucideIcons.FileText} label="Otros RUC PDF" file={editedClient.rucPdf} onUpload={(f) => setEditedClient({ ...editedClient, rucPdf: f })} />
                 <VaultCard icon={LucideIcons.FileKey} label="Firma Electrónica" file={editedClient.signatureFile} onUpload={(f) => setEditedClient({ ...editedClient, signatureFile: f })} />
-                {(editedClient.rentaRefundResolutionFile || editedClient.elderlyDevolucionIvaResolutionFile) ? (
+                
+                <VaultCard 
+                    icon={LucideIcons.Smartphone} 
+                    label="Clave SRI" 
+                    isPassword 
+                    value={editedClient.sriPassword} 
+                    isEditing={isEditing}
+                    onChange={(val) => setEditedClient({ ...editedClient, sriPassword: val })}
+                />
+                
+                <VaultCard 
+                    icon={LucideIcons.Lock} 
+                    label="Clave Firma" 
+                    isPassword 
+                    value={editedClient.electronicSignaturePassword} 
+                    isEditing={isEditing}
+                    onChange={(val) => setEditedClient({ ...editedClient, electronicSignaturePassword: val })}
+                />
+
+                {(editedClient.rentaRefundResolutionFile || editedClient.elderlyDevolucionIvaResolutionFile) && (
                     <VaultCard 
                         icon={LucideIcons.ShieldCheck} 
                         label={editedClient.rentaRefundResolutionFile ? "Resolución Renta" : "Resolución T.EDAD"} 
@@ -75,8 +94,6 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                             else setEditedClient({ ...editedClient, elderlyDevolucionIvaResolutionFile: f });
                         }} 
                     />
-                ) : (
-                    <VaultCard icon={LucideIcons.Smartphone} label="Clave SRI" file={undefined} isPassword value={client.sriPassword} />
                 )}
             </div>
 

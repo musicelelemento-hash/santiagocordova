@@ -185,6 +185,8 @@ export type ClientFilter = {
     hasActiveDevolucionIva?: boolean;
     hasMissingPdf?: boolean;
     title?: string;
+    activeGroupTab?: string;
+    searchTerm?: string;
 };
 
 export interface SriExtractionResult {

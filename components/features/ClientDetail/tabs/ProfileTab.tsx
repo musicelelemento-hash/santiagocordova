@@ -3,7 +3,7 @@ import { Client, TaxRegime, ServiceFeesConfig, Declaration } from '../../../../t
 import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay } from '../../../../services/sri';
 import { getClientServiceFee } from '../../../../services/clientService';
 import {
-    ShieldCheck, AlertTriangle, DollarSign, Eye, EyeOff, Globe,
+    ShieldCheck, AlertTriangle, DollarSign, Eye, EyeOff, Globe, Copy,
     Share2, MessageCircle, Settings, Activity, FileText, CalendarDays,
     BadgePercent, CheckCircle2, Clock, ArrowRight, Zap, Info, RefreshCcw
 } from 'lucide-react';
@@ -11,6 +11,7 @@ import { TaxObligationCard } from '../TaxObligationCard';
 import { PaymentHistoryChart } from '../PaymentHistoryChart';
 import { FacturadorCard } from '../FacturadorCard';
 import { ClientNotes } from '../ClientNotes';
+import { useToast } from '../../../../context/ToastContext';
 
 interface ProfileTabProps {
     client: Client;
@@ -138,9 +139,15 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     handleElderlyRefundAction,
     handleRevertDeclaration,
     handleCancelDeclaration,
-    onChangeIvaFrequency,
 }) => {
+    const { toast } = useToast();
     const isNegocioPopular = editedClient.regime === TaxRegime.RimpeNegocioPopular;
+
+    const handleCopy = (text?: string) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        toast.success("Copiado al portapapeles");
+    };
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
@@ -270,22 +277,87 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 {/* ── Columna derecha: Datos y acciones (1/3) ──────── */}
                 <div className="space-y-5">
 
-                    {/* Clave SRI */}
-                    <div className="bg-white dark:bg-surface/40 rounded-2xl p-5 border border-slate-100 dark:border-white/10 shadow-sm">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Clave SRI</p>
-                        <div className="flex items-center justify-between gap-3 p-3.5 bg-slate-50 dark:bg-surface-low/50 rounded-xl border border-slate-100 dark:border-white/5">
-                            <code className="text-sm font-bold text-primary tracking-wider font-mono truncate">
-                                {passwordVisible ? client.sriPassword : '•'.repeat(Math.min(client.sriPassword?.length || 8, 12))}
-                            </code>
-                            <button
-                                onClick={() => setPasswordVisible(!passwordVisible)}
-                                className="p-2 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-all active:scale-90 flex-shrink-0"
-                            >
-                                {passwordVisible ? <EyeOff size={15} strokeWidth={2} /> : <Eye size={15} strokeWidth={2} />}
-                            </button>
+                    {/* Claves de Acceso y Seguridad */}
+                    <div className="bg-white dark:bg-surface/40 rounded-2xl p-5 border border-slate-100 dark:border-white/10 shadow-sm space-y-4">
+                        <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clave SRI</p>
+                                {isEditing && (
+                                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Modo Edición</span>
+                                )}
+                            </div>
+                            <div className="flex items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-surface-low/50 rounded-xl border border-slate-100 dark:border-white/5">
+                                {isEditing ? (
+                                    <input
+                                        type={passwordVisible ? "text" : "password"}
+                                        value={editedClient.sriPassword || ''}
+                                        onChange={e => setEditedClient({ ...editedClient, sriPassword: e.target.value })}
+                                        className="w-full bg-transparent text-sm font-bold text-slate-900 dark:text-white tracking-wider font-mono outline-none border-b border-primary/30 pb-0.5 focus:border-primary"
+                                        placeholder="Clave SRI"
+                                    />
+                                ) : (
+                                    <code className="text-sm font-bold text-primary tracking-wider font-mono truncate">
+                                        {passwordVisible ? editedClient.sriPassword : '•'.repeat(Math.min(editedClient.sriPassword?.length || 8, 12))}
+                                    </code>
+                                )}
+                                <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                        onClick={() => handleCopy(editedClient.sriPassword)}
+                                        className="p-1.5 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-all active:scale-90"
+                                        title="Copiar Clave"
+                                    >
+                                        <Copy size={13} />
+                                    </button>
+                                    <button
+                                        onClick={() => setPasswordVisible(!passwordVisible)}
+                                        className="p-1.5 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-all active:scale-90"
+                                    >
+                                        {passwordVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 mt-4">
+                        {/* Clave Firma Electrónica */}
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Clave Firma Electrónica</p>
+                            <div className="flex items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-surface-low/50 rounded-xl border border-slate-100 dark:border-white/5">
+                                {isEditing ? (
+                                    <input
+                                        type={passwordVisible ? "text" : "password"}
+                                        value={editedClient.electronicSignaturePassword || ''}
+                                        onChange={e => setEditedClient({ ...editedClient, electronicSignaturePassword: e.target.value })}
+                                        className="w-full bg-transparent text-sm font-bold text-slate-900 dark:text-white tracking-wider font-mono outline-none border-b border-primary/30 pb-0.5 focus:border-primary"
+                                        placeholder="Clave Firma"
+                                    />
+                                ) : (
+                                    <code className="text-sm font-bold text-primary tracking-wider font-mono truncate">
+                                        {editedClient.electronicSignaturePassword 
+                                            ? (passwordVisible ? editedClient.electronicSignaturePassword : '•'.repeat(Math.min(editedClient.electronicSignaturePassword.length, 12)))
+                                            : 'NO REGISTRADA'}
+                                    </code>
+                                )}
+                                <div className="flex items-center gap-1 shrink-0">
+                                    {editedClient.electronicSignaturePassword && (
+                                        <button
+                                            onClick={() => handleCopy(editedClient.electronicSignaturePassword)}
+                                            className="p-1.5 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-all active:scale-90"
+                                            title="Copiar Clave"
+                                        >
+                                            <Copy size={13} />
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => setPasswordVisible(!passwordVisible)}
+                                        className="p-1.5 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-all active:scale-90"
+                                    >
+                                        {passwordVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 pt-2">
                             <button
                                 onClick={handleOpenSRI}
                                 className="flex flex-col items-center gap-2 p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-primary/5 dark:hover:bg-primary/10 border border-slate-100 dark:border-white/5 hover:border-primary/20 rounded-xl transition-all group active:scale-95"

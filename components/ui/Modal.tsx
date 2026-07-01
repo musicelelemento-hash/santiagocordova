@@ -8,9 +8,23 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   disableBackdropClick?: boolean; // New prop to prevent accidental closing
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl' | 'full';
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, disableBackdropClick = false }) => {
+const sizeClasses = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
+  '3xl': 'max-w-3xl',
+  '4xl': 'max-w-4xl',
+  '5xl': 'max-w-5xl',
+  '6xl': 'max-w-6xl',
+  full: 'max-w-full mx-4'
+};
+
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, disableBackdropClick = false, size }) => {
   if (!isOpen) return null;
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -20,10 +34,12 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
       }
   };
 
+  const modalSize = size ? sizeClasses[size] : 'max-w-lg';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm animate-fade-in-down" onClick={handleBackdropClick}>
       <div 
-        className="relative w-full max-w-lg p-4 sm:p-6 mx-2 sm:mx-4 bg-white rounded-lg shadow-xl dark:bg-gray-900 transform transition-all flex flex-col border border-gold/20"
+        className={`relative w-full ${modalSize} p-4 sm:p-6 mx-2 sm:mx-4 bg-white rounded-lg shadow-xl dark:bg-gray-900 transform transition-all flex flex-col border border-gold/20`}
         onClick={(e) => e.stopPropagation()}
         style={{ maxHeight: '90vh' }}
       >
@@ -39,7 +55,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             <X size={20} />
           </button>
         )}
-        <div className="mt-4 overflow-y-auto pr-2">
+        <div className="mt-4 overflow-y-auto pr-2 w-full flex-grow flex flex-col">
           {children}
         </div>
       </div>

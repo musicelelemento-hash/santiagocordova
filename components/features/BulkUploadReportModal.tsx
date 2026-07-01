@@ -66,8 +66,8 @@ export const BulkUploadReportModal: React.FC<BulkUploadReportModalProps> = ({ is
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="REPORTE TÁCTICO: UNIDAD DE PROCESAMIENTO">
-            <div className="flex flex-col h-[75vh] glass-elite dark:dark-glass rounded-3xl overflow-hidden border border-white/10 relative">
+        <Modal isOpen={isOpen} onClose={onClose} title="REPORTE TÁCTICO: UNIDAD DE PROCESAMIENTO" size="3xl">
+            <div className="flex flex-col h-[75vh] w-full glass-elite dark:dark-glass rounded-3xl overflow-hidden border border-white/10 relative">
                 {/* Scanline Animation Overlay */}
                 <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
                     <div className="w-full h-[2px] bg-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.8)] animate-scan-line-slow"></div>

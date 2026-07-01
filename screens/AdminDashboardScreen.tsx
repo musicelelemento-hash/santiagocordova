@@ -94,14 +94,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [showUploader, setShowUploader] = useState(false);
     const [isTacticalVisible, setIsTacticalVisible] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [viewMode, setViewMode] = useState<'list' | 'matrix'>('list');
-    const [matrixUploadSelection, setMatrixUploadSelection] = useState<{ client: Client, period: string } | null>(null);
     const [workspaceClient, setWorkspaceClient] = useState<{ client: Client, period?: string } | null>(null);
-    const [showMarkAllModal, setShowMarkAllModal] = useState(false);
-    const [markAllMode, setMarkAllMode] = useState<'declared' | 'paid' | 'both'>('both');
-    const [isBulkMarking, setIsBulkMarking] = useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
-    const matrixFileInputRef = React.useRef<HTMLInputElement>(null);
 
     // Persistence Effect
     React.useEffect(() => {
@@ -567,47 +561,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         });
     };
 
-    const handleUploadFromMatrix = (client: Client, period: string) => {
-        setMatrixUploadSelection({ client, period });
-        matrixFileInputRef.current?.click();
-    };
 
-    const handleTogglePaymentFromMatrix = (client: Client, period: string, type: 'IVA' | 'RENTA', isPaid: boolean) => {
-        const now = new Date().toISOString();
-        const updatedHistory = [...(client.declarations || [])];
-        const idx = updatedHistory.findIndex(d => d.period === period && (d.type === type || (!d.type && (type === 'IVA' || type === 'RENTA'))));
-        if (idx !== -1) {
-            updatedHistory[idx] = {
-                ...updatedHistory[idx],
-                is_paid: isPaid,
-                paidAt: isPaid ? now : undefined,
-                status: isPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
-                updatedAt: now
-            };
-            updateClient(client.id, { declarations: updatedHistory });
-            toast.success(isPaid ? 'Pago registrado' : 'Pago revertido');
-        }
-    };
-
-    const onMatrixFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !matrixUploadSelection) return;
-
-        setIsProcessing(true);
-        try {
-            const results = await processBulkPdfs([file], () => {});
-            setBulkResults(results as any);
-            setIsBulkModalOpen(true);
-            setRecentUploads(prev => [...(results as any), ...prev].slice(0, 20));
-            toast.success("Documento procesado");
-        } catch (error) {
-            toast.error("Error al procesar el documento");
-        } finally {
-            setIsProcessing(false);
-            setMatrixUploadSelection(null);
-            if (matrixFileInputRef.current) matrixFileInputRef.current.value = '';
-        }
-    };
     const tacticalInfo = useMemo(() => {
         const day = new Date().getDate();
         const schedule: Record<number, number> = { 10: 1, 12: 2, 14: 3, 16: 4, 18: 5, 20: 6, 22: 7, 24: 8, 26: 9, 28: 0 };
@@ -628,7 +582,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 title: `Vencimiento Crítico: Dígito ${tacticalInfo.todayDigit}`,
                 desc: `Hay ${urgentPriorities.length} clientes que vencen hoy según el SRI. Prioridad inmediata.`,
                 priority: 'high',
-                action: () => setFilter('urgent')
+                action: () => navigate('clients', { initialFilter: { activeGroupTab: 'vencidos' } })
             });
         }
 
@@ -637,7 +591,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 title: 'Renovación de Firmas',
                 desc: `${expiringSignatures.length} firmas están por caducar. Gestionar renovaciones para evitar bloqueos.`,
                 priority: 'medium',
-                action: () => setFilter('all')
+                action: () => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })
             });
         }
 
@@ -646,12 +600,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 title: 'Seguimiento de Devoluciones',
                 desc: `Tienes ${activeRentaRefunds.length} trámites de renta en curso. Revisa el estatus para asegurar el depósito.`,
                 priority: 'low',
-                action: () => setFilter('renta')
+                action: () => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })
             });
         }
 
         return suggestions.slice(0, 3);
-    }, [tacticalInfo, urgentPriorities, expiringSignatures, activeRentaRefunds]);
+    }, [tacticalInfo, urgentPriorities, expiringSignatures, activeRentaRefunds, navigate]);
+
     return (
         <div className="space-y-6 animate-fade-in pb-20 relative aurora-zen min-h-screen">
             <div className="relative z-20 px-4 sm:px-0">
@@ -704,19 +659,16 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     </div>
                                     <input
                                         type="text"
-                                        placeholder="Buscar cliente, RUC..."
+                                        placeholder="Buscar cliente global..."
                                         value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onChange={(e) => {
+                                            setSearchTerm(e.target.value);
+                                            if (e.target.value) {
+                                                navigate('clients', { initialFilter: { searchTerm: e.target.value, activeGroupTab: 'all' } });
+                                            }
+                                        }}
                                         className="w-full bg-slate-50 dark:bg-black/25 border border-slate-200 dark:border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 focus:bg-white dark:focus:bg-black/30 transition-all outline-none"
                                     />
-                                    {searchTerm && (
-                                        <button
-                                            onClick={() => setSearchTerm('')}
-                                            className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-700 dark:hover:text-white"
-                                        >
-                                            <LucideIcons.X size={14} />
-                                        </button>
-                                    )}
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
                                     <input type="file" multiple accept=".pdf" ref={fileInputRef} onChange={handleBulkUpload} className="hidden" />
@@ -743,20 +695,6 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         {isProcessing ? <LucideIcons.Loader2 size={16} className="animate-spin" /> : <LucideIcons.UploadCloud size={16} className="group-hover:-translate-y-0.5 transition-transform" />}
                                         <span className="hidden sm:inline">SUBIR PDFs / RUCs</span>
                                     </button>
-                                    <div className="flex items-center bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200 dark:border-white/10">
-                                        <button onClick={() => setViewMode('list')} title="Vista Lista" className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 opacity-50 hover:opacity-80'}`}>
-                                            <LucideIcons.List size={16} />
-                                        </button>
-                                        <button onClick={() => setViewMode('matrix')} title="Vista Matriz" className={`p-2.5 rounded-xl transition-all ${viewMode === 'matrix' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 opacity-50 hover:opacity-80'}`}>
-                                            <LucideIcons.LayoutGrid size={16} />
-                                        </button>
-                                    </div>
-                                    {viewMode === 'matrix' && (
-                                        <button onClick={() => window.print()} className="flex items-center gap-1.5 bg-emerald-500 text-white px-4 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/20">
-                                            <LucideIcons.Printer size={14} />
-                                            <span className="hidden sm:inline">PDF</span>
-                                        </button>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -777,7 +715,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                             {/* KPI 1: Clientes */}
                             <button
-                                onClick={() => setFilter('all')}
+                                onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
                                 className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-100 dark:border-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
                             >
                                 <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25 group-hover:scale-110 transition-transform duration-300 shrink-0">
@@ -786,13 +724,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Total Clientes</p>
                                     <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">{kpis.total}</p>
-                                    <p className="text-[10px] text-slate-400 mt-1">activos en cartera</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">ir a expedientes</p>
                                 </div>
                             </button>
 
                             {/* KPI 2: Facturación */}
                             <button
-                                onClick={() => setFilter('all')}
+                                onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
                                 className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-100 dark:border-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
                             >
                                 <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 group-hover:scale-110 transition-transform duration-300 shrink-0">
@@ -815,7 +753,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 const hasMissing = missingPdfCount > 0;
                                 return (
                                     <button
-                                        onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true, title: 'Auditoría de Bóveda' } })}
+                                        onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true } })}
                                         className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-100 dark:border-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
                                     >
                                         <div className={`p-3 rounded-2xl text-white shadow-lg shrink-0 group-hover:scale-110 transition-transform duration-300 ${
@@ -838,7 +776,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                             {/* KPI 4: Cartera por Cobrar */}
                             <button
-                                onClick={() => navigate('cobranza')}
+                                onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'cobros' } })}
                                 className="group flex-none w-[60vw] sm:w-auto snap-center flex flex-col justify-center p-6 sm:p-7 relative overflow-hidden hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -872,7 +810,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                     />
                                                 </div>
                                                 <div className="flex items-center justify-between mt-1.5">
-                                                    <p className="text-[10px] text-slate-400">{collectedPercent}% cobrado de facturación</p>
+                                                    <p className="text-[10px] text-slate-400">{collectedPercent}% cobrado</p>
                                                     <LucideIcons.ArrowRight size={12} className="text-rose-400 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                                                 </div>
                                             </>
@@ -1265,221 +1203,83 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 </div>
             </div>
 
-            {/* ── PANEL DE CONTROL: Segmentación de Cartera ── */}
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200/70 dark:border-white/[0.06] bg-white dark:bg-[hsl(222,47%,4%)] shadow-sm z-20 no-print">
-                <button 
-                    onClick={() => setExpandSegmentation(!expandSegmentation)}
-                    className="w-full px-6 py-4 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.02] hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors relative"
-                >
-                    {/* Subtle accent line top */}
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-left">
-                        <div className="flex items-center gap-4">
-                            <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/15">
-                                <LucideIcons.SlidersHorizontal size={16} className="text-blue-500 dark:text-blue-400" />
+            {/* ── EXECUTIVE FUNNEL INBOX WIDGET ── */}
+            <div className="relative z-30 px-4 sm:px-0">
+                <div className="bg-white dark:bg-[hsl(222,47%,4%)] rounded-[2.5rem] border border-slate-200/60 dark:border-white/[0.06] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                    <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
+                                <LucideIcons.Inbox size={16} />
                             </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Segmentación de Cartera</h3>
-                                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Filtra por régimen, obligación y período fiscal</p>
+                            <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] font-premium">Buzón de Control Ejecutivo</h3>
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Campaña Activa</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* CARD 1: PENDIENTES SRI */}
+                        <div 
+                            onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'vencidos' } })}
+                            className="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] p-6 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl group-hover:scale-110 transition-transform">
+                                    <LucideIcons.Zap size={20} />
+                                </div>
+                                <LucideIcons.ArrowUpRight size={20} className="text-slate-300 dark:text-slate-700 group-hover:text-rose-500 transition-colors" />
                             </div>
-                        </div>
-                    </div>
-                    <LucideIcons.ChevronDown size={18} className={`text-slate-400 transition-transform duration-500 ${expandSegmentation ? 'rotate-180' : ''}`} />
-                </button>
-
-                <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandSegmentation ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="p-6 sm:p-8 space-y-6 border-t border-slate-100 dark:border-white/[0.05]">
-                        <div className="flex justify-end mb-2">
-                            {(selectedRegime !== 'all' || selectedObligation !== 'all' || selectedPeriod !== 'all') && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedRegime('all');
-                                        setSelectedObligation('all');
-                                        setSelectedPeriod('all');
-                                    }}
-                                    className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-200 dark:border-rose-500/20 text-[10px] font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
-                                >
-                                    <LucideIcons.FilterX size={12} />
-                                    Limpiar filtros
-                                </button>
-                            )}
+                            <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-premium">En Proceso</h4>
+                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none mt-2">
+                                {pendientes.length + urgentPriorities.length}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-2">Declaraciones pendientes o vencidas</p>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* 1. REGÍMENES */}
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] font-premium flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                            1. Seleccionar Régimen
-                        </label>
-                        <div className="flex flex-col gap-2">
-                            {[
-                                { id: 'all', label: 'Todos los Regímenes', icon: LucideIcons.Layers },
-                                { id: 'Régimen General', label: 'Régimen General', icon: LucideIcons.Building2 },
-                                { id: 'Rimpe Emprendedor', label: 'RIMPE Emprendedor', icon: LucideIcons.TrendingUp },
-                                { id: 'Rimpe Negocio Popular', label: 'RIMPE Popular', icon: LucideIcons.Store },
-                            ].map(reg => {
-                                const isActive = selectedRegime === reg.id;
-                                return (
-                                    <button
-                                        key={reg.id}
-                                        onClick={() => {
-                                            setSelectedRegime(reg.id as any);
-                                            setSelectedObligation('all');
-                                            setSelectedPeriod('all');
-                                        }}
-                                        className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 ${isActive ? 'bg-primary text-white scale-[1.02] shadow-lg shadow-primary/20' : 'bg-slate-50 dark:bg-black/20 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent hover:border-slate-200 dark:hover:border-white/10'}`}
-                                    >
-                                        <reg.icon size={14} className={isActive ? 'text-white' : 'text-slate-400'} />
-                                        <span>{reg.label}</span>
-                                    </button>
-                                );
-                            })}
+                        {/* CARD 2: POR COBRAR */}
+                        <div 
+                            onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'cobros' } })}
+                            className="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] p-6 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-amber-500" />
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform">
+                                    <LucideIcons.DollarSign size={20} />
+                                </div>
+                                <LucideIcons.ArrowUpRight size={20} className="text-slate-300 dark:text-slate-700 group-hover:text-amber-500 transition-colors" />
+                            </div>
+                            <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-premium">Por Cobrar</h4>
+                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none mt-2">
+                                {cobros.length}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-2">Honorarios pendientes de registro</p>
                         </div>
-                    </div>
 
-                    {/* 2. OBLIGACIONES */}
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] font-premium flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            2. Obligación SRI
-                        </label>
-                        <div className="flex flex-col gap-2">
-                            {(() => {
-                                const allowedObs: { id: 'all' | 'IVA' | 'RENTA', label: string, icon: any, disabled: boolean, desc?: string }[] = [];
-                                
-                                allowedObs.push({ id: 'all', label: 'Todas las Obligaciones', icon: LucideIcons.ClipboardList, disabled: false });
-                                
-                                const isPopular = selectedRegime === 'Rimpe Negocio Popular';
-                                const isEmprendedor = selectedRegime === 'Rimpe Emprendedor';
-
-                                allowedObs.push({
-                                    id: 'IVA',
-                                    label: isEmprendedor ? 'IVA Semestral' : isPopular ? 'IVA (Exento)' : 'IVA Mensual',
-                                    icon: LucideIcons.CalendarRange,
-                                    disabled: isPopular,
-                                    desc: isPopular ? 'Negocio Popular no declara IVA' : undefined
-                                });
-
-                                allowedObs.push({
-                                    id: 'RENTA',
-                                    label: isPopular ? 'Renta Anual Simplif.' : 'Renta Anual',
-                                    icon: LucideIcons.ShieldCheck,
-                                    disabled: false
-                                });
-
-                                return allowedObs.map(ob => {
-                                    const isActive = selectedObligation === ob.id;
-                                    return (
-                                        <button
-                                            key={ob.id}
-                                            onClick={() => {
-                                                if (ob.disabled) return;
-                                                setSelectedObligation(ob.id);
-                                                setSelectedPeriod('all');
-                                            }}
-                                            disabled={ob.disabled}
-                                            title={ob.desc}
-                                            className={`relative flex items-center gap-3 px-4 py-3.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 ${ob.disabled ? 'opacity-40 cursor-not-allowed text-slate-300 dark:text-slate-700 bg-slate-100 dark:bg-white/5 border border-dashed border-slate-200 dark:border-white/5' : isActive ? 'bg-primary text-white scale-[1.02] shadow-lg shadow-primary/20' : 'bg-slate-50 dark:bg-black/20 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent hover:border-slate-200 dark:hover:border-white/10'}`}
-                                        >
-                                            <ob.icon size={14} className={ob.disabled ? 'text-slate-300 dark:text-slate-700' : isActive ? 'text-white' : 'text-slate-400'} />
-                                            <span>{ob.label}</span>
-                                            {ob.disabled && (
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[8px] font-black tracking-widest text-slate-400">EXENTO</span>
-                                            )}
-                                        </button>
-                                    );
-                                });
-                            })()}
-                        </div>
-                    </div>
-
-                    {/* 3. PERÍODOS */}
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] font-premium flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
-                            3. Período Fiscal
-                        </label>
-                        <div className="flex flex-col gap-2">
-                            {(() => {
-                                const isObligationSelected = selectedObligation !== 'all';
-                                if (!isObligationSelected) {
-                                    return (
-                                        <div className="flex flex-col items-center justify-center p-8 bg-slate-50/50 dark:bg-black/10 rounded-2xl border border-dashed border-slate-200 dark:border-white/5 text-slate-400 dark:text-slate-500 text-center py-10">
-                                            <LucideIcons.CalendarOff size={20} className="mb-2 text-slate-300 dark:text-slate-700" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider">Selecciona una obligación para habilitar períodos</span>
-                                        </div>
-                                    );
-                                }
-
-                                const periods: string[] = ['all'];
-                                const today = new Date();
-                                const currentYear = today.getFullYear();
-                                const rentaPeriod = (currentYear - 1).toString();
-
-                                if (selectedObligation === 'IVA') {
-                                    const isSemestral = selectedRegime === 'Rimpe Emprendedor';
-                                    if (isSemestral) {
-                                        const currentMonth = today.getMonth();
-                                        if (currentMonth >= 6) {
-                                            periods.push(`${currentYear}-S1`, `${currentYear - 1}-S2`);
-                                        } else {
-                                            periods.push(`${currentYear - 1}-S2`, `${currentYear - 1}-S1`);
-                                        }
-                                    } else {
-                                        // Monthly
-                                        for (let i = 0; i < 6; i++) {
-                                            const date = subMonths(today, i + 1);
-                                            periods.push(format(date, 'yyyy-MM'));
-                                        }
-                                    }
-                                } else if (selectedObligation === 'RENTA') {
-                                    periods.push(rentaPeriod, (currentYear - 2).toString());
-                                }
-
-                                return (
-                                    <div className="grid grid-cols-2 gap-2 max-h-[170px] overflow-y-auto pr-2 custom-scrollbar">
-                                        {periods.map(p => {
-                                            const isActive = selectedPeriod === p;
-                                            const label = p === 'all' ? 'Todos' : p;
-                                            return (
-                                                <button
-                                                    key={p}
-                                                    onClick={() => setSelectedPeriod(p)}
-                                                    className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-wider text-center transition-all duration-300 ${isActive ? 'bg-primary text-white scale-[1.02] shadow-lg shadow-primary/20' : 'bg-slate-50 dark:bg-black/20 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 border border-transparent hover:border-slate-200 dark:hover:border-white/10'}`}
-                                                >
-                                                    {label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                );
-                            })()}
-                        </div>
-                    </div>
+                        {/* CARD 3: COMPLETADOS */}
+                        <div 
+                            onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'al-dia' } })}
+                            className="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] p-6 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500" />
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform">
+                                    <LucideIcons.ShieldCheck size={20} />
+                                </div>
+                                <LucideIcons.ArrowUpRight size={20} className="text-slate-300 dark:text-slate-700 group-hover:text-emerald-500 transition-colors" />
+                            </div>
+                            <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-premium">Procesados</h4>
+                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none mt-2">
+                                {completados.length}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-2">Clientes al día esta campaña</p>
                         </div>
                     </div>
                 </div>
             </div>
-
-            {/* Campaign Progress Legend (Subtle) */}
-            <div className="flex items-center gap-4 px-6">
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-slate-900 dark:bg-white"></div>
-                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">{completados.length} Declarados</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-slate-200 dark:bg-white/10"></div>
-                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">{pendientes.length} Pendientes</span>
-                </div>
-            </div>
-
-
 
             {/* Critical Alerts Panel Refinado */}
             {(expiringSignatures.length > 0 || activeRentaRefunds.length > 0) && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-6">
                     {/* Renta Refunds Panel - High Priority */}
                     {activeRentaRefunds.length > 0 && (
                         <div className="bg-white dark:bg-surface-low border border-slate-100 dark:border-white/5 rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none animate-fade-in-down lg:col-span-full">
@@ -1550,515 +1350,64 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             </div>
                         </div>
                     )}
-
                 </div>
             )}
 
-            {/* ── FILTER DOCK INTELIGENTE (contextual por campaña) ── */}
-            <div className="sticky bottom-4 sm:static z-[100] px-4 sm:px-0">
-                <div className="glass-tactical-dock rounded-2xl sm:rounded-full p-2 flex items-center gap-1 sm:gap-1.5 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.25)] border border-white/10 dark:border-white/5 backdrop-blur-3xl no-scrollbar overflow-x-auto scroll-smooth">
-                    {[
-                        
-                        { id: 'digital-mando', label: 'Mando Digital', icon: LucideIcons.Activity, gradient: 'from-sky-500 to-blue-600', color: 'text-sky-400', always: true },
-                        // IVA Mensual: visible siempre pero con badge de campaña si está activa
-                        { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.CalendarCheck, gradient: 'from-violet-500 to-purple-600', always: false, showWhen: campaign.showMensualTab },
-                        // IVA Semestral: solo visible en julio y enero (campaña semestral activa)
-                        { id: 'semestral', label: 'IVA Semestral', icon: LucideIcons.CalendarRange, gradient: 'from-blue-500 to-indigo-600', always: false, showWhen: campaign.showSemestralTab, highlight: campaign.isSemestralMonth },
-                        // Renta: solo visible en marzo-junio
-                        { id: 'renta', label: 'Renta Anual', icon: LucideIcons.ShieldCheck, gradient: 'from-emerald-500 to-teal-600', always: false, showWhen: campaign.showRentaTab, highlight: campaign.isRentaMonth },
-                        { id: 'urgent', label: 'Crítico', icon: LucideIcons.Zap, gradient: 'from-rose-500 to-red-600', color: 'text-rose-400', always: true },
-                    ]
-                    // Mostrar siempre los que tienen always=true. Los contextuales solo si showWhen=true (o están activos)
-                    .filter(tab => tab.always || tab.showWhen || filter === tab.id)
-                    .map(tab => {
-                        const isActive = filter === tab.id;
-                        const isHighlighted = (tab as any).highlight && !isActive;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setFilter(tab.id as any)}
-                                className={`relative flex items-center gap-2 px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-[0.15em] transition-all duration-300 whitespace-nowrap hover:scale-[1.03] active:scale-95 shrink-0 ${
-                                    isActive
-                                        ? 'text-white shadow-lg'
-                                        : isHighlighted
-                                        ? 'text-blue-500 dark:text-blue-400 hover:bg-blue-500/10'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-white/[0.07]'
-                                }`}
-                            >
-                                {isActive && (
-                                    <div className={`absolute inset-0 rounded-xl sm:rounded-full bg-gradient-to-tr ${tab.gradient} opacity-100`}
-                                        style={{ boxShadow: `0 4px 15px -4px rgba(0,0,0,0.35)` }}
-                                    />
-                                )}
-                                {/* Ring de campaña activa (semestral/renta) */}
-                                {isHighlighted && !isActive && (
-                                    <div className="absolute inset-0 rounded-xl sm:rounded-full ring-1 ring-blue-400/40 animate-pulse" />
-                                )}
-                                <tab.icon size={13} className={`relative z-10 transition-all duration-300 ${
-                                    isActive ? 'text-white' : (tab.color || 'text-slate-500')
-                                }`} />
-                                <span className="relative z-10">{tab.label}</span>
-                                {/* Badge de urgentes en tab Crítico */}
-                                {urgentPriorities.length > 0 && tab.id === 'urgent' && (
-                                    <span className={`relative z-10 ml-0.5 flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-black ${
-                                        isActive ? 'bg-white/20 text-white' : 'bg-rose-500/15 text-rose-500'
-                                    }`}>{urgentPriorities.length}</span>
-                                )}
-                                {/* Indicador de campaña semestral activa */}
-                                {isHighlighted && tab.id === 'semestral' && (
-                                    <span className="relative z-10 ml-0.5 w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                                )}
-                                {/* Indicador de campaña renta activa */}
-                                {isHighlighted && tab.id === 'renta' && (
-                                    <span className="relative z-10 ml-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Indicador contextual del dígito SRI (bajo el dock) */}
-                {campaign.todaySriDigit !== null && (
-                    <div className="mt-2 flex items-center justify-center gap-2">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/8 dark:bg-rose-500/10 border border-rose-500/20 text-[10px] font-black text-rose-500 uppercase tracking-widest">
-                            <div className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-                            <span>Auto-ordenado por vencimiento SRI · Dígito {campaign.todaySriDigit} vence hoy</span>
-                        </div>
-                    </div>
-                )}
-                {campaign.phase === 'mensual_preparacion' && campaign.daysUntilOpen !== null && (
-                    <div className="mt-2 flex items-center justify-center gap-2">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-500/8 dark:bg-slate-500/10 border border-slate-200 dark:border-white/[0.06] text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            <LucideIcons.Clock size={11} />
-                            <span>Próxima campaña abre en {campaign.daysUntilOpen} días · Preparación activa</span>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-
-            {/* ── INBOX TABS ELITE ── */}
-            {!searchTerm && (
-                <div className="flex flex-col gap-3 z-10 relative px-4 sm:px-0">
-                    {/* ── MESA DE TRABAJO HEADER ── */}
-                    {(filter === 'mensual' || filter === 'digital-mando' || filter === 'semestral' || filter === 'renta') && (
-                        <div className="flex items-center justify-between px-1">
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
-                                    <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.25em]">
-                                        Mesa de Trabajo
-                                    </span>
-                                </div>
-                                {/* Badge del periodo activo */}
-                                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20">
-                                    <LucideIcons.CalendarCheck size={11} className="text-violet-500" />
-                                    <span className="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest">
-                                        {filter === 'semestral' 
-                                            ? `Semestral ${campaign.activePeriodLabel}`
-                                            : filter === 'renta'
-                                            ? `Renta Anual ${new Date().getFullYear() - 1}`
-                                            : campaign.activePeriodLabel 
-                                                ? formatPeriodForDisplay(campaign.activePeriodLabel).toUpperCase()
-                                                : 'IVA Mensual'
-                                        }
-                                    </span>
-                                </div>
-                                {/* Mini progreso */}
-                                {allResults.length > 0 && (
-                                    <div className="hidden sm:flex items-center gap-2">
-                                        <div className="w-20 h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
-                                            <div 
-                                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000"
-                                                style={{ width: `${Math.round((completados.length / allResults.length) * 100)}%` }}
-                                            />
-                                        </div>
-                                        <span className="text-[10px] font-bold text-slate-400">
-                                            {Math.round((completados.length / allResults.length) * 100)}% listo
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                            {/* Acciones rápidas */}
-                            <div className="hidden sm:flex items-center gap-2">
-                                <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600">{allResults.length} en vista</span>
-                                <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
-                                <button
-                                    onClick={() => setShowMarkAllModal(true)}
-                                    disabled={activeList.length === 0}
-                                    title="Marcar todos como declarados y pagados al día"
-                                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                                >
-                                    <LucideIcons.CheckCheck size={13} />
-                                    Marcar Todos
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-                    <div className="flex items-center gap-2 w-full sm:w-auto bg-slate-100/80 dark:bg-white/[0.04] p-1.5 rounded-2xl border border-slate-200 dark:border-white/[0.06]">
-                        {/* Tab: Pendientes */}
-                        <button
-                            onClick={() => setInboxTab('pendientes')}
-                            className={`relative flex-1 sm:flex-none flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 ${
-                                inboxTab === 'pendientes'
-                                    ? 'bg-white dark:bg-slate-800 shadow-md text-slate-900 dark:text-white'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                            }`}
-                        >
-                            <div className={`p-2 rounded-lg transition-all duration-300 ${
-                                inboxTab === 'pendientes'
-                                    ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md shadow-blue-500/20'
-                                    : 'bg-transparent text-slate-400'
-                            }`}>
-                                <LucideIcons.Flashlight size={14} strokeWidth={2.5} />
-                            </div>
-                            <div className="text-left">
-                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 leading-none mb-0.5">Pendientes SRI</div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-base font-black tracking-tight leading-none">En Proceso</span>
-                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                                        inboxTab === 'pendientes'
-                                            ? 'bg-rose-100 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400'
-                                            : 'bg-slate-200 dark:bg-white/10 text-slate-500'
-                                    }`}>{pendientes.length + urgentPriorities.length}</span>
-                                </div>
-                            </div>
-                        </button>
-
-                        {/* Tab: Cobros */}
-                        <button
-                            onClick={() => setInboxTab('cobros')}
-                            className={`relative flex-1 sm:flex-none flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 ${
-                                inboxTab === 'cobros'
-                                    ? 'bg-white dark:bg-slate-800 shadow-md text-slate-900 dark:text-white'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                            }`}
-                        >
-                            <div className={`p-2 rounded-lg transition-all duration-300 ${
-                                inboxTab === 'cobros'
-                                    ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-md shadow-amber-500/20'
-                                    : 'bg-transparent text-slate-400'
-                            }`}>
-                                <LucideIcons.DollarSign size={14} strokeWidth={2.5} />
-                            </div>
-                            <div className="text-left">
-                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 leading-none mb-0.5">Por Cobrar</div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-base font-black tracking-tight leading-none">Honorarios</span>
-                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                                        inboxTab === 'cobros'
-                                            ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                                            : 'bg-slate-200 dark:bg-white/10 text-slate-500'
-                                    }`}>{cobros.length}</span>
-                                </div>
-                            </div>
-                        </button>
-
-                        {/* Tab: Completados */}
-                        <button
-                            onClick={() => setInboxTab('completados')}
-                            className={`relative flex-1 sm:flex-none flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 ${
-                                inboxTab === 'completados'
-                                    ? 'bg-white dark:bg-slate-800 shadow-md text-slate-900 dark:text-white'
-                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                            }`}
-                        >
-                            <div className={`p-2 rounded-lg transition-all duration-300 ${
-                                inboxTab === 'completados'
-                                    ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/20'
-                                    : 'bg-transparent text-slate-400'
-                            }`}>
-                                <LucideIcons.ShieldCheck size={14} strokeWidth={2.5} />
-                            </div>
-                            <div className="text-left">
-                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 leading-none mb-0.5">Procesados</div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-base font-black tracking-tight leading-none">Al Día</span>
-                                    <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                                        inboxTab === 'completados'
-                                            ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                                            : 'bg-slate-200 dark:bg-white/10 text-slate-500'
-                                    }`}>{completados.length}</span>
-                                </div>
-                            </div>
-                        </button>
-                    </div>
-
-                    {/* Mando Digital Sub-frequency Selector */}
-                    {filter === 'digital-mando' && (
-                        <div className="flex items-center gap-1.5 bg-slate-100/80 dark:bg-white/[0.04] p-1.5 rounded-2xl border border-slate-200 dark:border-white/[0.06] w-full sm:w-auto">
-                            {(['Mensual', 'Semestral', 'Anual'] as const).map((subFreq) => {
-                                const count = 
-                                    subFreq === 'Mensual' ? mensualClients.length :
-                                    subFreq === 'Semestral' ? semestralClients.length :
-                                    anualClients.length;
-                                const isActive = subMandoFreq === subFreq;
-                                
-                                // Color gradient matching the column styles
-                                const gradientColor = 
-                                    subFreq === 'Mensual' ? 'from-sky-500 to-blue-600' :
-                                    subFreq === 'Semestral' ? 'from-amber-500 to-orange-600' :
-                                    'from-emerald-500 to-teal-600';
-                                
-                                return (
-                                    <button
-                                        key={subFreq}
-                                        onClick={() => setSubMandoFreq(subFreq)}
-                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-xl transition-all duration-300 ${
-                                            isActive 
-                                                ? 'bg-white dark:bg-slate-800 shadow-md text-slate-900 dark:text-white font-black' 
-                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 font-bold'
-                                        }`}
-                                    >
-                                        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? `bg-gradient-to-br ${gradientColor}` : 'bg-slate-300 dark:bg-slate-700'}`} />
-                                        <span className="text-[10px] uppercase tracking-wider">{subFreq}</span>
-                                        <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-black leading-none ${
-                                            isActive 
-                                                ? 'bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-slate-300' 
-                                                : 'bg-slate-200/50 dark:bg-white/5 text-slate-400'
-                                        }`}>
-                                            {count}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {/* Acciones no-campaña o mobile fallback */}
-                    {!(filter === 'mensual' || filter === 'digital-mando' || filter === 'semestral' || filter === 'renta') && (
-                        <div className="ml-auto hidden sm:flex items-center gap-3 text-slate-400">
-                            <LucideIcons.CalendarDays size={14} className="text-slate-400" />
-                            <span className="text-xs font-semibold uppercase tracking-widest">
-                                {formatPeriodForDisplay(getPeriod({ ruc: '0000000000001' } as any, new Date())).split(' ')[0]}
-                            </span>
-                            <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
-                            <span className="text-[10px] font-bold text-slate-300 dark:text-slate-600">{allResults.length} en vista</span>
-                            <div className="w-px h-4 bg-slate-200 dark:bg-white/10" />
-                            <button
-                                onClick={() => setShowMarkAllModal(true)}
-                                disabled={activeList.length === 0}
-                                title="Marcar todos como declarados y pagados al día"
-                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                            >
-                                <LucideIcons.CheckCheck size={13} />
-                                Marcar Todos
-                            </button>
-                        </div>
-                    )}
-                    </div>
-                </div>
-            )}
-
-            {/* ── SEARCH RESULT BANNER ── */}
-            {debouncedSearchTerm && (
-                <div className="flex items-center gap-4 bg-white/70 dark:bg-black/30 backdrop-blur-xl p-5 rounded-2xl border border-slate-200/60 dark:border-white/[0.06] animate-fade-in-down shadow-lg px-4 sm:px-5 mx-4 sm:mx-0">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg shadow-blue-500/20 shrink-0">
-                        <LucideIcons.Search size={18} />
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                        <span className="font-bold text-slate-900 dark:text-white truncate">Resultados para <span className="text-blue-500 dark:text-blue-400">"{debouncedSearchTerm}"</span></span>
-                        <span className="text-xs text-slate-400 mt-0.5">{activeList.length} clientes encontrados</span>
-                    </div>
-                    <button
-                        onClick={() => setSearchTerm('')}
-                        className="ml-auto shrink-0 flex items-center gap-1.5 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-xs font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
+            {/* ── ZEN ANALYTICS PANEL ── */}
+            <div className="relative z-20 px-4 sm:px-0 no-print mt-6">
+                <div className="bg-white dark:bg-[hsl(222,47%,4%)] rounded-2xl border border-slate-200/70 dark:border-white/[0.06] shadow-sm overflow-hidden">
+                    <button 
+                        onClick={() => setExpandAnalytics(!expandAnalytics)}
+                        className="w-full px-6 py-4 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.02] hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
                     >
-                        <LucideIcons.X size={12} />
-                        Limpiar
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
+                                <LucideIcons.BarChart2 size={16} />
+                            </div>
+                            <span className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Inteligencia de Negocio</span>
+                        </div>
+                        <LucideIcons.ChevronDown size={18} className={`text-slate-400 transition-transform duration-500 ${expandAnalytics ? 'rotate-180' : ''}`} />
                     </button>
-                </div>
-            )}
-
-            {/* Client Grid (Virtualized) or Matrix View */}
-            <div className="animate-fade-in no-print">
-
-                {/* Active Segmentation Context Ribbon */}
-                {(selectedRegime !== 'all' || selectedObligation !== 'all' || selectedPeriod !== 'all') && (
-                    <div className="mb-4 flex flex-wrap items-center gap-3 px-2">
-                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">
-                            <LucideIcons.Eye size={12} />
-                            <span>Vista filtrada:</span>
-                        </div>
-                        {selectedRegime !== 'all' && (
-                            <span className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black uppercase tracking-wider border border-primary/20 font-premium">
-                                <LucideIcons.Building2 size={10} />
-                                {selectedRegime}
-                            </span>
-                        )}
-                        {selectedObligation !== 'all' && (
-                            <span className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-wider border border-emerald-500/20 font-premium">
-                                <LucideIcons.ShieldCheck size={10} />
-                                {selectedObligation}
-                            </span>
-                        )}
-                        {selectedPeriod !== 'all' && (
-                            <span className="flex items-center gap-1.5 px-3 py-1 bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-full text-[10px] font-black uppercase tracking-wider border border-sky-500/20 font-premium">
-                                <LucideIcons.Calendar size={10} />
-                                {formatPeriodForDisplay(selectedPeriod)}
-                            </span>
-                        )}
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 font-premium ml-1">
-                            — {activeList.length} clientes
-                        </span>
-                    </div>
-                )}
-
-                {viewMode === 'matrix' ? (
-                    <TaxComplianceMatrix 
-                        clients={matrixClients}
-                        onViewClient={(c) => setWorkspaceClient({ client: c })}
-                        onUploadReceipt={handleUploadFromMatrix}
-                        onPreviewReceipt={(c, d) => setPreviewState({ isOpen: true, client: c, declaration: d })}
-                        onTogglePayment={handleTogglePaymentFromMatrix}
-                        theme={theme}
-                    />
-                ) : filter === 'digital-mando' ? (
-                    <VirtualClientList
-                        clients={
-                            subMandoFreq === 'Mensual' ? mensualClients :
-                            subMandoFreq === 'Semestral' ? semestralClients :
-                            anualClients
-                        }
-                        serviceFees={serviceFees}
-                        onQuickAction={handleAction}
-                        onView={(c) => setWorkspaceClient({ client: c })}
-                        onUploadReceipt={handleUploadFromMatrix}
-                        frequency={subMandoFreq}
-                        customPeriod={subMandoFreq === 'Anual' ? rentaPeriod : undefined}
-                        onPreview={(c, d) => setPreviewState({ isOpen: true, client: c, declaration: d })}
-                    />
-                ) : activeList.length > 0 ? (
-                    <VirtualClientList
-                        clients={activeList}
-                        serviceFees={serviceFees}
-                        onQuickAction={handleAction}
-                        onView={(c) => setWorkspaceClient({ client: c })}
-                        onUploadReceipt={handleUploadFromMatrix}
-                        frequency={filter === 'semestral' ? 'Semestral' : filter === 'mensual' ? 'Mensual' : 'all'}
-                        customPeriod={selectedPeriod !== 'all' ? selectedPeriod : undefined}
-                        isTrashView={filter === 'trash'}
-                        onPreview={(c, d) => setPreviewState({ isOpen: true, client: c, declaration: d })}
-                    />
-                ) : (
-                    <div className="py-32 text-center">
-                        <div className="relative inline-flex mb-6">
-                            <div className="absolute inset-0 bg-brand-teal/20 blur-3xl rounded-full"></div>
-                            <div className="relative p-8 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-2xl">
-                                <LucideIcons.Inbox size={48} className="text-slate-300 dark:text-slate-700" />
+                    
+                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandAnalytics ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                        <div className="p-6 border-t border-slate-100 dark:border-white/[0.05]">
+                            <div className="h-[250px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RechartsBarChart
+                                        data={[
+                                            { name: 'Activos', value: kpis.total, color: '#3b82f6' },
+                                            { name: 'Al Día', value: completados.length, color: '#10b981' },
+                                            { name: 'Pendientes', value: pendientes.length, color: '#f59e0b' },
+                                            { name: 'Urgentes', value: urgentPriorities.length, color: '#f43f5e' }
+                                        ]}
+                                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                    >
+                                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                        <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                                        <Tooltip 
+                                            cursor={{fill: 'transparent'}}
+                                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '12px', color: '#fff', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }}
+                                            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                                        />
+                                        <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                                            {
+                                                [
+                                                    { name: 'Activos', value: kpis.total, color: '#3b82f6' },
+                                                    { name: 'Al Día', value: completados.length, color: '#10b981' },
+                                                    { name: 'Pendientes', value: pendientes.length, color: '#f59e0b' },
+                                                    { name: 'Urgentes', value: urgentPriorities.length, color: '#f43f5e' }
+                                                ].map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                ))
+                                            }
+                                        </Bar>
+                                    </RechartsBarChart>
+                                </ResponsiveContainer>
                             </div>
                         </div>
-                        <h3 className="text-xl font-semibold text-slate-800 dark:text-white mb-2">Búsqueda sin resultados</h3>
-                        <p className="text-slate-500 dark:text-slate-400 max-w-xs mx-auto text-sm font-medium">
-                            No encontramos clientes que coincidan con el filtro <span className="text-brand-teal font-medium">"{filter}"</span> o tu búsqueda actual.
-                        </p>
-                        <button
-                            onClick={() => { setSearchTerm(''); setFilter('all'); }}
-                            className="mt-8 px-6 py-2.5 bg-brand-navy text-white rounded-xl font-semibold text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg"
-                        >
-                            Restablecer Flujo
-                        </button>
                     </div>
-                )}
+                </div>
             </div>
-
-            {/* ── MODAL CONFIRMAR MARCAR TODOS AL DÍA ── */}
-            {showMarkAllModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-fade-in-up">
-                    <div className="relative bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl border border-slate-100 dark:border-white/10 overflow-hidden">
-                        {/* Glow */}
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] -mr-20 -mt-20 pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-500/10 rounded-full blur-[60px] -ml-16 -mb-16 pointer-events-none" />
-
-                        <div className="relative z-10">
-                            {/* Icon */}
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30 flex-shrink-0">
-                                    {isBulkMarking
-                                        ? <LucideIcons.Loader2 size={26} className="text-white animate-spin" />
-                                        : <LucideIcons.CheckCheck size={26} className="text-white" />
-                                    }
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Acción Masiva</h3>
-                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">
-                                        {activeList.length} clientes en vista
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Selector de modo */}
-                            <div className="mb-6 space-y-2">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">¿Qué deseas marcar?</p>
-                                {([
-                                    { id: 'both', label: 'Declarados + Pagados al Día', desc: 'Marca la declaración SRI como enviada Y los honorarios como cobrados', icon: LucideIcons.ShieldCheck, color: 'emerald' },
-                                    { id: 'declared', label: 'Solo Declarados', desc: 'Registra la declaración SRI como enviada al fisco', icon: LucideIcons.FileCheck, color: 'blue' },
-                                    { id: 'paid', label: 'Solo Pagados', desc: 'Marca los honorarios profesionales como cobrados', icon: LucideIcons.DollarSign, color: 'amber' },
-                                ] as const).map(opt => {
-                                    const isActive = markAllMode === opt.id;
-                                    const colorMap = {
-                                        emerald: isActive ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-emerald-300',
-                                        blue: isActive ? 'bg-blue-500 border-blue-500 text-white' : 'bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-blue-300',
-                                        amber: isActive ? 'bg-amber-500 border-amber-500 text-white' : 'bg-slate-50 dark:bg-black/20 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-amber-300',
-                                    };
-                                    return (
-                                        <button
-                                            key={opt.id}
-                                            onClick={() => setMarkAllMode(opt.id)}
-                                            className={`w-full flex items-start gap-3 p-4 rounded-2xl border-2 transition-all duration-200 text-left ${colorMap[opt.color]}`}
-                                        >
-                                            <opt.icon size={18} className={`shrink-0 mt-0.5 ${isActive ? 'text-white' : ''}`} />
-                                            <div>
-                                                <p className={`text-xs font-black uppercase tracking-wider ${isActive ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>{opt.label}</p>
-                                                <p className={`text-[10px] mt-0.5 leading-relaxed ${isActive ? 'text-white/80' : 'text-slate-400'}`}>{opt.desc}</p>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Warning */}
-                            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/30 rounded-2xl mb-6">
-                                <LucideIcons.AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
-                                <p className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold leading-relaxed">
-                                    Esta acción modifica el período actual de <strong>{activeList.length} clientes</strong>. Solo afecta a los que están en la vista activa.
-                                </p>
-                            </div>
-
-                            {/* Buttons */}
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowMarkAllModal(false)}
-                                    disabled={isBulkMarking}
-                                    className="flex-1 py-4 rounded-2xl border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-white/5 transition-all disabled:opacity-50"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    onClick={handleMarkAllDeclaredAndPaid}
-                                    disabled={isBulkMarking || activeList.length === 0}
-                                    className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-black uppercase tracking-widest hover:from-emerald-600 hover:to-teal-600 transition-all active:scale-95 shadow-xl shadow-emerald-500/25 disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {isBulkMarking ? (
-                                        <><LucideIcons.Loader2 size={16} className="animate-spin" /> Procesando...</>
-                                    ) : (
-                                        <><LucideIcons.CheckCheck size={16} /> Confirmar</>  
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Hidden component for Print Export */}
-            <ComplianceReportExport 
-                clients={matrixClients}
-                periods={matrixPeriods}
-                frequency={filter === 'semestral' ? 'Semestral' : 'Mensual'}
-            />
 
             {previewState.client && previewState.declaration && (
                 <PdfPreviewModal
@@ -2093,7 +1442,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             {activeRentaRefunds.length > 0 && (
                 <div className="fixed bottom-24 right-6 z-50 animate-bounce-slow">
                     <button
-                        onClick={() => setFilter('renta')}
+                        onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
                         className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-amber-400 to-amber-500 text-white rounded-[2rem] shadow-[0_20px_40px_rgba(245,158,11,0.4)] border border-amber-300/30 transition-all hover:scale-110 active:scale-95"
                     >
                         <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -2107,14 +1456,6 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     </button>
                 </div>
             )}
-
-            <input
-                type="file"
-                accept=".pdf"
-                ref={matrixFileInputRef}
-                onChange={onMatrixFileChange}
-                className="hidden"
-            />
         </div>
     );
 };

@@ -92,15 +92,30 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
     // Smart Tabs Logic
     const getInitialGroupTab = () => {
+        if (initialFilter?.activeGroupTab) return initialFilter.activeGroupTab;
         const saved = sessionStorage.getItem('clients_group_tab');
         if (saved) return saved;
-        if (!initialFilter) return 'all';
         return 'all';
     };
 
     const [activeGroupTab, setActiveGroupTab] = useState(getInitialGroupTab());
     const [specificCategoryFilter, setSpecificCategoryFilter] = useState<any | null>(null);
     const [regimeFilter, setRegimeFilter] = useState<TaxRegime | 'all'>('all');
+
+    // Sync initialFilter prop changes (e.g. from Dashboard navigation)
+    useEffect(() => {
+        if (initialFilter) {
+            if (initialFilter.activeGroupTab) {
+                setActiveGroupTab(initialFilter.activeGroupTab);
+            }
+            if (initialFilter.searchTerm !== undefined) {
+                setSearchTerm(initialFilter.searchTerm);
+            }
+            if (initialFilter.hasMissingPdf) {
+                setActiveGroupTab('all');
+            }
+        }
+    }, [initialFilter]);
 
     // Search Persistence Effect
     useEffect(() => {

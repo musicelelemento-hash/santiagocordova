@@ -12,9 +12,11 @@ interface VaultCardProps {
     onDownload?: () => void;
     isPassword?: boolean;
     value?: string;
+    isEditing?: boolean;
+    onChange?: (value: string) => void;
 }
 
-export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, onUpload, isPassword, value, onDownload }) => {
+export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, onUpload, isPassword, value, onDownload, isEditing, onChange }) => {
     const [showPassword, setShowPassword] = React.useState(false);
     const hasData = !!(file || value);
 
@@ -32,9 +34,19 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
                         <p className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em]">{label}</p>
                         <div className="mt-1.5 min-h-[1.75rem] flex items-center">
                             {isPassword ? (
-                                <p className={`text-[15px] font-black tracking-[0.2em] font-mono ${showPassword ? 'text-slate-950 dark:text-slate-50' : 'text-slate-200 dark:text-slate-800'}`}>
-                                    {showPassword ? value : '••••••••••••'}
-                                </p>
+                                isEditing ? (
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        value={value || ''}
+                                        onChange={e => onChange && onChange(e.target.value)}
+                                        className="bg-transparent text-[15px] font-black tracking-wider font-mono outline-none border-b border-primary/30 pb-0.5 focus:border-primary text-slate-900 dark:text-white max-w-[150px]"
+                                        placeholder="Ingrese clave"
+                                    />
+                                ) : (
+                                    <p className={`text-[15px] font-black tracking-[0.2em] font-mono ${showPassword ? 'text-slate-950 dark:text-slate-50' : 'text-slate-200 dark:text-slate-800'}`}>
+                                        {showPassword ? value : '••••••••••••'}
+                                    </p>
+                                )
                             ) : file ? (
                                 <p className="text-[13px] font-black text-slate-900 dark:text-slate-50 truncate max-w-[120px] sm:max-w-[200px] uppercase tracking-tighter font-premium">
                                     {file.name}
