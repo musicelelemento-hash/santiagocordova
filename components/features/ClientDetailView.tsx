@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { Client, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, StoredFile, Task, TaskStatus } from '../../types';
-import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, safeFormat, getWhatsAppUrl, requiresIva } from '../../services/sri';
+import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, safeFormat, getWhatsAppUrl, requiresIva, generateDeclarationWhatsAppMessage } from '../../services/sri';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../../services/geminiService';
 import { extractDataFromSriPdf, extractDataFromDeclarationPdf, fileToBase64 } from '../../services/pdfExtraction';
 import { getClientServiceFee } from '../../services/clientService';
@@ -135,6 +135,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [activeSection, setActiveSection] = useState<'overview' | 'actions' | 'notes'>('overview');
 
     const [mismatchData, setMismatchData] = useState<{ ruc: string, name: string } | null>(null);
+    const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string } | null>(null);
 
     const [isSummarizing, setIsSummarizing] = useState(false);
     const [summary, setSummary] = useState('');
@@ -368,6 +369,26 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             onSave(updatedClient);
             
             toast.success(extractedData ? `✅ Formulario ${extractedData.formType} validado y guardado.` : "Comprobante guardado.");
+
+            if (uploadingTarget.type === 'iva' || uploadingTarget.type === 'renta') {
+                const targetPeriod = uploadingTarget.period || getPeriod(updatedClient, new Date());
+                const feeNum = getClientServiceFee(updatedClient, serviceFees, targetPeriod);
+                const generatedMsg = generateDeclarationWhatsAppMessage(
+                    updatedClient.name,
+                    uploadingTarget.type === 'iva' ? 'IVA' : 'Impuesto a la Renta',
+                    targetPeriod,
+                    feeNum,
+                    false
+                );
+                
+                if (updatedClient.phones?.length) {
+                    setWhatsAppPrompt({
+                        clientName: updatedClient.name,
+                        phone: updatedClient.phones[0].replace(/\D/g, ''),
+                        message: generatedMsg
+                    });
+                }
+            }
         } catch (error) {
             toast.error("Error al procesar el documento.");
             setCloudStatus('error');
@@ -824,6 +845,53 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         <p className="mb-6">¿Proceder con {confirmation?.action === 'declare' ? 'declaración' : 'pago'} de {confirmation ? formatPeriodForDisplay(confirmation.period) : ''}?</p>
                         <button onClick={() => handleConfirmAction(false)} className="w-full py-4 bg-brand-navy text-white font-semibold rounded-2xl text-xs uppercase tracking-widest">Confirmar</button>
                     </div>
+                </Modal>
+
+                <Modal isOpen={!!whatsAppPrompt} onClose={() => setWhatsAppPrompt(null)} title="🚀 Notificar por WhatsApp" size="2xl">
+                    {whatsAppPrompt && (
+                        <div className="space-y-6 p-4">
+                            <div className="p-4 bg-slate-50 dark:bg-surface-low rounded-2xl border border-slate-100 dark:border-white/5 space-y-2">
+                                <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                                    <span>Destinatario</span>
+                                    <span className="text-emerald-500 font-black">Cliente Activo</span>
+                                </div>
+                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                    {whatsAppPrompt.clientName} ({whatsAppPrompt.phone})
+                                </p>
+                            </div>
+                            
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block ml-1">
+                                    Mensaje Personalizable
+                                </label>
+                                <textarea
+                                    value={whatsAppPrompt.message}
+                                    onChange={(e) => setWhatsAppPrompt({ ...whatsAppPrompt, message: e.target.value })}
+                                    className="w-full h-40 px-5 py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/10 outline-none focus:ring-2 focus:ring-primary/20 text-slate-800 dark:text-slate-100 text-sm font-medium leading-relaxed resize-none shadow-inner"
+                                    placeholder="Escribe el mensaje aquí..."
+                                />
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setWhatsAppPrompt(null)}
+                                    className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-500 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95"
+                                >
+                                    Omitir
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        window.open(`https://wa.me/${whatsAppPrompt.phone}?text=${encodeURIComponent(whatsAppPrompt.message)}`, "_blank");
+                                        setWhatsAppPrompt(null);
+                                    }}
+                                    className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                                >
+                                    <MessageCircle size={14} strokeWidth={2.5} />
+                                    Enviar WhatsApp
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </Modal>
                 <Modal isOpen={isReceiptModalOpen} onClose={() => setIsReceiptModalOpen(false)} title="Recibo">
                     {receiptData && (

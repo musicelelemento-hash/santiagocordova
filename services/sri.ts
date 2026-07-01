@@ -398,3 +398,35 @@ export const fetchSRIPublicData = async (identifier: string): Promise<SRIPublicD
     }
     return null;
 };
+
+/**
+ * Generates a localized, time-aware WhatsApp notification message for tax declarations.
+ */
+export const generateDeclarationWhatsAppMessage = (
+    clientName: string,
+    type: string,
+    period: string,
+    amount: number,
+    isPaid: boolean
+): string => {
+    const now = new Date();
+    const hour = now.getHours();
+    let greeting = 'Buen día';
+    if (hour >= 12 && hour < 19) greeting = 'Buenas tardes';
+    else if (hour >= 19 || hour < 5) greeting = 'Buenas noches';
+
+    const name = clientName.split(' ')[0];
+    const formattedPeriod = formatPeriodForDisplay(period);
+    
+    let msg = `¡Hola ${name}! 👋 ${greeting}. Le saludo de SantiagoCordova.com. Le informo que su obligación de ${type} correspondiente a ${formattedPeriod} ya ha sido procesada con éxito en el SRI. Adjunto el comprobante de la declaración.\n\n`;
+    
+    if (isPaid) {
+        msg += `El cobro de honorarios por este trámite se encuentra pagado. ¡Muchas gracias por su puntualidad!`;
+    } else if (amount > 0) {
+        msg += `El valor total de honorarios es de $${amount.toFixed(2)}. Puede realizar el pago por transferencia o depósito.\n\n¡Muchas gracias por su confianza!`;
+    } else {
+        msg += `¡Muchas gracias por su confianza!`;
+    }
+    
+    return msg;
+};

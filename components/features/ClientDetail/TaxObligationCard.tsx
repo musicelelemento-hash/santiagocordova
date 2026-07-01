@@ -148,24 +148,38 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                                 <LucideIcons.X size={16} strokeWidth={2} />
                             </button>
                         )}
-                        <button
-                            onClick={onDeclare}
-                            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 ${
-                                overdueStatus
-                                    ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-200 dark:shadow-rose-500/20'
-                                    : 'bg-slate-900 dark:bg-primary text-white hover:bg-slate-800 dark:hover:bg-primary-low shadow-md'
-                            }`}
-                        >
-                            <LucideIcons.Send size={13} strokeWidth={2.5} />
-                            {overdueStatus ? 'Declarar (Vencido)' : 'Registrar Declaración'}
-                        </button>
-                        {onUpload && (
+                        {onUpload ? (
+                            <>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onUpload(); }}
+                                    className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 ${
+                                        overdueStatus
+                                            ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-200 dark:shadow-rose-500/20'
+                                            : 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-400 shadow-md'
+                                    }`}
+                                >
+                                    <LucideIcons.UploadCloud size={14} strokeWidth={2.5} />
+                                    {overdueStatus ? 'Subir Comprobante (Vencido)' : 'Subir Comprobante'}
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onDeclare(); }}
+                                    title="Registrar declaración manualmente sin PDF (emergencia)"
+                                    className="p-2.5 bg-white dark:bg-surface-low/50 border border-slate-200 dark:border-white/10 rounded-xl text-slate-400 hover:text-emerald-500 hover:border-emerald-500/30 transition-all active:scale-90 flex-shrink-0"
+                                >
+                                    <LucideIcons.Check size={16} strokeWidth={2.5} />
+                                </button>
+                            </>
+                        ) : (
                             <button
-                                onClick={onUpload}
-                                title="Subir comprobante PDF"
-                                className="p-2.5 bg-white dark:bg-surface-low/50 border border-slate-200 dark:border-white/10 rounded-xl text-slate-400 hover:text-primary hover:border-primary/30 transition-all active:scale-90"
+                                onClick={(e) => { e.stopPropagation(); onDeclare(); }}
+                                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 ${
+                                    overdueStatus
+                                        ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-200 dark:shadow-rose-500/20'
+                                        : 'bg-slate-900 dark:bg-primary text-white hover:bg-slate-800 dark:hover:bg-primary-low shadow-md'
+                                }`}
                             >
-                                <LucideIcons.UploadCloud size={16} strokeWidth={2} />
+                                <LucideIcons.Send size={13} strokeWidth={2.5} />
+                                {overdueStatus ? 'Declarar (Vencido)' : 'Registrar Declaración'}
                             </button>
                         )}
                     </div>

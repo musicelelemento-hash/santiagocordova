@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as LucideIcons from 'lucide-react';
 import { Client, DeclarationStatus, TaxRegime, Declaration } from '../../types';
-import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay } from '../../services/sri';
+import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay, generateDeclarationWhatsAppMessage } from '../../services/sri';
 import { useAppStore } from '../../store/useAppStore';
 import { getClientServiceFee } from '../../services/clientService';
 import { TaxObligationCard } from './ClientDetail/TaxObligationCard';
 import { useToast } from '../../context/ToastContext';
 import { fileToBase64 } from '../../services/pdfExtraction';
+import { Modal } from '../ui/Modal';
 
 interface ClientWorkspaceModalProps {
     isOpen: boolean;
@@ -27,6 +28,7 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
     const [activePeriod, setActivePeriod] = useState<string>('');
     const [isAnalyzingPdf, setIsAnalyzingPdf] = useState(false);
     const [uploadingTarget, setUploadingTarget] = useState<{ type: string; period?: string } | null>(null);
+    const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string } | null>(null);
     const proofInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -138,6 +140,23 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
 
             updateClient(client.id, { declarations: updatedHistory });
             toast.success("Comprobante guardado correctamente.");
+
+            const feeNum = getClientServiceFee(client, serviceFees, targetPeriod);
+            const generatedMsg = generateDeclarationWhatsAppMessage(
+                client.name,
+                uploadingTarget.type === 'iva' ? 'IVA' : 'Impuesto a la Renta',
+                targetPeriod,
+                feeNum,
+                false
+            );
+
+            if (client.phones?.length) {
+                setWhatsAppPrompt({
+                    clientName: client.name,
+                    phone: client.phones[0].replace(/\D/g, ''),
+                    message: generatedMsg
+                });
+            }
         } catch (error) {
             toast.error("Error al procesar el documento.");
         } finally {
@@ -317,6 +336,53 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
                 </div>
             )}
             <input type="file" ref={proofInputRef} className="sr-only" onChange={handleProofUpload} accept=".pdf,image/*" />
+
+            <Modal isOpen={!!whatsAppPrompt} onClose={() => setWhatsAppPrompt(null)} title="🚀 Notificar por WhatsApp" size="2xl">
+                {whatsAppPrompt && (
+                    <div className="space-y-6 p-4">
+                        <div className="p-4 bg-slate-50 dark:bg-surface-low rounded-2xl border border-slate-100 dark:border-white/5 space-y-2">
+                            <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                                <span>Destinatario</span>
+                                <span className="text-emerald-500 font-black">Cliente Activo</span>
+                            </div>
+                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                {whatsAppPrompt.clientName} ({whatsAppPrompt.phone})
+                            </p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block ml-1">
+                                Mensaje Personalizable
+                            </label>
+                            <textarea
+                                value={whatsAppPrompt.message}
+                                onChange={(e) => setWhatsAppPrompt({ ...whatsAppPrompt, message: e.target.value })}
+                                className="w-full h-40 px-5 py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/10 outline-none focus:ring-2 focus:ring-primary/20 text-slate-800 dark:text-slate-100 text-sm font-medium leading-relaxed resize-none shadow-inner"
+                                placeholder="Escribe el mensaje aquí..."
+                            />
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setWhatsAppPrompt(null)}
+                                className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-500 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95"
+                            >
+                                Omitir
+                            </button>
+                            <button
+                                onClick={() => {
+                                    window.open(`https://wa.me/${whatsAppPrompt.phone}?text=${encodeURIComponent(whatsAppPrompt.message)}`, "_blank");
+                                    setWhatsAppPrompt(null);
+                                }}
+                                className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                            >
+                                <LucideIcons.MessageCircle size={14} strokeWidth={2.5} />
+                                Enviar WhatsApp
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };
