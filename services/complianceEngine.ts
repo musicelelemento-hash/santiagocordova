@@ -87,7 +87,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
     const rentaPeriod = (currentYear - 1).toString();
 
     // 1. IVA (Mensual / Semestral)
-    const clientIvaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
+    const clientIvaFreq = client.taxProfile?.ivaFrequency || (client.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : (client.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual'));
     const shouldIncludeIva = (frequency === 'all') || 
                             (frequency === 'Mensual' && clientIvaFreq === 'Mensual') ||
                             (frequency === 'Semestral' && clientIvaFreq === 'Semestral');
@@ -284,7 +284,7 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
     
     // IVA
     if (requiresIva(client)) {
-        const clientFreq = client.taxProfile?.ivaFrequency || 'Mensual';
+        const clientFreq = client.taxProfile?.ivaFrequency || (client.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : (client.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual'));
         if (isSemester && clientFreq === 'Semestral') {
             obligations.push({ type: 'IVA', label: 'IVA Semestral' });
         } else if (!isSemester && clientFreq === 'Mensual') {
@@ -523,7 +523,7 @@ import { getClientServiceFee } from './clientService';
 
 export const getActivePeriodsForClient = (client: Client, date: Date = new Date()): string[] => {
     const periods: string[] = [];
-    const ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
+    const ivaFreq = client.taxProfile?.ivaFrequency || (client.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : (client.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual'));
     
     // We check monthly or semestral periods
     // Determine the floor period for this client

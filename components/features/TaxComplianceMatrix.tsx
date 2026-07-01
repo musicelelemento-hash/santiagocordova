@@ -62,10 +62,12 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         } else if (frequency === 'Semestral') {
             const currentYear = today.getFullYear();
             if (selectedYear < currentYear) {
+                // Año pasado: ambos semestres ya finalizaron
                 result.push(`${selectedYear}-S2`);
                 result.push(`${selectedYear}-S1`);
             } else {
-                if (today.getMonth() >= 6) {
+                // Año actual: S2 solo visible a partir de Diciembre (mes 11)
+                if (today.getMonth() >= 11) {
                     result.push(`${selectedYear}-S2`);
                 }
                 result.push(`${selectedYear}-S1`);
@@ -75,12 +77,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     }, [frequency, selectedYear]);
 
     const filteredClients = useMemo(() => {
-        return clients.filter(c => 
-            !c.isDeleted && 
-            c.isActive && 
-            c.taxProfile?.ivaFrequency === frequency &&
-            (c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.ruc.includes(searchTerm))
-        ).sort((a, b) => {
+        return clients.filter(c => {
+            const clientFreq = c.taxProfile?.ivaFrequency ||
+                (c.regime === 'RimpeEmprendedor' ? 'Semestral' :
+                 c.regime === 'RimpeNegocioPopular' ? 'Ninguno' : 'Mensual');
+            return (
+                !c.isDeleted &&
+                c.isActive &&
+                clientFreq === frequency &&
+                (c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.ruc.includes(searchTerm))
+            );
+        }).sort((a, b) => {
             const digitA = parseInt(a.ruc[8], 10) === 0 ? 10 : parseInt(a.ruc[8], 10);
             const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
             return digitA - digitB || a.name.localeCompare(b.name);
@@ -133,7 +140,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
                         className="bg-slate-100 dark:bg-black/25 text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl border border-slate-200 dark:border-white/10 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-sm"
                     >
-                        {[2026, 2025, 2024].map(y => (
+                        {[2026, 2025].map(y => (
                             <option key={y} value={y} className="bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white">{y}</option>
                         ))}
                     </select>
@@ -287,7 +294,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     >
                                                         {copiedRuc === client.ruc ? '✓ RUC copiado' : (client.tradeName || client.name)}
                                                     </button>
-                                                    <span className="text-[9px] font-mono font-bold text-slate-400 tracking-widest mt-1">
+                                                    <span
+                                                        title="Clic para copiar RUC"
+                                                        onClick={(e) => { e.stopPropagation(); handleCopyRuc(client.ruc); }}
+                                                        className="text-[9px] font-mono font-bold text-slate-400 tracking-widest mt-1 cursor-pointer hover:text-primary transition-colors select-none"
+                                                    >
                                                         {client.ruc}
                                                     </span>
                                                 </div>
