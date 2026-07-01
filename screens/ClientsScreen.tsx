@@ -1575,6 +1575,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 title="Agregar Nuevo Cliente"
+                size="4xl"
             >
                 <ClientForm
                     onSubmit={handleCreateClient}
