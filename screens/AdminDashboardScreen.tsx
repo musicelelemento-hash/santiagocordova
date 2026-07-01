@@ -23,6 +23,10 @@ import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCon
 import { useCampaignContext } from '../hooks/useCampaignContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { CampaignBanner, CampaignProgress } from '../components/ui/CampaignBanner';
+import { Modal } from '../components/ui/Modal';
+import { fileToBase64 } from '../services/pdfExtraction';
+import { getClientServiceFee } from '../services/clientService';
+import { generateDeclarationWhatsAppMessage } from '../services/sri';
 
 
 interface AdminDashboardScreenProps {
@@ -96,6 +100,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [isProcessing, setIsProcessing] = useState(false);
     const [workspaceClient, setWorkspaceClient] = useState<{ client: Client, period?: string } | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
+    const mesaFileInputRef = React.useRef<HTMLInputElement>(null);
 
     // Mesa de Trabajo Táctica — estados faltantes
     const [mesaTrabajoTab, setMesaTrabajoTab] = useState<'mensual' | 'semestral'>('mensual');
