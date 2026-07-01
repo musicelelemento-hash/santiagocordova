@@ -38,14 +38,18 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      style={{
+        background: 'rgba(0,0,0,0.75)',
+        backdropFilter: 'blur(12px)',
+        overflow: 'hidden'
+      }}
       onClick={handleBackdropClick}
     >
       <div
         className={`relative w-full ${modalSize} flex flex-col rounded-[2rem] overflow-hidden shadow-2xl`}
         style={{
-          maxHeight: '92vh',
+          maxHeight: 'calc(100vh - 3rem)',
           background: 'linear-gradient(145deg, #0f172a 0%, #1e293b 100%)',
           border: '1px solid rgba(255,255,255,0.07)',
           boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset',
