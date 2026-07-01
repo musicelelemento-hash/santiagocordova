@@ -369,6 +369,109 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         filter === 'digital-mando' ? activeList.filter(c => c.taxProfile?.ivaFrequency === 'Ninguno' || (!c.taxProfile?.ivaFrequency && c.regime === TaxRegime.RimpeNegocioPopular)) : []
     , [activeList, filter]);
 
+    const monthlyPeriodStr = useMemo(() => {
+        const lastMonthDate = subMonths(new Date(), 1);
+        return format(lastMonthDate, 'yyyy-MM'); // e.g. "2026-06"
+    }, []);
+
+    const semestralPeriodStr = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        return `${currentYear}-S1`; // e.g. "2026-S1"
+    }, []);
+
+    const mesaTrabajoList = useMemo(() => {
+        const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
+        const targetFreq = mesaTrabajoTab === 'mensual' ? 'Mensual' : 'Semestral';
+
+        return clients.filter(c => {
+            if (c.isDeleted || !c.isActive) return false;
+            
+            const freq = c.taxProfile?.ivaFrequency || (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : (c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual'));
+            if (freq !== targetFreq) return false;
+
+            const dec = (c.declarations || []).find(d => d.period === targetPeriod);
+            const isDone = dec?.status === DeclarationStatus.Enviada || dec?.status === DeclarationStatus.Pagada || !!dec?.proof_file;
+            
+            return !isDone;
+        }).sort((a, b) => a.name.localeCompare(b.name));
+    }, [clients, mesaTrabajoTab, monthlyPeriodStr, semestralPeriodStr]);
+
+    const handleCopyRuc = (ruc: string, name: string) => {
+        navigator.clipboard.writeText(ruc);
+        toast.success(`📋 RUC de ${name} copiado al portapapeles`);
+    };
+
+    const handleMesaUploadClick = (client: Client, period: string) => {
+        setMesaUploadingTarget({ client, period });
+        mesaFileInputRef.current?.click();
+    };
+
+    const handleMesaFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !mesaUploadingTarget) return;
+
+        toast.info("Procesando comprobante de declaración...");
+        try {
+            const base64 = await fileToBase64(file);
+            const storedFile = {
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                lastModified: Date.now(),
+                content: base64
+            };
+
+            const client = mesaUploadingTarget.client;
+            const targetPeriod = mesaUploadingTarget.period;
+
+            const updatedHistory = [...(client.declarations || [])];
+            const idx = updatedHistory.findIndex(d => d.period === targetPeriod);
+            
+            if (idx !== -1) {
+                updatedHistory[idx] = {
+                    ...updatedHistory[idx],
+                    proof_file: storedFile,
+                    status: DeclarationStatus.Enviada,
+                    updatedAt: new Date().toISOString()
+                };
+            } else {
+                updatedHistory.push({
+                    period: targetPeriod,
+                    status: DeclarationStatus.Enviada,
+                    is_paid: false,
+                    updatedAt: new Date().toISOString(),
+                    proof_file: storedFile
+                });
+            }
+
+            updateClient(client.id, { declarations: updatedHistory });
+            toast.success(`✅ Comprobante de ${client.name} registrado con éxito.`);
+
+            // Generar y activar el modal de WhatsApp
+            const feeNum = getClientServiceFee(client, serviceFees, targetPeriod);
+            const generatedMsg = generateDeclarationWhatsAppMessage(
+                client.name,
+                mesaTrabajoTab === 'mensual' ? 'IVA' : 'Impuesto a la Renta',
+                targetPeriod,
+                feeNum,
+                false
+            );
+
+            if (client.phones?.length) {
+                setWhatsAppPrompt({
+                    clientName: client.name,
+                    phone: client.phones[0].replace(/\D/g, ''),
+                    message: generatedMsg
+                });
+            }
+        } catch (err) {
+            toast.error("Error al procesar el archivo.");
+        } finally {
+            setMesaUploadingTarget(null);
+            if (mesaFileInputRef.current) mesaFileInputRef.current.value = '';
+        }
+    };
+
 
     // ... (handleAction remains same) ...
     const handleAction = (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate' | 'restore' | 'purge', customPeriod?: string) => {
@@ -1277,6 +1380,109 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 </div>
             </div>
 
+            {/* ── MESA DE TRABAJO TÁCTICA ── */}
+            <div className="relative z-30 px-4 sm:px-0 mt-8">
+                <div className="bg-white dark:bg-[hsl(222,47%,4%)] rounded-[2.5rem] border border-slate-200/60 dark:border-white/[0.06] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20">
+                                <LucideIcons.Briefcase size={16} />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] font-premium">Mesa de Trabajo Táctica</h3>
+                                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Campaña Activa 1 de Julio</p>
+                            </div>
+                        </div>
+                        
+                        <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200/40 dark:border-white/5">
+                            <button
+                                onClick={() => setMesaTrabajoTab('mensual')}
+                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                                    mesaTrabajoTab === 'mensual'
+                                        ? 'bg-blue-600 text-white shadow-md'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                }`}
+                            >
+                                Mensuales (Junio)
+                            </button>
+                            <button
+                                onClick={() => setMesaTrabajoTab('semestral')}
+                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                                    mesaTrabajoTab === 'semestral'
+                                        ? 'bg-blue-600 text-white shadow-md'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                }`}
+                            >
+                                Semestrales (1er Semestre)
+                            </button>
+                        </div>
+                    </div>
+
+                    {mesaTrabajoList.length === 0 ? (
+                        <div className="p-12 text-center border-2 border-dashed border-slate-200 dark:border-white/5 rounded-3xl">
+                            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-500 mb-4">
+                                <LucideIcons.CheckCircle2 size={24} />
+                            </div>
+                            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">¡Todo al Día!</h4>
+                            <p className="text-xs text-slate-400 mt-1">No quedan clientes pendientes en esta campaña.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
+                            {mesaTrabajoList.map(c => {
+                                const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
+                                return (
+                                    <div 
+                                        key={c.id} 
+                                        className="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] p-6 hover:shadow-lg transition-all duration-300 flex flex-col justify-between gap-4"
+                                    >
+                                        <div className="flex justify-between items-start gap-4">
+                                            <div className="min-w-0">
+                                                <h4 className="text-xs font-black text-slate-800 dark:text-slate-50 uppercase tracking-tight font-premium truncate">{c.name}</h4>
+                                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                                    <span className="px-2.5 py-1 bg-slate-200/50 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[8px] font-bold font-mono tracking-widest rounded-lg">
+                                                        {c.ruc}
+                                                    </span>
+                                                    <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-bold uppercase rounded-lg">
+                                                        {c.regime}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <button
+                                                onClick={() => handleCopyRuc(c.ruc, c.name)}
+                                                className="py-3 bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/20 border border-slate-200/70 dark:border-white/5 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 active:scale-95"
+                                                title="Copiar RUC"
+                                            >
+                                                <LucideIcons.Copy size={12} strokeWidth={2.5} />
+                                                <span>RUC</span>
+                                            </button>
+                                            <button
+                                                onClick={() => window.open("https://srienlinea.sri.gob.ec", "_blank")}
+                                                className="py-3 bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/20 border border-slate-200/70 dark:border-white/5 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 active:scale-95"
+                                                title="Abrir SRI"
+                                            >
+                                                <LucideIcons.ExternalLink size={12} strokeWidth={2.5} />
+                                                <span>Portal</span>
+                                            </button>
+                                            <button
+                                                onClick={() => handleMesaUploadClick(c, targetPeriod)}
+                                                className="py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-lg shadow-blue-500/10"
+                                                title="Subir Comprobante PDF"
+                                            >
+                                                <LucideIcons.UploadCloud size={12} strokeWidth={2.5} />
+                                                <span>Subir</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Critical Alerts Panel Refinado */}
             {(expiringSignatures.length > 0 || activeRentaRefunds.length > 0) && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-6">
@@ -1437,6 +1643,54 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 client={workspaceClient?.client || null}
                 initialPeriod={workspaceClient?.period}
             />
+
+            <Modal isOpen={!!whatsAppPrompt} onClose={() => setWhatsAppPrompt(null)} title="🚀 Notificar por WhatsApp" size="2xl">
+                {whatsAppPrompt && (
+                    <div className="space-y-6 p-4">
+                        <div className="p-4 bg-slate-50 dark:bg-surface-low rounded-2xl border border-slate-100 dark:border-white/5 space-y-2">
+                            <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                                <span>Destinatario</span>
+                                <span className="text-emerald-500 font-black">Cliente Activo</span>
+                            </div>
+                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                {whatsAppPrompt.clientName} ({whatsAppPrompt.phone})
+                            </p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block ml-1">
+                                Mensaje Personalizable
+                            </label>
+                            <textarea
+                                value={whatsAppPrompt.message}
+                                onChange={(e) => setWhatsAppPrompt({ ...whatsAppPrompt, message: e.target.value })}
+                                className="w-full h-40 px-5 py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/10 outline-none focus:ring-2 focus:ring-primary/20 text-slate-800 dark:text-slate-100 text-sm font-medium leading-relaxed resize-none shadow-inner"
+                                placeholder="Escribe el mensaje aquí..."
+                            />
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setWhatsAppPrompt(null)}
+                                className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-500 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95"
+                            >
+                                Omitir
+                            </button>
+                            <button
+                                onClick={() => {
+                                    window.open(`https://wa.me/${whatsAppPrompt.phone}?text=${encodeURIComponent(whatsAppPrompt.message)}`, "_blank");
+                                    setWhatsAppPrompt(null);
+                                }}
+                                className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                            >
+                                <LucideIcons.MessageCircle size={14} strokeWidth={2.5} />
+                                Enviar WhatsApp
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+            <input type="file" ref={mesaFileInputRef} onChange={handleMesaFileChange} className="hidden" accept=".pdf,image/*" />
 
             {/* Renta Refund Floating Orb */}
             {activeRentaRefunds.length > 0 && (
