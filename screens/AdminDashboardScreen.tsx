@@ -97,6 +97,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [workspaceClient, setWorkspaceClient] = useState<{ client: Client, period?: string } | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+    // Mesa de Trabajo Táctica — estados faltantes
+    const [mesaTrabajoTab, setMesaTrabajoTab] = useState<'mensual' | 'semestral'>('mensual');
+    const [mesaUploadingTarget, setMesaUploadingTarget] = useState<string | null>(null);
+    const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ client: Client; message: string; fileUrl: string } | null>(null);
+
     // Persistence Effect
     React.useEffect(() => {
         sessionStorage.setItem('dashboard_filter', filter);
