@@ -403,7 +403,12 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             const isDone = dec?.status === DeclarationStatus.Enviada || dec?.status === DeclarationStatus.Pagada || !!dec?.proof_file;
             
             return !isDone;
-        }).sort((a, b) => a.name.localeCompare(b.name));
+        }).sort((a, b) => {
+            // Orden por 9no dígito del RUC = orden de vencimiento SRI
+            const digitA = parseInt(a.ruc[8], 10) === 0 ? 10 : parseInt(a.ruc[8], 10);
+            const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
+            return digitA - digitB || a.name.localeCompare(b.name);
+        });
     }, [clients, mesaTrabajoTab, monthlyPeriodStr, semestralPeriodStr]);
 
     const handleCopyRuc = (ruc: string, name: string) => {
