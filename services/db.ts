@@ -258,8 +258,8 @@ export const db = {
                     'DELETE': 'removed'
                 };
                 let data = SupabaseService.mapClientFromDb(payload.new || payload.old);
-                // JOIN: Critical for Supabase realtime updates
-                data = await this.rejoinLargeFiles(data);
+                // JOIN: Realtime updates will be lazy loaded by the UI when needed
+                // data = await this.rejoinLargeFiles(data);
                 
                 const change = {
                     type: typeMap[payload.eventType] || 'modified',
@@ -276,10 +276,8 @@ export const db = {
         return onSnapshot(colRef, async (snapshot) => {
             const changes = await Promise.all(snapshot.docChanges().map(async change => {
                 let data = { id: change.doc.id, ...change.doc.data() };
-                // REJOIN: If there are split files, we might want to fetch them
-                // Optimization: Only rejoin if the user actually needs the file (lazy loading would be better)
-                // for now, we rejoin to maintain compatibility with the app logic.
-                data = await this.rejoinLargeFiles(data);
+                // REJOIN: Split files will be lazy loaded by the UI when needed
+                // data = await this.rejoinLargeFiles(data);
                 return {
                     type: change.type as 'added' | 'modified' | 'removed',
                     data
@@ -356,11 +354,11 @@ export const db = {
                 const snapshot = await getDocs(colRef);
                 fsResults = await Promise.all(snapshot.docs.map(async doc => {
                     let data = { id: doc.id, ...doc.data() };
-                    // Optimization: rejoinLargeFiles can be slow if it does network requests
-                    // We rejoin only if it has the split prefix
-                    if (JSON.stringify(data).includes('__SPLIT__:')) {
-                        data = await this.rejoinLargeFiles(data);
-                    }
+                    // Optimization: rejoinLargeFiles can be slow if it does network requests.
+                    // Split files will be lazy loaded by the UI when needed.
+                    // if (JSON.stringify(data).includes('__SPLIT__:')) {
+                    //     data = await this.rejoinLargeFiles(data);
+                    // }
                     return data;
                 }));
                 console.log(`📡 Firestore Loaded: ${fsResults.length} records.`);

@@ -4,6 +4,7 @@ import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, fo
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../../services/geminiService';
 import { extractDataFromSriPdf, extractDataFromDeclarationPdf, fileToBase64 } from '../../services/pdfExtraction';
 import { getClientServiceFee } from '../../services/clientService';
+import { db } from '../../services/db';
 import { isPast, subMonths, subYears, addDays, getYear } from 'date-fns';
 import {
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy,
@@ -142,7 +143,39 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [confirmation, setConfirmation] = useState<{ action: 'declare' | 'pay'; period: string } | null>(null);
     const [isProcessingAction, setIsProcessingAction] = useState(false);
     const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
-    const [previewItem, setPreviewItem] = useState<Declaration | null>(null);
+    const [previewItem, setPreviewItemState] = useState<Declaration | null>(null);
+    const [isLoadingPdfPreview, setIsLoadingPdfPreview] = useState(false);
+
+    const setPreviewItem = async (item: Declaration | null) => {
+        if (!item) {
+            setPreviewItemState(null);
+            return;
+        }
+
+        if (item.proof_file?.content && (item.proof_file.content.startsWith('__SPLIT__:') || item.proof_file.content.startsWith('__SPLIT__Solid'))) {
+            setIsLoadingPdfPreview(true);
+            toast.info("Cargando documento desde la nube...");
+            try {
+                const resolved = await db.rejoinLargeFiles({ proof_file: item.proof_file });
+                if (resolved.proof_file) {
+                    setPreviewItemState({
+                        ...item,
+                        proof_file: resolved.proof_file
+                    });
+                } else {
+                    setPreviewItemState(item);
+                }
+            } catch (err) {
+                console.error("Error loading PDF preview:", err);
+                toast.error("No se pudo cargar el archivo desde la nube.");
+                setPreviewItemState(item);
+            } finally {
+                setIsLoadingPdfPreview(false);
+            }
+        } else {
+            setPreviewItemState(item);
+        }
+    };
     const [receiptData, setReceiptData] = useState<any | null>(null);
     const receiptRef = useRef<HTMLDivElement>(null);
 
@@ -715,11 +748,23 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         />
     );
 
-    const handleDownload = (decl: Declaration) => {
-        if (!decl.proof_file?.content) return;
+    const handleDownloadFile = async (file: StoredFile) => {
+        if (!file?.content) return;
+        let content = file.content;
+        if (content.startsWith('__SPLIT__:') || content.startsWith('__SPLIT__Solid')) {
+            toast.info("Descargando archivo desde la nube...");
+            try {
+                const resolved = await db.rejoinLargeFiles({ content: file.content });
+                content = resolved.content || '';
+            } catch (err) {
+                console.error("Error resolviendo archivo grande:", err);
+                toast.error("Error al descargar el archivo desde la nube.");
+                return;
+            }
+        }
         const link = document.createElement('a');
-        link.href = decl.proof_file.content;
-        link.download = decl.proof_file.name;
+        link.href = content;
+        link.download = file.name;
         link.click();
     };
 
@@ -728,7 +773,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             client={client}
             editedClient={editedClient}
             setPreviewItem={setPreviewItem}
-            handleDownload={handleDownload}
+            handleDownload={(decl) => decl.proof_file && handleDownloadFile(decl.proof_file)}
             handleWhatsAppPaymentRequest={handleWhatsAppPaymentRequest}
             handleShowReceipt={handleShowReceipt}
             handleRevertPayment={handleRevertPayment}
@@ -753,6 +798,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             proofInputRef={proofInputRef}
             setPreviewItem={setPreviewItem}
             notes={client.structuredNotes || []}
+            onDownloadFile={handleDownloadFile}
         />
     );
 
@@ -769,8 +815,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 md:p-6 bg-slate-100/40 backdrop-blur-3xl overflow-hidden animate-in fade-in duration-700">
             <div className="bg-slate-50 w-full h-full md:max-h-[96vh] md:max-w-[95vw] lg:max-w-[1400px] md:rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] flex flex-col relative overflow-hidden group/modal">
                 
-                {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed) */}
-                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
+                {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed relative to modal) */}
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
                     <div className="flex items-center gap-1 p-1 bg-white/90 backdrop-blur-[40px] border border-slate-200 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] pointer-events-auto ring-1 ring-black/[0.05]">
                         {(['profile', 'history', 'vault', 'settings'] as const).map((tab) => (
                             <button
@@ -817,32 +863,32 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     <X size={24} className="group-hover:rotate-90 transition-transform duration-700" />
                 </button>
 
-                <div className="flex-1 overflow-y-auto no-scrollbar scroll-smooth relative">
-                    <div className="p-5 sm:p-14 pb-40 relative z-10 flex flex-col lg:flex-row gap-8 lg:gap-12">
-                        {/* LEFT COLUMN - Profile Header (Sticky on Desktop) */}
-                        <div className="w-full lg:w-1/3 xl:w-1/4 lg:sticky lg:top-14 self-start">
-                            <ClientHeader
-                                client={client}
-                                onBack={onBack}
-                                totalDebt={totalDebt}
-                                isFullyPaid={isFullyPaid}
-                                isFullyDeclared={isFullyDeclared}
-                                complianceStats={complianceStats}
-                                isEditing={isEditing}
-                                onToggleEdit={() => isEditing ? handleSave() : setIsEditing(true)}
-                                editedClient={editedClient}
-                                setEditedClient={setEditedClient}
-                                onCopy={handleCopy}
-                                onWhatsApp={handleWhatsApp}
-                                onOpenSRI={handleOpenSRI}
-                                onShare={handleShareViaWhatsApp}
-                                onDelete={() => setIsDeleteConfirmOpen(true)}
-                                nextDeadline={nextDeadline}
-                            />
-                        </div>
+                <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+                    {/* LEFT COLUMN - Profile Header (Static/Scroll-independent on Desktop) */}
+                    <div className="w-full lg:w-[320px] xl:w-[360px] flex-none border-b lg:border-b-0 lg:border-r border-slate-200/50 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/50 p-6 lg:p-10 overflow-y-auto no-scrollbar">
+                        <ClientHeader
+                            client={client}
+                            onBack={onBack}
+                            totalDebt={totalDebt}
+                            isFullyPaid={isFullyPaid}
+                            isFullyDeclared={isFullyDeclared}
+                            complianceStats={complianceStats}
+                            isEditing={isEditing}
+                            onToggleEdit={() => isEditing ? handleSave() : setIsEditing(true)}
+                            editedClient={editedClient}
+                            setEditedClient={setEditedClient}
+                            onCopy={handleCopy}
+                            onWhatsApp={handleWhatsApp}
+                            onOpenSRI={handleOpenSRI}
+                            onShare={handleShareViaWhatsApp}
+                            onDelete={() => setIsDeleteConfirmOpen(true)}
+                            nextDeadline={nextDeadline}
+                        />
+                    </div>
 
-                        {/* RIGHT COLUMN - Main Content */}
-                        <div className="w-full lg:w-2/3 xl:w-3/4 animate-in fade-in slide-in-from-bottom-10 duration-1000 min-h-[700px] relative z-10">
+                    {/* RIGHT COLUMN - Main Tab Content */}
+                    <div className="flex-1 overflow-y-auto p-6 sm:p-10 pb-40 no-scrollbar relative scroll-smooth bg-white dark:bg-slate-950">
+                        <div className="max-w-[960px] mx-auto animate-in fade-in slide-in-from-bottom-10 duration-1000">
                             {activeTab === 'profile' && renderProfileTab()}
                             {activeTab === 'history' && renderHistoryTab()}
                             {activeTab === 'vault' && renderVaultTab()}
@@ -876,7 +922,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     onClose={() => setPreviewItem(null)}
                     declaration={previewItem}
                     client={client}
-                    onDownload={() => previewItem && handleDownload(previewItem)}
+                    onDownload={() => previewItem?.proof_file && handleDownloadFile(previewItem.proof_file)}
                 />
 
                 <Modal isOpen={!!confirmation} onClose={() => setConfirmation(null)} title="Confirmar Acción">

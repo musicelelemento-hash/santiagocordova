@@ -17,6 +17,7 @@ interface VaultTabProps {
     proofInputRef: React.RefObject<HTMLInputElement>;
     setPreviewItem: (item: Declaration | null) => void;
     notes: ClientNote[];
+    onDownloadFile?: (file: any) => void;
 }
 
 export const VaultTab: React.FC<VaultTabProps> = ({
@@ -29,7 +30,8 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     setUploadingTarget,
     proofInputRef,
     setPreviewItem,
-    notes
+    notes,
+    onDownloadFile
 }) => {
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
@@ -62,9 +64,9 @@ export const VaultTab: React.FC<VaultTabProps> = ({
 
             {/* Top Security Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <VaultCard icon={LucideIcons.ScanLine} label="Certificado RUC" file={editedClient.rucCertificate} onUpload={(f) => setEditedClient({ ...editedClient, rucCertificate: f })} />
-                <VaultCard icon={LucideIcons.FileText} label="Otros RUC PDF" file={editedClient.rucPdf} onUpload={(f) => setEditedClient({ ...editedClient, rucPdf: f })} />
-                <VaultCard icon={LucideIcons.FileKey} label="Firma Electrónica" file={editedClient.signatureFile} onUpload={(f) => setEditedClient({ ...editedClient, signatureFile: f })} />
+                <VaultCard icon={LucideIcons.ScanLine} label="Certificado RUC" file={editedClient.rucCertificate} onUpload={(f) => setEditedClient({ ...editedClient, rucCertificate: f })} onDownload={() => editedClient.rucCertificate && onDownloadFile?.(editedClient.rucCertificate)} />
+                <VaultCard icon={LucideIcons.FileText} label="Otros RUC PDF" file={editedClient.rucPdf} onUpload={(f) => setEditedClient({ ...editedClient, rucPdf: f })} onDownload={() => editedClient.rucPdf && onDownloadFile?.(editedClient.rucPdf)} />
+                <VaultCard icon={LucideIcons.FileKey} label="Firma Electrónica" file={editedClient.signatureFile} onUpload={(f) => setEditedClient({ ...editedClient, signatureFile: f })} onDownload={() => editedClient.signatureFile && onDownloadFile?.(editedClient.signatureFile)} />
                 
                 <VaultCard 
                     icon={LucideIcons.Smartphone} 
@@ -93,6 +95,10 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                             if (editedClient.rentaRefundResolutionFile) setEditedClient({ ...editedClient, rentaRefundResolutionFile: f });
                             else setEditedClient({ ...editedClient, elderlyDevolucionIvaResolutionFile: f });
                         }} 
+                        onDownload={() => {
+                            const file = editedClient.rentaRefundResolutionFile || editedClient.elderlyDevolucionIvaResolutionFile;
+                            file && onDownloadFile?.(file);
+                        }}
                     />
                 )}
             </div>
@@ -179,7 +185,10 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                                                 <span className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400 tracking-tight font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
                                                 <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1 font-premium">{formatPeriodForDisplay(decl.period)}</span>
                                             </div>
-                                            <button className="p-3 bg-slate-50 dark:bg-white/5 hover:bg-primary hover:text-white rounded-xl text-slate-300 transition-all shadow-sm">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); decl.proof_file && onDownloadFile?.(decl.proof_file); }}
+                                                className="p-3 bg-slate-50 dark:bg-white/5 hover:bg-primary hover:text-white rounded-xl text-slate-300 transition-all shadow-sm"
+                                            >
                                                 <LucideIcons.Download size={14} />
                                             </button>
                                         </div>
@@ -219,10 +228,16 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-premium">Monto Validado</span>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button className="p-3 bg-white dark:bg-white/5 hover:bg-slate-900 dark:hover:bg-primary hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-100 dark:border-white/5">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); decl.proof_file && onDownloadFile?.(decl.proof_file); }}
+                                                className="p-3 bg-white dark:bg-white/5 hover:bg-slate-900 dark:hover:bg-primary hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-100 dark:border-white/5"
+                                            >
                                                 <LucideIcons.Download size={16} />
                                             </button>
-                                            <button className="p-3 bg-white dark:bg-white/5 hover:bg-primary hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-100 dark:border-white/5">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); setPreviewItem(decl); }}
+                                                className="p-3 bg-white dark:bg-white/5 hover:bg-primary hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-100 dark:border-white/5"
+                                            >
                                                 <LucideIcons.Eye size={16} />
                                             </button>
                                         </div>
@@ -265,10 +280,16 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                                             </td>
                                             <td className="px-10 py-6 text-right pr-12">
                                                 <div className="flex justify-end gap-3 opacity-20 group-hover:opacity-100 transition-opacity">
-                                                    <button className="p-2.5 hover:bg-white dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shadow-sm">
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); decl.proof_file && onDownloadFile?.(decl.proof_file); }}
+                                                        className="p-2.5 hover:bg-white dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shadow-sm"
+                                                    >
                                                         <LucideIcons.Download size={16} />
                                                     </button>
-                                                    <button className="p-2.5 hover:bg-white dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shadow-sm">
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); setPreviewItem(decl); }}
+                                                        className="p-2.5 hover:bg-white dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shadow-sm"
+                                                    >
                                                         <LucideIcons.Eye size={16} />
                                                     </button>
                                                 </div>
