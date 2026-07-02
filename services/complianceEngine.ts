@@ -297,6 +297,9 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
         if (client.taxProfile?.requiresAnexosGastos) {
             obligations.push({ type: 'ANEXO', label: 'Anexo Gastos' });
         }
+        if (client.taxProfile?.requiresAnexoPvp) {
+            obligations.push({ type: 'PVP', label: 'Anexo PVP' });
+        }
         if (client.taxProfile?.hasActiveDevolucionIva) {
             obligations.push({ type: 'DEVOLUCION', label: 'Dev. IVA' });
         }

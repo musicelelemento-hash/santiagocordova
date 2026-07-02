@@ -123,6 +123,28 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         return result;
     }, [frequency, matrixMode, selectedYear, today.getFullYear(), today.getMonth(), today.getDate()]);
 
+    const findDeclarationForOb = (clientDeclarations: Declaration[], period: string, obType: string) => {
+        return clientDeclarations.find(dh => {
+            let targetPeriod = period;
+            if (obType === 'ICE') {
+                targetPeriod = `${period}:ICE`;
+            } else if (obType === 'ANEXO') {
+                if (matrixMode === 'RENTA') {
+                    targetPeriod = `${period}:GAP`;
+                } else {
+                    targetPeriod = `${period}:ANEXO_ICE`;
+                }
+            } else if (obType === 'PVP') {
+                targetPeriod = `${period}:PVP`;
+            } else if (obType === 'DEVOLUCION') {
+                targetPeriod = `${period}:DEV`;
+            }
+            const matchPeriod = dh.period === targetPeriod || dh.period === targetPeriod.replace(':', '-');
+            const matchType = dh.type === obType || (!dh.type && (obType === 'IVA' || obType === 'RENTA'));
+            return matchPeriod && matchType;
+        });
+    };
+
     // Check if client has uploaded all proofs for the displayed matrix periods
     const isClientUpToDate = (client: Client) => {
         return periods.every(p => {
@@ -130,10 +152,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             if (obligations.length === 0) return true;
             const declarations = client.declarations || [];
             return obligations.every(ob => {
-                const d = declarations.find(dh => 
-                    dh.period === p && 
-                    (dh.type === ob.type || (!dh.type && (ob.type === 'IVA' || ob.type === 'RENTA')))
-                );
+                const d = findDeclarationForOb(declarations, p, ob.type);
                 return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada || !!d.proof_file) && d.proof_file;
             });
         });
@@ -495,10 +514,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             
                                             // Determine if this cell is generally "Done" (all obligations met)
                                             const allObligationsDone = obligations.length > 0 && obligations.every(ob => {
-                                                const d = declarations.find(dh => 
-                                                    dh.period === p && 
-                                                    (dh.type === ob.type || (!dh.type && (ob.type === 'IVA' || ob.type === 'RENTA')))
-                                                );
+                                                const d = findDeclarationForOb(declarations, p, ob.type);
                                                 return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada || !!d.proof_file) && d.proof_file;
                                             });
 
@@ -506,10 +522,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 <td key={p} className={`px-2 py-4 border-r border-slate-200/50 dark:border-white/5 last:border-r-0 transition-colors ${allObligationsDone ? 'bg-emerald-50 dark:bg-emerald-900/10' : ''}`}>
                                                     <div className="flex flex-wrap justify-center gap-2 min-w-[70px]">
                                                         {obligations.map(ob => {
-                                                            const d = declarations.find(dh => 
-                                                                dh.period === p && 
-                                                                (dh.type === ob.type || (!dh.type && (ob.type === 'IVA' || ob.type === 'RENTA')))
-                                                            );
+                                                            const d = findDeclarationForOb(declarations, p, ob.type);
                                                             const hasProof = !!d?.proof_file;
                                                             const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid;
                                                             const isSent = d?.status === DeclarationStatus.Enviada || isPaid || hasProof;
