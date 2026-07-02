@@ -430,6 +430,31 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         }
     };
 
+    const handleTogglePriorityFromMatrix = (client: Client, period: string, type: TaxObligationType, isPriority: boolean) => {
+        const now = new Date().toISOString();
+        const updatedHistory = [...(client.declarations || [])];
+        const idx = updatedHistory.findIndex(d => d.period === period && d.type === type);
+        
+        if (idx !== -1) {
+            updatedHistory[idx] = {
+                ...updatedHistory[idx],
+                isPriority,
+                updatedAt: now
+            };
+        } else {
+            updatedHistory.push({
+                period,
+                type,
+                status: DeclarationStatus.Pendiente,
+                isPriority,
+                updatedAt: now
+            });
+        }
+        
+        updateClient(client.id, { declarations: updatedHistory });
+        toast.success(isPriority ? 'Prioridad de declaración fijada' : 'Prioridad quitada');
+    };
+
     const handleOpenClientDetails = (client: Client) => {
         setSelectedClient(client);
         setIsClientDetailsOpen(true);
@@ -1376,6 +1401,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 setPreviewItem({ client, declaration });
                             }}
                             onTogglePayment={handleTogglePaymentFromMatrix}
+                            onTogglePriority={handleTogglePriorityFromMatrix}
                         />
                     </motion.div>
                 ) : isWorkspaceView ? (

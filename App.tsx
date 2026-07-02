@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as LucideIcons from 'lucide-react';
 import { AdminDashboardScreen } from './screens/AdminDashboardScreen';
 import { ClientsScreen } from './screens/ClientsScreen';
@@ -108,6 +108,30 @@ const App: React.FC = () => {
   const [activeScreen, setActiveScreen] = useState<Screen>('home');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [previousScreen, setPreviousScreen] = useState<Screen | null>(null);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [isGlobalDropdownOpen, setIsGlobalDropdownOpen] = useState(false);
+  const globalSearchRef = useRef<HTMLDivElement>(null);
+
+  const globalSearchResults = useMemo(() => {
+    if (!globalSearchQuery.trim()) return [];
+    const query = globalSearchQuery.toLowerCase();
+    return clients.filter(c => !c.isDeleted && (
+      c.name.toLowerCase().includes(query) ||
+      (c.tradeName && c.tradeName.toLowerCase().includes(query)) ||
+      c.ruc.includes(query)
+    )).slice(0, 8);
+  }, [clients, globalSearchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (globalSearchRef.current && !globalSearchRef.current.contains(event.target as Node)) {
+        setIsGlobalDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [showSplash, setShowSplash] = useState(true);
 
   const [clientFilter, setClientFilter] = useState<ClientFilter | null>(null);
@@ -389,6 +413,73 @@ const App: React.FC = () => {
               <h1 className="text-xl font-light tracking-tight text-slate-800 dark:text-white capitalize">
                 {activeScreen === 'home' ? 'Resumen General' : activeScreen.replace('_', ' ')}
               </h1>
+            </div>
+
+            {/* Universal Search Bar */}
+            <div className="relative w-80 group max-w-md no-print">
+                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
+                    <LucideIcons.Search className="text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" size={16} />
+                </div>
+                <input 
+                    type="text"
+                    placeholder="Buscar por RUC o nombre..."
+                    value={globalSearchQuery}
+                    onChange={(e) => {
+                        setGlobalSearchQuery(e.target.value);
+                        setIsGlobalDropdownOpen(true);
+                    }}
+                    onFocus={() => setIsGlobalDropdownOpen(true)}
+                    className="w-full pl-10 pr-10 py-2.5 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-premium uppercase tracking-wider"
+                />
+                {globalSearchQuery && (
+                    <button 
+                        onClick={() => {
+                            setGlobalSearchQuery('');
+                            setIsGlobalDropdownOpen(false);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all z-10"
+                    >
+                        <LucideIcons.X size={12} />
+                    </button>
+                )}
+
+                {/* Floating Results Dropdown */}
+                {isGlobalDropdownOpen && (
+                    <div 
+                        ref={globalSearchRef}
+                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[400] max-h-80 overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-top-2 duration-300"
+                    >
+                        {globalSearchResults.length > 0 ? (
+                            <div className="p-2 space-y-1">
+                                {globalSearchResults.map((c) => (
+                                    <button
+                                        key={c.id}
+                                        onClick={() => {
+                                            navigate('clients', { clientIdToView: c.id });
+                                            setGlobalSearchQuery('');
+                                            setIsGlobalDropdownOpen(false);
+                                        }}
+                                        className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center justify-between group/item"
+                                    >
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide group-hover/item:text-primary transition-colors">
+                                                {c.tradeName || c.name}
+                                            </span>
+                                            <span className="text-[10px] font-mono font-bold text-slate-400 mt-1">
+                                                RUC: {c.ruc}
+                                            </span>
+                                        </div>
+                                        <LucideIcons.ArrowRight size={12} className="text-slate-400 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all" />
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="px-5 py-6 text-center text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                {globalSearchQuery ? 'Sin Resultados' : 'Escribe para buscar...'}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center space-x-6">

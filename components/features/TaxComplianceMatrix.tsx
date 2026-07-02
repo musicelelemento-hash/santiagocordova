@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime } from '../../types';
+import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime, TaxObligationType } from '../../types';
 import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod } from '../../services/sri';
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -14,6 +14,7 @@ interface TaxComplianceMatrixProps {
     onUploadReceipt: (client: Client, period: string) => void;
     onPreviewReceipt: (client: Client, declaration: Declaration) => void;
     onTogglePayment?: (client: Client, period: string, type: 'IVA' | 'RENTA', isPaid: boolean) => void;
+    onTogglePriority?: (client: Client, period: string, type: TaxObligationType, isPriority: boolean) => void;
     theme?: 'light' | 'dark';
     initialMode?: MatrixMode;
 }
@@ -24,6 +25,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     onUploadReceipt, 
     onPreviewReceipt,
     onTogglePayment,
+    onTogglePriority,
     theme = 'dark',
     initialMode = 'IVA'
 }) => {
@@ -159,6 +161,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     };
 
     const filteredClients = useMemo(() => {
+        const hasPriorityDeclaration = (c: Client) => {
+            return (c.declarations || []).some(d => d.isPriority && d.status === DeclarationStatus.Pendiente);
+        };
+
         return clients.filter(c => {
             const clientFreq = c.taxProfile?.ivaFrequency ||
                 (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' :
@@ -182,6 +188,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 matchesSearch
             );
         }).sort((a, b) => {
+            const priorityA = hasPriorityDeclaration(a);
+            const priorityB = hasPriorityDeclaration(b);
+            if (priorityA !== priorityB) {
+                return priorityA ? -1 : 1; // Prioritarios (true) primero, otros después
+            }
             if (isWorkspaceMode) {
                 const upToDateA = isClientUpToDate(a);
                 const upToDateB = isClientUpToDate(b);
@@ -535,21 +546,24 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                     key={`${p}-${ob.type}`}
                                                                     className={`group/ob relative flex flex-col items-center justify-center w-12 h-14 rounded-xl cursor-pointer transition-all duration-300 border ${
                                                                         isDone ? 'bg-emerald-500 text-white border-emerald-600 shadow-md shadow-emerald-500/30 hover:bg-emerald-600 hover:scale-110 z-10' : 
+                                                                        d?.isPriority ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/30 hover:bg-amber-600 hover:scale-110 z-10 animate-pulse' :
                                                                         isSent && !hasProof ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 border-amber-300 hover:bg-amber-200' :
                                                                         isOverdue ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-500 border-rose-200 hover:bg-rose-100' :
                                                                         'bg-slate-50 dark:bg-white/5 text-slate-400 border-slate-200 dark:border-white/10 hover:bg-slate-100 hover:text-slate-600'
                                                                     }`}
-                                                                    title={isDone ? `Ver PDF de ${ob.label}` : `Subir PDF para ${ob.label}`}
+                                                                    title={isDone ? `Ver PDF de ${ob.label}` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         if (hasProof) onPreviewReceipt(client, d!);
                                                                         else onUploadReceipt(client, p);
                                                                     }}
                                                                 >
-                                                                    <span className={`text-[8px] font-black tracking-wider uppercase mb-1 ${isDone ? 'opacity-90' : 'opacity-60'}`}>{ob.type}</span>
+                                                                    <span className={`text-[8px] font-black tracking-wider uppercase mb-1 ${isDone || d?.isPriority ? 'opacity-90' : 'opacity-60'}`}>{ob.type}</span>
                                                                     
                                                                     {isDone ? (
                                                                         <LucideIcons.FileCheck size={16} strokeWidth={2.5} className={isPaid ? 'text-white drop-shadow-md' : 'text-emerald-100'} />
+                                                                    ) : d?.isPriority ? (
+                                                                        <LucideIcons.Pin size={16} strokeWidth={2.5} className="text-white animate-bounce" />
                                                                     ) : isSent ? (
                                                                         <LucideIcons.AlertCircle size={16} strokeWidth={2.5} />
                                                                     ) : isOverdue ? (
@@ -558,7 +572,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         <LucideIcons.UploadCloud size={16} strokeWidth={2} className="opacity-50 group-hover/ob:opacity-100" />
                                                                     )}
 
-                                                                    {isDone && (
+                                                                    {isDone ? (
                                                                         <button
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
@@ -572,6 +586,21 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                             title={isPaid ? "Marcar Honorario como Pendiente" : "Marcar Honorario como Pagado"}
                                                                         >
                                                                             <LucideIcons.DollarSign size={8} strokeWidth={4} />
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                if (onTogglePriority) onTogglePriority(client, p, ob.type as any, !d?.isPriority);
+                                                                            }}
+                                                                            className={`absolute -top-1.5 -right-1.5 rounded-full p-0.5 shadow-sm transition-all hover:scale-125 z-20 ${
+                                                                                d?.isPriority 
+                                                                                    ? 'bg-amber-500 text-white shadow-amber-500/20' 
+                                                                                    : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-300/30 dark:border-slate-700/30'
+                                                                            }`}
+                                                                            title={d?.isPriority ? "Quitar Prioridad" : "Marcar como Prioridad"}
+                                                                        >
+                                                                            <LucideIcons.Pin size={8} strokeWidth={4} className={d?.isPriority ? 'rotate-45' : ''} />
                                                                         </button>
                                                                     )}
                                                                     {!hasProof && isOverdue && (

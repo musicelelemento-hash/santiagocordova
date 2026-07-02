@@ -77,6 +77,7 @@ export interface Declaration {
     transactionId?: string;
     amount?: number;
     reminders?: Array<{ date: string; channel: 'email' | 'whatsapp', type: ReminderType }>;
+    isPriority?: boolean;
     proof_file?: StoredFile;
 }
 
