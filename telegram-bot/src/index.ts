@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential } from './database_ops';
+import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -20,7 +20,7 @@ const pendingPdfs = new Map<string, { buffer: Buffer, data: ValidatedPDF }>();
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 if (!TELEGRAM_BOT_TOKEN) throw new Error("TELEGRAM_BOT_TOKEN must be set");
 
-const bot = new Bot(TELEGRAM_BOT_TOKEN);
+export const bot = new Bot(TELEGRAM_BOT_TOKEN);
 
 // Security: Whitelist authorized users
 // Clean quotes and whitespace from environment variable
@@ -121,6 +121,11 @@ bot.command('testcron', async (ctx) => {
     await triggerProactiveReport(bot);
 });
 
+bot.command('reporte', async (ctx) => {
+    await ctx.reply('⏳ Comandante, estoy preparando y consolidando el reporte operativo en tiempo real. Un momento...');
+    await triggerProactiveReport(bot);
+});
+
 
 // ─────────────────────────────────────────────────────────
 // PRE-AI SHORTCUT ENGINE — Zero tokens, instant responses
@@ -163,12 +168,45 @@ async function showClientSelection(
     });
 }
 
+async function showOperationalMenu(ctx: any) {
+    const kb = new InlineKeyboard()
+        .text('💰 Registrar Pago', 'baku_cmd:reg_payment').row()
+        .text('👤 Ver Claves SRI', 'baku_cmd:see_sri_key').row()
+        .text('🔑 Clave Firma Electrónica', 'baku_cmd:see_sig_key').row()
+        .text('📂 Descargar Firma (.p12)', 'baku_cmd:download_p12').row()
+        .text('📅 Cuándo Caduca Firma', 'baku_cmd:check_expiry').row()
+        .text('📄 Ver Comprobantes', 'baku_cmd:download_proof').row()
+        .text('📊 Reporte Rápido General', 'baku_cmd:quick_report');
+
+    await ctx.reply(
+        `🎯 *CENTRO DE OPERACIONES TÁCTICAS — SANTIAGO*\n\n` +
+        `Selecciona una acción directa para gestionar la cartera de clientes de forma inmediata:`,
+        {
+            parse_mode: 'Markdown',
+            reply_markup: kb
+        }
+    );
+}
+
 /**
  * Pre-AI shortcut engine. Returns true if the message was handled.
  * Uses inline keyboard buttons when multiple clients match — no context loss.
  */
 async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise<boolean> {
     const t = text.toLowerCase().trim();
+
+    // Trigger operational menu
+    if (['pagos', 'menú', 'menu', 'santiago', 'opciones', 'inicio', 'comenzar', 'baku'].includes(t)) {
+        await showOperationalMenu(ctx);
+        return true;
+    }
+
+    // Trigger proactive report
+    if (['reporte', 'reporte matutino', 'forzar reporte', 'reporte proactivo', 'enviar reporte'].includes(t)) {
+        await ctx.reply('⏳ Comandante, estoy preparando y consolidando el reporte operativo en tiempo real. Un momento...');
+        await triggerProactiveReport(bot);
+        return true;
+    }
 
     // Stop identifier capture at " y " to avoid compound query false positives
     // e.g. "RUC de aleida y su clave" → identifier = "aleida"
@@ -818,6 +856,68 @@ bot.on('callback_query:data', async (ctx) => {
         return;
     }
 
+    if (data.startsWith('baku_cmd:')) {
+        const cmd = data.replace('baku_cmd:', '');
+        
+        // Remove keyboard from the menu message
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        
+        if (cmd === 'reg_payment') {
+            pendingDialogs.set(chatId, {
+                type: 'mark_payment',
+                chatId,
+                step: 'ask_client_name',
+                data: {}
+            });
+            await ctx.reply("✍️ ¿Para qué cliente deseas registrar el pago? (Escribe el nombre o RUC). Baku.");
+        } else if (cmd === 'see_sri_key') {
+            pendingDialogs.set(chatId, {
+                type: 'field_query',
+                chatId,
+                step: 'ask_client_name',
+                data: { field: 'sri_password' }
+            });
+            await ctx.reply("🔍 ¿De qué cliente deseas consultar la clave SRI? (Escribe el nombre o RUC). Baku.");
+        } else if (cmd === 'see_sig_key') {
+            pendingDialogs.set(chatId, {
+                type: 'field_query',
+                chatId,
+                step: 'ask_client_name',
+                data: { field: 'electronicSignaturePassword' }
+            });
+            await ctx.reply("🔑 ¿De qué cliente deseas ver la clave de la firma electrónica? (Escribe el nombre o RUC). Baku.");
+        } else if (cmd === 'download_p12') {
+            pendingDialogs.set(chatId, {
+                type: 'field_query',
+                chatId,
+                step: 'ask_client_name',
+                data: { field: 'electronicSignaturePassword' }
+            });
+            await ctx.reply("📂 ¿De qué cliente deseas descargar la firma electrónica (.p12)? (Escribe el nombre o RUC). Baku.");
+        } else if (cmd === 'check_expiry') {
+            pendingDialogs.set(chatId, {
+                type: 'field_query',
+                chatId,
+                step: 'ask_client_name',
+                data: { field: 'signatureExpirationDate' }
+            });
+            await ctx.reply("📅 ¿De qué cliente deseas ver la fecha de caducidad de la firma? (Escribe el nombre o RUC). Baku.");
+        } else if (cmd === 'download_proof') {
+            pendingDialogs.set(chatId, {
+                type: 'field_query',
+                chatId,
+                step: 'ask_client_name',
+                data: { field: 'declaration_history' }
+            });
+            await ctx.reply("📄 ¿De qué cliente deseas ver/descargar comprobantes de declaraciones? (Escribe el nombre o RUC). Baku.");
+        } else if (cmd === 'quick_report') {
+            await ctx.replyWithChatAction('typing');
+            const summary = await getDatabaseSummary();
+            await ctx.reply(summary, { parse_mode: 'Markdown' });
+        }
+        return;
+    }
+
     if (!data.startsWith('baku_sel:')) return;
 
     const ruc = data.replace('baku_sel:', '');
@@ -840,7 +940,11 @@ bot.on('callback_query:data', async (ctx) => {
 
     if (dialog.type === 'field_query') {
         const field = dialog.data.field!;
-        if (dialog.data.value !== undefined) {
+        if (field === 'declaration_history') {
+            const result = await getClientDeclarationProofsList(ruc);
+            pendingDialogs.delete(chatId);
+            await ctx.reply(result, { parse_mode: 'Markdown' });
+        } else if (dialog.data.value !== undefined) {
             // Quick update flow
             const result = await quickUpdateClient(ruc, field, dialog.data.value);
             pendingDialogs.delete(chatId);
@@ -895,11 +999,26 @@ bot.on('message:text', async (ctx) => {
       const { buffer, data } = pending;
       const folderName = `SantiagoBot/Clientes/${data.ruc}`;
       const fileName = `${data.type}_${data.period.replace(/\//g, '-')}.pdf`;
+      
+      // Upload to Drive
       const driveFile = await uploadToDrive(fileName, buffer, folderName);
+      
+      // Convert buffer to base64 for local database persistence
+      const base64Content = buffer.toString('base64');
+      const dbResult = await saveDeclarationPdf(
+          data.ruc,
+          data.type as 'IVA' | 'RENTA',
+          data.period,
+          fileName,
+          buffer.length,
+          base64Content,
+          data.amount
+      );
+      
       const note = `Documento ${data.type} periodo ${data.period} cargado el ${new Date().toLocaleDateString()}. [Drive: ${driveFile.id}]`;
       await updateClientData(data.ruc, { notes: note, last_update: new Date().toISOString() });
       pendingPdfs.delete(chatId);
-      await ctx.reply(`✅ ¡Todo listo, Santiago!\n\n1. Archivo guardado en Google Drive (${folderName}/${fileName})\n2. Supabase actualizado.\n\n${STATUS_ICON}`);
+      await ctx.reply(`✅ ¡Todo listo, Santiago!\n\n1. Archivo guardado en Google Drive (${folderName}/${fileName})\n2. Supabase actualizado (${dbResult}).\n\n${STATUS_ICON}`);
     } catch (err: any) {
       await ctx.reply("Error guardando el documento: " + err.message);
     }

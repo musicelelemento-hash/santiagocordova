@@ -104,8 +104,11 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
     // Mesa de Trabajo Táctica — estados faltantes
     const [mesaTrabajoTab, setMesaTrabajoTab] = useState<'mensual' | 'semestral'>('mensual');
-    const [mesaUploadingTarget, setMesaUploadingTarget] = useState<string | null>(null);
-    const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ client: Client; message: string; fileUrl: string } | null>(null);
+    const [mesaUploadingTarget, setMesaUploadingTarget] = useState<{ client: Client; period: string } | null>(null);
+    const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string; fileUrl?: string } | null>(null);
+    const [isBulkMarking, setIsBulkMarking] = useState(false);
+    const [markAllMode, setMarkAllMode] = useState<'declared' | 'paid' | 'both'>('declared');
+    const [showMarkAllModal, setShowMarkAllModal] = useState(false);
 
     // Persistence Effect
     React.useEffect(() => {

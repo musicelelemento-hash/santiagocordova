@@ -4,6 +4,98 @@ import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getCredenti
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { syncToSheets } from './google-sync';
 import { supabase } from './supabase';
+import { OpenAI } from 'openai';
+
+async function generateReportWithAI(prompt: string, systemInstruction?: string): Promise<string> {
+    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+
+    // 1. Try OpenRouter (Gemini 2.5 Flash / 2.0 Flash)
+    if (OPENROUTER_API_KEY) {
+        try {
+            console.log("📡 [Cron AI] Attempting OpenRouter...");
+            const openai = new OpenAI({
+                baseURL: 'https://openrouter.ai/api/v1',
+                apiKey: OPENROUTER_API_KEY,
+            });
+            const response = await openai.chat.completions.create({
+                model: 'google/gemini-2.5-flash',
+                messages: [
+                    ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
+                    { role: 'user', content: prompt }
+                ],
+                max_tokens: 1500
+            });
+            if (response.choices?.[0]?.message?.content) {
+                return response.choices[0].message.content;
+            }
+        } catch (e: any) {
+            console.error("⚠️ [Cron AI] OpenRouter failed:", e.message);
+        }
+    }
+
+    // 2. Try Groq (Llama 3.3 70b)
+    if (GROQ_API_KEY) {
+        try {
+            console.log("📡 [Cron AI] Attempting Groq...");
+            const openai = new OpenAI({
+                baseURL: 'https://api.groq.com/openai/v1',
+                apiKey: GROQ_API_KEY,
+            });
+            const response = await openai.chat.completions.create({
+                model: 'llama-3.3-70b-specdec',
+                messages: [
+                    ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
+                    { role: 'user', content: prompt }
+                ],
+                max_tokens: 1500
+            });
+            if (response.choices?.[0]?.message?.content) {
+                return response.choices[0].message.content;
+            }
+        } catch (e: any) {
+            try {
+                const openai = new OpenAI({
+                    baseURL: 'https://api.groq.com/openai/v1',
+                    apiKey: GROQ_API_KEY,
+                });
+                const response = await openai.chat.completions.create({
+                    model: 'mixtral-8x7b-32768',
+                    messages: [
+                        ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
+                        { role: 'user', content: prompt }
+                    ],
+                    max_tokens: 1500
+                });
+                if (response.choices?.[0]?.message?.content) {
+                    return response.choices[0].message.content;
+                }
+            } catch (e2: any) {
+                console.error("⚠️ [Cron AI] Groq failed:", e2.message);
+            }
+        }
+    }
+
+    // 3. Try Google Generative AI SDK (Gemini 2.0 Flash)
+    if (GEMINI_API_KEY && !GEMINI_API_KEY.includes('dummy')) {
+        try {
+            console.log("📡 [Cron AI] Attempting Google Generative AI SDK...");
+            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-2.0-flash",
+                ...(systemInstruction ? { systemInstruction } : {})
+            });
+            const result = await model.generateContent(prompt);
+            const text = result.response.text();
+            if (text) return text;
+        } catch (e: any) {
+            console.error("⚠️ [Cron AI] Google SDK failed:", e.message);
+        }
+    }
+
+    throw new Error("No AI providers available or all of them failed");
+}
 
 export async function triggerProactiveReport(bot: Bot) {
     const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
@@ -25,13 +117,8 @@ export async function triggerProactiveReport(bot: Bot) {
             tasksList = tasks.map(t => `- [ ] ${t.title} (Vence: ${t.due_date || 'Sin fecha'})${t.description ? ` - ${t.description}` : ''}`).join('\n');
         }
 
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
+        const systemPrompt = `Eres Baku, el asistente fiscal de élite de Santiago Cordova. Es de madrugada (3:30 AM) y estás preparando el reporte operativo del día para el Comandante. Tu tarea es mandarle un resumen consolidado de la CARTERA ESTRATÉGICA y de su AGENDA DE TRABAJO usando estricto LENGUAJE TÉCNICO CONTABLE y TONO EJECUTIVO DE ALTA CONFIABILIDAD.`;
         const prompt = `
-Eres Baku, el asistente fiscal de élite de Santiago Cordova. Es de madrugada (3:30 AM) y estás preparando el reporte operativo del día para el Comandante.
-Tu tarea es mandarle un resumen consolidado de la CARTERA ESTRATÉGICA y de su AGENDA DE TRABAJO usando estricto LENGUAJE TÉCNICO CONTABLE y TONO EJECUTIVO DE ALTA CONFIABILIDAD.
-
 Contexto actual de la base de datos:
 --- 
 INFORMACIÓN CONSOLIDADA (RESUMEN ESTRATÉGICO):
@@ -56,8 +143,7 @@ INSTRUCCIONES DE REDACCIÓN:
 Genera el mensaje directamente para Telegram.
 `;
 
-        const result = await model.generateContent(prompt);
-        const aiResponse = result.response.text();
+        const aiResponse = await generateReportWithAI(prompt, systemPrompt);
 
         // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
         try {
@@ -67,10 +153,10 @@ Genera el mensaje directamente para Telegram.
             await bot.api.sendMessage(adminChatId, aiResponse);
         }
         console.log("✅ Reporte proactivo enviado a Santiago.");
-    } catch (error) {
+    } catch (error: any) {
         console.error("❌ Error en reporte proactivo:", error);
         try {
-            await bot.api.sendMessage(adminChatId, "⚠️ Comandante, intenté generar tu reporte, pero hubo un error de conexión con la IA. Por favor, pídeme un 'resumen general' cuando puedas.");
+            await bot.api.sendMessage(adminChatId, `⚠️ Comandante, intenté generar tu reporte, pero hubo un error de conexión con la IA (${error.message}). Por favor, pídeme un 'resumen general' cuando puedas.`);
         } catch (e) {}
     }
 }
@@ -94,13 +180,8 @@ export function startCronJobs(bot: Bot) {
         try {
             const debtorReport = await getDebtorClients();
             
-            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
+            const systemPrompt = `Eres Baku, el asistente fiscal de élite de Santiago Cordova. Es lunes por la mañana (08:00 AM) y es momento de iniciar la cobranza semanal ("Lunes Financiero"). Tu misión es presentarle un resumen ejecutivo y motivador sobre la cartera vencida por cobrar, e instarlo a iniciar gestiones de recuperación de flujo.`;
             const prompt = `
-Eres Baku, el asistente fiscal de élite de Santiago Cordova. Es lunes por la mañana (08:00 AM) y es momento de iniciar la cobranza semanal ("Lunes Financiero").
-Tu misión es presentarle un resumen ejecutivo y motivador sobre la cartera vencida por cobrar, e instarlo a iniciar gestiones de recuperación de flujo.
-
 Reporte actual de deudores de la base de datos:
 ---
 ${debtorReport}
@@ -113,8 +194,7 @@ Instrucciones de redacción:
 4. Recuérdale que puede pedirte: "Genera el mensaje de cobro para [nombre] por $[monto]" y tú generarás el WhatsApp listo para copiar.
 5. Mantén un formato estructurado con emojis de finanzas y negritas estratégicas.
 `;
-            const result = await model.generateContent(prompt);
-            const aiResponse = result.response.text();
+            const aiResponse = await generateReportWithAI(prompt, systemPrompt);
 
             // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
             try {

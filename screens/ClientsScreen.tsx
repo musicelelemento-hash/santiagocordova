@@ -131,7 +131,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     }, [sortOption]);
 
     useEffect(() => {
-        setIsMatrixView(activeGroupTab === 'matrix');
+        setIsMatrixView(activeGroupTab === 'matrix' || activeGroupTab === 'renta');
         setIsWorkspaceView(['all', 'mensual', 'semestral', 'al-dia', 'ordenes', 'trash'].includes(activeGroupTab));
         setIsCobrosView(activeGroupTab === 'cobros');
         setIsAlertasView(activeGroupTab === 'vencidos');
@@ -1001,7 +1001,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         {
                             id: 'renta',
                             label: 'Renta',
-                            icon: LucideIcons.ShieldCheck,
+                            icon: LucideIcons.Award,
                             always: false,
                             // Renta visible en mar-jun, o si ya está seleccionado
                             showWhen: campaign.showRentaTab || campaign.isRentaMonth || activeGroupTab === 'renta',
@@ -1346,6 +1346,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         <TaxComplianceMatrix 
                             clients={sortedClients} 
                             onViewClient={handleOpenClientDetails}
+                            initialMode={activeGroupTab === 'renta' ? 'RENTA' : 'IVA'}
                             onUploadReceipt={(client, period) => {
                                 setReceiptUploadState({ client, period });
                                 receiptFileInputRef.current?.click();

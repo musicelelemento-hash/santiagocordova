@@ -139,6 +139,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     handleElderlyRefundAction,
     handleRevertDeclaration,
     handleCancelDeclaration,
+    onChangeIvaFrequency,
 }) => {
     const { toast } = useToast();
     const isNegocioPopular = editedClient.regime === TaxRegime.RimpeNegocioPopular;

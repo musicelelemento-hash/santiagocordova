@@ -495,7 +495,7 @@ export async function getFinancialSummary() {
             
             // 1. Calculate Revenue (Actually Paid this month)
             const paidThisMonth = declarations.filter((d: any) => 
-                d.is_paid && d.paid_at && d.paid_at.startsWith(currentMonthStr)
+                d.is_paid && (d.paidAt || d.paid_at) && (d.paidAt || d.paid_at).startsWith(currentMonthStr)
             );
             
             paidThisMonth.forEach((d: any) => {
@@ -708,7 +708,8 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
             for (let d of history) {
                 if (d.type === 'RENTA' && d.period === periodToMark) {
                     d.is_paid = true;
-                    d.paid_at = new Date().toISOString();
+                    d.paidAt = new Date().toISOString();
+                    d.paid_at = d.paidAt;
                     d.status = 'Pagada';
                     found = true;
                     break;
@@ -741,7 +742,8 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
             if (targetIdx === -1) return `No hay pagos pendientes de ${type} para ${client.name}.`;
             
             history[targetIdx].is_paid = true;
-            history[targetIdx].paid_at = new Date().toISOString();
+            history[targetIdx].paidAt = new Date().toISOString();
+            history[targetIdx].paid_at = history[targetIdx].paidAt;
             history[targetIdx].status = 'Pagada';
             
             const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
@@ -781,6 +783,7 @@ export async function markPaymentAsUnpaid(ruc: string, type: 'IVA' | 'RENTA' | '
             
             if (match) {
                 d.is_paid = false;
+                d.paidAt = undefined;
                 d.paid_at = null;
                 if (d.proof_file) d.status = 'Enviada';
                 else d.status = 'Enviada'; // Default to enviada if reverting payment
@@ -1199,6 +1202,7 @@ export async function markPaymentsList(
             let entry = history.find(d => d.type === dbType && d.period === period);
             if (entry) {
                 entry.is_paid = true;
+                entry.paidAt = nowStr;
                 entry.paid_at = nowStr;
                 entry.updatedAt = nowStr;
                 // If it was already sent/declared, update its status to Pagada
@@ -1212,6 +1216,7 @@ export async function markPaymentsList(
                     period,
                     status: 'Pendiente',
                     is_paid: true,
+                    paidAt: nowStr,
                     paid_at: nowStr,
                     declaredAt: null,
                     updatedAt: nowStr,
@@ -1322,5 +1327,148 @@ export async function get_sri_credential(ruc: string): Promise<string> {
     } catch (error: any) {
         console.error("Error fetching SRI credential from Firebase:", error);
         return `Error al consultar la bóveda de contraseñas: ${error.message}`;
+    }
+}
+
+export async function saveDeclarationPdf(
+    ruc: string,
+    type: 'IVA' | 'RENTA',
+    period: string,
+    fileName: string,
+    fileSize: number,
+    base64Content: string,
+    amount: number = 0
+): Promise<string> {
+    console.log(`📑 Saving declaration PDF for ${ruc} - Period ${period} - Type ${type}`);
+    try {
+        const { data: rawClients, error } = await supabase
+            .from('clients')
+            .select('*')
+            .eq('ruc', ruc)
+            .eq('is_deleted', false);
+            
+        if (error) throw error;
+        if (!rawClients || rawClients.length === 0) {
+            return `❌ No encontré ningún cliente con el RUC ${ruc} en la base de datos.`;
+        }
+        
+        const client = rawClients[0];
+        let history = [...(client.declaration_history || [])];
+        const nowStr = new Date().toISOString();
+        
+        const contentUri = `data:application/pdf;base64,${base64Content}`;
+        
+        const proof_file = {
+            name: fileName,
+            type: 'pdf',
+            size: fileSize,
+            lastModified: Date.now(),
+            content: contentUri,
+            metadata: {
+                amount: amount,
+                period: period,
+                formType: type,
+                uploadedAt: nowStr
+            }
+        };
+        
+        let entryIdx = history.findIndex(d => d.type === type && d.period === period);
+        if (entryIdx !== -1) {
+            history[entryIdx].status = history[entryIdx].is_paid ? 'Pagada' : 'Enviada';
+            history[entryIdx].declaredAt = nowStr;
+            history[entryIdx].updatedAt = nowStr;
+            history[entryIdx].proof_file = proof_file;
+            history[entryIdx].amount = amount;
+        } else {
+            history.push({
+                type,
+                period,
+                status: 'Enviada',
+                is_paid: false,
+                declaredAt: nowStr,
+                updatedAt: nowStr,
+                proof_file,
+                amount
+            });
+        }
+        
+        history.sort((a: any, b: any) => a.period.localeCompare(b.period));
+        
+        const { error: updErr } = await supabase
+            .from('clients')
+            .update({ 
+                declaration_history: history, 
+                updated_at: nowStr 
+            })
+            .eq('id', client.id);
+            
+        if (updErr) throw updErr;
+        
+        await logAuditAction('PDF Cargado (Bot)', `${type} ${period} - RUC: ${ruc}`, 'sri', 'info');
+        return `✅ Base de datos actualizada con PDF.`;
+    } catch (e: any) {
+        console.error("Error saving declaration PDF:", e);
+        return `❌ Error al guardar en base de datos: ${e.message}`;
+    }
+}
+
+export async function getClientDeclarationProofsList(ruc: string): Promise<string> {
+    try {
+        const { data: rawClients, error } = await supabase.from('clients').select('*').eq('ruc', ruc).eq('is_deleted', false);
+        if (error) throw error;
+        if (!rawClients || rawClients.length === 0) return `❌ No se encontró cliente RUC ${ruc}.`;
+        
+        const client = rawClients[0];
+        const declarations = (client.declaration_history || []).filter((d: any) => d.proof_file && d.proof_file.content);
+        
+        if (declarations.length === 0) {
+            return `📋 *${client.name}* no tiene comprobantes de declaración guardados en su historial de Supabase.`;
+        }
+        
+        let response = `📄 *COMPROBANTES DISPONIBLES PARA ${client.name.toUpperCase()}:*\n\n`;
+        declarations.forEach((d: any, idx: number) => {
+            response += `${idx + 1}. *${d.type}* - Periodo: \`${d.period}\` (Archivo: _${d.proof_file.name}_)\n`;
+        });
+        response += `\n💡 _Para descargar alguno, pídeme: "Descarga comprobante de ${client.name} periodo [periodo]" y te mandaré el archivo PDF de inmediato._`;
+        return response;
+    } catch (e: any) {
+        return `❌ Error al listar comprobantes: ${e.message}`;
+    }
+}
+
+export async function downloadClientProofFile(
+    ruc: string, 
+    period: string, 
+    type?: 'IVA' | 'RENTA'
+): Promise<{ fileName: string; contentBase64: string; error?: string } | null> {
+    try {
+        const { data: rawClients, error } = await supabase.from('clients').select('*').eq('ruc', ruc).eq('is_deleted', false);
+        if (error) throw error;
+        if (!rawClients || rawClients.length === 0) return { fileName: '', contentBase64: '', error: 'Cliente no encontrado' };
+        
+        const client = rawClients[0];
+        const declarations = client.declaration_history || [];
+        const entry = declarations.find((d: any) => 
+            d.period === period && 
+            (!type || d.type === type) && 
+            d.proof_file && 
+            d.proof_file.content
+        );
+        
+        if (!entry) {
+            return { fileName: '', contentBase64: '', error: `No encontré ningún comprobante de declaración para el periodo ${period}.` };
+        }
+        
+        let base64 = entry.proof_file.content;
+        if (base64.includes(';base64,')) {
+            base64 = base64.split(';base64,')[1];
+        }
+        
+        return {
+            fileName: entry.proof_file.name || `declaracion_${period}.pdf`,
+            contentBase64: base64
+        };
+    } catch (e: any) {
+        return { fileName: '', contentBase64: '', error: `Error de base de datos: ${e.message}` };
     }
 }

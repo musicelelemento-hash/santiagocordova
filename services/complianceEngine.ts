@@ -282,6 +282,27 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
     // Check if it's a semester period (e.g., 2024-S1)
     const isSemester = period.includes('-S');
     
+    // Check if it's a pure year period (RENTA fiscal year, e.g., "2025")
+    const isYearPeriod = /^\d{4}$/.test(period);
+    
+    // RENTA (período anual puro: "2025", "2024", etc.)
+    if (isYearPeriod) {
+        const needsRenta = client.taxProfile?.requiresAnnualRenta ||
+            client.regime === TaxRegime.RimpeEmprendedor ||
+            client.regime === TaxRegime.RimpeNegocioPopular ||
+            client.regime === TaxRegime.General;
+        if (needsRenta) {
+            obligations.push({ type: 'RENTA', label: 'Renta Anual' });
+        }
+        if (client.taxProfile?.requiresAnexosGastos) {
+            obligations.push({ type: 'ANEXO', label: 'Anexo Gastos' });
+        }
+        if (client.taxProfile?.hasActiveDevolucionIva) {
+            obligations.push({ type: 'DEVOLUCION', label: 'Dev. IVA' });
+        }
+        return obligations;
+    }
+    
     // IVA
     if (requiresIva(client)) {
         const clientFreq = client.taxProfile?.ivaFrequency || (client.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : (client.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual'));
@@ -297,10 +318,6 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
         obligations.push({ type: 'ICE', label: 'ICE Mensual' });
         obligations.push({ type: 'ANEXO', label: 'Anexo ICE' });
     }
-    
-    // RENTA (Only for Yearly period, but we often map it to the month of March in the matrix or as a special row)
-    // However, the matrix usually shows months. If the period is YYYY-03, we might want to show Renta.
-    // For now, let's keep it simple: Matrix shows IVA and ICE by default.
     
     return obligations;
 };

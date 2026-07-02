@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Client, DeclarationStatus, IvaFrequency, Declaration } from '../../types';
+import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime } from '../../types';
 import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod } from '../../services/sri';
-import { format, subMonths, startOfMonth, endOfMonth, isPast } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getClientCompliance, getObligationsForPeriod } from '../../services/complianceEngine';
+
+type MatrixMode = 'IVA' | 'RENTA';
 
 interface TaxComplianceMatrixProps {
     clients: Client[];
@@ -13,6 +15,7 @@ interface TaxComplianceMatrixProps {
     onPreviewReceipt: (client: Client, declaration: Declaration) => void;
     onTogglePayment?: (client: Client, period: string, type: 'IVA' | 'RENTA', isPaid: boolean) => void;
     theme?: 'light' | 'dark';
+    initialMode?: MatrixMode;
 }
 
 export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({ 
@@ -21,12 +24,19 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     onUploadReceipt, 
     onPreviewReceipt,
     onTogglePayment,
-    theme = 'dark'
+    theme = 'dark',
+    initialMode = 'IVA'
 }) => {
     const [frequency, setFrequency] = useState<IvaFrequency>('Mensual');
+    const [matrixMode, setMatrixMode] = useState<MatrixMode>(initialMode);
     const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
     const [searchTerm, setSearchTerm] = useState('');
     const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
+
+    // Sync mode when navigating between matrix/renta tabs
+    React.useEffect(() => {
+        setMatrixMode(initialMode);
+    }, [initialMode]);
 
     const handleCopyRuc = (ruc: string) => {
         navigator.clipboard.writeText(ruc).then(() => {
@@ -52,47 +62,94 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
     // Generar periodos a mostrar
     const periods = useMemo(() => {
-        const result = [];
+        const result: string[] = [];
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1; // 1-12
+        const currentDay = today.getDate();
+
+        if (matrixMode === 'RENTA') {
+            // Renta: mostrar 3 años fiscales (año anterior, anteanterior, uno más atrás)
+            for (let i = 1; i <= 3; i++) {
+                result.push((currentYear - i).toString());
+            }
+            return result;
+        }
+
         if (frequency === 'Mensual') {
-            const maxMonth = selectedYear === today.getFullYear() ? today.getMonth() + 1 : 12;
+            // El mensual se habilita cuando el mes CIERRA (día 10+).
+            // El mes corriente solo aparece a partir del día 10.
+            let maxMonth: number;
+            if (selectedYear === currentYear) {
+                // Si estamos antes del día 10, el último mes disponible es el anterior
+                maxMonth = currentDay < 10 ? currentMonth - 1 : currentMonth;
+                if (maxMonth < 1) maxMonth = 0; // Enero día 1-9: sin meses del año actual
+            } else {
+                maxMonth = 12;
+            }
             for (let m = maxMonth; m >= 1; m--) {
                 const monthStr = m < 10 ? `0${m}` : `${m}`;
                 result.push(`${selectedYear}-${monthStr}`);
             }
         } else if (frequency === 'Semestral') {
-            const currentYear = today.getFullYear();
-            if (selectedYear < currentYear) {
-                // Año pasado: ambos semestres ya finalizaron
-                result.push(`${selectedYear}-S2`);
-                result.push(`${selectedYear}-S1`);
-            } else {
-                // Año actual: S2 solo visible a partir de Diciembre (mes 11)
-                if (today.getMonth() >= 11) {
-                    result.push(`${selectedYear}-S2`);
-                }
-                result.push(`${selectedYear}-S1`);
+            // Mostrar 3 semestres hacia atrás desde el actual
+            // Semestre actual: S1 (ene-jun) o S2 (jul-dic)
+            const currentSemester = currentMonth <= 6 ? 1 : 2;
+
+            // Construir la lista de hasta 3 semestres ya cerrados
+            const semList: string[] = [];
+            let yr = currentYear;
+            let sem = currentSemester;
+
+            // Retroceder hasta obtener 3 semestres cerrados
+            const totalNeeded = 3;
+            while (semList.length < totalNeeded) {
+                // Retroceder un semestre
+                sem -= 1;
+                if (sem < 1) { sem = 2; yr -= 1; }
+                semList.push(`${yr}-S${sem}`);
             }
+
+            // Añadir el semestre actual SOLO si ya cerró el período mínimo
+            // S1 cierra en julio (mes 7+), S2 cierra en enero del año siguiente
+            const s1Closed = currentSemester === 1 && currentMonth >= 7;
+            const s2Closed = false; // S2 de este año se cierra al iniciar el año siguiente
+            if (s1Closed || s2Closed) {
+                result.push(`${currentYear}-S${currentSemester}`);
+            }
+            result.push(...semList);
         }
         return result;
-    }, [frequency, selectedYear]);
+    }, [frequency, matrixMode, selectedYear, today.getFullYear(), today.getMonth(), today.getDate()]);
 
     const filteredClients = useMemo(() => {
         return clients.filter(c => {
             const clientFreq = c.taxProfile?.ivaFrequency ||
-                (c.regime === 'RimpeEmprendedor' ? 'Semestral' :
-                 c.regime === 'RimpeNegocioPopular' ? 'Ninguno' : 'Mensual');
+                (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' :
+                 c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual');
+
+            const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.ruc.includes(searchTerm);
+            const isActive = !c.isDeleted && c.isActive;
+
+            if (matrixMode === 'RENTA') {
+                // Mostrar clientes que tienen renta
+                const hasRenta = c.taxProfile?.requiresAnnualRenta ||
+                    c.regime === TaxRegime.RimpeEmprendedor ||
+                    c.regime === TaxRegime.RimpeNegocioPopular ||
+                    c.regime === TaxRegime.General;
+                return isActive && hasRenta && matchesSearch;
+            }
+
             return (
-                !c.isDeleted &&
-                c.isActive &&
+                isActive &&
                 clientFreq === frequency &&
-                (c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.ruc.includes(searchTerm))
+                matchesSearch
             );
         }).sort((a, b) => {
             const digitA = parseInt(a.ruc[8], 10) === 0 ? 10 : parseInt(a.ruc[8], 10);
             const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
             return digitA - digitB || a.name.localeCompare(b.name);
         });
-    }, [clients, frequency, searchTerm]);
+    }, [clients, frequency, matrixMode, searchTerm]);
 
     const getStatusIcon = (declaration?: Declaration) => {
         if (!declaration) return <div className="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-white/5 shadow-inner" title="Sin Registro" />;
@@ -110,40 +167,72 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             {/* Header / Controls */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-[2rem] border border-slate-200/50 dark:border-white/5 shadow-xl">
                 <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20">
-                        <LucideIcons.LayoutGrid size={24} />
+                    <div className={`p-3 text-white rounded-2xl shadow-lg ${
+                        matrixMode === 'RENTA' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-primary shadow-primary/20'
+                    }`}>
+                        {matrixMode === 'RENTA' ? <LucideIcons.Award size={24} /> : <LucideIcons.LayoutGrid size={24} />}
                     </div>
                     <div>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight font-premium">Matriz de Obligaciones</h2>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Control Centralizado de IVA</p>
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight font-premium">
+                            {matrixMode === 'RENTA' ? 'Matriz de Renta Anual' : 'Matriz de Obligaciones'}
+                        </h2>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                            {matrixMode === 'RENTA' ? 'Impuesto a la Renta · 3 Períodos Fiscales' : 'Control Centralizado de IVA'}
+                        </p>
                     </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    {/* Mode selector: IVA vs RENTA */}
                     <div className="flex items-center gap-2 bg-slate-100 dark:bg-black/20 p-1.5 rounded-2xl border border-slate-200/50 dark:border-white/5">
                         <button
-                            onClick={() => setFrequency('Mensual')}
-                            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${frequency === 'Mensual' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                            onClick={() => setMatrixMode('IVA')}
+                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                                matrixMode === 'IVA' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
+                            }`}
                         >
-                            Mensual
+                            <LucideIcons.LayoutGrid size={13} /> IVA
                         </button>
                         <button
-                            onClick={() => setFrequency('Semestral')}
-                            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${frequency === 'Semestral' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                            onClick={() => setMatrixMode('RENTA')}
+                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                                matrixMode === 'RENTA' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-slate-400 hover:text-slate-600'
+                            }`}
                         >
-                            Semestral
+                            <LucideIcons.Award size={13} /> Renta
                         </button>
                     </div>
 
-                    <select
-                        value={selectedYear}
-                        onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-                        className="bg-slate-100 dark:bg-black/25 text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl border border-slate-200 dark:border-white/10 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-sm"
-                    >
-                        {[2026, 2025].map(y => (
-                            <option key={y} value={y} className="bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white">{y}</option>
-                        ))}
-                    </select>
+                    {/* IVA frequency selector - solo visible en modo IVA */}
+                    {matrixMode === 'IVA' && (
+                        <div className="flex items-center gap-2 bg-slate-100 dark:bg-black/20 p-1.5 rounded-2xl border border-slate-200/50 dark:border-white/5">
+                            <button
+                                onClick={() => setFrequency('Mensual')}
+                                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${frequency === 'Mensual' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                                Mensual
+                            </button>
+                            <button
+                                onClick={() => setFrequency('Semestral')}
+                                className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${frequency === 'Semestral' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                                Semestral
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Year selector - solo visible en modo IVA mensual */}
+                    {matrixMode === 'IVA' && frequency === 'Mensual' && (
+                        <select
+                            value={selectedYear}
+                            onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+                            className="bg-slate-100 dark:bg-black/25 text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl border border-slate-200 dark:border-white/10 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-sm"
+                        >
+                            {[today.getFullYear(), today.getFullYear() - 1].map(y => (
+                                <option key={y} value={y} className="bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white">{y}</option>
+                            ))}
+                        </select>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
@@ -205,14 +294,20 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             <div className="md:col-span-2 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-5 rounded-3xl border border-slate-200/50 dark:border-white/5 shadow-lg flex flex-col justify-center">
                                 <div className="flex justify-between items-center mb-3">
                                     <div>
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Eficiencia Mensual</p>
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                            {matrixMode === 'RENTA' ? 'Eficiencia Renta' : 'Eficiencia Mensual'}
+                                        </p>
                                         <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Ciclo {lastPeriod}</p>
                                     </div>
-                                    <span className="text-lg font-black text-emerald-500">{Math.round((pdfCount / totalClients) * 100)}%</span>
+                                    <span className={`text-lg font-black ${matrixMode === 'RENTA' ? 'text-emerald-500' : 'text-emerald-500'}`}>{Math.round((pdfCount / totalClients) * 100)}%</span>
                                 </div>
                                 <div className="w-full h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden p-0.5 border border-slate-200/50 dark:border-white/10">
                                     <div 
-                                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(16,185,129,0.3)]" 
+                                        className={`h-full rounded-full transition-all duration-1000 ${
+                                            matrixMode === 'RENTA'
+                                                ? 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                                                : 'bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                                        }`}
                                         style={{ width: `${(pdfCount / totalClients) * 100}%` }}
                                     ></div>
                                 </div>
