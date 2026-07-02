@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
  * If period is provided, it attempts to match Annual/Monthly specific fees.
  */
 export const getClientServiceFee = (client: Client, fees: ServiceFeesConfig, period?: string): number => {
+    if (client.isCourtesy) return 0;
     // 1. Check for specific Period type (Annual vs Recurring)
     if (period) {
         // Annual Period (e.g., "2024")

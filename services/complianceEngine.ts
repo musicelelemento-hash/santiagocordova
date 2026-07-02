@@ -52,7 +52,8 @@ const isDeclared = (decl: Declaration | undefined): boolean => {
         decl.status === DeclarationStatus.Pagada;
 };
 
-const isPaid = (decl: Declaration | undefined): boolean => {
+const isPaid = (decl: Declaration | undefined, client?: Client): boolean => {
+    if (client?.isCourtesy) return true;
     if (!decl) return false;
     return decl.status === DeclarationStatus.Pagada || !!decl.is_paid;
 };
@@ -98,7 +99,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
         const ivaDue = getDueDateForPeriod(client, ivaPeriod);
         const ivaDays = ivaDue ? getDaysUntilDue(ivaDue) : null;
         const ivaDeclared = isDeclared(ivaDecl);
-        const ivaPaids = isPaid(ivaDecl);
+        const ivaPaids = isPaid(ivaDecl, client);
 
         obligations.push({
             type: 'IVA',
@@ -127,7 +128,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
         const rentaDue = getDueDateForPeriod(client, rentaPeriod);
         const rentaDays = rentaDue ? getDaysUntilDue(rentaDue) : null;
         const rentaDeclared = isDeclared(rentaDecl);
-        const rentaPaidStatus = isPaid(rentaDecl);
+        const rentaPaidStatus = isPaid(rentaDecl, client);
 
         // Solo mostrar si estamos en temporada (después de enero) o si está vencida
         const month = getMonth(date);
@@ -155,7 +156,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
         const iceDue = getDueDateForPeriod(client, icePeriod);
         const iceDays = iceDue ? getDaysUntilDue(iceDue) : null;
         const iceDeclared = isDeclared(iceDecl);
-        const icePaidStatus = isPaid(iceDecl);
+        const icePaidStatus = isPaid(iceDecl, client);
 
         obligations.push({
             type: 'ICE',
@@ -176,12 +177,12 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
             type: 'ANEXO',
             period: icePeriod,
             label: 'Anexo ICE',
-            color: getColor(iceDays, isDeclared(iceAnexoDecl), isPaid(iceAnexoDecl)),
+            color: getColor(iceDays, isDeclared(iceAnexoDecl), isPaid(iceAnexoDecl, client)),
             daysRemaining: iceDays,
             dueDate: iceDue,
             declaration: iceAnexoDecl || null,
             isDeclared: isDeclared(iceAnexoDecl),
-            isPaid: isPaid(iceAnexoDecl),
+            isPaid: isPaid(iceAnexoDecl, client),
         });
     }
 
@@ -196,12 +197,12 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
             type: 'PVP',
             period: pvpPeriod,
             label: 'Anexo PVP',
-            color: getColor(pvpDays, isDeclared(pvpDecl), isPaid(pvpDecl)),
+            color: getColor(pvpDays, isDeclared(pvpDecl), isPaid(pvpDecl, client)),
             daysRemaining: pvpDays,
             dueDate: pvpDue,
             declaration: pvpDecl || null,
             isDeclared: isDeclared(pvpDecl),
-            isPaid: isPaid(pvpDecl),
+            isPaid: isPaid(pvpDecl, client),
         });
     }
 
@@ -216,12 +217,12 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
             type: 'ANEXO',
             period: devPeriod,
             label: 'Dev. IVA',
-            color: getColor(devDays, isDeclared(devDecl), isPaid(devDecl)),
+            color: getColor(devDays, isDeclared(devDecl), isPaid(devDecl, client)),
             daysRemaining: devDays,
             dueDate: devDue,
             declaration: devDecl || null,
             isDeclared: isDeclared(devDecl),
-            isPaid: isPaid(devDecl),
+            isPaid: isPaid(devDecl, client),
         });
     }
 
@@ -236,12 +237,12 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
             type: 'ANEXO',
             period: gapPeriod,
             label: 'Anexo Gastos',
-            color: getColor(gapDays, isDeclared(gapDecl), isPaid(gapDecl)),
+            color: getColor(gapDays, isDeclared(gapDecl), isPaid(gapDecl, client)),
             daysRemaining: gapDays,
             dueDate: gapDue,
             declaration: gapDecl || null,
             isDeclared: isDeclared(gapDecl),
-            isPaid: isPaid(gapDecl),
+            isPaid: isPaid(gapDecl, client),
         });
     }
 

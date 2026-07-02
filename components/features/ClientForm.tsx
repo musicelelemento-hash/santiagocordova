@@ -58,6 +58,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
 
     const [isVip, setIsVip] = useState(true);
     const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
+    const [isCourtesy, setIsCourtesy] = useState(initialData?.isCourtesy ?? false);
 
     // Tax Profile States
     const initialTaxProfile = initialData?.taxProfile || {
@@ -255,6 +256,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             notes: notes.trim(),
             clientStartPeriod: clientStartPeriod || getDefaultStartPeriod(),
             signatureExpirationDate: clientData.signatureExpirationDate,
+            isCourtesy,
             taxProfile: {
                 ivaFrequency: finalIvaFrequency,
                 requiresAnnualRenta: finalRequiresAnnualRenta,
@@ -599,8 +601,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
 
                         <div className="bg-slate-950/5 dark:bg-white/5 rounded-3xl p-5 border border-white/10 shadow-inner backdrop-blur-3xl">
                             <div className="flex flex-col gap-4">
-                                <div className="flex justify-between items-center gap-4">
-                                    <div onClick={() => setIsVip(!true)} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer flex-1 ${true ? 'bg-amber-400/10 border-amber-400/30' : 'bg-white/5 border-white/10 opacity-50'}`}>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div onClick={() => setIsVip(!true)} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${true ? 'bg-amber-400/10 border-amber-400/30' : 'bg-white/5 border-white/10 opacity-50'}`}>
                                         <Sparkles size={18} className={true ? 'text-amber-400' : 'text-slate-400'} />
                                         <div className="flex flex-col">
                                             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Socio VIP</span>
@@ -608,7 +610,15 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                         </div>
                                     </div>
 
-                                    <div onClick={() => setIsActive(!isActive)} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer flex-1 ${isActive ? 'bg-emerald-400/10 border-emerald-400/30' : 'bg-white/5 border-white/10 opacity-50'}`}>
+                                    <div onClick={() => setIsCourtesy(!isCourtesy)} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${isCourtesy ? 'bg-sky-400/10 border-sky-400/30' : 'bg-white/5 border-white/10 opacity-50'}`}>
+                                        <Coins size={18} className={isCourtesy ? 'text-sky-400' : 'text-slate-400'} />
+                                        <div className="flex flex-col">
+                                            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Tarifa</span>
+                                            <span className={`text-xs font-semibold ${isCourtesy ? 'text-sky-400' : 'text-slate-400'}`}>{isCourtesy ? 'CORTESÍA' : 'ESTÁNDAR'}</span>
+                                        </div>
+                                    </div>
+
+                                    <div onClick={() => setIsActive(!isActive)} className={`flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${isActive ? 'bg-emerald-400/10 border-emerald-400/30' : 'bg-white/5 border-white/10 opacity-50'}`}>
                                         <CheckCircle size={18} className={isActive ? 'text-emerald-400' : 'text-slate-400'} />
                                         <div className="flex flex-col">
                                             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Estado</span>

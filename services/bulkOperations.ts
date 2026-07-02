@@ -145,21 +145,42 @@ export const processBulkPdfs = async (
                     updates.rucPdf = storedFile;
                 }
             } else if ((data as any).period) {
-                const decPeriod = (data as any).period;
+                let decPeriod = (data as any).period;
+                let type: TaxObligationType = (decPeriod.includes('-') ? 'IVA' : 'RENTA') as TaxObligationType;
+
+                if (data.formType === 'ICE') {
+                    if (!decPeriod.includes(':ICE')) {
+                        decPeriod = `${decPeriod.split(':')[0]}:ICE`;
+                    }
+                    type = 'ICE';
+                } else if (data.formType === 'ANEXO_ICE') {
+                    if (!decPeriod.includes(':ANEXO_ICE')) {
+                        decPeriod = `${decPeriod.split(':')[0]}:ANEXO_ICE`;
+                    }
+                    type = 'ANEXO';
+                } else if (data.formType === 'PVP') {
+                    if (!decPeriod.includes(':PVP')) {
+                        decPeriod = `${decPeriod.split(':')[0]}:PVP`;
+                    }
+                    type = 'PVP';
+                }
+
                 const existingDec = client.declarations.find(d => d.period === decPeriod);
                 
-                if (existingDec && existingDec.status === DeclarationStatus.Enviada) {
-                    // Evitar duplicados si ya está enviada, pero adjuntar el archivo
+                if (existingDec && (existingDec.status === DeclarationStatus.Enviada || existingDec.status === DeclarationStatus.Pagada)) {
+                    // Evitar duplicados si ya está enviada o pagada, pero adjuntar el archivo
                     status = 'duplicate';
                 } else {
                     const newDec = {
                         period: decPeriod,
-                        type: (decPeriod.includes('-') ? 'IVA' : 'RENTA') as TaxObligationType,
-                        status: DeclarationStatus.Enviada,
+                        type,
+                        status: client.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
                         updatedAt: new Date().toISOString(),
                         declaredAt: (data as any).declarationDate || new Date().toISOString(),
                         amount: (data as any).amount || 0,
-                        proof_file: storedFile
+                        proof_file: storedFile,
+                        is_paid: client.isCourtesy ? true : false,
+                        paidAt: client.isCourtesy ? new Date().toISOString() : undefined
                     };
  
                     const newHistory = [...client.declarations.filter(d => d.period !== decPeriod), newDec];

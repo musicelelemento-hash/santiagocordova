@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
-import { Client, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, StoredFile, Task, TaskStatus } from '../../types';
+import { Client, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, StoredFile, Task, TaskStatus, TaxObligationType } from '../../types';
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, safeFormat, getWhatsAppUrl, requiresIva, generateDeclarationWhatsAppMessage } from '../../services/sri';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../../services/geminiService';
 import { extractDataFromSriPdf, extractDataFromDeclarationPdf, fileToBase64 } from '../../services/pdfExtraction';
@@ -319,21 +319,45 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
             if (uploadingTarget.type === 'iva' && uploadingTarget.period) {
                 const updatedHistory = [...(editedClient.declarations || [])];
-                const idx = updatedHistory.findIndex(d => d.period === uploadingTarget.period);
+                let targetPeriod = uploadingTarget.period;
+                let type: TaxObligationType = 'IVA';
+
+                if (extractedData?.formType === 'ICE') {
+                    if (!targetPeriod.includes(':ICE')) {
+                        targetPeriod = `${targetPeriod.split(':')[0]}:ICE`;
+                    }
+                    type = 'ICE';
+                } else if (extractedData?.formType === 'ANEXO_ICE') {
+                    if (!targetPeriod.includes(':ANEXO_ICE')) {
+                        targetPeriod = `${targetPeriod.split(':')[0]}:ANEXO_ICE`;
+                    }
+                    type = 'ANEXO';
+                } else if (extractedData?.formType === 'PVP') {
+                    if (!targetPeriod.includes(':PVP')) {
+                        targetPeriod = `${targetPeriod.split(':')[0]}:PVP`;
+                    }
+                    type = 'PVP';
+                }
+
+                const idx = updatedHistory.findIndex(d => d.period === targetPeriod);
                 if (idx !== -1) {
                     updatedHistory[idx] = {
                         ...updatedHistory[idx],
                         proof_file: storedFile,
                         amount: extractedData?.amount || updatedHistory[idx].amount,
-                        status: DeclarationStatus.Enviada,
+                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        is_paid: editedClient.isCourtesy ? true : updatedHistory[idx].is_paid,
+                        paidAt: editedClient.isCourtesy ? new Date().toISOString() : updatedHistory[idx].paidAt,
                         updatedAt: new Date().toISOString(),
                         declaredAt: extractedData?.declarationDate // Guardamos la fecha del SRI
                     };
                 } else {
                     updatedHistory.push({
-                        period: uploadingTarget.period,
-                        status: DeclarationStatus.Enviada,
-                        is_paid: false,
+                        period: targetPeriod,
+                        type,
+                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        is_paid: editedClient.isCourtesy ? true : false,
+                        paidAt: editedClient.isCourtesy ? new Date().toISOString() : undefined,
                         updatedAt: new Date().toISOString(),
                         declaredAt: extractedData?.declarationDate,
                         proof_file: storedFile,
@@ -347,9 +371,24 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 const updatedHistory = [...(editedClient.declarations || [])];
                 const idx = updatedHistory.findIndex(d => d.period === period);
                 if (idx !== -1) {
-                    updatedHistory[idx] = { ...updatedHistory[idx], proof_file: storedFile, status: DeclarationStatus.Enviada, updatedAt: new Date().toISOString() };
+                    updatedHistory[idx] = { 
+                        ...updatedHistory[idx], 
+                        proof_file: storedFile, 
+                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada, 
+                        is_paid: editedClient.isCourtesy ? true : updatedHistory[idx].is_paid,
+                        paidAt: editedClient.isCourtesy ? new Date().toISOString() : updatedHistory[idx].paidAt,
+                        updatedAt: new Date().toISOString() 
+                    };
                 } else {
-                    updatedHistory.push({ period, status: DeclarationStatus.Enviada, is_paid: false, proof_file: storedFile, updatedAt: new Date().toISOString() });
+                    updatedHistory.push({ 
+                        period, 
+                        type: 'RENTA',
+                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada, 
+                        is_paid: editedClient.isCourtesy ? true : false, 
+                        paidAt: editedClient.isCourtesy ? new Date().toISOString() : undefined,
+                        proof_file: storedFile, 
+                        updatedAt: new Date().toISOString() 
+                    });
                 }
                 updatedClient.declarations = updatedHistory;
             } else if (uploadingTarget.type === 'devolucionRenta') {

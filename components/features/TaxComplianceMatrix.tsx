@@ -524,7 +524,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         {obligations.map(ob => {
                                                             const d = findDeclarationForOb(declarations, p, ob.type);
                                                             const hasProof = !!d?.proof_file;
-                                                            const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid;
+                                                            const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
                                                             const isSent = d?.status === DeclarationStatus.Enviada || isPaid || hasProof;
                                                             
                                                             const isDone = hasProof;

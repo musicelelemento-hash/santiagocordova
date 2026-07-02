@@ -3,7 +3,7 @@ import { Modal } from '../ui/Modal';
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, X, Search, User, Calendar, DollarSign, ExternalLink, Plus, Eye, Download } from 'lucide-react';
 import { extractDataFromDeclarationPdf, fileToBase64 } from '../../services/pdfExtraction';
 import { useAppStore } from '../../store/useAppStore';
-import { Client, DeclarationStatus, StoredFile } from '../../types';
+import { Client, DeclarationStatus, StoredFile, TaxObligationType } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { formatPeriodForDisplay } from '../../services/sri';
 
@@ -83,15 +83,36 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
 
                 // Update Client Data
                 const history = [...client.declarations];
-                const eraPeriod = data.period;
+                let eraPeriod = data.period;
+                let type: TaxObligationType = eraPeriod.includes('-') ? 'IVA' : 'RENTA';
+
+                if (data.formType === 'ICE') {
+                    if (!eraPeriod.includes(':ICE')) {
+                        eraPeriod = `${eraPeriod.split(':')[0]}:ICE`;
+                    }
+                    type = 'ICE';
+                } else if (data.formType === 'ANEXO_ICE') {
+                    if (!eraPeriod.includes(':ANEXO_ICE')) {
+                        eraPeriod = `${eraPeriod.split(':')[0]}:ANEXO_ICE`;
+                    }
+                    type = 'ANEXO';
+                } else if (data.formType === 'PVP') {
+                    if (!eraPeriod.includes(':PVP')) {
+                        eraPeriod = `${eraPeriod.split(':')[0]}:PVP`;
+                    }
+                    type = 'PVP';
+                }
+
                 const idx = history.findIndex(d => d.period === eraPeriod);
 
                 if (idx !== -1) {
                     history[idx] = {
                         ...history[idx],
+                        period: eraPeriod,
+                        type,
                         status: DeclarationStatus.Pagada,
                         is_paid: true,
-                        paidAt: new Date().toISOString(),
+                        paidAt: history[idx].paidAt || new Date().toISOString(),
                         amount: data.amount,
                         proof_file: storedFile,
                         updatedAt: new Date().toISOString()
@@ -99,6 +120,7 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                 } else {
                     history.push({
                         period: eraPeriod,
+                        type,
                         status: DeclarationStatus.Pagada,
                         is_paid: true,
                         paidAt: new Date().toISOString(),

@@ -75,7 +75,7 @@ export const mockClients: Client[] = [
     },
     {
         id: uuidv4(),
-        ruc: '0702706821001', // Validated RUC for CHAVEZ CORDOVA GUIDO ERMEL (ends in 001, correct check-digit)
+        ruc: '0706482023001', // Validated RUC for CHAVEZ CORDOVA GUIDO ERMEL
         name: 'CHAVEZ CORDOVA GUIDO ERMEL',
         sriPassword: 'Guido2026*',
         regime: TaxRegime.General,

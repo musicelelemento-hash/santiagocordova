@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Client, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField } from '../types';
+import { Client, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField, TaxObligationType } from '../types';
 import * as LucideIcons from 'lucide-react';
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat } from '../services/sri';
 import { Modal } from '../components/ui/Modal';
@@ -545,11 +545,31 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             const base64 = await fileToBase64(file);
             const today = new Date();
-            const period = receiptUploadState.period || data.period || getPeriod(receiptUploadState.client, today);
+            let period = receiptUploadState.period || data.period || getPeriod(receiptUploadState.client, today);
             const nowIso = today.toISOString();
 
             // CRITICAL FIX: Leer siempre el cliente FRESCO del store
             const freshClient = clients.find(c => c.id === receiptUploadState.client.id) || receiptUploadState.client;
+            
+            let type: TaxObligationType = period.includes('-') ? 'IVA' : 'RENTA';
+
+            if (data.formType === 'ICE') {
+                if (!period.includes(':ICE')) {
+                    period = `${period.split(':')[0]}:ICE`;
+                }
+                type = 'ICE';
+            } else if (data.formType === 'ANEXO_ICE') {
+                if (!period.includes(':ANEXO_ICE')) {
+                    period = `${period.split(':')[0]}:ANEXO_ICE`;
+                }
+                type = 'ANEXO';
+            } else if (data.formType === 'PVP') {
+                if (!period.includes(':PVP')) {
+                    period = `${period.split(':')[0]}:PVP`;
+                }
+                type = 'PVP';
+            }
+
             const history = [...(freshClient.declarations || [])];
             const idx = history.findIndex(d => d.period === period);
 
@@ -571,11 +591,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             const entry: Declaration = {
                 period,
-                type: period.includes('-') ? 'IVA' : 'RENTA',
-                status: DeclarationStatus.Enviada,
+                type,
+                status: freshClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
                 updatedAt: nowIso,
                 declaredAt: nowIso,
-                is_paid: false,
+                is_paid: freshClient.isCourtesy ? true : false,
+                paidAt: freshClient.isCourtesy ? nowIso : undefined,
                 amount: data.amount || 0,
                 transactionId: data.id || `PDF-${Date.now().toString().slice(-4)}`,
                 proof_file: proofFileObj
@@ -590,7 +611,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             const updates: Partial<Client> = { declarations: history };
 
             updateClient(freshClient.id, updates);
-            toast.success('¡Comprobante validado! Obligación marcada como HECHA (Cobro Pendiente)');
+            toast.success(freshClient.isCourtesy ? '¡Comprobante validado! (Tarifa de Cortesía Aplicada)' : '¡Comprobante validado! Obligación marcada como HECHA (Cobro Pendiente)');
 
         } catch (err) {
             console.error("Error procesando PDF:", err);

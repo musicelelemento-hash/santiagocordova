@@ -180,6 +180,25 @@ export const extractDataFromDeclarationPdf = async (file: File): Promise<{
       formType = 'RENTA';
     } else if (cleanText.includes("FORMULARIO 101")) {
       formType = 'RENTA SOCIEDADES';
+    } else if (cleanText.includes("3031") || 
+               cleanText.includes("BEBIDAS ALCOHÓLICAS") || 
+               cleanText.includes("DECLARACIÓN DE ICE") || 
+               cleanText.includes("DECLARACION DE ICE") || 
+               cleanText.includes("FORMULARIO 105") || 
+               cleanText.includes("CONSUMOS ESPECIALES")) {
+      formType = 'ICE';
+    } else if (cleanText.includes("ANEXO DE IMPUESTO A LOS CONSUMOS ESPECIALES") || 
+               cleanText.includes("ANEXO DE CONSUMOS ESPECIALES") || 
+               cleanText.includes("ANEXO ICE") || 
+               cleanText.includes("SISTEMA DE RECEPCION DE ANEXOS POR INTERNET") || 
+               cleanText.includes("PRESENTACIÓN DE ARCHIVO - ICE") || 
+               cleanText.includes("PRESENTACION DE ARCHIVO - ICE")) {
+      formType = 'ANEXO_ICE';
+    } else if (cleanText.includes("ANEXO DE PRECIOS DE VENTA AL PÚBLICO") || 
+               cleanText.includes("ANEXO PVP") || 
+               cleanText.includes("PRESENTACIÓN DE ARCHIVO - PVP") || 
+               cleanText.includes("PRESENTACION DE ARCHIVO - PVP")) {
+      formType = 'PVP';
     }
 
     // Extracción de Periodo
@@ -232,9 +251,17 @@ export const extractDataFromDeclarationPdf = async (file: File): Promise<{
     const idMatch = cleanText.match(/N[UÚ]MERO DE SERIE\s*[:]?\s*(\d+)/) || cleanText.match(/N[UÚ]MERO ADHESIVO\s*[:]?\s*(\d+)/);
     const id = idMatch ? idMatch[1] : '';
 
-    // Extracción de Fecha de Declaración (si existe)
-    const dateMatch = cleanText.match(/FECHA Y HORA DE DECLARACI[ÓO]N\s*[:]?\s*(\d{2})\/(\d{2})\/(\d{4})/i);
+    // Extracción de Fecha de Declaración / Presentación / Carga
+    const dateMatch = cleanText.match(/FECHA Y HORA DE DECLARACI[ÓO]N\s*[:]?\s*(\d{2})\/(\d{2})\/(\d{4})/i) ||
+                      cleanText.match(/PRESENTADO CON FECHA Y HORA\s*[:]?\s*(\d{2})\/(\d{2})\/(\d{4})/i) ||
+                      cleanText.match(/FECHA Y HORA\s*[:]?\s*(\d{2})\/(\d{2})\/(\d{4})/i) ||
+                      cleanText.match(/FECHA DE CARGA\s*[:]?\s*(\d{2})[-/](\d{2})[-/](\d{4})/i);
     const declarationDate = dateMatch ? `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}` : '';
+
+    // Autocorrección de año para Anexos cargados en la campaña activa de Junio 2026
+    if (formType === 'ANEXO_ICE' && period === '2025-06' && declarationDate && declarationDate.startsWith('2026')) {
+      period = '2026-06';
+    }
 
     if (!ruc && formType === 'DESCONOCIDO') {
       throw new Error("Documento no reconocido como declaración válida del SRI.");

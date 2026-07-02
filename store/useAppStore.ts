@@ -704,13 +704,13 @@ export const useAppStore = create<AppState>((set, get) => ({
       const t0 = performance.now();
 
       const selfHealChavez = (clientsList: Client[]) => {
-        const idx = clientsList.findIndex(c => c.ruc === '0702706813002' || (c.ruc === '0702706821001' && !c.clientStartPeriod));
+        const idx = clientsList.findIndex(c => c.ruc === '0702706813002' || c.ruc === '0702706821001' || (c.ruc === '0706482023001' && !c.clientStartPeriod));
         if (idx !== -1) {
           const client = clientsList[idx];
           console.log("🛠️ selfHealChavez: Corrigiendo datos de Chavez...");
           setTimeout(() => {
             get().updateClient(client.id, { 
-              ruc: '0702706821001', 
+              ruc: '0706482023001', 
               clientStartPeriod: '2026-05' 
             });
           }, 500);
