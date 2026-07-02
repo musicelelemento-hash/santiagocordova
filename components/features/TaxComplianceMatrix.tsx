@@ -32,6 +32,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
     const [searchTerm, setSearchTerm] = useState('');
     const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
+    const [copiedKey, setCopiedKey] = useState<string | null>(null);
+    const [isWorkspaceMode, setIsWorkspaceMode] = useState(false);
 
     // Sync mode when navigating between matrix/renta tabs
     React.useEffect(() => {
@@ -121,6 +123,22 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         return result;
     }, [frequency, matrixMode, selectedYear, today.getFullYear(), today.getMonth(), today.getDate()]);
 
+    // Check if client has uploaded all proofs for the displayed matrix periods
+    const isClientUpToDate = (client: Client) => {
+        return periods.every(p => {
+            const obligations = getObligationsForPeriod(client, p);
+            if (obligations.length === 0) return true;
+            const declarations = client.declarations || [];
+            return obligations.every(ob => {
+                const d = declarations.find(dh => 
+                    dh.period === p && 
+                    (dh.type === ob.type || (!dh.type && (ob.type === 'IVA' || ob.type === 'RENTA')))
+                );
+                return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada || !!d.proof_file) && d.proof_file;
+            });
+        });
+    };
+
     const filteredClients = useMemo(() => {
         return clients.filter(c => {
             const clientFreq = c.taxProfile?.ivaFrequency ||
@@ -145,11 +163,18 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 matchesSearch
             );
         }).sort((a, b) => {
+            if (isWorkspaceMode) {
+                const upToDateA = isClientUpToDate(a);
+                const upToDateB = isClientUpToDate(b);
+                if (upToDateA !== upToDateB) {
+                    return upToDateA ? 1 : -1; // Not up-to-date (false) first, up-to-date (true) last
+                }
+            }
             const digitA = parseInt(a.ruc[8], 10) === 0 ? 10 : parseInt(a.ruc[8], 10);
             const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
             return digitA - digitB || a.name.localeCompare(b.name);
         });
-    }, [clients, frequency, matrixMode, searchTerm]);
+    }, [clients, frequency, matrixMode, searchTerm, isWorkspaceMode, periods]);
 
     const getStatusIcon = (declaration?: Declaration) => {
         if (!declaration) return <div className="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-white/5 shadow-inner" title="Sin Registro" />;
@@ -233,6 +258,19 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             ))}
                         </select>
                     )}
+                    {/* Workspace desk switcher */}
+                    <button
+                        onClick={() => setIsWorkspaceMode(!isWorkspaceMode)}
+                        className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border shadow-sm ${
+                            isWorkspaceMode 
+                                ? 'bg-primary text-white border-primary/50 shadow-primary/20' 
+                                : 'bg-slate-100 dark:bg-black/25 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:text-slate-700 dark:hover:text-slate-200'
+                        }`}
+                        title="Priorizar clientes con obligaciones pendientes"
+                    >
+                        <LucideIcons.Briefcase size={12} />
+                        Mesa de Trabajo: {isWorkspaceMode ? 'Pendientes Arriba' : 'Estándar'}
+                    </button>
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
@@ -334,7 +372,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         {filteredClients.map((client, index) => {
                             const currentDigit = parseInt(client.ruc[8], 10);
                             const prevDigit = index > 0 ? parseInt(filteredClients[index - 1].ruc[8], 10) : null;
-                            const showDivider = currentDigit !== prevDigit;
+                            const showDivider = !isWorkspaceMode && (currentDigit !== prevDigit);
 
                             return (
                                 <React.Fragment key={client.id}>
@@ -377,23 +415,75 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     {client.ruc[8]}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    {/* Clicking the name copies RUC */}
-                                                    <button
-                                                        title="Clic para copiar RUC"
-                                                        onClick={(e) => { e.stopPropagation(); handleCopyRuc(client.ruc); }}
-                                                        className={`text-left text-sm font-black truncate max-w-[200px] transition-colors ${
-                                                            copiedRuc === client.ruc
-                                                                ? 'text-emerald-500'
-                                                                : 'text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary'
-                                                        }`}
-                                                    >
-                                                        {copiedRuc === client.ruc ? '✓ RUC copiado' : (client.tradeName || client.name)}
-                                                    </button>
-                                                    <span
-                                                        title="Clic para copiar RUC"
-                                                        onClick={(e) => { e.stopPropagation(); handleCopyRuc(client.ruc); }}
-                                                        className="text-[9px] font-mono font-bold text-slate-400 tracking-widest mt-1 cursor-pointer hover:text-primary transition-colors select-none"
-                                                    >
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-black truncate max-w-[200px] text-slate-900 dark:text-white group-hover/name:text-primary transition-colors">
+                                                            {client.tradeName || client.name}
+                                                        </span>
+                                                        {isWorkspaceMode && (
+                                                            <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                                                isClientUpToDate(client) 
+                                                                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
+                                                                    : 'bg-rose-500/10 text-rose-500 border border-rose-500/20 animate-pulse'
+                                                            }`}>
+                                                                {isClientUpToDate(client) ? 'Al Día' : 'Pendiente'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1.5 mt-1.5 no-print">
+                                                        <span className="text-[9px] font-mono font-bold text-slate-400 tracking-wider">
+                                                            {client.ruc}
+                                                        </span>
+                                                        
+                                                        {/* Copiar RUC */}
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleCopyRuc(client.ruc); }}
+                                                            className={`p-1 rounded transition-all border ${
+                                                                copiedRuc === client.ruc
+                                                                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                                    : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-primary hover:border-primary/30'
+                                                            }`}
+                                                            title={copiedRuc === client.ruc ? "RUC Copiado" : "Copiar RUC"}
+                                                        >
+                                                            {copiedRuc === client.ruc ? <LucideIcons.Check size={8} /> : <LucideIcons.Copy size={8} />}
+                                                        </button>
+
+                                                        {/* Copiar Clave SRI */}
+                                                        {client.sriPassword && (
+                                                            <button
+                                                                onClick={(e) => { 
+                                                                    e.stopPropagation(); 
+                                                                    navigator.clipboard.writeText(client.sriPassword!).then(() => {
+                                                                        setCopiedKey(client.id);
+                                                                        setTimeout(() => setCopiedKey(null), 1500);
+                                                                    });
+                                                                }}
+                                                                className={`p-1 rounded transition-all border ${
+                                                                    copiedKey === client.id
+                                                                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                                        : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-emerald-500 hover:border-emerald-500/30'
+                                                                }`}
+                                                                title={copiedKey === client.id ? "Clave Copiada" : `Copiar Clave SRI (${client.sriPassword})`}
+                                                            >
+                                                                {copiedKey === client.id ? <LucideIcons.Check size={8} /> : <LucideIcons.Key size={8} />}
+                                                            </button>
+                                                        )}
+
+                                                        {/* Enlace SRI */}
+                                                        <a
+                                                            href="https://srienlinea.sri.gob.ec/sri-en-linea/sri/login/inicio"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="p-1 rounded border bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-primary hover:border-primary/30 transition-all flex items-center justify-center"
+                                                            title="Ir a SRI en Línea"
+                                                        >
+                                                            <LucideIcons.ExternalLink size={8} />
+                                                        </a>
+                                                    </div>
+
+                                                    {/* Mostrar RUC en modo impresión */}
+                                                    <span className="text-[9px] font-mono font-bold text-slate-400 tracking-wider mt-1 print-only hidden">
                                                         {client.ruc}
                                                     </span>
                                                 </div>
