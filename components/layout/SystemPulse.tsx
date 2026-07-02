@@ -10,6 +10,7 @@ interface SystemPulseProps {
     sessionCode?: string;
     version?: string;
     theme?: Theme;
+    isCollapsed?: boolean;
 }
 
 export const SystemPulse: React.FC<SystemPulseProps> = ({
@@ -17,7 +18,8 @@ export const SystemPulse: React.FC<SystemPulseProps> = ({
     role = "ADMINISTRADOR",
     sessionCode = "AQ.Ab8RN",
     version = "v1.0",
-    theme = "dark"
+    theme = "dark",
+    isCollapsed = false
 }) => {
     const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -25,6 +27,47 @@ export const SystemPulse: React.FC<SystemPulseProps> = ({
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
+
+    if (isCollapsed) {
+        return (
+            <div className="flex flex-col items-center gap-6 py-6 px-2 select-none animate-in fade-in duration-500 font-premium">
+                {/* Clock only */}
+                <div className="flex flex-col items-center">
+                    <span className={`text-xs font-mono font-bold tracking-tight ${
+                        theme === 'light' ? 'text-slate-900' : 'text-slate-100'
+                    }`}>
+                        {format(currentTime, 'HH:mm')}
+                    </span>
+                </div>
+
+                {/* Led connection dot */}
+                <div className="relative" title="Conexión Segura Activa">
+                    <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border transition-all ${
+                        theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-slate-900 border-white/10'
+                    }`}>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                    </div>
+                </div>
+
+                {/* Glass initials badge */}
+                <div 
+                    className={`w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500/10 to-emerald-500/10 border flex items-center justify-center text-xs font-black tracking-widest hover:scale-105 transition-transform ${
+                        theme === 'light' 
+                            ? 'border-slate-200 text-slate-700 bg-slate-50' 
+                            : 'border-white/10 text-slate-200 bg-white/5'
+                    }`}
+                    title={`${userName} (${role})`}
+                >
+                    {userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                </div>
+
+                {/* Mini shield check */}
+                <span title="Seguridad Activa">
+                    <ShieldCheck size={14} className="text-slate-500 opacity-40 hover:opacity-100 hover:text-primary transition-all cursor-help mt-2" />
+                </span>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-6 p-6 select-none animate-fade-in font-premium">

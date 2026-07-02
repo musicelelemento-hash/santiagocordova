@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { LogOut, RefreshCw, Check, Cloud, WifiOff, AlertCircle, Zap, UserPlus } from 'lucide-react';
+import { LogOut, RefreshCw, Check, Cloud, WifiOff, AlertCircle, Zap, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Logo } from '../ui/Logo';
 import { Screen, Theme } from '../../types';
 import { SystemPulse } from './SystemPulse';
@@ -26,6 +25,8 @@ interface SidebarProps {
     role?: string;
     sessionCode?: string;
     theme?: Theme;
+    isCollapsed?: boolean;
+    onToggleCollapse?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -39,7 +40,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     userName,
     role,
     sessionCode,
-    theme = 'dark'
+    theme = 'dark',
+    isCollapsed = false,
+    onToggleCollapse
 }) => {
 
     const getCloudStatusIcon = () => {
@@ -55,11 +58,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const addClientItem = navItems.find(i => i.screen === 'add_client' as any);
 
     return (
-        <aside className={`hidden md:flex flex-col w-[280px] h-screen fixed left-0 top-0 z-50 border-r transition-all duration-500 overflow-hidden no-print ${
+        <aside className={`hidden md:flex flex-col h-screen fixed left-0 top-0 z-50 border-r transition-all duration-500 overflow-visible no-print ${
+            isCollapsed ? 'w-[84px]' : 'w-[280px]'
+        } ${
             theme === 'dark' 
                 ? 'bg-slate-950 border-white/5 shadow-2xl' 
                 : 'bg-white border-slate-200 shadow-xl'
         }`}>
+            {/* Collapse Toggle Button (Floating on Border) */}
+            {onToggleCollapse && (
+                <button
+                    onClick={onToggleCollapse}
+                    className={`absolute right-[-14px] top-8 z-[60] w-7 h-7 flex items-center justify-center rounded-full border transition-all duration-300 shadow-md hover:scale-110 active:scale-95 group/collapse ${
+                        theme === 'dark'
+                            ? 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                            : 'bg-white border-slate-200 text-slate-500 hover:text-slate-900'
+                    }`}
+                    title={isCollapsed ? "Expandir Menú" : "Colapsar Menú"}
+                >
+                    {isCollapsed ? (
+                        <ChevronRight size={12} strokeWidth={2.5} className="group-hover/collapse:translate-x-0.5 transition-transform" />
+                    ) : (
+                        <ChevronLeft size={12} strokeWidth={2.5} className="group-hover/collapse:-translate-x-0.5 transition-transform" />
+                    )}
+                </button>
+            )}
+
             {/* System Pulse - Top Integration */}
             <div className={`border-b transition-colors duration-500 ${
                 theme === 'dark' ? 'border-white/5 bg-slate-900/50' : 'border-slate-100 bg-slate-50/50'
@@ -69,17 +93,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     role={role} 
                     sessionCode={sessionCode} 
                     theme={theme}
+                    isCollapsed={isCollapsed}
                 />
             </div>
 
             {/* Navigation Section */}
-            <nav className="flex-1 overflow-y-auto py-6 px-4 no-scrollbar">
-                <div className="flex flex-col gap-1.5">
+            <nav className={`flex-1 overflow-y-auto py-6 no-scrollbar ${isCollapsed ? 'px-2 flex flex-col items-center gap-1.5' : 'px-4'}`}>
+                <div className={`flex flex-col gap-1.5 ${isCollapsed ? 'w-full items-center' : ''}`}>
                     {navItems.filter(i => (i.screen as any) !== 'add_client' && (i.screen as any) !== 'landing').map(({ screen, icon: Icon, label, count }) => (
                         <button
                             key={screen}
                             onClick={() => onNavigate(screen)}
-                            className={`group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 
+                            title={isCollapsed ? label : undefined}
+                            className={`group relative flex items-center rounded-xl transition-all duration-300 
+                                ${isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-4 py-3 gap-3'}
                                 ${activeScreen === screen
                                     ? (theme === 'dark' 
                                         ? 'bg-white/10 text-white border border-white/10 shadow-[0_0_20px_rgba(255,255,255,0.05)]'
@@ -89,22 +116,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                         : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900')
                                 }`}
                         >
-                            <Icon size={20} className={`transition-transform duration-300 ${activeScreen === screen ? 'scale-110' : 'group-hover:scale-110'}`} />
-                            <span className="text-[13px] font-black uppercase tracking-widest flex-1 text-left font-premium">
+                            <Icon size={20} className={`transition-transform duration-300 flex-shrink-0 ${activeScreen === screen ? 'scale-110' : 'group-hover:scale-110'}`} />
+                            <span className={`text-[13px] font-black uppercase tracking-widest flex-1 text-left font-premium transition-all duration-300 ${
+                                isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''
+                            }`}>
                                 {label}
                             </span>
                             
                             {count !== undefined && count > 0 && (
-                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border transition-colors duration-300 font-premium
-                                    ${activeScreen === screen 
-                                        ? (theme === 'dark' ? 'bg-white text-slate-900 border-white' : 'bg-white text-slate-900 border-slate-200')
-                                        : (theme === 'dark' ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200')}
-                                `}>
-                                    {count}
-                                </span>
+                                isCollapsed ? (
+                                    <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-slate-900 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
+                                ) : (
+                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border transition-colors duration-300 font-premium
+                                        ${activeScreen === screen 
+                                            ? (theme === 'dark' ? 'bg-white text-slate-900 border-white' : 'bg-white text-slate-900 border-slate-200')
+                                            : (theme === 'dark' ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200')}
+                                    `}>
+                                        {count}
+                                    </span>
+                                )
                             )}
 
-                            {activeScreen === screen && (
+                            {activeScreen === screen && !isCollapsed && (
                                 <div className={`absolute left-0 w-1 h-6 rounded-r-full shadow-lg ${
                                     theme === 'dark' ? 'bg-white shadow-[4px_0_12px_rgba(255,255,255,0.4)]' : 'bg-slate-900 shadow-[4px_0_12px_rgba(15,23,42,0.3)]'
                                 }`}></div>
@@ -114,37 +147,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
 
                 {/* Quick Actions Separator */}
-                <div className="mt-8 mb-4 px-4">
+                <div className={`mt-8 mb-4 px-4 transition-all duration-300 ${isCollapsed ? 'opacity-0 h-0 my-0 overflow-hidden' : ''}`}>
                     <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-600">
                         Acciones Rápidas
                     </span>
                 </div>
 
-                <div className="flex flex-col gap-1.5 px-1">
-                        <button 
-                            onClick={onQuickManagement} 
-                            className={`group flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 ${
-                                theme === 'dark'
-                                    ? 'bg-slate-800/40 border-white/5 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/10'
-                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-300'
-                            }`}
-                        >
-                            <Zap size={18} className="transition-transform group-hover:scale-110" />
-                            <span className="text-[11px] font-black uppercase tracking-widest font-premium">Gestión Inmediata</span>
-                        </button>
+                <div className={`flex flex-col gap-1.5 ${isCollapsed ? 'w-full items-center px-0 mt-6' : 'px-1'}`}>
+                    <button 
+                        onClick={onQuickManagement} 
+                        title={isCollapsed ? "Gestión Inmediata" : undefined}
+                        className={`group flex items-center rounded-xl border transition-all duration-300 ${
+                            isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-4 py-3 gap-3'
+                        } ${
+                            theme === 'dark'
+                                ? 'bg-slate-800/40 border-white/5 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/10'
+                                : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-300'
+                        }`}
+                    >
+                        <Zap size={18} className="transition-transform group-hover:scale-110 flex-shrink-0" />
+                        <span className={`text-[11px] font-black uppercase tracking-widest font-premium transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''}`}>Gestión Inmediata</span>
+                    </button>
 
                     {addClientItem?.onClick && (
                         <button 
                             onClick={addClientItem.onClick} 
-                            className={`group flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-300 ${
+                            title={isCollapsed ? "Nuevo Cliente" : undefined}
+                            className={`group flex items-center rounded-xl border transition-all duration-300 ${
+                                isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-4 py-3 gap-3'
+                            } ${
                                 theme === 'dark'
                                     ? 'bg-slate-800/40 border-white/5 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/10'
                                     : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-300'
-                            }`}
-                        >
-                            <UserPlus size={18} className="transition-transform group-hover:scale-110" />
-                            <span className="text-[11px] font-black uppercase tracking-widest font-premium">Nuevo Cliente</span>
-                        </button>
+                        }`}
+                    >
+                        <UserPlus size={18} className="transition-transform group-hover:scale-110 flex-shrink-0" />
+                        <span className={`text-[11px] font-black uppercase tracking-widest font-premium transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''}`}>Nuevo Cliente</span>
+                    </button>
                     )}
                 </div>
             </nav>
@@ -153,19 +192,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className={`p-4 border-t transition-colors duration-500 ${
                 theme === 'dark' ? 'bg-slate-900/80 border-white/5' : 'bg-slate-50 border-slate-100'
             }`}>
-                <div className="flex items-center gap-2">
+                <div className={`flex ${isCollapsed ? 'flex-col items-center gap-2' : 'items-center gap-2'}`}>
                     {onManualSave && (
                         <button
                             onClick={onManualSave}
-                            className={`flex-1 flex items-center justify-center gap-2 h-10 rounded-xl border transition-all duration-300 group ${
+                            title={isCollapsed ? "Sincronizar Manualmente" : "Sincronizar Manualmente"}
+                            className={`flex items-center justify-center gap-2 h-10 rounded-xl border transition-all duration-300 group ${
+                                isCollapsed ? 'w-10 h-10 flex-none' : 'flex-1'
+                            } ${
                                 theme === 'dark'
                                     ? 'bg-slate-800/50 border-white/5 text-slate-400 hover:text-sky-400 hover:bg-sky-400/5'
                                     : 'bg-white border-slate-200 text-slate-500 hover:text-sky-600 hover:border-sky-200'
                             }`}
-                            title="Sincronizar Manualmente"
                         >
                             {getCloudStatusIcon()}
-                            <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-sky-400">Sync</span>
+                            <span className={`text-[11px] font-bold uppercase tracking-wider group-hover:text-sky-400 transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''}`}>Sync</span>
                         </button>
                     )}
 

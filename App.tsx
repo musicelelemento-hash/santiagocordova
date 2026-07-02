@@ -106,6 +106,7 @@ const App: React.FC = () => {
   const [loggedClient, setLoggedClient] = useState<Client | null>(null);
   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'light');
   const [activeScreen, setActiveScreen] = useState<Screen>('home');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [previousScreen, setPreviousScreen] = useState<Screen | null>(null);
   const [showSplash, setShowSplash] = useState(true);
 
@@ -379,8 +380,10 @@ const App: React.FC = () => {
           role="ADMINISTRADOR"
           sessionCode="AQ.Ab8RN"
           theme={theme}
+          isCollapsed={isSidebarCollapsed || !!clientToView}
+          onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
         />
-        <div className="flex-1 flex flex-col min-w-0 relative z-10 md:pl-[280px]">
+        <div className={`flex-1 flex flex-col min-w-0 relative z-10 transition-all duration-500 ${(isSidebarCollapsed || !!clientToView) ? 'md:pl-[84px]' : 'md:pl-[280px]'}`}>
           <header className="hidden md:flex items-center justify-between p-6 px-10 bg-white/40 dark:bg-surface/60 backdrop-blur-3xl border-b border-slate-200/50 dark:border-white/10 relative overflow-hidden transition-all duration-700 no-print">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-light tracking-tight text-slate-800 dark:text-white capitalize">
