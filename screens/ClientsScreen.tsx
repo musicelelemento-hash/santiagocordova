@@ -458,11 +458,14 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const handleOpenClientDetails = (client: Client) => {
         setSelectedClient(client);
         setIsClientDetailsOpen(true);
+        navigate('clients', { clientIdToView: client.id });
     };
 
     const handleCloseClientDetails = () => {
         setIsClientDetailsOpen(false);
         setTimeout(() => setSelectedClient(null), 300);
+        clearClientToView();
+        navigate('clients');
     };
 
     const handleQuickAction = (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', customPeriod?: string) => {
@@ -1675,16 +1678,14 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             {/* OVERLAY DE DETALLE DE CLIENTE: Preserva el estado de la lista al no desmontarla */}
             {selectedClient && (
-                <div className={`fixed inset-0 z-50 h-full overflow-y-auto bg-white dark:bg-gray-900 transform transition-transform duration-500 ${isClientDetailsOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                    <ClientDetailView 
-                        client={selectedClient} 
-                        onSave={handleUpdateClient} 
-                        onBack={handleCloseClientDetails} 
-                        serviceFees={serviceFees} 
-                        sriCredentials={sriCredentialsProp || sriCredentials}
-                        initialTab={initialTab}
-                    />
-                </div>
+                <ClientDetailView 
+                    client={selectedClient} 
+                    onSave={handleUpdateClient} 
+                    onBack={handleCloseClientDetails} 
+                    serviceFees={serviceFees} 
+                    sriCredentials={sriCredentialsProp || sriCredentials}
+                    initialTab={(window as any).__TEMP_INITIAL_TAB__ || initialTab}
+                />
             )}
 
             {previewItem && (
