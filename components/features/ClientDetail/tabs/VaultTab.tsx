@@ -1,5 +1,5 @@
 import React from 'react';
-import { Client, TaxRegime, Declaration } from '../../../../types';
+import { Client, TaxRegime, Declaration, StoredFile } from '../../../../types';
 import { getPeriod, formatPeriodForDisplay } from '../../../../services/sri';
 import * as LucideIcons from 'lucide-react';
 import { VaultCard } from '../VaultCard';
@@ -18,6 +18,7 @@ interface VaultTabProps {
     setPreviewItem: (item: Declaration | null) => void;
     notes: ClientNote[];
     onDownloadFile?: (file: any) => void;
+    onUpdateClientDirect?: (updates: Partial<Client>) => Promise<void>;
 }
 
 export const VaultTab: React.FC<VaultTabProps> = ({
@@ -31,8 +32,34 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     proofInputRef,
     setPreviewItem,
     notes,
-    onDownloadFile
+    onDownloadFile,
+    onUpdateClientDirect
 }) => {
+    const handleUploadField = async (field: keyof Client, file: StoredFile) => {
+        if (isEditing) {
+            setEditedClient({ ...editedClient, [field]: file });
+        } else {
+            setEditedClient({ ...editedClient, [field]: file });
+            if (onUpdateClientDirect) {
+                await onUpdateClientDirect({ [field]: file });
+            }
+        }
+    };
+
+    const handleDeleteField = async (field: keyof Client) => {
+        if (isEditing) {
+            const updated = { ...editedClient };
+            delete updated[field];
+            setEditedClient(updated);
+        } else {
+            const updated = { ...editedClient };
+            delete updated[field];
+            setEditedClient(updated);
+            if (onUpdateClientDirect) {
+                await onUpdateClientDirect({ [field]: null as any });
+            }
+        }
+    };
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
             {/* Encabezado Premium Bóveda */}
@@ -64,9 +91,30 @@ export const VaultTab: React.FC<VaultTabProps> = ({
 
             {/* Top Security Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <VaultCard icon={LucideIcons.ScanLine} label="Certificado RUC" file={editedClient.rucCertificate} onUpload={(f) => setEditedClient({ ...editedClient, rucCertificate: f })} onDownload={() => editedClient.rucCertificate && onDownloadFile?.(editedClient.rucCertificate)} />
-                <VaultCard icon={LucideIcons.FileText} label="Otros RUC PDF" file={editedClient.rucPdf} onUpload={(f) => setEditedClient({ ...editedClient, rucPdf: f })} onDownload={() => editedClient.rucPdf && onDownloadFile?.(editedClient.rucPdf)} />
-                <VaultCard icon={LucideIcons.FileKey} label="Firma Electrónica" file={editedClient.signatureFile} onUpload={(f) => setEditedClient({ ...editedClient, signatureFile: f })} onDownload={() => editedClient.signatureFile && onDownloadFile?.(editedClient.signatureFile)} />
+                <VaultCard 
+                    icon={LucideIcons.ScanLine} 
+                    label="Certificado RUC" 
+                    file={editedClient.rucCertificate} 
+                    onUpload={(f) => handleUploadField('rucCertificate', f)} 
+                    onDownload={() => editedClient.rucCertificate && onDownloadFile?.(editedClient.rucCertificate)} 
+                    onDelete={() => handleDeleteField('rucCertificate')}
+                />
+                <VaultCard 
+                    icon={LucideIcons.FileText} 
+                    label="Otros RUC PDF" 
+                    file={editedClient.rucPdf} 
+                    onUpload={(f) => handleUploadField('rucPdf', f)} 
+                    onDownload={() => editedClient.rucPdf && onDownloadFile?.(editedClient.rucPdf)} 
+                    onDelete={() => handleDeleteField('rucPdf')}
+                />
+                <VaultCard 
+                    icon={LucideIcons.FileKey} 
+                    label="Firma Electrónica" 
+                    file={editedClient.signatureFile} 
+                    onUpload={(f) => handleUploadField('signatureFile', f)} 
+                    onDownload={() => editedClient.signatureFile && onDownloadFile?.(editedClient.signatureFile)} 
+                    onDelete={() => handleDeleteField('signatureFile')}
+                />
                 
                 <VaultCard 
                     icon={LucideIcons.Smartphone} 
@@ -92,12 +140,16 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                         label={editedClient.rentaRefundResolutionFile ? "Resolución Renta" : "Resolución T.EDAD"} 
                         file={editedClient.rentaRefundResolutionFile || editedClient.elderlyDevolucionIvaResolutionFile} 
                         onUpload={(f) => {
-                            if (editedClient.rentaRefundResolutionFile) setEditedClient({ ...editedClient, rentaRefundResolutionFile: f });
-                            else setEditedClient({ ...editedClient, elderlyDevolucionIvaResolutionFile: f });
+                            if (editedClient.rentaRefundResolutionFile) handleUploadField('rentaRefundResolutionFile', f);
+                            else handleUploadField('elderlyDevolucionIvaResolutionFile', f);
                         }} 
                         onDownload={() => {
                             const file = editedClient.rentaRefundResolutionFile || editedClient.elderlyDevolucionIvaResolutionFile;
                             file && onDownloadFile?.(file);
+                        }}
+                        onDelete={() => {
+                            if (editedClient.rentaRefundResolutionFile) handleDeleteField('rentaRefundResolutionFile');
+                            else handleDeleteField('elderlyDevolucionIvaResolutionFile');
                         }}
                     />
                 )}

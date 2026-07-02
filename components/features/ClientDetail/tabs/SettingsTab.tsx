@@ -2,12 +2,14 @@ import React from 'react';
 import { Client, TaxRegime } from '../../../../types';
 import * as LucideIcons from 'lucide-react';
 import { ExtraObligationsCheckboxes } from '../ExtraObligationsCheckboxes';
+import { useToast } from '../../../../context/ToastContext';
 
 interface SettingsTabProps {
     client: Client;
     editedClient: Client;
     setEditedClient: React.Dispatch<React.SetStateAction<Client>>;
     isEditing: boolean;
+    onUpdateClientDirect?: (updates: Partial<Client>) => Promise<void>;
 }
 
 const TaxProfileField: React.FC<{
@@ -55,8 +57,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     client,
     editedClient,
     setEditedClient,
-    isEditing
+    isEditing,
+    onUpdateClientDirect
 }) => {
+    const { toast } = useToast();
     return (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700 pb-20">
             {/* Grid for Technical Parameters */}
@@ -98,13 +102,104 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 isEditing={isEditing} 
                                 onChange={(val) => setEditedClient({ ...editedClient, email: val })} 
                             />
-                            <TaxProfileField 
-                                label="Teléfono / WhatsApp" 
-                                value={editedClient.phones?.[0] || ''} 
-                                icon={LucideIcons.Phone} 
-                                isEditing={isEditing} 
-                                onChange={(val) => setEditedClient({ ...editedClient, phones: [val] })} 
-                            />
+                            {/* Teléfonos y Canales de WhatsApp Múltiples */}
+                            <div className="space-y-3 group/field animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2.5">
+                                        <LucideIcons.Phone size={13} className="text-primary/50 group-hover/field:text-primary transition-colors" />
+                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Teléfonos / WhatsApp</span>
+                                    </div>
+                                    {isEditing && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setEditedClient(prev => ({ ...prev, phones: [...(prev.phones || ['']), ''] }))}
+                                            className="text-[9px] text-emerald-500 hover:text-emerald-600 font-black uppercase tracking-wider flex items-center gap-1"
+                                        >
+                                            <LucideIcons.Plus size={10} strokeWidth={3} /> Añadir Número
+                                        </button>
+                                    )}
+                                </div>
+
+                                {isEditing ? (
+                                    <div className="space-y-3">
+                                        {(editedClient.phones || ['']).map((phone, idx) => (
+                                            <div key={idx} className="flex gap-3 items-center animate-in fade-in duration-300">
+                                                <div className="relative flex-1">
+                                                    <LucideIcons.Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                    <input
+                                                        type="text"
+                                                        value={phone}
+                                                        onChange={(e) => {
+                                                            const newPhones = [...(editedClient.phones || [''])];
+                                                            newPhones[idx] = e.target.value;
+                                                            setEditedClient({ ...editedClient, phones: newPhones });
+                                                        }}
+                                                        className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl pl-11 pr-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all shadow-sm"
+                                                        placeholder="Ej: 0991234567"
+                                                    />
+                                                </div>
+                                                {(editedClient.phones || []).length > 1 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const newPhones = (editedClient.phones || []).filter((_, i) => i !== idx);
+                                                            setEditedClient({ ...editedClient, phones: newPhones });
+                                                        }}
+                                                        className="p-3.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-2xl transition-all border border-rose-500/10 active:scale-95"
+                                                    >
+                                                        <LucideIcons.Trash2 size={15} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {(client.phones || []).length > 0 ? (
+                                            (client.phones || []).map((phone, idx) => {
+                                                const cleanPhone = phone.replace(/\D/g, '');
+                                                const ecuadorianPhone = cleanPhone.startsWith('0') ? '593' + cleanPhone.substring(1) : cleanPhone;
+                                                return (
+                                                    <div key={idx} className="flex items-center justify-between px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 shadow-sm group/phone">
+                                                        <div className="flex items-center gap-3">
+                                                            <LucideIcons.Smartphone size={14} className="text-slate-400" />
+                                                            <span className="font-mono tracking-wider">{phone}</span>
+                                                        </div>
+                                                        <div className="flex gap-2 opacity-60 group-hover/phone:opacity-100 transition-opacity">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(phone);
+                                                                    toast.success("Teléfono copiado al portapapeles.");
+                                                                }}
+                                                                className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-slate-500 dark:text-slate-400 transition-colors"
+                                                                title="Copiar Número"
+                                                            >
+                                                                <LucideIcons.Copy size={13} />
+                                                            </button>
+                                                            {ecuadorianPhone && (
+                                                                <a
+                                                                    href={`https://wa.me/${ecuadorianPhone}`}
+                                                                    target="_blank"
+                                                                    rel="noreferrer"
+                                                                    className="p-2 hover:bg-emerald-500/10 hover:text-emerald-500 rounded-xl text-slate-500 dark:text-slate-400 transition-colors flex items-center justify-center"
+                                                                    title="Enviar Mensaje por WhatsApp"
+                                                                >
+                                                                    <LucideIcons.MessageSquare size={13} />
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-300 dark:text-slate-600 italic shadow-sm">
+                                                Sin números telefónicos registrados
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                             <div className="md:col-span-2">
                                 <TaxProfileField 
                                     label="Dirección de Facturación" 

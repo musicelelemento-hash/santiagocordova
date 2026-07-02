@@ -786,6 +786,16 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         />
     );
 
+    const handleUpdateClientDirect = async (updates: Partial<Client>) => {
+        try {
+            await updateClient(client.id, updates);
+            toast.success("Sincronizado correctamente.");
+        } catch (err) {
+            console.error("Error updating client direct:", err);
+            toast.error("Error al guardar los datos.");
+        }
+    };
+
     const renderVaultTab = () => (
         <VaultTab
             client={client}
@@ -799,6 +809,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             setPreviewItem={setPreviewItem}
             notes={client.structuredNotes || []}
             onDownloadFile={handleDownloadFile}
+            onUpdateClientDirect={handleUpdateClientDirect}
         />
     );
 
@@ -808,6 +819,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             editedClient={editedClient}
             setEditedClient={setEditedClient}
             isEditing={isEditing}
+            onUpdateClientDirect={handleUpdateClientDirect}
         />
     );
 

@@ -4,7 +4,7 @@ import { validateIdentifier, validateSriPassword, getPeriod } from '../../servic
 import { extractDataFromSriPdf, fileToBase64 } from '../../services/pdfExtraction';
 import {
     User, Mail, Phone, MapPin, FileText, Plus, X, Upload, Check, Loader, Lock, Briefcase, Camera, ScanText, Sparkles, Building2, Receipt, Palette,
-    ScanLine, CreditCard, Key, EyeOff, Eye, Calendar, DollarSign, Zap, Coins, ToggleRight, ToggleLeft, CheckCircle, AlertTriangle, Save, Users, CalendarCheck
+    ScanLine, CreditCard, Key, EyeOff, Eye, Calendar, DollarSign, Zap, Coins, ToggleRight, ToggleLeft, CheckCircle, AlertTriangle, Save, Users, CalendarCheck, Trash2
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '../../context/ToastContext';
@@ -398,16 +398,47 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-[11px] font-semibold text-slate-400 mb-2 block uppercase tracking-widest pl-1">WhatsApp</label>
-                                <div className="relative group">
-                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-400 transition-colors" size={16} />
-                                    <input
-                                        type="text"
-                                        value={(clientData.phones || [''])[0]}
-                                        onChange={e => setClientData({ ...clientData, phones: [e.target.value] })}
-                                        className="w-full pl-10 p-3 bg-white/5 dark:bg-slate-900/40 border border-white/10 dark:border-white/5 rounded-2xl text-xs font-semibold backdrop-blur-3xl"
-                                        placeholder="09..."
-                                    />
+                                <label className="text-[11px] font-semibold text-slate-400 mb-2 block uppercase tracking-widest pl-1 flex items-center justify-between">
+                                    <span>WhatsApp / Telf.</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => setClientData(prev => ({ ...prev, phones: [...(prev.phones || ['']), ''] }))}
+                                        className="text-[9px] text-emerald-500 hover:text-emerald-600 font-bold uppercase tracking-wider"
+                                    >
+                                        + Agregar
+                                    </button>
+                                </label>
+                                <div className="space-y-2">
+                                    {(clientData.phones || ['']).map((phone, idx) => (
+                                        <div key={idx} className="relative group flex gap-2 items-center">
+                                            <div className="relative flex-1">
+                                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-400 transition-colors" size={14} />
+                                                <input
+                                                    type="text"
+                                                    value={phone}
+                                                    onChange={e => {
+                                                        const newPhones = [...(clientData.phones || [''])];
+                                                        newPhones[idx] = e.target.value;
+                                                        setClientData({ ...clientData, phones: newPhones });
+                                                    }}
+                                                    className="w-full pl-10 p-3 bg-white/5 dark:bg-slate-900/40 border border-white/10 dark:border-white/5 rounded-2xl text-xs font-semibold backdrop-blur-3xl"
+                                                    placeholder="09..."
+                                                />
+                                            </div>
+                                            {(clientData.phones || []).length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newPhones = (clientData.phones || []).filter((_, i) => i !== idx);
+                                                        setClientData({ ...clientData, phones: newPhones });
+                                                    }}
+                                                    className="p-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl transition-all"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                             <div>

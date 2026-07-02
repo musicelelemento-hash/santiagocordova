@@ -10,13 +10,14 @@ interface VaultCardProps {
     file?: StoredFile;
     onUpload?: (file: StoredFile) => void;
     onDownload?: () => void;
+    onDelete?: () => void;
     isPassword?: boolean;
     value?: string;
     isEditing?: boolean;
     onChange?: (value: string) => void;
 }
 
-export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, onUpload, isPassword, value, onDownload, isEditing, onChange }) => {
+export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, onUpload, onDownload, onDelete, isPassword, value, isEditing, onChange }) => {
     const [showPassword, setShowPassword] = React.useState(false);
     const hasData = !!(file || value);
 
@@ -68,7 +69,11 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
                             >
                                 <LucideIcons.Download size={18} strokeWidth={2.5} />
                             </button>
-                            <button className="w-11 h-11 flex items-center justify-center bg-slate-100 dark:bg-surface-low hover:bg-rose-500 hover:text-white text-slate-500 dark:text-slate-400 rounded-xl transition-all active:scale-95 border border-slate-200 dark:border-white/5" title="Eliminar">
+                            <button 
+                                onClick={onDelete}
+                                className="w-11 h-11 flex items-center justify-center bg-slate-100 dark:bg-surface-low hover:bg-rose-500 hover:text-white text-slate-500 dark:text-slate-400 rounded-xl transition-all active:scale-95 border border-slate-200 dark:border-white/5" 
+                                title="Eliminar"
+                            >
                                 <LucideIcons.Trash2 size={18} strokeWidth={2.5} />
                             </button>
                         </>
