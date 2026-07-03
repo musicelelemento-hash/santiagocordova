@@ -526,7 +526,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             // Determine if this cell is generally "Done" (all obligations met)
                                             const allObligationsDone = obligations.length > 0 && obligations.every(ob => {
                                                 const d = findDeclarationForOb(declarations, p, ob.type);
-                                                return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada || !!d.proof_file) && d.proof_file;
+                                                return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada || !!d.proof_file);
                                             });
 
                                             return (
@@ -538,7 +538,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
                                                             const isSent = d?.status === DeclarationStatus.Enviada || isPaid || hasProof;
                                                             
-                                                            const isDone = hasProof;
+                                                            const isDone = hasProof || d?.status === DeclarationStatus.Enviada || d?.status === DeclarationStatus.Pagada;
                                                             const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
 
                                                             return (
@@ -611,6 +611,42 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         })}
                                                         {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-slate-200/50 dark:bg-white/10 my-6" />}
                                                     </div>
+                                                    {obligations.length > 1 && (
+                                                        <div className="mt-2.5 flex justify-center">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const allPaid = obligations.every(ob => {
+                                                                        const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                        return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+                                                                    });
+                                                                    
+                                                                    obligations.forEach(ob => {
+                                                                        if (onTogglePayment) {
+                                                                            onTogglePayment(client, p, ob.type as any, !allPaid);
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className={`flex items-center justify-center gap-1.5 px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all duration-300 ${
+                                                                    obligations.every(ob => {
+                                                                        const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                        return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+                                                                    })
+                                                                        ? 'bg-sky-500 hover:bg-sky-600 border-sky-600 text-white shadow-md shadow-sky-500/20 active:scale-95'
+                                                                        : 'bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 active:scale-95'
+                                                                }`}
+                                                                title={
+                                                                    obligations.every(ob => {
+                                                                        const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                        return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+                                                                    }) ? "Marcar todo como Pendiente" : "Marcar todo como Pagado"
+                                                                }
+                                                            >
+                                                                <LucideIcons.Coins size={11} strokeWidth={2.5} />
+                                                                <span>COBRO COMPLETO</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             );
                                         })}
