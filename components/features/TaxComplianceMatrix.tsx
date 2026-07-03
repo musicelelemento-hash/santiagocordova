@@ -11,7 +11,7 @@ type MatrixMode = 'IVA' | 'RENTA';
 interface TaxComplianceMatrixProps {
     clients: Client[];
     onViewClient: (client: Client) => void;
-    onUploadReceipt: (client: Client, period: string) => void;
+    onUploadReceipt: (client: Client, period: string, type: TaxObligationType) => void;
     onPreviewReceipt: (client: Client, declaration: Declaration) => void;
     onTogglePayment?: (client: Client, period: string, type: 'IVA' | 'RENTA', isPaid: boolean) => void;
     onTogglePriority?: (client: Client, period: string, type: TaxObligationType, isPriority: boolean) => void;
@@ -555,7 +555,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         if (hasProof) onPreviewReceipt(client, d!);
-                                                                        else onUploadReceipt(client, p);
+                                                                        else onUploadReceipt(client, p, ob.type as any);
                                                                     }}
                                                                 >
                                                                     <span className={`text-[8px] font-black tracking-wider uppercase mb-1 ${isDone || d?.isPriority ? 'opacity-90' : 'opacity-60'}`}>{ob.type}</span>

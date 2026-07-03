@@ -80,7 +80,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => (sessionStorage.getItem('clients_view_mode') as any) || 'list');
     const receiptFileInputRef = useRef<HTMLInputElement>(null);
     const bulkFileInputRef = useRef<HTMLInputElement>(null);
-    const [receiptUploadState, setReceiptUploadState] = useState<{ client: Client, period?: string } | null>(null);
+    const [receiptUploadState, setReceiptUploadState] = useState<{ client: Client, period?: string, obligationType?: TaxObligationType } | null>(null);
     const [bulkResults, setBulkResults] = useState<BulkUploadResult[]>([]);
     const [isBulkReportOpen, setIsBulkReportOpen] = useState(false);
     const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
@@ -552,8 +552,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         toast.success("Exportación CSV descargada");
     };
 
-    const handleUploadReceipt = (client: Client, period?: string) => {
-        setReceiptUploadState({ client, period });
+    const handleUploadReceipt = (client: Client, period?: string, type?: TaxObligationType) => {
+        setReceiptUploadState({ client, period, obligationType: type });
         receiptFileInputRef.current?.click();
     };
 
@@ -579,23 +579,27 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             // CRITICAL FIX: Leer siempre el cliente FRESCO del store
             const freshClient = clients.find(c => c.id === receiptUploadState.client.id) || receiptUploadState.client;
             
-            let type: TaxObligationType = period.includes('-') ? 'IVA' : 'RENTA';
+            const targetType = receiptUploadState.obligationType || (
+                data.formType === 'ICE' ? 'ICE' :
+                data.formType === 'ANEXO_ICE' ? 'ANEXO' :
+                data.formType === 'PVP' ? 'PVP' :
+                (period.includes('-') ? 'IVA' : 'RENTA')
+            );
 
-            if (data.formType === 'ICE') {
+            let type: TaxObligationType = targetType;
+
+            if (targetType === 'ICE') {
                 if (!period.includes(':ICE')) {
                     period = `${period.split(':')[0]}:ICE`;
                 }
-                type = 'ICE';
-            } else if (data.formType === 'ANEXO_ICE') {
+            } else if (targetType === 'ANEXO') {
                 if (!period.includes(':ANEXO_ICE')) {
                     period = `${period.split(':')[0]}:ANEXO_ICE`;
                 }
-                type = 'ANEXO';
-            } else if (data.formType === 'PVP') {
+            } else if (targetType === 'PVP') {
                 if (!period.includes(':PVP')) {
                     period = `${period.split(':')[0]}:PVP`;
                 }
-                type = 'PVP';
             }
 
             const history = [...(freshClient.declarations || [])];
@@ -1396,10 +1400,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             clients={sortedClients} 
                             onViewClient={handleOpenClientDetails}
                             initialMode={activeGroupTab === 'renta' ? 'RENTA' : 'IVA'}
-                            onUploadReceipt={(client, period) => {
-                                setReceiptUploadState({ client, period });
-                                receiptFileInputRef.current?.click();
-                            }}
+                            onUploadReceipt={handleUploadReceipt}
                             onPreviewReceipt={(client, declaration) => {
                                 setPreviewItem({ client, declaration });
                             }}
