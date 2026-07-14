@@ -317,6 +317,13 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     if (totalClients === 0) return null;
                     
                     const lastPeriod = periods[0];
+                    // Filtrar clientes que realmente tienen al menos una obligación en el periodo evaluado
+                    const clientsWithObligations = filteredClients.filter(c => getObligationsForPeriod(c, lastPeriod).length > 0);
+                    const totalClientsCount = clientsWithObligations.length;
+                    
+                    // Si ningún cliente tiene obligaciones activas en este período (ej: todos son nuevos), usamos el total como fallback
+                    const denominator = totalClientsCount > 0 ? totalClientsCount : totalClients;
+                    
                     const declaredCount = filteredClients.filter(c => c.declarations?.some(d => d.period === lastPeriod && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada))).length;
                     const pdfCount = filteredClients.filter(c => c.declarations?.some(d => d.period === lastPeriod && d.proof_file)).length;
                     
@@ -329,7 +336,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     </div>
                                     <div>
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Declarados</p>
-                                        <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">{declaredCount}<span className="text-xs text-slate-400 font-bold ml-1">/ {totalClients}</span></p>
+                                        <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">{declaredCount}<span className="text-xs text-slate-400 font-bold ml-1">/ {denominator}</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -340,7 +347,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     </div>
                                     <div>
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Respaldos</p>
-                                        <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">{pdfCount}<span className="text-xs text-slate-400 font-bold ml-1">/ {totalClients}</span></p>
+                                        <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">{pdfCount}<span className="text-xs text-slate-400 font-bold ml-1">/ {denominator}</span></p>
                                     </div>
                                 </div>
                             </div>
@@ -352,7 +359,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         </p>
                                         <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Ciclo {lastPeriod}</p>
                                     </div>
-                                    <span className={`text-lg font-black ${matrixMode === 'RENTA' ? 'text-emerald-500' : 'text-emerald-500'}`}>{Math.round((pdfCount / totalClients) * 100)}%</span>
+                                    <span className={`text-lg font-black ${matrixMode === 'RENTA' ? 'text-emerald-500' : 'text-emerald-500'}`}>{Math.round((pdfCount / Math.max(1, denominator)) * 100)}%</span>
                                 </div>
                                 <div className="w-full h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden p-0.5 border border-slate-200/50 dark:border-white/10">
                                     <div 
@@ -361,7 +368,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 ? 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                                                 : 'bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                                         }`}
-                                        style={{ width: `${(pdfCount / totalClients) * 100}%` }}
+                                        style={{ width: `${(pdfCount / Math.max(1, denominator)) * 100}%` }}
                                     ></div>
                                 </div>
                             </div>
