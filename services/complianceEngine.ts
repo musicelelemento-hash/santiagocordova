@@ -76,14 +76,10 @@ const getColor = (daysRemaining: number | null, declared: boolean, paid: boolean
 
 export const getClientFloors = (client: Client): { monthly: string; semestral: string; annual: string } => {
     const clientStartPeriod = client.clientStartPeriod || null;
-    const creationDate = client.createdAt ? new Date(client.createdAt) : null;
-    const isValidCreation = creationDate && !isNaN(creationDate.getTime());
 
-    const fallbackMonthly = isValidCreation ? format(creationDate, 'yyyy-MM') : '2026-01';
-    const fallbackSemestral = isValidCreation 
-        ? format(creationDate, 'yyyy') + (creationDate.getMonth() < 6 ? '-S1' : '-S2') 
-        : '2026-S1';
-    const fallbackAnnual = isValidCreation ? format(creationDate, 'yyyy') : '2026';
+    const fallbackMonthly = '2025-01';
+    const fallbackSemestral = '2025-S1';
+    const fallbackAnnual = '2025';
 
     const floorMonthly = (clientStartPeriod && !clientStartPeriod.includes('-S') && clientStartPeriod.length === 7)
         ? clientStartPeriod

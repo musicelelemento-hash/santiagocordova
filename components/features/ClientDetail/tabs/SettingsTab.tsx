@@ -20,7 +20,8 @@ const TaxProfileField: React.FC<{
     onChange: (val: string) => void;
     type?: string;
     options?: { value: string; label: string }[];
-}> = ({ label, value, icon: Icon, isEditing, onChange, type = 'text', options }) => (
+    placeholder?: string;
+}> = ({ label, value, icon: Icon, isEditing, onChange, type = 'text', options, placeholder }) => (
     <div className="space-y-3 group/field animate-in fade-in slide-in-from-bottom-2 duration-500">
         <div className="flex items-center gap-2.5">
             <Icon size={13} className="text-primary/50 group-hover/field:text-primary transition-colors" />
@@ -41,6 +42,7 @@ const TaxProfileField: React.FC<{
                 <input
                     type={type}
                     value={value}
+                    placeholder={placeholder}
                     onChange={(e) => onChange(e.target.value)}
                     className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all shadow-sm"
                 />
@@ -320,11 +322,25 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                     })} 
                                 />
                             )}
+
+                            <TaxProfileField 
+                                label="Inicio de Obligaciones" 
+                                value={editedClient.clientStartPeriod || ''} 
+                                icon={LucideIcons.CalendarRange} 
+                                isEditing={isEditing} 
+                                placeholder="AÑO-MES (ej: 2025-01 o 2025-S1)"
+                                onChange={(val) => setEditedClient({ 
+                                    ...editedClient, 
+                                    clientStartPeriod: val
+                                })} 
+                            />
                             
                             <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5 space-y-5">
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Creado</span>
-                                    <span className="text-[10px] font-mono text-primary font-bold">{new Date(client.createdAt).toLocaleDateString()}</span>
+                                    <span className="text-[10px] font-mono text-primary font-bold">
+                                        {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'No Registrada'}
+                                    </span>
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Último Acceso</span>
