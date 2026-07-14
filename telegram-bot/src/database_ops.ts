@@ -1475,3 +1475,34 @@ export async function downloadClientProofFile(
         return { fileName: '', contentBase64: '', error: `Error de base de datos: ${e.message}` };
     }
 }
+
+export function convertMarkdownToTelegramHtml(markdown: string): string {
+    if (!markdown) return '';
+
+    // 1. Escape HTML characters first to prevent parsing errors
+    let html = markdown
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    // 2. Convert headers (e.g. ### Header -> <b>Header</b>)
+    html = html.replace(/^###?\s+(.+)$/gm, '<b>$1</b>');
+
+    // 3. Convert bold (**text** or __text__)
+    html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+    html = html.replace(/__(.*?)__/g, '<b>$1</b>');
+
+    // 4. Convert italic (*text* or _text_)
+    // Underscores: match if not surrounded by word characters
+    html = html.replace(/(?<!\w)_(.*?)_(?!\w)/g, '<i>$1</i>');
+    // Asterisks: only match if * is not followed by space (bullet points)
+    html = html.replace(/(?<!\w|\*)\*(?!\s)(.*?)(?<!\s)\*(?!\w|\*)/g, '<i>$1</i>');
+
+    // 5. Convert code blocks ```code``` to <pre>code</pre>
+    html = html.replace(/```([\s\S]*?)```/g, '<pre>$1</pre>');
+
+    // 6. Convert inline code `code` to <code>code</code>
+    html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+
+    return html;
+}

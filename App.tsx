@@ -14,6 +14,7 @@ import { ServicesPage } from './screens/ServicesPage';
 import { ClientPortalScreen } from './screens/ClientPortalScreen';
 import { MusicPage } from './screens/MusicPage';
 import { AuditLogScreen } from './screens/AuditLogScreen';
+import { FacturacionSriScreen } from './screens/FacturacionSriScreen';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
 import { NotificationBell } from './components/layout/NotificationBell';
@@ -223,6 +224,9 @@ const App: React.FC = () => {
   const [initialClientData, setInitialClientData] = useState<Partial<Client> | null>(null);
   const [initialTaskData, setInitialTaskData] = useState<Partial<Task> | null>(null);
   const [clientToView, setClientToView] = useState<Client | null>(null);
+  const [sriInvoiceClientId, setSriInvoiceClientId] = useState<string | null>(null);
+  const [sriInvoiceAmount, setSriInvoiceAmount] = useState<number | null>(null);
+  const [sriInvoiceDescription, setSriInvoiceDescription] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
@@ -356,6 +360,12 @@ const App: React.FC = () => {
     setInitialClientData(options.initialClientData || null);
     setInitialTaskData(options.initialTaskData || null);
     
+    if (screen === 'sri_facturacion') {
+      setSriInvoiceClientId(options.clientId || null);
+      setSriInvoiceAmount(options.amount || null);
+      setSriInvoiceDescription(options.description || null);
+    }
+    
     if (options.clientIdToView) {
       const client = clients.find(c => c.id === options.clientIdToView);
       setClientToView(client || null);
@@ -408,11 +418,23 @@ const App: React.FC = () => {
       );
       case 'calendar': return <CalendarScreen navigate={navigate} />;
       case 'reports': return <ReportsScreen navigate={navigate} />;
-      case 'cobranza': return <CobranzaScreen />;
+      case 'cobranza': return <CobranzaScreen navigate={navigate} />;
       case 'web_orders': return <WebOrdersScreen navigate={navigate} />;
       case 'tasks': return <TasksScreen navigate={navigate} taskFilter={taskFilter} clearTaskFilter={() => setTaskFilter(null)} initialTaskData={initialTaskData} clearInitialTaskData={() => setInitialTaskData(null)} />;
       case 'settings': return <SettingsScreen navigate={navigate} />;
       case 'audit_log': return <AuditLogScreen />;
+      case 'sri_facturacion': return (
+        <FacturacionSriScreen 
+          initialClientId={sriInvoiceClientId}
+          initialAmount={sriInvoiceAmount}
+          initialDescription={sriInvoiceDescription}
+          onClearInitialData={() => {
+            setSriInvoiceClientId(null);
+            setSriInvoiceAmount(null);
+            setSriInvoiceDescription(null);
+          }}
+        />
+      );
       default: return <AdminDashboardScreen navigate={navigate} />;
     }
   };
@@ -421,6 +443,7 @@ const App: React.FC = () => {
     { screen: 'home', icon: LucideIcons.Home, label: 'Dashboard' },
     { screen: 'clients', icon: LucideIcons.Users, label: 'Clientes' },
     { screen: 'cobranza', icon: LucideIcons.BarChart, label: 'Cobranza' },
+    { screen: 'sri_facturacion', icon: LucideIcons.FileText, label: 'Facturación SRI' },
     { screen: 'tasks', icon: LucideIcons.CheckCircle, label: 'Tareas' },
     { screen: 'calendar', icon: LucideIcons.CalendarDays, label: 'Agenda' },
     { screen: 'web_orders', icon: LucideIcons.ShoppingCart, label: 'Tienda' },

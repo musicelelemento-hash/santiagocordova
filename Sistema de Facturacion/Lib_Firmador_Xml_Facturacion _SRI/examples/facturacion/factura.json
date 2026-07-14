@@ -1,0 +1,66 @@
+{
+  "tipo": "factura",
+  "data": {
+    "infoTributaria": {
+      "ambiente": "1",
+      "tipoEmision": "1",
+      "razonSocial": "EMPRESA DEMO S.A.",
+      "nombreComercial": "EMPRESA DEMO",
+      "ruc": "1790012345001",
+      "codigoNumerico": "12345678",
+      "codDoc": "01",
+      "estab": "001",
+      "ptoEmi": "001",
+      "secuencial": "000000001",
+      "dirMatriz": "Quito",
+      "regimen": "0"
+    },
+    "infoFactura": {
+      "fechaEmision": "2026-06-01",
+      "dirEstablecimiento": "Quito",
+      "obligadoContabilidad": "NO",
+      "tipoIdentificacionComprador": "05",
+      "razonSocialComprador": "CLIENTE DEMO",
+      "identificacionComprador": "1710034065",
+      "totalSinImpuestos": "100.00",
+      "totalDescuento": "0.00",
+      "totalImpuesto": [
+        {
+          "codigo": "2",
+          "codigoPorcentaje": "4",
+          "baseImponible": "100.00",
+          "valor": "15.00"
+        }
+      ],
+      "propina": "0.00",
+      "importeTotal": "115.00",
+      "moneda": "DOLAR",
+      "pagos": {
+        "formaPago": "01",
+        "total": "115.00"
+      }
+    },
+    "detalle": [
+      {
+        "codigoPrincipal": "SERV-001",
+        "codigoAuxiliar": "SERV-001",
+        "descripcion": "Servicio demo",
+        "cantidad": "1.00",
+        "precioUnitario": "100.00",
+        "descuento": "0.00",
+        "precioTotalSinImpuesto": "100.00",
+        "impuesto": {
+          "codigo": "2",
+          "codigoPorcentaje": "4",
+          "tarifa": "15",
+          "baseImponible": "100.00",
+          "valor": "15.00"
+        }
+      }
+    ],
+    "infoAdicional": {
+      "telefono": "0999999999",
+      "email": "cliente@example.com"
+    }
+  }
+}

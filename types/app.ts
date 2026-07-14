@@ -1,5 +1,5 @@
 
-export type Screen = 'home' | 'clients' | 'tasks' | 'reports' | 'settings' | 'cobranza' | 'calendar' | 'web_orders' | 'scanner' | 'audit_log';
+export type Screen = 'home' | 'clients' | 'tasks' | 'reports' | 'settings' | 'cobranza' | 'calendar' | 'web_orders' | 'scanner' | 'audit_log' | 'sri_facturacion';
 export type Theme = 'light' | 'dark';
 
 export interface AuditLog {

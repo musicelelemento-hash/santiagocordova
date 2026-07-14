@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList } from './database_ops';
+import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -106,24 +106,24 @@ bot.command('setvoice', async (ctx) => {
 });
 
 bot.command('status', async (ctx) => {
-    const vStatus = getVoiceStatus();
-    let statusMsg = "📊 **ESTADO DEL SISTEMA:**\n\n";
+    const vStatus = await getVoiceStatus();
+    let statusMsg = "📊 <b>ESTADO DEL SISTEMA:</b>\n\n";
     statusMsg += `🎙️ ElevenLabs: ${vStatus.elevenLabs ? '✅ Conectado' : '❌ Sin Clave'}\n`;
-    statusMsg += `🆔 Voz Actual: \`${vStatus.voiceId}\`\n`;
+    statusMsg += `🆔 Voz Actual: <code>${vStatus.voiceId}</code>\n`;
     statusMsg += `☁️ Google TTS: ${vStatus.googleCloud ? '✅ Activo (Respaldo)' : '⚠️ No configurado'}\n`;
     statusMsg += `🧠 Groq: ✅ Activo\n`;
     statusMsg += "\nBaku.";
-    await ctx.reply(statusMsg, { parse_mode: 'Markdown' });
+    await ctx.reply(statusMsg, { parse_mode: 'HTML' });
 });
 
 bot.command('testcron', async (ctx) => {
     await ctx.reply('⏳ Forzando la generación del reporte proactivo matutino. Por favor espera...');
-    await triggerProactiveReport(bot);
+    await triggerProactiveReport(bot, ctx.chat.id.toString());
 });
 
 bot.command('reporte', async (ctx) => {
     await ctx.reply('⏳ Comandante, estoy preparando y consolidando el reporte operativo en tiempo real. Un momento...');
-    await triggerProactiveReport(bot);
+    await triggerProactiveReport(bot, ctx.chat.id.toString());
 });
 
 
@@ -162,8 +162,8 @@ async function showClientSelection(
         candidates: clients,
         data
     });
-    await ctx.reply(message, {
-        parse_mode: 'Markdown',
+    await ctx.reply(convertMarkdownToTelegramHtml(message), {
+        parse_mode: 'HTML',
         reply_markup: buildClientKeyboard(clients)
     });
 }
@@ -179,10 +179,10 @@ async function showOperationalMenu(ctx: any) {
         .text('📊 Reporte Rápido General', 'baku_cmd:quick_report');
 
     await ctx.reply(
-        `🎯 *CENTRO DE OPERACIONES TÁCTICAS — SANTIAGO*\n\n` +
+        `🎯 <b>CENTRO DE OPERACIONES TÁCTICAS — SANTIAGO</b>\n\n` +
         `Selecciona una acción directa para gestionar la cartera de clientes de forma inmediata:`,
         {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: kb
         }
     );
@@ -204,7 +204,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
     // Trigger proactive report
     if (['reporte', 'reporte matutino', 'forzar reporte', 'reporte proactivo', 'enviar reporte'].includes(t)) {
         await ctx.reply('⏳ Comandante, estoy preparando y consolidando el reporte operativo en tiempo real. Un momento...');
-        await triggerProactiveReport(bot);
+        await triggerProactiveReport(bot, chatId);
         return true;
     }
 
@@ -222,17 +222,17 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
             if (field === 'sri_password' && identifier.trim().length === 13 && /^\d+$/.test(identifier.trim())) {
                 const backupCred = await get_sri_credential(identifier.trim());
                 if (!backupCred.includes('\u274c No se encontr')) {
-                    await ctx.reply(backupCred, { parse_mode: 'Markdown' });
+                    await ctx.reply(convertMarkdownToTelegramHtml(backupCred), { parse_mode: 'HTML' });
                     return true;
                 }
             }
-            await ctx.reply(`\u274c No encontr\u00e9 ning\u00fan cliente con "${identifier}". Baku.`);
+            await ctx.reply(`\u274c No encontré ningún cliente con "${identifier}". Baku.`);
             return true;
         }
         if (clients.length === 1) {
             const client = clients[0];
             const result = await getClientField(client.ruc, field);
-            await ctx.reply(result, { parse_mode: 'Markdown' });
+            await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
             
             // Si solicitó la clave de firma electrónica, enviamos también el archivo p12 adjunto
             if (field === 'electronicSignaturePassword') {
@@ -247,8 +247,8 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
                     if (sigFile && sigFile.content && sigFile.name) {
                         const buffer = Buffer.from(sigFile.content, 'base64');
                         await ctx.replyWithDocument(new InputFile(buffer, sigFile.name), {
-                            caption: `📂 Archivo de firma electrónica (.p12) de *${client.name}*`,
-                            parse_mode: 'Markdown'
+                            caption: `📂 Archivo de firma electrónica (.p12) de <b>${client.name}</b>`,
+                            parse_mode: 'HTML'
                         });
                         console.log(`✅ Archivo de firma electrónica enviado para ${client.name}`);
                     }
@@ -261,7 +261,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         // Multiple matches → inline keyboard, preserves field context
         await showClientSelection(
             chatId, clients, 'field_query', { field },
-            ctx, `🔍 Encontré *${clients.length}* clientes con "${identifier}".\_Selecciona el que necesitas:`
+            ctx, `🔍 Encontré <b>${clients.length}</b> clientes con "${identifier}". Selecciona el que necesitas:`
         );
         return true;
     }
@@ -277,12 +277,12 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         }
         if (clients.length === 1) {
             const result = await quickUpdateClient(clients[0].ruc, field, value);
-            await ctx.reply(result, { parse_mode: 'Markdown' });
+            await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
             return true;
         }
         await showClientSelection(
             chatId, clients, 'field_query', { field, value },
-            ctx, `🔍 Encontré *${clients.length}* coincidencias. ¿Cuál deseas editar?`
+            ctx, `🔍 Encontré <b>${clients.length}</b> coincidencias. ¿Cuál deseas editar?`
         );
         return true;
     }
@@ -324,25 +324,29 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
     const payClient = marcaPagoMatch ? (marcaPagoMatch[1] || marcaPagoMatch[2])?.trim() : null;
     if (payClient && payClient.length > 2) {
         const result = await markPaymentAsPaid(payClient, 'IVA');
-        await ctx.reply(result, { parse_mode: 'Markdown' });
+        await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
         return true;
     }
 
     // --- REPORT shortcuts ---
     if (/(?:quien(?:es)?\s+(?:me\s+)?deb[e|en]|deudores|cartera\s+vencida|cobros\s+pendientes)/.test(t)) {
-        await ctx.reply(await getDebtorClients(), { parse_mode: 'Markdown' });
+        const text = await getDebtorClients();
+        await ctx.reply(convertMarkdownToTelegramHtml(text), { parse_mode: 'HTML' });
         return true;
     }
     if (/(?:quien(?:es)?\s+falt[a|an]|falta\s+declarar|pendientes\s+(?:de\s+)?(?:sri|declarar)|quien\s+no\s+ha\s+declarado|no\s+han\s+declarado)/.test(t)) {
-        await ctx.reply(await getClientsStatusReport(), { parse_mode: 'Markdown' });
+        const text = await getClientsStatusReport();
+        await ctx.reply(convertMarkdownToTelegramHtml(text), { parse_mode: 'HTML' });
         return true;
     }
     if (/(?:vencimiento|vence\s+(?:esta|la)\s+semana|pr[oó]ximos?\s+vencimientos?|cuando\s+vence)/.test(t)) {
-        await ctx.reply(await getUpcomingDeadlines(), { parse_mode: 'Markdown' });
+        const text = await getUpcomingDeadlines();
+        await ctx.reply(convertMarkdownToTelegramHtml(text), { parse_mode: 'HTML' });
         return true;
     }
     if (/(?:^resumen$|estado\s+general|c[oó]mo\s+va\s+(?:todo|la\s+cartera)|panorama\s+general|cu[aá]ntos\s+clientes)/.test(t)) {
-        await ctx.reply(await getDatabaseSummary(), { parse_mode: 'Markdown' });
+        const text = await getDatabaseSummary();
+        await ctx.reply(convertMarkdownToTelegramHtml(text), { parse_mode: 'HTML' });
         return true;
     }
 
@@ -489,16 +493,18 @@ async function startPaymentFlowForClient(chatId: string, client: any, ctx: any) 
     });
 
     await ctx.reply(
-        `👤 *Cliente:* ${client.name}\n` +
-        `📅 *Frecuencia IVA:* ${ivaFrequency}\n` +
-        `💼 *Régimen:* ${regime}\n\n` +
-        pendingMsg +
-        `¿Qué período(s) deseas marcar como pagado?\n` +
-        `• Escribe el periodo (ej: \`2026-04\` o \`abril\`)\n` +
-        `• Escribe varios separados por coma (ej: \`2026-04, 2026-05\`)\n` +
-        `• Escribe \`adelantado\` para registrar pagos de meses futuros.\n\n` +
-        `Escribe **cancelar** en cualquier momento para salir. Baku.`,
-        { parse_mode: 'Markdown' }
+        convertMarkdownToTelegramHtml(
+            `👤 **Cliente:** ${client.name}\n` +
+            `📅 **Frecuencia IVA:** ${ivaFrequency}\n` +
+            `💼 **Régimen:** ${regime}\n\n` +
+            pendingMsg +
+            `¿Qué período(s) deseas marcar como pagado?\n` +
+            `• Escribe el periodo (ej: \`2026-04\` o \`abril\`)\n` +
+            `• Escribe varios separados por coma (ej: \`2026-04, 2026-05\`)\n` +
+            `• Escribe \`adelantado\` para registrar pagos de meses futuros.\n\n` +
+            `Escribe **cancelar** en cualquier momento para salir. Baku.`
+        ),
+        { parse_mode: 'HTML' }
     );
 }
 
@@ -534,13 +540,15 @@ async function startDeclarationFlowForClient(chatId: string, client: any, ctx: a
     });
 
     await ctx.reply(
-        `👤 *Cliente:* ${client.name}\n` +
-        `¿Qué tipo de declaración de impuestos deseas registrar?\n` +
-        `1. **IVA** (Frecuencia: ${ivaFrequency})\n` +
-        `2. **RENTA** (Anual)\n\n` +
-        `Responde **IVA** o **RENTA**.\n\n` +
-        `Escribe **cancelar** en cualquier momento para salir. Baku.`,
-        { parse_mode: 'Markdown' }
+        convertMarkdownToTelegramHtml(
+            `👤 **Cliente:** ${client.name}\n` +
+            `¿Qué tipo de declaración de impuestos deseas registrar?\n` +
+            `1. **IVA** (Frecuencia: ${ivaFrequency})\n` +
+            `2. **RENTA** (Anual)\n\n` +
+            `Responde **IVA** o **RENTA**.\n\n` +
+            `Escribe **cancelar** en cualquier momento para salir. Baku.`
+        ),
+        { parse_mode: 'HTML' }
     );
 }
 
@@ -913,7 +921,7 @@ bot.on('callback_query:data', async (ctx) => {
         } else if (cmd === 'quick_report') {
             await ctx.replyWithChatAction('typing');
             const summary = await getDatabaseSummary();
-            await ctx.reply(summary, { parse_mode: 'Markdown' });
+            await ctx.reply(convertMarkdownToTelegramHtml(summary), { parse_mode: 'HTML' });
         }
         return;
     }
@@ -936,24 +944,24 @@ bot.on('callback_query:data', async (ctx) => {
 
     // Remove the inline keyboard from the original message to keep chat clean
     try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
-    await ctx.reply(`✅ Seleccionado: *${client.name}*`, { parse_mode: 'Markdown' });
+    await ctx.reply(`✅ Seleccionado: <b>${client.name}</b>`, { parse_mode: 'HTML' });
 
     if (dialog.type === 'field_query') {
         const field = dialog.data.field!;
         if (field === 'declaration_history') {
             const result = await getClientDeclarationProofsList(ruc);
             pendingDialogs.delete(chatId);
-            await ctx.reply(result, { parse_mode: 'Markdown' });
+            await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
         } else if (dialog.data.value !== undefined) {
             // Quick update flow
             const result = await quickUpdateClient(ruc, field, dialog.data.value);
             pendingDialogs.delete(chatId);
-            await ctx.reply(result, { parse_mode: 'Markdown' });
+            await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
         } else {
             // Field read flow
             const result = await getClientField(ruc, field);
             pendingDialogs.delete(chatId);
-            await ctx.reply(result, { parse_mode: 'Markdown' });
+            await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
         }
     } else if (dialog.type === 'mark_payment') {
         await startPaymentFlowForClient(chatId, client, ctx);
@@ -1138,7 +1146,7 @@ bot.on('message:document', async (ctx) => {
     preview += `--------------------------\n`;
     preview += `¿Deseas guardar este archivo en la carpeta del cliente y sincronizar con la base de datos? (Responde "SÍ GUARDAR")`;
 
-    await ctx.reply(preview, { parse_mode: 'Markdown' });
+    await ctx.reply(convertMarkdownToTelegramHtml(preview), { parse_mode: 'HTML' });
   } catch (err: any) {
     console.error('Error processing document:', err);
     await ctx.reply('Error al procesar el PDF: ' + err.message);
@@ -1164,7 +1172,7 @@ bot.on('message:voice', async (ctx) => {
 
     // Transcribe
     const transcription = await transcribeAudioUrl(fileUrl);
-    await ctx.reply(`🎤 *Transcrito:* ${transcription}`, { parse_mode: 'Markdown' });
+    await ctx.reply(`🎤 <b>Transcrito:</b> ${transcription}`, { parse_mode: 'HTML' });
 
     // 2. Check if a dialog is triggered by the transcribed text
     const triggered = await handleDialogTriggers(chatId, transcription, ctx);

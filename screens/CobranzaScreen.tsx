@@ -25,12 +25,13 @@ interface CobranzaScreenProps {
     clientsProp?: Client[];
     setClientsProp?: React.Dispatch<React.SetStateAction<Client[]>>;
     serviceFeesProp?: ServiceFeesConfig;
+    navigate?: (screen: any, options?: any) => void;
 }
 
 
 const defaultBusinessProfile: BusinessProfile = {
-    ruc: '0700000000001',
-    businessName: 'Santiago Cordova',
+    ruc: '0705787745001',
+    businessName: 'CORDOVA RAMIREZ ROBERTO SANTIGO',
     tradeName: 'Soluciones Tributarias',
     address: 'Colon y Sucre / Pasaje - El Oro',
     phone: '+593 978 980 722',
@@ -42,7 +43,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     reminderConfigProp,
     clientsProp,
     setClientsProp,
-    serviceFeesProp
+    serviceFeesProp,
+    navigate
 }) => {
     // Use Store or Props
     const store = useAppStore();
@@ -507,15 +509,33 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                         ${item.amount.toFixed(2)}
                                                     </p>
                                                 </div>
-                                                <div className={`mt-2 flex items-center gap-2 px-3 py-1 rounded-full border
-                                                    ${item.status === 'Pagada' 
-                                                        ? 'bg-emerald-400/20 text-emerald-400' 
-                                                        : item.daysDiff && item.daysDiff > 0 
-                                                            ? 'bg-rose-400/20 text-rose-400' 
-                                                            : 'bg-slate-200/50 dark:bg-white/10 text-slate-400'}`}>
-                                                    <span className="text-[11px] font-semibold uppercase tracking-widest">
-                                                        {item.status === 'Pagada' ? 'EXECUTED' : item.daysDiff && item.daysDiff > 0 ? `DELAYED ${item.daysDiff}D` : 'PENDING'}
-                                                    </span>
+                                                <div className="mt-2 flex items-center gap-2">
+                                                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full border
+                                                        ${item.status === 'Pagada' 
+                                                            ? 'bg-emerald-400/20 text-emerald-400' 
+                                                            : item.daysDiff && item.daysDiff > 0 
+                                                                ? 'bg-rose-400/20 text-rose-400' 
+                                                                : 'bg-slate-200/50 dark:bg-white/10 text-slate-400'}`}>
+                                                        <span className="text-[11px] font-semibold uppercase tracking-widest">
+                                                            {item.status === 'Pagada' ? 'EJECUTADO' : item.daysDiff && item.daysDiff > 0 ? `ATRASADO ${item.daysDiff}D` : 'PENDIENTE'}
+                                                        </span>
+                                                    </div>
+                                                    {navigate && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation(); // Evitar seleccionar la fila de cobros
+                                                                navigate('sri_facturacion', {
+                                                                    clientId: item.clientId,
+                                                                    amount: item.amount,
+                                                                    description: `Honorarios Profesionales - Período ${item.period}`
+                                                                });
+                                                            }}
+                                                            className="p-1.5 bg-slate-100 hover:bg-primary/20 dark:bg-slate-800 dark:hover:bg-primary/30 text-slate-450 hover:text-primary rounded-lg transition-colors border border-slate-200 dark:border-slate-700"
+                                                            title="Emitir Factura Electrónica para este cobro"
+                                                        >
+                                                            <LucideIcons.FileText size={12} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                             {isSelected && (
@@ -633,6 +653,21 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             >
                                 <LucideIcons.Printer size={20} className="text-brand-teal" /> GENERAR TICKET FÍSICO
                             </button>
+                            {navigate && (
+                                <button 
+                                    onClick={() => {
+                                        setIsReceiptOpen(false);
+                                        navigate('sri_facturacion', {
+                                            clientId: receiptData.client?.id || receiptData.client?.ruc,
+                                            amount: receiptData.totalAmount,
+                                            description: `Honorarios Profesionales - ${receiptData.paidPeriods.map((p: any) => p.period).join(', ')}`
+                                        });
+                                    }} 
+                                    className="flex-1 py-5 bg-primary text-white rounded-2xl font-semibold text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] transition-all"
+                                >
+                                    <LucideIcons.FileText size={20} className="text-white" /> EMITIR FACTURA SRI
+                                </button>
+                            )}
                             <button 
                                 onClick={() => setIsReceiptOpen(false)} 
                                 className="flex-1 py-5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-semibold text-[11px] uppercase tracking-[0.2em] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"

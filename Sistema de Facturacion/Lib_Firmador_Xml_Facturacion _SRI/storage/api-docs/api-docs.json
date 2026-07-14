@@ -1,0 +1,46 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Firmador Documento electrónico XML Ecuador  v1.0",
+        "description": "FacturasEc",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/v1/sign/xml": {
+            "get": {
+                "tags": [
+                    "FirmaController"
+                ],
+                "summary": "Sign new Cert",
+                "description": "Sign new Cert",
+                "operationId": "SignCert",
+                "requestBody": {
+                    "description": "Pass user credentials",
+                    "required": false
+                },
+                "responses": {
+                    "200": {
+                        "description": "Wrong credentials response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": "true"
+                                        },
+                                        "data": {
+                                            "type": "string",
+                                            "example": "{xml}"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

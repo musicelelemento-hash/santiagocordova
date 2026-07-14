@@ -458,6 +458,19 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             };
             updateClient(client.id, { declarations: updatedHistory });
             toast.success(isPaid ? 'Pago registrado' : 'Pago revertido');
+
+            if (isPaid) {
+                setTimeout(() => {
+                    if (window.confirm(`¿Desea generar la factura electrónica SRI para el pago de ${client.name}?`)) {
+                        const feeAmount = getClientServiceFee(client, serviceFees);
+                        navigate('sri_facturacion', {
+                            clientId: client.id,
+                            amount: feeAmount,
+                            description: `Declaración de ${type} - Período ${period}`
+                        });
+                    }
+                }, 100);
+            }
         }
     };
 
@@ -555,6 +568,19 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         }
 
         toast.success(action === 'declare' ? 'Declaración registrada' : 'Pago registrado');
+
+        if (action === 'pay') {
+            setTimeout(() => {
+                if (window.confirm(`¿Desea generar la factura electrónica SRI para el pago de ${client.name}?`)) {
+                    const feeAmount = getClientServiceFee(client, serviceFees);
+                    navigate('sri_facturacion', {
+                        clientId: client.id,
+                        amount: feeAmount,
+                        description: `Declaración de IVA/Renta - Período ${period}`
+                    });
+                }
+            }, 100);
+        }
     };
 
     const handleExportCSV = () => {

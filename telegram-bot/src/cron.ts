@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { Bot } from 'grammy';
-import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getCredentialStatus } from './database_ops';
+import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getCredentialStatus, convertMarkdownToTelegramHtml } from './database_ops';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { syncToSheets } from './google-sync';
 import { supabase } from './supabase';
@@ -97,9 +97,10 @@ async function generateReportWithAI(prompt: string, systemInstruction?: string):
     throw new Error("No AI providers available or all of them failed");
 }
 
-export async function triggerProactiveReport(bot: Bot) {
+export async function triggerProactiveReport(bot: Bot, chatId?: string) {
     const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
     const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
+    const targetChatId = chatId || adminChatId;
 
     try {
         const summary = await getDatabaseSummary();
@@ -139,24 +140,25 @@ INSTRUCCIONES DE REDACCIÓN:
 5. Identifica una oportunidad de gestión inmediata (ej: "Hoy podemos liquidar 3 declaraciones de IVA de la lista de prioridad").
 6. Mantén un formato limpio, con uso de emojis profesionales y negritas estratégicas.
 7. Termina con una pregunta de mando táctico (ej: "¿Damos luz verde a la gestión de cobros hoy?").
+8. El reporte debe ser altamente resumido y conciso. La longitud total del reporte NO DEBE superar los 3000 caracteres bajo ninguna circunstancia.
 
 Genera el mensaje directamente para Telegram.
 `;
 
         const aiResponse = await generateReportWithAI(prompt, systemPrompt);
+        const htmlResponse = convertMarkdownToTelegramHtml(aiResponse);
 
-        // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
         try {
-            await bot.api.sendMessage(adminChatId, aiResponse, { parse_mode: 'Markdown' });
-        } catch (markdownError) {
-            console.warn("⚠️ Failed to send cron report with Markdown, falling back to plain text:", markdownError);
-            await bot.api.sendMessage(adminChatId, aiResponse);
+            await bot.api.sendMessage(targetChatId, htmlResponse, { parse_mode: 'HTML' });
+        } catch (htmlError) {
+            console.warn("⚠️ Failed to send cron report with HTML, falling back to plain text:", htmlError);
+            await bot.api.sendMessage(targetChatId, aiResponse);
         }
-        console.log("✅ Reporte proactivo enviado a Santiago.");
+        console.log(`✅ Reporte proactivo enviado a chat ${targetChatId}.`);
     } catch (error: any) {
         console.error("❌ Error en reporte proactivo:", error);
         try {
-            await bot.api.sendMessage(adminChatId, `⚠️ Comandante, intenté generar tu reporte, pero hubo un error de conexión con la IA (${error.message}). Por favor, pídeme un 'resumen general' cuando puedas.`);
+            await bot.api.sendMessage(targetChatId, `⚠️ Comandante, intenté generar tu reporte, pero hubo un error de conexión con la IA (${error.message}). Por favor, pídeme un 'resumen general' cuando puedas.`);
         } catch (e) {}
     }
 }
@@ -192,15 +194,16 @@ Instrucciones de redacción:
 2. Explica de forma concisa quiénes son los principales deudores y cuánto suman los honorarios pendientes de cobrar. Incluye el nombre COMPLETO de cada deudor.
 3. Sugiere enviar recordatorios a los clientes clave que tengan deudas mayores.
 4. Recuérdale que puede pedirte: "Genera el mensaje de cobro para [nombre] por $[monto]" y tú generarás el WhatsApp listo para copiar.
-5. Mantén un formato estructurado con emojis de finanzas y negritas estratégicas.
+5. Mantén un formato limpio, estructurado con emojis de finanzas y negritas estratégicas.
+6. El reporte de cobranza debe ser extremadamente conciso. La longitud del reporte NO DEBE superar los 3000 caracteres.
 `;
             const aiResponse = await generateReportWithAI(prompt, systemPrompt);
+            const htmlResponse = convertMarkdownToTelegramHtml(aiResponse);
 
-            // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
             try {
-                await bot.api.sendMessage(adminChatId, aiResponse, { parse_mode: 'Markdown' });
-            } catch (markdownError) {
-                console.warn("⚠️ Failed to send debtor report with Markdown, falling back to plain text:", markdownError);
+                await bot.api.sendMessage(adminChatId, htmlResponse, { parse_mode: 'HTML' });
+            } catch (htmlError) {
+                console.warn("⚠️ Failed to send debtor report with HTML, falling back to plain text:", htmlError);
                 await bot.api.sendMessage(adminChatId, aiResponse);
             }
             console.log("✅ Reporte semanal de deudores enviado a Santiago.");
@@ -238,11 +241,12 @@ Instrucciones de redacción:
             // Only send if there are issues (report won't contain '✅ Credenciales SRI OK' if issues exist)
             if (!credReport.startsWith('✅ Credenciales SRI OK')) {
                 const alertMsg = `🔐 *VIERNES CREDENCIAL — Alerta Automática*\n\n${credReport}\n\n_Santiago, revisa estas credenciales antes de que afecten las declaraciones. Baku._`;
-                // BUG FIX: added parse_mode so *bold* and _italic_ markdown renders correctly in Telegram
+                const htmlAlertMsg = convertMarkdownToTelegramHtml(alertMsg);
+                
                 try {
-                    await bot.api.sendMessage(adminChatId, alertMsg, { parse_mode: 'Markdown' });
-                } catch (markdownError) {
-                    console.warn("⚠️ Failed to send credentials alert with Markdown, falling back to plain text:", markdownError);
+                    await bot.api.sendMessage(adminChatId, htmlAlertMsg, { parse_mode: 'HTML' });
+                } catch (htmlError) {
+                    console.warn("⚠️ Failed to send credentials alert with HTML, falling back to plain text:", htmlError);
                     await bot.api.sendMessage(adminChatId, alertMsg);
                 }
                 console.log("✅ Alerta de credenciales enviada a Santiago.");

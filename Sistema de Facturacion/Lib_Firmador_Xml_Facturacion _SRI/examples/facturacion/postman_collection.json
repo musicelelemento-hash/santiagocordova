@@ -1,0 +1,394 @@
+{
+  "info": {
+    "_postman_id": "6af152d8-3d74-4694-83ef-4f5d64fbe021",
+    "name": "Facturacion SRI - flujo completo factura",
+    "description": "Coleccion para validar el flujo completo de facturacion de este proyecto: validar datos, generar XML, firmar, enviar al SRI y consultar autorizacion.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Tipos soportados",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/facturacion/tipos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "facturacion",
+            "tipos"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Respuesta correcta', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().status).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Validar identificacion comprador",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tipo\": \"cedula\",\n  \"numero\": \"1710034065\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/facturacion/validar-identificacion",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "facturacion",
+            "validar-identificacion"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.test('Identificacion valida', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(json.status).to.eql(true);",
+              "  pm.expect(json.data.valido).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Generar clave de acceso factura",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fecha_emision\": \"2026-06-01\",\n  \"tipo_comprobante\": \"01\",\n  \"ruc\": \"1790012345001\",\n  \"ambiente\": \"{{ambiente}}\",\n  \"serie\": \"001001\",\n  \"secuencial\": \"000000001\",\n  \"codigo_numerico\": \"12345678\",\n  \"tipo_emision\": \"1\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/facturacion/clave-acceso",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "facturacion",
+            "clave-acceso"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.test('Clave generada', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(json.data.clave_acceso).to.have.length(49);",
+              "});",
+              "pm.environment.set('clave_acceso', json.data.clave_acceso);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Generar XML factura",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tipo\": \"factura\",\n  \"data\": {\n    \"infoTributaria\": {\n      \"ambiente\": \"{{ambiente}}\",\n      \"tipoEmision\": \"1\",\n      \"razonSocial\": \"EMPRESA DEMO S.A.\",\n      \"nombreComercial\": \"EMPRESA DEMO\",\n      \"ruc\": \"1790012345001\",\n      \"codigoNumerico\": \"12345678\",\n      \"codDoc\": \"01\",\n      \"estab\": \"001\",\n      \"ptoEmi\": \"001\",\n      \"secuencial\": \"000000001\",\n      \"dirMatriz\": \"Quito\",\n      \"regimen\": \"0\"\n    },\n    \"infoFactura\": {\n      \"fechaEmision\": \"2026-06-01\",\n      \"dirEstablecimiento\": \"Quito\",\n      \"obligadoContabilidad\": \"NO\",\n      \"tipoIdentificacionComprador\": \"05\",\n      \"razonSocialComprador\": \"CLIENTE DEMO\",\n      \"identificacionComprador\": \"1710034065\",\n      \"totalSinImpuestos\": \"100.00\",\n      \"totalDescuento\": \"0.00\",\n      \"totalImpuesto\": [\n        {\n          \"codigo\": \"2\",\n          \"codigoPorcentaje\": \"4\",\n          \"baseImponible\": \"100.00\",\n          \"valor\": \"15.00\"\n        }\n      ],\n      \"propina\": \"0.00\",\n      \"importeTotal\": \"115.00\",\n      \"moneda\": \"DOLAR\",\n      \"pagos\": {\n        \"formaPago\": \"01\",\n        \"total\": \"115.00\"\n      }\n    },\n    \"detalle\": [\n      {\n        \"codigoPrincipal\": \"SERV-001\",\n        \"codigoAuxiliar\": \"SERV-001\",\n        \"descripcion\": \"Servicio demo\",\n        \"cantidad\": \"1.00\",\n        \"precioUnitario\": \"100.00\",\n        \"descuento\": \"0.00\",\n        \"precioTotalSinImpuesto\": \"100.00\",\n        \"impuesto\": {\n          \"codigo\": \"2\",\n          \"codigoPorcentaje\": \"4\",\n          \"tarifa\": \"15\",\n          \"baseImponible\": \"100.00\",\n          \"valor\": \"15.00\"\n        }\n      }\n    ],\n    \"infoAdicional\": {\n      \"telefono\": \"0999999999\",\n      \"email\": \"cliente@example.com\"\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/facturacion/xml",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "facturacion",
+            "xml"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.test('XML generado', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(json.status).to.eql(true);",
+              "  pm.expect(json.data.xml).to.include('<factura');",
+              "  pm.expect(json.data.xml_base64).to.not.be.empty;",
+              "});",
+              "pm.environment.set('xml_base64', json.data.xml_base64);",
+              "const match = json.data.xml.match(/<claveAcceso>(.*?)<\\/claveAcceso>/);",
+              "if (match) {",
+              "  pm.environment.set('clave_acceso', match[1]);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Firmar XML generado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tipo\": \"factura\",\n  \"xml_base64\": \"{{xml_base64}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/facturacion/firmar",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "facturacion",
+            "firmar"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.test('XML firmado', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(json.status).to.eql(true);",
+              "  pm.expect(json.data.xml).to.include('Signature');",
+              "});",
+              "pm.environment.set('xml_firmado_base64', json.data.xml_base64);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Generar y firmar factura en un solo paso",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tipo\": \"factura\",\n  \"data\": {\n    \"infoTributaria\": {\n      \"ambiente\": \"{{ambiente}}\",\n      \"tipoEmision\": \"1\",\n      \"razonSocial\": \"EMPRESA DEMO S.A.\",\n      \"nombreComercial\": \"EMPRESA DEMO\",\n      \"ruc\": \"1790012345001\",\n      \"codigoNumerico\": \"12345678\",\n      \"codDoc\": \"01\",\n      \"estab\": \"001\",\n      \"ptoEmi\": \"001\",\n      \"secuencial\": \"000000001\",\n      \"dirMatriz\": \"Quito\",\n      \"regimen\": \"0\"\n    },\n    \"infoFactura\": {\n      \"fechaEmision\": \"2026-06-01\",\n      \"dirEstablecimiento\": \"Quito\",\n      \"obligadoContabilidad\": \"NO\",\n      \"tipoIdentificacionComprador\": \"05\",\n      \"razonSocialComprador\": \"CLIENTE DEMO\",\n      \"identificacionComprador\": \"1710034065\",\n      \"totalSinImpuestos\": \"100.00\",\n      \"totalDescuento\": \"0.00\",\n      \"totalImpuesto\": [\n        {\n          \"codigo\": \"2\",\n          \"codigoPorcentaje\": \"4\",\n          \"baseImponible\": \"100.00\",\n          \"valor\": \"15.00\"\n        }\n      ],\n      \"propina\": \"0.00\",\n      \"importeTotal\": \"115.00\",\n      \"moneda\": \"DOLAR\",\n      \"pagos\": {\n        \"formaPago\": \"01\",\n        \"total\": \"115.00\"\n      }\n    },\n    \"detalle\": [\n      {\n        \"codigoPrincipal\": \"SERV-001\",\n        \"codigoAuxiliar\": \"SERV-001\",\n        \"descripcion\": \"Servicio demo\",\n        \"cantidad\": \"1.00\",\n        \"precioUnitario\": \"100.00\",\n        \"descuento\": \"0.00\",\n        \"precioTotalSinImpuesto\": \"100.00\",\n        \"impuesto\": {\n          \"codigo\": \"2\",\n          \"codigoPorcentaje\": \"4\",\n          \"tarifa\": \"15\",\n          \"baseImponible\": \"100.00\",\n          \"valor\": \"15.00\"\n        }\n      }\n    ],\n    \"infoAdicional\": {\n      \"telefono\": \"0999999999\",\n      \"email\": \"cliente@example.com\"\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/facturacion/generar-firmar",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "facturacion",
+            "generar-firmar"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.test('Factura generada y firmada', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(json.status).to.eql(true);",
+              "  pm.expect(json.data.xml).to.include('Signature');",
+              "});",
+              "pm.environment.set('xml_firmado_base64', json.data.xml_base64);",
+              "const match = json.data.xml.match(/<claveAcceso>(.*?)<\\/claveAcceso>/);",
+              "if (match) {",
+              "  pm.environment.set('clave_acceso', match[1]);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Enviar XML firmado al SRI",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"xml_base64\": \"{{xml_firmado_base64}}\",\n  \"ambiente\": \"{{ambiente}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/facturacion/sri/enviar",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "facturacion",
+            "sri",
+            "enviar"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Respuesta de recepcion SRI', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().status).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Consultar autorizacion SRI",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"clave_acceso\": \"{{clave_acceso}}\",\n  \"ambiente\": \"{{ambiente}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/facturacion/sri/autorizar",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "facturacion",
+            "sri",
+            "autorizar"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Respuesta de autorizacion SRI', function () {",
+              "  pm.response.to.have.status(200);",
+              "  pm.expect(pm.response.json().status).to.eql(true);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
