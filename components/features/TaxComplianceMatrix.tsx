@@ -79,13 +79,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         }
 
         if (frequency === 'Mensual') {
-            // El mensual se habilita cuando el mes CIERRA (día 10+).
-            // El mes corriente solo aparece a partir del día 10.
+            // El mensual solo habilita hasta el mes anterior (June is the latest in July, July is not due/editable until August)
             let maxMonth: number;
             if (selectedYear === currentYear) {
-                // Si estamos antes del día 10, el último mes disponible es el anterior
-                maxMonth = currentDay < 10 ? currentMonth - 1 : currentMonth;
-                if (maxMonth < 1) maxMonth = 0; // Enero día 1-9: sin meses del año actual
+                maxMonth = currentMonth - 1;
+                if (maxMonth < 1) maxMonth = 0; // Enero: sin meses del año actual
             } else {
                 maxMonth = 12;
             }
@@ -112,11 +110,12 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 semList.push(`${yr}-S${sem}`);
             }
 
-            // Añadir el semestre actual SOLO si ya cerró el período mínimo
-            // S1 cierra en julio (mes 7+), S2 cierra en enero del año siguiente
-            const s1Closed = currentSemester === 1 && currentMonth >= 7;
-            const s2Closed = false; // S2 de este año se cierra al iniciar el año siguiente
-            if (s1Closed || s2Closed) {
+            // Añadir el semestre actual si ya cerró o se habilita un mes antes
+            // S1 (ene-jun) se habilita un mes antes (en junio: mes >= 6)
+            // S2 (jul-dic) se habilita un mes antes (en diciembre: mes >= 12)
+            const s1Enabled = currentSemester === 1 && currentMonth >= 6;
+            const s2Enabled = currentSemester === 2 && currentMonth >= 12;
+            if (s1Enabled || s2Enabled) {
                 result.push(`${currentYear}-S${currentSemester}`);
             }
             result.push(...semList);

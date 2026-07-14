@@ -127,9 +127,16 @@ export const getPeriod = (client: Pick<Client, 'taxProfile' | 'regime' | 'declar
     if (ivaFreq === 'all') ivaFreq = client.taxProfile?.ivaFrequency || 'Mensual';
 
     if (ivaFreq === 'Semestral') {
-        if (month < 6) { // Ene-Jun (Se declara el S2 del año anterior)
+        // Habilitar un mes antes del vencimiento oficial (Junio para S1, Diciembre para S2)
+        if (month === 5) {
+            return `${currentYear}-S1`;
+        }
+        if (month === 11) {
+            return `${currentYear}-S2`;
+        }
+        if (month < 5) { // Ene-May
             return `${currentYear - 1}-S2`;
-        } else { // Jul-Dic (Se declara el S1 del año actual)
+        } else { // Jul-Nov
             return `${currentYear}-S1`;
         }
     }
@@ -141,7 +148,9 @@ export const getPeriod = (client: Pick<Client, 'taxProfile' | 'regime' | 'declar
 
     // Default Fallback
     if (client.regime === TaxRegime.RimpeEmprendedor) {
-        if (month < 6) return `${currentYear - 1}-S2`;
+        if (month === 5) return `${currentYear}-S1`;
+        if (month === 11) return `${currentYear}-S2`;
+        if (month < 5) return `${currentYear - 1}-S2`;
         return `${currentYear}-S1`;
     }
 
