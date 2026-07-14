@@ -402,6 +402,8 @@ const App: React.FC = () => {
           // Pasamos initialTab del estado/options guardado o usar una variable del estado si hace falta
           // (Lo mejor es añadir el tab al estado del app o en options)
           initialTab={(window as any).__TEMP_INITIAL_TAB__}
+          globalSearchTerm={globalSearchQuery}
+          setGlobalSearchTerm={setGlobalSearchQuery}
         />
       );
       case 'calendar': return <CalendarScreen navigate={navigate} />;

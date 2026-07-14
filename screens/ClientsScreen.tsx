@@ -49,6 +49,8 @@ interface ClientsScreenProps {
     clearClientToView: () => void;
     sriCredentialsProp?: Record<string, string>;
     initialTab?: 'profile' | 'history' | 'vault' | 'settings';
+    globalSearchTerm?: string;
+    setGlobalSearchTerm?: (term: string) => void;
 }
 
 export const ClientsScreen: React.FC<ClientsScreenProps> = ({
@@ -59,14 +61,18 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     clientToView,
     clearClientToView,
     sriCredentialsProp,
-    initialTab
+    initialTab,
+    globalSearchTerm,
+    setGlobalSearchTerm
 }) => {
     const { clients, setClients, updateClient, addClient, removeClient, restoreClient, purgeTrash, serviceFees, sriCredentials: storeCredentials } = useAppStore();
     const sriCredentials = sriCredentialsProp || storeCredentials;
     const { toast } = useToast();
     // ── CAMPAÑA INTELIGENTE ──
     const campaign = useCampaignContext();
-    const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('clients_search') || '');
+    const [localSearchTerm, setLocalSearchTerm] = useState(() => sessionStorage.getItem('clients_search') || '');
+    const searchTerm = globalSearchTerm !== undefined ? globalSearchTerm : localSearchTerm;
+    const setSearchTerm = setGlobalSearchTerm !== undefined ? setGlobalSearchTerm : setLocalSearchTerm;
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -249,23 +255,48 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 (filterOption === 'inactive' && !(client.isActive ?? true));
             if (!statusMatch) return false;
 
-            const terms = debouncedSearchTerm.toLowerCase().split(/\s+/).filter(t => t.length > 0);
-            const clientName = client.name.toLowerCase();
-            const clientRuc = client.ruc;
-            const clientTrade = (client.tradeName || "").toLowerCase();
-            const clientNotes = (client.notes || "").toLowerCase();
+            // Smart Search Filtering (Unified with App.tsx tag logic)
+            const query = debouncedSearchTerm.toLowerCase().trim();
+            let searchMatch = true;
 
-            const searchMatch = terms.length === 0 || terms.every(term =>
-                clientName.includes(term) ||
-                clientRuc.includes(term) ||
-                clientTrade.includes(term) ||
-                clientNotes.includes(term)
-            );
+            if (query) {
+                if (query.startsWith('r:')) {
+                    const targetRegime = query.substring(2).trim();
+                    searchMatch = (
+                        (targetRegime.includes('pop') && client.regime === TaxRegime.RimpeNegocioPopular) ||
+                        (targetRegime.includes('emp') && client.regime === TaxRegime.RimpeEmprendedor) ||
+                        (targetRegime.includes('gen') && client.regime === TaxRegime.General)
+                    );
+                } else if (query.startsWith('v:')) {
+                    const targetStatus = query.substring(2).trim();
+                    if (targetStatus.includes('ven') || targetStatus.includes('pen')) {
+                        const today = new Date();
+                        searchMatch = getClientUndeclaredSummary(client, today).overduePeriodsCount > 0;
+                    }
+                } else if (query.startsWith('d:')) {
+                    const digit = query.substring(2).trim();
+                    if (digit.length === 1 && /^\d$/.test(digit)) {
+                        searchMatch = client.ruc[8] === digit;
+                    }
+                } else if (query.startsWith('n:')) {
+                    const noteSearch = query.substring(2).trim();
+                    searchMatch = !!(client.notes && client.notes.toLowerCase().includes(noteSearch));
+                } else {
+                    // Normal search
+                    const terms = query.split(/\s+/).filter(t => t.length > 0);
+                    searchMatch = terms.every(term =>
+                        client.name.toLowerCase().includes(term) ||
+                        client.ruc.includes(term) ||
+                        (client.tradeName && client.tradeName.toLowerCase().includes(term)) ||
+                        (client.notes && client.notes.toLowerCase().includes(term))
+                    );
+                }
+            }
 
             if (!searchMatch) return false;
 
             // SI HAY BÚSQUEDA ACTIVADA, saltamos los filtros de pestañas para mostrar resultados globales
-            if (debouncedSearchTerm) return true;
+            if (query) return true;
 
             if (activeGroupTab === 'vencidos') {
                 const today = new Date();
@@ -1003,22 +1034,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             )}
 
 
-            {/* TACTICAL COMMAND BAR - Unificado */}
-            <div className="bg-surface p-4 sm:p-5 rounded-[2rem] border border-outline-variant/30 flex flex-col xl:flex-row gap-5 items-center mb-8 mx-1 sm:mx-0 shadow-sm relative z-20">
-                {/* Search Input */}
-                <div className="relative flex-1 w-full group">
-                    <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-                        <LucideIcons.Search className="text-on-surface-variant/40 group-focus-within:text-primary transition-colors" size={20} />
-                    </div>
-                    <input 
-                        type="text"
-                        placeholder="BUSCAR EXPEDIENTE..."
-                        className="w-full bg-surface-medium border border-outline-variant/30 rounded-2xl py-4.5 pl-14 pr-6 text-xs font-bold text-on-surface placeholder:text-on-surface-variant/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-premium tracking-widest uppercase"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-
+            {/* TACTICAL COMMAND BAR - Minimalista y Limpio (Zen) */}
+            <div className="bg-surface p-4 sm:p-5 rounded-[2rem] border border-outline-variant/30 flex flex-col xl:flex-row gap-5 items-center justify-between mb-8 mx-1 sm:mx-0 shadow-sm relative z-20">
                 {/* Tactical Segmented Control for Tabs - CONTEXTUAL por campaña */}
                 <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 w-full xl:w-auto shrink-0">
                     {[
@@ -1141,6 +1158,20 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
                 {/* Actions & Toggles */}
                 <div className="flex items-center gap-3 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
+                    {searchTerm && (
+                        <div className="flex items-center gap-2.5 px-3.5 py-2 bg-primary/5 hover:bg-primary/10 text-primary border border-primary/20 rounded-xl transition-all duration-300 animate-in fade-in slide-in-from-right-4 shadow-sm shrink-0">
+                            <LucideIcons.Search size={11} className="animate-pulse" />
+                            <span className="text-[9px] font-bold uppercase tracking-wider font-premium">Búsqueda:</span>
+                            <span className="text-[11px] font-black font-mono tracking-tight">{searchTerm}</span>
+                            <button 
+                                onClick={() => setSearchTerm('')}
+                                className="p-0.5 hover:bg-primary/20 rounded transition-all ml-1"
+                                title="Limpiar Búsqueda"
+                            >
+                                <LucideIcons.X size={10} strokeWidth={3} />
+                            </button>
+                        </div>
+                    )}
                     <button 
                         onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}
                         className={`p-3.5 rounded-xl transition-all border
