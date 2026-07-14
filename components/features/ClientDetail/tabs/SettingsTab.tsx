@@ -276,19 +276,50 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
                             <TaxProfileField 
                                 label="Tipo de Tarifa" 
-                                value={editedClient.isCourtesy ? 'CORTESIA' : 'ESTANDAR'} 
+                                value={editedClient.isCourtesy ? 'CORTESIA' : (editedClient.customServiceFee !== undefined ? 'PERSONALIZADA' : 'ESTANDAR')} 
                                 icon={LucideIcons.Coins} 
                                 isEditing={isEditing} 
                                 type="select"
                                 options={[
                                     { value: 'ESTANDAR', label: 'Estándar / Regular' },
-                                    { value: 'CORTESIA', label: 'Cortesía' }
+                                    { value: 'PERSONALIZADA', label: 'Tarifa Personalizada ($)' },
+                                    { value: 'CORTESIA', label: 'Cortesía / Sin Costo' }
                                 ]}
-                                onChange={(val) => setEditedClient({ 
-                                    ...editedClient, 
-                                    isCourtesy: val === 'CORTESIA' 
-                                })} 
+                                onChange={(val) => {
+                                    if (val === 'CORTESIA') {
+                                        setEditedClient({ 
+                                            ...editedClient, 
+                                            isCourtesy: true,
+                                            customServiceFee: undefined
+                                        });
+                                    } else if (val === 'ESTANDAR') {
+                                        setEditedClient({ 
+                                            ...editedClient, 
+                                            isCourtesy: false,
+                                            customServiceFee: undefined
+                                        });
+                                    } else {
+                                        setEditedClient({ 
+                                            ...editedClient, 
+                                            isCourtesy: false,
+                                            customServiceFee: editedClient.customServiceFee || 20
+                                        });
+                                    }
+                                }} 
                             />
+
+                            {(!editedClient.isCourtesy && editedClient.customServiceFee !== undefined) && (
+                                <TaxProfileField 
+                                    label="Valor de Tarifa Personalizada ($)" 
+                                    value={editedClient.customServiceFee?.toString() || '0'} 
+                                    icon={LucideIcons.DollarSign} 
+                                    isEditing={isEditing} 
+                                    onChange={(val) => setEditedClient({ 
+                                        ...editedClient, 
+                                        customServiceFee: parseFloat(val) || 0
+                                    })} 
+                                />
+                            )}
                             
                             <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5 space-y-5">
                                 <div className="flex items-center justify-between">

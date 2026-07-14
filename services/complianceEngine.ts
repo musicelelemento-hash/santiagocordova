@@ -74,6 +74,38 @@ const getColor = (daysRemaining: number | null, declared: boolean, paid: boolean
     return 'gray';
 };
 
+export const getClientFloors = (client: Client): { monthly: string; semestral: string; annual: string } => {
+    const clientStartPeriod = client.clientStartPeriod || null;
+    const creationDate = client.createdAt ? new Date(client.createdAt) : null;
+    const isValidCreation = creationDate && !isNaN(creationDate.getTime());
+
+    const fallbackMonthly = isValidCreation ? format(creationDate, 'yyyy-MM') : '2026-01';
+    const fallbackSemestral = isValidCreation 
+        ? format(creationDate, 'yyyy') + (creationDate.getMonth() < 6 ? '-S1' : '-S2') 
+        : '2026-S1';
+    const fallbackAnnual = isValidCreation ? format(creationDate, 'yyyy') : '2026';
+
+    const floorMonthly = (clientStartPeriod && !clientStartPeriod.includes('-S') && clientStartPeriod.length === 7)
+        ? clientStartPeriod
+        : fallbackMonthly;
+
+    const floorSemestral = clientStartPeriod?.includes('-S')
+        ? clientStartPeriod
+        : clientStartPeriod
+            ? clientStartPeriod.substring(0, 4) + '-S1'
+            : fallbackSemestral;
+
+    const floorAnnual = clientStartPeriod?.length === 4
+        ? clientStartPeriod
+        : fallbackAnnual;
+
+    return {
+        monthly: floorMonthly,
+        semestral: floorSemestral,
+        annual: floorAnnual
+    };
+};
+
 // ─────────────────────────────────────────────────────────
 // CORE: Get all obligations for a client at a given date
 // ─────────────────────────────────────────────────────────
@@ -248,28 +280,17 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
 
     // Determine the earliest period this client should have obligations for.
     // clientStartPeriod takes precedence over the global system floor.
-    const clientFloor = client.clientStartPeriod || null;
-    const globalFloorMonthly = '2026-01';
-    const globalFloorSemestral = '2026-S1';
-    const globalFloorAnnual = '2026';
+    const floors = getClientFloors(client);
 
     return obligations.filter(ob => {
         if (ob.period.length === 4) {
-            const floor = clientFloor?.length === 4 ? clientFloor : globalFloorAnnual;
-            return ob.period >= floor;
+            return ob.period >= floors.annual;
         }
         if (ob.period.includes('-S')) {
-            // For semestral clientStartPeriod like '2026-S2', use it directly
-            const floor = clientFloor?.includes('-S') ? clientFloor
-                : clientFloor ? clientFloor.substring(0, 4) + '-S1' // fallback to start of year
-                : globalFloorSemestral;
-            return ob.period >= floor;
+            return ob.period >= floors.semestral;
         }
         // Monthly
-        const floor = (clientFloor && !clientFloor.includes('-S') && clientFloor.length === 7)
-            ? clientFloor
-            : globalFloorMonthly;
-        return ob.period >= floor;
+        return ob.period >= floors.monthly;
     });
 };
 
@@ -279,28 +300,18 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
  */
 export const getObligationsForPeriod = (client: Client, period: string): Array<{ type: TaxObligationType, label: string }> => {
     // Check if period is before the client's start date
-    const clientFloor = client.clientStartPeriod || null;
-    const globalFloorMonthly = '2026-01';
-    const globalFloorSemestral = '2026-S1';
-    const globalFloorAnnual = '2026';
+    const floors = getClientFloors(client);
 
     const isSemester = period.includes('-S');
     const isYearPeriod = /^\d{4}$/.test(period);
 
     if (isYearPeriod) {
-        const floor = clientFloor?.length === 4 ? clientFloor : globalFloorAnnual;
-        if (period < floor) return [];
+        if (period < floors.annual) return [];
     } else if (isSemester) {
-        const floor = clientFloor?.includes('-S') ? clientFloor
-            : clientFloor ? clientFloor.substring(0, 4) + '-S1'
-            : globalFloorSemestral;
-        if (period < floor) return [];
+        if (period < floors.semestral) return [];
     } else {
         // Monthly
-        const floor = (clientFloor && !clientFloor.includes('-S') && clientFloor.length === 7)
-            ? clientFloor
-            : globalFloorMonthly;
-        if (period < floor) return [];
+        if (period < floors.monthly) return [];
     }
 
     const obligations: Array<{ type: TaxObligationType, label: string }> = [];
@@ -567,17 +578,13 @@ export const getActivePeriodsForClient = (client: Client, date: Date = new Date(
     
     // We check monthly or semestral periods
     // Determine the floor period for this client
-    const clientStartPeriod = client.clientStartPeriod || null;
-    const floorMonthly = (clientStartPeriod && !clientStartPeriod.includes('-S') && clientStartPeriod.length === 7)
-        ? clientStartPeriod : '2026-01';
-    const floorSemestral = clientStartPeriod?.includes('-S') ? clientStartPeriod
-        : clientStartPeriod ? clientStartPeriod.substring(0, 4) + '-S1' : '2026-S1';
+    const floors = getClientFloors(client);
 
     if (requiresIva(client) && ivaFreq !== 'Ninguno') {
         let currentDate = date;
         for (let i = 0; i < 24; i++) {
             const period = getPeriod(client, currentDate);
-            const isBeforeStart = period.includes('-S') ? period < floorSemestral : period < floorMonthly;
+            const isBeforeStart = period.includes('-S') ? period < floors.semestral : period < floors.monthly;
             if (isBeforeStart) break;
             if (!periods.includes(period)) {
                 periods.push(period);

@@ -5,13 +5,15 @@ import { getClientServiceFee } from '../../../../services/clientService';
 import {
     ShieldCheck, AlertTriangle, DollarSign, Eye, EyeOff, Globe, Copy,
     Share2, MessageCircle, Settings, Activity, FileText, CalendarDays,
-    BadgePercent, CheckCircle2, Clock, ArrowRight, Zap, Info, RefreshCcw
+    BadgePercent, CheckCircle2, Clock, ArrowRight, Zap, Info, RefreshCcw,
+    FileKey, Download, Trash2, UploadCloud
 } from 'lucide-react';
 import { TaxObligationCard } from '../TaxObligationCard';
 import { PaymentHistoryChart } from '../PaymentHistoryChart';
 import { FacturadorCard } from '../FacturadorCard';
 import { ClientNotes } from '../ClientNotes';
 import { useToast } from '../../../../context/ToastContext';
+import { fileToBase64 } from '../../../../services/pdfExtraction';
 
 interface ProfileTabProps {
     client: Client;
@@ -358,6 +360,104 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                             </div>
                         </div>
 
+                        {/* Archivo Firma Electrónica (.p12 / .pdf) */}
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                <FileKey size={10} className="text-primary/50" /> Archivo de Firma (.p12 / PDF)
+                            </p>
+                            <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-surface-low/50 rounded-xl border border-slate-100 dark:border-white/5">
+                                {editedClient.signatureFile ? (
+                                    <div className="flex items-center justify-between w-full">
+                                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200 truncate max-w-[170px] uppercase">
+                                            {editedClient.signatureFile.name}
+                                        </span>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const link = document.createElement('a');
+                                                    link.href = editedClient.signatureFile?.content || '';
+                                                    link.download = editedClient.signatureFile?.name || 'firma.p12';
+                                                    link.click();
+                                                }}
+                                                className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                                title="Descargar Firma"
+                                            >
+                                                <Download size={13} />
+                                            </button>
+                                            {isEditing && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditedClient(prev => {
+                                                        const updated = { ...prev };
+                                                        delete updated.signatureFile;
+                                                        return updated;
+                                                    })}
+                                                    className="p-1 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-lg text-rose-400 hover:text-rose-600 dark:hover:text-rose-200"
+                                                    title="Eliminar Firma"
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="w-full">
+                                        {isEditing ? (
+                                            <label className="w-full flex items-center justify-center gap-2 py-1.5 px-3 bg-slate-100 dark:bg-white/5 hover:bg-primary/10 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg border border-dashed border-slate-300 dark:border-white/10 cursor-pointer transition-all text-xs font-bold">
+                                                <UploadCloud size={13} /> Subir Firma
+                                                <input 
+                                                    type="file" 
+                                                    className="hidden" 
+                                                    onChange={async (e) => {
+                                                        const f = e.target.files?.[0];
+                                                        if (f) {
+                                                            const content = await fileToBase64(f);
+                                                            setEditedClient(prev => ({
+                                                                ...prev,
+                                                                signatureFile: {
+                                                                    name: f.name,
+                                                                    type: 'pdf',
+                                                                    size: f.size,
+                                                                    lastModified: f.lastModified,
+                                                                    content
+                                                                }
+                                                            }));
+                                                        }
+                                                    }}
+                                                />
+                                            </label>
+                                        ) : (
+                                            <span className="text-[10px] font-mono font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest italic opacity-50">NO_ENTRY</span>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Fecha de Vencimiento de la Firma */}
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                <CalendarDays size={10} className="text-primary/50" /> Vencimiento de Firma
+                            </p>
+                            <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-surface-low/50 rounded-xl border border-slate-100 dark:border-white/5">
+                                {isEditing ? (
+                                    <input
+                                        type="date"
+                                        value={editedClient.signatureExpirationDate || ''}
+                                        onChange={e => setEditedClient({ ...editedClient, signatureExpirationDate: e.target.value })}
+                                        className="w-full bg-transparent text-xs font-bold text-slate-900 dark:text-white outline-none border-b border-primary/30 pb-0.5 focus:border-primary [color-scheme:light] dark:[color-scheme:dark] cursor-pointer"
+                                    />
+                                ) : (
+                                    <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                                        {editedClient.signatureExpirationDate 
+                                            ? new Date(editedClient.signatureExpirationDate).toLocaleDateString()
+                                            : 'NO REGISTRADA'}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-3 pt-2">
                             <button
                                 onClick={handleOpenSRI}
@@ -450,10 +550,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         </button>
                     </div>
 
-                    {/* Facturador (si tiene) */}
-                    {editedClient.facturadorConfig && (
+                    {/* Facturador (siempre visible en edición o si tiene configuración cargada) */}
+                    {(isEditing || editedClient.facturadorConfig) && (
                         <FacturadorCard
-                            config={editedClient.facturadorConfig}
+                            config={editedClient.facturadorConfig || {}}
                             isEditing={isEditing}
                             onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
                         />

@@ -55,24 +55,22 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                 <div className="space-y-4">
                     <label className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                         <LucideIcons.Globe size={13} className="text-blue-500" strokeWidth={3} />
-                        SRV_PLATFORM
+                        🖥️ SRV_PLATFORM (Facturador)
                     </label>
                     <div className="space-y-3">
                         <div className="relative group/select">
                             <select
-                                value={config.programName === '0facturador' ? '0facturador' : 'Otra'}
-                                onChange={(e) => {
-                                    if (e.target.value === '0facturador') {
-                                        handleFieldChange('programName', '0facturador');
-                                    } else {
-                                        handleFieldChange('programName', '');
-                                    }
-                                }}
+                                value={config.programName || ''}
+                                onChange={(e) => handleFieldChange('programName', e.target.value)}
                                 disabled={!isEditing}
-                                className="w-full px-5 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm"
+                                className="w-full px-5 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm cursor-pointer"
                             >
-                                <option value="0facturador">0facturador.os</option>
-                                <option value="Otra">Custom_Ext</option>
+                                <option value="">No Definido</option>
+                                <option value="SRI PUBLIC">SRI PUBLIC</option>
+                                <option value="ZIFAC">ZIFAC</option>
+                                <option value="ECUAFACT">ECUAFACT</option>
+                                <option value="0facturador.os">0facturador.os</option>
+                                <option value="Otro">Otro / Personalizado</option>
                             </select>
                             <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
@@ -85,14 +83,14 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                 <div className="space-y-4">
                     <label className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                         <LucideIcons.ExternalLink size={13} className="text-blue-500" strokeWidth={3} />
-                        ACCESS_ENDPOINT
+                        🔗 ACCESS_ENDPOINT (URL)
                     </label>
                     <input
                         type="text"
                         value={config.url || ''}
                         onChange={(e) => handleFieldChange('url', e.target.value)}
                         disabled={!isEditing}
-                        placeholder="https://app.0facturador.com"
+                        placeholder="https://app.example.com"
                         className="w-full px-6 py-4 bg-white dark:bg-surface-low/30 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-mono font-bold text-slate-900 dark:text-slate-50 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm"
                     />
                 </div>
@@ -101,14 +99,14 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                 <div className="space-y-4">
                     <label className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                         <LucideIcons.User size={13} className="text-blue-500" strokeWidth={3} />
-                        AUTH_IDENTITY
+                        👤 AUTH_IDENTITY (Usuario)
                     </label>
                     <input
                         type="text"
                         value={config.username || ''}
                         onChange={(e) => handleFieldChange('username', e.target.value)}
                         disabled={!isEditing}
-                        placeholder="ID"
+                        placeholder="ID / Usuario"
                         className="w-full px-6 py-4 bg-white dark:bg-surface-low/30 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-mono font-bold text-slate-900 dark:text-slate-50 focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-40 outline-none shadow-sm"
                     />
                 </div>
@@ -117,7 +115,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                 <div className="space-y-4">
                     <label className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                         <LucideIcons.Lock size={13} className="text-emerald-500" strokeWidth={3} />
-                        AUTH_SECRET
+                        🔒 AUTH_SECRET (Contraseña)
                     </label>
                     <div className="relative group/passwd">
                         <input
@@ -143,7 +141,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                 <div className="space-y-4">
                     <label className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                         <LucideIcons.Calendar size={13} className="text-amber-500" strokeWidth={3} />
-                        EXP_DATE
+                        📅 EXP_DATE (Fecha Vencimiento)
                     </label>
                     <input
                         type="date"
@@ -158,19 +156,19 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                 <div className="space-y-4">
                     <label className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                         <LucideIcons.FileText size={13} className="text-rose-500" strokeWidth={3} />
-                        LICENSE_TYPE
+                        📝 LICENSE_TYPE (Modalidad)
                     </label>
                     <div className="relative">
                         <select
                             value={config.documentStatus || ''}
                             onChange={(e) => handleFieldChange('documentStatus', e.target.value)}
                             disabled={!isEditing}
-                            className="w-full px-5 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm"
+                            className="w-full px-5 py-3.5 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all disabled:opacity-40 outline-none appearance-none shadow-sm cursor-pointer"
                         >
-                            <option value="">UNCERTAIN</option>
-                            <option value="Ilimitado">UNLIMITED</option>
-                            <option value="Prepago">PREPAID</option>
-                            <option value="Vencido">EXPIRED</option>
+                            <option value="">No Definido</option>
+                            <option value="Ilimitado">Ilimitado</option>
+                            <option value="Prepago">Prepago</option>
+                            <option value="Vencido">Vencido</option>
                         </select>
                         <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300 dark:text-slate-600">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7"></path></svg>
@@ -182,7 +180,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                 <div className="space-y-4">
                     <label className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                         <LucideIcons.FilePlus size={13} className="text-cyan-500" strokeWidth={3} />
-                        VOL_METRICS
+                        📊 VOL_METRICS (Cant. Comprobantes)
                     </label>
                     <input
                         type="number"
@@ -198,7 +196,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                 <div className="space-y-4">
                     <label className="text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                         <LucideIcons.Coins size={13} className="text-sky-500" strokeWidth={3} />
-                        RECURRING_COST
+                        💰 RECURRING_COST (Precio Tarifa)
                     </label>
                     <div className="relative">
                         <span className="absolute left-6 top-1/2 -translate-y-1/2 text-sky-600 dark:text-sky-400 font-mono font-bold text-xs">$</span>

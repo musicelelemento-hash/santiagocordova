@@ -97,6 +97,17 @@ export const ClientSchema = z.object({
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
     advanceCredits: z.number().optional(),
+    clientStartPeriod: z.string().optional(),
+    facturadorConfig: z.object({
+        programName: z.string().optional(),
+        url: z.string().optional(),
+        username: z.string().optional(),
+        password: z.string().optional(),
+        expirationDate: z.string().optional(),
+        documentStatus: z.string().optional(),
+        documentCount: z.number().optional(),
+        price: z.number().optional(),
+    }).optional(),
 });
 
 export type ValidatedClient = z.infer<typeof ClientSchema>;
