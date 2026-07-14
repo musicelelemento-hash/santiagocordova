@@ -167,7 +167,8 @@ export async function searchClient(query: string) {
             // Block 3: State of declarations and payment of fees
             let totalToPay = 0;
             let feeBreakdown = "";
-            const isCortesia = (c.name || "").toLowerCase().includes("daniel cordova") || 
+            const isCortesia = !!c.isCourtesy || 
+                               (c.name || "").toLowerCase().includes("daniel cordova") || 
                                (c.name || "").toLowerCase().includes("aleida ramirez") || 
                                (c.name || "").toLowerCase().includes("ramirez aleida");
             
@@ -185,16 +186,18 @@ export async function searchClient(query: string) {
             const unpaidIva = allDeclarations.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file));
             const unpaidRenta = allDeclarations.filter((d: any) => d.type === 'RENTA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file));
 
-            if (unpaidIva.length > 0) {
-                const sumIva = unpaidIva.length * ivaFee;
-                totalToPay += sumIva;
-                feeBreakdown += `$${sumIva} IVA (${unpaidIva.length} pend.) + `;
-            }
+            if (!isCortesia) {
+                if (unpaidIva.length > 0) {
+                    const sumIva = unpaidIva.length * ivaFee;
+                    totalToPay += sumIva;
+                    feeBreakdown += `$${sumIva} IVA (${unpaidIva.length} pend.) + `;
+                }
 
-            if (unpaidRenta.length > 0) {
-                const sumRenta = unpaidRenta.length * rentaFee;
-                totalToPay += sumRenta;
-                feeBreakdown += `$${sumRenta} Renta (${unpaidRenta.length} pend.) + `;
+                if (unpaidRenta.length > 0) {
+                    const sumRenta = unpaidRenta.length * rentaFee;
+                    totalToPay += sumRenta;
+                    feeBreakdown += `$${sumRenta} Renta (${unpaidRenta.length} pend.) + `;
+                }
             }
 
             response += `\n📑 *ESTADO DE DECLARACIONES SRI:*\n`;

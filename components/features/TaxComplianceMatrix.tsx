@@ -32,7 +32,6 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const [frequency, setFrequency] = useState<IvaFrequency>('Mensual');
     const [matrixMode, setMatrixMode] = useState<MatrixMode>(initialMode);
     const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
-    const [searchTerm, setSearchTerm] = useState('');
     const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [isWorkspaceMode, setIsWorkspaceMode] = useState(false);
@@ -170,7 +169,6 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' :
                  c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual');
 
-            const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.ruc.includes(searchTerm);
             const isActive = !c.isDeleted && c.isActive;
 
             if (matrixMode === 'RENTA') {
@@ -179,13 +177,12 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     c.regime === TaxRegime.RimpeEmprendedor ||
                     c.regime === TaxRegime.RimpeNegocioPopular ||
                     c.regime === TaxRegime.General;
-                return isActive && hasRenta && matchesSearch;
+                return isActive && hasRenta;
             }
 
             return (
                 isActive &&
-                clientFreq === frequency &&
-                matchesSearch
+                clientFreq === frequency
             );
         }).sort((a, b) => {
             const priorityA = hasPriorityDeclaration(a);
@@ -204,7 +201,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
             return digitA - digitB || a.name.localeCompare(b.name);
         });
-    }, [clients, frequency, matrixMode, searchTerm, isWorkspaceMode, periods]);
+    }, [clients, frequency, matrixMode, isWorkspaceMode, periods]);
 
     const getStatusIcon = (declaration?: Declaration) => {
         if (!declaration) return <div className="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-white/5 shadow-inner" title="Sin Registro" />;
@@ -304,17 +301,6 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
-                    <div className="relative group flex-1 md:w-64">
-                        <LucideIcons.Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" size={16} />
-                        <input
-                            type="text"
-                            placeholder="Filtrar cliente..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-3 pl-10 pr-4 text-xs font-bold text-slate-900 dark:text-white placeholder-slate-400 focus:border-primary outline-none transition-all uppercase tracking-widest"
-                        />
-                    </div>
-                    
                     <button 
                         onClick={() => window.print()}
                         className="p-3 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl border border-slate-200 dark:border-white/10 hover:text-primary hover:border-primary transition-all no-print shadow-sm"

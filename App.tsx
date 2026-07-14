@@ -21,13 +21,14 @@ import { Sidebar } from './components/layout/Sidebar';
 import { MobileNavBar } from './components/layout/MobileNavBar';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { GlobalUploadModal } from './components/features/GlobalUploadModal';
-import { Client, Task, Screen, Theme, ClientFilter, PublicUser } from './types';
+import { Client, Task, Screen, Theme, ClientFilter, PublicUser, TaxRegime } from './types';
 import { loadDataFromSheet, syncDataToSheet } from './services/sheetApi';
 import { CommandPalette } from './components/CommandPalette';
 import { Modal } from './components/ui/Modal';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useAppStore } from './store/useAppStore';
+import { getClientUndeclaredSummary } from './services/complianceEngine';
 
 
 type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music';
@@ -114,13 +115,96 @@ const App: React.FC = () => {
 
   const globalSearchResults = useMemo(() => {
     if (!globalSearchQuery.trim()) return [];
-    const query = globalSearchQuery.toLowerCase();
+    const query = globalSearchQuery.toLowerCase().trim();
+
+    // 1. Smart Tag: r: (Tax Regime)
+    if (query.startsWith('r:')) {
+      const targetRegime = query.substring(2).trim();
+      return clients.filter(c => !c.isDeleted && c.isActive && (
+        (targetRegime.includes('pop') && c.regime === TaxRegime.RimpeNegocioPopular) ||
+        (targetRegime.includes('emp') && c.regime === TaxRegime.RimpeEmprendedor) ||
+        (targetRegime.includes('gen') && c.regime === TaxRegime.General)
+      )).slice(0, 8);
+    }
+
+    // 2. Smart Tag: v: (Vencidos / Overdue)
+    if (query.startsWith('v:')) {
+      const targetStatus = query.substring(2).trim();
+      if (targetStatus.includes('ven') || targetStatus.includes('pen')) {
+        const today = new Date();
+        return clients.filter(c => !c.isDeleted && c.isActive && 
+          getClientUndeclaredSummary(c, today).overduePeriodsCount > 0
+        ).slice(0, 8);
+      }
+    }
+
+    // 3. Smart Tag: d: (9th Digit of RUC)
+    if (query.startsWith('d:')) {
+      const digit = query.substring(2).trim();
+      if (digit.length === 1 && /^\d$/.test(digit)) {
+        return clients.filter(c => !c.isDeleted && c.isActive && c.ruc[8] === digit).slice(0, 8);
+      }
+    }
+
+    // 4. Smart Tag: n: (Client Notes)
+    if (query.startsWith('n:')) {
+      const searchTerm = query.substring(2).trim();
+      return clients.filter(c => !c.isDeleted && c.isActive && 
+        c.notes && c.notes.toLowerCase().includes(searchTerm)
+      ).slice(0, 8);
+    }
+
+    // Normal Search (Default)
     return clients.filter(c => !c.isDeleted && (
       c.name.toLowerCase().includes(query) ||
       (c.tradeName && c.tradeName.toLowerCase().includes(query)) ||
       c.ruc.includes(query)
     )).slice(0, 8);
   }, [clients, globalSearchQuery]);
+
+  const recentClients = useMemo(() => {
+    try {
+      const recentRaw = localStorage.getItem('sc_pro_recent_searches');
+      const recentIds: string[] = recentRaw ? JSON.parse(recentRaw) : [];
+      return recentIds
+        .map(id => clients.find(c => c.id === id))
+        .filter((c): c is Client => !!c && !c.isDeleted);
+    } catch (e) {
+      return [];
+    }
+  }, [clients, isGlobalDropdownOpen]);
+
+  const handleSelectClient = (client: Client) => {
+    try {
+      const recentRaw = localStorage.getItem('sc_pro_recent_searches');
+      let recent: string[] = recentRaw ? JSON.parse(recentRaw) : [];
+      recent = recent.filter(id => id !== client.id);
+      recent.unshift(client.id);
+      recent = recent.slice(0, 3);
+      localStorage.setItem('sc_pro_recent_searches', JSON.stringify(recent));
+    } catch (e) {
+      console.warn("Failed to save recent search:", e);
+    }
+
+    navigate('clients', { clientIdToView: client.id });
+    setGlobalSearchQuery('');
+    setIsGlobalDropdownOpen(false);
+  };
+
+  const highlightText = (text: string, query: string) => {
+    if (!query) return <span>{text}</span>;
+    const escapedQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+    return (
+      <span>
+        {parts.map((part, i) => 
+          part.toLowerCase() === query.toLowerCase() 
+            ? <strong key={i} className="text-primary font-black">{part}</strong>
+            : part
+        )}
+      </span>
+    );
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -408,7 +492,7 @@ const App: React.FC = () => {
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
         />
         <div className={`flex-1 flex flex-col min-w-0 relative z-10 transition-all duration-500 ${(isSidebarCollapsed || !!clientToView) ? 'md:pl-[84px]' : 'md:pl-[280px]'}`}>
-          <header className="hidden md:flex items-center justify-between p-6 px-10 bg-white/40 dark:bg-surface/60 backdrop-blur-3xl border-b border-slate-200/50 dark:border-white/10 relative overflow-hidden transition-all duration-700 no-print">
+          <header className="hidden md:flex items-center justify-between p-6 px-10 bg-white/40 dark:bg-surface/60 backdrop-blur-3xl border-b border-slate-200/50 dark:border-white/10 relative z-30 transition-all duration-700 no-print">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-light tracking-tight text-slate-800 dark:text-white capitalize">
                 {activeScreen === 'home' ? 'Resumen General' : activeScreen.replace('_', ' ')}
@@ -431,42 +515,50 @@ const App: React.FC = () => {
                     onFocus={() => setIsGlobalDropdownOpen(true)}
                     className="w-full pl-10 pr-10 py-2.5 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-premium uppercase tracking-wider"
                 />
-                {globalSearchQuery && (
-                    <button 
-                        onClick={() => {
-                            setGlobalSearchQuery('');
-                            setIsGlobalDropdownOpen(false);
-                        }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all z-10"
-                    >
-                        <LucideIcons.X size={12} />
-                    </button>
-                )}
+            {globalSearchQuery ? (
+                <button 
+                    onClick={() => {
+                        setGlobalSearchQuery('');
+                        setIsGlobalDropdownOpen(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all z-10"
+                >
+                    <LucideIcons.X size={12} />
+                </button>
+            ) : (
+                <kbd 
+                    onClick={() => {
+                        setIsGlobalDropdownOpen(false);
+                        setIsCommandPaletteOpen(true);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 rounded text-[9px] font-mono leading-none border border-slate-300 dark:border-white/5 shadow-sm select-none cursor-pointer z-10 hover:bg-slate-300 dark:hover:bg-white/20 transition-all"
+                    title="Atajo de Teclado"
+                >
+                    Ctrl+K
+                </kbd>
+            )}
 
-                {/* Floating Results Dropdown */}
-                {isGlobalDropdownOpen && (
-                    <div 
-                        ref={globalSearchRef}
-                        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[400] max-h-80 overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-top-2 duration-300"
-                    >
-                        {globalSearchResults.length > 0 ? (
+            {/* Floating Results Dropdown */}
+            {isGlobalDropdownOpen && (
+                <div 
+                    ref={globalSearchRef}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[400] max-h-[26rem] overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-top-2 duration-300"
+                >
+                    {globalSearchQuery ? (
+                        globalSearchResults.length > 0 ? (
                             <div className="p-2 space-y-1">
                                 {globalSearchResults.map((c) => (
                                     <button
                                         key={c.id}
-                                        onClick={() => {
-                                            navigate('clients', { clientIdToView: c.id });
-                                            setGlobalSearchQuery('');
-                                            setIsGlobalDropdownOpen(false);
-                                        }}
+                                        onClick={() => handleSelectClient(c)}
                                         className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all flex items-center justify-between group/item"
                                     >
                                         <div className="flex flex-col">
                                             <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide group-hover/item:text-primary transition-colors">
-                                                {c.tradeName || c.name}
+                                                {highlightText(c.tradeName || c.name, globalSearchQuery)}
                                             </span>
                                             <span className="text-[10px] font-mono font-bold text-slate-400 mt-1">
-                                                RUC: {c.ruc}
+                                                RUC: {highlightText(c.ruc, globalSearchQuery)}
                                             </span>
                                         </div>
                                         <LucideIcons.ArrowRight size={12} className="text-slate-400 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all" />
@@ -475,11 +567,78 @@ const App: React.FC = () => {
                             </div>
                         ) : (
                             <div className="px-5 py-6 text-center text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                                {globalSearchQuery ? 'Sin Resultados' : 'Escribe para buscar...'}
+                                Sin Resultados
                             </div>
-                        )}
-                    </div>
-                )}
+                        )
+                    ) : (
+                        <div className="flex flex-col divide-y divide-slate-200 dark:divide-white/5 bg-slate-50/50 dark:bg-slate-900/50">
+                            {recentClients.length > 0 && (
+                                <div className="p-4 space-y-2">
+                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1.5 block">Búsquedas Recientes</span>
+                                    <div className="grid grid-cols-1 gap-1">
+                                        {recentClients.map((c) => (
+                                            <button
+                                                key={c.id}
+                                                onClick={() => handleSelectClient(c)}
+                                                className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-all flex items-center justify-between group/recent text-xs"
+                                            >
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-slate-700 dark:text-slate-300 group-hover/recent:text-primary transition-all uppercase truncate max-w-[220px]">
+                                                        {c.tradeName || c.name}
+                                                    </span>
+                                                    <span className="text-[9px] font-mono text-slate-400 mt-0.5">RUC: {c.ruc}</span>
+                                                </div>
+                                                <LucideIcons.ArrowRight size={10} className="text-slate-400 group-hover/recent:text-primary group-hover/recent:translate-x-1 transition-all" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            <div className="p-4 space-y-3">
+                                <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-white/5">
+                                    <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Guía de Búsqueda Rápida</span>
+                                    <button 
+                                        onClick={() => {
+                                            setIsGlobalDropdownOpen(false);
+                                            setIsCommandPaletteOpen(true);
+                                        }}
+                                        className="text-[9px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-1"
+                                    >
+                                        <LucideIcons.Command size={10} /> Consola de Comandos
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-1 gap-1.5">
+                                    {[
+                                        { tag: 'Ctrl + K', desc: 'Abrir atajos y comandos rápidos', isKbd: true, onClick: () => { setIsGlobalDropdownOpen(false); setIsCommandPaletteOpen(true); } },
+                                        { tag: 'r:popular', desc: 'Filtrar por Régimen Negocio Popular', onClick: () => setGlobalSearchQuery('r:popular') },
+                                        { tag: 'r:emprendedor', desc: 'Filtrar por Régimen Emprendedor', onClick: () => setGlobalSearchQuery('r:emprendedor') },
+                                        { tag: 'v:vencido', desc: 'Ver clientes con obligaciones vencidas', onClick: () => setGlobalSearchQuery('v:vencido') },
+                                        { tag: 'd:9', desc: 'Buscar RUC por noveno dígito (ej: 9)', onClick: () => setGlobalSearchQuery('d:9') },
+                                        { tag: 'n:viaje', desc: 'Buscar términos dentro de las notas', onClick: () => setGlobalSearchQuery('n:') }
+                                    ].map((item, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={item.onClick}
+                                            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-all flex items-center justify-between group/guide text-[11px] font-bold"
+                                        >
+                                            <span className="text-slate-600 dark:text-slate-300 group-hover/guide:text-slate-800 dark:group-hover/guide:text-white transition-colors">
+                                                {item.desc}
+                                            </span>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono border transition-all ${
+                                                item.isKbd 
+                                                    ? 'bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-white/5' 
+                                                    : 'bg-primary/10 text-primary border-primary/20 group-hover/guide:bg-primary group-hover/guide:text-white'
+                                            }`}>
+                                                {item.tag}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
             </div>
 
             <div className="flex items-center space-x-6">

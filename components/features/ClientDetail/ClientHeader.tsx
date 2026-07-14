@@ -183,6 +183,11 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                             <div className="space-y-3">
                                 <div className="flex flex-wrap items-center justify-center gap-2">
                                     <RegimeBadge regime={client.regime} />
+                                    {client.isCourtesy && (
+                                        <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold bg-sky-100 text-sky-700 border border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20 uppercase tracking-wider">
+                                            Cortesía
+                                        </span>
+                                    )}
                                     {client.isActive === false && (
                                         <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold bg-slate-100 text-slate-400 border border-slate-200 dark:bg-white/5 dark:text-slate-500 dark:border-white/10 uppercase tracking-wider">
                                             Inactivo

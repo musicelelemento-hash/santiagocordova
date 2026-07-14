@@ -278,13 +278,32 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
  * This is used mainly for the Matrix view to know what to display for historical cells.
  */
 export const getObligationsForPeriod = (client: Client, period: string): Array<{ type: TaxObligationType, label: string }> => {
-    const obligations: Array<{ type: TaxObligationType, label: string }> = [];
-    
-    // Check if it's a semester period (e.g., 2024-S1)
+    // Check if period is before the client's start date
+    const clientFloor = client.clientStartPeriod || null;
+    const globalFloorMonthly = '2026-01';
+    const globalFloorSemestral = '2026-S1';
+    const globalFloorAnnual = '2026';
+
     const isSemester = period.includes('-S');
-    
-    // Check if it's a pure year period (RENTA fiscal year, e.g., "2025")
     const isYearPeriod = /^\d{4}$/.test(period);
+
+    if (isYearPeriod) {
+        const floor = clientFloor?.length === 4 ? clientFloor : globalFloorAnnual;
+        if (period < floor) return [];
+    } else if (isSemester) {
+        const floor = clientFloor?.includes('-S') ? clientFloor
+            : clientFloor ? clientFloor.substring(0, 4) + '-S1'
+            : globalFloorSemestral;
+        if (period < floor) return [];
+    } else {
+        // Monthly
+        const floor = (clientFloor && !clientFloor.includes('-S') && clientFloor.length === 7)
+            ? clientFloor
+            : globalFloorMonthly;
+        if (period < floor) return [];
+    }
+
+    const obligations: Array<{ type: TaxObligationType, label: string }> = [];
     
     // RENTA (período anual puro: "2025", "2024", etc.)
     if (isYearPeriod) {

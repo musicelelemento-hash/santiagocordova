@@ -273,6 +273,22 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                     } 
                                 })} 
                             />
+
+                            <TaxProfileField 
+                                label="Tipo de Tarifa" 
+                                value={editedClient.isCourtesy ? 'CORTESIA' : 'ESTANDAR'} 
+                                icon={LucideIcons.Coins} 
+                                isEditing={isEditing} 
+                                type="select"
+                                options={[
+                                    { value: 'ESTANDAR', label: 'Estándar / Regular' },
+                                    { value: 'CORTESIA', label: 'Cortesía' }
+                                ]}
+                                onChange={(val) => setEditedClient({ 
+                                    ...editedClient, 
+                                    isCourtesy: val === 'CORTESIA' 
+                                })} 
+                            />
                             
                             <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5 space-y-5">
                                 <div className="flex items-center justify-between">

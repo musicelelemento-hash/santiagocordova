@@ -1012,7 +1012,7 @@ bot.on('message:text', async (ctx) => {
           fileName,
           buffer.length,
           base64Content,
-          data.amount
+          parseFloat(data.amount) || 0
       );
       
       const note = `Documento ${data.type} periodo ${data.period} cargado el ${new Date().toLocaleDateString()}. [Drive: ${driveFile.id}]`;

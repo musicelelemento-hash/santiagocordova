@@ -22,8 +22,8 @@ async function generateReportWithAI(prompt: string, systemInstruction?: string):
             const response = await openai.chat.completions.create({
                 model: 'google/gemini-2.5-flash',
                 messages: [
-                    ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
-                    { role: 'user', content: prompt }
+                    ...(systemInstruction ? [{ role: 'system' as const, content: systemInstruction }] : []),
+                    { role: 'user' as const, content: prompt }
                 ],
                 max_tokens: 1500
             });
@@ -46,8 +46,8 @@ async function generateReportWithAI(prompt: string, systemInstruction?: string):
             const response = await openai.chat.completions.create({
                 model: 'llama-3.3-70b-specdec',
                 messages: [
-                    ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
-                    { role: 'user', content: prompt }
+                    ...(systemInstruction ? [{ role: 'system' as const, content: systemInstruction }] : []),
+                    { role: 'user' as const, content: prompt }
                 ],
                 max_tokens: 1500
             });
@@ -63,8 +63,8 @@ async function generateReportWithAI(prompt: string, systemInstruction?: string):
                 const response = await openai.chat.completions.create({
                     model: 'mixtral-8x7b-32768',
                     messages: [
-                        ...(systemInstruction ? [{ role: 'system', content: systemInstruction }] : []),
-                        { role: 'user', content: prompt }
+                        ...(systemInstruction ? [{ role: 'system' as const, content: systemInstruction }] : []),
+                        { role: 'user' as const, content: prompt }
                     ],
                     max_tokens: 1500
                 });

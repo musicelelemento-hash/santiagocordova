@@ -295,6 +295,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
         if (passwordFileInputRef.current) passwordFileInputRef.current.value = "";
     };
 
+    const handleAutoLinkPasswords = () => {
+        if (!sriCredentials || Object.keys(sriCredentials).length === 0) {
+            alert("La base de credenciales del SRI está vacía. Por favor, suba un archivo CSV de claves primero.");
+            return;
+        }
+
+        let updatedCount = 0;
+        const updatedClients = clients.map(client => {
+            const vaultPassword = sriCredentials[client.ruc];
+            if (vaultPassword && client.sriPassword !== vaultPassword) {
+                updatedCount++;
+                return {
+                    ...client,
+                    sriPassword: vaultPassword,
+                    updatedAt: new Date().toISOString()
+                };
+            }
+            return client;
+        });
+
+        if (updatedCount === 0) {
+            alert("No se encontraron claves nuevas o faltantes para vincular. Todos los clientes coinciden con la base de credenciales.");
+            return;
+        }
+
+        setClients(updatedClients);
+        alert(`Sincronización Exitosa: Se vincularon/actualizaron las claves de ${updatedCount} clientes.`);
+    };
+
     const handleBulkPdfClick = () => {
         bulkPdfInputRef.current?.click();
     };
@@ -1056,16 +1085,25 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                     Base de Credenciales SRI
                                 </h4>
                                 <div className="p-4 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800/50">
-                                    <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                                        Importe archivos CSV de contraseñas de su navegador para alimentar el motor de autocompletado.
+                                    <p className="text-xs text-slate-500 mb-4 leading-relaxed font-semibold">
+                                        Importe contraseñas desde el CSV de su navegador (Actualmente: {Object.keys(sriCredentials || {}).length} claves en bóveda).
                                     </p>
                                     <input type="file" ref={passwordFileInputRef} onChange={handlePasswordFileChange} accept=".csv" className="hidden" />
-                                    <button 
-                                        onClick={handlePasswordImportClick} 
-                                        className="w-full py-2.5 bg-brand-teal/10 hover:bg-brand-teal/20 text-brand-teal font-medium rounded-lg border border-brand-teal/20 transition-all text-xs"
-                                    >
-                                        SINCRONIZAR CLAVES DEL NAVEGADOR
-                                    </button>
+                                    <div className="flex flex-col gap-2">
+                                        <button 
+                                            onClick={handlePasswordImportClick} 
+                                            className="w-full py-2.5 bg-brand-teal/10 hover:bg-brand-teal/20 text-brand-teal font-semibold rounded-lg border border-brand-teal/20 transition-all text-xs"
+                                        >
+                                            SINCRONIZAR CLAVES DEL NAVEGADOR
+                                        </button>
+                                        <button 
+                                            onClick={handleAutoLinkPasswords} 
+                                            className="w-full py-2.5 bg-brand-teal text-white hover:bg-brand-teal/95 font-semibold rounded-lg transition-all text-xs flex items-center justify-center gap-1.5 shadow-md shadow-brand-teal/10"
+                                        >
+                                            <LucideIcons.RefreshCw size={12} />
+                                            VINCULAR CLAVES A CLIENTES EXISTENTES
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
