@@ -238,9 +238,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 isEditing={isEditing} 
                                 type="select"
                                 options={[
-                                    { value: 'RIMPE_NEGOCIO_POPULAR', label: 'RIMPE Negocio Popular' },
-                                    { value: 'RIMPE_EMPRENDEDOR', label: 'RIMPE Emprendedor' },
-                                    { value: 'REGIMEN_GENERAL', label: 'Régimen General' }
+                                    { value: TaxRegime.RimpeNegocioPopular, label: 'RIMPE Negocio Popular' },
+                                    { value: TaxRegime.RimpeEmprendedor, label: 'RIMPE Emprendedor' },
+                                    { value: TaxRegime.General, label: 'Régimen General' }
                                 ]}
                                 onChange={(val) => {
                                     const regime = val as TaxRegime;
