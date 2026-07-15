@@ -127,14 +127,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   
   // Emisor Defaults (Ecuador Company Details)
-  const [emisorRuc, setEmisorRuc] = useState('0705787745001');
-  const [emisorRazonSocial, setEmisorRazonSocial] = useState('CORDOVA RAMIREZ ROBERTO SANTIGO');
-  const [emisorNombreComercial, setEmisorNombreComercial] = useState('SOLUCIONES CONTABLES PRO');
-  const [emisorDirMatriz, setEmisorDirMatriz] = useState('Colon y Sucre / Pasaje - El Oro');
-  const [emisorEstab, setEmisorEstab] = useState('001');
-  const [emisorPtoEmi, setEmisorPtoEmi] = useState('001');
-  const [emisorRegimen, setEmisorRegimen] = useState('0'); // 0 = General, 1 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
-  const [ambiente, setAmbiente] = useState<'1' | '2'>('1'); // 1 = Pruebas, 2 = Producción
+  const [emisorRuc, setEmisorRuc] = useState(() => localStorage.getItem('sc_emisor_ruc') || '0705787745001');
+  const [emisorRazonSocial, setEmisorRazonSocial] = useState(() => localStorage.getItem('sc_emisor_razon') || 'CORDOVA RAMIREZ ROBERTO SANTIGO');
+  const [emisorNombreComercial, setEmisorNombreComercial] = useState(() => localStorage.getItem('sc_emisor_comercial') || 'SOLUCIONES CONTABLES PRO');
+  const [emisorDirMatriz, setEmisorDirMatriz] = useState(() => localStorage.getItem('sc_emisor_dir') || 'Colon y Sucre / Pasaje - El Oro');
+  const [emisorEstab, setEmisorEstab] = useState(() => localStorage.getItem('sc_emisor_estab') || '001');
+  const [emisorPtoEmi, setEmisorPtoEmi] = useState(() => localStorage.getItem('sc_emisor_pto') || '001');
+  const [emisorRegimen, setEmisorRegimen] = useState(() => localStorage.getItem('sc_emisor_regimen') || '0'); // 0 = General, 1 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
+  const [ambiente, setAmbiente] = useState<'1' | '2'>(() => (localStorage.getItem('sc_emisor_ambiente') as '1' | '2') || '1'); // 1 = Pruebas, 2 = Producción
   const [p12FileBase64, setP12FileBase64] = useState(() => localStorage.getItem('sc_sri_p12_base64') || '');
   const [p12FileName, setP12FileName] = useState(() => localStorage.getItem('sc_sri_p12_filename') || '');
   const [p12Password, setP12Password] = useState(() => localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123');
@@ -296,6 +296,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [isEditingSignature, setIsEditingSignature] = useState(() => !localStorage.getItem('sc_sri_p12_base64'));
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [showP12Password, setShowP12Password] = useState(false);
+  const [emisorLogo, setEmisorLogo] = useState(() => localStorage.getItem('sc_emisor_logo') || '');
+  const [emisorSecuencialInicio, setEmisorSecuencialInicio] = useState(() => Number(localStorage.getItem('sc_emisor_secuencial_inicio')) || 1);
+  const [selectedComprobanteForRide, setSelectedComprobanteForRide] = useState<HistoricComprobante | null>(null);
 
   const activeClientObj = useMemo(() => {
     return clients.find(c => c.id === selectedClient) || null;
@@ -779,7 +782,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     addLog(`Ambiente: ${ambiente === '1' ? '1 (PRUEBAS)' : '2 (PRODUCCIÓN)'}. Modo: ${isMock ? 'SIMULACIÓN DEMO' : 'API LARAVEL CONECTADA'}`);
 
     // Formulate payload
-    const secuencial = String(history.length + 1).padStart(9, '0');
+    const nextNum = emisorSecuencialInicio + history.filter(h => h.tipo === docType).length;
+    const secuencial = String(nextNum).padStart(9, '0');
     const todayStr = new Date().toISOString().split('T')[0];
     const key = generateAccessKeyEcuador(
       todayStr,
@@ -1402,12 +1406,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   };
 
   const handleSaveSettings = () => {
+    localStorage.setItem('sc_emisor_ruc', emisorRuc);
     localStorage.setItem('sc_emisor_razon', emisorRazonSocial);
     localStorage.setItem('sc_emisor_comercial', emisorNombreComercial);
     localStorage.setItem('sc_emisor_dir', emisorDirMatriz);
     localStorage.setItem('sc_emisor_estab', emisorEstab);
     localStorage.setItem('sc_emisor_pto', emisorPtoEmi);
-    localStorage.setItem('sc_api_url', apiUrl);
+    localStorage.setItem('sc_emisor_regimen', emisorRegimen);
+    localStorage.setItem('sc_emisor_ambiente', ambiente);
+    localStorage.setItem('sc_facturacion_api_url', apiUrl);
+    localStorage.setItem('sc_emisor_secuencial_inicio', String(emisorSecuencialInicio));
+    localStorage.setItem('sc_emisor_logo', emisorLogo);
     alert('Ajustes del emisor y API guardados correctamente.');
     setActiveTab('dashboard');
   };
@@ -1757,6 +1766,64 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       <option value="1">1 - PRUEBAS</option>
                       <option value="2">2 - PRODUCCIÓN</option>
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Secuencial Inicio Factura</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={emisorSecuencialInicio}
+                      onChange={(e) => setEmisorSecuencialInicio(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Logo del Emisor (Impresión RIDE)</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              const result = event.target?.result as string;
+                              setEmisorLogo(result);
+                              localStorage.setItem('sc_emisor_logo', result);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="hidden"
+                        id="logo-upload-input-config"
+                      />
+                      <label
+                        htmlFor="logo-upload-input-config"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer border-dashed border-2 hover:border-primary"
+                      >
+                        <Download size={13} className="text-primary shrink-0" />
+                        Subir Logo
+                      </label>
+                      {emisorLogo && (
+                        <div className="relative shrink-0 w-10 h-10 bg-white dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 flex items-center justify-center overflow-hidden group">
+                          <img src={emisorLogo} alt="Logo" className="w-full h-full object-contain" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEmisorLogo('');
+                              localStorage.removeItem('sc_emisor_logo');
+                            }}
+                            className="absolute inset-0 bg-rose-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"
+                            title="Eliminar logo"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2706,6 +2773,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex justify-end gap-1.5">
                           <button
+                            onClick={() => setSelectedComprobanteForRide(row)}
+                            className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg transition-colors"
+                            title="Ver PDF (RIDE)"
+                          >
+                            <FileText size={12} />
+                          </button>
+                          <button
                             onClick={() => downloadXmlFile(row)}
                             className="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors"
                             title="Descargar XML"
@@ -2929,6 +3003,30 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
 
             <div className="grid grid-cols-1 gap-2 pt-2 relative z-10">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowWhatsAppModal(false);
+                  const currentComp: HistoricComprobante = {
+                    id: Date.now().toString(),
+                    tipo: docType,
+                    secuencial: generatedAccessKey ? generatedAccessKey.substring(30, 39) : '000000001',
+                    claveAcceso: generatedAccessKey,
+                    rucReceptor: buyerRuc,
+                    nombreReceptor: buyerName,
+                    fechaEmision: generatedAccessKey ? `${generatedAccessKey.substring(4, 8)}-${generatedAccessKey.substring(2, 4)}-${generatedAccessKey.substring(0, 2)}` : new Date().toISOString().split('T')[0],
+                    total: docType === 'factura' ? invoiceTotals.total : withholdingTotal,
+                    estado: 'Autorizado',
+                    xml: generatedXml,
+                    ambiente
+                  };
+                  setSelectedComprobanteForRide(currentComp);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.99]"
+              >
+                <FileText size={14} />
+                Ver PDF / Imprimir RIDE
+              </button>
               <a
                 href={`https://api.whatsapp.com/send?phone=${
                   // Format phone with Ecuadorian country code 593
@@ -2964,6 +3062,375 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 Cerrar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* RIDE PDF Printable Viewer Modal */}
+      {selectedComprobanteForRide && (
+        <div id="print-ride-root" className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 overflow-y-auto flex items-center justify-center p-0 md:p-6 no-print-backdrop">
+          <div className="bg-white text-slate-900 w-full max-w-4xl min-h-screen md:min-h-0 md:rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative border-t-8 border-t-slate-800 flex flex-col justify-between">
+            
+            {/* CSS specific styles for browser printing */}
+            <style dangerouslySetInnerHTML={{__html: `
+              @media print {
+                body * {
+                  visibility: hidden !important;
+                }
+                #ride-print-area, #ride-print-area * {
+                  visibility: visible !important;
+                  color: black !important;
+                }
+                #ride-print-area {
+                  position: absolute;
+                  left: 0;
+                  top: 0;
+                  width: 100% !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                }
+                .no-print {
+                  display: none !important;
+                  height: 0 !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
+                }
+                .no-print-backdrop {
+                  background: transparent !important;
+                  backdrop-filter: none !important;
+                  position: relative !important;
+                  padding: 0 !important;
+                }
+              }
+            `}} />
+
+            {/* Modal Controls (Hidden in Print) */}
+            <div className="flex justify-between items-center pb-4 border-b border-slate-200 no-print">
+              <div className="flex items-center gap-2">
+                <FileText className="text-slate-800" size={18} />
+                <span className="text-xs font-black uppercase tracking-wider text-slate-800">Visualizador de RIDE Autorizado</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                >
+                  <Download size={12} />
+                  Imprimir / PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedComprobanteForRide(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+
+            {/* RIDE PDF Content (Printable area) */}
+            <div className="space-y-6 text-[11px] font-sans flex-1 leading-normal" id="ride-print-area">
+              
+              {/* Grid 1: Emisor & RIDE Obligatory Box */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                
+                {/* Left: Emisor Info */}
+                <div className="space-y-4">
+                  {emisorLogo ? (
+                    <div className="h-16 w-full flex justify-start items-center overflow-hidden">
+                      <img src={emisorLogo} alt="Logo Emisor" className="max-h-full max-w-[200px] object-contain" />
+                    </div>
+                  ) : (
+                    <div className="text-lg font-black tracking-wide text-slate-800 font-premium">{emisorNombreComercial || 'EMISOR'}</div>
+                  )}
+
+                  <div className="space-y-1 text-slate-600">
+                    <div className="text-xs font-black text-slate-800 uppercase">{emisorRazonSocial}</div>
+                    <div><strong>Dir. Matriz:</strong> {emisorDirMatriz}</div>
+                    <div className="pt-2"><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
+                    {emisorRegimen === '1' && <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Contribuyente Régimen RIMPE - Negocio Popular</div>}
+                    {emisorRegimen === '2' && <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Contribuyente Régimen RIMPE</div>}
+                  </div>
+                </div>
+
+                {/* Right: Official SRI Authorization details */}
+                <div className="border-2 border-slate-800 rounded-2xl p-5 space-y-3 bg-slate-50/50">
+                  <div className="text-sm font-black text-slate-800">R.U.C.: <span className="font-mono">{emisorRuc}</span></div>
+                  
+                  <div className="space-y-0.5">
+                    <div className="text-base font-black tracking-wider text-slate-800 uppercase">
+                      {selectedComprobanteForRide.tipo === 'factura' ? 'FACTURA' : 'COMPROBANTE DE RETENCIÓN'}
+                    </div>
+                    <div className="text-xs font-mono font-bold text-slate-700">
+                      No. {emisorEstab}-{emisorPtoEmi}-{selectedComprobanteForRide.secuencial}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 text-slate-700 border-t border-slate-300 pt-2.5">
+                    <div><strong>NÚMERO DE AUTORIZACIÓN:</strong></div>
+                    <div className="font-mono text-[9px] break-all leading-tight font-semibold text-slate-600">{selectedComprobanteForRide.claveAcceso}</div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-[10px] pt-1">
+                      <div><strong>FECHA / HORA:</strong></div>
+                      <div>{selectedComprobanteForRide.fechaEmision} 12:00:00</div>
+                      
+                      <div><strong>AMBIENTE:</strong></div>
+                      <div>{selectedComprobanteForRide.ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</div>
+                      
+                      <div><strong>EMISIÓN:</strong></div>
+                      <div>NORMAL</div>
+                    </div>
+                  </div>
+
+                  {/* Simulated Barcode */}
+                  <div className="border-t border-slate-300 pt-3 space-y-1.5 text-center">
+                    <div className="text-[9px] font-black uppercase text-slate-400">Clave de Acceso</div>
+                    <div className="h-9 w-full bg-slate-900 relative overflow-hidden flex flex-row items-stretch justify-center px-4" title="Código de barras simulated">
+                      {Array.from({ length: 45 }).map((_, i) => (
+                        <div 
+                          key={i} 
+                          className="bg-white shrink-0" 
+                          style={{ 
+                            width: `${(i % 3 === 0) ? 2 : (i % 5 === 0) ? 4 : 1}px`, 
+                            marginLeft: `${(i % 4 === 0) ? 3 : (i % 2 === 0) ? 1 : 2}px` 
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div className="font-mono text-[8px] text-slate-500 font-semibold">{selectedComprobanteForRide.claveAcceso}</div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Grid 2: Buyer / Receptor details */}
+              <div className="border-2 border-slate-800 rounded-2xl p-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5 bg-slate-50/20">
+                <div>
+                  <strong>Razón Social / Nombres y Apellidos:</strong> 
+                  <span className="ml-1 text-slate-700 font-semibold uppercase">{selectedComprobanteForRide.nombreReceptor}</span>
+                </div>
+                <div>
+                  <strong>Identificación:</strong> 
+                  <span className="ml-1 font-mono text-slate-700 font-bold">{selectedComprobanteForRide.rucReceptor}</span>
+                </div>
+                <div>
+                  <strong>Fecha Emisión:</strong> 
+                  <span className="ml-1 text-slate-700 font-semibold">{selectedComprobanteForRide.fechaEmision}</span>
+                </div>
+                <div>
+                  <strong>Guía de Remisión:</strong> 
+                  <span className="ml-1 text-slate-500 font-semibold">S/N</span>
+                </div>
+              </div>
+
+              {/* Table: Invoice Items */}
+              <div className="border-2 border-slate-800 rounded-2xl overflow-hidden bg-white">
+                <table className="w-full text-left border-collapse text-[10px]">
+                  <thead>
+                    <tr className="bg-slate-800 text-white font-black uppercase text-[9px] border-b-2 border-slate-800">
+                      <th className="py-2.5 px-3">Cod. Principal</th>
+                      <th className="py-2.5 px-3 text-center">Cant.</th>
+                      <th className="py-2.5 px-4">Descripción</th>
+                      <th className="py-2.5 px-3 text-right">Precio Unitario</th>
+                      <th className="py-2.5 px-3 text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-300">
+                    {(() => {
+                      try {
+                        const parser = new DOMParser();
+                        const xmlDoc = parser.parseFromString(selectedComprobanteForRide.xml, "text/xml");
+                        const detalles = xmlDoc.getElementsByTagName("detalle");
+                        if (detalles.length > 0) {
+                          const rows: any[] = [];
+                          for (let i = 0; i < detalles.length; i++) {
+                            const d = detalles[i];
+                            rows.push({
+                              codigo: d.getElementsByTagName("codigoPrincipal")[0]?.textContent || '001',
+                              descripcion: d.getElementsByTagName("descripcion")[0]?.textContent || 'Servicios Contables',
+                              cantidad: Number(d.getElementsByTagName("cantidad")[0]?.textContent || 1),
+                              precioUnitario: Number(d.getElementsByTagName("precioUnitario")[0]?.textContent || selectedComprobanteForRide.total),
+                              precioTotalSinImpuesto: Number(d.getElementsByTagName("precioTotalSinImpuesto")[0]?.textContent || selectedComprobanteForRide.total)
+                            });
+                          }
+                          return rows.map((item, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50">
+                              <td className="py-2 px-3 font-mono font-semibold">{item.codigo}</td>
+                              <td className="py-2 px-3 text-center font-semibold">{item.cantidad.toFixed(2)}</td>
+                              <td className="py-2 px-4 uppercase font-semibold text-slate-700">{item.descripcion}</td>
+                              <td className="py-2 px-3 text-right font-mono font-semibold">${item.precioUnitario.toFixed(2)}</td>
+                              <td className="py-2 px-3 text-right font-mono font-black">${item.precioTotalSinImpuesto.toFixed(2)}</td>
+                            </tr>
+                          ));
+                        }
+                      } catch (e) {
+                        console.error("XML parse error", e);
+                      }
+                      
+                      return (
+                        <tr className="hover:bg-slate-50">
+                          <td className="py-2 px-3 font-mono font-semibold">001</td>
+                          <td className="py-2 px-3 text-center font-semibold">1.00</td>
+                          <td className="py-2 px-4 uppercase font-semibold text-slate-700">Servicios Contables Profesionales</td>
+                          <td className="py-2 px-3 text-right font-mono font-semibold">${selectedComprobanteForRide.total.toFixed(2)}</td>
+                          <td className="py-2 px-3 text-right font-mono font-black">${selectedComprobanteForRide.total.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Grid 3: Additional details & Totals */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                
+                {/* Left: Info Adicional & Forma de Pago */}
+                <div className="md:col-span-7 space-y-4">
+                  
+                  {/* Info Adicional box */}
+                  <div className="border-2 border-slate-800 rounded-2xl p-4 space-y-1.5 bg-slate-50/20">
+                    <div className="text-[10px] font-black uppercase text-slate-800 pb-1 border-b border-slate-300 mb-2">Información Adicional</div>
+                    <div><strong>Dirección:</strong> pasaje, el oro</div>
+                    <div><strong>Email:</strong> correo@cliente.com</div>
+                    <div><strong>Teléfono:</strong> 0999999999</div>
+                    <div><strong>Periodo Fiscal:</strong> {new Date(selectedComprobanteForRide.fechaEmision).toLocaleString('es-EC', {month: 'long', year: 'numeric'}).toUpperCase()}</div>
+                  </div>
+
+                  {/* Pago box */}
+                  <div className="border-2 border-slate-800 rounded-2xl p-4 space-y-2 bg-slate-50/20">
+                    <div className="text-[10px] font-black uppercase text-slate-800 pb-1 border-b border-slate-300">Forma de Pago</div>
+                    <table className="w-full text-left text-[10px]">
+                      <thead>
+                        <tr className="font-bold text-slate-600">
+                          <th>Descripción</th>
+                          <th className="text-right">Valor</th>
+                          <th className="text-right">Plazo</th>
+                          <th className="text-right">Tiempo</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="font-semibold text-slate-700">
+                          {(() => {
+                            try {
+                              const parser = new DOMParser();
+                              const xmlDoc = parser.parseFromString(selectedComprobanteForRide.xml, "text/xml");
+                              const pago = xmlDoc.getElementsByTagName("pago")[0];
+                              if (pago) {
+                                const code = pago.getElementsByTagName("formaPago")[0]?.textContent;
+                                const descMap: Record<string, string> = {
+                                  '01': 'SIN UTILIZACION DEL SISTEMA FINANCIERO (EFECTIVO)',
+                                  '19': 'TARJETA DE CREDITO',
+                                  '20': 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO (TRANSFERENCIA)',
+                                  '17': 'DINERO ELECTRONICO / DIGITAL'
+                                };
+                                return (
+                                  <>
+                                    <td className="py-1">{descMap[code || '01'] || 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO'}</td>
+                                    <td className="py-1 text-right font-mono">${Number(pago.getElementsByTagName("total")[0]?.textContent || selectedComprobanteForRide.total).toFixed(2)}</td>
+                                  </>
+                                );
+                              }
+                            } catch {}
+                            return (
+                              <>
+                                <td className="py-1">OTROS CON UTILIZACION DEL SISTEMA FINANCIERO</td>
+                                <td className="py-1 text-right font-mono">${selectedComprobanteForRide.total.toFixed(2)}</td>
+                              </>
+                            );
+                          })()}
+                          <td className="py-1 text-right">0</td>
+                          <td className="py-1 text-right">Días</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>
+
+                {/* Right: Totals summary */}
+                <div className="md:col-span-5 border-2 border-slate-800 rounded-2xl p-4 bg-slate-50/50 flex flex-col justify-center">
+                  <table className="w-full text-left text-[10px] border-collapse font-semibold text-slate-700">
+                    <tbody className="divide-y divide-slate-200">
+                      {(() => {
+                        let subtotal15 = 0;
+                        let subtotal0 = selectedComprobanteForRide.total;
+                        let iva15 = 0;
+                        let total = selectedComprobanteForRide.total;
+                        
+                        try {
+                          const parser = new DOMParser();
+                          const xmlDoc = parser.parseFromString(selectedComprobanteForRide.xml, "text/xml");
+                          const totalImpuestos = xmlDoc.getElementsByTagName("totalImpuesto");
+                          if (totalImpuestos.length > 0) {
+                            subtotal0 = 0;
+                            for (let i = 0; i < totalImpuestos.length; i++) {
+                              const imp = totalImpuestos[i];
+                              const codigoPorcentaje = imp.getElementsByTagName("codigoPorcentaje")[0]?.textContent;
+                              const baseImponible = Number(imp.getElementsByTagName("baseImponible")[0]?.textContent || 0);
+                              const valor = Number(imp.getElementsByTagName("valor")[0]?.textContent || 0);
+                              
+                              if (codigoPorcentaje === '4' || codigoPorcentaje === '2') { // IVA 15% / 12%
+                                subtotal15 = baseImponible;
+                                iva15 = valor;
+                              } else if (codigoPorcentaje === '0') { // IVA 0%
+                                subtotal0 = baseImponible;
+                              }
+                            }
+                            total = Number(xmlDoc.getElementsByTagName("importeTotal")[0]?.textContent || selectedComprobanteForRide.total);
+                          }
+                        } catch {}
+                        
+                        return (
+                          <>
+                            <tr>
+                              <td className="py-1.5">SUBTOTAL 15%</td>
+                              <td className="py-1.5 text-right font-mono">${subtotal15.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5">SUBTOTAL 0%</td>
+                              <td className="py-1.5 text-right font-mono">${subtotal0.toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5">SUBTOTAL NO OBJETO IVA</td>
+                              <td className="py-1.5 text-right font-mono">$0.00</td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5">SUBTOTAL EXENTO IVA</td>
+                              <td className="py-1.5 text-right font-mono">$0.00</td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5">SUBTOTAL SIN IMPUESTOS</td>
+                              <td className="py-1.5 text-right font-mono">${(subtotal15 + subtotal0).toFixed(2)}</td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5">DESCUENTO</td>
+                              <td className="py-1.5 text-right font-mono">$0.00</td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5">ICE</td>
+                              <td className="py-1.5 text-right font-mono">$0.00</td>
+                            </tr>
+                            <tr>
+                              <td className="py-1.5">IVA 15%</td>
+                              <td className="py-1.5 text-right font-mono">${iva15.toFixed(2)}</td>
+                            </tr>
+                            <tr className="border-t-2 border-slate-800 text-slate-800 text-[11px] font-black">
+                              <td className="py-2">VALOR TOTAL</td>
+                              <td className="py-2 text-right font-mono text-xs">${total.toFixed(2)}</td>
+                            </tr>
+                          </>
+                        );
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+
+              </div>
+
+            </div>
+
           </div>
         </div>
       )}
