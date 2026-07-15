@@ -432,7 +432,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const checkBackendConnection = async (urlToCheck = apiUrl) => {
     setConnectionStatus('checking');
     try {
-      const response = await fetch(`${urlToCheck}/`, { method: 'GET', mode: 'cors' });
+      const response = await fetch(`${urlToCheck}${apiPrefix}/facturacion/tipos`, { method: 'GET', mode: 'cors' });
       if (response.ok) {
         setConnectionStatus('connected');
       } else {
@@ -2473,6 +2473,37 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         {p12SubjectName && <span className="text-[10px] font-black uppercase tracking-wider opacity-90">{p12SubjectName}</span>}
                       </div>
                     )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Guía rápida de facturación real */}
+            <div className="border-t border-slate-200 dark:border-white/10 pt-6 mt-6">
+              <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-2xl p-5 space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5 font-premium">
+                  <Info size={14} />
+                  Guía Rápida para Facturación Real en Ecuador (SRI)
+                </h4>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
+                  Para emitir comprobantes electrónicos que tengan validez legal y aparezcan en el SRI de producción:
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-[10px] leading-relaxed text-slate-600 dark:text-slate-400">
+                  <div className="space-y-1 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-slate-150 dark:border-white/5">
+                    <strong className="text-slate-800 dark:text-white block font-bold">1. Conexión Laravel API</strong>
+                    <span>El indicador superior izquierdo debe decir <strong className="text-emerald-500">Laravel Online</strong>. Si dice Offline, la API local no está respondiendo y el sistema simulará los datos.</span>
+                  </div>
+                  <div className="space-y-1 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-slate-150 dark:border-white/5">
+                    <strong className="text-slate-800 dark:text-white block font-bold">2. Firma Electrónica</strong>
+                    <span>Sube tu archivo de firma <strong className="text-mono">.p12</strong> real y escribe su contraseña correcta. Esto se guardará localmente en tu navegador.</span>
+                  </div>
+                  <div className="space-y-1 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-slate-150 dark:border-white/5">
+                    <strong className="text-slate-800 dark:text-white block font-bold">3. Ambiente Producción</strong>
+                    <span>Cambia el <strong>Ambiente de Trabajo</strong> a <strong className="text-slate-800 dark:text-white">2 - PRODUCCIÓN</strong> en los campos de arriba y haz clic en Guardar Ajustes.</span>
+                  </div>
+                  <div className="space-y-1 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-slate-150 dark:border-white/5">
+                    <strong className="text-slate-800 dark:text-white block font-bold">4. Validar en SRI</strong>
+                    <span>Tus facturas ahora viajarán al SRI real. Las podrás consultar inmediatamente en el portal oficial de comprobantes electrónicos del SRI.</span>
                   </div>
                 </div>
               </div>
