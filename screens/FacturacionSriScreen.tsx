@@ -965,7 +965,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         });
         if (!response.ok) throw new Error(`Error en API al generar XML: ${response.statusText}`);
         const data = await response.json();
-        currentXml = data.xml;
+        // Controller returns: { status: true, data: { xml: '...', xml_base64: '...' } }
+        currentXml = data.data?.xml || data.xml;
+        if (!currentXml) throw new Error('La API no devolvió el XML generado. Revise los logs del servidor.');
         setGeneratedXml(currentXml);
         addLog(`XML generado correctamente en el backend (${currentXml.length} bytes)`, 'success');
       }
@@ -996,6 +998,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         if (!signResponse.ok) throw new Error(`Error en API al firmar: ${signResponse.statusText}`);
         const signData = await signResponse.json();
         currentXml = signData.data?.xml || signData.xml_firmado || signData.xml;
+        if (!currentXml) throw new Error('La API de firma no devolvió el XML firmado. Verifique la clave y el archivo .p12.');
         setGeneratedXml(currentXml);
         addLog(`Firma digital realizada con éxito por el backend`, 'success');
       }
