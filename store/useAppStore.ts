@@ -806,6 +806,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Si no había datos locales, esperar a la nube
       if (!localData) {
         await cloudRefresh();
+        if (get().clients.length === 0) {
+          set({ clients: mockClients });
+        }
         if (!get().isLoaded) {
           set({
             isLoaded: true,
