@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { TaxObligationCard } from '../TaxObligationCard';
 import { PaymentHistoryChart } from '../PaymentHistoryChart';
-import { FacturadorCard } from '../FacturadorCard';
 import { ClientNotes } from '../ClientNotes';
 import { useToast } from '../../../../context/ToastContext';
 import { fileToBase64 } from '../../../../services/pdfExtraction';
@@ -550,14 +549,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         </button>
                     </div>
 
-                    {/* Facturador (siempre visible en edición o si tiene configuración cargada) */}
-                    {(isEditing || editedClient.facturadorConfig) && (
-                        <FacturadorCard
-                            config={editedClient.facturadorConfig || {}}
-                            isEditing={isEditing}
-                            onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
-                        />
-                    )}
+
 
                     {/* Notas del cliente */}
                     <ClientNotes
