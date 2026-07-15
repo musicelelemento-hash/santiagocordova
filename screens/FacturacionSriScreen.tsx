@@ -1895,10 +1895,54 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               )}
             </div>
 
+            {/* Protocolo de Conectividad & Enlaces widget */}
+            <div className="glass-card-premium p-5 space-y-3.5">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Guía de Acceso & Enlaces SRI</span>
+              
+              {/* Protocol info */}
+              <div className="space-y-2 text-[10px] leading-relaxed text-slate-600 dark:text-slate-400">
+                <div className="bg-slate-50 dark:bg-white/5 p-3 rounded-xl space-y-1.5 border border-slate-100 dark:border-white/5">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 block">Facturación Local (Actual)</span>
+                  <div>🌐 <strong>Interfaz:</strong> <span className="font-mono">localhost:3000</span></div>
+                  <div>🔌 <strong>Firmador:</strong> <span className="font-mono">localhost:8000</span> (Laravel API)</div>
+                </div>
+
+                <div className="bg-primary/5 dark:bg-primary/10 p-3 rounded-xl space-y-1.5 border border-primary/10">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-primary block">Facturación Cloud (Render)</span>
+                  <div>🚀 <strong>Dominio:</strong> <span className="font-mono">santiagocordova.com</span></div>
+                  <div className="text-[9px] opacity-75">No requerirá correr comandos locales. Todo se procesará seguro en la nube.</div>
+                </div>
+              </div>
+
+              {/* Quick links */}
+              <div className="pt-2 border-t border-slate-200 dark:border-white/5 space-y-1.5">
+                <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 block mb-1">Portales Oficiales SRI</span>
+                
+                <a
+                  href="https://srienlinea.sri.gob.ec/sri-enlinea/pages/comprobantesElectronicos/svalidezComprobantes.jsf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all"
+                >
+                  <span>Consulta Validez SRI</span>
+                  <ExternalLink size={10} className="text-primary" />
+                </a>
+
+                <a
+                  href="https://srienlinea.sri.gob.ec/sri-enlinea-pruebas/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all"
+                >
+                  <span>SRI en Línea (Pruebas)</span>
+                  <ExternalLink size={10} className="text-primary" />
+                </a>
+              </div>
+            </div>
+          </div>
+
           </div>
         </div>
-
-      </div>
     );
   };
 
