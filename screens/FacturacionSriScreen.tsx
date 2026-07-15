@@ -240,19 +240,25 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [buyerIdType, setBuyerIdType] = useState('05'); // 04 = RUC, 05 = Cédula, 06 = Pasaporte
 
   // Invoice specifics
-  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([
-    {
-      id: '1',
-      codigoPrincipal: 'SERV-TRIB',
-      descripcion: 'Asesoría Tributaria Mensual Profesional',
-      cantidad: 1,
-      precioUnitario: 120.00,
-      ivaRate: 0.15,
-      subtotal: 120.00,
-      iva: 18.00,
-      total: 138.00
-    }
-  ]);
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>(() => {
+    const initialRegime = localStorage.getItem('sc_emisor_regimen') || '0';
+    const initialIva = initialRegime === '1' ? 0.00 : 0.15;
+    const initialSub = 120.00;
+    const initialIvaVal = Number((initialSub * initialIva).toFixed(2));
+    return [
+      {
+        id: '1',
+        codigoPrincipal: 'SERV-TRIB',
+        descripcion: 'Asesoría Tributaria Mensual Profesional',
+        cantidad: 1,
+        precioUnitario: 120.00,
+        ivaRate: initialIva,
+        subtotal: initialSub,
+        iva: initialIvaVal,
+        total: Number((initialSub + initialIvaVal).toFixed(2))
+      }
+    ];
+  });
   const [formaPago, setFormaPago] = useState('20'); // 01 = Sin sist. financiero, 20 = Con sist. financiero (transferencia/tarjeta)
 
   // Withholding specifics
@@ -376,23 +382,27 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   useEffect(() => {
     if (selectedPeriods.length === 0) return;
     if (!activeClientObj) return;
-
+ 
     const checkedObs = pendingObligations.filter(ob => selectedPeriods.includes(ob.id));
     if (checkedObs.length === 0) return;
-
+ 
+    const currentIvaRate = emisorRegimen === '1' ? 0.00 : 0.15;
+ 
     if (billingMode === 'detallado') {
       const newItems: InvoiceItem[] = checkedObs.map((ob, idx) => {
         const desc = `Declaración de ${ob.label} - Período ${formatPeriodForDisplay(ob.period)}`;
+        const sub = ob.amount;
+        const tax = Number((sub * currentIvaRate).toFixed(2));
         return {
           id: `period-${ob.id}`,
           codigoPrincipal: ob.type === 'IVA' ? 'SERV-IVA' : ob.type === 'RENTA' ? 'SERV-RENTA' : 'SERV-TRIB',
           descripcion: desc,
           cantidad: 1,
           precioUnitario: ob.amount,
-          ivaRate: 0.15,
-          subtotal: ob.amount,
-          iva: Number((ob.amount * 0.15).toFixed(2)),
-          total: Number((ob.amount * 1.15).toFixed(2))
+          ivaRate: currentIvaRate,
+          subtotal: sub,
+          iva: tax,
+          total: Number((sub + tax).toFixed(2))
         };
       });
       setInvoiceItems(newItems);
@@ -401,6 +411,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       const totalAmount = checkedObs.reduce((sum, ob) => sum + ob.amount, 0);
       const periodsStr = checkedObs.map(ob => `${ob.type} ${formatPeriodForDisplay(ob.period).replace('IVA ', '')}`).join(', ');
       const desc = `Servicios Contables Profesionales - Períodos: ${periodsStr}`;
+      const tax = Number((totalAmount * currentIvaRate).toFixed(2));
       setInvoiceItems([
         {
           id: 'consolidated-1',
@@ -408,14 +419,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           descripcion: desc,
           cantidad: 1,
           precioUnitario: totalAmount,
-          ivaRate: 0.15,
+          ivaRate: currentIvaRate,
           subtotal: totalAmount,
-          iva: Number((totalAmount * 0.15).toFixed(2)),
-          total: Number((totalAmount * 1.15).toFixed(2))
+          iva: tax,
+          total: Number((totalAmount + tax).toFixed(2))
         }
       ]);
     }
-  }, [selectedPeriods, billingMode, activeClientObj, pendingObligations]);
+  }, [selectedPeriods, billingMode, activeClientObj, pendingObligations, emisorRegimen]);
 
   // ID Validator utility
   const [validationInput, setValidationInput] = useState('');
@@ -473,6 +484,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       
       if (initialAmount) {
         const mapped = mapDescriptionToProduct(initialDescription || 'Honorarios por Servicios Contables');
+        const currentIvaRate = emisorRegimen === '1' ? 0.00 : 0.15;
+        const tax = Number((initialAmount * currentIvaRate).toFixed(2));
         setInvoiceItems([
           {
             id: 'init-1',
@@ -480,10 +493,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             descripcion: mapped.description,
             cantidad: 1,
             precioUnitario: initialAmount,
-            ivaRate: 0.15,
+            ivaRate: currentIvaRate,
             subtotal: initialAmount,
-            iva: Number((initialAmount * 0.15).toFixed(2)),
-            total: Number((initialAmount * 1.15).toFixed(2))
+            iva: tax,
+            total: Number((initialAmount + tax).toFixed(2))
           }
         ]);
       }
@@ -492,7 +505,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         onClearInitialData();
       }
     }
-  }, [initialClientId, initialAmount, initialDescription, onClearInitialData]);
+  }, [initialClientId, initialAmount, initialDescription, onClearInitialData, emisorRegimen]);
 
   // Auto-populate buyer details when client is selected
   useEffect(() => {
@@ -514,6 +527,25 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       setBuyerAddress('');
     }
   }, [selectedClient, clients]);
+
+  // Synchronize invoice items with emisorRegimen (Force 0% IVA for RIMPE Negocio Popular)
+  useEffect(() => {
+    if (emisorRegimen === '1') {
+      setInvoiceItems(prev => prev.map(item => {
+        if (item.ivaRate !== 0.00) {
+          const sub = item.cantidad * item.precioUnitario;
+          return {
+            ...item,
+            ivaRate: 0.00,
+            subtotal: Number(sub.toFixed(2)),
+            iva: 0.00,
+            total: Number(sub.toFixed(2))
+          };
+        }
+        return item;
+      }));
+    }
+  }, [emisorRegimen]);
 
   // Standard withholding codes for Ecuador
   const withholdingCodes = {
@@ -575,6 +607,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     setBuyerPhone('');
     setBuyerAddress('');
     setBuyerIdType('05');
+    const initialIva = emisorRegimen === '1' ? 0.00 : 0.15;
+    const initialSub = 120.00;
+    const initialIvaVal = Number((initialSub * initialIva).toFixed(2));
     setInvoiceItems([
       {
         id: '1',
@@ -582,10 +617,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         descripcion: 'Asesoría Tributaria Mensual Profesional',
         cantidad: 1,
         precioUnitario: 120.00,
-        ivaRate: 0.15,
-        subtotal: 120.00,
-        iva: 18.00,
-        total: 138.00
+        ivaRate: initialIva,
+        subtotal: initialSub,
+        iva: initialIvaVal,
+        total: Number((initialSub + initialIvaVal).toFixed(2))
       }
     ]);
     setSelectedPeriods([]);
@@ -604,6 +639,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     setBuyerPhone('0987654321');
     setBuyerAddress('Centro de Pasaje, El Oro, Ecuador');
     setBuyerIdType('05');
+    const initialIva = emisorRegimen === '1' ? 0.00 : 0.15;
+    const sub1 = 350.00;
+    const tax1 = Number((sub1 * initialIva).toFixed(2));
+    const sub2 = 160.00;
+    const tax2 = Number((sub2 * initialIva).toFixed(2));
     setInvoiceItems([
       {
         id: 'mock-1',
@@ -611,10 +651,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         descripcion: 'Honorarios por Auditoría Externa y Estados Financieros',
         cantidad: 1,
         precioUnitario: 350.00,
-        ivaRate: 0.15,
-        subtotal: 350.00,
-        iva: 52.50,
-        total: 402.50
+        ivaRate: initialIva,
+        subtotal: sub1,
+        iva: tax1,
+        total: Number((sub1 + tax1).toFixed(2))
       },
       {
         id: 'mock-2',
@@ -622,10 +662,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         descripcion: 'Servicios de Consultoría y Planificación Tributaria Anual',
         cantidad: 2,
         precioUnitario: 80.00,
-        ivaRate: 0.15,
-        subtotal: 160.00,
-        iva: 24.00,
-        total: 184.00
+        ivaRate: initialIva,
+        subtotal: sub2,
+        iva: tax2,
+        total: Number((sub2 + tax2).toFixed(2))
       }
     ]);
     setSelectedPeriods([]);
@@ -645,7 +685,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       descripcion: 'Detalle de servicio prestado',
       cantidad: 1,
       precioUnitario: 0.00,
-      ivaRate: 0.15,
+      ivaRate: emisorRegimen === '1' ? 0.00 : 0.15,
       subtotal: 0.00,
       iva: 0.00,
       total: 0.00
@@ -3016,10 +3056,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           <select
                             value={item.ivaRate}
                             onChange={(e) => updateInvoiceItem(item.id, 'ivaRate', parseFloat(e.target.value))}
-                            className="w-full px-3 py-2 mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                            disabled={emisorRegimen === '1'}
+                            className="w-full px-3 py-2 mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                           >
-                            <option value="0.15">15% IVA</option>
-                            <option value="0.00">0% IVA</option>
+                            {emisorRegimen === '1' ? (
+                              <option value="0.00">0% (RIMPE NP)</option>
+                            ) : (
+                              <>
+                                <option value="0.15">15% IVA</option>
+                                <option value="0.00">0% IVA</option>
+                              </>
+                            )}
                           </select>
                         </div>
                         <div className="col-span-3 md:col-span-1">
