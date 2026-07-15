@@ -3,7 +3,7 @@ import {
   FileText, Plus, Trash2, Settings, CheckCircle2, XCircle, Info, Search, 
   Download, RefreshCw, Check, AlertTriangle, Globe, Activity, Wifi, WifiOff, 
   Copy, ExternalLink, Eye, ChevronRight, Play, Database, CreditCard, User, AlertCircle,
-  Lock, Key, Edit3, Save
+  Lock, Key, Edit3, Save, Home, ChevronDown, ChevronUp, Sliders, Building2
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { Client, TaxRegime, DeclarationStatus } from '../types';
@@ -108,7 +108,18 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   onClearInitialData
 }) => {
   const { clients, serviceFees } = useAppStore();
-  const [activeTab, setActiveTab] = useState<'emitir' | 'historial' | 'validador' | 'conexion'>('emitir');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'factura' | 'retencion' | 'nota_credito' | 'nota_debito' | 'guia' | 'liquidacion' | 'historial' | 'validador' | 'configuracion'>('dashboard');
+  const [isFacturacionOpen, setIsFacturacionOpen] = useState(true);
+  const [isHerramientasOpen, setIsHerramientasOpen] = useState(true);
+  const [isActionsDropdownOpen, setIsActionsDropdownOpen] = useState(false);
+
+  // Sync initial client selection to auto-open Factura tab
+  useEffect(() => {
+    if (initialClientId) {
+      setActiveTab('factura');
+      selectClientAndInitialize(initialClientId);
+    }
+  }, [initialClientId]);
 
   // API connection settings
   const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('sc_facturacion_api_url') || 'http://localhost:8000');
@@ -208,6 +219,16 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Emission fields
   const [docType, setDocType] = useState<'factura' | 'retencion'>('factura');
+
+  // Synchronize docType state when activeTab changes to factura or retencion
+  useEffect(() => {
+    if (activeTab === 'factura') {
+      setDocType('factura');
+    } else if (activeTab === 'retencion') {
+      setDocType('retencion');
+    }
+  }, [activeTab]);
+
   const [selectedClient, setSelectedClient] = useState<string>('');
   
   // Buyer / Subject Details
@@ -444,7 +465,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     if (initialClientId) {
       setSelectedClient(initialClientId);
       setDocType('factura');
-      setActiveTab('emitir');
+      setActiveTab('factura');
       
       if (initialAmount) {
         const mapped = mapDescriptionToProduct(initialDescription || 'Honorarios por Servicios Contables');
@@ -540,6 +561,77 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const withholdingTotal = useMemo(() => {
     return withholdings.reduce((sum, item) => sum + item.valorRetenido, 0);
   }, [withholdings]);
+
+  const handleResetForm = () => {
+    setSelectedClient('');
+    setClientSearchQuery('');
+    setBuyerName('');
+    setBuyerRuc('');
+    setBuyerEmail('');
+    setBuyerPhone('');
+    setBuyerAddress('');
+    setBuyerIdType('05');
+    setInvoiceItems([
+      {
+        id: '1',
+        codigoPrincipal: 'SERV-TRIB',
+        descripcion: 'Asesoría Tributaria Mensual Profesional',
+        cantidad: 1,
+        precioUnitario: 120.00,
+        ivaRate: 0.15,
+        subtotal: 120.00,
+        iva: 18.00,
+        total: 138.00
+      }
+    ]);
+    setSelectedPeriods([]);
+    setGeneratedXml('');
+    setGeneratedJson('');
+    setGeneratedAccessKey('');
+    setProcessStatus('idle');
+    setCurrentStep(0);
+    setConsoleLogs([]);
+  };
+
+  const handleLoadMockData = () => {
+    setBuyerName('CORDOVA ORTEGA ROBERTO ESTEBAN');
+    setBuyerRuc('0705787745');
+    setBuyerEmail('roberto.esteban@correo.com');
+    setBuyerPhone('0987654321');
+    setBuyerAddress('Centro de Pasaje, El Oro, Ecuador');
+    setBuyerIdType('05');
+    setInvoiceItems([
+      {
+        id: 'mock-1',
+        codigoPrincipal: 'SERV-CONT',
+        descripcion: 'Honorarios por Auditoría Externa y Estados Financieros',
+        cantidad: 1,
+        precioUnitario: 350.00,
+        ivaRate: 0.15,
+        subtotal: 350.00,
+        iva: 52.50,
+        total: 402.50
+      },
+      {
+        id: 'mock-2',
+        codigoPrincipal: 'SERV-TRIB',
+        descripcion: 'Servicios de Consultoría y Planificación Tributaria Anual',
+        cantidad: 2,
+        precioUnitario: 80.00,
+        ivaRate: 0.15,
+        subtotal: 160.00,
+        iva: 24.00,
+        total: 184.00
+      }
+    ]);
+    setSelectedPeriods([]);
+    setGeneratedXml('');
+    setGeneratedJson('');
+    setGeneratedAccessKey('');
+    setProcessStatus('idle');
+    setCurrentStep(0);
+    setConsoleLogs([]);
+  };
 
   // Invoice helper functions
   const addInvoiceItem = () => {
@@ -858,7 +950,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         });
         if (!signResponse.ok) throw new Error(`Error en API al firmar: ${signResponse.statusText}`);
         const signData = await signResponse.json();
-        currentXml = signData.xml_firmado || signData.xml;
+        currentXml = signData.data?.xml || signData.xml_firmado || signData.xml;
         setGeneratedXml(currentXml);
         addLog(`Firma digital realizada con éxito por el backend`, 'success');
       }
@@ -877,13 +969,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            xml_firmado: currentXml,
+            xml: currentXml,
             ambiente
           })
         });
         if (!sendResponse.ok) throw new Error(`Fallo de conexión al SRI: ${sendResponse.statusText}`);
         const sendData = await sendResponse.json();
-        addLog(`Respuesta Recepción SRI: ${JSON.stringify(sendData.respuesta || sendData)}`, 'success');
+        addLog(`Respuesta Recepción SRI: ${JSON.stringify(sendData.data || sendData.respuesta || sendData)}`, 'success');
       }
 
       // Step 4: Authorize
@@ -927,9 +1019,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         if (!authResponse.ok) throw new Error(`Fallo consulta autorización: ${authResponse.statusText}`);
         const authData = await authResponse.json();
         
-        addLog(`Respuesta Autorización SRI: ${JSON.stringify(authData.respuesta || authData)}`, 'success');
+        addLog(`Respuesta Autorización SRI: ${JSON.stringify(authData.data || authData.respuesta || authData)}`, 'success');
         
-        const isAuthorized = authData.status || authData.estado === 'AUTORIZADO';
+        const stringifiedData = JSON.stringify(authData.data || {}).toUpperCase();
+        const isAuthorized = authData.status && stringifiedData.includes('"ESTADO":"AUTORIZADO"');
         setProcessStatus(isAuthorized ? 'success' : 'failed');
         if (isAuthorized) {
           setShowWhatsAppModal(true);
@@ -1094,275 +1187,645 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     alert(`${subject} copiado al portapapeles.`);
   };
 
-  return (
-    <div className={`space-y-6 animate-in fade-in duration-500 ${activeTab === 'emitir' ? 'pb-28' : ''}`}>
-      
-      {/* Top Banner Status */}
-      <div className="glass-card-premium p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-            <FileText size={28} />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white">
-              Facturación Electrónica SRI Ecuador
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
-              Genera comprobantes XML, realiza firmas electrónicas con estándares XAdES-BES y transmite al SRI localmente.
+  const renderDashboard = () => {
+    const totalIssued = history.length;
+    const invoicesCount = history.filter(h => h.tipo === 'factura').length;
+    const withholdingsCount = history.filter(h => h.tipo === 'retencion').length;
+    const totalRevenue = history
+      .filter(h => h.tipo === 'factura' && h.estado === 'Autorizado')
+      .reduce((sum, h) => sum + h.total, 0);
+    const latestDocs = history.slice(0, 5);
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        
+        {/* Welcome Card */}
+        <div className="glass-card-premium p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
+          <div className="space-y-1 relative z-10">
+            <span className="text-[9px] font-black uppercase tracking-wider text-primary">Mi Oficina</span>
+            <h3 className="text-lg font-black uppercase tracking-wide text-slate-800 dark:text-white font-premium">
+              {emisorRazonSocial || 'Emisor No Configurado'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
+              RUC Emisor: <span className="font-mono">{emisorRuc || '0705787745001'}</span> — {emisorNombreComercial || 'SOLUCIONES CONTABLES PRO'}
             </p>
           </div>
+          
+          <div className="flex flex-wrap gap-2 relative z-10 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab('factura')}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-sm shadow-primary/10 active:scale-[0.98]"
+            >
+              <Plus size={12} />
+              Nueva Factura
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('retencion')}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-800 dark:text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+            >
+              <Plus size={12} />
+              Nueva Retención
+            </button>
+          </div>
         </div>
 
-        {/* Connection Widget & Settings Button */}
-        <div className="flex items-center gap-3 self-end md:self-center">
-          <button
-            type="button"
-            onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
-            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-black uppercase tracking-wider font-premium transition-all ${
-              showAdvancedSettings
-                ? 'bg-primary text-white border-primary shadow-primary'
-                : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/10'
-            }`}
-            title="Ajustes de Emisor y API"
-          >
-            <Settings size={14} className={showAdvancedSettings ? 'animate-spin' : ''} />
-            <span>Ajustes</span>
-          </button>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="glass-card-premium p-5 space-y-2">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Facturado (Autorizados)</span>
+            <div className="flex justify-between items-baseline">
+              <span className="text-2xl font-mono font-black text-slate-800 dark:text-white">${totalRevenue.toFixed(2)}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">USD</span>
+            </div>
+            <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
+              Ingresos de facturas autorizadas por el SRI.
+            </div>
+          </div>
           
-          <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all ${
-            connectionStatus === 'connected' 
-              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-              : connectionStatus === 'checking'
-              ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
-              : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
-          }`}>
-            {connectionStatus === 'connected' ? (
-              <>
-                <Wifi size={16} className="animate-pulse" />
-                <div className="flex flex-col text-left">
-                  <span className="text-xs font-black uppercase tracking-wider font-premium">API Online</span>
-                  <span className="text-[9px] font-mono opacity-80">{apiUrl}</span>
-                </div>
-              </>
-            ) : connectionStatus === 'checking' ? (
-              <>
-                <RefreshCw size={16} className="animate-spin" />
-                <span className="text-xs font-black uppercase tracking-wider font-premium">Verificando...</span>
-              </>
+          <div className="glass-card-premium p-5 space-y-2">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Facturas Emitidas</span>
+            <div className="flex justify-between items-baseline">
+              <span className="text-2xl font-mono font-black text-slate-800 dark:text-white">{invoicesCount}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Docs</span>
+            </div>
+            <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
+              Comprobantes de tipo factura en archivo.
+            </div>
+          </div>
+
+          <div className="glass-card-premium p-5 space-y-2">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Retenciones Emitidas</span>
+            <div className="flex justify-between items-baseline">
+              <span className="text-2xl font-mono font-black text-slate-800 dark:text-white">{withholdingsCount}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Docs</span>
+            </div>
+            <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
+              Comprobantes de retención en archivo.
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Latest Activity Table */}
+          <div className="lg:col-span-8 glass-card-premium p-6 space-y-4">
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Comprobantes Recientes</h4>
+            
+            {latestDocs.length === 0 ? (
+              <div className="h-48 flex items-center justify-center text-xs font-bold text-slate-400 uppercase italic">
+                Aún no hay comprobantes emitidos.
+              </div>
             ) : (
-              <>
-                <WifiOff size={16} />
-                <div className="flex flex-col text-left">
-                  <span className="text-xs font-black uppercase tracking-wider font-premium">Simulación Activa</span>
-                  <span className="text-[9px] opacity-80">Laravel Offline</span>
-                </div>
-              </>
+              <div className="overflow-x-auto no-scrollbar">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-white/5 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      <th className="pb-3 pr-2">Comprobante</th>
+                      <th className="pb-3 pr-2">Receptor</th>
+                      <th className="pb-3 pr-2">Fecha</th>
+                      <th className="pb-3 pr-2">Total</th>
+                      <th className="pb-3 text-right">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {latestDocs.map(doc => (
+                      <tr key={doc.id} className="border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-slate-50/50 dark:hover:bg-white/5">
+                        <td className="py-3 font-semibold pr-2">
+                          <span className="uppercase text-[10px] font-black text-slate-700 dark:text-slate-300 block">
+                            {doc.tipo === 'factura' ? 'Factura' : 'Retención'}
+                          </span>
+                          <span className="text-[9px] font-mono text-slate-400">{doc.secuencial}</span>
+                        </td>
+                        <td className="py-3 font-bold pr-2 truncate max-w-[155px] uppercase text-[10px]" title={doc.nombreReceptor}>
+                          {doc.nombreReceptor}
+                        </td>
+                        <td className="py-3 text-slate-500 pr-2">{doc.fechaEmision}</td>
+                        <td className="py-3 font-mono font-bold pr-2">${doc.total.toFixed(2)}</td>
+                        <td className="py-3 text-right">
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${
+                            doc.estado === 'Autorizado'
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                              : doc.estado === 'Rechazado' || doc.estado === 'Error'
+                              ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                          }`}>
+                            {doc.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
+          </div>
+
+          {/* Quick info widgets */}
+          <div className="lg:col-span-4 space-y-4">
+            
+            {/* Connection widget */}
+            <div className="glass-card-premium p-5 space-y-3">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Servidor API</span>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-xl border ${
+                  connectionStatus === 'connected'
+                    ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-500'
+                    : 'bg-rose-500/10 border-rose-500/25 text-rose-500'
+                }`}>
+                  {connectionStatus === 'connected' ? <Wifi size={18} /> : <WifiOff size={18} />}
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    {connectionStatus === 'connected' ? 'Laravel Conectado' : 'Modo Simulación'}
+                  </span>
+                  <span className="text-[9px] font-mono text-slate-400 truncate max-w-[150px]">{apiUrl}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Signature expiry warning */}
+            <div className="glass-card-premium p-5 space-y-3">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Firma Certificado</span>
+              {p12FileBase64 ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-500 rounded-xl">
+                      <Lock size={18} />
+                    </div>
+                    <div className="flex flex-col text-left min-w-0">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate max-w-[150px]">
+                        {p12FileName || 'firma.p12'}
+                      </span>
+                      <span className="text-[9px] text-slate-400 truncate">Vence: {p12ExpiryDate}</span>
+                    </div>
+                  </div>
+                  <div className={`text-[9px] font-black uppercase tracking-wider text-center p-1 rounded-lg ${
+                    p12SubjectName.includes('VENCIDO')
+                      ? 'bg-rose-500/10 text-rose-500'
+                      : p12SubjectName.includes('Vence en')
+                      ? 'bg-amber-500/10 text-amber-500'
+                      : 'bg-emerald-500/10 text-emerald-500'
+                  }`}>
+                    {p12SubjectName || 'Certificado Vigente'}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center space-y-2">
+                  <div className="p-2 bg-rose-500/10 border border-rose-500/25 text-rose-500 rounded-xl w-fit mx-auto">
+                    <AlertTriangle size={18} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-rose-500 block">Firma no configurada</span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('configuracion')}
+                    className="text-[9px] font-black uppercase tracking-wider text-primary hover:underline"
+                  >
+                    Configurar Ahora
+                  </button>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    );
+  };
+
+  const renderUpcomingDocument = (title: string, desc: string) => {
+    return (
+      <div className="glass-card-premium p-8 flex flex-col items-center justify-center text-center space-y-4 max-w-lg mx-auto py-16 animate-in fade-in duration-300">
+        <div className="p-4 bg-primary/10 rounded-full text-primary animate-pulse">
+          <FileText size={32} />
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-lg font-black uppercase tracking-wider text-slate-800 dark:text-white font-premium">
+            {title}
+          </h3>
+          <span className="px-2 py-0.5 bg-primary/15 border border-primary/25 text-primary rounded-lg text-[9px] font-black uppercase tracking-widest block w-fit mx-auto font-sans">
+            Próximamente en Frontend
+          </span>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed max-w-sm pt-2">
+            {desc}
+          </p>
+        </div>
+        <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl text-[10px] text-slate-500 font-mono border border-slate-200 dark:border-white/5 max-w-sm">
+          El backend en Laravel ya tiene implementada la firma XAdES-BES y la generación de este documento. La interfaz gráfica se habilitará en la siguiente actualización.
+        </div>
+      </div>
+    );
+  };
+
+  const handleSaveSettings = () => {
+    localStorage.setItem('sc_emisor_razon', emisorRazonSocial);
+    localStorage.setItem('sc_emisor_comercial', emisorNombreComercial);
+    localStorage.setItem('sc_emisor_dir', emisorDirMatriz);
+    localStorage.setItem('sc_emisor_estab', emisorEstab);
+    localStorage.setItem('sc_emisor_pto', emisorPtoEmi);
+    localStorage.setItem('sc_api_url', apiUrl);
+    alert('Ajustes del emisor y API guardados correctamente.');
+    setActiveTab('dashboard');
+  };
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-6 min-h-[calc(100vh-120px)] relative">
+      
+      {/* 1. Sidebar Nav (Internal Nested Sidebar) */}
+      <div className="lg:w-[260px] w-full shrink-0">
+        <div className="lg:sticky lg:top-24 space-y-4">
+          <div className="glass-card-premium p-4 space-y-6">
+            
+            {/* Header: Workspace title */}
+            <div className="flex items-center gap-3 px-2 border-b border-slate-200 dark:border-white/5 pb-4">
+              <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                <FileText size={18} />
+              </div>
+              <div className="flex flex-col text-left font-premium">
+                <span className="text-[11px] font-black uppercase tracking-widest text-slate-800 dark:text-white">Facturación</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">SRI offline v1.0</span>
+              </div>
+            </div>
+            
+            {/* Menu Options */}
+            <div className="space-y-4">
+              
+              {/* Category: General */}
+              <div className="space-y-1">
+                <span className="px-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-2">Mi Oficina</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('dashboard')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider font-premium transition-all ${
+                    activeTab === 'dashboard'
+                      ? 'bg-primary text-white shadow-md shadow-primary/20'
+                      : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 dark:text-slate-400'
+                  }`}
+                >
+                  <Home size={14} />
+                  <span>Escritorio</span>
+                </button>
+              </div>
+
+              {/* Category: Emisión */}
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setIsFacturacionOpen(!isFacturacionOpen)}
+                  className="w-full flex items-center justify-between px-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                >
+                  <span>Emisión SRI</span>
+                  {isFacturacionOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                </button>
+                
+                {isFacturacionOpen && (
+                  <div className="space-y-1 pl-1 border-l border-slate-100 dark:border-white/5 ml-2">
+                    {[
+                      { id: 'factura', label: 'Factura', badge: null },
+                      { id: 'retencion', label: 'Retención', badge: null },
+                      { id: 'nota_credito', label: 'Nota Crédito', badge: 'PRÓX' },
+                      { id: 'nota_debito', label: 'Nota Débito', badge: 'PRÓX' },
+                      { id: 'guia', label: 'Guía Remisión', badge: 'PRÓX' },
+                      { id: 'liquidacion', label: 'Liquidación', badge: 'PRÓX' }
+                    ].map(sub => (
+                      <button
+                        key={sub.id}
+                        type="button"
+                        onClick={() => setActiveTab(sub.id as any)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+                          activeTab === sub.id
+                            ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black'
+                            : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 dark:text-slate-400'
+                        }`}
+                      >
+                        <span className="truncate">{sub.label}</span>
+                        {sub.badge && (
+                          <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 text-[8px] font-bold text-slate-400 rounded-md shrink-0 scale-90 font-sans">
+                            {sub.badge}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Category: Archivo */}
+              <div className="space-y-1">
+                <span className="px-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-2">Historial</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('historial')}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider font-premium transition-all ${
+                    activeTab === 'historial'
+                      ? 'bg-primary text-white shadow-md shadow-primary/20'
+                      : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 dark:text-slate-400'
+                  }`}
+                >
+                  <Database size={14} />
+                  <span>Historial XML</span>
+                </button>
+              </div>
+
+              {/* Category: Herramientas */}
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setIsHerramientasOpen(!isHerramientasOpen)}
+                  className="w-full flex items-center justify-between px-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                >
+                  <span>Herramientas</span>
+                  {isHerramientasOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                </button>
+                
+                {isHerramientasOpen && (
+                  <div className="space-y-1 pl-1 border-l border-slate-100 dark:border-white/5 ml-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('validador')}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        activeTab === 'validador'
+                          ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black'
+                          : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 dark:text-slate-400'
+                      }`}
+                    >
+                      <CheckCircle2 size={12} />
+                      <span>Validar RUC/Cédula</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('configuracion')}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        activeTab === 'configuracion'
+                          ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black'
+                          : 'text-slate-500 hover:bg-slate-55 dark:hover:bg-white/5 dark:text-slate-400'
+                      }`}
+                    >
+                      <Settings size={12} />
+                      <span>Ajustes Emisor & API</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Bottom Status Block */}
+            <div className="pt-4 border-t border-slate-200 dark:border-white/5">
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-left space-y-1 font-sans">
+                <span className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">Firma Electrónica</span>
+                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 block leading-tight">
+                  {p12FileBase64 ? '✓ Firma Configurada y Activa' : '⚠️ Pendiente de configurar'}
+                </span>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
 
-      {/* Tabs Menu */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-white/10 pb-px overflow-x-auto no-scrollbar shrink-0">
-        {[
-          { id: 'emitir', label: 'Emitir Factura', icon: Play },
-          { id: 'historial', label: 'Historial / Archivo', icon: Database }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id as any);
-              setShowAdvancedSettings(false);
-            }}
-            className={`flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-wider font-premium border-b-2 transition-all ${
-              activeTab === tab.id
-                ? 'border-primary text-primary'
-                : 'border-transparent text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <tab.icon size={14} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* 2. Main Content Area */}
+      <div className={`flex-1 min-w-0 space-y-6 ${(activeTab === 'factura' || activeTab === 'retencion') ? 'pb-28' : ''}`}>
+        
+        {/* Dynamic top bar inside content area to show connection status */}
+        {activeTab !== 'dashboard' && (
+          <div className="glass-card-premium p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                {activeTab === 'factura' ? <FileText size={18} /> : activeTab === 'retencion' ? <CreditCard size={18} /> : <Sliders size={18} />}
+              </div>
+              <div className="flex flex-col text-left font-premium">
+                <h2 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-white">
+                  {activeTab === 'factura' ? 'Nueva Factura Electrónica' : activeTab === 'retencion' ? 'Comprobante de Retención' : activeTab === 'validador' ? 'Validador SRI' : activeTab === 'configuracion' ? 'Ajustes del Emisor' : 'Historial Comprobantes'}
+                </h2>
+                <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5 font-sans">
+                  Emisor: {emisorRazonSocial || 'No configurado'}
+                </span>
+              </div>
+            </div>
 
-      {/* Ajustes Avanzados Colapsables (Emisor y API) */}
-      {showAdvancedSettings && (
-        <div className="glass-card-premium p-6 border-primary/20 bg-slate-100/40 dark:bg-slate-900/30 space-y-6 animate-fade-in relative z-20">
-          <div className="flex justify-between items-center border-b border-slate-200 dark:border-white/10 pb-3">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium flex items-center gap-2">
-              <Settings size={14} className="text-primary animate-pulse" />
-              Configuración de API & Emisor
-            </h3>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5 self-end sm:self-center">
+              {(activeTab === 'factura' || activeTab === 'retencion') && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsActionsDropdownOpen(!isActionsDropdownOpen)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all shadow-sm shadow-primary/10 active:scale-[0.98]"
+                  >
+                    <span>Acciones</span>
+                    <ChevronDown size={10} />
+                  </button>
+                  {isActionsDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsActionsDropdownOpen(false)} />
+                      <div className="absolute right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 w-44 p-1.5 space-y-0.5 animate-in fade-in duration-200">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleResetForm();
+                            setIsActionsDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200"
+                        >
+                          Limpiar Formulario
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleLoadMockData();
+                            setIsActionsDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-[10px] font-black uppercase tracking-wider text-primary"
+                        >
+                          Simular Datos Prueba
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-wider font-premium transition-all ${
+                connectionStatus === 'connected' 
+                  ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-rose-500/10 border-rose-500/25 text-rose-600 dark:text-rose-400'
+              }`}>
+                {connectionStatus === 'connected' ? <Wifi size={12} /> : <WifiOff size={12} />}
+                <span>{connectionStatus === 'connected' ? 'Laravel Online' : 'Offline'}</span>
+              </div>
+              
+              <div className="text-[9px] font-bold text-slate-400 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 uppercase font-premium font-sans">
+                Ambiente: {ambiente === '1' ? 'Pruebas' : 'Producción'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Views Router */}
+        {activeTab === 'dashboard' && renderDashboard()}
+        
+        {activeTab === 'nota_credito' && renderUpcomingDocument('Nota de Crédito Electrónica', 'Permite anular o aplicar descuentos/modificaciones a facturas emitidas y autorizadas previamente en el SRI.')}
+        {activeTab === 'nota_debito' && renderUpcomingDocument('Nota de Débito Electrónica', 'Permite cobrar intereses, multas o cargos adicionales que aumenten el valor original de una factura.')}
+        {activeTab === 'guia' && renderUpcomingDocument('Guía de Remisión Electrónica', 'Soporte oficial del SRI para el traslado de mercaderías por vía terrestre dentro del territorio nacional.')}
+        {activeTab === 'liquidacion' && renderUpcomingDocument('Liquidación de Compra', 'Comprobante emitido a proveedores que por su nivel cultural o rusticidad no pueden emitir facturas.')}
+
+        {activeTab === 'configuracion' && (
+          <div className="glass-card-premium p-6 space-y-6 animate-fade-in relative z-20">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-white/10 pb-3 font-premium">
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white flex items-center gap-2">
+                <Settings size={14} className="text-primary animate-pulse" />
+                Configuración de API & Emisor
+              </h3>
               <button
                 type="button"
-                onClick={() => {
-                  // Persist all emisor fields to localStorage
-                  localStorage.setItem('sc_emisor_razon', emisorRazonSocial);
-                  localStorage.setItem('sc_emisor_comercial', emisorNombreComercial);
-                  localStorage.setItem('sc_emisor_dir', emisorDirMatriz);
-                  localStorage.setItem('sc_emisor_estab', emisorEstab);
-                  localStorage.setItem('sc_emisor_pto', emisorPtoEmi);
-                  localStorage.setItem('sc_api_url', apiUrl);
-                  setShowAdvancedSettings(false);
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all shadow-sm"
+                onClick={handleSaveSettings}
+                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm"
               >
                 <Save size={12} />
                 Guardar Ajustes
               </button>
-              <button
-                type="button"
-                onClick={() => setShowAdvancedSettings(false)}
-                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 uppercase font-black tracking-widest font-premium px-2 py-2"
-              >
-                ✕
-              </button>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Emisor Defaults card */}
-            <div className="lg:col-span-7 space-y-4">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Datos de Facturación del Emisor (Compañía)</h4>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Razón Social</label>
-                  <input
-                    type="text"
-                    value={emisorRazonSocial}
-                    onChange={(e) => setEmisorRazonSocial(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
-                  />
-                </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-7 space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Datos de Facturación del Emisor (Compañía)</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Razón Social</label>
+                    <input
+                      type="text"
+                      value={emisorRazonSocial}
+                      onChange={(e) => setEmisorRazonSocial(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Nombre Comercial</label>
-                  <input
-                    type="text"
-                    value={emisorNombreComercial}
-                    onChange={(e) => setEmisorNombreComercial(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Nombre Comercial</label>
+                    <input
+                      type="text"
+                      value={emisorNombreComercial}
+                      onChange={(e) => setEmisorNombreComercial(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">RUC Emisor</label>
-                  <input
-                    type="text"
-                    value={emisorRuc}
-                    onChange={(e) => setEmisorRuc(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">RUC Emisor</label>
+                    <input
+                      type="text"
+                      value={emisorRuc}
+                      onChange={(e) => setEmisorRuc(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Dirección Matriz</label>
-                  <input
-                    type="text"
-                    value={emisorDirMatriz}
-                    onChange={(e) => setEmisorDirMatriz(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
-                  />
-                </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Dirección Matriz</label>
+                    <input
+                      type="text"
+                      value={emisorDirMatriz}
+                      onChange={(e) => setEmisorDirMatriz(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Cód. Establecimiento</label>
-                  <input
-                    type="text"
-                    value={emisorEstab}
-                    onChange={(e) => setEmisorEstab(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Cód. Establecimiento</label>
+                    <input
+                      type="text"
+                      value={emisorEstab}
+                      onChange={(e) => setEmisorEstab(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Cód. Punto Emisión</label>
-                  <input
-                    type="text"
-                    value={emisorPtoEmi}
-                    onChange={(e) => setEmisorPtoEmi(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Cód. Punto Emisión</label>
+                    <input
+                      type="text"
+                      value={emisorPtoEmi}
+                      onChange={(e) => setEmisorPtoEmi(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Régimen SRI</label>
-                  <select
-                    value={emisorRegimen}
-                    onChange={(e) => setEmisorRegimen(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none text-slate-800 dark:text-slate-100 animate-in"
-                  >
-                    <option value="0">REGIMEN GENERAL</option>
-                    <option value="1">RIMPE NEGOCIO POPULAR</option>
-                    <option value="2">RIMPE EMPRENDEDOR</option>
-                  </select>
-                </div>
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Régimen SRI</label>
+                    <select
+                      value={emisorRegimen}
+                      onChange={(e) => setEmisorRegimen(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="0">RÉGIMEN GENERAL</option>
+                      <option value="1">RIMPE NEGOCIO POPULAR</option>
+                      <option value="2">RIMPE EMPRENDEDOR</option>
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Ambiente de Trabajo</label>
-                  <select
-                    value={ambiente}
-                    onChange={(e) => setAmbiente(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none text-slate-800 dark:text-slate-100"
-                  >
-                    <option value="1">1 - PRUEBAS</option>
-                    <option value="2">2 - PRODUCCIÓN</option>
-                  </select>
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Ambiente de Trabajo</label>
+                    <select
+                      value={ambiente}
+                      onChange={(e) => setAmbiente(e.target.value as any)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="1">1 - PRUEBAS</option>
+                      <option value="2">2 - PRODUCCIÓN</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Connection settings card */}
-            <div className="lg:col-span-5 space-y-4">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Servidor Laravel API</h4>
+              <div className="lg:col-span-5 space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Servidor Laravel API</h4>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Base URL de la API</label>
-                  <input
-                    type="text"
-                    value={apiUrl}
-                    onChange={(e) => {
-                      setApiUrl(e.target.value);
-                      localStorage.setItem('sc_facturacion_api_url', e.target.value);
-                    }}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary font-mono text-slate-800 dark:text-slate-100"
-                    placeholder="http://localhost:8000"
-                  />
-                </div>
+                <div className="space-y-4 font-premium">
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Base URL de la API</label>
+                    <input
+                      type="text"
+                      value={apiUrl}
+                      onChange={(e) => {
+                        setApiUrl(e.target.value);
+                        localStorage.setItem('sc_facturacion_api_url', e.target.value);
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary font-mono text-slate-800 dark:text-slate-100"
+                      placeholder="http://localhost:8000"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Prefijo de la API</label>
-                  <input
-                    type="text"
-                    value={apiPrefix}
-                    onChange={(e) => setApiPrefix(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary font-mono text-slate-800 dark:text-slate-100"
-                    placeholder="/api/v1"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Prefijo de la API</label>
+                    <input
+                      type="text"
+                      value={apiPrefix}
+                      onChange={(e) => setApiPrefix(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary font-mono text-slate-800 dark:text-slate-100"
+                      placeholder="/api/v1"
+                    />
+                  </div>
 
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => checkBackendConnection(apiUrl)}
-                    className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all"
-                  >
-                    <RefreshCw size={12} className={connectionStatus === 'checking' ? 'animate-spin' : ''} />
-                    Verificar Conexión
-                  </button>
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => checkBackendConnection(apiUrl)}
+                      className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                    >
+                      <RefreshCw size={12} className={connectionStatus === 'checking' ? 'animate-spin' : ''} />
+                      Verificar Conexión
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* TAB 1: EMISION DE COMPROBANTES */}
-      {activeTab === 'emitir' && (
+        {(activeTab === 'factura' || activeTab === 'retencion') && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* Left panel - Form */}
@@ -1500,9 +1963,21 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               )}
             </div>
 
-            {/* Header selection card */}
-            <div className="glass-card-premium p-6 space-y-4">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Receptor de la Factura</h3>
+            {/* SECCIÓN 1: DATOS DEL CLIENTE / RECEPTOR */}
+            <div className="glass-card-premium p-6 space-y-6 border-t-4 border-t-primary relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl -mr-6 -mt-6"></div>
+              
+              <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200 dark:border-white/5 relative z-10">
+                <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                  <User size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
+                    1. Datos del Cliente / Receptor
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Búsqueda y datos del receptor</p>
+                </div>
+              </div>
 
               {/* Client Searchable Selector */}
               <div className="relative">
@@ -1680,96 +2155,105 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Receptor Data Form */}
-            <div className="glass-card-premium p-6 space-y-4">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                <User size={14} className="text-primary" />
-                Datos del Cliente / Receptor
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Razón Social</label>
-                  <input
-                    type="text"
-                    value={buyerName}
-                    onChange={(e) => setBuyerName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
-                    placeholder="Nombres completos o Razón Social"
-                  />
-                </div>
+              {/* Formulario de Campos Manuales del Receptor */}
+              <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/5">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Detalles de Identificación y Contacto</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Razón Social</label>
+                    <input
+                      type="text"
+                      value={buyerName}
+                      onChange={(e) => setBuyerName(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
+                      placeholder="Nombres completos o Razón Social"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Identificación</label>
-                  <input
-                    type="text"
-                    value={buyerRuc}
-                    onChange={(e) => setBuyerRuc(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-mono font-semibold"
-                    placeholder="Cédula o RUC"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Identificación</label>
+                    <input
+                      type="text"
+                      value={buyerRuc}
+                      onChange={(e) => setBuyerRuc(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-mono font-semibold"
+                      placeholder="Cédula o RUC"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Tipo Identificación</label>
-                  <select
-                    value={buyerIdType}
-                    onChange={(e) => setBuyerIdType(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
-                  >
-                    <option value="05">05 - CÉDULA</option>
-                    <option value="04">04 - RUC</option>
-                    <option value="06">06 - PASAPORTE</option>
-                    <option value="07">07 - CONSUMIDOR FINAL</option>
-                  </select>
-                </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Tipo Identificación</label>
+                    <select
+                      value={buyerIdType}
+                      onChange={(e) => setBuyerIdType(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
+                    >
+                      <option value="05">05 - CÉDULA</option>
+                      <option value="04">04 - RUC</option>
+                      <option value="06">06 - PASAPORTE</option>
+                      <option value="07">07 - CONSUMIDOR FINAL</option>
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Email Receptor</label>
-                  <input
-                    type="email"
-                    value={buyerEmail}
-                    onChange={(e) => setBuyerEmail(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
-                    placeholder="correo@ejemplo.com"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Email Receptor</label>
+                    <input
+                      type="email"
+                      value={buyerEmail}
+                      onChange={(e) => setBuyerEmail(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
+                      placeholder="correo@ejemplo.com"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Teléfono</label>
-                  <input
-                    type="text"
-                    value={buyerPhone}
-                    onChange={(e) => setBuyerPhone(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
-                    placeholder="0999999999"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Teléfono</label>
+                    <input
+                      type="text"
+                      value={buyerPhone}
+                      onChange={(e) => setBuyerPhone(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
+                      placeholder="0999999999"
+                    />
+                  </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Dirección</label>
-                  <input
-                    type="text"
-                    value={buyerAddress}
-                    onChange={(e) => setBuyerAddress(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
-                    placeholder="Dirección del receptor"
-                  />
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Dirección</label>
+                    <input
+                      type="text"
+                      value={buyerAddress}
+                      onChange={(e) => setBuyerAddress(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
+                      placeholder="Dirección del receptor"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Document Details - Factura specific */}
+            {/* SECCIÓN 2: DETALLES DE PRODUCTOS / SERVICIOS */}
             {docType === 'factura' && (
-              <div className="glass-card-premium p-6 space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Detalles de Factura</h3>
+              <div className="glass-card-premium p-6 space-y-6 border-t-4 border-t-primary relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl -mr-6 -mt-6"></div>
+                
+                <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-white/5 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                      <FileText size={16} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
+                        2. Detalles de Productos y Servicios
+                      </h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Grilla de ítems facturados</p>
+                    </div>
+                  </div>
+                  
                   <button
                     type="button"
                     onClick={addInvoiceItem}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-lg text-[10px] font-black uppercase tracking-wider font-premium transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
                   >
                     <Plus size={12} />
                     Agregar Ítem
@@ -1859,44 +2343,62 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
 
-                {/* Totals and Payment */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-200 dark:border-white/10">
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Forma de Pago</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { value: '01', label: 'Efectivo', icon: '💵', sub: 'Sin sistema financiero' },
-                          { value: '20', label: 'Transferencia', icon: '🏦', sub: 'Sistema financiero' },
-                          { value: '19', label: 'Tarjeta', icon: '💳', sub: 'Crédito / Débito' },
-                          { value: '17', label: 'Digital', icon: '📱', sub: 'Dinero electrónico' }
-                        ].map(opt => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setFormaPago(opt.value)}
-                            className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all ${
-                              formaPago === opt.value
-                                ? 'border-primary bg-primary/5 dark:bg-primary/10 text-primary'
-                                : 'border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 hover:border-slate-300 dark:hover:border-white/10 text-slate-600 dark:text-slate-300'
-                            }`}
-                          >
-                            <span className="text-lg shrink-0">{opt.icon}</span>
-                            <div>
-                              <p className={`text-[10px] font-black uppercase tracking-wider ${
-                                formaPago === opt.value ? 'text-primary' : 'text-slate-700 dark:text-slate-200'
-                              }`}>{opt.label}</p>
-                              <p className="text-[8px] text-slate-400 font-semibold">{opt.sub}</p>
-                            </div>
-                            {formaPago === opt.value && <Check size={12} className="ml-auto shrink-0" />}
-                          </button>
-                        ))}
-                      </div>
+            {/* SECCIÓN 3: FORMA DE PAGO Y RESUMEN DE TOTALES */}
+            {docType === 'factura' && (
+              <div className="glass-card-premium p-6 space-y-6 border-t-4 border-t-primary relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl -mr-6 -mt-6"></div>
+                
+                <div className="flex items-center gap-2.5 pb-3 border-b border-slate-200 dark:border-white/5 relative z-10">
+                  <div className="p-2 bg-primary/10 rounded-xl text-primary">
+                    <CreditCard size={16} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
+                      3. Forma de Pago & Totales
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Método de cobro y totales de factura</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Forma de Pago */}
+                  <div className="lg:col-span-6 space-y-3 text-left">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Seleccione la Forma de Pago</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        { value: '01', label: 'Efectivo', icon: '💵', sub: 'Sin sistema financiero' },
+                        { value: '20', label: 'Transferencia', icon: '🏦', sub: 'Sistema financiero' },
+                        { value: '19', label: 'Tarjeta', icon: '💳', sub: 'Crédito / Débito' },
+                        { value: '17', label: 'Digital', icon: '📱', sub: 'Dinero electrónico' }
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setFormaPago(opt.value)}
+                          className={`flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all ${
+                            formaPago === opt.value
+                              ? 'border-primary bg-primary/5 dark:bg-primary/10 text-primary font-black shadow-sm'
+                              : 'border-slate-200 dark:border-white/5 bg-slate-50/50 dark:bg-white/5 hover:border-slate-300 dark:hover:border-white/10 text-slate-600 dark:text-slate-300 font-bold'
+                          }`}
+                        >
+                          <span className="text-lg shrink-0">{opt.icon}</span>
+                          <div>
+                            <p className={`text-[10px] font-black uppercase tracking-wider ${
+                              formaPago === opt.value ? 'text-primary' : 'text-slate-700 dark:text-slate-200'
+                            }`}>{opt.label}</p>
+                            <p className="text-[8px] text-slate-400 font-semibold">{opt.sub}</p>
+                          </div>
+                          {formaPago === opt.value && <Check size={12} className="ml-auto shrink-0" />}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="bg-slate-100/50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 rounded-2xl p-4 space-y-2">
+                  {/* Resumen de Totales */}
+                  <div className="lg:col-span-6 bg-slate-100/50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 rounded-2xl p-4 space-y-2.5 flex flex-col justify-center text-left">
                     <div className="flex justify-between text-xs font-semibold text-slate-500">
                       <span>Subtotal 15% IVA:</span>
                       <span className="font-mono">${invoiceTotals.subtotal15.toFixed(2)}</span>
@@ -1912,7 +2414,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     <div className="h-px bg-slate-200 dark:bg-white/10 my-1"></div>
                     <div className="flex justify-between text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider font-premium">
                       <span>Importe Total:</span>
-                      <span className="font-mono text-primary">${invoiceTotals.total.toFixed(2)}</span>
+                      <span className="font-mono text-primary text-base">${invoiceTotals.total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -2295,7 +2797,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         </div>
       )}
       {/* Sticky Bottom Action Bar for Invoicing */}
-      {activeTab === 'emitir' && (
+      {(activeTab === 'factura' || activeTab === 'retencion') && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/92 dark:bg-slate-900/92 border-t border-slate-200/80 dark:border-white/10 px-4 py-3 shadow-2xl backdrop-blur-md transition-transform duration-300">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
             <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -2440,6 +2942,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         </div>
       )}
 
+      </div>
     </div>
   );
 };

@@ -200,8 +200,12 @@ class FacturacionElectronicaController extends Controller
         }
 
         $certificado = config('services.facturacion.certificado_p12');
+        $defaultStoragePath = storage_path('app/firma.p12');
 
         if (!$certificado) {
+            if (is_file($defaultStoragePath)) {
+                return file_get_contents($defaultStoragePath);
+            }
             throw ValidationException::withMessages([
                 'certificado' => 'Configure FACTURACION_CERTIFICADO_P12 en .env o envie certificado_p12_base64.',
             ]);
@@ -210,6 +214,9 @@ class FacturacionElectronicaController extends Controller
         $path = $this->resolverRutaCertificado($certificado);
 
         if (!is_file($path)) {
+            if (is_file($defaultStoragePath)) {
+                return file_get_contents($defaultStoragePath);
+            }
             throw ValidationException::withMessages([
                 'certificado' => "No existe el certificado configurado: {$path}",
             ]);

@@ -3,6 +3,7 @@ services:
     name: backend-sri
     runtime: php
     plan: free
+    rootDir: "Sistema de Facturacion/Lib_Firmador_Xml_Facturacion _SRI"
     buildCommand: >
       composer install --no-dev --optimize-autoloader &&
       php artisan config:clear &&
