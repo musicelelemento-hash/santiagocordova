@@ -1801,6 +1801,92 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* Firma Electrónica (.p12) */}
+                <div className="pt-6 border-t border-slate-200 dark:border-white/5 space-y-4 font-premium">
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-white/5">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                      <Key size={12} className="text-primary animate-pulse" />
+                      Firma Electrónica (.p12)
+                    </h4>
+                    {p12FileBase64 ? (
+                      <span className="px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-[8px] font-black uppercase tracking-wider flex items-center gap-1">
+                        <Check size={8} />
+                        Cargada
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-[8px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse">
+                        <AlertTriangle size={8} />
+                        Faltante
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Archivo Certificado */}
+                    <div>
+                      <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                        Archivo de Firma (.p12)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".p12"
+                          onChange={handleP12Upload}
+                          className="hidden"
+                          id="p12-upload-input-config"
+                        />
+                        <label
+                          htmlFor="p12-upload-input-config"
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer border-dashed border-2 hover:border-primary"
+                        >
+                          <Download size={13} className="text-primary" />
+                          <span className="truncate max-w-[150px]">{p12FileName || 'Subir Archivo .p12'}</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Contraseña de la Firma */}
+                    <div>
+                      <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                        Contraseña de la Firma
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showP12Password ? 'text' : 'password'}
+                          value={p12Password}
+                          onChange={(e) => {
+                            setP12Password(e.target.value);
+                            localStorage.setItem('sc_sri_p12_password', e.target.value);
+                          }}
+                          placeholder="Escriba la clave..."
+                          className="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none focus:border-primary text-slate-800 dark:text-slate-100 transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowP12Password(!showP12Password)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all"
+                        >
+                          {showP12Password ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expiry metadata info */}
+                    {p12ExpiryDate && (
+                      <div className={`flex flex-col gap-1 p-3 rounded-xl ${
+                        p12SubjectName.includes('VENCIDO') 
+                          ? 'bg-rose-100/40 dark:bg-rose-950/20 border border-rose-500/10 text-rose-600 dark:text-rose-400'
+                          : p12SubjectName.includes('Vence en')
+                          ? 'bg-amber-100/40 dark:bg-amber-950/20 border border-amber-500/10 text-amber-600 dark:text-amber-400'
+                          : 'bg-emerald-100/40 dark:bg-emerald-950/20 border border-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                      }`}>
+                        <span className="text-xs font-semibold">📅 Vence: <span className="font-mono">{p12ExpiryDate}</span></span>
+                        {p12SubjectName && <span className="text-[10px] font-black uppercase tracking-wider opacity-90">{p12SubjectName}</span>}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
