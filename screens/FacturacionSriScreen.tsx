@@ -1187,6 +1187,508 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const printRideDocument = (comprobante: HistoricComprobante) => {
+    let emisor = {
+      razonSocial: emisorRazonSocial,
+      nombreComercial: emisorNombreComercial,
+      ruc: emisorRuc,
+      dirMatriz: emisorDirMatriz,
+      estab: emisorEstab,
+      ptoEmi: emisorPtoEmi,
+      secuencial: comprobante.secuencial,
+      claveAcceso: comprobante.claveAcceso,
+      ambiente: comprobante.ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS',
+      regimen: emisorRegimen
+    };
+
+    let receptor = {
+      razonSocial: comprobante.nombreReceptor,
+      identificacion: comprobante.rucReceptor,
+      direccion: comprobante.rucReceptor === buyerRuc ? buyerAddress || 'Pasaje, El Oro' : 'Ecuador',
+      fechaEmision: comprobante.fechaEmision
+    };
+
+    let itemsHtml = '';
+    let subtotal15 = 0;
+    let subtotal0 = comprobante.total;
+    let iva15 = 0;
+    let total = comprobante.total;
+    let formaPagoDesc = 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
+    let formaPagoTotal = comprobante.total;
+
+    try {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(comprobante.xml, "text/xml");
+      
+      const razonSocial = xmlDoc.getElementsByTagName("razonSocial")[0]?.textContent;
+      if (razonSocial) emisor.razonSocial = razonSocial;
+      const nombreComercial = xmlDoc.getElementsByTagName("nombreComercial")[0]?.textContent;
+      if (nombreComercial) emisor.nombreComercial = nombreComercial;
+      const ruc = xmlDoc.getElementsByTagName("ruc")[0]?.textContent;
+      if (ruc) emisor.ruc = ruc;
+      const dirMatriz = xmlDoc.getElementsByTagName("dirMatriz")[0]?.textContent;
+      if (dirMatriz) emisor.dirMatriz = dirMatriz;
+      const estab = xmlDoc.getElementsByTagName("estab")[0]?.textContent;
+      if (estab) emisor.estab = estab;
+      const ptoEmi = xmlDoc.getElementsByTagName("ptoEmi")[0]?.textContent;
+      if (ptoEmi) emisor.ptoEmi = ptoEmi;
+
+      const razonSocialComprador = xmlDoc.getElementsByTagName("razonSocialComprador")[0]?.textContent;
+      if (razonSocialComprador) receptor.razonSocial = razonSocialComprador;
+      const identificacionComprador = xmlDoc.getElementsByTagName("identificacionComprador")[0]?.textContent;
+      if (identificacionComprador) receptor.identificacion = identificacionComprador;
+      const direccionComprador = xmlDoc.getElementsByTagName("direccionComprador")[0]?.textContent;
+      if (direccionComprador) receptor.direccion = direccionComprador;
+
+      const detalles = xmlDoc.getElementsByTagName("detalle");
+      if (detalles.length > 0) {
+        for (let i = 0; i < detalles.length; i++) {
+          const d = detalles[i];
+          const codigo = d.getElementsByTagName("codigoPrincipal")[0]?.textContent || '001';
+          const descripcion = d.getElementsByTagName("descripcion")[0]?.textContent || 'Servicios Contables';
+          const cantidad = Number(d.getElementsByTagName("cantidad")[0]?.textContent || 1);
+          const precioUnitario = Number(d.getElementsByTagName("precioUnitario")[0]?.textContent || comprobante.total);
+          const precioTotalSinImpuesto = Number(d.getElementsByTagName("precioTotalSinImpuesto")[0]?.textContent || comprobante.total);
+          
+          itemsHtml += "<tr><td style='font-family: monospace;'>" + codigo + "</td><td style='text-align: center;'>" + cantidad.toFixed(2) + "</td><td style='text-transform: uppercase;'>" + descripcion + "</td><td style='text-align: right; font-family: monospace;'>$" + precioUnitario.toFixed(2) + "</td><td style='text-align: right; font-family: monospace; font-weight: bold;'>$" + precioTotalSinImpuesto.toFixed(2) + "</td></tr>";
+        }
+      }
+
+      const totalImpuestos = xmlDoc.getElementsByTagName("totalImpuesto");
+      if (totalImpuestos.length > 0) {
+        subtotal0 = 0;
+        for (let i = 0; i < totalImpuestos.length; i++) {
+          const imp = totalImpuestos[i];
+          const codigoPorcentaje = imp.getElementsByTagName("codigoPorcentaje")[0]?.textContent;
+          const baseImponible = Number(imp.getElementsByTagName("baseImponible")[0]?.textContent || 0);
+          const valor = Number(imp.getElementsByTagName("valor")[0]?.textContent || 0);
+          
+          if (codigoPorcentaje === '4' || codigoPorcentaje === '2') {
+            subtotal15 = baseImponible;
+            iva15 = valor;
+          } else if (codigoPorcentaje === '0') {
+            subtotal0 = baseImponible;
+          }
+        }
+        total = Number(xmlDoc.getElementsByTagName("importeTotal")[0]?.textContent || comprobante.total);
+      }
+
+      const pago = xmlDoc.getElementsByTagName("pago")[0];
+      if (pago) {
+        const code = pago.getElementsByTagName("formaPago")[0]?.textContent;
+        const descMap: Record<string, string> = {
+          '01': 'SIN UTILIZACION DEL SISTEMA FINANCIERO (EFECTIVO)',
+          '19': 'TARJETA DE CREDITO',
+          '20': 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO (TRANSFERENCIA)',
+          '17': 'DINERO ELECTRONICO / DIGITAL'
+        };
+        formaPagoDesc = descMap[code || '01'] || 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
+        formaPagoTotal = Number(pago.getElementsByTagName("total")[0]?.textContent || total);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!itemsHtml) {
+      itemsHtml = "<tr><td style='font-family: monospace;'>001</td><td style='text-align: center;'>1.00</td><td style='text-transform: uppercase;'>Servicios Contables Profesionales</td><td style='text-align: right; font-family: monospace;'>$" + comprobante.total.toFixed(2) + "</td><td style='text-align: right; font-family: monospace; font-weight: bold;'>$" + comprobante.total.toFixed(2) + "</td></tr>";
+    }
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Por favor, permita las ventanas emergentes (popups) para poder imprimir el RIDE.');
+      return;
+    }
+
+    let regimeLabel = '';
+    if (emisor.regimen === '1') regimeLabel = '<div style="font-size: 8px; font-weight: bold; color: #555; text-transform: uppercase; margin-top: 5px;">Contribuyente Régimen RIMPE - Negocio Popular</div>';
+    else if (emisor.regimen === '2') regimeLabel = '<div style="font-size: 8px; font-weight: bold; color: #555; text-transform: uppercase; margin-top: 5px;">Contribuyente Régimen RIMPE</div>';
+
+    const logoHtml = emisorLogo 
+      ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 
+      : "<div class='emisor-title' style='font-size: 16px; font-weight: 900; margin-bottom: 15px;'>" + (emisor.nombreComercial || 'EMISOR') + "</div>";
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>RIDE Factura ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</title>
+        <meta charset="utf-8" />
+        <style>
+          body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 10px;
+            color: #333;
+            margin: 25px;
+            background: white;
+            line-height: 1.4;
+          }
+          .ride-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          .grid-container {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
+          }
+          .emisor-box {
+            padding-right: 10px;
+          }
+          .logo-img {
+            max-height: 60px;
+            max-width: 200px;
+            object-fit: contain;
+            margin-bottom: 10px;
+          }
+          .emisor-name {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #111;
+            margin-bottom: 5px;
+          }
+          .auth-box {
+            border: 1.5px solid #000;
+            border-radius: 12px;
+            padding: 15px;
+            background: #fafafa;
+          }
+          .auth-title {
+            font-size: 12px;
+            font-weight: 900;
+            color: #000;
+            margin-bottom: 5px;
+          }
+          .auth-secuencial {
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            color: #222;
+          }
+          .auth-details {
+            border-top: 1px solid #ccc;
+            padding-top: 8px;
+            margin-top: 8px;
+          }
+          .auth-details table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .auth-details td {
+            padding: 2.5px 0;
+            vertical-align: top;
+          }
+          .barcode-container {
+            border-top: 1px solid #ccc;
+            padding-top: 8px;
+            margin-top: 8px;
+            text-align: center;
+          }
+          .barcode-lines {
+            height: 30px;
+            background: #000;
+            width: 100%;
+            margin: 4px 0;
+            background: repeating-linear-gradient(
+              90deg,
+              #000,
+              #000 2px,
+              #fff 2px,
+              #fff 4px,
+              #000 4px,
+              #000 6px,
+              #fff 6px,
+              #fff 7px
+            );
+          }
+          .barcode-text {
+            font-family: monospace;
+            font-size: 8.5px;
+            color: #444;
+            word-break: break-all;
+          }
+          .receptor-box {
+            border: 1.5px solid #000;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: 1.3fr 1fr;
+            gap: 8px;
+          }
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            border: 1.5px solid #000;
+            border-radius: 12px;
+            overflow: hidden;
+          }
+          .items-table th {
+            background: #222;
+            color: white;
+            text-transform: uppercase;
+            font-size: 8.5px;
+            font-weight: 800;
+            padding: 6px 8px;
+            border: 1px solid #222;
+          }
+          .items-table td {
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+          }
+          .items-table tr:nth-child(even) {
+            background-color: #f8f8f8;
+          }
+          .bottom-grid {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr;
+            gap: 20px;
+          }
+          .pago-box, .info-box {
+            border: 1.5px solid #000;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+          }
+          .box-title {
+            font-weight: 800;
+            text-transform: uppercase;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+            font-size: 9px;
+          }
+          .pago-table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .pago-table th {
+            color: #555;
+            border-bottom: 1px solid #ccc;
+            padding: 3px;
+            font-size: 8.5px;
+            text-align: left;
+          }
+          .pago-table td {
+            padding: 4px 3px;
+          }
+          .totals-box {
+            border: 1.5px solid #000;
+            border-radius: 12px;
+            padding: 10px 12px;
+            background: #fafafa;
+          }
+          .totals-table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          .totals-table td {
+            padding: 3.5px 2px;
+            border-bottom: 1px dashed #ddd;
+          }
+          .totals-table tr:last-child td {
+            border-bottom: none;
+          }
+          .totals-table tr.total-row {
+            border-top: 1.5px solid #000;
+            font-weight: 900;
+            font-size: 11px;
+            color: #000;
+          }
+          @media print {
+            body {
+              margin: 15px;
+            }
+            .ride-container {
+              width: 100%;
+              max-width: 100%;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="ride-container">
+          <div class="grid-container">
+            <div class="emisor-box">
+              ${logoHtml}
+              <div class="emisor-name">${emisor.razonSocial}</div>
+              <div style="color: #555; font-weight: 600;">${emisor.nombreComercial}</div>
+              <div style="margin-top: 8px;"><strong>Dirección Matriz:</strong> ${emisor.dirMatriz}</div>
+              <div style="margin-top: 8px;"><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
+              ${regimeLabel}
+            </div>
+            <div class="auth-box">
+              <div class="auth-title">R.U.C.: <span style="font-family: monospace; font-size: 13px;">${emisor.ruc}</span></div>
+              <div style="font-size: 13px; font-weight: 900; letter-spacing: 0.5px; margin: 3px 0;">FACTURA</div>
+              <div class="auth-secuencial">No. ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</div>
+              <div class="auth-details">
+                <table>
+                  <tr>
+                    <td style="width: 120px;"><strong>NÚMERO AUTORIZACIÓN:</strong></td>
+                    <td style="font-family: monospace; font-size: 8.5px; word-break: break-all; color: #111;">${comprobante.claveAcceso}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>FECHA/HORA AUTORIZ.:</strong></td>
+                    <td>${comprobante.fechaEmision} 12:00:00</td>
+                  </tr>
+                  <tr>
+                    <td><strong>AMBIENTE:</strong></td>
+                    <td style="text-transform: uppercase;">${emisor.ambiente}</td>
+                  </tr>
+                  <tr>
+                    <td><strong>EMISIÓN:</strong></td>
+                    <td>NORMAL</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="barcode-container">
+                <div style="font-size: 8px; font-weight: bold; color: #888; text-transform: uppercase;">Clave de Acceso</div>
+                <div class="barcode-lines"></div>
+                <div class="barcode-text">${comprobante.claveAcceso}</div>
+              </div>
+            </div>
+          </div>
+          <div class="receptor-box">
+            <div>
+              <strong>Razón Social / Nombres y Apellidos:</strong>
+              <div style="margin-top: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #111;">${receptor.razonSocial}</div>
+            </div>
+            <div>
+              <strong>Identificación / RUC:</strong>
+              <div style="margin-top: 3px; font-family: monospace; font-size: 11px; font-weight: bold;">${receptor.identificacion}</div>
+            </div>
+            <div style="margin-top: 4px;">
+              <strong>Fecha Emisión:</strong> ${receptor.fechaEmision}
+            </div>
+            <div style="margin-top: 4px;">
+              <strong>Guía de Remisión:</strong> S/N
+            </div>
+            <div style="grid-column: span 2; border-top: 1px dashed #ddd; padding-top: 4px; margin-top: 2px;">
+              <strong>Dirección del Comprador:</strong> ${receptor.direccion}
+            </div>
+          </div>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width: 80px;">Cod. Principal</th>
+                <th style="width: 50px; text-align: center;">Cant.</th>
+                <th>Descripción</th>
+                <th style="width: 100px; text-align: right;">P. Unitario</th>
+                <th style="width: 100px; text-align: right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+          <div class="bottom-grid">
+            <div class="space-y-4">
+              <div class="info-box">
+                <div class="box-title">Información Adicional</div>
+                <table style="width: 100%;">
+                  <tr>
+                    <td style="width: 100px; font-weight: bold; padding: 2px 0;">Dirección:</td>
+                    <td style="color: #444; text-transform: uppercase;">${receptor.direccion}</td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight: bold; padding: 2px 0;">Email:</td>
+                    <td style="color: #444;">${receptor.identificacion === buyerRuc ? buyerEmail || 'correo@cliente.com' : 'correo@cliente.com'}</td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight: bold; padding: 2px 0;">Teléfono:</td>
+                    <td style="color: #444;">${receptor.identificacion === buyerRuc ? buyerPhone || '0999999999' : '0999999999'}</td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight: bold; padding: 2px 0;">Periodo Fiscal:</td>
+                    <td style="color: #444; font-weight: bold; text-transform: uppercase;">${new Date(comprobante.fechaEmision).toLocaleString('es-EC', {month: 'long', year: 'numeric'}).toUpperCase()}</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="pago-box">
+                <div class="box-title">Forma de Pago</div>
+                <table class="pago-table">
+                  <thead>
+                    <tr>
+                      <th>Descripción</th>
+                      <th style="text-align: right; width: 80px;">Valor</th>
+                      <th style="text-align: right; width: 50px;">Plazo</th>
+                      <th style="text-align: right; width: 60px;">Tiempo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="font-weight: 600; font-size: 8px;">${formaPagoDesc}</td>
+                      <td style="text-align: right; font-family: monospace; font-weight: bold;">$${formaPagoTotal.toFixed(2)}</td>
+                      <td style="text-align: right;">0</td>
+                      <td style="text-align: right;">Días</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div>
+              <div class="totals-box">
+                <table class="totals-table">
+                  <tr>
+                    <td>SUBTOTAL 15%</td>
+                    <td style="text-align: right; font-family: monospace;">$${subtotal15.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>SUBTOTAL 0%</td>
+                    <td style="text-align: right; font-family: monospace;">$${subtotal0.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>SUBTOTAL NO OBJETO IVA</td>
+                    <td style="text-align: right; font-family: monospace;">$0.00</td>
+                  </tr>
+                  <tr>
+                    <td>SUBTOTAL EXENTO IVA</td>
+                    <td style="text-align: right; font-family: monospace;">$0.00</td>
+                  </tr>
+                  <tr>
+                    <td>SUBTOTAL SIN IMPUESTOS</td>
+                    <td style="text-align: right; font-family: monospace;">$${(subtotal15 + subtotal0).toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td>DESCUENTO</td>
+                    <td style="text-align: right; font-family: monospace;">$0.00</td>
+                  </tr>
+                  <tr>
+                    <td>ICE</td>
+                    <td style="text-align: right; font-family: monospace;">$0.00</td>
+                  </tr>
+                  <tr>
+                    <td>IVA 15%</td>
+                    <td style="text-align: right; font-family: monospace;">$${iva15.toFixed(2)}</td>
+                  </tr>
+                  <tr class="total-row">
+                    <td>VALOR TOTAL</td>
+                    <td style="text-align: right; font-family: monospace;">$${total.toFixed(2)}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            }, 300);
+          };
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const copyToClipboard = (text: string, subject: string) => {
     navigator.clipboard.writeText(text);
     alert(`${subject} copiado al portapapeles.`);
@@ -1304,9 +1806,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         <td className="py-3 text-right">
                           <div className="flex justify-end gap-1.5">
                             <button
-                              onClick={() => setSelectedComprobanteForRide(doc)}
+                              onClick={() => printRideDocument(doc)}
                               className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg transition-colors"
-                              title="Ver PDF (RIDE)"
+                              title="Imprimir PDF (RIDE)"
                             >
                               <FileText size={11} />
                             </button>
@@ -2792,9 +3294,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex justify-end gap-1.5">
                           <button
-                            onClick={() => setSelectedComprobanteForRide(row)}
+                            onClick={() => printRideDocument(row)}
                             className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg transition-colors"
-                            title="Ver PDF (RIDE)"
+                            title="Imprimir PDF (RIDE)"
                           >
                             <FileText size={12} />
                           </button>
@@ -3039,7 +3541,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     xml: generatedXml,
                     ambiente
                   };
-                  setSelectedComprobanteForRide(currentComp);
+                  printRideDocument(currentComp);
                 }}
                 className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.99]"
               >
@@ -3085,374 +3587,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         </div>
       )}
 
-      {/* RIDE PDF Printable Viewer Modal */}
-      {selectedComprobanteForRide && (
-        <div id="print-ride-root" className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 overflow-y-auto flex items-center justify-center p-0 md:p-6 no-print-backdrop">
-          <div className="bg-white text-slate-900 w-full max-w-4xl min-h-screen md:min-h-0 md:rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 relative border-t-8 border-t-slate-800 flex flex-col justify-between">
-            
-            {/* CSS specific styles for browser printing */}
-            <style dangerouslySetInnerHTML={{__html: `
-              @media print {
-                body * {
-                  visibility: hidden !important;
-                }
-                #ride-print-area, #ride-print-area * {
-                  visibility: visible !important;
-                  color: black !important;
-                }
-                #ride-print-area {
-                  position: absolute;
-                  left: 0;
-                  top: 0;
-                  width: 100% !important;
-                  margin: 0 !important;
-                  padding: 0 !important;
-                }
-                .no-print {
-                  display: none !important;
-                  height: 0 !important;
-                  padding: 0 !important;
-                  margin: 0 !important;
-                }
-                .no-print-backdrop {
-                  background: transparent !important;
-                  backdrop-filter: none !important;
-                  position: relative !important;
-                  padding: 0 !important;
-                }
-              }
-            `}} />
-
-            {/* Modal Controls (Hidden in Print) */}
-            <div className="flex justify-between items-center pb-4 border-b border-slate-200 no-print">
-              <div className="flex items-center gap-2">
-                <FileText className="text-slate-800" size={18} />
-                <span className="text-xs font-black uppercase tracking-wider text-slate-800">Visualizador de RIDE Autorizado</span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
-                >
-                  <Download size={12} />
-                  Imprimir / PDF
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedComprobanteForRide(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
-                >
-                  Cerrar
-                </button>
-              </div>
-            </div>
-
-            {/* RIDE PDF Content (Printable area) */}
-            <div className="space-y-6 text-[11px] font-sans flex-1 leading-normal" id="ride-print-area">
-              
-              {/* Grid 1: Emisor & RIDE Obligatory Box */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                
-                {/* Left: Emisor Info */}
-                <div className="space-y-4">
-                  {emisorLogo ? (
-                    <div className="h-16 w-full flex justify-start items-center overflow-hidden">
-                      <img src={emisorLogo} alt="Logo Emisor" className="max-h-full max-w-[200px] object-contain" />
-                    </div>
-                  ) : (
-                    <div className="text-lg font-black tracking-wide text-slate-800 font-premium">{emisorNombreComercial || 'EMISOR'}</div>
-                  )}
-
-                  <div className="space-y-1 text-slate-600">
-                    <div className="text-xs font-black text-slate-800 uppercase">{emisorRazonSocial}</div>
-                    <div><strong>Dir. Matriz:</strong> {emisorDirMatriz}</div>
-                    <div className="pt-2"><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
-                    {emisorRegimen === '1' && <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Contribuyente Régimen RIMPE - Negocio Popular</div>}
-                    {emisorRegimen === '2' && <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Contribuyente Régimen RIMPE</div>}
-                  </div>
-                </div>
-
-                {/* Right: Official SRI Authorization details */}
-                <div className="border-2 border-slate-800 rounded-2xl p-5 space-y-3 bg-slate-50/50">
-                  <div className="text-sm font-black text-slate-800">R.U.C.: <span className="font-mono">{emisorRuc}</span></div>
-                  
-                  <div className="space-y-0.5">
-                    <div className="text-base font-black tracking-wider text-slate-800 uppercase">
-                      {selectedComprobanteForRide.tipo === 'factura' ? 'FACTURA' : 'COMPROBANTE DE RETENCIÓN'}
-                    </div>
-                    <div className="text-xs font-mono font-bold text-slate-700">
-                      No. {emisorEstab}-{emisorPtoEmi}-{selectedComprobanteForRide.secuencial}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 text-slate-700 border-t border-slate-300 pt-2.5">
-                    <div><strong>NÚMERO DE AUTORIZACIÓN:</strong></div>
-                    <div className="font-mono text-[9px] break-all leading-tight font-semibold text-slate-600">{selectedComprobanteForRide.claveAcceso}</div>
-                    
-                    <div className="grid grid-cols-2 gap-2 text-[10px] pt-1">
-                      <div><strong>FECHA / HORA:</strong></div>
-                      <div>{selectedComprobanteForRide.fechaEmision} 12:00:00</div>
-                      
-                      <div><strong>AMBIENTE:</strong></div>
-                      <div>{selectedComprobanteForRide.ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</div>
-                      
-                      <div><strong>EMISIÓN:</strong></div>
-                      <div>NORMAL</div>
-                    </div>
-                  </div>
-
-                  {/* Simulated Barcode */}
-                  <div className="border-t border-slate-300 pt-3 space-y-1.5 text-center">
-                    <div className="text-[9px] font-black uppercase text-slate-400">Clave de Acceso</div>
-                    <div className="h-9 w-full bg-slate-900 relative overflow-hidden flex flex-row items-stretch justify-center px-4" title="Código de barras simulated">
-                      {Array.from({ length: 45 }).map((_, i) => (
-                        <div 
-                          key={i} 
-                          className="bg-white shrink-0" 
-                          style={{ 
-                            width: `${(i % 3 === 0) ? 2 : (i % 5 === 0) ? 4 : 1}px`, 
-                            marginLeft: `${(i % 4 === 0) ? 3 : (i % 2 === 0) ? 1 : 2}px` 
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <div className="font-mono text-[8px] text-slate-500 font-semibold">{selectedComprobanteForRide.claveAcceso}</div>
-                  </div>
-
-                </div>
-
-              </div>
-
-              {/* Grid 2: Buyer / Receptor details */}
-              <div className="border-2 border-slate-800 rounded-2xl p-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5 bg-slate-50/20">
-                <div>
-                  <strong>Razón Social / Nombres y Apellidos:</strong> 
-                  <span className="ml-1 text-slate-700 font-semibold uppercase">{selectedComprobanteForRide.nombreReceptor}</span>
-                </div>
-                <div>
-                  <strong>Identificación:</strong> 
-                  <span className="ml-1 font-mono text-slate-700 font-bold">{selectedComprobanteForRide.rucReceptor}</span>
-                </div>
-                <div>
-                  <strong>Fecha Emisión:</strong> 
-                  <span className="ml-1 text-slate-700 font-semibold">{selectedComprobanteForRide.fechaEmision}</span>
-                </div>
-                <div>
-                  <strong>Guía de Remisión:</strong> 
-                  <span className="ml-1 text-slate-500 font-semibold">S/N</span>
-                </div>
-              </div>
-
-              {/* Table: Invoice Items */}
-              <div className="border-2 border-slate-800 rounded-2xl overflow-hidden bg-white">
-                <table className="w-full text-left border-collapse text-[10px]">
-                  <thead>
-                    <tr className="bg-slate-800 text-white font-black uppercase text-[9px] border-b-2 border-slate-800">
-                      <th className="py-2.5 px-3">Cod. Principal</th>
-                      <th className="py-2.5 px-3 text-center">Cant.</th>
-                      <th className="py-2.5 px-4">Descripción</th>
-                      <th className="py-2.5 px-3 text-right">Precio Unitario</th>
-                      <th className="py-2.5 px-3 text-right">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-300">
-                    {(() => {
-                      try {
-                        const parser = new DOMParser();
-                        const xmlDoc = parser.parseFromString(selectedComprobanteForRide.xml, "text/xml");
-                        const detalles = xmlDoc.getElementsByTagName("detalle");
-                        if (detalles.length > 0) {
-                          const rows: any[] = [];
-                          for (let i = 0; i < detalles.length; i++) {
-                            const d = detalles[i];
-                            rows.push({
-                              codigo: d.getElementsByTagName("codigoPrincipal")[0]?.textContent || '001',
-                              descripcion: d.getElementsByTagName("descripcion")[0]?.textContent || 'Servicios Contables',
-                              cantidad: Number(d.getElementsByTagName("cantidad")[0]?.textContent || 1),
-                              precioUnitario: Number(d.getElementsByTagName("precioUnitario")[0]?.textContent || selectedComprobanteForRide.total),
-                              precioTotalSinImpuesto: Number(d.getElementsByTagName("precioTotalSinImpuesto")[0]?.textContent || selectedComprobanteForRide.total)
-                            });
-                          }
-                          return rows.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50">
-                              <td className="py-2 px-3 font-mono font-semibold">{item.codigo}</td>
-                              <td className="py-2 px-3 text-center font-semibold">{item.cantidad.toFixed(2)}</td>
-                              <td className="py-2 px-4 uppercase font-semibold text-slate-700">{item.descripcion}</td>
-                              <td className="py-2 px-3 text-right font-mono font-semibold">${item.precioUnitario.toFixed(2)}</td>
-                              <td className="py-2 px-3 text-right font-mono font-black">${item.precioTotalSinImpuesto.toFixed(2)}</td>
-                            </tr>
-                          ));
-                        }
-                      } catch (e) {
-                        console.error("XML parse error", e);
-                      }
-                      
-                      return (
-                        <tr className="hover:bg-slate-50">
-                          <td className="py-2 px-3 font-mono font-semibold">001</td>
-                          <td className="py-2 px-3 text-center font-semibold">1.00</td>
-                          <td className="py-2 px-4 uppercase font-semibold text-slate-700">Servicios Contables Profesionales</td>
-                          <td className="py-2 px-3 text-right font-mono font-semibold">${selectedComprobanteForRide.total.toFixed(2)}</td>
-                          <td className="py-2 px-3 text-right font-mono font-black">${selectedComprobanteForRide.total.toFixed(2)}</td>
-                        </tr>
-                      );
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Grid 3: Additional details & Totals */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                
-                {/* Left: Info Adicional & Forma de Pago */}
-                <div className="md:col-span-7 space-y-4">
-                  
-                  {/* Info Adicional box */}
-                  <div className="border-2 border-slate-800 rounded-2xl p-4 space-y-1.5 bg-slate-50/20">
-                    <div className="text-[10px] font-black uppercase text-slate-800 pb-1 border-b border-slate-300 mb-2">Información Adicional</div>
-                    <div><strong>Dirección:</strong> pasaje, el oro</div>
-                    <div><strong>Email:</strong> correo@cliente.com</div>
-                    <div><strong>Teléfono:</strong> 0999999999</div>
-                    <div><strong>Periodo Fiscal:</strong> {new Date(selectedComprobanteForRide.fechaEmision).toLocaleString('es-EC', {month: 'long', year: 'numeric'}).toUpperCase()}</div>
-                  </div>
-
-                  {/* Pago box */}
-                  <div className="border-2 border-slate-800 rounded-2xl p-4 space-y-2 bg-slate-50/20">
-                    <div className="text-[10px] font-black uppercase text-slate-800 pb-1 border-b border-slate-300">Forma de Pago</div>
-                    <table className="w-full text-left text-[10px]">
-                      <thead>
-                        <tr className="font-bold text-slate-600">
-                          <th>Descripción</th>
-                          <th className="text-right">Valor</th>
-                          <th className="text-right">Plazo</th>
-                          <th className="text-right">Tiempo</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="font-semibold text-slate-700">
-                          {(() => {
-                            try {
-                              const parser = new DOMParser();
-                              const xmlDoc = parser.parseFromString(selectedComprobanteForRide.xml, "text/xml");
-                              const pago = xmlDoc.getElementsByTagName("pago")[0];
-                              if (pago) {
-                                const code = pago.getElementsByTagName("formaPago")[0]?.textContent;
-                                const descMap: Record<string, string> = {
-                                  '01': 'SIN UTILIZACION DEL SISTEMA FINANCIERO (EFECTIVO)',
-                                  '19': 'TARJETA DE CREDITO',
-                                  '20': 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO (TRANSFERENCIA)',
-                                  '17': 'DINERO ELECTRONICO / DIGITAL'
-                                };
-                                return (
-                                  <>
-                                    <td className="py-1">{descMap[code || '01'] || 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO'}</td>
-                                    <td className="py-1 text-right font-mono">${Number(pago.getElementsByTagName("total")[0]?.textContent || selectedComprobanteForRide.total).toFixed(2)}</td>
-                                  </>
-                                );
-                              }
-                            } catch {}
-                            return (
-                              <>
-                                <td className="py-1">OTROS CON UTILIZACION DEL SISTEMA FINANCIERO</td>
-                                <td className="py-1 text-right font-mono">${selectedComprobanteForRide.total.toFixed(2)}</td>
-                              </>
-                            );
-                          })()}
-                          <td className="py-1 text-right">0</td>
-                          <td className="py-1 text-right">Días</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                </div>
-
-                {/* Right: Totals summary */}
-                <div className="md:col-span-5 border-2 border-slate-800 rounded-2xl p-4 bg-slate-50/50 flex flex-col justify-center">
-                  <table className="w-full text-left text-[10px] border-collapse font-semibold text-slate-700">
-                    <tbody className="divide-y divide-slate-200">
-                      {(() => {
-                        let subtotal15 = 0;
-                        let subtotal0 = selectedComprobanteForRide.total;
-                        let iva15 = 0;
-                        let total = selectedComprobanteForRide.total;
-                        
-                        try {
-                          const parser = new DOMParser();
-                          const xmlDoc = parser.parseFromString(selectedComprobanteForRide.xml, "text/xml");
-                          const totalImpuestos = xmlDoc.getElementsByTagName("totalImpuesto");
-                          if (totalImpuestos.length > 0) {
-                            subtotal0 = 0;
-                            for (let i = 0; i < totalImpuestos.length; i++) {
-                              const imp = totalImpuestos[i];
-                              const codigoPorcentaje = imp.getElementsByTagName("codigoPorcentaje")[0]?.textContent;
-                              const baseImponible = Number(imp.getElementsByTagName("baseImponible")[0]?.textContent || 0);
-                              const valor = Number(imp.getElementsByTagName("valor")[0]?.textContent || 0);
-                              
-                              if (codigoPorcentaje === '4' || codigoPorcentaje === '2') { // IVA 15% / 12%
-                                subtotal15 = baseImponible;
-                                iva15 = valor;
-                              } else if (codigoPorcentaje === '0') { // IVA 0%
-                                subtotal0 = baseImponible;
-                              }
-                            }
-                            total = Number(xmlDoc.getElementsByTagName("importeTotal")[0]?.textContent || selectedComprobanteForRide.total);
-                          }
-                        } catch {}
-                        
-                        return (
-                          <>
-                            <tr>
-                              <td className="py-1.5">SUBTOTAL 15%</td>
-                              <td className="py-1.5 text-right font-mono">${subtotal15.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5">SUBTOTAL 0%</td>
-                              <td className="py-1.5 text-right font-mono">${subtotal0.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5">SUBTOTAL NO OBJETO IVA</td>
-                              <td className="py-1.5 text-right font-mono">$0.00</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5">SUBTOTAL EXENTO IVA</td>
-                              <td className="py-1.5 text-right font-mono">$0.00</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5">SUBTOTAL SIN IMPUESTOS</td>
-                              <td className="py-1.5 text-right font-mono">${(subtotal15 + subtotal0).toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5">DESCUENTO</td>
-                              <td className="py-1.5 text-right font-mono">$0.00</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5">ICE</td>
-                              <td className="py-1.5 text-right font-mono">$0.00</td>
-                            </tr>
-                            <tr>
-                              <td className="py-1.5">IVA 15%</td>
-                              <td className="py-1.5 text-right font-mono">${iva15.toFixed(2)}</td>
-                            </tr>
-                            <tr className="border-t-2 border-slate-800 text-slate-800 text-[11px] font-black">
-                              <td className="py-2">VALOR TOTAL</td>
-                              <td className="py-2 text-right font-mono text-xs">${total.toFixed(2)}</td>
-                            </tr>
-                          </>
-                        );
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-      )}
 
       </div>
     </div>
