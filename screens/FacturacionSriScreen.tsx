@@ -1272,7 +1272,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       <th className="pb-3 pr-2">Receptor</th>
                       <th className="pb-3 pr-2">Fecha</th>
                       <th className="pb-3 pr-2">Total</th>
-                      <th className="pb-3 text-right">Estado</th>
+                      <th className="pb-3 text-center">Estado</th>
+                      <th className="pb-3 text-right">Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1289,7 +1290,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         </td>
                         <td className="py-3 text-slate-500 pr-2">{doc.fechaEmision}</td>
                         <td className="py-3 font-mono font-bold pr-2">${doc.total.toFixed(2)}</td>
-                        <td className="py-3 text-right">
+                        <td className="py-3 text-center">
                           <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${
                             doc.estado === 'Autorizado'
                               ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
@@ -1299,6 +1300,24 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           }`}>
                             {doc.estado}
                           </span>
+                        </td>
+                        <td className="py-3 text-right">
+                          <div className="flex justify-end gap-1.5">
+                            <button
+                              onClick={() => setSelectedComprobanteForRide(doc)}
+                              className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg transition-colors"
+                              title="Ver PDF (RIDE)"
+                            >
+                              <FileText size={11} />
+                            </button>
+                            <button
+                              onClick={() => downloadXmlFile(doc)}
+                              className="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors"
+                              title="Descargar XML"
+                            >
+                              <Download size={11} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
