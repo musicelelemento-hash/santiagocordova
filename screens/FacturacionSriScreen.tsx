@@ -863,7 +863,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
     if (docType === 'factura') {
       payload.data.infoFactura = {
-        fechaEmision: todayStr.split('-').reverse().join('/'), // DD/MM/YYYY
+        fechaEmision: todayStr, // YYYY-MM-DD (Parsed correctly by PHP date_create)
         dirEstablecimiento: emisorDirMatriz,
         obligadoContabilidad: 'NO',
         tipoIdentificacionComprador: buyerIdType,
@@ -906,7 +906,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     } else {
       // Retencion
       payload.data.infoCompRetencion = {
-        fechaEmision: todayStr.split('-').reverse().join('/'),
+        fechaEmision: todayStr, // YYYY-MM-DD
         dirEstablecimiento: emisorDirMatriz,
         obligadoContabilidad: 'NO',
         tipoIdentificacionSujetoRetenido: buyerIdType,
@@ -922,7 +922,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         valorRetenido: w.valorRetenido.toFixed(2),
         codDocSustento: w.codDocSustento,
         numDocSustento: w.numDocSustento.replace(/-/g, ''),
-        fechaEmisionDocSustento: w.fechaEmisionDocSustento.split('-').reverse().join('/')
+        fechaEmisionDocSustento: w.fechaEmisionDocSustento // YYYY-MM-DD
       }));
     }
 
