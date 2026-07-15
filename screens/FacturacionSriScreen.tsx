@@ -121,8 +121,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     }
   }, [initialClientId]);
 
-  // API connection settings
-  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('sc_facturacion_api_url') || 'http://localhost:8000');
+
+  // API connection settings — uses VITE_FACTURACION_API_URL for production (set in Netlify/Vercel env vars)
+  const DEFAULT_API_URL = import.meta.env.VITE_FACTURACION_API_URL || 'http://localhost:8000';
+  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('sc_facturacion_api_url') || DEFAULT_API_URL);
   const [apiPrefix, setApiPrefix] = useState('/api/v1');
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   

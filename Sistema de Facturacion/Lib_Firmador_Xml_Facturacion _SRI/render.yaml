@@ -1,23 +1,28 @@
 services:
   - type: web
-    name: backend-sri
+    name: facturador-sri-api
     runtime: php
     plan: free
-    rootDir: "Sistema de Facturacion/Lib_Firmador_Xml_Facturacion _SRI"
+    # Cuando uses un repo separado para este backend, quita el rootDir
+    # rootDir: "Sistema de Facturacion/Lib_Firmador_Xml_Facturacion _SRI"
     buildCommand: >
       composer install --no-dev --optimize-autoloader &&
       php artisan config:clear &&
       php artisan route:clear &&
-      php artisan view:clear &&
-      chmod -R 775 storage bootstrap/cache
-    startCommand: php bootstrap/start.php && php artisan serve --host=0.0.0.0 --port=$PORT
+      php artisan cache:clear &&
+      chmod -R 775 storage bootstrap/cache &&
+      mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views
+    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    healthCheckPath: /api/v1/ping
     envVars:
+      - key: APP_NAME
+        value: "Facturador SRI Ecuador"
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
         value: false
-      - key: APP_KEY
-        generateValue: true
+      - key: LOG_CHANNEL
+        value: stack
       - key: LOG_LEVEL
         value: error
       - key: CACHE_DRIVER
@@ -27,8 +32,12 @@ services:
       - key: QUEUE_CONNECTION
         value: sync
       - key: DB_CONNECTION
-        value: pgsql
-      # El resto de vars se configuran manualmente en el dashboard de Render:
-      # APP_URL, DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD
-      # FACTURACION_CERTIFICADO_P12_BASE64, FACTURACION_CERTIFICADO_CLAVE
-      # ACCEPTED_SECRETS
+        value: sqlite
+      - key: DB_DATABASE
+        value: /tmp/laravel.sqlite
+      # === Configurar manualmente en el Dashboard de Render ===
+      # APP_KEY            → base64:TU_APP_KEY_AQUI
+      # APP_URL            → https://facturador-sri-api.onrender.com
+      # FACTURACION_CERTIFICADO_P12_BASE64  → Firma .p12 en base64
+      # FACTURACION_CERTIFICADO_CLAVE       → Clave de la firma
+      # ACCEPTED_SECRETS   → Tu token secreto de seguridad

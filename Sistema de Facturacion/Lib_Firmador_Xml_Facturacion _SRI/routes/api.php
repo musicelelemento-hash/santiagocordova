@@ -20,6 +20,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// Healthcheck público — usado por Render.com para verificar que el servicio está vivo
+Route::get('/v1/ping', function () {
+    return response()->json([
+        'status' => true,
+        'message' => 'Facturador SRI API operativo',
+        'timestamp' => now()->toIso8601String(),
+        'version' => '1.0.0',
+    ]);
+});
+
 Route::group(['middleware' => 'app'], function () {
     Route::post('/v1/sign/xml', [FirmaController::class,'ProcesarFirma']);
 
@@ -32,3 +42,4 @@ Route::group(['middleware' => 'app'], function () {
     Route::post('/v1/facturacion/sri/enviar', [FacturacionElectronicaController::class, 'enviarSri']);
     Route::post('/v1/facturacion/sri/autorizar', [FacturacionElectronicaController::class, 'autorizarSri']);
 });
+
