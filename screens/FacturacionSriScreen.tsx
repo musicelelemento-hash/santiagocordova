@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   FileText, Plus, Trash2, Settings, CheckCircle2, XCircle, Info, Search, 
   Download, RefreshCw, Check, AlertTriangle, Globe, Activity, Wifi, WifiOff, 
-  Copy, ExternalLink, Eye, ChevronRight, Play, Database, CreditCard, User, AlertCircle,
+  Copy, ExternalLink, Eye, EyeOff, ChevronRight, Play, Database, CreditCard, User, AlertCircle,
   Lock, Key, Edit3, Save, Home, ChevronDown, ChevronUp, Sliders, Building2
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
@@ -295,6 +295,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [isEditingSignature, setIsEditingSignature] = useState(() => !localStorage.getItem('sc_sri_p12_base64'));
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [showP12Password, setShowP12Password] = useState(false);
 
   const activeClientObj = useMemo(() => {
     return clients.find(c => c.id === selectedClient) || null;
@@ -1221,19 +1222,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               <Plus size={12} />
               Nueva Factura
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('retencion')}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-800 dark:text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
-            >
-              <Plus size={12} />
-              Nueva Retención
-            </button>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="glass-card-premium p-5 space-y-2">
             <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Facturado (Autorizados)</span>
             <div className="flex justify-between items-baseline">
@@ -1253,17 +1246,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
             <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
               Comprobantes de tipo factura en archivo.
-            </div>
-          </div>
-
-          <div className="glass-card-premium p-5 space-y-2">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Retenciones Emitidas</span>
-            <div className="flex justify-between items-baseline">
-              <span className="text-2xl font-mono font-black text-slate-800 dark:text-white">{withholdingsCount}</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Docs</span>
-            </div>
-            <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
-              Comprobantes de retención en archivo.
             </div>
           </div>
         </div>
@@ -1484,11 +1466,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   <div className="space-y-1 pl-1 border-l border-slate-100 dark:border-white/5 ml-2">
                     {[
                       { id: 'factura', label: 'Factura', badge: null },
-                      { id: 'retencion', label: 'Retención', badge: null },
-                      { id: 'nota_credito', label: 'Nota Crédito', badge: 'PRÓX' },
-                      { id: 'nota_debito', label: 'Nota Débito', badge: 'PRÓX' },
-                      { id: 'guia', label: 'Guía Remisión', badge: 'PRÓX' },
-                      { id: 'liquidacion', label: 'Liquidación', badge: 'PRÓX' }
+                      { id: 'nota_credito', label: 'Nota Crédito', badge: null },
+                      { id: 'nota_debito', label: 'Nota Débito', badge: null },
+                      { id: 'guia', label: 'Guía Remisión', badge: null },
+                      { id: 'liquidacion', label: 'Liquidación', badge: null }
                     ].map(sub => (
                       <button
                         key={sub.id}
@@ -1832,132 +1813,91 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           <div className="lg:col-span-7 space-y-6">
             
             {/* Configuración de Firma Electrónica Directa */}
-            <div className="glass-card-premium p-6 space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                  <Key size={14} className="text-primary" />
-                  Firma Electrónica Emisor
+            <div className="glass-card-premium p-6 space-y-4 border-t-4 border-t-primary relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl -mr-6 -mt-6"></div>
+              
+              <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-white/5 relative z-10">
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white flex items-center gap-2 font-premium">
+                  <Key size={14} className="text-primary animate-pulse" />
+                  Firma Electrónica (.p12)
                 </h3>
                 
                 {p12FileBase64 ? (
                   <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
                     <Check size={10} />
-                    Configurada
+                    Firma Cargada
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                  <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse">
                     <AlertTriangle size={10} />
-                    Sin Configurar
+                    Firma Faltante
                   </span>
                 )}
               </div>
 
-              {!isEditingSignature ? (
-                /* MODO LECTURA */
-                <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl p-4 space-y-3">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                    <div className="space-y-2 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200">
-                        <FileText size={14} className="text-primary shrink-0" />
-                        <span className="truncate block font-mono text-[11px]" title={p12FileName}>
-                          {p12FileName || 'firma_electronica.p12'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <Lock size={13} className="shrink-0" />
-                        <span className="font-semibold">Contraseña: ••••••••••••</span>
-                      </div>
-                      {p12ExpiryDate && (
-                        <div className={`flex items-center gap-2 text-[10px] font-bold rounded-lg px-2 py-1 w-fit ${
-                          p12SubjectName.includes('VENCIDO') 
-                            ? 'bg-rose-100 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400'
-                            : p12SubjectName.includes('Vence en')
-                            ? 'bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400'
-                            : 'bg-emerald-100 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400'
-                        }`}>
-                          <span>📅 Vence: {p12ExpiryDate}</span>
-                          {p12SubjectName && <span className="opacity-75">— {p12SubjectName}</span>}
-                        </div>
-                      )}
-                    </div>
-                    
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Archivo Certificado .p12 */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    Archivo Certificado (.p12)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".p12"
+                      onChange={handleP12Upload}
+                      className="hidden"
+                      id="p12-upload-input"
+                    />
+                    <label
+                      htmlFor="p12-upload-input"
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer border-dashed border-2 hover:border-primary"
+                    >
+                      <Download size={13} className="text-primary" />
+                      <span className="truncate max-w-[200px]">{p12FileName || 'Subir Archivo .p12'}</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Contraseña de la Firma */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                    Contraseña de la Firma
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showP12Password ? 'text' : 'password'}
+                      value={p12Password}
+                      onChange={(e) => {
+                        setP12Password(e.target.value);
+                        localStorage.setItem('sc_sri_p12_password', e.target.value);
+                      }}
+                      placeholder="Escriba la clave..."
+                      className="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none focus:border-primary text-slate-800 dark:text-slate-100 transition-all"
+                    />
                     <button
                       type="button"
-                      onClick={() => setIsEditingSignature(true)}
-                      className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-200 dark:bg-white/10 hover:bg-primary text-slate-700 dark:text-slate-200 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shrink-0"
+                      onClick={() => setShowP12Password(!showP12Password)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all"
                     >
-                      <Edit3 size={12} />
-                      Editar Firma
+                      {showP12Password ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   </div>
                 </div>
-              ) : (
-                /* MODO EDICION */
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                        Archivo Certificado (.p12)
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="file"
-                          accept=".p12"
-                          onChange={handleP12Upload}
-                          className="hidden"
-                          id="p12-upload-input"
-                        />
-                        <label
-                          htmlFor="p12-upload-input"
-                          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer border-dashed"
-                        >
-                          <Download size={13} />
-                          <span className="truncate max-w-[150px]">{p12FileName || 'Subir Firma .p12'}</span>
-                        </label>
-                      </div>
-                    </div>
+              </div>
 
-                    <div>
-                      <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                        Contraseña de la Firma
-                      </label>
-                      <input
-                        type="password"
-                        value={p12Password}
-                        onChange={(e) => {
-                          setP12Password(e.target.value);
-                          localStorage.setItem('sc_sri_p12_password', e.target.value);
-                        }}
-                        placeholder="Escriba la clave..."
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none focus:border-primary text-slate-800 dark:text-slate-100 transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-white/5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!p12FileBase64) {
-                          alert('Por favor, suba primero su certificado de firma electrónica (.p12).');
-                          return;
-                        }
-                        setIsEditingSignature(false);
-                      }}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all"
-                    >
-                      <Check size={12} />
-                      Guardar Firma
-                    </button>
-                    {p12FileBase64 && (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingSignature(false)}
-                        className="px-4 py-2 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all"
-                      >
-                        Cancelar
-                      </button>
-                    )}
+              {/* Expiry metadata info */}
+              {p12ExpiryDate && (
+                <div className="pt-3 border-t border-slate-200 dark:border-white/5">
+                  <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-3 rounded-xl ${
+                    p12SubjectName.includes('VENCIDO') 
+                      ? 'bg-rose-100/40 dark:bg-rose-950/20 border border-rose-500/10 text-rose-600 dark:text-rose-400'
+                      : p12SubjectName.includes('Vence en')
+                      ? 'bg-amber-100/40 dark:bg-amber-950/20 border border-amber-500/10 text-amber-600 dark:text-amber-400'
+                      : 'bg-emerald-100/40 dark:bg-emerald-950/20 border border-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                  }`}>
+                    <span className="text-xs font-semibold">📅 Vence: <span className="font-mono">{p12ExpiryDate}</span></span>
+                    {p12SubjectName && <span className="text-[10px] font-black uppercase tracking-wider opacity-90">{p12SubjectName}</span>}
                   </div>
                 </div>
               )}
