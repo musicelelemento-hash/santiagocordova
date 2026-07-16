@@ -1117,8 +1117,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         
         addLog(`Respuesta Autorización SRI: ${JSON.stringify(authData.data || authData.respuesta || authData)}`, 'success');
         
-        const stringifiedData = JSON.stringify(authData.data || {}).toUpperCase();
-        const isAuthorized = authData.status && stringifiedData.includes('"ESTADO":"AUTORIZADO"');
+        const rawDataStr = typeof authData.data === 'string' ? authData.data : JSON.stringify(authData.data || {});
+        const uppercaseData = rawDataStr.toUpperCase().replace(/[\s\\"]/g, ''); // Remove spaces, backslashes, and quotes
+        const isAuthorized = authData.status && uppercaseData.includes('ESTADO:AUTORIZADO');
         setProcessStatus(isAuthorized ? 'success' : 'failed');
         if (isAuthorized) {
           setShowWhatsAppModal(true);
@@ -1874,25 +1875,31 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="glass-card-premium p-5 space-y-2">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Total Facturado (Autorizados)</span>
+          <div 
+            onClick={() => setActiveTab('historial')}
+            className="glass-card-premium p-5 space-y-2 cursor-pointer hover:border-primary/40 active:scale-[0.99] transition-all group"
+          >
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary transition-colors">Total Facturado (Autorizados)</span>
             <div className="flex justify-between items-baseline">
               <span className="text-2xl font-mono font-black text-slate-800 dark:text-white">${totalRevenue.toFixed(2)}</span>
               <span className="text-[10px] font-bold text-slate-400 uppercase">USD</span>
             </div>
             <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
-              Ingresos de facturas autorizadas por el SRI.
+              Ingresos de facturas autorizadas por el SRI. Clic para ver historial.
             </div>
           </div>
           
-          <div className="glass-card-premium p-5 space-y-2">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Facturas Emitidas</span>
+          <div 
+            onClick={() => setActiveTab('historial')}
+            className="glass-card-premium p-5 space-y-2 cursor-pointer hover:border-primary/40 active:scale-[0.99] transition-all group"
+          >
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary transition-colors">Facturas Emitidas</span>
             <div className="flex justify-between items-baseline">
               <span className="text-2xl font-mono font-black text-slate-800 dark:text-white">{invoicesCount}</span>
               <span className="text-[10px] font-bold text-slate-400 uppercase">Docs</span>
             </div>
             <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
-              Comprobantes de tipo factura en archivo.
+              Comprobantes de tipo factura en archivo. Clic para ver historial.
             </div>
           </div>
         </div>
@@ -1921,7 +1928,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </thead>
                   <tbody>
                     {latestDocs.map(doc => (
-                      <tr key={doc.id} className="border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-slate-50/50 dark:hover:bg-white/5">
+                      <tr 
+                        key={doc.id} 
+                        onClick={() => printRideDocument(doc)}
+                        className="border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-slate-50/80 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                      >
                         <td className="py-3 font-semibold pr-2">
                           <span className="uppercase text-[10px] font-black text-slate-700 dark:text-slate-300 block">
                             {doc.tipo === 'factura' ? 'Factura' : 'Retención'}
@@ -1947,14 +1958,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         <td className="py-3 text-right">
                           <div className="flex justify-end gap-1.5">
                             <button
-                              onClick={() => printRideDocument(doc)}
+                              onClick={(e) => { e.stopPropagation(); printRideDocument(doc); }}
                               className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg transition-colors"
                               title="Imprimir PDF (RIDE)"
                             >
                               <FileText size={11} />
                             </button>
                             <button
-                              onClick={() => downloadXmlFile(doc)}
+                              onClick={(e) => { e.stopPropagation(); downloadXmlFile(doc); }}
                               className="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors"
                               title="Descargar XML"
                             >
@@ -1995,33 +2006,62 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
             {/* Signature expiry warning */}
             <div className="glass-card-premium p-5 space-y-3">
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Firma Certificado</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Vigencia Firma Electrónica</span>
               {p12FileBase64 ? (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-500 rounded-xl">
-                      <Lock size={18} />
+                (() => {
+                  const daysLeft = p12ExpiryDate ? Math.max(0, Math.ceil((new Date(p12ExpiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 365;
+                  const pct = Math.min(100, Math.max(0, (daysLeft / 730) * 100)); // Out of 2 years (730 days)
+                  const isExpiringSoon = daysLeft < 30;
+                  const isExpired = daysLeft === 0;
+                  
+                  return (
+                    <div className="space-y-4 animate-fade-in">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`p-2 rounded-xl ${isExpired ? 'bg-rose-500/10 text-rose-500 animate-pulse' : 'bg-primary/10 text-primary'}`}>
+                            <Lock size={15} />
+                          </div>
+                          <div className="flex flex-col text-left min-w-0">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate max-w-[130px]">
+                              {p12FileName || 'firma.p12'}
+                            </span>
+                            <span className="text-[8px] font-mono text-slate-400">Vence: {p12ExpiryDate || 'N/A'}</span>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-lg ${isExpired ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                          {daysLeft} Días
+                        </span>
+                      </div>
+                      
+                      {/* Animated Progress Bar */}
+                      <div className="space-y-1">
+                        <div className="h-2 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden relative">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${
+                              isExpired 
+                                ? 'from-rose-500 to-red-600' 
+                                : isExpiringSoon 
+                                ? 'from-amber-500 to-orange-400 animate-pulse' 
+                                : 'from-emerald-500 to-teal-400 animate-pulse'
+                            }`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none">
+                          <span>Vigencia</span>
+                          <span>{pct.toFixed(0)}% restante</span>
+                        </div>
+                      </div>
+                      
+                      <div className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-white/5 pt-2">
+                        Propietario: <span className="font-bold text-slate-700 dark:text-slate-300 uppercase block truncate">{p12SubjectName || emisorRazonSocial}</span>
+                      </div>
                     </div>
-                    <div className="flex flex-col text-left min-w-0">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate max-w-[150px]">
-                        {p12FileName || 'firma.p12'}
-                      </span>
-                      <span className="text-[9px] text-slate-400 truncate">Vence: {p12ExpiryDate}</span>
-                    </div>
-                  </div>
-                  <div className={`text-[9px] font-black uppercase tracking-wider text-center p-1 rounded-lg ${
-                    p12SubjectName.includes('VENCIDO')
-                      ? 'bg-rose-500/10 text-rose-500'
-                      : p12SubjectName.includes('Vence en')
-                      ? 'bg-amber-500/10 text-amber-500'
-                      : 'bg-emerald-500/10 text-emerald-500'
-                  }`}>
-                    {p12SubjectName || 'Certificado Vigente'}
-                  </div>
-                </div>
+                  );
+                })()
               ) : (
                 <div className="text-center space-y-2">
-                  <div className="p-2 bg-rose-500/10 border border-rose-500/25 text-rose-500 rounded-xl w-fit mx-auto">
+                  <div className="p-2 bg-rose-500/10 border border-rose-500/25 text-rose-500 rounded-xl w-fit mx-auto animate-bounce">
                     <AlertTriangle size={18} />
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-rose-500 block">Firma no configurada</span>
@@ -3298,34 +3338,123 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           {/* Right panel - Logs & Code output */}
           <div className="lg:col-span-5 space-y-6">
             
-            {/* Live Terminal Log */}
-            <div className="glass-card-premium overflow-hidden flex flex-col h-[280px] bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 relative">
-              <div className="px-4 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 flex justify-between items-center">
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Activity size={12} className="text-primary animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-widest font-premium">Consola de Transmisión SRI</span>
-                </div>
-                <button 
-                  onClick={() => setConsoleLogs([])}
-                  className="text-[9px] font-semibold text-slate-500 hover:text-slate-300 transition-colors uppercase"
-                >
-                  Limpiar
-                </button>
-              </div>
-
-              <div className="flex-1 p-4 overflow-y-auto font-mono text-[10px] space-y-1.5 no-scrollbar select-text text-slate-700 dark:text-slate-300">
-                {consoleLogs.length === 0 ? (
-                  <div className="text-slate-400 dark:text-slate-600 italic">Esperando inicio de proceso de transmisión...</div>
-                ) : (
-                  consoleLogs.map((log, index) => (
-                    <div key={index} className="leading-relaxed border-l border-slate-200 dark:border-white/5 pl-2">
-                      {log}
+            {/* Live Terminal Log or Success Action Panel */}
+            {processStatus === 'success' ? (
+              <div className="glass-card-premium p-6 bg-emerald-500/5 dark:bg-emerald-950/10 border border-emerald-500/20 rounded-[2rem] flex flex-col justify-between h-[280px] relative overflow-hidden animate-fade-in text-left">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                <div className="space-y-4 relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center">
+                      <CheckCircle2 size={20} className="animate-bounce" />
                     </div>
-                  ))
-                )}
-                <div ref={logsEndRef} />
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-white">Factura Autorizada</h4>
+                      <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">Estado: AUTORIZADO (SRI)</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 font-mono text-[9px] text-slate-600 dark:text-slate-400 leading-relaxed bg-white dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100 dark:border-white/5">
+                    <div>SEC: <span className="font-bold text-slate-800 dark:text-slate-200">{generatedAccessKey ? generatedAccessKey.substring(30, 39) : '000000001'}</span></div>
+                    <div className="truncate">CLAVE: <span className="text-[8px]">{generatedAccessKey}</span></div>
+                    <div>TOTAL: <span className="font-bold text-primary">${invoiceTotals.total.toFixed(2)}</span></div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 pt-2 relative z-10">
+                  <button
+                    onClick={() => {
+                      const currentComp: HistoricComprobante = {
+                        id: Date.now().toString(),
+                        tipo: docType,
+                        secuencial: generatedAccessKey ? generatedAccessKey.substring(30, 39) : '000000001',
+                        claveAcceso: generatedAccessKey,
+                        rucReceptor: buyerRuc,
+                        nombreReceptor: buyerName,
+                        fechaEmision: generatedAccessKey ? `${generatedAccessKey.substring(4, 8)}-${generatedAccessKey.substring(2, 4)}-${generatedAccessKey.substring(0, 2)}` : new Date().toISOString().split('T')[0],
+                        total: docType === 'factura' ? invoiceTotals.total : withholdingTotal,
+                        estado: 'Autorizado',
+                        xml: generatedXml,
+                        ambiente
+                      };
+                      printRideDocument(currentComp);
+                    }}
+                    className="flex items-center justify-center gap-1.5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                  >
+                    <FileText size={12} />
+                    Ver RIDE
+                  </button>
+                  <button
+                    onClick={() => {
+                      const currentComp: HistoricComprobante = {
+                        id: Date.now().toString(),
+                        tipo: docType,
+                        secuencial: generatedAccessKey ? generatedAccessKey.substring(30, 39) : '000000001',
+                        claveAcceso: generatedAccessKey,
+                        rucReceptor: buyerRuc,
+                        nombreReceptor: buyerName,
+                        fechaEmision: generatedAccessKey ? `${generatedAccessKey.substring(4, 8)}-${generatedAccessKey.substring(2, 4)}-${generatedAccessKey.substring(0, 2)}` : new Date().toISOString().split('T')[0],
+                        total: docType === 'factura' ? invoiceTotals.total : withholdingTotal,
+                        estado: 'Autorizado',
+                        xml: generatedXml,
+                        ambiente
+                      };
+                      downloadXmlFile(currentComp);
+                    }}
+                    className="flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                  >
+                    <Download size={12} />
+                    XML
+                  </button>
+                  <a
+                    href={`https://api.whatsapp.com/send?phone=${
+                      (() => {
+                        let cleanPhone = buyerPhone.replace(/\D/g, '');
+                        if (cleanPhone.startsWith('0')) return '593' + cleanPhone.substring(1);
+                        return cleanPhone.length === 9 ? '593' + cleanPhone : cleanPhone;
+                      })()
+                    }&text=${encodeURIComponent(
+                      `Hola *${buyerName}*,\nLe comparto el detalle de su factura emitida en el SRI por Servicios Contables.\n\n` +
+                      `*Total:* $${invoiceTotals.total.toFixed(2)}\n` +
+                      `*Clave de Acceso:* ${generatedAccessKey}\n\n` +
+                      `¡Muchas gracias por su confianza!\n_Santiago Córdova - Soluciones Tributarias_`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="col-span-2 flex items-center justify-center gap-1.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                  >
+                    <Globe size={11} />
+                    Enviar por WhatsApp
+                  </a>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="glass-card-premium overflow-hidden flex flex-col h-[280px] bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 relative">
+                <div className="px-4 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 flex justify-between items-center">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Activity size={12} className="text-primary animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-widest font-premium">Consola de Transmisión SRI</span>
+                  </div>
+                  <button 
+                    onClick={() => setConsoleLogs([])}
+                    className="text-[9px] font-semibold text-slate-500 hover:text-slate-300 transition-colors uppercase"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+
+                <div className="flex-1 p-4 overflow-y-auto font-mono text-[10px] space-y-1.5 no-scrollbar select-text text-slate-700 dark:text-slate-300">
+                  {consoleLogs.length === 0 ? (
+                    <div className="text-slate-400 dark:text-slate-600 italic">Esperando inicio de proceso de transmisión...</div>
+                  ) : (
+                    consoleLogs.map((log, index) => (
+                      <div key={index} className="leading-relaxed border-l border-slate-200 dark:border-white/5 pl-2">
+                        {log}
+                      </div>
+                    ))
+                  )}
+                  <div ref={logsEndRef} />
+                </div>
+              </div>
+            )}
 
             {/* XML Output viewer */}
             <div className="glass-card-premium overflow-hidden flex flex-col min-h-[300px]">
