@@ -441,11 +441,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  // Check connection status to Laravel backend
+  // Check connection status to Laravel backend usando el endpoint público /ping
   const checkBackendConnection = async (urlToCheck = apiUrl) => {
     setConnectionStatus('checking');
     try {
-      const response = await fetch(`${urlToCheck}${apiPrefix}/facturacion/tipos`, { method: 'GET', mode: 'cors' });
+      const response = await fetch(`${urlToCheck}${apiPrefix}/ping`, { method: 'GET', mode: 'cors' });
       if (response.ok) {
         setConnectionStatus('connected');
       } else {
@@ -459,6 +459,16 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   useEffect(() => {
     checkBackendConnection();
   }, []);
+
+  // Warm-up: despierta el backend de Render (free tier se duerme tras 15 min)
+  // Se dispara cuando el usuario entra a la pestaña de Factura o Retención,
+  // antes de que presione cualquier botón — así ya está despierto cuando lo necesita.
+  useEffect(() => {
+    if (activeTab === 'factura' || activeTab === 'retencion') {
+      fetch(`${apiUrl}${apiPrefix}/ping`, { method: 'GET', mode: 'cors' })
+        .catch(() => {}); // silencioso — solo para despertar el servidor
+    }
+  }, [activeTab]);
 
   // Load history from localStorage
   useEffect(() => {

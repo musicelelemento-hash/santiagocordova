@@ -1,18 +1,9 @@
 services:
   - type: web
     name: facturador-sri-api
-    runtime: php
+    env: docker                    # ← CORRECTO para Docker en Render (no "runtime")
     plan: free
-    # Cuando uses un repo separado para este backend, quita el rootDir
-    # rootDir: "Sistema de Facturacion/Lib_Firmador_Xml_Facturacion _SRI"
-    buildCommand: >
-      composer install --no-dev --optimize-autoloader &&
-      php artisan config:clear &&
-      php artisan route:clear &&
-      php artisan cache:clear &&
-      chmod -R 775 storage bootstrap/cache &&
-      mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views
-    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    dockerfilePath: ./Dockerfile   # ← Usa el Dockerfile del proyecto
     healthCheckPath: /api/v1/ping
     envVars:
       - key: APP_NAME
@@ -36,8 +27,8 @@ services:
       - key: DB_DATABASE
         value: /tmp/laravel.sqlite
       # === Configurar manualmente en el Dashboard de Render ===
-      # APP_KEY            → base64:TU_APP_KEY_AQUI
+      # APP_KEY            → base64:52W8B8esyTGwyF0JpCR5X9IvA+9AQ2Wpu0CUwwnq6Rk=
       # APP_URL            → https://facturador-sri-api.onrender.com
       # FACTURACION_CERTIFICADO_P12_BASE64  → Firma .p12 en base64
-      # FACTURACION_CERTIFICADO_CLAVE       → Clave de la firma
+      # FACTURACION_CERTIFICADO_CLAVE       → Contraseña de la firma (sin .p12)
       # ACCEPTED_SECRETS   → Tu token secreto de seguridad

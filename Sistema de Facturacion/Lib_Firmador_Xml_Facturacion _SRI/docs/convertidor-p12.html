@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Convertidor .p12 → Base64 para Render</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117; --card: #161b22; --border: #30363d;
+      --accent: #7c3aed; --accent2: #a855f7; --green: #22c55e;
+      --red: #ef4444; --yellow: #f59e0b; --text: #e6edf3; --muted: #8b949e;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+    .header { text-align: center; margin-bottom: 40px; }
+    .header h1 { font-size: 2rem; font-weight: 700;
+      background: linear-gradient(135deg, #a855f7, #7c3aed, #6366f1);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+    .header p { color: var(--muted); font-size: 1rem; }
+    .badge { display: inline-block; background: rgba(34,197,94,0.15); color: var(--green);
+      border: 1px solid rgba(34,197,94,0.3); border-radius: 20px; padding: 4px 12px;
+      font-size: 0.75rem; font-weight: 600; margin-bottom: 16px; letter-spacing: 0.05em; }
+    .container { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 24px; }
+    .drop-zone { border: 2px dashed var(--border); border-radius: 16px; padding: 60px 20px;
+      text-align: center; cursor: pointer; transition: all 0.25s ease; background: var(--card); position: relative; }
+    .drop-zone:hover, .drop-zone.dragging { border-color: var(--accent2);
+      background: rgba(124,58,237,0.08); transform: scale(1.01); }
+    .drop-zone.done { border-color: var(--green); background: rgba(34,197,94,0.06); }
+    .drop-icon { font-size: 3.5rem; margin-bottom: 16px; display: block; }
+    .drop-zone h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 8px; }
+    .drop-zone p { color: var(--muted); font-size: 0.9rem; }
+    .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .clave-section { background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px; display: none; }
+    .clave-section.show { display: block; }
+    .clave-section label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--yellow);
+      margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .clave-row { display: flex; gap: 10px; }
+    .clave-row input { flex: 1; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 16px; color: var(--text);
+      font-family: 'JetBrains Mono', monospace; font-size: 1rem; outline: none; transition: border-color 0.2s; }
+    .clave-row input:focus { border-color: var(--accent2); }
+    .clave-hint { margin-top: 8px; font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+    .result-section { display: none; flex-direction: column; gap: 16px; }
+    .result-section.show { display: flex; }
+    .result-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; }
+    .result-card .label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .result-card .var-name { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; font-weight: 600; color: var(--accent2); }
+    .copy-btn { background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.4); color: var(--accent2);
+      border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .copy-btn:hover { background: rgba(124,58,237,0.4); transform: translateY(-1px); }
+    .copy-btn.copied { background: rgba(34,197,94,0.2); border-color: rgba(34,197,94,0.4); color: var(--green); }
+    .value-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--muted);
+      word-break: break-all; max-height: 90px; overflow-y: auto; line-height: 1.6; }
+    .render-steps { background: var(--card); border: 1px solid rgba(124,58,237,0.3); border-radius: 16px; padding: 24px; }
+    .render-steps h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .step { display: flex; gap: 14px; margin-bottom: 14px; align-items: flex-start; }
+    .step-num { background: var(--accent); color: white; border-radius: 50%; width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700;
+      flex-shrink: 0; margin-top: 2px; }
+    .step p { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+    .step p strong { color: var(--text); }
+    .step code { background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+      padding: 1px 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: var(--accent2); }
+    .warning-box { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 12px; padding: 16px 20px; font-size: 0.85rem; color: var(--yellow);
+      line-height: 1.6; display: none; gap: 12px; align-items: flex-start; }
+    .warning-box code { background: rgba(0,0,0,0.3); border-radius: 4px; padding: 1px 5px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="badge">🔒 100% Local — tu archivo nunca sale de tu PC</div>
+  <h1>Convertidor .p12 → Render</h1>
+  <p>Sube tu firma electrónica y obtén las variables listas para pegar en Render</p>
+</div>
+
+<div class="container">
+
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".p12,.pfx" />
+    <span class="drop-icon" id="dropIcon">🔐</span>
+    <h2 id="dropTitle">Arrastra tu firma .p12 aquí</h2>
+    <p id="dropSub">o haz clic para buscar el archivo en tu PC</p>
+  </div>
+
+  <div class="warning-box" id="warningClave">
+    <span>⚠️</span>
+    <span>
+      <strong>Error común en Render:</strong> Si tienes <code>Santiago2026.p12</code> como clave — eso es el nombre del archivo, 
+      NO la contraseña. La contraseña es lo que escribes para usar la firma. Escríbela abajo y cópiala correctamente.
+    </span>
+  </div>
+
+  <div class="clave-section" id="claveSection">
+    <label>🔑 Contraseña de la firma (.p12)</label>
+    <div class="clave-row">
+      <input type="text" id="claveInput" placeholder="Ej: Santiago2026  (la clave que usas para firmar, NO el nombre del archivo)" />
+    </div>
+    <p class="clave-hint">
+      Esta es la misma contraseña que escribes cuando usas tu firma en el facturador del SRI o en el sistema de facturación.
+    </p>
+  </div>
+
+  <div class="result-section" id="resultSection">
+
+    <div class="result-card">
+      <div class="label-row">
+        <span class="var-name">FACTURACION_CERTIFICADO_P12_BASE64</span>
+        <button class="copy-btn" id="copyP12Btn" onclick="copiar('p12')">📋 Copiar</button>
+      </div>
+      <div class="value-box" id="p12Value">—</div>
+    </div>
+
+    <div class="result-card">
+      <div class="label-row">
+        <span class="var-name">FACTURACION_CERTIFICADO_CLAVE</span>
+        <button class="copy-btn" id="copyClaveBtn" onclick="copiar('clave')">📋 Copiar</button>
+      </div>
+      <div class="value-box" id="claveValue">— escribe la contraseña arriba para verla aquí</div>
+    </div>
+
+    <div class="render-steps">
+      <h3>🚀 Cómo pegarlo en Render</h3>
+      <div class="step">
+        <div class="step-num">1</div>
+        <p>Ve a <strong>dashboard.render.com</strong> → tu servicio <code>facturador-sri-api</code> → <strong>Environment</strong></p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <p>Edita <code>FACTURACION_CERTIFICADO_P12_BASE64</code> → borra lo que hay → pega el texto copiado del botón de arriba</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <p>Edita <code>FACTURACION_CERTIFICADO_CLAVE</code> → pon la <strong>contraseña real</strong> (no el nombre del archivo)</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <p>Haz clic en <strong>"Save Changes"</strong> → Render reinicia en ~1 minuto</p>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <p>Verifica en: <code>https://facturador-sri-api.onrender.com/api/v1/ping</code> — debe responder <code>status: true</code></p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const dropZone     = document.getElementById('dropZone');
+  const fileInput    = document.getElementById('fileInput');
+  const claveInput   = document.getElementById('claveInput');
+  const claveSection = document.getElementById('claveSection');
+  const resultSection= document.getElementById('resultSection');
+  const warningClave = document.getElementById('warningClave');
+  let base64Result   = '';
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragging'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('dragging');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) processFile(fileInput.files[0]); });
+  claveInput.addEventListener('input', () => {
+    const val = claveInput.value;
+    document.getElementById('claveValue').textContent = val || '— escribe la contraseña arriba';
+  });
+
+  function processFile(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const bytes = new Uint8Array(e.target.result);
+      let binary = '';
+      bytes.forEach(b => binary += String.fromCharCode(b));
+      base64Result = btoa(binary);
+
+      dropZone.classList.add('done');
+      document.getElementById('dropIcon').textContent = '✅';
+      document.getElementById('dropTitle').textContent = file.name;
+      document.getElementById('dropSub').textContent   = (file.size / 1024).toFixed(1) + ' KB — convertido correctamente';
+      document.getElementById('p12Value').textContent  = base64Result;
+
+      claveSection.classList.add('show');
+      resultSection.classList.add('show');
+      warningClave.style.display = 'flex';
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function copiar(tipo) {
+    let text = '', btnId = '';
+    if (tipo === 'p12') { text = base64Result; btnId = 'copyP12Btn'; }
+    else {
+      text = claveInput.value.trim(); btnId = 'copyClaveBtn';
+      if (!text) { alert('Primero escribe la contraseña de la firma arriba.'); return; }
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById(btnId);
+      btn.textContent = '✅ Copiado'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 Copiar'; btn.classList.remove('copied'); }, 2500);
+    });
+  }
+</script>
+</body>
+</html>
