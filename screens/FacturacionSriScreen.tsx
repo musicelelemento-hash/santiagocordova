@@ -124,7 +124,15 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // API connection settings — uses VITE_FACTURACION_API_URL for production (set in Netlify/Vercel env vars)
   const DEFAULT_API_URL = import.meta.env.VITE_FACTURACION_API_URL || 'https://facturador-sri-api.onrender.com';
-  const [apiUrl, setApiUrl] = useState(() => localStorage.getItem('sc_facturacion_api_url') || DEFAULT_API_URL);
+  const [apiUrl, setApiUrl] = useState(() => {
+    const stored = localStorage.getItem('sc_facturacion_api_url');
+    // Migración automática: si tiene localhost o un puerto local, forzamos a Render
+    if (stored && (stored.includes('localhost') || stored.includes('127.0.0.1') || stored.includes('8080') || stored.includes('8000'))) {
+      localStorage.setItem('sc_facturacion_api_url', DEFAULT_API_URL);
+      return DEFAULT_API_URL;
+    }
+    return stored || DEFAULT_API_URL;
+  });
   const [apiPrefix, setApiPrefix] = useState('/api/v1');
   const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   
@@ -445,7 +453,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const checkBackendConnection = async (urlToCheck = apiUrl) => {
     setConnectionStatus('checking');
     try {
-      const response = await fetch(`${urlToCheck}${apiPrefix}/ping`, { method: 'GET', mode: 'cors' });
+      const response = await fetch(`${urlToCheck}${apiPrefix}/ping`, { 
+        method: 'GET', 
+        mode: 'cors',
+        headers: {
+          'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+        }
+      });
       if (response.ok) {
         setConnectionStatus('connected');
       } else {
@@ -465,8 +479,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   // antes de que presione cualquier botón — así ya está despierto cuando lo necesita.
   useEffect(() => {
     if (activeTab === 'factura' || activeTab === 'retencion') {
-      fetch(`${apiUrl}${apiPrefix}/ping`, { method: 'GET', mode: 'cors' })
-        .catch(() => {}); // silencioso — solo para despertar el servidor
+      fetch(`${apiUrl}${apiPrefix}/ping`, { 
+        method: 'GET', 
+        mode: 'cors',
+        headers: {
+          'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+        }
+      })
+      .catch(() => {}); // silencioso — solo para despertar el servidor
     }
   }, [activeTab]);
 
@@ -972,7 +992,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       } else {
         const response = await fetch(`${apiUrl}${apiPrefix}/facturacion/xml`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+          },
           body: JSON.stringify(payload)
         });
         if (!response.ok) throw new Error(`Error en API al generar XML: ${response.statusText}`);
@@ -998,7 +1021,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         // Sign endpoint
         const signResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/firmar`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+          },
           body: JSON.stringify({
             tipo: docType,
             xml: currentXml,
@@ -1027,7 +1053,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       } else {
         const sendResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/enviar`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+          },
           body: JSON.stringify({
             xml: currentXml,
             ambiente
@@ -1070,7 +1099,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       } else {
         const authResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+          },
           body: JSON.stringify({
             clave_acceso: key,
             ambiente
@@ -2449,20 +2481,19 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               </div>
 
               <div className="lg:col-span-5 space-y-4">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Servidor Laravel API</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Servidor Laravel API (Protegido)</h4>
 
                 <div className="space-y-4 font-premium">
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Base URL de la API</label>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1 flex items-center gap-1">
+                      <Lock size={10} className="text-emerald-500" />
+                      Base URL de la API (Servidor de Producción Render)
+                    </label>
                     <input
                       type="text"
                       value={apiUrl}
-                      onChange={(e) => {
-                        setApiUrl(e.target.value);
-                        localStorage.setItem('sc_facturacion_api_url', e.target.value);
-                      }}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none focus:border-primary font-mono text-slate-800 dark:text-slate-100"
-                      placeholder="http://localhost:8000"
+                      disabled
+                      className="w-full px-3 py-2 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold font-mono text-slate-400 dark:text-slate-500 cursor-not-allowed"
                     />
                   </div>
 
