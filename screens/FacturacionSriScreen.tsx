@@ -47,6 +47,7 @@ interface HistoricComprobante {
   estado: 'Generado' | 'Firmado' | 'Enviado' | 'Autorizado' | 'Rechazado' | 'Error';
   xml?: string;
   ambiente: '1' | '2';
+  mensajeError?: string;
 }
 
 const mapDescriptionToProduct = (desc: string) => {
@@ -1115,6 +1116,24 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           setShowWhatsAppModal(true);
         }
 
+        let errorMsg = '';
+        if (!isAuthorized) {
+          try {
+            const authObj = typeof authData.data === 'string' ? JSON.parse(authData.data) : authData.data;
+            const autorizacion = authObj?.RespuestaAutorizacionComprobante?.autorizaciones?.autorizacion;
+            if (autorizacion) {
+              const mensajesObj = autorizacion.mensajes?.mensaje;
+              const mensajesList = Array.isArray(mensajesObj) ? mensajesObj : (mensajesObj ? [mensajesObj] : []);
+              errorMsg = mensajesList.map((m: any) => `${m.mensaje || 'Error'}: ${m.informacionAdicional || ''}`).join(' | ');
+            }
+          } catch (e) {
+            errorMsg = JSON.stringify(authData.data || authData);
+          }
+          if (!errorMsg) {
+            errorMsg = 'No autorizado por el SRI (Estado no AUTORIZADO)';
+          }
+        }
+
         const newRecord: HistoricComprobante = {
           id: Date.now().toString(),
           tipo: docType,
@@ -1126,7 +1145,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           total: docType === 'factura' ? invoiceTotals.total : withholdingTotal,
           estado: isAuthorized ? 'Autorizado' : 'Error',
           xml: currentXml,
-          ambiente
+          ambiente,
+          mensajeError: isAuthorized ? undefined : errorMsg
         };
         const updatedHistory = [newRecord, ...history];
         setHistory(updatedHistory);
@@ -1136,6 +1156,24 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     } catch (err: any) {
       addLog(`Error en el flujo: ${err.message}`, 'error');
       setProcessStatus('failed');
+
+      const newRecord: HistoricComprobante = {
+        id: Date.now().toString(),
+        tipo: docType,
+        secuencial,
+        claveAcceso: key,
+        rucReceptor: buyerRuc,
+        nombreReceptor: buyerName,
+        fechaEmision: todayStr,
+        total: docType === 'factura' ? invoiceTotals.total : withholdingTotal,
+        estado: 'Error',
+        xml: currentXml,
+        ambiente,
+        mensajeError: err.message
+      };
+      const updatedHistory = [newRecord, ...history];
+      setHistory(updatedHistory);
+      localStorage.setItem('sc_sri_comprobantes_history', JSON.stringify(updatedHistory));
     }
   };
 
@@ -1581,6 +1619,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             color: #000;
           }
           @media print {
+            .no-print {
+              display: none !important;
+            }
             body {
               margin: 15px;
             }
@@ -1592,6 +1633,19 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         </style>
       </head>
       <body>
+        <div class="no-print" style="background: #0f172a; padding: 12px 20px; margin: -25px -25px 20px -25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #2b6aff; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+          <div style="color: white; font-family: sans-serif; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px;">
+            📄 Vista Previa RIDE - Comprobante Autorizado
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button onclick="window.print()" style="background: #2b6aff; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-family: sans-serif;">
+              🖨️ Imprimir / Guardar PDF
+            </button>
+            <button onclick="window.close()" style="background: #334155; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-family: sans-serif;">
+              Cerrar
+            </button>
+          </div>
+        </div>
         <div class="ride-container">
           <div class="grid-container">
             <div class="emisor-box">
@@ -1759,10 +1813,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           window.onload = function() {
             setTimeout(function() {
               window.print();
-              window.onafterprint = function() {
-                window.close();
-              };
-            }, 300);
+            }, 400);
           };
         </script>
       </body>
@@ -3227,25 +3278,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 ))}
               </div>
 
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={handleProcessDocument}
-                  disabled={processStatus === 'running'}
-                  className="w-full flex items-center justify-center gap-2 py-4 bg-primary hover:bg-primary-hover disabled:bg-primary/50 text-white rounded-2xl text-xs font-black uppercase tracking-wider font-premium shadow-primary active:scale-[0.99] transition-all"
-                >
-                  {processStatus === 'running' ? (
-                    <>
-                      <RefreshCw size={14} className="animate-spin" />
-                      Procesando Transmisión SRI...
-                    </>
-                  ) : (
-                    <>
-                      <Play size={14} fill="currentColor" />
-                      Procesar, Firmar y Autorizar en SRI
-                    </>
-                  )}
-                </button>
+              <div className="pt-2 text-center">
+                <span className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-wider block">
+                  Use el botón azul "PROCESAR Y AUTORIZAR" en la barra inferior para transmitir
+                </span>
               </div>
             </div>
 
@@ -3444,15 +3480,22 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         )}
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
-                          row.estado === 'Autorizado'
-                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                            : row.estado === 'Error' || row.estado === 'Rechazado'
-                            ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
-                            : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                        }`}>
-                          {row.estado}
-                        </span>
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
+                            row.estado === 'Autorizado'
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                              : row.estado === 'Error' || row.estado === 'Rechazado'
+                              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                          }`}>
+                            {row.estado}
+                          </span>
+                          {row.mensajeError && (
+                            <span className="text-[8px] text-rose-500 dark:text-rose-400 max-w-[110px] truncate block font-semibold" title={row.mensajeError}>
+                              {row.mensajeError}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex justify-end gap-1.5">
