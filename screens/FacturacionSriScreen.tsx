@@ -262,7 +262,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     return [
       {
         id: '1',
-        codigoPrincipal: 'SERV-TRIB',
+        codigoPrincipal: '001',
         descripcion: 'Asesoría Tributaria Mensual Profesional',
         cantidad: 1,
         precioUnitario: 120.00,
@@ -409,7 +409,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         const tax = Number((sub * currentIvaRate).toFixed(2));
         return {
           id: `period-${ob.id}`,
-          codigoPrincipal: ob.type === 'IVA' ? 'SERV-IVA' : ob.type === 'RENTA' ? 'SERV-RENTA' : 'SERV-TRIB',
+          codigoPrincipal: ob.type === 'IVA' ? '002' : ob.type === 'RENTA' ? '003' : '001',
           descripcion: desc,
           cantidad: 1,
           precioUnitario: ob.amount,
@@ -429,7 +429,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       setInvoiceItems([
         {
           id: 'consolidated-1',
-          codigoPrincipal: 'SERV-TRIB',
+          codigoPrincipal: '001',
           descripcion: desc,
           cantidad: 1,
           precioUnitario: totalAmount,
@@ -697,7 +697,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     setInvoiceItems([
       {
         id: '1',
-        codigoPrincipal: 'SERV-TRIB',
+        codigoPrincipal: '001',
         descripcion: 'Asesoría Tributaria Mensual Profesional',
         cantidad: 1,
         precioUnitario: 120.00,
@@ -731,7 +731,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     setInvoiceItems([
       {
         id: 'mock-1',
-        codigoPrincipal: 'SERV-CONT',
+        codigoPrincipal: '004',
         descripcion: 'Honorarios por Auditoría Externa y Estados Financieros',
         cantidad: 1,
         precioUnitario: 350.00,
@@ -742,7 +742,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       },
       {
         id: 'mock-2',
-        codigoPrincipal: 'SERV-TRIB',
+        codigoPrincipal: '001',
         descripcion: 'Servicios de Consultoría y Planificación Tributaria Anual',
         cantidad: 2,
         precioUnitario: 80.00,
@@ -765,7 +765,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const addInvoiceItem = () => {
     const newItem: InvoiceItem = {
       id: Date.now().toString(),
-      codigoPrincipal: 'SERV-NUEVO',
+      codigoPrincipal: '005',
       descripcion: 'Detalle de servicio prestado',
       cantidad: 1,
       precioUnitario: 0.00,
@@ -1112,6 +1112,25 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         if (!sendResponse.ok) throw new Error(`Fallo de conexión al SRI: ${sendResponse.statusText}`);
         const sendData = await sendResponse.json();
         addLog(`Respuesta Recepción SRI: ${JSON.stringify(sendData.data || sendData.respuesta || sendData)}`, 'success');
+        
+        const sendResultStr = JSON.stringify(sendData).toUpperCase();
+        if (sendResultStr.includes('"ESTADO":"DEVUELTA"') || sendResultStr.includes('ESTADO:DEVUELTA')) {
+          let errMsg = 'Rechazo en Recepción SRI: ';
+          try {
+            const sendObj = typeof sendData.data === 'string' ? JSON.parse(sendData.data) : (sendData.data || sendData);
+            const comprobante = sendObj?.RespuestaRecepcionComprobante?.comprobantes?.comprobante || sendObj?.comprobantes?.comprobante;
+            if (comprobante) {
+              const mensaje = comprobante.mensajes?.mensaje;
+              const mensajesList = Array.isArray(mensaje) ? mensaje : (mensaje ? [mensaje] : []);
+              errMsg += mensajesList.map((m: any) => `${m.mensaje || 'Error'}: ${m.informacionAdicional || ''}`).join(' | ');
+            } else {
+              errMsg += JSON.stringify(sendObj);
+            }
+          } catch (e) {
+            errMsg += JSON.stringify(sendData);
+          }
+          throw new Error(errMsg);
+        }
       }
 
       // Step 4: Authorize
