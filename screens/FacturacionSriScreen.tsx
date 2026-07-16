@@ -2451,16 +2451,32 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               </div>
               <div>
                 <strong className="block text-[11px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">Modo Simulación Activo</strong>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">El facturador no está conectado a la API de Laravel. Los comprobantes que firme no se transmitirán al SRI real.</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                  El facturador no está conectado a la API ({apiUrl}). Los comprobantes no se transmitirán al SRI real.
+                </span>
               </div>
             </div>
-            <button 
-              type="button"
-              onClick={() => checkBackendConnection()}
-              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase tracking-wider text-[9px] transition-all shrink-0 active:scale-[0.98]"
-            >
-              Reconectar
-            </button>
+            <div className="flex gap-2 shrink-0">
+              <button 
+                type="button"
+                onClick={() => {
+                  const altUrl = apiUrl === 'https://facturador-sri-api.onrender.com' ? 'http://localhost:8000' : 'https://facturador-sri-api.onrender.com';
+                  setApiUrl(altUrl);
+                  localStorage.setItem('sc_facturacion_api_url', altUrl);
+                  checkBackendConnection(altUrl);
+                }}
+                className="px-3.5 py-2 bg-slate-800 dark:bg-white/10 hover:bg-slate-700 dark:hover:bg-white/20 text-white rounded-xl font-black uppercase tracking-wider text-[9px] transition-all"
+              >
+                {apiUrl === 'https://facturador-sri-api.onrender.com' ? 'Usar Local (8000)' : 'Usar Nube (Render)'}
+              </button>
+              <button 
+                type="button"
+                onClick={() => checkBackendConnection()}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase tracking-wider text-[9px] transition-all active:scale-[0.98]"
+              >
+                Reconectar
+              </button>
+            </div>
           </div>
         )}
 
@@ -2644,15 +2660,62 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
                 <div className="space-y-4 font-premium">
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1 flex items-center gap-1">
-                      <Lock size={10} className="text-emerald-500" />
-                      Base URL de la API (Servidor de Producción Render)
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1">
+                      <Sliders size={10} className="text-primary" />
+                      Servidor de Firmador & Autorización (SRI API)
                     </label>
+                    <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl mb-2.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setApiUrl('https://facturador-sri-api.onrender.com');
+                          checkBackendConnection('https://facturador-sri-api.onrender.com');
+                        }}
+                        className={`py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                          apiUrl === 'https://facturador-sri-api.onrender.com'
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-white/10'
+                        }`}
+                      >
+                        Nube (Render)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setApiUrl('http://localhost:8000');
+                          checkBackendConnection('http://localhost:8000');
+                        }}
+                        className={`py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                          apiUrl.includes('localhost:8000') || apiUrl.includes('127.0.0.1:8000')
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-white/10'
+                        }`}
+                      >
+                        Local (Port 8000)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const customUrl = prompt('Ingrese URL de API personalizada (ej: https://sri.miempresa.com):');
+                          if (customUrl) {
+                            setApiUrl(customUrl);
+                            checkBackendConnection(customUrl);
+                          }
+                        }}
+                        className={`py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                          apiUrl !== 'https://facturador-sri-api.onrender.com' && !apiUrl.includes('localhost:8000') && !apiUrl.includes('127.0.0.1:8000')
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-white/10'
+                        }`}
+                      >
+                        Personalizar
+                      </button>
+                    </div>
                     <input
                       type="text"
                       value={apiUrl}
-                      disabled
-                      className="w-full px-3 py-2 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold font-mono text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                      onChange={(e) => setApiUrl(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold font-mono text-slate-800 dark:text-slate-100 outline-none focus:border-primary"
                     />
                   </div>
 
