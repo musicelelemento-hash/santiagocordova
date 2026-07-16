@@ -818,8 +818,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     codNumerico = '12345678',
     tipoEmi = '1'
   ) => {
-    const cleanFecha = fecha.replace(/-/g, ''); // DDMMYYYY format expected by SRI
-    const d = cleanFecha.substring(8, 10) + cleanFecha.substring(5, 7) + cleanFecha.substring(0, 4); // "01062026"
+    const cleanFecha = fecha.replace(/-/g, ''); // "20260716" → YYYYMMDD
+    const d = cleanFecha.substring(6, 8) + cleanFecha.substring(4, 6) + cleanFecha.substring(0, 4); // DD+MM+YYYY = "16072026"
     
     // access key construction:
     // Fecha (8) + TipoComp (2) + RUC (13) + Ambiente (1) + Serie (6) + Secuencial (9) + Código Numérico (8) + Tipo Emision (1) = 48 digits
