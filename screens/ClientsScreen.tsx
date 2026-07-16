@@ -78,6 +78,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
     const [isClientDetailsOpen, setIsClientDetailsOpen] = useState(false);
+    const [billingPromptData, setBillingPromptData] = useState<{ client: Client; amount: number; description: string; } | null>(null);
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
     const sortMenuRef = useRef<HTMLDivElement>(null);
     const [sortOption, setSortOption] = useState<'9th_digit' | 'name' | 'status' | 'pending_obligations' | 'pending_payments'>(() => (sessionStorage.getItem('clients_sort') as any) || '9th_digit');
@@ -461,14 +462,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             if (isPaid) {
                 setTimeout(() => {
-                    if (window.confirm(`¿Desea generar la factura electrónica SRI para el pago de ${client.name}?`)) {
-                        const feeAmount = getClientServiceFee(client, serviceFees);
-                        navigate('sri_facturacion', {
-                            clientId: client.id,
-                            amount: feeAmount,
-                            description: `Declaración de ${type} - Período ${period}`
-                        });
-                    }
+                    const feeAmount = getClientServiceFee(client, serviceFees);
+                    setBillingPromptData({
+                        client,
+                        amount: feeAmount,
+                        description: `Declaración de ${type} - Período ${period}`
+                    });
                 }, 100);
             }
         }
@@ -571,14 +570,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
         if (action === 'pay') {
             setTimeout(() => {
-                if (window.confirm(`¿Desea generar la factura electrónica SRI para el pago de ${client.name}?`)) {
-                    const feeAmount = getClientServiceFee(client, serviceFees);
-                    navigate('sri_facturacion', {
-                        clientId: client.id,
-                        amount: feeAmount,
-                        description: `Declaración de IVA/Renta - Período ${period}`
-                    });
-                }
+                const feeAmount = getClientServiceFee(client, serviceFees);
+                setBillingPromptData({
+                    client,
+                    amount: feeAmount,
+                    description: `Declaración de IVA/Renta - Período ${period}`
+                });
             }, 100);
         }
     };
@@ -1761,6 +1758,80 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         }
                     }}
                 />
+            {billingPromptData && (
+                <Modal 
+                    isOpen={!!billingPromptData} 
+                    onClose={() => setBillingPromptData(null)} 
+                    title="🧾 Facturación Electrónica SRI"
+                >
+                    <div className="p-6 space-y-6 text-slate-800 dark:text-slate-200 text-left">
+                        <div className="text-center space-y-2">
+                            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2">
+                                <LucideIcons.FileText size={24} />
+                            </div>
+                            <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
+                                Generar Factura SRI
+                            </h3>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                Se ha registrado un pago con éxito. ¿Cómo desea proceder?
+                            </p>
+                        </div>
+
+                        {/* Detalle del Pago */}
+                        <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl p-4 space-y-2 text-[10px] font-mono leading-relaxed text-slate-600 dark:text-slate-400">
+                            <div><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Cliente:</strong> {billingPromptData.client.name}</div>
+                            <div><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Valor Recibido:</strong> ${billingPromptData.amount.toFixed(2)}</div>
+                            <div><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Detalle:</strong> {billingPromptData.description}</div>
+                        </div>
+
+                        <div className="flex flex-col gap-2 pt-2">
+                            {/* Option 1: Solo este pago */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const client = billingPromptData.client;
+                                    const amount = billingPromptData.amount;
+                                    const desc = billingPromptData.description;
+                                    setBillingPromptData(null);
+                                    navigate('sri_facturacion', {
+                                        clientId: client.id,
+                                        amount: amount,
+                                        description: desc
+                                    });
+                                }}
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.99]"
+                            >
+                                <LucideIcons.Check size={14} strokeWidth={3} />
+                                Facturar Solo Este Pago
+                            </button>
+
+                            {/* Option 2: Incluir más pendientes */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const client = billingPromptData.client;
+                                    setBillingPromptData(null);
+                                    navigate('sri_facturacion', {
+                                        clientId: client.id
+                                    });
+                                }}
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.99]"
+                            >
+                                <LucideIcons.Plus size={14} />
+                                Facturar y Elegir Más Obligaciones
+                            </button>
+
+                            {/* Option 3: Cerrar */}
+                            <button
+                                type="button"
+                                onClick={() => setBillingPromptData(null)}
+                                className="w-full py-3 bg-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all"
+                              >
+                                Solo Registrar Pago (Cerrar)
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
             )}
         </div >
     );
