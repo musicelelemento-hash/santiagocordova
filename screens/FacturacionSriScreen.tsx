@@ -144,7 +144,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [emisorDirMatriz, setEmisorDirMatriz] = useState(() => localStorage.getItem('sc_emisor_dir') || 'Colon y Sucre / Pasaje - El Oro');
   const [emisorEstab, setEmisorEstab] = useState(() => localStorage.getItem('sc_emisor_estab') || '001');
   const [emisorPtoEmi, setEmisorPtoEmi] = useState(() => localStorage.getItem('sc_emisor_pto') || '001');
-  const [emisorRegimen, setEmisorRegimen] = useState(() => localStorage.getItem('sc_emisor_regimen') || '0'); // 0 = General, 1 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
+  const [emisorRegimen, setEmisorRegimen] = useState(() => {
+    const stored = localStorage.getItem('sc_emisor_regimen');
+    if (!stored || stored === '0') {
+      localStorage.setItem('sc_emisor_regimen', '1');
+      return '1';
+    }
+    return stored;
+  }); // 0 = General, 1 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
   const [ambiente, setAmbiente] = useState<'1' | '2'>(() => (localStorage.getItem('sc_emisor_ambiente') as '1' | '2') || '1'); // 1 = Pruebas, 2 = Producción
   const [p12FileBase64, setP12FileBase64] = useState(() => localStorage.getItem('sc_sri_p12_base64') || '');
   const [p12FileName, setP12FileName] = useState(() => localStorage.getItem('sc_sri_p12_filename') || '');
@@ -252,7 +259,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Invoice specifics
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>(() => {
-    const initialRegime = localStorage.getItem('sc_emisor_regimen') || '0';
+    const stored = localStorage.getItem('sc_emisor_regimen');
+    const initialRegime = (!stored || stored === '0') ? '1' : stored;
     const initialIva = initialRegime === '1' ? 0.00 : 0.15;
     const initialSub = 120.00;
     const initialIvaVal = Number((initialSub * initialIva).toFixed(2));
