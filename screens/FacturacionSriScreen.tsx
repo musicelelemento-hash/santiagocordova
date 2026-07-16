@@ -127,11 +127,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const DEFAULT_API_URL = import.meta.env.VITE_FACTURACION_API_URL || 'https://facturador-sri-api.onrender.com';
   const [apiUrl, setApiUrl] = useState(() => {
     const stored = localStorage.getItem('sc_facturacion_api_url');
-    // Migración automática: si tiene localhost o un puerto local, forzamos a Render
-    if (stored && (stored.includes('localhost') || stored.includes('127.0.0.1') || stored.includes('8080') || stored.includes('8000'))) {
-      localStorage.setItem('sc_facturacion_api_url', DEFAULT_API_URL);
-      return DEFAULT_API_URL;
-    }
     return stored || DEFAULT_API_URL;
   });
   const [apiPrefix, setApiPrefix] = useState('/api/v1');
@@ -479,8 +474,56 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     }
   };
 
+  const fetchSignatureVigencia = async () => {
+    const storedBase64 = localStorage.getItem('sc_sri_p12_base64') || p12FileBase64;
+    const storedPassword = localStorage.getItem('sc_sri_p12_password') || p12Password;
+    if (!storedBase64) return;
+    
+    try {
+      const response = await fetch(`${apiUrl}${apiPrefix}/facturacion/firma/vigencia`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+        },
+        body: JSON.stringify({
+          certificado_p12_base64: storedBase64,
+          clave: storedPassword
+        })
+      });
+      if (response.ok) {
+        const resData = await response.json();
+        if (resData.status && resData.data) {
+          const certInfo = resData.data;
+          const exp = certInfo.valido_hasta || certInfo.validTo_time_t || certInfo.validTo || '';
+          
+          let formattedExpiry = '';
+          if (exp) {
+            const expDate = new Date(typeof exp === 'number' ? exp * 1000 : exp);
+            if (!isNaN(expDate.getTime())) {
+              formattedExpiry = expDate.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: '2-digit' });
+              setP12ExpiryDate(formattedExpiry);
+              localStorage.setItem('sc_sri_p12_expiry', formattedExpiry);
+              
+              const daysLeft = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              const subjectNote = daysLeft < 0 ? '⚠️ CERTIFICADO VENCIDO' : daysLeft < 60 ? `⚠️ Vence en ${daysLeft} días` : `✓ Válido (${daysLeft} días restantes)`;
+              setP12SubjectName(subjectNote);
+              localStorage.setItem('sc_sri_p12_subject', subjectNote);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching signature details from backend:', err);
+    }
+  };
+
   useEffect(() => {
-    checkBackendConnection();
+    const runChecks = async () => {
+      await checkBackendConnection();
+      await fetchSignatureVigencia();
+    };
+    runChecks();
   }, []);
 
   // Warm-up: despierta el backend de Render (free tier se duerme tras 15 min)
@@ -2399,6 +2442,28 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           </div>
         )}
 
+        {/* Connection warning banner */}
+        {connectionStatus !== 'connected' && (activeTab === 'factura' || activeTab === 'retencion') && (
+          <div className="bg-rose-500/10 border border-rose-500/25 text-rose-500 p-4 rounded-[1.5rem] text-xs font-semibold flex items-center justify-between gap-3 animate-pulse text-left relative z-20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-rose-500/10 rounded-xl text-rose-500 shrink-0">
+                <AlertTriangle size={16} />
+              </div>
+              <div>
+                <strong className="block text-[11px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">Modo Simulación Activo</strong>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">El facturador no está conectado a la API de Laravel. Los comprobantes que firme no se transmitirán al SRI real.</span>
+              </div>
+            </div>
+            <button 
+              type="button"
+              onClick={() => checkBackendConnection()}
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black uppercase tracking-wider text-[9px] transition-all shrink-0 active:scale-[0.98]"
+            >
+              Reconectar
+            </button>
+          </div>
+        )}
+
         {/* Views Router */}
         {activeTab === 'dashboard' && renderDashboard()}
         
@@ -3784,10 +3849,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               <div className="flex flex-col text-left">
                 <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Ítems</span>
                 <span className="text-[11px] font-black font-mono text-slate-700 dark:text-slate-200 mt-0.5">
-                  {invoiceItems.length} línea{invoiceItems.length !== 1 ? 's' : ''}
+                  {docType === 'factura' ? invoiceItems.length : withholdings.length} línea{((docType === 'factura' ? invoiceItems.length : withholdings.length) !== 1) ? 's' : ''}
                 </span>
               </div>
-
+ 
               {activeClientObj && (
                 <button
                   type="button"
@@ -3809,19 +3874,23 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 </button>
               )}
             </div>
-
+ 
             <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
               <div className="flex flex-col text-right">
                 <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Total a Facturar</span>
                 <span className="text-lg font-mono font-black text-primary leading-none mt-0.5">
-                  ${invoiceTotals.total.toFixed(2)}
+                  ${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}
                 </span>
               </div>
-
+ 
               <button
                 type="button"
                 onClick={handleProcessDocument}
-                disabled={processStatus === 'running' || !selectedClient || invoiceItems.length === 0}
+                disabled={
+                  processStatus === 'running' || 
+                  (!selectedClient && (!buyerName.trim() || !buyerRuc.trim())) || 
+                  (docType === 'factura' ? invoiceItems.length === 0 : withholdings.length === 0)
+                }
                 className="flex items-center justify-center gap-2 px-5 py-3 bg-primary hover:bg-primary-hover disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-slate-600 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium shadow-primary active:scale-[0.99] transition-all min-w-[190px]"
               >
                 {processStatus === 'running' ? (
