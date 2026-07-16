@@ -302,6 +302,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [generatedXml, setGeneratedXml] = useState('');
   const [generatedJson, setGeneratedJson] = useState('');
   const [generatedAccessKey, setGeneratedAccessKey] = useState('');
+  const [processErrorMessage, setProcessErrorMessage] = useState<string | null>(null);
   
   // Historical logs
   const [history, setHistory] = useState<HistoricComprobante[]>([]);
@@ -763,10 +764,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Invoice helper functions
   const addInvoiceItem = () => {
+    const nextNum = invoiceItems.length + 1;
+    const nextCode = String(nextNum).padStart(3, '0');
     const newItem: InvoiceItem = {
       id: Date.now().toString(),
-      codigoPrincipal: '005',
-      descripcion: 'Detalle de servicio prestado',
+      codigoPrincipal: nextCode,
+      descripcion: '',
       cantidad: 1,
       precioUnitario: 0.00,
       ivaRate: emisorRegimen === '3' ? 0.00 : 0.15,
@@ -1203,6 +1206,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           if (!errorMsg) {
             errorMsg = 'No autorizado por el SRI (Estado no AUTORIZADO)';
           }
+          setProcessErrorMessage(errorMsg);
         }
 
         const newRecord: HistoricComprobante = {
@@ -1227,6 +1231,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     } catch (err: any) {
       addLog(`Error en el flujo: ${err.message}`, 'error');
       setProcessStatus('failed');
+      setProcessErrorMessage(err.message);
 
       const newRecord: HistoricComprobante = {
         id: Date.now().toString(),
@@ -1478,6 +1483,36 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       }
     } catch (e) {
       console.error(e);
+    }
+
+    let authDateStr = '';
+    try {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(comprobante.xml || '', "text/xml");
+      const fechaAutorizacion = xmlDoc.getElementsByTagName("fechaAutorizacion")[0]?.textContent;
+      if (fechaAutorizacion) {
+        if (fechaAutorizacion.includes('T')) {
+          const parts = fechaAutorizacion.split('T');
+          const dateParts = parts[0].split('-'); // YYYY-MM-DD
+          const timeParts = parts[1].split('-')[0].split('+')[0]; // HH:MM:SS
+          authDateStr = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]} ${timeParts}`;
+        } else {
+          authDateStr = fechaAutorizacion;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!authDateStr) {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      authDateStr = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
     }
 
     if (!itemsHtml) {
@@ -1739,7 +1774,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </tr>
                   <tr>
                     <td><strong>FECHA/HORA AUTORIZ.:</strong></td>
-                    <td>${comprobante.fechaEmision} 12:00:00</td>
+                    <td>${authDateStr}</td>
                   </tr>
                   <tr>
                     <td><strong>AMBIENTE:</strong></td>
@@ -2887,96 +2922,97 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           
           {/* Left panel - Form */}
           <div className="lg:col-span-7 space-y-6">
-            
-            {/* Configuración de Firma Electrónica Directa */}
-            <div className="glass-card-premium p-6 space-y-4 border-t-4 border-t-primary relative overflow-hidden">
+                        {/* PANEL DE CONTROL DE EMISIÓN (SUPERIOR) */}
+            <div className="glass-card-premium p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t-4 border-t-primary relative overflow-hidden bg-slate-900/40 dark:bg-white/5">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl -mr-6 -mt-6"></div>
               
-              <div className="flex justify-between items-center pb-3 border-b border-slate-200 dark:border-white/5 relative z-10">
-                <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white flex items-center gap-2 font-premium">
-                  <Key size={14} className="text-primary animate-pulse" />
-                  Firma Electrónica (.p12)
-                </h3>
-                
-                {p12FileBase64 ? (
-                  <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
-                    <Check size={10} />
-                    Firma Cargada
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse">
-                    <AlertTriangle size={10} />
-                    Firma Faltante
-                  </span>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Archivo Certificado .p12 */}
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                    Archivo Certificado (.p12)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept=".p12"
-                      onChange={handleP12Upload}
-                      className="hidden"
-                      id="p12-upload-input"
-                    />
-                    <label
-                      htmlFor="p12-upload-input"
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition-all cursor-pointer border-dashed border-2 hover:border-primary"
-                    >
-                      <Download size={13} className="text-primary" />
-                      <span className="truncate max-w-[200px]">{p12FileName || 'Subir Archivo .p12'}</span>
-                    </label>
-                  </div>
+              <div className="flex items-center gap-3 relative z-10">
+                <div className="p-2.5 bg-primary/10 rounded-xl text-primary shrink-0">
+                  <Sliders size={18} />
                 </div>
-
-                {/* Contraseña de la Firma */}
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                    Contraseña de la Firma
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showP12Password ? 'text' : 'password'}
-                      value={p12Password}
-                      onChange={(e) => {
-                        setP12Password(e.target.value);
-                        localStorage.setItem('sc_sri_p12_password', e.target.value);
-                      }}
-                      placeholder="Escriba la clave..."
-                      className="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none focus:border-primary text-slate-800 dark:text-slate-100 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowP12Password(!showP12Password)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all"
-                    >
-                      {showP12Password ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </div>
+                <div className="text-left">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
+                    Control de Emisión
+                  </h3>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">
+                    Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'Retención'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span>
+                  </p>
                 </div>
               </div>
 
-              {/* Expiry metadata info */}
-              {p12ExpiryDate && (
-                <div className="pt-3 border-t border-slate-200 dark:border-white/5">
-                  <div className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-3 rounded-xl ${
-                    p12SubjectName.includes('VENCIDO') 
-                      ? 'bg-rose-100/40 dark:bg-rose-950/20 border border-rose-500/10 text-rose-600 dark:text-rose-400'
-                      : p12SubjectName.includes('Vence en')
-                      ? 'bg-amber-100/40 dark:bg-amber-950/20 border border-amber-500/10 text-amber-600 dark:text-amber-400'
-                      : 'bg-emerald-100/40 dark:bg-emerald-950/20 border border-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                  }`}>
-                    <span className="text-xs font-semibold">📅 Vence: <span className="font-mono">{p12ExpiryDate}</span></span>
-                    {p12SubjectName && <span className="text-[10px] font-black uppercase tracking-wider opacity-90">{p12SubjectName}</span>}
-                  </div>
-                </div>
-              )}
+              <div className="flex flex-wrap items-center gap-3 justify-end relative z-10">
+                {/* Reset Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedClient('');
+                    setClientSearchQuery('');
+                    setSelectedPeriods([]);
+                    setBuyerName('');
+                    setBuyerRuc('');
+                    setBuyerEmail('');
+                    setBuyerPhone('');
+                    setBuyerAddress('');
+                    if (docType === 'factura') {
+                      setInvoiceItems([
+                        {
+                          id: '1',
+                          codigoPrincipal: '001',
+                          descripcion: 'Asesoría Tributaria Mensual Profesional',
+                          cantidad: 1,
+                          precioUnitario: 120.00,
+                          ivaRate: emisorRegimen === '3' ? 0.00 : 0.15,
+                          subtotal: 120.00,
+                          iva: emisorRegimen === '3' ? 0.00 : 18.00,
+                          total: emisorRegimen === '3' ? 120.00 : 138.00
+                        }
+                      ]);
+                    } else {
+                      setWithholdings([
+                        {
+                          id: '1',
+                          baseImponible: 100.00,
+                          codDocSustento: '01',
+                          numDocSustento: '001-001-000004567',
+                          fechaEmisionDocSustento: new Date().toISOString().split('T')[0],
+                          tipoRetencion: '1',
+                          codigoRetencion: '343',
+                          porcentajeRetener: 10.0,
+                          valorRetenido: 10.0
+                        }
+                      ]);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                >
+                  <Trash2 size={11} />
+                  Limpiar Formulario
+                </button>
+
+                {/* Process Button */}
+                <button
+                  type="button"
+                  onClick={handleProcessDocument}
+                  disabled={
+                    processStatus === 'running' || 
+                    (!selectedClient && (!buyerName.trim() || !buyerRuc.trim())) || 
+                    (docType === 'factura' ? invoiceItems.length === 0 : withholdings.length === 0)
+                  }
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-slate-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium shadow-primary active:scale-[0.99] transition-all"
+                >
+                  {processStatus === 'running' ? (
+                    <>
+                      <RefreshCw size={11} className="animate-spin" />
+                      Enviando SRI...
+                    </>
+                  ) : (
+                    <>
+                      <Play size={11} fill="currentColor" />
+                      Procesar y Autorizar
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* SECCIÓN 1: DATOS DEL CLIENTE / RECEPTOR */}
@@ -3584,7 +3620,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="glass-card-premium overflow-hidden flex flex-col h-[280px] bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 relative">
+              <div id="console-terminal-logs" className="glass-card-premium overflow-hidden flex flex-col h-[280px] bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 relative">
                 <div className="px-4 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 flex justify-between items-center">
                   <div className="flex items-center gap-2 text-slate-400">
                     <Activity size={12} className="text-primary animate-pulse" />
@@ -4018,6 +4054,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       )}
 
       {/* WhatsApp Send Suggestion Modal */}
+      {/* WhatsApp Send Suggestion Modal */}
       {showWhatsAppModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-[2.5rem] shadow-2xl p-8 max-w-md w-full space-y-6 relative overflow-hidden">
@@ -4029,20 +4066,21 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 <CheckCircle2 size={24} />
               </div>
               <h3 className="text-lg font-black uppercase tracking-wider text-slate-800 dark:text-white font-premium">
-                ¡Factura Emitida con Éxito!
+                ¡Comprobante Autorizado!
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
-                El comprobante para <strong className="text-slate-700 dark:text-slate-200">{buyerName}</strong> por un valor total de <strong className="text-primary font-mono">${invoiceTotals.total.toFixed(2)}</strong> ha sido firmado y autorizado por el SRI.
+                El comprobante para <strong className="text-slate-700 dark:text-slate-200">{buyerName}</strong> por un valor total de <strong className="text-primary font-mono">${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}</strong> ha sido firmado y autorizado por el SRI.
               </p>
             </div>
 
             <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl p-4 space-y-2 text-[10px] text-slate-600 dark:text-slate-400 font-medium font-mono leading-relaxed">
               <div><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Razón Social:</strong> {buyerName}</div>
-              <div><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">RUC:</strong> {buyerRuc}</div>
-              <div><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Clave de Acceso SRI:</strong> {generatedAccessKey}</div>
+              <div><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Identificación:</strong> {buyerRuc}</div>
+              <div className="truncate"><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Clave de Acceso SRI:</strong> {generatedAccessKey}</div>
             </div>
 
-            <div className="grid grid-cols-1 gap-2 pt-2 relative z-10">
+            <div className="grid grid-cols-2 gap-3 pt-2 relative z-10">
+              {/* Button 1: Ver RIDE */}
               <button
                 type="button"
                 onClick={() => {
@@ -4062,44 +4100,197 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   };
                   printRideDocument(currentComp);
                 }}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.99]"
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
               >
-                <FileText size={14} />
-                Ver PDF / Imprimir RIDE
+                <FileText size={12} />
+                Ver RIDE
               </button>
+
+              {/* Button 2: Descargar XML */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowWhatsAppModal(false);
+                  const currentComp: HistoricComprobante = {
+                    id: Date.now().toString(),
+                    tipo: docType,
+                    secuencial: generatedAccessKey ? generatedAccessKey.substring(30, 39) : '000000001',
+                    claveAcceso: generatedAccessKey,
+                    rucReceptor: buyerRuc,
+                    nombreReceptor: buyerName,
+                    fechaEmision: generatedAccessKey ? `${generatedAccessKey.substring(4, 8)}-${generatedAccessKey.substring(2, 4)}-${generatedAccessKey.substring(0, 2)}` : new Date().toISOString().split('T')[0],
+                    total: docType === 'factura' ? invoiceTotals.total : withholdingTotal,
+                    estado: 'Autorizado',
+                    xml: generatedXml,
+                    ambiente
+                  };
+                  downloadXmlFile(currentComp);
+                }}
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+              >
+                <Download size={12} />
+                Descargar XML
+              </button>
+
+              {/* Button 3: WhatsApp */}
               <a
                 href={`https://api.whatsapp.com/send?phone=${
-                  // Format phone with Ecuadorian country code 593
                   (() => {
                     let cleanPhone = buyerPhone.replace(/\D/g, '');
-                    if (cleanPhone.startsWith('0')) {
-                      return '593' + cleanPhone.substring(1);
-                    }
-                    if (cleanPhone.length === 9) {
-                      return '593' + cleanPhone;
-                    }
-                    return cleanPhone;
+                    if (cleanPhone.startsWith('0')) return '593' + cleanPhone.substring(1);
+                    return cleanPhone.length === 9 ? '593' + cleanPhone : cleanPhone;
                   })()
                 }&text=${encodeURIComponent(
                   `Hola *${buyerName}*,\nLe comparto el detalle de su factura emitida en el SRI por Servicios Contables.\n\n` +
-                  `*Total:* $${invoiceTotals.total.toFixed(2)}\n` +
+                  `*Total:* $${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}\n` +
                   `*Clave de Acceso:* ${generatedAccessKey}\n\n` +
                   `¡Muchas gracias por su confianza!\n_Santiago Córdova - Soluciones Tributarias_`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setShowWhatsAppModal(false)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium shadow-emerald-500/10 transition-all active:scale-[0.99]"
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
               >
-                <Globe size={14} />
-                Enviar por WhatsApp
+                <Globe size={11} />
+                WhatsApp
               </a>
+
+              {/* Button 4: Correo */}
+              <a
+                href={`mailto:${buyerEmail}?subject=${encodeURIComponent(`Comprobante Electrónico SRI Autorizado - ${emisorNombreComercial}`)}&body=${encodeURIComponent(
+                  `Estimado/a ${buyerName},\n\n` +
+                  `Le informamos que se ha emitido y autorizado su comprobante electrónico en el SRI.\n\n` +
+                  `Detalle del Comprobante:\n` +
+                  `- Emisor: ${emisorRazonSocial}\n` +
+                  `- RUC Emisor: ${emisorRuc}\n` +
+                  `- Secuencial: ${generatedAccessKey ? generatedAccessKey.substring(30, 39) : ''}\n` +
+                  `- Clave de Acceso: ${generatedAccessKey}\n` +
+                  `- Total: $${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}\n\n` +
+                  `Puede descargar su RIDE o XML desde el portal de facturación o consultar con su clave de acceso en el SRI.\n\n` +
+                  `Atentamente,\n` +
+                  `${emisorNombreComercial}`
+                )}`}
+                onClick={() => setShowWhatsAppModal(false)}
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+              >
+                <Mail size={12} />
+                Enviar Correo
+              </a>
+
               <button
                 type="button"
                 onClick={() => setShowWhatsAppModal(false)}
-                className="w-full py-3 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all"
+                className="col-span-2 py-3 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all"
               >
-                Cerrar
+                Cerrar Ventana
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULL SCREEN PROCESS LOADING OVERLAY (Cargando / Validando) */}
+      {processStatus === 'running' && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-2xl p-8 max-w-sm w-full space-y-6 text-center relative overflow-hidden">
+            {/* Decorative pulse blur */}
+            <div className="absolute -top-12 -left-12 w-32 h-32 bg-primary/20 rounded-full blur-2xl animate-pulse"></div>
+            <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl animate-pulse"></div>
+
+            {/* Modern Rotating Spinner */}
+            <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-t-primary border-r-indigo-500 rounded-full animate-spin"></div>
+              <FileText size={28} className="text-primary animate-pulse" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-sm font-black uppercase tracking-widest text-white">Transmisión SRI Activa</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                Procesando comprobante electrónico...
+              </p>
+            </div>
+
+            {/* Step Progress indicators */}
+            <div className="space-y-3 pt-2 text-left">
+              {[
+                { step: 1, label: 'Generación de XML' },
+                { step: 2, label: 'Firma Digital XAdES-BES' },
+                { step: 3, label: 'Recepción y Validación SRI' },
+                { step: 4, label: 'Consulta de Autorización' }
+              ].map(s => {
+                const isActive = currentStep === s.step;
+                const isDone = currentStep > s.step;
+                return (
+                  <div key={s.step} className="flex items-center gap-3 transition-opacity duration-300">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${
+                      isDone 
+                        ? 'bg-emerald-500 text-white' 
+                        : isActive 
+                        ? 'bg-primary text-white animate-pulse' 
+                        : 'bg-slate-800 text-slate-500'
+                    }`}>
+                      {isDone ? <Check size={10} strokeWidth={3} /> : s.step}
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-wider ${
+                      isDone 
+                        ? 'text-emerald-500 font-bold' 
+                        : isActive 
+                        ? 'text-primary font-bold' 
+                        : 'text-slate-500'
+                    }`}>
+                      {s.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ERROR DETAILS DIALOG MODAL */}
+      {processErrorMessage && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-[2.5rem] shadow-2xl p-8 max-w-md w-full space-y-6 relative overflow-hidden text-center">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+            
+            <div className="mx-auto w-12 h-12 bg-rose-100 dark:bg-rose-950/30 rounded-full flex items-center justify-center text-rose-500 mb-2">
+              <AlertTriangle size={24} />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-black uppercase tracking-wider text-slate-800 dark:text-white font-premium">
+                ⚠️ Error de Transmisión SRI
+              </h3>
+              <p className="text-xs text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider">
+                El comprobante fue devuelto o rechazado
+              </p>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-white/5 rounded-2xl p-4 text-xs font-mono font-bold leading-relaxed text-slate-700 dark:text-slate-300 max-h-[150px] overflow-y-auto no-scrollbar text-left">
+              {processErrorMessage}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setProcessErrorMessage(null);
+                  const logsEl = document.getElementById('console-terminal-logs');
+                  if (logsEl) logsEl.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full py-3 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+              >
+                Ver Consola
+              </button>
+              <button
+                type="button"
+                onClick={() => setProcessErrorMessage(null)}
+                className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium shadow-rose-500/10 transition-all active:scale-[0.98]"
+              >
+                Cerrar Diálogo
               </button>
             </div>
           </div>
