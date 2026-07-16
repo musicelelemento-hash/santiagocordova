@@ -493,7 +493,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                                                         {/* Enlace SRI */}
                                                         <a
-                                                            href="https://srienlinea.sri.gob.ec/sri-en-linea/sri/login/inicio"
+                                                            href="https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT"
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             onClick={(e) => e.stopPropagation()}

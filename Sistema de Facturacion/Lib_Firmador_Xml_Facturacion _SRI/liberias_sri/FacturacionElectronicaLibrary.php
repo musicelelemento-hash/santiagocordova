@@ -225,4 +225,10 @@ class FacturacionElectronicaLibrary
 
         return json_decode(json_encode($value), true);
     }
+
+    public function obtenerInfoCertificado($certificadoP12, $claveCertificado)
+    {
+        return $this->facturacion->obtenerDatosCertificado($certificadoP12, $claveCertificado);
+    }
 }
+

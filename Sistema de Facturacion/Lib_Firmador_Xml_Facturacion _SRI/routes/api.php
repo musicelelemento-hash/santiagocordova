@@ -41,5 +41,6 @@ Route::group(['middleware' => 'app'], function () {
     Route::post('/v1/facturacion/generar-firmar', [FacturacionElectronicaController::class, 'generarYFirmarXml']);
     Route::post('/v1/facturacion/sri/enviar', [FacturacionElectronicaController::class, 'enviarSri']);
     Route::post('/v1/facturacion/sri/autorizar', [FacturacionElectronicaController::class, 'autorizarSri']);
+    Route::post('/v1/facturacion/firma/vigencia', [FacturacionElectronicaController::class, 'consultarVigenciaFirma']);
 });
 

@@ -359,8 +359,8 @@ private function getOpenSslErrors()
       // INFORMACIOO DE FACTURA.
     	$infoFactura = $xml->createElement('infoFactura');
       $infoFactura = $Factura->appendChild($infoFactura);
-      $date_emision=date_create($infoFac->fechaEmision);
-      $fecha_format_emision= date_format($date_emision,"d/m/Y");
+      $date_emision = $this->parseDateTime($infoFac->fechaEmision);
+      $fecha_format_emision = date_format($date_emision, "d/m/Y");
     	$cbc = $xml->createElement('fechaEmision',$fecha_format_emision);
     	$cbc = $infoFactura->appendChild($cbc);
     	$cbc = $xml->createElement('dirEstablecimiento', $infoFac->dirEstablecimiento);
@@ -539,8 +539,8 @@ private function getOpenSslErrors()
       // INFORMACIÓN RETENCIÓN.
     	$infoComprobanteRetencion = $xml->createElement('infoCompRetencion');
       $infoComprobanteRetencion = $COMPROBANTE_RETENCION->appendChild($infoComprobanteRetencion);
-      $date_emision=date_create($infoNot["fechaEmision"]);
-      $fecha_format_emision= date_format($date_emision,"d/m/Y");
+      $date_emision = $this->parseDateTime($infoNot["fechaEmision"]);
+      $fecha_format_emision = date_format($date_emision, "d/m/Y");
     	$cbc = $xml->createElement('fechaEmision',$fecha_format_emision);
       $cbc = $infoComprobanteRetencion->appendChild($cbc);
 
@@ -584,8 +584,8 @@ private function getOpenSslErrors()
         $cbc = $impuesto->appendChild($cbc);
         $cbc = $xml->createElement('numDocSustento', $value["numDocSustento"]);
         $cbc = $impuesto->appendChild($cbc);
-        $date_emision_doc=date_create($value["fechaEmisionDocSustento"]);
-        $fecha_format_emision= date_format($date_emision_doc,"d/m/Y");
+        $date_emision_doc = $this->parseDateTime($value["fechaEmisionDocSustento"]);
+        $fecha_format_emision = date_format($date_emision_doc, "d/m/Y");
         $cbc = $xml->createElement('fechaEmisionDocSustento', $fecha_format_emision);
         $cbc = $impuesto->appendChild($cbc);
 
@@ -698,13 +698,13 @@ private function getOpenSslErrors()
       $cbc = $xml->createElement('obligadoContabilidad', $infoNot["obligadoContabilidad"]);
       $cbc = $infoGuiaRemision->appendChild($cbc);
 
-      $fechaIniTransporte=date_create($infoNot["fechaIniTransporte"]);
-      $fecha_format_ini_transporte= date_format($fechaIniTransporte,"d/m/Y");
+      $fechaIniTransporte = $this->parseDateTime($infoNot["fechaIniTransporte"]);
+      $fecha_format_ini_transporte = date_format($fechaIniTransporte, "d/m/Y");
       $cbc = $xml->createElement('fechaIniTransporte', $fecha_format_ini_transporte);
       $cbc = $infoGuiaRemision->appendChild($cbc);
 
-      $fechaFinTransporte=date_create($infoNot["fechaFinTransporte"]);
-      $fecha_format_fin_transporte= date_format($fechaFinTransporte,"d/m/Y");
+      $fechaFinTransporte = $this->parseDateTime($infoNot["fechaFinTransporte"]);
+      $fecha_format_fin_transporte = date_format($fechaFinTransporte, "d/m/Y");
       $cbc = $xml->createElement('fechaFinTransporte', $fecha_format_fin_transporte);
       $cbc = $infoGuiaRemision->appendChild($cbc);
 
@@ -830,8 +830,8 @@ private function getOpenSslErrors()
 
     	$infoNotaDebito = $xml->createElement('infoNotaDebito');
       $infoNotaDebito = $NotaCredito->appendChild($infoNotaDebito);
-      $date_emision=date_create($infoNot["fechaEmision"]);
-      $fecha_format_emision= date_format($date_emision,"d/m/Y");
+      $date_emision = $this->parseDateTime($infoNot["fechaEmision"]);
+      $fecha_format_emision = date_format($date_emision, "d/m/Y");
     	$cbc = $xml->createElement('fechaEmision',$fecha_format_emision);
     	$cbc = $infoNotaDebito->appendChild($cbc);
     	$cbc = $xml->createElement('dirEstablecimiento', $infoNot["dirEstablecimiento"]);
@@ -858,8 +858,8 @@ private function getOpenSslErrors()
       $cbc = $infoNotaDebito->appendChild($cbc);
       $cbc = $xml->createElement('numDocModificado', $infoNot["numDocModificado"]);
       $cbc = $infoNotaDebito->appendChild($cbc);
-      $fechaEmisionDocSustento=date_create($infoNot["fechaEmisionDocSustento"]);
-      $fecha_format_sustento_emision= date_format($fechaEmisionDocSustento,"d/m/Y");
+      $fechaEmisionDocSustento = $this->parseDateTime($infoNot["fechaEmisionDocSustento"]);
+      $fecha_format_sustento_emision = date_format($fechaEmisionDocSustento, "d/m/Y");
       $cbc = $xml->createElement('fechaEmisionDocSustento', $fecha_format_sustento_emision);
     	$cbc = $infoNotaDebito->appendChild($cbc);
     	$cbc = $xml->createElement('totalSinImpuestos', $infoNot["totalSinImpuestos"]);
@@ -1013,8 +1013,8 @@ private function getOpenSslErrors()
 
     	$infoNotaCredito = $xml->createElement('infoNotaCredito');
       $infoNotaCredito = $NotaCredito->appendChild($infoNotaCredito);
-      $date_emision=date_create($infoNot->fechaEmision);
-      $fecha_format_emision= date_format($date_emision,"d/m/Y");
+      $date_emision = $this->parseDateTime($infoNot->fechaEmision);
+      $fecha_format_emision = date_format($date_emision, "d/m/Y");
     	$cbc = $xml->createElement('fechaEmision',$fecha_format_emision);
     	$cbc = $infoNotaCredito->appendChild($cbc);
     	$cbc = $xml->createElement('dirEstablecimiento', $infoNot->dirEstablecimiento);
@@ -1042,8 +1042,8 @@ private function getOpenSslErrors()
       $cbc = $xml->createElement('numDocModificado', $infoNot->numDocModificado);
       $cbc = $infoNotaCredito->appendChild($cbc);
 
-      $fechaEmisionDocSustento=date_create($infoNot->fechaEmisionDocSustento);
-      $fecha_format_sustento_emision= date_format($fechaEmisionDocSustento,"d/m/Y");
+      $fechaEmisionDocSustento = $this->parseDateTime($infoNot->fechaEmisionDocSustento);
+      $fecha_format_sustento_emision = date_format($fechaEmisionDocSustento, "d/m/Y");
 
       $cbc = $xml->createElement('fechaEmisionDocSustento', $fecha_format_sustento_emision);
     	$cbc = $infoNotaCredito->appendChild($cbc);
@@ -1219,8 +1219,8 @@ private function getOpenSslErrors()
       // INFORMACIÓN DE FACTURA.
     	$infoLiquidacionCompra = $xml->createElement('infoLiquidacionCompra');
       $infoLiquidacionCompra = $Liquidacion->appendChild($infoLiquidacionCompra);
-      $date_emision=date_create($infoLic->fechaEmision);
-      $fecha_format_emision= date_format($date_emision,"d/m/Y");
+      $date_emision = $this->parseDateTime($infoLic->fechaEmision);
+      $fecha_format_emision = date_format($date_emision, "d/m/Y");
     	$cbc = $xml->createElement('fechaEmision',$fecha_format_emision);
     	$cbc = $infoLiquidacionCompra->appendChild($cbc);
     	$cbc = $xml->createElement('dirEstablecimiento', $infoLic->dirEstablecimiento);
@@ -1370,8 +1370,8 @@ private function getOpenSslErrors()
      */
     public function GenerarClaveDeAccesos($fechaEmision,$tipoComprobante,$ruc,$tipoAmbiente,$serie,$secuencial,$codigoNumerico,$tipoEmision){
 
-      $date=date_create($fechaEmision);
-      $fecha_format= date_format($date,"dmY");
+      $date = $this->parseDateTime($fechaEmision);
+      $fecha_format = date_format($date, "dmY");
       $clave_acceso=$fecha_format.$tipoComprobante.$ruc.$tipoAmbiente.$serie.$secuencial.$codigoNumerico.$tipoEmision;
       $digitoVerificador = $this->obtenerCodigoVerificador($clave_acceso);
       return $clave_acceso_final=$clave_acceso.$digitoVerificador;
@@ -1410,5 +1410,87 @@ private function getOpenSslErrors()
         }
         return $dv;
       }
+
+    public function parseDateTime($dateStr)
+    {
+        if (empty($dateStr)) {
+            return new \DateTime();
+        }
+
+        $formats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'Y/m/d', 'Y-m-d H:i:s', 'd/m/Y H:i:s'];
+        foreach ($formats as $format) {
+            $d = \DateTime::createFromFormat($format, $dateStr);
+            if ($d && $d->format($format) === $dateStr) {
+                return $d;
+            }
+        }
+
+        $cleanStr = str_replace('/', '-', $dateStr);
+        $d = date_create($cleanStr);
+        if ($d !== false) {
+            return $d;
+        }
+
+        $d = date_create($dateStr);
+        if ($d !== false) {
+            return $d;
+        }
+
+        return new \DateTime();
+    }
+
+    public function obtenerDatosCertificado($pkcs12Content, $password)
+    {
+        $certs = [];
+        if (!$this->readPkcs12($pkcs12Content, $certs, $password)) {
+            return [
+                'status' => false,
+                'message' => 'No se pudo leer el certificado PKCS#12. Verifique la contrasena.'
+            ];
+        }
+
+        $certPem = $certs['cert'] ?? null;
+        if (!$certPem) {
+            return [
+                'status' => false,
+                'message' => 'No se encontro el certificado en el archivo.'
+            ];
+        }
+
+        $certData = openssl_x509_parse($certPem);
+        if (!$certData) {
+            return [
+                'status' => false,
+                'message' => 'No se pudo parsear el certificado X.509.'
+            ];
+        }
+
+        $validFrom = isset($certData['validFrom_time_t']) ? $certData['validFrom_time_t'] : null;
+        $validTo = isset($certData['validTo_time_t']) ? $certData['validTo_time_t'] : null;
+
+        $validFromFormatted = $validFrom ? date('Y-m-d H:i:s', $validFrom) : null;
+        $validToFormatted = $validTo ? date('Y-m-d H:i:s', $validTo) : null;
+
+        $now = time();
+        $vigente = false;
+        $diasRestantes = 0;
+
+        if ($validFrom && $validTo) {
+            $vigente = ($now >= $validFrom && $now <= $validTo);
+            $diasRestantes = (int) floor(($validTo - $now) / 86400);
+        }
+
+        return [
+            'status' => true,
+            'sujeto' => $certData['subject'] ?? [],
+            'emisor' => $certData['issuer'] ?? [],
+            'valido_desde' => $validFromFormatted,
+            'valido_hasta' => $validToFormatted,
+            'vigente' => $vigente,
+            'dias_restantes' => $diasRestantes,
+            'cn' => $certData['subject']['CN'] ?? null,
+            'o' => $certData['subject']['O'] ?? null
+        ];
+    }
 
 }

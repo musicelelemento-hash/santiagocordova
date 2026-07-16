@@ -244,6 +244,29 @@ class FacturacionElectronicaController extends Controller
         return $clave;
     }
 
+    public function consultarVigenciaFirma(Request $request)
+    {
+        $request->validate([
+            'certificado_p12_base64' => 'nullable|string',
+            'clave' => 'nullable|string',
+            'clave_base64' => 'nullable|string',
+        ]);
+
+        $certificado = $this->certificadoFromRequest($request);
+        $clave = $this->claveCertificadoFromRequest($request);
+
+        $resultado = $this->facturacion->obtenerInfoCertificado($certificado, $clave);
+
+        if (isset($resultado['status']) && !$resultado['status']) {
+            return response()->json($resultado, Response::HTTP_BAD_REQUEST);
+        }
+
+        return response()->json([
+            'status' => true,
+            'data' => $resultado,
+        ], Response::HTTP_OK);
+    }
+
     private function resolverRutaCertificado($certificado)
     {
         if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $certificado) || substr($certificado, 0, 1) === '/' || substr($certificado, 0, 2) === '\\\\') {
