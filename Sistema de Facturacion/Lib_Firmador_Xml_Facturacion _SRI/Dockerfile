@@ -35,12 +35,15 @@ RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions sto
 # Variables de entorno por defecto para producción
 ENV APP_ENV=production \
     APP_DEBUG=false \
+    APP_KEY=base64:52W8B8esyTGwyF0JpCR5X9IvA+9AQ2Wpu0CUwwnq6Rk= \
+    APP_URL=https://facturador-sri-api.onrender.com \
     LOG_LEVEL=error \
     CACHE_DRIVER=file \
     SESSION_DRIVER=file \
     QUEUE_CONNECTION=sync \
     DB_CONNECTION=sqlite \
-    DB_DATABASE=/tmp/laravel.sqlite
+    DB_DATABASE=/tmp/laravel.sqlite \
+    ACCEPTED_SECRETS=0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir,0HXtqJOyU1JFsIIaF6kOls3uPKbXe3iG
 
 # Script de inicio: decodifica el .p12 desde env var y arranca Laravel
 CMD php bootstrap/start.php && php artisan config:clear && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}

@@ -903,14 +903,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         identificacionComprador: buyerRuc,
         totalSinImpuestos: invoiceTotals.subtotal.toFixed(2),
         totalDescuento: '0.00',
-        totalImpuesto: [
-          {
-            codigo: '2', // IVA
-            codigoPorcentaje: '4', // 15% (Ecuador)
-            baseImponible: invoiceTotals.subtotal15.toFixed(2),
-            valor: invoiceTotals.iva.toFixed(2)
-          }
-        ],
+        totalImpuesto: emisorRegimen === '1'
+          ? [{ codigo: '2', codigoPorcentaje: '0', baseImponible: invoiceTotals.subtotal.toFixed(2), valor: '0.00' }]
+          : [{ codigo: '2', codigoPorcentaje: '4', baseImponible: invoiceTotals.subtotal15.toFixed(2), valor: invoiceTotals.iva.toFixed(2) }],
         propina: '0.00',
         importeTotal: invoiceTotals.total.toFixed(2),
         moneda: 'DOLAR',
