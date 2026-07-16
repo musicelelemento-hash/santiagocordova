@@ -3202,8 +3202,18 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Tipo Identificación</label>
                     <select
                       value={buyerIdType}
-                      onChange={(e) => setBuyerIdType(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setBuyerIdType(val);
+                        if (val === '07') {
+                          setBuyerRuc('9999999999999');
+                          setBuyerName('CONSUMIDOR FINAL');
+                        } else if (buyerRuc === '9999999999999') {
+                          setBuyerRuc('');
+                          setBuyerName('');
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold text-slate-800 dark:text-slate-100"
                     >
                       <option value="05">05 - CÉDULA</option>
                       <option value="04">04 - RUC</option>
@@ -3958,8 +3968,23 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
  
             <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-              <div className="flex flex-col text-right">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Total a Facturar</span>
+              <div className="flex flex-col text-right justify-center">
+                {(!buyerName.trim() || !buyerRuc.trim()) && !selectedClient && (
+                  <span className="text-[8px] text-rose-500 font-black uppercase tracking-wider mb-1 animate-pulse">
+                    ⚠️ Falta Comprador (RUC/Nombre)
+                  </span>
+                )}
+                {docType === 'factura' && invoiceItems.length === 0 && (
+                  <span className="text-[8px] text-rose-500 font-black uppercase tracking-wider mb-1 animate-pulse">
+                    ⚠️ Agregue al menos un Ítem
+                  </span>
+                )}
+                {docType === 'retencion' && withholdings.length === 0 && (
+                  <span className="text-[8px] text-rose-500 font-black uppercase tracking-wider mb-1 animate-pulse">
+                    ⚠️ Agregue una Retención
+                  </span>
+                )}
+                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 leading-none">Total a Facturar</span>
                 <span className="text-lg font-mono font-black text-primary leading-none mt-0.5">
                   ${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}
                 </span>
