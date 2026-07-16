@@ -141,12 +141,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [emisorPtoEmi, setEmisorPtoEmi] = useState(() => localStorage.getItem('sc_emisor_pto') || '001');
   const [emisorRegimen, setEmisorRegimen] = useState(() => {
     const stored = localStorage.getItem('sc_emisor_regimen');
-    if (!stored || stored === '0') {
-      localStorage.setItem('sc_emisor_regimen', '1');
-      return '1';
+    if (!stored || stored === '0' || stored === '1') {
+      localStorage.setItem('sc_emisor_regimen', '3');
+      return '3';
     }
     return stored;
-  }); // 0 = General, 1 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
+  }); // 0 = General, 3 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
   const [ambiente, setAmbiente] = useState<'1' | '2'>(() => (localStorage.getItem('sc_emisor_ambiente') as '1' | '2') || '1'); // 1 = Pruebas, 2 = Producción
   const [p12FileBase64, setP12FileBase64] = useState(() => localStorage.getItem('sc_sri_p12_base64') || '');
   const [p12FileName, setP12FileName] = useState(() => localStorage.getItem('sc_sri_p12_filename') || '');
@@ -255,8 +255,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   // Invoice specifics
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>(() => {
     const stored = localStorage.getItem('sc_emisor_regimen');
-    const initialRegime = (!stored || stored === '0') ? '1' : stored;
-    const initialIva = initialRegime === '1' ? 0.00 : 0.15;
+    const initialRegime = (!stored || stored === '0' || stored === '1') ? '3' : stored;
+    const initialIva = initialRegime === '3' ? 0.00 : 0.15;
     const initialSub = 120.00;
     const initialIvaVal = Number((initialSub * initialIva).toFixed(2));
     return [
@@ -400,7 +400,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     const checkedObs = pendingObligations.filter(ob => selectedPeriods.includes(ob.id));
     if (checkedObs.length === 0) return;
  
-    const currentIvaRate = emisorRegimen === '1' ? 0.00 : 0.15;
+    const currentIvaRate = emisorRegimen === '3' ? 0.00 : 0.15;
  
     if (billingMode === 'detallado') {
       const newItems: InvoiceItem[] = checkedObs.map((ob, idx) => {
@@ -568,7 +568,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       
       if (initialAmount) {
         const mapped = mapDescriptionToProduct(initialDescription || 'Honorarios por Servicios Contables');
-        const currentIvaRate = emisorRegimen === '1' ? 0.00 : 0.15;
+        const currentIvaRate = emisorRegimen === '3' ? 0.00 : 0.15;
         const tax = Number((initialAmount * currentIvaRate).toFixed(2));
         setInvoiceItems([
           {
@@ -614,7 +614,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Synchronize invoice items with emisorRegimen (Force 0% IVA for RIMPE Negocio Popular)
   useEffect(() => {
-    if (emisorRegimen === '1') {
+    if (emisorRegimen === '3') {
       setInvoiceItems(prev => prev.map(item => {
         if (item.ivaRate !== 0.00) {
           const sub = item.cantidad * item.precioUnitario;
@@ -691,7 +691,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     setBuyerPhone('');
     setBuyerAddress('');
     setBuyerIdType('05');
-    const initialIva = emisorRegimen === '1' ? 0.00 : 0.15;
+    const initialIva = emisorRegimen === '3' ? 0.00 : 0.15;
     const initialSub = 120.00;
     const initialIvaVal = Number((initialSub * initialIva).toFixed(2));
     setInvoiceItems([
@@ -723,7 +723,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     setBuyerPhone('0987654321');
     setBuyerAddress('Centro de Pasaje, El Oro, Ecuador');
     setBuyerIdType('05');
-    const initialIva = emisorRegimen === '1' ? 0.00 : 0.15;
+    const initialIva = emisorRegimen === '3' ? 0.00 : 0.15;
     const sub1 = 350.00;
     const tax1 = Number((sub1 * initialIva).toFixed(2));
     const sub2 = 160.00;
@@ -769,7 +769,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       descripcion: 'Detalle de servicio prestado',
       cantidad: 1,
       precioUnitario: 0.00,
-      ivaRate: emisorRegimen === '1' ? 0.00 : 0.15,
+      ivaRate: emisorRegimen === '3' ? 0.00 : 0.15,
       subtotal: 0.00,
       iva: 0.00,
       total: 0.00
@@ -955,7 +955,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         identificacionComprador: buyerRuc,
         totalSinImpuestos: invoiceTotals.subtotal.toFixed(2),
         totalDescuento: '0.00',
-        totalImpuesto: emisorRegimen === '1'
+        totalImpuesto: emisorRegimen === '3'
           ? [{ codigo: '2', codigoPorcentaje: '0', baseImponible: invoiceTotals.subtotal.toFixed(2), valor: '0.00' }]
           : [{ codigo: '2', codigoPorcentaje: '4', baseImponible: invoiceTotals.subtotal15.toFixed(2), valor: invoiceTotals.iva.toFixed(2) }],
         propina: '0.00',
@@ -2597,7 +2597,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none text-slate-800 dark:text-slate-100"
                     >
                       <option value="0">RÉGIMEN GENERAL</option>
-                      <option value="1">RIMPE NEGOCIO POPULAR</option>
+                      <option value="3">RIMPE NEGOCIO POPULAR</option>
                       <option value="2">RIMPE EMPRENDEDOR</option>
                     </select>
                   </div>
@@ -3353,10 +3353,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           <select
                             value={item.ivaRate}
                             onChange={(e) => updateInvoiceItem(item.id, 'ivaRate', parseFloat(e.target.value))}
-                            disabled={emisorRegimen === '1'}
+                            disabled={emisorRegimen === '3'}
                             className="w-full px-3 py-2 mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                           >
-                            {emisorRegimen === '1' ? (
+                            {emisorRegimen === '3' ? (
                               <option value="0.00">0% (RIMPE NP)</option>
                             ) : (
                               <>
