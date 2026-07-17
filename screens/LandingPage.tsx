@@ -705,13 +705,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 <div className="w-full max-w-6xl h-[1.5px] bg-white/5 mb-3 rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-[#00A896] to-teal-200 transition-all duration-150" style={{ width: `${scrollProgress}%` }} />
                 </div>
-                <nav className={`pointer-events-auto transition-all duration-700 flex items-center justify-between px-3 pr-3 py-2 rounded-full border shadow-2xl backdrop-blur-3xl
+                <nav className={`pointer-events-auto transition-all duration-500 flex items-center justify-between px-3 pr-3 py-2 rounded-full border shadow-2xl backdrop-blur-xl
                     ${scrolled 
-                        ? `nav-island-active w-full max-w-5xl scale-[0.97] border-holographic ${theme === 'dark' ? 'bg-[#020617]/80' : 'bg-white/90 border-slate-200'}` 
+                        ? `w-full max-w-5xl scale-[0.98] ${theme === 'dark' ? 'bg-[#020617]/70 border-[#2B6AFF]/20 shadow-[#2B6AFF]/5 tactical-glow-primary' : 'bg-white/80 border-slate-200 shadow-md'}` 
                         : `w-full max-w-6xl ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-900/10 border-slate-900/10'}`
                     }`}>
                     <div className="flex items-center gap-3 cursor-pointer pl-2 group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                        <div className={`transition-all duration-700 w-9 h-9 bg-gradient-to-br from-[#00A896] to-[#005F56] rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,168,150,0.4)] ${scrolled ? 'rotate-[360deg] scale-90' : ''}`}>
+                        <div className={`transition-all duration-700 w-9 h-9 bg-gradient-to-br from-[#2B6AFF] to-[#6366F1] rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(43,106,255,0.4)] ${scrolled ? 'rotate-[360deg] scale-90' : ''}`}>
                             <Logo className="w-5 h-5 text-white" />
                         </div>
                         <div className={`hidden sm:flex flex-col transition-all duration-500 ${scrolled ? 'opacity-80' : ''}`}>
@@ -726,7 +726,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 className={`px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 relative overflow-hidden group
                                     ${theme === 'dark' ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>
                                 <span className="relative z-10">{item}</span>
-                                <div className="absolute inset-0 bg-gradient-to-r from-[#00A896]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-full" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-[#2B6AFF]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-full" />
                             </button>
                         ))}
                     </div>
@@ -745,9 +745,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             Acceso
                         </button>
                         <MagneticButton onClick={onNavigateToServices}>
-                            <div className="group relative px-6 py-2.5 bg-white text-[#0B2149] rounded-full text-xs font-bold uppercase tracking-wider overflow-hidden shadow-[0_0_30px_rgba(255,255,255,0.15)] transition-all duration-500">
+                            <div className="group relative px-6 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] text-white rounded-full text-xs font-bold uppercase tracking-wider overflow-hidden shadow-lg shadow-blue-500/25 transition-all duration-300 active:scale-95">
                                 <span className="relative z-10 group-hover:text-white transition-colors duration-500">Contratar</span>
-                                <div className="absolute inset-0 bg-[#00A896] transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" />
+                                <div className="absolute inset-0 bg-blue-700 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" />
                             </div>
                         </MagneticButton>
                     </div>
@@ -816,11 +816,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             {/* ════════════════════════════════════════════════════════════════
                 HERO SECTION
             ════════════════════════════════════════════════════════════════ */}
-            <header id="top" className={`relative min-h-screen flex items-center justify-center overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+            <header id="top" className={`relative min-h-screen flex items-center justify-center overflow-hidden transition-colors duration-500 pt-32 pb-24 md:pt-48 md:pb-32 ${theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-50'}`}>
                 <AuroraBackground />
                 <motion.div style={{ y: heroY }} className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-1/4 -left-20 w-[500px] h-[500px] bg-[#00A896]/8 rounded-full blur-[150px]" />
-                    <div className="absolute bottom-1/4 -right-20 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[180px]" />
+                    <div className="absolute top-1/4 -left-20 w-[600px] h-[600px] bg-[#2B6AFF]/8 rounded-full blur-[160px]" />
+                    <div className="absolute bottom-1/3 -right-20 w-[700px] h-[700px] bg-[#04B17B]/6 rounded-full blur-[180px]" />
                 </motion.div>
 
                 {/* Animated grid dots */}
@@ -832,19 +832,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         style={{
                             top: `${15 + i * 13}%`, left: `${10 + i * 15}%`,
                             width: i % 2 === 0 ? '2px' : '1px', height: i % 2 === 0 ? '2px' : '1px',
-                            background: i % 3 === 0 ? '#00A896' : 'white',
+                            background: i % 3 === 0 ? '#2B6AFF' : 'white',
                             borderRadius: '50%',
-                            animation: `float ${4 + i}s ease-in-out ${i * 0.5}s infinite alternate`,
-                            opacity: 0.4
+                            animation: `float ${6 + i}s ease-in-out ${i * 0.5}s infinite alternate`,
+                            opacity: 0.3
                         }} />
                 ))}
 
-                <div className="relative z-10 max-w-7xl mx-auto px-6 text-center mt-20">
+                <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
                     {/* Status badge */}
                     <Reveal delay={0}>
-                        <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-[#00A896]/30 bg-[#00A896]/5 backdrop-blur-md mb-10 group cursor-default">
-                            <div className="w-2 h-2 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_10px_#00A896]" />
-                            <span className="text-[11px] font-bold text-[#00A896] uppercase tracking-[0.35em]">Disponible • Pasaje, El Oro · Ecuador</span>
+                        <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-[#2B6AFF]/30 bg-[#2B6AFF]/5 backdrop-blur-md mb-10 group cursor-default">
+                            <div className="w-2 h-2 rounded-full bg-[#04B17B] animate-pulse shadow-[0_0_10px_#04B17B]" />
+                            <span className="text-[11px] font-bold text-[#2B6AFF] uppercase tracking-[0.35em]">Disponible • Pasaje, El Oro · Ecuador</span>
                         </div>
                     </Reveal>
 
@@ -859,7 +859,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 SANTIAGO
                             </span>
                             <span className="relative inline-block mt-3 md:mt-5">
-                                <span className="absolute -inset-4 blur-[120px] bg-[#00A896]/40 animate-pulse pointer-events-none" />
+                                <span className="absolute -inset-4 blur-[120px] bg-[#2B6AFF]/40 animate-pulse pointer-events-none" />
                                 <span className="relative liquid-gold-text">CÓRDOVA</span>
                             </span>
                         </h1>
@@ -870,7 +870,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         <p className={`text-lg md:text-2xl max-w-2xl mx-auto mb-4 font-light tracking-wide leading-relaxed text-balance transition-colors
                             ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                             Soluciones tributarias de precisión para líderes y empresas que exigen{' '}
-                            <span className={`font-semibold border-b border-[#00A896] ${theme === 'dark' ? 'text-white' : 'text-slate-955'}`}>rendimiento absoluto</span>{' '}
+                            <span className={`font-semibold border-b border-[#2B6AFF] ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>rendimiento absoluto</span>{' '}
                             y blindaje fiscal total.
                         </p>
                     </Reveal>
@@ -889,31 +889,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <Reveal delay={280}>
                         <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
                             <MagneticButton onClick={onNavigateToServices}>
-                                <div className={`group relative w-64 h-14 rounded-full font-bold text-xs uppercase tracking-widest overflow-hidden transition-all duration-500
+                                <div className={`group relative w-64 h-14 rounded-full font-bold text-xs uppercase tracking-widest overflow-hidden transition-all duration-300 active:scale-95 shadow-lg shadow-blue-500/25 border border-white/10
                                     ${theme === 'dark'
-                                        ? 'bg-white text-[#020617] shadow-[0_0_50px_rgba(255,255,255,0.3)] hover:shadow-[#00A896]/50'
-                                        : 'bg-slate-900 text-white shadow-xl hover:shadow-[#00A896]/30'
+                                        ? 'bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] text-white tactical-glow-primary hover:from-[#1A53D9] hover:to-[#5558DD]'
+                                        : 'bg-slate-900 text-white hover:bg-slate-800 shadow-xl'
                                     }`}>
                                     <div className="absolute inset-0 flex items-center justify-center gap-2 group-hover:-translate-y-full transition-transform duration-400">
                                         <LucideIcons.Sparkles size={16} />
                                         <span>Ver Servicios</span>
                                     </div>
-                                    <div className="absolute inset-0 flex items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-400 bg-[#00A896] text-white">
+                                    <div className="absolute inset-0 flex items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-400 bg-white text-[#020617] font-extrabold">
                                         <LucideIcons.ArrowRight size={16} />
                                         <span>Comenzar Ahora</span>
                                     </div>
                                 </div>
                             </MagneticButton>
                             <MagneticButton href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20me%20interesa%20agendar%20una%20consulta%20gratuita.`} target="_blank" rel="noopener noreferrer">
-                                <div className={`flex items-center gap-3 transition-colors group px-7 py-4 rounded-full border
+                                <div className={`flex items-center gap-3 transition-all duration-300 group px-7 py-4 rounded-full border active:scale-95
                                     ${theme === 'dark' 
-                                        ? 'text-slate-300 hover:text-white border-white/10 hover:bg-white/5 hover:border-[#00A896]/40' 
-                                        : 'text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-100 hover:border-[#00A896]/40'
+                                        ? 'text-slate-300 hover:text-white border-white/10 hover:bg-white/5 hover:border-[#2B6AFF]/40' 
+                                        : 'text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                                     }`}>
-                                    <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center group-hover:bg-[#00A896] group-hover:border-[#00A896] transition-all">
-                                        <LucideIcons.MessageCircle size={18} />
+                                    <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#2B6AFF]/20 group-hover:border-[#2B6AFF] transition-all">
+                                        <LucideIcons.MessageCircle size={18} className="text-[#2B6AFF]" />
                                     </div>
-                                    <span className="text-xs font-semibold uppercase tracking-widest">Consulta Gratuita</span>
+                                    <span className="text-xs font-semibold uppercase tracking-widest font-mono">Consulta Gratuita</span>
                                 </div>
                             </MagneticButton>
                         </div>
