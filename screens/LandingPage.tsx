@@ -113,9 +113,16 @@ const useCounter = (end: number, duration = 2000) => {
 
 const AnimatedStat = ({ end, label, prefix = "", suffix = "", theme = 'dark', className = "" }: { end: number; label: string; prefix?: string; suffix?: string; theme?: 'light' | 'dark'; className?: string }) => {
     const { count, ref } = useCounter(end);
+    const textLength = `${prefix}${end.toLocaleString()}${suffix}`.length;
+    const sizeClass = textLength > 10 
+        ? "text-3xl sm:text-4xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl"
+        : textLength > 7
+        ? "text-4xl sm:text-5xl md:text-5xl lg:text-5xl xl:text-6xl 2xl:text-7xl"
+        : "text-5xl md:text-7xl";
+
     return (
         <div ref={ref} className={`group cursor-default ${className}`}>
-            <div className={`text-5xl md:text-7xl font-editorial tracking-tighter mb-3 group-hover:text-[#00A896] transition-all duration-700 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
+            <div className={`${sizeClass} font-editorial tracking-tighter mb-3 group-hover:text-[#00A896] transition-all duration-700 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
                 {prefix}{count.toLocaleString()}{suffix}
             </div>
             <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em] opacity-80">{label}</div>
@@ -954,7 +961,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             { label: "Efectividad SRI", end: 100, suffix: "%", icon: LucideIcons.Activity }
                         ].map((stat, i) => (
                             <StaggerItem key={i}>
-                                <div className={`p-10 md:p-14 hover:bg-white/[0.03] transition-colors group relative border-r last:border-r-0 h-full ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
+                                <div className={`px-4 py-10 md:px-6 md:py-14 xl:px-10 hover:bg-white/[0.03] transition-colors group relative border-r last:border-r-0 h-full ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
                                     <div className="absolute top-6 right-6 text-[#00A896] opacity-20 group-hover:opacity-80 transition-opacity">
                                         <stat.icon size={20} />
                                     </div>
