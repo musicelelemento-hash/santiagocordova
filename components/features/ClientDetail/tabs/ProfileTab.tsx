@@ -11,6 +11,7 @@ import {
 import { TaxObligationCard } from '../TaxObligationCard';
 import { PaymentHistoryChart } from '../PaymentHistoryChart';
 import { ClientNotes } from '../ClientNotes';
+import { FacturadorCard } from '../FacturadorCard';
 import { useToast } from '../../../../context/ToastContext';
 import { fileToBase64 } from '../../../../services/pdfExtraction';
 
@@ -558,6 +559,13 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     />
                 </div>
             </div>
+
+            {/* Facturador Electrónico del Cliente */}
+            <FacturadorCard
+                config={editedClient.facturadorConfig || {}}
+                isEditing={isEditing}
+                onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
+            />
         </div>
     );
 };

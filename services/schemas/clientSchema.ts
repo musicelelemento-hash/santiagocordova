@@ -107,6 +107,7 @@ export const ClientSchema = z.object({
         documentStatus: z.string().optional(),
         documentCount: z.number().optional(),
         price: z.number().optional(),
+        soldByMe: z.boolean().optional(),
     }).optional(),
 });
 

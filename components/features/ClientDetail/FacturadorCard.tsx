@@ -248,6 +248,40 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark] cursor-pointer"
                             />
                         </div>
+
+                        {/* ¿Vendido por nosotros? */}
+                        <div className="space-y-2 col-span-1 md:col-span-2">
+                            <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">
+                                Canal de Venta / Distribución
+                            </label>
+                            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl">
+                                <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                    <LucideIcons.Store size={14} className="text-primary" />
+                                    ¿Vendido por Soluciones Contables Pro?
+                                </span>
+                                {isEditing ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleFieldChange('soldByMe', !config.soldByMe)}
+                                        className="focus:outline-none transition-all active:scale-95"
+                                    >
+                                        {config.soldByMe ? (
+                                            <LucideIcons.ToggleRight size={28} className="text-primary" />
+                                        ) : (
+                                            <LucideIcons.ToggleLeft size={28} className="text-slate-400" />
+                                        )}
+                                    </button>
+                                ) : (
+                                    <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${
+                                        config.soldByMe 
+                                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                                            : 'bg-slate-100 text-slate-600 dark:bg-white/5 dark:text-slate-400 border border-slate-200 dark:border-white/5'
+                                    }`}>
+                                        {config.soldByMe ? 'Vendido por Mí 🚀' : 'Externo'}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

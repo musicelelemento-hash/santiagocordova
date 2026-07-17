@@ -5,7 +5,6 @@ import * as LucideIcons from 'lucide-react';
 import { VaultCard } from '../VaultCard';
 import { ClientNotes } from '../ClientNotes';
 import { ClientNote } from '../../../../types';
-import { FacturadorCard } from '../FacturadorCard';
 
 interface VaultTabProps {
     client: Client;
@@ -155,15 +154,6 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     />
                 )}
             </div>
-
-            {/* Facturador Electrónico del Cliente */}
-            {(isEditing || editedClient.facturadorConfig) && (
-                <FacturadorCard
-                    config={editedClient.facturadorConfig || {}}
-                    isEditing={isEditing}
-                    onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
-                />
-            )}
 
             {/* Simplificación Zen: Notas Directas en lugar de Facturador complejo */}
             <div className="grid grid-cols-1 gap-8">

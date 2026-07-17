@@ -125,6 +125,7 @@ export interface FacturadorConfig {
     documentStatus?: string;
     documentCount?: number;
     price?: number;
+    soldByMe?: boolean;
 }
 
 export interface Client {
