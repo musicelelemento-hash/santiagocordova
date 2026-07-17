@@ -687,11 +687,12 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 </div>
             )}
 
-            <div className="flex gap-4 pt-4 border-t border-slate-200 dark:border-white/10">
-                <button onClick={onCancel} className="flex-1 py-5 bg-slate-50 dark:bg-white/5 text-slate-400 font-bold rounded-2xl hover:bg-slate-100 dark:hover:bg-white/10 transition-all uppercase text-xs tracking-[0.2em] border border-slate-200 dark:border-white/5">
+            {/* Sticky Action Footer */}
+            <div className="sticky bottom-[-24px] mt-8 pt-6 pb-6 bg-[#0f172a] shadow-[0_-20px_40px_-15px_rgba(15,23,42,0.95)] z-50 flex gap-4 px-2 -mx-2">
+                <button onClick={onCancel} className="flex-1 py-4 bg-slate-800/80 text-slate-300 font-bold rounded-2xl hover:bg-slate-700 transition-all uppercase text-xs tracking-[0.2em] border border-white/5 backdrop-blur-md">
                     Cancelar
                 </button>
-                <button onClick={handleSubmit} className="flex-[2] py-5 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 transition-all transform hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-3 text-xs uppercase tracking-[0.3em]">
+                <button onClick={handleSubmit} className="flex-[2] py-4 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 transition-all transform hover:scale-[1.01] active:scale-95 flex items-center justify-center gap-3 text-xs uppercase tracking-[0.3em]">
                     <Save size={20} strokeWidth={2.5} />
                     <span>Guardar Protocolo</span>
                 </button>

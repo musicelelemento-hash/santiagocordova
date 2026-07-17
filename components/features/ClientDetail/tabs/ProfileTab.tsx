@@ -153,15 +153,12 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
 
-            {/* ── Fila 1: Grid principal ──────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* ── TOP ROW: Identity & Service Status (Bento Grid) ──────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                {/* ── Columna izquierda: Obligaciones fiscales (2/3) ── */}
-                <div className="lg:col-span-2 space-y-6">
-
-                    {/* Info del régimen */}
+                {/* Info del régimen */}
                     <RegimeInfoPanel client={editedClient} />
 
                     {/* Estado del servicio */}
@@ -173,9 +170,15 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         handleQuickPay={handleQuickPay}
                         setConfirmation={setConfirmation}
                     />
+            </div>
 
+            {/* ── MIDDLE ROW: Action Core ──────────────────────────── */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                
+                {/* ── Column 1: Tax Obligations (Span 2) ── */}
+                <div className="xl:col-span-2 space-y-6">
                     {/* Sección: Obligaciones tributarias */}
-                    <div>
+                    <div className="bg-white dark:bg-surface/30 rounded-2xl p-6 border border-slate-100 dark:border-white/5 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                 <Zap size={13} className="text-primary" strokeWidth={2.5} />
@@ -266,18 +269,9 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                             )}
                         </div>
                     </div>
-
-                    {/* Gráfico de honorarios */}
-                    <div className="bg-white dark:bg-surface/30 rounded-2xl p-6 border border-slate-100 dark:border-white/5 shadow-sm">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
-                            <Activity size={13} className="text-primary" strokeWidth={2.5} />
-                            Historial de Honorarios
-                        </h3>
-                        <PaymentHistoryChart client={client} />
-                    </div>
                 </div>
 
-                {/* ── Columna derecha: Datos y acciones (1/3) ──────── */}
+                {/* ── Column 2: Security & Quick Actions (Span 1) ── */}
                 <div className="space-y-5">
 
                     {/* Claves de Acceso y Seguridad */}
@@ -552,20 +546,39 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
 
 
 
-                    {/* Notas del cliente */}
-                    <ClientNotes
-                        clientId={client.id}
-                        notes={client.structuredNotes || []}
+                    </div>
+                </div>
+
+            {/* ── BOTTOM ROW: Analytics & Facturador ──────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Gráfico de honorarios */}
+                <div className="bg-white dark:bg-surface/30 rounded-2xl p-6 border border-slate-100 dark:border-white/5 shadow-sm h-full flex flex-col">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
+                        <Activity size={13} className="text-primary" strokeWidth={2.5} />
+                        Historial de Honorarios
+                    </h3>
+                    <div className="flex-1">
+                        <PaymentHistoryChart client={client} />
+                    </div>
+                </div>
+
+                {/* Facturador Electrónico del Cliente */}
+                <div className="h-full flex flex-col">
+                    <FacturadorCard
+                        config={editedClient.facturadorConfig || {}}
+                        isEditing={isEditing}
+                        onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
                     />
                 </div>
             </div>
 
-            {/* Facturador Electrónico del Cliente */}
-            <FacturadorCard
-                config={editedClient.facturadorConfig || {}}
-                isEditing={isEditing}
-                onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
-            />
+            {/* Notas del cliente */}
+            <div className="pt-2">
+                <ClientNotes
+                    clientId={client.id}
+                    notes={client.structuredNotes || []}
+                />
+            </div>
         </div>
     );
 };
