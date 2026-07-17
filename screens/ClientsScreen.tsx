@@ -1758,6 +1758,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         }
                     }}
                 />
+            )}
             {billingPromptData && (
                 <Modal 
                     isOpen={!!billingPromptData} 

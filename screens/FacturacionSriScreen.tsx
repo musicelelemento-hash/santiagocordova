@@ -3,7 +3,7 @@ import {
   FileText, Plus, Trash2, Settings, CheckCircle2, XCircle, Info, Search, 
   Download, RefreshCw, Check, AlertTriangle, Globe, Activity, Wifi, WifiOff, 
   Copy, ExternalLink, Eye, EyeOff, ChevronRight, Play, Database, CreditCard, User, AlertCircle,
-  Lock, Key, Edit3, Save, Home, ChevronDown, ChevronUp, Sliders, Building2
+  Lock, Key, Edit3, Save, Home, ChevronDown, ChevronUp, Sliders, Building2, Mail
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { Client, TaxRegime, DeclarationStatus } from '../types';
@@ -1013,8 +1013,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     // Wait a brief delay for realism in logs
     await new Promise(r => setTimeout(r, 800));
 
+    let currentXml = '';
     try {
-      let currentXml = '';
       
       // Step 1: Generate XML
       addLog(`Generando estructura de XML comprobante en base al payload JSON...`);
