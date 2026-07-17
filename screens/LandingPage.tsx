@@ -131,9 +131,8 @@ const Reveal = ({ children, className = "", delay = 0, yOffset = 35 }: { childre
             whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             viewport={{ once: true, margin: "-8% 0px -8% 0px" }}
             transition={{ 
-                type: "spring",
-                stiffness: 40,
-                damping: 15,
+                duration: 0.8,
+                ease: [0.22, 1, 0.36, 1],
                 delay: delay / 1000 
             }}
             className={className}
@@ -177,9 +176,8 @@ const StaggerItem = ({ children, className = "", yOffset = 30 }: { children: Rea
                     y: 0, 
                     filter: "blur(0px)",
                     transition: {
-                        type: "spring",
-                        stiffness: 45,
-                        damping: 14
+                        duration: 0.8,
+                        ease: [0.22, 1, 0.36, 1]
                     }
                 }
             }}
@@ -208,13 +206,13 @@ const SpotlightCard = ({ children, className = "", theme = 'dark' }: { children:
             style={{ transform: `perspective(1000px) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`, transition: 'transform 0.15s ease-out' }}
             className={`relative border rounded-[2.5rem] overflow-hidden group/card transition-all duration-500
                 ${theme === 'dark' 
-                    ? 'bg-white/5 border-white/10 glass-premium-2' 
+                    ? 'glass-card-premium gradient-obsidian border-white/10' 
                     : 'bg-white border-slate-200/80 shadow-md hover:shadow-lg'
                 } ${className}`}>
             <div className="pointer-events-none absolute -inset-px transition duration-300"
                 style={{ 
                     opacity, 
-                    background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${theme === 'dark' ? 'rgba(0,168,150,0.12)' : 'rgba(0,168,150,0.06)'}, transparent 40%)` 
+                    background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${theme === 'dark' ? 'rgba(43, 106, 255, 0.15)' : 'rgba(43, 106, 255, 0.08)'}, transparent 40%)` 
                 }} />
             <div className="relative z-10 h-full">{children}</div>
         </motion.div>
@@ -644,10 +642,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-md flex flex-col items-center justify-center p-4">
                         <motion.div 
-                            initial={{ scale: 0.95, y: 20 }} 
+                            initial={{ scale: 0.95, y: "100%" }} 
                             animate={{ scale: 1, y: 0 }} 
-                            exit={{ scale: 0.95, y: 20 }}
-                            className={`w-full max-w-2xl border rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden shadow-2xl
+                            exit={{ scale: 0.95, y: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className={`w-full max-w-2xl border absolute md:relative bottom-0 md:bottom-auto rounded-t-[32px] md:rounded-[2.5rem] p-8 md:p-10 overflow-hidden shadow-2xl
                                 ${theme === 'dark' ? 'bg-[#050a1b] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
                             <button 
                                 onClick={() => setSelectedNews(null)}
@@ -1216,21 +1215,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         </div>
                     </Reveal>
 
-                    <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {/* Feature card large */}
-                        <StaggerItem className="md:col-span-2">
+                        <StaggerItem className="md:col-span-2 md:row-span-2">
                             <SpotlightCard theme={theme} className="interactive-card h-full">
                                 <div className="flex flex-col h-full justify-between p-10 min-h-[440px] text-left">
                                     <div>
-                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#00A896] to-teal-900/50 flex items-center justify-center mb-8 shadow-lg shadow-[#00A896]/20">
+                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#2B6AFF] to-[#6366F1] flex items-center justify-center mb-8 shadow-lg shadow-[#2B6AFF]/20">
                                             <LucideIcons.BarChart3 className="text-white" size={28} />
                                         </div>
-                                        <h3 className={`text-3xl md:text-5xl font-editorial tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>OPTIMIZACIÓN FISCAL</h3>
+                                        <h3 className={`text-3xl md:text-5xl font-editorial font-extrabold tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>GESTIÓN INTEGRAL SRI</h3>
                                         <p className={`text-lg leading-relaxed max-w-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                            Analizamos cada variable de su estructura financiera para maximizar deducciones legales y eliminar pagos en exceso con precisión quirúrgica.
+                                            Analizamos cada variable de su estructura financiera para maximizar deducciones legales y eliminar pagos en exceso con precisión quirúrgica. Todo en piloto automático.
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-4 text-[#00A896] font-bold text-xs uppercase tracking-widest group/link cursor-pointer" onClick={onNavigateToServices}>
+                                    <div className="flex items-center gap-4 text-[#2B6AFF] font-bold text-xs uppercase tracking-widest group/link cursor-pointer" onClick={onNavigateToServices}>
                                         <span>Ver Detalles</span>
                                         <LucideIcons.ArrowUpRight size={16} className="group-hover/link:translate-x-1 group-hover/link:-translate-y-1 transition-transform" />
                                     </div>
@@ -1238,49 +1237,66 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             </SpotlightCard>
                         </StaggerItem>
 
-                        <StaggerItem>
+                        <StaggerItem className="md:col-span-1 md:row-span-2">
                             <SpotlightCard theme={theme} className="interactive-card h-full">
                                 <div className="flex flex-col h-full p-10 min-h-[440px] text-left">
                                     <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-8">
-                                        <LucideIcons.ShieldCheck className="text-[#00A896]" size={28} />
+                                        <LucideIcons.Zap className="text-[#6366F1]" size={28} />
                                     </div>
-                                    <h3 className={`text-3xl font-editorial tracking-tight mb-4 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Blindaje Jurídico</h3>
+                                    <h3 className={`text-3xl font-editorial font-extrabold tracking-tight mb-4 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Facturación Electrónica</h3>
                                     <p className={`leading-relaxed mb-auto ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                        Defensa técnica ante entes de control. Integridad patrimonial garantizada frente a auditorías del SRI.
+                                        Declaraciones automatizadas, reportes en tiempo real y conectividad directa con el SRI. Olvídese de las multas.
                                     </p>
                                     <div className="mt-8 pt-6 border-t border-white/5 flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                                         <span>Disponibilidad</span>
-                                        <span className="text-[#00A896]">Inmediata</span>
+                                        <span className="text-[#04B17B] font-mono">Inmediata</span>
                                     </div>
                                 </div>
                             </SpotlightCard>
                         </StaggerItem>
 
-                        <StaggerItem>
+                        <StaggerItem className="md:col-span-1 md:row-span-1">
                             <SpotlightCard theme={theme} className="interactive-card h-full">
-                                <div className="flex flex-col h-full p-10 min-h-[360px] text-left">
-                                    <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-8">
-                                        <LucideIcons.Zap className="text-yellow-400" size={26} />
+                                <div className="flex flex-col h-full p-10 text-left justify-center">
+                                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
+                                        <LucideIcons.ShieldCheck className="text-[#04B17B]" size={24} />
                                     </div>
-                                    <h3 className={`text-3xl font-editorial tracking-tight mb-4 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Gestión Turbo</h3>
-                                    <p className={`leading-relaxed text-base ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                        Declaraciones automatizadas, reportes mensuales en tiempo real. Nunca más venza plazos.
+                                    <h3 className={`text-2xl font-editorial font-extrabold tracking-tight mb-2 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Apertura de RUC</h3>
+                                    <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                                        Asesoramiento inicial y alta en el régimen correcto.
                                     </p>
                                 </div>
                             </SpotlightCard>
                         </StaggerItem>
 
-                        <StaggerItem className="md:col-span-2">
+                        <StaggerItem className="md:col-span-1 md:row-span-1">
+                            <SpotlightCard theme={theme} className="interactive-card h-full">
+                                <div className="flex flex-col h-full p-10 text-left justify-center">
+                                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
+                                        <LucideIcons.FileKey className="text-purple-400" size={24} />
+                                    </div>
+                                    <h3 className={`text-2xl font-editorial font-extrabold tracking-tight mb-2 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Firma Electrónica</h3>
+                                    <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                                        Token .P12 en 30 minutos.
+                                    </p>
+                                    <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2">
+                                        <span className={`text-xl font-mono font-bold text-[#04B17B]`}>$35</span>
+                                    </div>
+                                </div>
+                            </SpotlightCard>
+                        </StaggerItem>
+
+                        <StaggerItem className="md:col-span-2 lg:col-span-4">
                             <SpotlightCard theme={theme} className="interactive-card overflow-hidden h-full">
                                 <div className="flex flex-col md:flex-row h-full">
                                     <div className="flex-1 p-10 flex flex-col justify-center text-left">
-                                        <h3 className={`text-3xl md:text-5xl font-editorial tracking-tight mb-4 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Consultoría Estratégica</h3>
+                                        <h3 className={`text-3xl md:text-5xl font-editorial font-extrabold tracking-tight mb-4 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Consultoría Estratégica</h3>
                                         <p className={`text-lg font-light leading-relaxed mb-8 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                                             Sesiones ejecutivas para diseñar rutas de crecimiento bajo marcos fiscales eficientes y conformes con la ley.
                                         </p>
                                         <MagneticButton onClick={onNavigateToServices}>
-                                            <div className={`inline-flex items-center gap-3 px-8 py-4 rounded-full text-xs font-bold uppercase tracking-[0.2em] transition-colors
-                                                ${theme === 'dark' ? 'bg-white text-black hover:bg-[#00A896] hover:text-white' : 'bg-slate-900 text-white hover:bg-[#00A896]'}`}>
+                                            <div className={`inline-flex items-center gap-3 px-8 py-4 rounded-full text-xs font-bold uppercase tracking-[0.2em] transition-all active:scale-95
+                                                ${theme === 'dark' ? 'bg-white text-black hover:bg-[#2B6AFF] hover:text-white' : 'bg-slate-900 text-white hover:bg-[#2B6AFF]'}`}>
                                                 <LucideIcons.Calendar size={14} />
                                                 Agendar Sesión
                                             </div>
@@ -1289,54 +1305,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     <div className={`flex-1 p-10 flex items-center justify-center border-l relative min-h-[200px] ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
                                         <div className="absolute inset-0 tactical-grid opacity-20" />
                                         <div className="relative">
-                                            <div className="absolute inset-0 bg-[#00A896]/20 blur-3xl rounded-full" />
+                                            <div className="absolute inset-0 bg-[#2B6AFF]/20 blur-3xl rounded-full" />
                                             <LucideIcons.Globe className={`relative z-10 ${theme === 'dark' ? 'text-white/15' : 'text-slate-900/10'}`} size={140} />
                                         </div>
-                                    </div>
-                                </div>
-                            </SpotlightCard>
-                        </StaggerItem>
-
-                        {/* Firma Electrónica */}
-                        <StaggerItem>
-                            <SpotlightCard theme={theme} className="interactive-card h-full">
-                                <div className="flex flex-col h-full p-10 min-h-[300px] justify-between text-left">
-                                    <div className="flex items-start justify-between mb-6">
-                                        <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                            <LucideIcons.FileKey className="text-purple-400" size={22} />
-                                        </div>
-                                        <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full uppercase tracking-wider">Digital</span>
-                                    </div>
-                                    <div>
-                                        <h3 className={`text-2xl font-editorial tracking-tight mb-3 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Firma Electrónica</h3>
-                                        <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Token .P12 válido para SRI, Quipux y todos los trámites legales.</p>
-                                    </div>
-                                    <div className={`mt-6 pt-4 border-t ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
-                                        <span className={`text-2xl font-editorial ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>${serviceFees?.customPunctualServices?.find((s: any) => s.id === 'firma-electronica')?.price?.toString() || "35"}</span>
-                                        <span className="text-slate-500 text-xs ml-2 uppercase tracking-wider">vigencia 1 año</span>
-                                    </div>
-                                </div>
-                            </SpotlightCard>
-                        </StaggerItem>
-
-                        {/* Devolución IVA */}
-                        <StaggerItem>
-                            <SpotlightCard theme={theme} className="interactive-card h-full">
-                                <div className="flex flex-col h-full p-10 min-h-[300px] justify-between text-left">
-                                    <div className="flex items-start justify-between mb-6">
-                                        <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                                            <LucideIcons.DollarSign className="text-emerald-400" size={22} />
-                                        </div>
-                                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full uppercase tracking-wider">Recuperación</span>
-                                    </div>
-                                    <div>
-                                        <h3 className={`text-2xl font-editorial tracking-tight mb-3 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Devolución IVA</h3>
-                                        <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Para 3ra Edad y Discapacidad. Recupere su IVA mensual garantizado.</p>
-                                    </div>
-                                    <div className={`mt-6 pt-4 border-t ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
-                                        <button onClick={onNavigateToServices} className="text-[#00A896] text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
-                                            Ver precio <LucideIcons.ArrowRight size={12} />
-                                        </button>
                                     </div>
                                 </div>
                             </SpotlightCard>
