@@ -833,11 +833,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     );
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-0 md:p-6 bg-slate-100/40 dark:bg-slate-950/40 backdrop-blur-3xl overflow-hidden animate-in fade-in duration-700">
-            <div className="bg-slate-50 dark:bg-slate-900 border dark:border-white/5 w-full h-full md:max-h-[96vh] md:max-w-[95vw] lg:max-w-[1400px] md:rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] flex flex-col relative overflow-hidden group/modal">
-                
-                {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed relative to modal) */}
-                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
+        <div className="w-full h-full bg-slate-50 dark:bg-slate-900 border-none dark:border-white/5 md:rounded-[2.5rem] flex flex-col relative overflow-hidden group/modal shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] animate-in fade-in duration-700">
+            {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed relative to modal) */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
                     <div className="flex items-center gap-1 p-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-[40px] border border-slate-200 dark:border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] pointer-events-auto ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
                         {(['profile', 'history', 'vault', 'settings'] as const).map((tab) => (
                             <button
@@ -1070,6 +1068,5 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     />
                 )}
             </div>
-        </div>
     );
 });

@@ -96,7 +96,7 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
     };
 
     return (
-        <div style={style} className={`flex border-b border-slate-100 dark:border-white/5 hover:bg-primary/[0.03] dark:hover:bg-primary/[0.08] transition-all items-center px-4 group/row hover:shadow-[inset_4px_0_0_0_theme(colors.primary.DEFAULT)] ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-inset ring-primary/30' : ''}`}>
+        <div style={style} className={`flex border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-all items-center px-4 group/row hover:shadow-[inset_4px_0_0_0_theme(colors.primary.DEFAULT)] ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-inset ring-primary/30' : ''}`}>
             {/* Estatus Zen */}
             <div className="w-20 shrink-0 flex flex-col items-center group cursor-help relative px-2" title={merit.label}>
                 <div className={`p-2.5 rounded-2xl ${merit.rank === 1 ? 'bg-tertiary/10 text-tertiary shadow-sm' : (merit.rank === 2 ? 'bg-on-surface-variant/10 text-on-surface-variant' : 'bg-primary/10 text-primary')} transition-all group-hover:scale-110`}>

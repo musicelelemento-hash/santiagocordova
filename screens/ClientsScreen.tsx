@@ -973,7 +973,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     // El detalle ahora se renderiza como un overlay al final para no desmontar la lista y preservar scroll/estado
 
     return (
-        <div className="bg-surface-lowest min-h-screen">
+        <div className="bg-surface-lowest min-h-screen flex flex-col lg:flex-row max-w-[1600px] mx-auto">
+            
+            {/* PANEL IZQUIERDO (Lista de Clientes) */}
+            <div className={`flex-1 transition-all duration-500 w-full ${selectedClient ? 'hidden lg:block lg:w-[45%] xl:w-[40%] lg:border-r border-white/5 lg:pr-6 lg:overflow-y-auto' : 'max-w-7xl mx-auto px-2 sm:px-6'}`}>
+                <div className="py-6 sm:py-8">
             {/* ZENITH CLIENT MANAGEMENT - ARCHITECTURAL HEADER */}
             <motion.div 
                 initial={{ opacity: 0, y: -20 }}
@@ -1731,16 +1735,35 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 results={bulkResults}
             />
 
-            {/* OVERLAY DE DETALLE DE CLIENTE: Preserva el estado de la lista al no desmontarla */}
+            </div> {/* End of inner padding container */}
+            </div> {/* End of LEFT PANE */}
+
+            {/* RIGHT PANE: COMMAND CENTER DETAIL */}
             {selectedClient && (
-                <ClientDetailView 
-                    client={selectedClient} 
-                    onSave={handleUpdateClient} 
-                    onBack={handleCloseClientDetails} 
-                    serviceFees={serviceFees} 
-                    sriCredentials={sriCredentialsProp || sriCredentials}
-                    initialTab={(window as any).__TEMP_INITIAL_TAB__ || initialTab}
-                />
+                <div className="w-full lg:w-[55%] xl:w-[60%] lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden lg:p-6 lg:pl-0 z-50">
+                    {/* Mobile Overlay View */}
+                    <div className="lg:hidden fixed inset-0 z-[150] flex items-center justify-center p-0 bg-slate-100/40 dark:bg-slate-950/40 backdrop-blur-3xl overflow-hidden animate-in fade-in duration-700">
+                        <ClientDetailView 
+                            client={selectedClient} 
+                            onSave={handleUpdateClient} 
+                            onBack={handleCloseClientDetails} 
+                            serviceFees={serviceFees} 
+                            sriCredentials={sriCredentialsProp || sriCredentials}
+                            initialTab={(window as any).__TEMP_INITIAL_TAB__ || initialTab}
+                        />
+                    </div>
+                    {/* Desktop Split-Pane View */}
+                    <div className="hidden lg:block w-full h-full shadow-2xl rounded-[2.5rem] overflow-hidden bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 relative">
+                        <ClientDetailView 
+                            client={selectedClient} 
+                            onSave={handleUpdateClient} 
+                            onBack={handleCloseClientDetails} 
+                            serviceFees={serviceFees} 
+                            sriCredentials={sriCredentialsProp || sriCredentials}
+                            initialTab={(window as any).__TEMP_INITIAL_TAB__ || initialTab}
+                        />
+                    </div>
+                </div>
             )}
 
             {previewItem && (
