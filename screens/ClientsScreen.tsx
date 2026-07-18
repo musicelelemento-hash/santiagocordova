@@ -5,7 +5,7 @@ import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, fo
 import { Modal } from '../components/ui/Modal';
 import { v4 as uuidv4 } from 'uuid';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../services/geminiService';
-import { isPast, subMonths, subYears } from 'date-fns';
+import { isPast, subMonths, subYears, differenceInCalendarDays } from 'date-fns';
 import { getClientServiceFee } from '../services/clientService';
 import { useTranscription } from '../hooks/useTranscription';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -18,6 +18,7 @@ import { ClientCard } from '../components/features/ClientCard';
 import { extractDataFromDeclarationPdf, fileToBase64, extractDataFromSriPdf } from '../services/pdfExtraction';
 import { StoredFile } from '../types';
 import { BulkUploadReportModal, BulkUploadResult } from '../components/features/BulkUploadReportModal';
+import { BulkClientWizardModal } from '../components/features/BulkClientWizardModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
@@ -97,12 +98,16 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [isMatrixView, setIsMatrixView] = useState(false);
     const [previewItem, setPreviewItem] = useState<{ client: Client, declaration: Declaration } | null>(null);
 
+    // Bulk Wizard State
+    const [bulkWizardData, setBulkWizardData] = useState<any[]>([]);
+    const [isBulkWizardOpen, setIsBulkWizardOpen] = useState(false);
+
     // Smart Tabs Logic
     const getInitialGroupTab = () => {
         if (initialFilter?.activeGroupTab) return initialFilter.activeGroupTab;
         const saved = sessionStorage.getItem('clients_group_tab');
         if (saved) return saved;
-        return 'all';
+        return 'matrix';
     };
 
     const [activeGroupTab, setActiveGroupTab] = useState(getInitialGroupTab());
@@ -347,6 +352,22 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             }
 
             if (regimeFilter !== 'all' && client.regime !== regimeFilter) return false;
+
+            // FILTRO DE ATENCIÓN URGENTE (Radar de Vencimientos)
+            if (initialFilter?.needsAttention) {
+                const today = new Date();
+                const alertDays = 15;
+                let isExpiring = false;
+                if (client.signatureExpirationDate) {
+                    const diff = differenceInCalendarDays(new Date(client.signatureExpirationDate), today);
+                    if (diff <= alertDays) isExpiring = true;
+                }
+                if (client.facturadorConfig?.expirationDate) {
+                    const diff = differenceInCalendarDays(new Date(client.facturadorConfig.expirationDate), today);
+                    if (diff <= alertDays) isExpiring = true;
+                }
+                if (!isExpiring) return false;
+            }
 
             // FILTRO DE AUDITORÍA DE BÓVEDA (Missing PDFs)
             if (initialFilter?.hasMissingPdf) {
@@ -717,6 +738,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         if (files.length === 0) return;
 
         const results: BulkUploadResult[] = [];
+        const extractedRucs: any[] = [];
 
         for (const file of files) {
             try {
@@ -762,34 +784,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 // --- MANEJO DE CERTIFICADO DE RUC ---
                 if (isRucCert) {
                     if (!targetClient) {
-                        const newClient: Client = {
-                            id: uuidv4(),
-                            name: data.apellidos_nombres,
-                            ruc: data.ruc,
-                            sriPassword: '',
-                            regime: data.regimen,
-                            isActive: true,
-                            phones: [data.contacto.celular].filter(Boolean),
-                            email: data.contacto.email,
-                            address: data.direccion,
-                            notes: `Creado desde Certificado de RUC`,
-                            needsVerification: true,
-                            verificationReason: 'Registrado automáticamente por Carga Masiva (RUC)',
-                            taxProfile: {
-                                ivaFrequency: data.obligaciones_tributarias === 'semestral' ? 'Semestral' : 'Mensual',
-                                requiresAnnualRenta: data.lista_obligaciones.includes('Impuesto a la Renta'),
-                                requiresAnexosGastos: false,
-                                hasActiveDevolucionIva: false,
-                                hasActiveElderlyDevolucionIva: false,
-                                requiresIce: false,
-                                requiresAnexoPvp: false
-                            },
-                            declarations: [],
-                            vault: []
-                        };
-                        addClient(newClient);
-                        targetClient = newClient;
-                        
+                        extractedRucs.push(data);
                         results.push({
                             fileName: file.name,
                             status: 'new_client',
@@ -949,9 +944,16 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             }
         }
 
-        setBulkResults(results);
-        setIsBulkReportOpen(true);
         if (bulkFileInputRef.current) bulkFileInputRef.current.value = '';
+
+        if (extractedRucs.length > 0) {
+            setBulkWizardData(extractedRucs);
+            setIsBulkWizardOpen(true);
+            setBulkResults(results); // We still save results
+        } else if (results.length > 0) {
+            setBulkResults(results);
+            setIsBulkReportOpen(true);
+        }
     };
 
     const handleAddComboTask = (selectedClientId: string) => {
@@ -1735,6 +1737,22 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 results={bulkResults}
             />
 
+            <BulkClientWizardModal
+                isOpen={isBulkWizardOpen}
+                onClose={() => {
+                    setIsBulkWizardOpen(false);
+                    setBulkWizardData([]);
+                    if (bulkResults.length > 0) {
+                        setIsBulkReportOpen(true);
+                    }
+                }}
+                extractedData={bulkWizardData}
+                onApprove={(clientData) => {
+                    addClient(clientData);
+                    toast.success(`Cliente ${clientData.name} aprobado y registrado.`);
+                }}
+            />
+
             </div> {/* End of inner padding container */}
             </div> {/* End of LEFT PANE */}
 
@@ -1753,7 +1771,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         />
                     </div>
                     {/* Desktop Split-Pane View */}
-                    <div className="hidden lg:block w-full h-full shadow-2xl rounded-[2.5rem] overflow-hidden bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 relative">
+                    <div className="hidden lg:block w-full h-full shadow-2xl rounded-[2.5rem] overflow-hidden glass-card-premium relative">
                         <ClientDetailView 
                             client={selectedClient} 
                             onSave={handleUpdateClient} 
@@ -1823,7 +1841,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         description: desc
                                     });
                                 }}
-                                className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.99]"
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-gradient-azure text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.99]"
                             >
                                 <LucideIcons.Check size={14} strokeWidth={3} />
                                 Facturar Solo Este Pago

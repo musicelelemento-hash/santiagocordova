@@ -96,7 +96,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                     value={config.programName || ''}
                                     onChange={(e) => handleFieldChange('programName', e.target.value)}
                                     disabled={!isEditing}
-                                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none appearance-none cursor-pointer transition-all disabled:opacity-50"
+                                    className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none appearance-none cursor-pointer transition-all disabled:opacity-50"
                                 >
                                     <option value="">No Definido / Ninguno</option>
                                     <option value="SRI PUBLIC">Facturador Público SRI (Gratuito)</option>
@@ -123,7 +123,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 onChange={(e) => handleFieldChange('url', e.target.value)}
                                 disabled={!isEditing}
                                 placeholder="https://sistema.cliente.com"
-                                className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
+                                className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                             />
                         </div>
 
@@ -138,7 +138,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 onChange={(e) => handleFieldChange('username', e.target.value)}
                                 disabled={!isEditing}
                                 placeholder="RUC / Cédula / Correo"
-                                className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
+                                className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                             />
                         </div>
 
@@ -154,7 +154,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                     onChange={(e) => handleFieldChange('password', e.target.value)}
                                     disabled={!isEditing}
                                     placeholder="Clave de facturador"
-                                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
+                                    className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                                 />
                                 <button 
                                     type="button"
@@ -186,7 +186,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                     value={config.documentStatus || ''}
                                     onChange={(e) => handleFieldChange('documentStatus', e.target.value)}
                                     disabled={!isEditing}
-                                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none appearance-none cursor-pointer transition-all disabled:opacity-50"
+                                    className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none appearance-none cursor-pointer transition-all disabled:opacity-50"
                                 >
                                     <option value="">No Definido</option>
                                     <option value="Ilimitado">Plan Ilimitado</option>
@@ -212,7 +212,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 onChange={(e) => handleFieldChange('documentCount', e.target.value === '' ? undefined : parseInt(e.target.value))}
                                 disabled={!isEditing}
                                 placeholder="Ej: 100 / Ilimitado"
-                                className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
+                                className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                             />
                         </div>
 
@@ -230,7 +230,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                     onChange={(e) => handleFieldChange('price', e.target.value === '' ? undefined : parseFloat(e.target.value))}
                                     disabled={!isEditing}
                                     placeholder="0.00"
-                                    className="w-full pl-8 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
+                                    className="w-full pl-8 pr-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                                 />
                             </div>
                         </div>
@@ -245,7 +245,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 value={config.expirationDate || ''}
                                 onChange={(e) => handleFieldChange('expirationDate', e.target.value)}
                                 disabled={!isEditing}
-                                className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark] cursor-pointer"
+                                className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark] cursor-pointer"
                             />
                         </div>
 
@@ -254,7 +254,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                             <label className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-1">
                                 Canal de Venta / Distribución
                             </label>
-                            <div className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl">
+                            <div className="flex items-center justify-between p-3 glass-card-premium rounded-xl">
                                 <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                                     <LucideIcons.Store size={14} className="text-primary" />
                                     ¿Vendido por Soluciones Contables Pro?

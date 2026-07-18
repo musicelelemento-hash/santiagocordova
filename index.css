@@ -61,6 +61,10 @@
     --gradient-obsidian: linear-gradient(135deg, #020617 0%, #0c142c 100%);
 }
 
+.bg-gradient-obsidian {
+    background: var(--gradient-obsidian);
+}
+
 body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));

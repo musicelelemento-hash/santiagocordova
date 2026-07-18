@@ -513,34 +513,35 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
                                                             const isSent = d?.status === DeclarationStatus.Enviada || isPaid || hasProof;
                                                             
-                                                            const isDone = hasProof || d?.status === DeclarationStatus.Enviada || d?.status === DeclarationStatus.Pagada;
-                                                            const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
+                                                            const isDone = hasProof;
+                                                            const isManualDone = !hasProof && (d?.status === DeclarationStatus.Enviada || d?.status === DeclarationStatus.Pagada);
+                                                            const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone && !isManualDone;
 
                                                             return (
                                                                 <div 
                                                                     key={`${p}-${ob.type}`}
                                                                     className={`group/ob relative flex flex-col items-center justify-center w-14 h-14 rounded-xl cursor-pointer transition-all duration-300 border ${
-                                                                        isDone ? 'bg-gradient-to-br from-emerald-550 to-emerald-600 text-white border-emerald-600/50 shadow-md shadow-emerald-500/10 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/20 z-10' : 
-                                                                        d?.isPriority ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white border-amber-600/50 shadow-md shadow-amber-500/10 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/25 z-10 animate-pulse' :
-                                                                        isSent && !hasProof ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700/40 hover:bg-amber-100 dark:hover:bg-amber-950/30 hover:scale-105' :
+                                                                        isDone ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-emerald-600/50 shadow-md shadow-emerald-500/10 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/20 z-10' : 
+                                                                        isManualDone ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white border-amber-500/50 shadow-md shadow-amber-500/10 hover:scale-105 hover:shadow-lg z-10 animate-pulse' :
+                                                                        d?.isPriority ? 'bg-gradient-to-br from-orange-500 to-rose-500 text-white border-orange-600/50 shadow-md shadow-orange-500/10 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/25 z-10 animate-pulse' :
                                                                         isOverdue ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-500 dark:text-rose-400 border-rose-250 dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-950/30 hover:scale-105' :
                                                                         'bg-slate-50 dark:bg-slate-900/40 text-slate-405 dark:text-slate-400 border-slate-200/50 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-600 dark:hover:text-slate-200 hover:scale-105'
                                                                     }`}
-                                                                    title={isDone ? `Ver PDF de ${ob.label}` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
+                                                                    title={isDone ? `Ver PDF de ${ob.label}` : isManualDone ? `Atención: Sin PDF de ${ob.label}. Haz click para subirlo.` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         if (hasProof) onPreviewReceipt(client, d!);
                                                                         else onUploadReceipt(client, p, ob.type as any);
                                                                     }}
                                                                 >
-                                                                    <span className={`text-[7px] font-black tracking-widest uppercase mb-1.5 ${isDone || d?.isPriority ? 'opacity-90' : 'opacity-55'}`}>{ob.type}</span>
+                                                                    <span className={`text-[7px] font-black tracking-widest uppercase mb-1.5 ${isDone || isManualDone || d?.isPriority ? 'opacity-90' : 'opacity-55'}`}>{ob.type}</span>
                                                                     
                                                                     {isDone ? (
-                                                                        <LucideIcons.Check size={14} strokeWidth={3} className="text-white drop-shadow-sm" />
+                                                                        <LucideIcons.ShieldCheck size={14} strokeWidth={3} className="text-white drop-shadow-sm" />
+                                                                    ) : isManualDone ? (
+                                                                        <LucideIcons.AlertTriangle size={14} strokeWidth={3} className="text-white drop-shadow-sm" />
                                                                     ) : d?.isPriority ? (
                                                                         <LucideIcons.Pin size={12} strokeWidth={2.5} className="text-white rotate-45" />
-                                                                    ) : isSent ? (
-                                                                        <LucideIcons.AlertTriangle size={14} strokeWidth={2.5} />
                                                                     ) : isOverdue ? (
                                                                         <LucideIcons.AlertCircle size={14} strokeWidth={2.5} />
                                                                     ) : (

@@ -66,7 +66,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                 <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">Módulo no disponible</p>
                 <button 
                     onClick={this.handleReload}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md text-xs font-medium text-slate-600 dark:text-slate-200 hover:text-brand-teal hover:border-brand-teal transition-colors shadow-sm"
+                    className="flex items-center gap-1 px-3 py-1.5 glass-card-premium rounded-md text-xs font-medium text-slate-600 dark:text-slate-200 hover:text-brand-teal hover:border-brand-teal transition-colors "
                 >
                     <RefreshCw size={10} /> Reintentar
                 </button>
@@ -111,7 +111,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               
               <button 
                 onClick={this.handleGoHome}
-                className="flex items-center justify-center space-x-3 px-8 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium rounded-2xl transition-all"
+                className="flex items-center justify-center space-x-3 px-8 py-4 glass-card-premium hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium rounded-2xl transition-all"
               >
                 <Home size={20} />
                 <span>Volver al Dashboard</span>

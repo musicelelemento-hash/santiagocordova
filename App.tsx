@@ -490,13 +490,13 @@ const App: React.FC = () => {
 
   return (
     <ToastProvider>
-      <div className={`font-body min-h-screen flex ${theme === 'dark' ? 'bg-background dark' : 'bg-slate-50'} text-slate-800 dark:text-slate-100 transition-colors duration-500 relative overflow-hidden`}>
+      <div className={`font-body min-h-screen flex ${theme === 'dark' ? 'bg-gradient-obsidian dark' : 'bg-slate-50'} text-slate-800 dark:text-slate-100 transition-colors duration-500 relative overflow-hidden`}>
         {/* Decorative background elements - Enhanced for Dark Elite */}
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-sky-500/15 via-primary/5 to-transparent blur-[150px] -z-10 animate-aurora pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-gradient-to-tr from-emerald-500/10 via-sky-600/5 to-transparent blur-[120px] -z-10 animate-aurora pointer-events-none"></div>
         
         {/* Subtle texture for premium feel */}
-        <div className={`absolute inset-0 opacity-[0.03] pointer-events-none bg-noise -z-20 ${theme === 'dark' ? 'invert' : ''}`}></div>
+        <div className={`absolute inset-0 opacity-[0.04] pointer-events-none bg-noise-animated -z-20 ${theme === 'dark' ? 'invert' : ''}`}></div>
 
         <Sidebar
           onNavigate={(screen) => {

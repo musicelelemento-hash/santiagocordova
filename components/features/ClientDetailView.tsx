@@ -706,9 +706,26 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     };
 
     const handleWhatsApp = () => {
-        if (client.phones?.length) {
-            window.open(getWhatsAppUrl(client.phones[0]), '_blank');
+        if (!client.phones?.length) return toast.error("El cliente no tiene teléfono registrado.");
+        const greeting = new Date().getHours() < 12 ? 'Buenos días' : 'Buenas tardes';
+        const name = client.name.split(' ')[0];
+        setWhatsAppPrompt({
+            clientName: client.name,
+            phone: client.phones[0],
+            message: `${greeting} ${name} 👋. Le saludo de Soluciones Contables Pro. Le escribo para...`
+        });
+    };
+
+    const handleEmail = () => {
+        if (!client.email) {
+            toast.error("El cliente no tiene correo registrado.");
+            return;
         }
+        const greeting = new Date().getHours() < 12 ? 'Buenos días' : 'Buenas tardes';
+        const name = client.name.split(' ')[0];
+        const subject = encodeURIComponent(`Actualización Tributaria - Soluciones Contables Pro`);
+        const body = encodeURIComponent(`${greeting} ${name},\n\nAdjunto a este correo encontrará sus documentos tributarios recientes.\n\nPor favor, revise los archivos y no dude en contactarnos si tiene alguna duda.\n\nAtentamente,\nSoluciones Contables Pro`);
+        window.location.href = `mailto:${client.email}?subject=${subject}&body=${body}`;
     };
 
     const handleOpenSRI = () => window.open("https://srienlinea.sri.gob.ec/", "_blank");
@@ -746,6 +763,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             handleWhatsApp={handleWhatsApp}
             handleOpenSRI={handleOpenSRI}
             handleShareViaWhatsApp={handleShareViaWhatsApp}
+            handleEmail={handleEmail}
             passwordVisible={passwordVisible}
             setPasswordVisible={setPasswordVisible}
             handleExtraAction={handleExtraAction}

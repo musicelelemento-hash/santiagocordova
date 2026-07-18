@@ -1962,7 +1962,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('factura')}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-sm shadow-primary/10 active:scale-[0.98]"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-sm shadow-primary/10 active:scale-[0.98]"
             >
               <Plus size={12} />
               Nueva Factura
@@ -2445,7 +2445,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsActionsDropdownOpen(!isActionsDropdownOpen)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all shadow-sm shadow-primary/10 active:scale-[0.98]"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all shadow-sm shadow-primary/10 active:scale-[0.98]"
                   >
                     <span>Acciones</span>
                     <ChevronDown size={10} />
@@ -2453,7 +2453,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   {isActionsDropdownOpen && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setIsActionsDropdownOpen(false)} />
-                      <div className="absolute right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 w-44 p-1.5 space-y-0.5 animate-in fade-in duration-200">
+                      <div className="absolute right-0 mt-1.5 glass-card-premium rounded-xl  overflow-hidden z-50 w-44 p-1.5 space-y-0.5 animate-in fade-in duration-200">
                         <button
                           type="button"
                           onClick={() => {
@@ -2998,7 +2998,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     (!selectedClient && (!buyerName.trim() || !buyerRuc.trim())) || 
                     (docType === 'factura' ? invoiceItems.length === 0 : withholdings.length === 0)
                   }
-                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-slate-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium shadow-primary active:scale-[0.99] transition-all"
+                  className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-gradient-azure disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-slate-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium shadow-primary active:scale-[0.99] transition-all"
                 >
                   {processStatus === 'running' ? (
                     <>
@@ -3074,7 +3074,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       className="fixed inset-0 z-40" 
                       onClick={() => setIsClientDropdownOpen(false)}
                     />
-                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 max-h-[200px] overflow-y-auto no-scrollbar">
+                    <div className="absolute top-full left-0 right-0 mt-1.5 glass-card-premium rounded-xl  overflow-hidden z-50 max-h-[200px] overflow-y-auto no-scrollbar">
                       {filteredClientsForSearch.length > 0 ? (
                         <div className="p-1.5 space-y-0.5">
                           {filteredClientsForSearch.map(c => (
@@ -3315,7 +3315,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   <button
                     type="button"
                     onClick={addInvoiceItem}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
                   >
                     <Plus size={12} />
                     Agregar Ítem
@@ -3346,7 +3346,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             value={item.codigoPrincipal}
                             onChange={(e) => updateInvoiceItem(item.id, 'codigoPrincipal', e.target.value.replace(/\D/g, ''))}
                             placeholder="001"
-                            className="w-full px-3 py-2 mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold font-mono text-slate-700 dark:text-slate-300 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-center tracking-widest"
+                            className="w-full px-3 py-2 mt-1 glass-card-premium rounded-xl text-xs font-semibold font-mono text-slate-700 dark:text-slate-300 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-center tracking-widest"
                           />
                         </div>
                         <div className="md:col-span-9">
@@ -3355,7 +3355,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             value={item.descripcion}
                             onChange={(e) => updateInvoiceItem(item.id, 'descripcion', e.target.value)}
                             rows={2}
-                            className="w-full px-3 py-2 mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none leading-relaxed"
+                            className="w-full px-3 py-2 mt-1 glass-card-premium rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none leading-relaxed"
                             placeholder="Describa el servicio prestado..."
                           />
                         </div>
@@ -3370,7 +3370,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             step="0.01"
                             value={item.cantidad}
                             onChange={(e) => updateInvoiceItem(item.id, 'cantidad', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold font-mono text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                            className="w-full px-3 py-2 mt-1 glass-card-premium rounded-xl text-xs font-bold font-mono text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                           />
                         </div>
                         <div>
@@ -3381,7 +3381,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             step="0.01"
                             value={item.precioUnitario}
                             onChange={(e) => updateInvoiceItem(item.id, 'precioUnitario', parseFloat(e.target.value) || 0)}
-                            className="w-full px-3 py-2 mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold font-mono text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                            className="w-full px-3 py-2 mt-1 glass-card-premium rounded-xl text-xs font-bold font-mono text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                           />
                         </div>
                         <div>
@@ -3390,7 +3390,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             value={item.ivaRate}
                             onChange={(e) => updateInvoiceItem(item.id, 'ivaRate', parseFloat(e.target.value))}
                             disabled={emisorRegimen === '3'}
-                            className="w-full px-3 py-2 mt-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="w-full px-3 py-2 mt-1 glass-card-premium rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                           >
                             {emisorRegimen === '3' ? (
                               <option value="0.00">0% (RIMPE NP)</option>
@@ -3570,7 +3570,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       };
                       printRideDocument(currentComp);
                     }}
-                    className="flex items-center justify-center gap-1.5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                    className="flex items-center justify-center gap-1.5 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
                   >
                     <FileText size={12} />
                     Ver RIDE
@@ -3620,7 +3620,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 </div>
               </div>
             ) : (
-              <div id="console-terminal-logs" className="glass-card-premium overflow-hidden flex flex-col h-[280px] bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/5 relative">
+              <div id="console-terminal-logs" className="glass-card-premium overflow-hidden flex flex-col h-[280px] glass-card-premium relative">
                 <div className="px-4 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 flex justify-between items-center">
                   <div className="flex items-center gap-2 text-slate-400">
                     <Activity size={12} className="text-primary animate-pulse" />
@@ -3892,7 +3892,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 <button
                   type="button"
                   onClick={handleValidateId}
-                  className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all"
+                  className="px-5 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all"
                 >
                   Validar
                 </button>
@@ -4034,7 +4034,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   (!selectedClient && (!buyerName.trim() || !buyerRuc.trim())) || 
                   (docType === 'factura' ? invoiceItems.length === 0 : withholdings.length === 0)
                 }
-                className="flex items-center justify-center gap-2 px-5 py-3 bg-primary hover:bg-primary-hover disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-slate-600 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium shadow-primary active:scale-[0.99] transition-all min-w-[190px]"
+                className="flex items-center justify-center gap-2 px-5 py-3 bg-primary hover:bg-gradient-azure disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-slate-600 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium shadow-primary active:scale-[0.99] transition-all min-w-[190px]"
               >
                 {processStatus === 'running' ? (
                   <>
@@ -4057,7 +4057,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       {/* WhatsApp Send Suggestion Modal */}
       {showWhatsAppModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-[2.5rem] shadow-2xl p-8 max-w-md w-full space-y-6 relative overflow-hidden">
+          <div className="glass-card-premium rounded-[2.5rem]  p-8 max-w-md w-full space-y-6 relative overflow-hidden">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
             
@@ -4100,7 +4100,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   };
                   printRideDocument(currentComp);
                 }}
-                className="flex items-center justify-center gap-1.5 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
               >
                 <FileText size={12} />
                 Ver RIDE
@@ -4252,7 +4252,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       {/* ERROR DETAILS DIALOG MODAL */}
       {processErrorMessage && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-[2.5rem] shadow-2xl p-8 max-w-md w-full space-y-6 relative overflow-hidden text-center">
+          <div className="glass-card-premium rounded-[2.5rem]  p-8 max-w-md w-full space-y-6 relative overflow-hidden text-center">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
             

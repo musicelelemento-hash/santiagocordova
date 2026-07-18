@@ -187,6 +187,7 @@ export type ClientFilter = {
     ivaFrequency?: IvaFrequency;
     hasActiveDevolucionIva?: boolean;
     hasMissingPdf?: boolean;
+    needsAttention?: boolean;
     title?: string;
     activeGroupTab?: string;
     searchTerm?: string;

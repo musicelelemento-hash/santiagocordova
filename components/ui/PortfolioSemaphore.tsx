@@ -51,10 +51,10 @@ export const PortfolioSemaphore: React.FC<PortfolioSemaphoreProps> = ({
                             key={cat.key}
                             onClick={() => onFilterChange?.(cat.key)}
                             className={`
-                                relative group overflow-hidden p-4 rounded-[1.5rem] border transition-all duration-500 text-left hover:scale-[1.01] active:scale-[0.99]
+                                relative group overflow-hidden p-4 rounded-[1.5rem] transition-all duration-500 text-left active:scale-[0.99]
                                 ${isActive 
-                                    ? `bg-white dark:bg-surface shadow-xl scale-[1.02] z-10 ${activeColors[cat.key]}` 
-                                    : `glass-zen border-transparent hover:border-slate-200 dark:hover:border-white/10 text-slate-600 dark:text-slate-300`
+                                    ? `bg-white dark:bg-surface shadow-xl scale-[1.02] z-10 tactical-glow-primary ${activeColors[cat.key]}` 
+                                    : `glass-card-premium hover:border-slate-300 dark:hover:border-white/20 text-slate-600 dark:text-slate-300`
                                 }
                             `}
                         >

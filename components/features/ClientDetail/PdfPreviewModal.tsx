@@ -143,7 +143,7 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
                     <div className="p-8 border-t border-slate-100 bg-white/50 backdrop-blur-sm relative z-10 space-y-4">
                         <button 
                             onClick={onDownload}
-                            className="w-full flex items-center justify-center gap-3 py-5 bg-primary hover:bg-primary/90 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] transition-all shadow-primary hover:shadow-xl active:scale-95 border border-primary font-premium"
+                            className="w-full flex items-center justify-center gap-3 py-5 bg-primary hover:bg-gradient-azure/90 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.25em] transition-all shadow-primary hover:shadow-xl active:scale-95 border border-primary font-premium"
                         >
                             <Download size={18} strokeWidth={3} /> EXTRAER ORIGINAL
                         </button>

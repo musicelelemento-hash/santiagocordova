@@ -97,7 +97,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Describa la observación o recomendación técnica..."
-              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 focus:border-blue-400 dark:focus:border-primary p-5 rounded-xl text-sm text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-700 resize-none h-32 transition-all outline-none font-medium shadow-inner"
+              className="w-full glass-card-premium focus:border-blue-400 dark:focus:border-primary p-5 rounded-xl text-sm text-slate-900 dark:text-slate-50 placeholder:text-slate-400 dark:placeholder:text-slate-700 resize-none h-32 transition-all outline-none font-medium shadow-inner"
             />
             <div className="flex justify-end gap-3 mt-6">
               <button
@@ -120,7 +120,7 @@ export const ClientNotes: React.FC<ClientNotesProps> = ({ clientId, notes }) => 
 
         {notes.length === 0 && !isAdding && (
           <div className="flex flex-col items-center justify-center py-24 text-center relative group/empty bg-slate-50/50 dark:bg-surface-low/10 rounded-2xl border border-dashed border-slate-200 dark:border-white/5">
-            <div className="w-16 h-16 rounded-full bg-white dark:bg-surface-low border border-slate-200 dark:border-white/5 flex items-center justify-center text-slate-200 dark:text-slate-800 shadow-inner group-hover/empty:scale-105 transition-transform duration-1000">
+            <div className="w-16 h-16 rounded-full glass-card-premium flex items-center justify-center text-slate-200 dark:text-slate-800 shadow-inner group-hover/empty:scale-105 transition-transform duration-1000">
               <LucideIcons.MessageSquare size={26} strokeWidth={1.5} />
             </div>
             <p className="text-[10px] font-mono font-bold text-slate-300 dark:text-slate-600 uppercase tracking-[0.4em] mt-6">NO_ACTIVITY_LOGGED</p>

@@ -294,7 +294,7 @@ export const IvaFrequencyChangeModal: React.FC<IvaFrequencyChangeModalProps> = (
                                         type="number"
                                         value={newFee}
                                         onChange={e => setNewFee(e.target.value)}
-                                        className="w-full pl-8 pr-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400/30 transition-all"
+                                        className="w-full pl-8 pr-3 py-2.5 glass-card-premium rounded-xl text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400/30 transition-all"
                                     />
                                 </div>
                             </div>
@@ -306,7 +306,7 @@ export const IvaFrequencyChangeModal: React.FC<IvaFrequencyChangeModalProps> = (
                                     type="date"
                                     value={effectiveDate}
                                     onChange={e => setEffectiveDate(e.target.value)}
-                                    className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400/30 transition-all"
+                                    className="w-full px-3 py-2.5 glass-card-premium rounded-xl text-xs font-mono font-bold text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400/30 transition-all"
                                 />
                             </div>
                         </div>
@@ -322,7 +322,7 @@ export const IvaFrequencyChangeModal: React.FC<IvaFrequencyChangeModalProps> = (
                             value={reason}
                             onChange={e => setReason(e.target.value)}
                             placeholder="Ej: Calificación como artesano, cambio de actividad..."
-                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 transition-all placeholder:text-slate-300"
+                            className="w-full px-4 py-2.5 glass-card-premium rounded-xl text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 transition-all placeholder:text-slate-300"
                         />
                     </div>
 

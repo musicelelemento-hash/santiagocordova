@@ -445,7 +445,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             <button onClick={() => {
                                 if (selectedItems.size === currentList.length) setSelectedItems(new Set());
                                 else setSelectedItems(new Set(currentList.map(i => `${i.clientId}-${i.period}`)));
-                            }} className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 hover:text-brand-teal dark:hover:text-brand-teal transition-all active:scale-95 shadow-sm">
+                            }} className="flex items-center gap-3 px-5 py-3 rounded-2xl glass-card-premium text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 hover:text-brand-teal dark:hover:text-brand-teal transition-all active:scale-95 ">
                                 {selectedItems.size === currentList.length ? <LucideIcons.CheckSquare size={16} className="text-brand-teal" /> : <LucideIcons.Square size={16} />}
                                 SELECT ALL ENTRIES
                             </button>
@@ -554,7 +554,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 <div className="p-4 sm:p-8 space-y-10">
                     <div className="relative group">
                         <div className="absolute -inset-2 bg-gradient-to-r from-brand-teal to-brand-navy rounded-3xl blur-2xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-                        <div className="relative bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-10 rounded-3xl text-center shadow-inner-premium">
+                        <div className="relative glass-card-premium p-10 rounded-3xl text-center shadow-inner-premium">
                             <div className="flex justify-center mb-6">
                                 <div className="p-4 rounded-2xl bg-brand-teal/10 border border-brand-teal/20 text-brand-teal">
                                     <LucideIcons.ShieldCheck size={32} />
@@ -595,7 +595,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     <div className="p-4 sm:p-10 space-y-10">
                         <div className="relative group">
                             <div className="absolute -inset-2 bg-gradient-to-r from-brand-teal to-brand-navy rounded-[2.5rem] blur-3xl opacity-10"></div>
-                            <div ref={receiptRef} className="relative bg-white dark:bg-slate-900 p-8 sm:p-12 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 font-mono text-[11px] shadow-2xl overflow-hidden">
+                            <div ref={receiptRef} className="relative glass-card-premium p-8 sm:p-12 text-slate-800 dark:text-slate-200 font-mono text-[11px]  overflow-hidden">
                                 <div className="absolute top-0 right-0 p-8 text-slate-100 dark:text-slate-800/40">
                                     <LucideIcons.Shield size={120} />
                                 </div>

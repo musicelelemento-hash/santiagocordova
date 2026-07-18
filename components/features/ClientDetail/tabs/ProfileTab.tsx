@@ -6,7 +6,7 @@ import {
     ShieldCheck, AlertTriangle, DollarSign, Eye, EyeOff, Globe, Copy,
     Share2, MessageCircle, Settings, Activity, FileText, CalendarDays,
     BadgePercent, CheckCircle2, Clock, ArrowRight, Zap, Info, RefreshCcw,
-    FileKey, Download, Trash2, UploadCloud
+    FileKey, Download, Trash2, UploadCloud, Mail
 } from 'lucide-react';
 import { TaxObligationCard } from '../TaxObligationCard';
 import { PaymentHistoryChart } from '../PaymentHistoryChart';
@@ -38,6 +38,7 @@ interface ProfileTabProps {
     handleElderlyRefundAction: (action: any) => void;
     handleRevertDeclaration: (period: string) => void;
     handleCancelDeclaration: (period: string) => void;
+    handleEmail?: () => void;
     onChangeIvaFrequency?: () => void;
 }
 
@@ -141,6 +142,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     handleElderlyRefundAction,
     handleRevertDeclaration,
     handleCancelDeclaration,
+    handleEmail,
     onChangeIvaFrequency,
 }) => {
     const { toast } = useToast();
@@ -178,7 +180,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 {/* ── Column 1: Tax Obligations (Span 2) ── */}
                 <div className="xl:col-span-2 space-y-6">
                     {/* Sección: Obligaciones tributarias */}
-                    <div className="bg-white dark:bg-surface/30 rounded-2xl p-6 border border-slate-100 dark:border-white/5 shadow-sm">
+                    <div className="glass-card-premium rounded-2xl p-6 ">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                 <Zap size={13} className="text-primary" strokeWidth={2.5} />
@@ -275,7 +277,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 <div className="space-y-5">
 
                     {/* Claves de Acceso y Seguridad */}
-                    <div className="bg-white dark:bg-surface/40 rounded-2xl p-5 border border-slate-100 dark:border-white/10 shadow-sm space-y-4">
+                    <div className="glass-card-premium rounded-2xl p-5  space-y-4">
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clave SRI</p>
@@ -489,6 +491,24 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                             </div>
                             <ArrowRight size={14} className="text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
                         </button>
+
+                        {handleEmail && (
+                            <button
+                                onClick={handleEmail}
+                                className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-sky-500/5 dark:hover:bg-sky-500/10 border border-slate-100 dark:border-white/5 hover:border-sky-200 dark:hover:border-sky-500/30 rounded-xl transition-all group active:scale-[0.98]"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-sky-50 dark:bg-sky-500/10 rounded-lg text-sky-500 group-hover:scale-110 transition-transform">
+                                        <Mail size={15} strokeWidth={2} />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Correo Electrónico</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Enviar email seguro</p>
+                                    </div>
+                                </div>
+                                <ArrowRight size={14} className="text-slate-300 group-hover:text-sky-500 group-hover:translate-x-1 transition-all" />
+                            </button>
+                        )}
 
                         <button
                             onClick={() => setActiveTab('settings')}

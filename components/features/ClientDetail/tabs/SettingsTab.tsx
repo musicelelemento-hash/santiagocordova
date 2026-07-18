@@ -32,7 +32,7 @@ const TaxProfileField: React.FC<{
                 <select
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer shadow-sm"
+                    className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer "
                 >
                     {options?.map((opt) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -44,7 +44,7 @@ const TaxProfileField: React.FC<{
                     value={value}
                     placeholder={placeholder}
                     onChange={(e) => onChange(e.target.value)}
-                    className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all shadow-sm"
+                    className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all "
                 />
             )
         ) : (
@@ -136,7 +136,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                             newPhones[idx] = e.target.value;
                                                             setEditedClient({ ...editedClient, phones: newPhones });
                                                         }}
-                                                        className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl pl-11 pr-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all shadow-sm"
+                                                        className="w-full glass-card-premium rounded-2xl pl-11 pr-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all "
                                                         placeholder="Ej: 0991234567"
                                                     />
                                                 </div>

@@ -71,7 +71,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, onSendMe
                 <button
                   key={i}
                   onClick={() => onSendMessage(s)}
-                  className="text-[11px] font-medium text-left p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-[#00A896] hover:text-[#00A896] transition-all shadow-sm flex items-center gap-2 group"
+                  className="text-[11px] font-medium text-left p-3 glass-card-premium rounded-xl hover:border-[#00A896] hover:text-[#00A896] transition-all  flex items-center gap-2 group"
                 >
                   <div className="w-1 h-1 rounded-full bg-slate-300 group-hover:bg-[#00A896]"></div>
                   {s}

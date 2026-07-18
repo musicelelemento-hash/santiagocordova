@@ -283,7 +283,7 @@ export const DesignScreen: React.FC<DesignScreenProps> = ({ navigate, sriCredent
                                             <input 
                                                 value={(extractedData.phones || [])[0] || ''} 
                                                 onChange={e => setExtractedData({...extractedData, phones: [e.target.value]})}
-                                                className="w-full pl-10 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium text-sm outline-none focus:ring-2 focus:ring-brand-teal" 
+                                                className="w-full pl-10 p-3 glass-card-premium rounded-xl font-medium text-sm outline-none focus:ring-2 focus:ring-brand-teal" 
                                             />
                                         </div>
                                     </div>

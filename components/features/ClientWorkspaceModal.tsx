@@ -277,7 +277,7 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
                                 <select 
                                     value={activePeriod}
                                     onChange={(e) => setActivePeriod(e.target.value)}
-                                    className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 shadow-sm outline-none focus:border-blue-500 transition-colors cursor-pointer"
+                                    className="glass-card-premium rounded-xl px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200  outline-none focus:border-blue-500 transition-colors cursor-pointer"
                                 >
                                     <option value={getPeriod(client, new Date())}>{formatPeriodForDisplay(getPeriod(client, new Date()))} (Actual)</option>
                                     {Array.from(new Set(client.declarations?.filter(d => d.period.length > 4 && d.period !== getPeriod(client, new Date())).map(d => d.period) || [])).map(p => (

@@ -356,7 +356,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-8 bg-surface-low dark:bg-surface-low p-8 rounded-[2rem] shadow-architect transition-colors">
+                <div className="space-y-8 glass-card-premium rounded-[2rem] p-8 transition-colors">
                     <div className="flex items-center gap-4 pb-6 border-b border-outline-variant/10">
                         <div className="bg-primary/5 p-3 rounded-2xl text-primary">
                             <User size={22} />
@@ -376,7 +376,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                         setClientData({ ...clientData, ruc: val });
                                         checkExistingRuc(val);
                                     }}
-                                    className={`w-full pl-12 p-4 bg-surface-lowest dark:bg-surface-lowest border-0 rounded-2xl text-sm font-mono font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all ${validationErrors.ruc ? 'ring-2 ring-rose-400/50' : ''}`}
+                                    className={`w-full pl-12 p-4 bg-surface-lowest dark:bg-surface-lowest border-0 rounded-2xl text-sm font-mono tracking-wider font-bold outline-none focus:ring-2 focus:ring-primary/20 transition-all ${validationErrors.ruc ? 'ring-2 ring-rose-400/50' : ''}`}
                                     placeholder="1790000000001"
                                 />
                             </div>
@@ -464,14 +464,14 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                     rows={2}
                                     value={clientData.address || ''}
                                     onChange={e => setClientData({ ...clientData, address: e.target.value })}
-                                    className="w-full pl-8 p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium resize-none"
+                                    className="w-full pl-8 p-2.5 glass-card-premium rounded-xl text-xs font-medium resize-none"
                                     placeholder="Provincia, Ciudad, Calle principal..."
                                 />
                             </div>
                         </div>
                 </div>
 
-                <div className="space-y-8 bg-surface-low dark:bg-surface-low p-8 rounded-[2rem] shadow-architect transition-colors">
+                <div className="space-y-8 glass-card-premium rounded-[2rem] p-8 transition-colors">
                     <div className="flex items-center gap-4 pb-6 border-b border-outline-variant/10">
                         <div className="bg-primary/5 p-3 rounded-2xl text-primary">
                             <Briefcase size={22} />
@@ -522,7 +522,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                         type={passwordVisible ? "text" : "password"}
                                         value={clientData.sriPassword || ''}
                                         onChange={e => setClientData({ ...clientData, sriPassword: e.target.value })}
-                                        className="w-full pl-10 pr-10 p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono font-medium"
+                                        className="w-full pl-10 pr-10 p-2.5 glass-card-premium rounded-xl text-sm font-mono font-medium"
                                         placeholder="••••••••"
                                         autoComplete="new-password"
                                     />
@@ -539,7 +539,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                         type="date"
                                         value={clientData.signatureExpirationDate || ''}
                                         onChange={e => setClientData({ ...clientData, signatureExpirationDate: e.target.value })}
-                                        className="w-full pl-10 p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium font-mono"
+                                        className="w-full pl-10 p-2.5 glass-card-premium rounded-xl text-xs font-medium font-mono"
                                     />
                                 </div>
                             </div>
@@ -572,7 +572,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                     type={p12PasswordVisible ? "text" : "password"}
                                     value={clientData.electronicSignaturePassword || ''}
                                     onChange={e => setClientData({ ...clientData, electronicSignaturePassword: e.target.value })}
-                                    className="w-full pl-10 pr-10 p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono font-medium"
+                                    className="w-full pl-10 pr-10 p-2.5 glass-card-premium rounded-xl text-sm font-mono font-medium"
                                     placeholder="••••••••"
                                     autoComplete="new-password"
                                 />

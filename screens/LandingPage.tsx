@@ -214,7 +214,7 @@ const SpotlightCard = ({ children, className = "", theme = 'dark' }: { children:
             className={`relative border rounded-[2.5rem] overflow-hidden group/card transition-all duration-500
                 ${theme === 'dark' 
                     ? 'glass-card-premium gradient-obsidian border-white/10' 
-                    : 'bg-white border-slate-200/80 shadow-md hover:shadow-lg'
+                    : 'bg-white border-slate-200/80 shadow-md hover:'
                 } ${className}`}>
             <div className="pointer-events-none absolute -inset-px transition duration-300"
                 style={{ 

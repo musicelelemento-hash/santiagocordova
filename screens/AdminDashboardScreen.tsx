@@ -772,25 +772,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 </div>
                             </div>
 
-                            {/* ── SEARCH & ACTIONS ── */}
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto lg:max-w-xl">
-                                <div className="relative group flex-1 sm:min-w-[280px]">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <LucideIcons.Search size={16} className="text-slate-400 group-focus-within:text-blue-500 transition-colors duration-300" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Buscar cliente global..."
-                                        value={searchTerm}
-                                        onChange={(e) => {
-                                            setSearchTerm(e.target.value);
-                                            if (e.target.value) {
-                                                navigate('clients', { initialFilter: { searchTerm: e.target.value, activeGroupTab: 'all' } });
-                                            }
-                                        }}
-                                        className="w-full bg-slate-50 dark:bg-black/25 border border-slate-200 dark:border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 focus:bg-white dark:focus:bg-black/30 transition-all outline-none"
-                                    />
-                                </div>
+                            {/* ── ACTIONS ── */}
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
                                 <div className="flex items-center gap-2 shrink-0">
                                     <input type="file" multiple accept=".pdf" ref={fileInputRef} onChange={handleBulkUpload} className="hidden" />
                                     <button
@@ -831,9 +814,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     </div>
 
                     {/* ── KPI STRIP ── */}
-                    <div className="border-t border-slate-100 dark:border-white/[0.05] relative z-10">
-                        <div className="flex sm:grid sm:grid-cols-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
-
+                    <div className="px-6 sm:px-10 pb-6 relative z-10">
+                        <div className="glass-card-premium p-0 relative overflow-hidden flex sm:grid sm:grid-cols-4 overflow-x-auto snap-x snap-mandatory hide-scrollbar">
                             {/* KPI 1: Clientes */}
                             <button
                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
@@ -1506,7 +1488,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-6">
                     {/* Renta Refunds Panel - High Priority */}
                     {activeRentaRefunds.length > 0 && (
-                        <div className="bg-white dark:bg-surface-low border border-slate-100 dark:border-white/5 rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none animate-fade-in-down lg:col-span-full">
+                        <div className="glass-card-premium rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none animate-fade-in-down lg:col-span-full">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-5">
                                     <div className="p-3 bg-slate-50 dark:bg-white/5 text-slate-400 rounded-2xl">
@@ -1535,7 +1517,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                     Tiempo: {hoursPassed.toFixed(1)}H {isCritical && '• PRIORIDAD'}
                                                 </span>
                                             </div>
-                                            <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="shrink-0 px-6 py-2.5 bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white hover:bg-slate-900 dark:hover:bg-white hover:text-white dark:hover:text-slate-900 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all font-premium">
+                                            <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="shrink-0 px-6 py-2.5 glass-card-premium text-slate-900 dark:text-white hover:bg-slate-900 dark:hover:bg-white hover:text-white dark:hover:text-slate-900 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all font-premium">
                                                 DETALLE
                                             </button>
                                         </div>
@@ -1546,7 +1528,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     )}
                     {/* Expiring Signatures Alert */}
                     {expiringSignatures.length > 0 && (
-                        <div className="bg-white dark:bg-surface-low border border-slate-100 dark:border-white/5 rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none animate-fade-in-down lg:col-span-full mt-4">
+                        <div className="glass-card-premium rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none animate-fade-in-down lg:col-span-full mt-4">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-5">
                                     <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl">

@@ -150,9 +150,9 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, cli
 
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-2 px-4 text-xs text-slate-400 flex justify-between items-center border-t border-slate-100 dark:border-slate-800">
                     <div className="flex gap-2">
-                        <span className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-1.5 py-0.5">↑↓</span>
+                        <span className="glass-card-premium rounded px-1.5 py-0.5">↑↓</span>
                         <span>Navegar</span>
-                        <span className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-1.5 py-0.5 ml-2">↵</span>
+                        <span className="glass-card-premium rounded px-1.5 py-0.5 ml-2">↵</span>
                         <span>Seleccionar</span>
                     </div>
                     <span>ESC para cerrar</span>

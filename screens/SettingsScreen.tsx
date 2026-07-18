@@ -925,7 +925,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         type="number"
                                         value={localReminderConfig?.daysBefore ?? 3}
                                         onChange={e => setLocalReminderConfig(c => c ? ({ ...c, daysBefore: parseInt(e.target.value) || 0 }) : c)}
-                                        className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium focus:ring-2 focus:ring-brand-teal/50"
+                                        className="w-full p-3 glass-card-premium rounded-xl font-medium focus:ring-2 focus:ring-brand-teal/50"
                                     />
                                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">DÍAS ANTES</span>
                                 </div>
@@ -940,7 +940,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                         type="number"
                                         value={localReminderConfig?.overdueInterval ?? 7}
                                         onChange={e => setLocalReminderConfig(c => c ? ({ ...c, overdueInterval: parseInt(e.target.value) || 0 }) : c)}
-                                        className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium focus:ring-2 focus:ring-rose-400/50"
+                                        className="w-full p-3 glass-card-premium rounded-xl font-medium focus:ring-2 focus:ring-rose-400/50"
                                     />
                                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">CADA X DÍAS</span>
                                 </div>
@@ -972,7 +972,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                                 rows={5}
                                 value={localReminderConfig?.template || ''}
                                 onChange={e => setLocalReminderConfig(c => c ? ({ ...c, template: e.target.value }) : c)}
-                                className="w-full p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono leading-relaxed focus:ring-2 focus:ring-brand-teal/50 outline-none"
+                                className="w-full p-4 glass-card-premium rounded-xl text-sm font-mono leading-relaxed focus:ring-2 focus:ring-brand-teal/50 outline-none"
                                 placeholder="Escriba el protocolo de mensaje aquí..."
                             />
                         </div>

@@ -110,7 +110,7 @@ export const DocumentTimeline: React.FC<DocumentTimelineProps> = ({ client, onVi
                                 </button>
                                 <button
                                     onClick={() => onViewPreview(doc)}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-primary hover:bg-primary dark:hover:bg-primary/80 text-white rounded-xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all shadow-lg active:scale-95"
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-primary hover:bg-gradient-azure dark:hover:bg-primary/80 text-white rounded-xl text-[10px] font-bold uppercase tracking-[0.15em] transition-all shadow-lg active:scale-95"
                                 >
                                     <LucideIcons.Eye size={14} strokeWidth={2} />
                                     Ver

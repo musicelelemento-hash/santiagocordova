@@ -1,7 +1,8 @@
 
 import React, { useMemo } from 'react';
-import { ArrowRight, UserCheck, Users, Calendar, Clock as ClockIcon, FileText, Receipt, UserPlus, Gift, Activity } from 'lucide-react';
+import { ArrowRight, UserCheck, Users, Calendar, Clock as ClockIcon, FileText, Receipt, UserPlus, Gift, Activity, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { Screen, ClientFilter, TaxRegime, ServiceFeesConfig, Task, Client } from '../types';
+import { differenceInCalendarDays } from 'date-fns';
 
 interface HomeScreenProps {
   navigate: (screen: Screen, options?: { clientFilter?: ClientFilter, initialTaskData?: Partial<Task>, initialClientData?: Partial<Client> }) => void;
@@ -133,6 +134,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
         return [...menuItems, ...customItems];
     }, [navigate, serviceFees]);
 
+    const expiringClients = useMemo(() => {
+        const today = new Date();
+        const alertDays = 15;
+        return clients.filter(c => {
+            let isExpiring = false;
+            if (c.signatureExpirationDate) {
+                const diff = differenceInCalendarDays(new Date(c.signatureExpirationDate), today);
+                if (diff <= alertDays) isExpiring = true;
+            }
+            if (c.facturadorConfig?.expirationDate) {
+                const diff = differenceInCalendarDays(new Date(c.facturadorConfig.expirationDate), today);
+                if (diff <= alertDays) isExpiring = true;
+            }
+            return isExpiring;
+        });
+    }, [clients]);
+
   return (
     <div className="space-y-8 pb-32 animate-fade-in relative aurora-premium min-h-screen">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10 px-1 sm:px-0 mb-4">
@@ -152,6 +170,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
                   <span>Navegación Táctica de Operaciones</span>
               </div>
           </div>
+
+          {/* RADAR DE VENCIMIENTOS WIDGET */}
+          {expiringClients.length > 0 && (
+              <div 
+                  onClick={() => navigate('clients', { clientFilter: { needsAttention: true, title: 'Atención: Vencimientos' } })}
+                  className="w-full sm:w-auto animate-slide-up-fade bg-rose-500/10 border border-rose-500/20 p-4 rounded-2xl cursor-pointer hover:bg-rose-500/20 transition-all group flex items-center gap-4"
+              >
+                  <div className="bg-rose-500/20 p-3 rounded-xl text-rose-400 group-hover:scale-110 group-hover:rotate-12 transition-transform shadow-[0_0_15px_rgba(244,63,94,0.4)]">
+                      <ShieldAlert size={24} strokeWidth={2} />
+                  </div>
+                  <div>
+                      <h3 className="text-rose-400 font-bold text-sm uppercase tracking-wider mb-0.5">Radar de Vencimientos</h3>
+                      <p className="text-slate-400 text-xs font-medium">
+                          <strong className="text-slate-200">{expiringClients.length}</strong> {expiringClients.length === 1 ? 'cliente requiere' : 'clientes requieren'} renovación urgente
+                      </p>
+                  </div>
+                  <ArrowRight size={18} className="text-rose-400/50 group-hover:text-rose-400 group-hover:translate-x-1 transition-all ml-2" />
+              </div>
+          )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">

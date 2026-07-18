@@ -114,10 +114,17 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
 
                 {isDeclared ? (
                     <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 text-blue-600 dark:text-primary-low bg-blue-50 dark:bg-primary/5 px-4 py-2 rounded-xl border border-blue-100 dark:border-primary/20 text-xs font-bold">
-                            <LucideIcons.CheckCircle2 size={14} strokeWidth={2.5} />
-                            Declarado
-                        </div>
+                        {hasProofFile ? (
+                            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-200 dark:border-emerald-500/20 text-xs font-bold">
+                                <LucideIcons.ShieldCheck size={14} strokeWidth={2.5} />
+                                Respaldado
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-4 py-2 rounded-xl border border-amber-200 dark:border-amber-500/20 text-xs font-bold animate-pulse">
+                                <LucideIcons.AlertTriangle size={14} strokeWidth={2.5} />
+                                Sin Comprobante
+                            </div>
+                        )}
                         {!hasProofFile && onUpload && (
                             <button
                                 onClick={(e) => { e.stopPropagation(); onUpload(); }}
@@ -143,7 +150,7 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                             <button
                                 onClick={(e) => { e.stopPropagation(); onCancel(); }}
                                 title="Cancelar declaración"
-                                className="p-2.5 bg-white dark:bg-surface-low/50 border border-slate-200 dark:border-white/10 rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-300 transition-all active:scale-90"
+                                className="p-2.5 glass-card-premium rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-300 transition-all active:scale-90"
                             >
                                 <LucideIcons.X size={16} strokeWidth={2} />
                             </button>
@@ -164,7 +171,7 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onDeclare(); }}
                                     title="Registrar declaración manualmente sin PDF (emergencia)"
-                                    className="p-2.5 bg-white dark:bg-surface-low/50 border border-slate-200 dark:border-white/10 rounded-xl text-slate-400 hover:text-emerald-500 hover:border-emerald-500/30 transition-all active:scale-90 flex-shrink-0"
+                                    className="p-2.5 glass-card-premium rounded-xl text-slate-400 hover:text-emerald-500 hover:border-emerald-500/30 transition-all active:scale-90 flex-shrink-0"
                                 >
                                     <LucideIcons.Check size={16} strokeWidth={2.5} />
                                 </button>
@@ -236,7 +243,7 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                             <button
                                 onClick={(e) => { e.stopPropagation(); onCancel(); }}
                                 title="Cancelar pago/servicio"
-                                className="p-2.5 bg-white dark:bg-surface-low/50 border border-slate-200 dark:border-white/10 rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-300 transition-all active:scale-90"
+                                className="p-2.5 glass-card-premium rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-300 transition-all active:scale-90"
                             >
                                 <LucideIcons.X size={16} strokeWidth={2} />
                             </button>

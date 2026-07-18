@@ -266,7 +266,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                             .map((decl, idx) => (
                                 <div key={idx} className="bg-slate-50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 rounded-[2rem] p-6 border border-slate-100 dark:border-white/5 flex items-center justify-between shadow-sm hover:shadow-lg transition-all group cursor-pointer" onClick={() => setPreviewItem(decl)}>
                                     <div className="flex items-center gap-6">
-                                        <div className="w-16 h-16 rounded-2xl bg-white dark:bg-surface-low border border-slate-100 dark:border-white/5 flex items-center justify-center shadow-sm group-hover:bg-primary/10 transition-colors">
+                                        <div className="w-16 h-16 rounded-2xl glass-card-premium flex items-center justify-center  group-hover:bg-primary/10 transition-colors">
                                             <LucideIcons.FileText className="text-slate-400 group-hover:text-primary" size={28} />
                                         </div>
                                         <div>
