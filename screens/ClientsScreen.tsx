@@ -143,10 +143,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     }, [sortOption]);
 
     useEffect(() => {
-        setIsMatrixView(activeGroupTab === 'matrix' || activeGroupTab === 'renta');
-        setIsWorkspaceView(['all', 'mensual', 'semestral', 'al-dia', 'ordenes', 'trash'].includes(activeGroupTab));
+        setIsMatrixView(['matrix', 'renta', 'ordenes', 'vencidos'].includes(activeGroupTab));
+        setIsWorkspaceView(['all', 'mensual', 'semestral', 'al-dia', 'trash'].includes(activeGroupTab));
         setIsCobrosView(activeGroupTab === 'cobros');
-        setIsAlertasView(activeGroupTab === 'vencidos');
+        setIsAlertasView(false); // Eliminado para unificar con Matrix
     }, [activeGroupTab]);
 
     useEffect(() => {
