@@ -66,10 +66,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     return (
         <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700 pb-20">
             {/* Grid for Technical Parameters */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div className="grid grid-cols-1 2xl:grid-cols-12 gap-10">
                 
                 {/* Left Column: Core Identity & Tax Profile */}
-                <div className="lg:col-span-8 space-y-10">
+                <div className="2xl:col-span-8 space-y-10">
                     <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-slate-200/50 dark:border-white/10 shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden group transition-all duration-500">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-all duration-1000 group-hover:scale-110 pointer-events-none">
                             <LucideIcons.ShieldCheck size={96} className="text-primary" />
@@ -226,7 +226,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 </div>
 
                 {/* Right Column: Technical Stats & Meta */}
-                <div className="lg:col-span-4 space-y-10">
+                <div className="2xl:col-span-4 space-y-10">
                     <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-8 border border-slate-200/50 dark:border-white/10 shadow-2xl shadow-slate-200/50 dark:shadow-none transition-all duration-500">
                         <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-8">Parámetros del Sistema</h3>
                         

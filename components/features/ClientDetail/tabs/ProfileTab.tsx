@@ -158,7 +158,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
 
             {/* ── TOP ROW: Identity & Service Status (Bento Grid) ──────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
 
                 {/* Info del régimen */}
                     <RegimeInfoPanel client={editedClient} />
@@ -175,10 +175,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             </div>
 
             {/* ── MIDDLE ROW: Action Core ──────────────────────────── */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
                 
                 {/* ── Column 1: Tax Obligations (Span 2) ── */}
-                <div className="xl:col-span-2 space-y-6">
+                <div className="2xl:col-span-2 space-y-6">
                     {/* Sección: Obligaciones tributarias */}
                     <div className="glass-card-premium rounded-2xl p-6 ">
                         <div className="flex items-center justify-between mb-4">
@@ -570,7 +570,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 </div>
 
             {/* ── BOTTOM ROW: Analytics & Facturador ──────────────────────────── */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
                 {/* Gráfico de honorarios */}
                 <div className="bg-white dark:bg-surface/30 rounded-2xl p-6 border border-slate-100 dark:border-white/5 shadow-sm h-full flex flex-col">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
