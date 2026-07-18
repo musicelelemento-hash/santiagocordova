@@ -157,22 +157,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
 
-            {/* ── TOP ROW: Identity & Service Status (Bento Grid) ──────────────────────────── */}
-            <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
 
-                {/* Info del régimen */}
-                    <RegimeInfoPanel client={editedClient} />
-
-                    {/* Estado del servicio */}
-                    <ServicePaymentStatus
-                        isFullyAlDia={isFullyAlDia}
-                        complianceStats={complianceStats}
-                        client={client}
-                        serviceFees={serviceFees}
-                        handleQuickPay={handleQuickPay}
-                        setConfirmation={setConfirmation}
-                    />
-            </div>
 
             {/* ── MIDDLE ROW: Action Core ──────────────────────────── */}
             <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
