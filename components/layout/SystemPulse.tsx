@@ -68,82 +68,52 @@ export const SystemPulse: React.FC<SystemPulseProps> = ({
             </div>
         );
     }
-
     return (
-        <div className="flex flex-col gap-6 p-6 select-none animate-fade-in font-premium">
-            {/* Clock & Date Section */}
-            <div className="flex flex-col">
-                <span className={`text-4xl font-light tracking-tighter tabular-nums ${
+        <div className="flex flex-col gap-4 p-5 select-none animate-fade-in font-premium">
+            {/* Clock & Date Section - Minimalist */}
+            <div className="flex items-baseline justify-between">
+                <span className={`text-2xl font-light tracking-tighter tabular-nums ${
                     theme === 'light' ? 'text-slate-900' : 'text-slate-100'
                 }`}>
                     {format(currentTime, 'HH:mm')}
                 </span>
-                <span className={`text-[11px] font-medium mt-1 lowercase first-letter:uppercase ${
-                    theme === 'light' ? 'text-slate-500' : 'text-slate-400'
+                <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                    theme === 'light' ? 'text-slate-400' : 'text-slate-500'
                 }`}>
-                    {format(currentTime, 'EEEE, d MMMM', { locale: es })}
+                    {format(currentTime, 'd MMM', { locale: es })}
                 </span>
             </div>
 
-            {/* Operational Status Section */}
-            <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                        theme === 'light' ? 'bg-slate-900 shadow-[0_0_8px_rgba(15,23,42,0.3)]' : 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]'
-                    }`}></div>
-                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] font-premium ${
-                        theme === 'light' ? 'text-slate-400' : 'text-slate-500'
-                    }`}>
-                        Estado Operativo
-                    </span>
-                </div>
-                
-                <div className={`flex flex-col gap-1.5 pl-3.5 border-l ${
-                    theme === 'light' ? 'border-slate-200' : 'border-white/5'
-                }`}>
-                    <div className="flex items-center gap-2">
-                        <span className={`text-[11px] font-medium ${
-                            theme === 'light' ? 'text-slate-500' : 'text-slate-400'
-                        }`}>SISTEMA INTEGRAL {version}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className={`text-[11px] font-black uppercase tracking-widest font-premium ${
-                            theme === 'light' ? 'text-slate-400' : 'text-white/40'
-                        }`}>Conexión Segura Activa</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Identity Section */}
-            <div className={`mt-2 pt-6 border-t ${
+            {/* Identity Section - Ultra Minimalist Profile Badge */}
+            <div className={`pt-4 border-t ${
                 theme === 'light' ? 'border-slate-100' : 'border-white/5'
             }`}>
-                <div className="flex flex-col gap-1">
-                    <h3 className={`text-sm font-semibold tracking-tight ${
-                        theme === 'light' ? 'text-slate-900' : 'text-slate-200'
+                <div className="flex items-center gap-3">
+                    {/* Tiny Initials Avatar */}
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black tracking-wider ${
+                        theme === 'light' 
+                            ? 'bg-slate-100 border border-slate-200 text-slate-700'
+                            : 'bg-white/5 border border-white/10 text-slate-300'
                     }`}>
-                        {userName}
-                    </h3>
-                    <div className="flex items-center justify-between">
-                        <span className={`text-[10px] font-black uppercase tracking-[0.15em] font-premium ${
-                            theme === 'light' ? 'text-slate-400' : 'text-slate-500'
+                        {userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                        <h3 className={`text-xs font-bold truncate ${
+                            theme === 'light' ? 'text-slate-800' : 'text-slate-200'
                         }`}>
-                            {role}
-                        </span>
-                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
-                            theme === 'light' 
-                                ? 'text-slate-400 bg-slate-100 border-slate-200'
-                                : 'text-white/30 bg-white/5 border-white/10' 
-                        }`}>
-                            {sessionCode}
-                        </span>
+                            {userName}
+                        </h3>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={`text-[8px] font-black uppercase tracking-wider ${
+                                theme === 'light' ? 'text-slate-400' : 'text-slate-500'
+                            }`}>
+                                {role}
+                            </span>
+                            <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            {/* System Shield Indicator - Minimalist */}
-            <div className="mt-auto pt-4 flex justify-end">
-                <ShieldCheck size={14} className="text-slate-800 opacity-50 hover:opacity-100 hover:text-white/50 transition-all cursor-help" />
             </div>
         </div>
     );
