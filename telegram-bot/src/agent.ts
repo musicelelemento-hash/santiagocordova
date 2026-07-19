@@ -420,6 +420,111 @@ const toolDefinitions = [
     { type: "function", function: { name: "download_client_proof", description: "Descarga y envía el comprobante PDF oficial de declaración de un cliente para un período específico.", parameters: { type: "object", properties: { ruc: { type: "string", description: "Número de RUC del cliente" }, period: { type: "string", description: "El periodo del comprobante a descargar (ej: '2026-04' o '2025')" }, type: { type: "string", enum: ["IVA", "RENTA"], description: "El tipo de impuesto (opcional)" } }, required: ["ruc", "period"] } } }
 ];
 
+// Función para convertir herramientas de formato OpenAI/OpenRouter a la especificación nativa del SDK de Google (tipos en MAYÚSCULAS)
+function convertToolsToGoogleSDK(openAiTools: any[]): any {
+    const convertType = (val: string): string => {
+        if (!val) return 'STRING';
+        const u = val.toUpperCase();
+        return u === 'ARRAY' ? 'ARRAY' : u === 'OBJECT' ? 'OBJECT' : u === 'BOOLEAN' ? 'BOOLEAN' : u === 'INTEGER' ? 'INTEGER' : u === 'NUMBER' ? 'NUMBER' : 'STRING';
+    };
+
+    const convertSchema = (schema: any): any => {
+        if (!schema) return undefined;
+        const newSchema: any = {
+            type: convertType(schema.type)
+        };
+        if (schema.description) newSchema.description = schema.description;
+        if (schema.enum) newSchema.enum = schema.enum;
+        
+        if (schema.properties) {
+            newSchema.properties = {};
+            for (const key in schema.properties) {
+                newSchema.properties[key] = convertSchema(schema.properties[key]);
+            }
+        }
+        if (schema.required) newSchema.required = schema.required;
+        if (schema.items) newSchema.items = convertSchema(schema.items);
+        
+        return newSchema;
+    };
+
+    const declarations = openAiTools.map(t => {
+        const fn = t.function;
+        return {
+            name: fn.name,
+            description: fn.description,
+            parameters: fn.parameters ? convertSchema(fn.parameters) : { type: 'OBJECT', properties: {} }
+        };
+    });
+
+    return [{ functionDeclarations: declarations }];
+}
+
+// Función para mapear el historial compatible con OpenAI al formato Content[] estricto del SDK oficial de Google (partes alternadas)
+function mapOpenAiMessagesToGoogleSDK(openAiMessages: any[]): any[] {
+    const googleContents: any[] = [];
+
+    openAiMessages.forEach(m => {
+        if (m.role === 'system') return; // Se maneja vía systemInstruction
+
+        const parts: any[] = [];
+
+        if (m.content !== undefined && m.content !== null) {
+            parts.push({ text: String(m.content) });
+        }
+
+        if (m.role === 'assistant' && m.tool_calls && m.tool_calls.length > 0) {
+            m.tool_calls.forEach((tc: any) => {
+                let args = {};
+                try {
+                    args = typeof tc.function.arguments === 'string'
+                        ? JSON.parse(tc.function.arguments || '{}')
+                        : tc.function.arguments;
+                } catch (e) {
+                    console.error('Error parsing tool arguments for Google:', e);
+                }
+                parts.push({
+                    functionCall: {
+                        name: tc.function.name,
+                        args: args
+                    }
+                });
+            });
+        }
+
+        if (m.role === 'tool') {
+            let responseObj = { result: m.content };
+            try {
+                responseObj = JSON.parse(m.content);
+            } catch (e) {
+                // Mantener como string si no es JSON
+            }
+            parts.push({
+                functionResponse: {
+                    name: m.name || 'unknown_tool',
+                    response: typeof responseObj === 'object' ? responseObj : { result: String(m.content) }
+                }
+            });
+        }
+
+        // Determinar rol estricto en Google: 'user' o 'model' (las tools se envían como user)
+        const role = (m.role === 'assistant') ? 'model' : 'user';
+
+        // Evitar roles repetidos consecutivos inyectando partes consecutivas en el mismo mensaje
+        const lastContent = googleContents[googleContents.length - 1];
+        if (lastContent && lastContent.role === role) {
+            lastContent.parts.push(...parts);
+        } else if (parts.length > 0) {
+            googleContents.push({
+                role: role,
+                parts: parts
+            });
+        }
+    });
+
+    return googleContents;
+}
+
 export async function processChatWithAgentLoop(chatId: string, userMessage: string): Promise<string> {
     // 1. Save user message to DB
     await saveMessage(chatId, 'user', userMessage);
@@ -448,25 +553,57 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
 
         let response;
         let lastError = "";
-               // --- 1. TRY DIRECT GOOGLE GEMINI 2.0 (Fast, direct, OpenAI-compatible, generous limits) ---
+        // --- 1. TRY DIRECT GOOGLE GEMINI 2.0 VIA OFFICIAL SDK (Fast, robust tool calling, 100% free) ---
         if (GEMINI_API_KEY) {
             try {
-                console.log("📡 Attempting Primary (Direct Google Gemini 2.0 Flash)...");
-                const directGoogleClient = new OpenAI({
-                    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
-                    apiKey: GEMINI_API_KEY,
-                });
-                response = await directGoogleClient.chat.completions.create({
-                    messages: cleanMessages(messages, 15000, 20000) as any,
+                console.log("📡 Attempting Primary (Direct Google Gemini 2.0 Flash SDK)...");
+                const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+                const model = genAI.getGenerativeModel({
                     model: 'gemini-2.0-flash',
-                    tools: toolDefinitions as any,
-                    tool_choice: "auto",
-                    max_tokens: 1500
+                    systemInstruction: SYSTEM_PROMPT + memoryContext,
+                    tools: convertToolsToGoogleSDK(toolDefinitions)
                 });
-                console.log(`✅ Direct Gemini Success`);
+
+                const googleHistory = mapOpenAiMessagesToGoogleSDK(messages);
+                
+                const result = await model.generateContent({
+                    contents: googleHistory,
+                    generationConfig: {
+                        maxOutputTokens: 1500,
+                        temperature: 0.2
+                    }
+                });
+
+                const candidate = result.response?.candidates?.[0];
+                const parts = candidate?.content?.parts || [];
+                const text = result.response?.text();
+                
+                const toolCalls = parts
+                    .filter((p: any) => p.functionCall)
+                    .map((p: any) => ({
+                        id: `call_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                        type: 'function',
+                        function: {
+                            name: p.functionCall.name,
+                            arguments: JSON.stringify(p.functionCall.args || {})
+                        }
+                    }));
+
+                response = {
+                    choices: [
+                        {
+                            message: {
+                                role: 'assistant',
+                                content: text || null,
+                                ...(toolCalls.length > 0 ? { tool_calls: toolCalls } : {})
+                            }
+                        }
+                    ]
+                };
+                console.log(`✅ Direct Gemini SDK Success`);
             } catch (error: any) {
-                console.error('⚠️ Direct Gemini Error:', error.message);
-                lastError = `DirectGemini: ${error.message}`;
+                console.error('⚠️ Direct Gemini SDK Error:', error.message);
+                lastError = `DirectGeminiSDK: ${error.message}`;
             }
         }
 

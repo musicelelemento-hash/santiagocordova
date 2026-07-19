@@ -310,5 +310,57 @@ export const SupabaseService = {
       createdAt: db.created_at,
       updatedAt: db.updated_at
     };
+  },
+
+  // --- SRI Comprobantes ---
+  async getSriComprobantes(): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('sri_comprobantes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data || []).map(d => ({
+        id: d.id,
+        tipo: d.tipo,
+        secuencial: d.secuencial,
+        claveAcceso: d.clave_acceso,
+        rucReceptor: d.ruc_receptor,
+        nombreReceptor: d.nombre_receptor,
+        fechaEmision: d.fecha_emision,
+        total: Number(d.total),
+        estado: d.estado,
+        xml: d.xml,
+        ambiente: d.ambiente,
+        mensajeError: d.mensaje_error
+      }));
+    } catch (err) {
+      console.error('Error fetching sri comprobantes:', err);
+      return [];
+    }
+  },
+
+  async upsertSriComprobante(comp: any): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('sri_comprobantes')
+        .upsert({
+          tipo: comp.tipo,
+          secuencial: comp.secuencial,
+          clave_acceso: comp.claveAcceso,
+          ruc_receptor: comp.rucReceptor,
+          nombre_receptor: comp.nombreReceptor,
+          fecha_emision: comp.fechaEmision,
+          total: comp.total,
+          estado: comp.estado,
+          xml: comp.xml,
+          ambiente: comp.ambiente,
+          mensaje_error: comp.mensajeError
+        }, { onConflict: 'clave_acceso' });
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error upserting sri comprobante:', err);
+      throw err;
+    }
   }
 };

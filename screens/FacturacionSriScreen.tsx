@@ -10,6 +10,8 @@ import { Client, TaxRegime, DeclarationStatus } from '../types';
 import { getActivePeriodsForClient, getObligationsForPeriod } from '../services/complianceEngine';
 import { getClientServiceFee } from '../services/clientService';
 import { formatPeriodForDisplay } from '../services/sri';
+import { db } from '../services/db';
+import { SupabaseService } from '../services/supabaseClientService';
 
 interface InvoiceItem {
   id: string;
@@ -148,39 +150,63 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     return stored;
   }); // 0 = General, 3 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
   const [ambiente, setAmbiente] = useState<'1' | '2'>(() => (localStorage.getItem('sc_emisor_ambiente') as '1' | '2') || '1'); // 1 = Pruebas, 2 = Producción
-  const [p12FileBase64, setP12FileBase64] = useState(() => localStorage.getItem('sc_sri_p12_base64') || '');
-  const [p12FileName, setP12FileName] = useState(() => localStorage.getItem('sc_sri_p12_filename') || '');
-  const [p12Password, setP12Password] = useState(() => localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123');
-  const [p12ExpiryDate, setP12ExpiryDate] = useState(() => localStorage.getItem('sc_sri_p12_expiry') || '');
-  const [p12SubjectName, setP12SubjectName] = useState(() => localStorage.getItem('sc_sri_p12_subject') || '');
+  const [p12FileBase64, setP12FileBase64] = useState('');
+  const [p12FileName, setP12FileName] = useState('');
+  const [p12Password, setP12Password] = useState('ClaveFirma123');
+  const [p12ExpiryDate, setP12ExpiryDate] = useState('');
+  const [p12SubjectName, setP12SubjectName] = useState('');
 
-  const handlePasswordChange = (val: string) => {
+  // Carga asíncrona de firma electrónica desde IndexedDB
+  useEffect(() => {
+    const loadSignatureFromIndexedDB = async () => {
+      try {
+        const base64 = await db.getLocal('sc_sri_p12_base64') || '';
+        const name = await db.getLocal('sc_sri_p12_filename') || '';
+        const password = await db.getLocal('sc_sri_p12_password') || 'ClaveFirma123';
+        const expiry = await db.getLocal('sc_sri_p12_expiry') || '';
+        const subject = await db.getLocal('sc_sri_p12_subject') || '';
+        
+        setP12FileBase64(base64);
+        setP12FileName(name);
+        setP12Password(password);
+        setP12ExpiryDate(expiry);
+        setP12SubjectName(subject);
+        
+        if (base64) {
+          setIsEditingSignature(false);
+        }
+      } catch (err) {
+        console.error('Error loading signature from local db:', err);
+      }
+    };
+    loadSignatureFromIndexedDB();
+  }, []);
+
+  const handlePasswordChange = async (val: string) => {
     setP12Password(val);
-    localStorage.setItem('sc_sri_p12_password', val);
+    await db.setLocal('sc_sri_p12_password', val);
   };
 
-  const handleP12Upload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleP12Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const result = event.target?.result as string;
       if (result) {
         const base64Data = result.split(',')[1] || result;
         setP12FileBase64(base64Data);
         setP12FileName(file.name);
-        localStorage.setItem('sc_sri_p12_base64', base64Data);
-        localStorage.setItem('sc_sri_p12_filename', file.name);
+        await db.setLocal('sc_sri_p12_base64', base64Data);
+        await db.setLocal('sc_sri_p12_filename', file.name);
 
         // Try to extract expiry/subject from the binary DER data embedded in the .p12
-        // We look for the ASN.1 UTCTime / GeneralizedTime pattern for the expiry date
         try {
           const binaryStr = atob(base64Data);
           const bytes = new Uint8Array(binaryStr.length);
           for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
 
-          // Search for UTCTime tag (0x17) and GeneralizedTime tag (0x18) — certificate validity dates
           const found: Date[] = [];
           for (let i = 0; i < bytes.length - 15; i++) {
             if ((bytes[i] === 0x17 || bytes[i] === 0x18) && bytes[i+1] >= 12) {
@@ -188,12 +214,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               const str = Array.from(bytes.slice(i+2, i+2+len)).map(b => String.fromCharCode(b)).join('');
               let d: Date | null = null;
               if (bytes[i] === 0x17 && str.length === 13) {
-                // YYMMDDHHMMSSZ
                 const yr = parseInt(str.substring(0, 2));
                 const year = yr >= 50 ? 1900 + yr : 2000 + yr;
                 d = new Date(`${year}-${str.substring(2,4)}-${str.substring(4,6)}T${str.substring(6,8)}:${str.substring(8,10)}:${str.substring(10,12)}Z`);
               } else if (bytes[i] === 0x18 && str.length === 15) {
-                // YYYYMMDDHHMMSSZ
                 d = new Date(`${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}T${str.substring(8,10)}:${str.substring(10,12)}:${str.substring(12,14)}Z`);
               }
               if (d && !isNaN(d.getTime()) && d.getFullYear() > 2000 && d.getFullYear() < 2060) {
@@ -203,27 +227,25 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           }
 
           if (found.length >= 2) {
-            // Sort ascending; the last one tends to be the expiry
             found.sort((a, b) => a.getTime() - b.getTime());
             const expiry = found[found.length - 1];
             const formatted = expiry.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: '2-digit' });
             setP12ExpiryDate(formatted);
-            localStorage.setItem('sc_sri_p12_expiry', formatted);
+            await db.setLocal('sc_sri_p12_expiry', formatted);
 
-            // Check if near expiry (< 60 days)
             const daysLeft = Math.floor((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
             const subjectNote = daysLeft < 0 ? '⚠️ CERTIFICADO VENCIDO' : daysLeft < 60 ? `⚠️ Vence en ${daysLeft} días` : `✓ Válido (${daysLeft} días restantes)`;
             setP12SubjectName(subjectNote);
-            localStorage.setItem('sc_sri_p12_subject', subjectNote);
+            await db.setLocal('sc_sri_p12_subject', subjectNote);
           } else {
             setP12ExpiryDate('No detectada');
             setP12SubjectName('Archivo cargado correctamente');
-            localStorage.setItem('sc_sri_p12_expiry', 'No detectada');
-            localStorage.setItem('sc_sri_p12_subject', 'Archivo cargado correctamente');
+            await db.setLocal('sc_sri_p12_expiry', 'No detectada');
+            await db.setLocal('sc_sri_p12_subject', 'Archivo cargado correctamente');
           }
         } catch {
           setP12ExpiryDate('No detectada');
-          localStorage.setItem('sc_sri_p12_expiry', 'No detectada');
+          await db.setLocal('sc_sri_p12_expiry', 'No detectada');
         }
       }
     };
@@ -314,7 +336,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [billingMode, setBillingMode] = useState<'detallado' | 'consolidado'>('detallado');
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
-  const [isEditingSignature, setIsEditingSignature] = useState(() => !localStorage.getItem('sc_sri_p12_base64'));
+  const [isEditingSignature, setIsEditingSignature] = useState(true);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [showP12Password, setShowP12Password] = useState(false);
   const [emisorLogo, setEmisorLogo] = useState(() => localStorage.getItem('sc_emisor_logo') || '');
@@ -476,8 +498,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   };
 
   const fetchSignatureVigencia = async () => {
-    const storedBase64 = localStorage.getItem('sc_sri_p12_base64') || p12FileBase64;
-    const storedPassword = localStorage.getItem('sc_sri_p12_password') || p12Password;
+    const storedBase64 = await db.getLocal('sc_sri_p12_base64') || p12FileBase64;
+    const storedPassword = await db.getLocal('sc_sri_p12_password') || p12Password;
     if (!storedBase64) return;
     
     try {
@@ -504,12 +526,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             if (!isNaN(expDate.getTime())) {
               formattedExpiry = expDate.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: '2-digit' });
               setP12ExpiryDate(formattedExpiry);
-              localStorage.setItem('sc_sri_p12_expiry', formattedExpiry);
+              await db.setLocal('sc_sri_p12_expiry', formattedExpiry);
               
               const daysLeft = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
               const subjectNote = daysLeft < 0 ? '⚠️ CERTIFICADO VENCIDO' : daysLeft < 60 ? `⚠️ Vence en ${daysLeft} días` : `✓ Válido (${daysLeft} días restantes)`;
               setP12SubjectName(subjectNote);
-              localStorage.setItem('sc_sri_p12_subject', subjectNote);
+              await db.setLocal('sc_sri_p12_subject', subjectNote);
             }
           }
         }
@@ -543,16 +565,51 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     }
   }, [activeTab]);
 
-  // Load history from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('sc_sri_comprobantes_history');
-    if (stored) {
-      try {
-        setHistory(JSON.parse(stored));
-      } catch (e) {
-        console.error(e);
-      }
+  const saveRecordToHistory = async (newRecord: HistoricComprobante) => {
+    setHistory(prev => {
+      const updated = [newRecord, ...prev];
+      db.setLocal('sc_sri_comprobantes_history', updated).catch(e => console.error(e));
+      return updated;
+    });
+
+    try {
+      await SupabaseService.upsertSriComprobante(newRecord);
+    } catch (err) {
+      console.error('Error saving invoice to Supabase:', err);
     }
+  };
+
+  // Load history from Supabase (with IndexedDB fallback)
+  useEffect(() => {
+    const loadComprobantesHistory = async () => {
+      try {
+        const dbComprobantes = await SupabaseService.getSriComprobantes();
+        if (dbComprobantes && dbComprobantes.length > 0) {
+          setHistory(dbComprobantes);
+          await db.setLocal('sc_sri_comprobantes_history', dbComprobantes);
+          return;
+        }
+      } catch (err) {
+        console.error('Error loading history from Supabase:', err);
+      }
+
+      try {
+        const stored = await db.getLocal('sc_sri_comprobantes_history');
+        if (stored) {
+          setHistory(stored);
+        } else {
+          const legacy = localStorage.getItem('sc_sri_comprobantes_history');
+          if (legacy) {
+            const parsed = JSON.parse(legacy);
+            setHistory(parsed);
+            await db.setLocal('sc_sri_comprobantes_history', parsed);
+          }
+        }
+      } catch (e) {
+        console.error('Error loading history from local backup:', e);
+      }
+    };
+    loadComprobantesHistory();
   }, []);
 
   // Auto-scroll logs
@@ -1162,9 +1219,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           ambiente
         };
 
-        const updatedHistory = [newRecord, ...history];
-        setHistory(updatedHistory);
-        localStorage.setItem('sc_sri_comprobantes_history', JSON.stringify(updatedHistory));
+        await saveRecordToHistory(newRecord);
       } else {
         const authResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
           method: 'POST',
@@ -1223,9 +1278,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           ambiente,
           mensajeError: isAuthorized ? undefined : errorMsg
         };
-        const updatedHistory = [newRecord, ...history];
-        setHistory(updatedHistory);
-        localStorage.setItem('sc_sri_comprobantes_history', JSON.stringify(updatedHistory));
+        await saveRecordToHistory(newRecord);
       }
 
     } catch (err: any) {
@@ -1247,9 +1300,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         ambiente,
         mensajeError: err.message
       };
-      const updatedHistory = [newRecord, ...history];
-      setHistory(updatedHistory);
-      localStorage.setItem('sc_sri_comprobantes_history', JSON.stringify(updatedHistory));
+      await saveRecordToHistory(newRecord);
     }
   };
 
@@ -1540,13 +1591,15 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         <title>RIDE Factura ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</title>
         <meta charset="utf-8" />
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;750&family=Manrope:wght@700;800&display=swap');
+          
           body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             font-size: 10px;
-            color: #333;
+            color: #1e293b;
             margin: 25px;
-            background: white;
-            line-height: 1.4;
+            background: #ffffff;
+            line-height: 1.5;
           }
           .ride-container {
             width: 100%;
@@ -1557,172 +1610,219 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             display: grid;
             grid-template-columns: 1.2fr 1fr;
             gap: 20px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
           }
           .emisor-box {
             padding-right: 10px;
           }
           .logo-img {
-            max-height: 60px;
-            max-width: 200px;
+            max-height: 70px;
+            max-width: 220px;
             object-fit: contain;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+          }
+          .emisor-title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+            margin-bottom: 15px;
           }
           .emisor-name {
+            font-family: 'Manrope', sans-serif;
             font-size: 11px;
-            font-weight: 800;
+            font-weight: 700;
             text-transform: uppercase;
-            color: #111;
+            color: #0f172a;
             margin-bottom: 5px;
           }
           .auth-box {
-            border: 1.5px solid #000;
-            border-radius: 12px;
-            padding: 15px;
-            background: #fafafa;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 16px;
+            background: #f8fafc;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
           }
           .auth-title {
             font-size: 12px;
-            font-weight: 900;
-            color: #000;
+            font-weight: 700;
+            color: #0f172a;
             margin-bottom: 5px;
           }
           .auth-secuencial {
-            font-family: monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
-            font-weight: bold;
-            color: #222;
+            font-weight: 750;
+            color: #2b6aff;
+            letter-spacing: 0.05em;
           }
           .auth-details {
-            border-top: 1px solid #ccc;
-            padding-top: 8px;
-            margin-top: 8px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 10px;
+            margin-top: 10px;
           }
           .auth-details table {
             width: 100%;
             border-collapse: collapse;
           }
           .auth-details td {
-            padding: 2.5px 0;
+            padding: 3px 0;
             vertical-align: top;
           }
+          .auth-details td strong {
+            color: #475569;
+            font-size: 8.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+          }
           .barcode-container {
-            border-top: 1px solid #ccc;
-            padding-top: 8px;
-            margin-top: 8px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 10px;
+            margin-top: 10px;
             text-align: center;
           }
           .barcode-lines {
-            height: 30px;
-            background: #000;
+            height: 35px;
             width: 100%;
-            margin: 4px 0;
+            margin: 6px 0;
             background: repeating-linear-gradient(
               90deg,
-              #000,
-              #000 2px,
+              #0f172a,
+              #0f172a 2px,
               #fff 2px,
               #fff 4px,
-              #000 4px,
-              #000 6px,
+              #0f172a 4px,
+              #0f172a 6px,
               #fff 6px,
               #fff 7px
             );
+            border-radius: 4px;
           }
           .barcode-text {
-            font-family: monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 8.5px;
-            color: #444;
+            color: #475569;
             word-break: break-all;
+            letter-spacing: 0.02em;
           }
           .receptor-box {
-            border: 1.5px solid #000;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 20px;
             display: grid;
             grid-template-columns: 1.3fr 1fr;
-            gap: 8px;
+            gap: 10px;
+            background: #ffffff;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+          }
+          .receptor-box strong {
+            color: #64748b;
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
           }
           .items-table {
             width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-            border: 1.5px solid #000;
-            border-radius: 12px;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
             overflow: hidden;
           }
           .items-table th {
-            background: #222;
-            color: white;
+            background: #0f172a;
+            color: #ffffff;
             text-transform: uppercase;
             font-size: 8.5px;
-            font-weight: 800;
-            padding: 6px 8px;
-            border: 1px solid #222;
+            font-weight: 600;
+            padding: 10px 12px;
+            border: none;
+            letter-spacing: 0.05em;
           }
           .items-table td {
-            padding: 6px 8px;
-            border: 1px solid #ccc;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            border-right: 1px solid #f1f5f9;
+          }
+          .items-table td:last-child {
+            border-right: none;
+          }
+          .items-table tr:last-child td {
+            border-bottom: none;
           }
           .items-table tr:nth-child(even) {
-            background-color: #f8f8f8;
+            background-color: #f8fafc;
           }
           .bottom-grid {
             display: grid;
-            grid-template-columns: 1.3fr 1fr;
+            grid-template-columns: 1.2fr 1fr;
             gap: 20px;
           }
           .pago-box, .info-box {
-            border: 1.5px solid #000;
-            border-radius: 12px;
-            padding: 10px 12px;
-            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 15px;
+            background: #ffffff;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
           }
           .box-title {
-            font-weight: 800;
+            font-family: 'Manrope', sans-serif;
+            font-weight: 700;
             text-transform: uppercase;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 4px;
-            margin-bottom: 8px;
-            font-size: 9px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+            font-size: 9.5px;
+            color: #0f172a;
+            letter-spacing: 0.05em;
           }
           .pago-table {
             width: 100%;
             border-collapse: collapse;
           }
           .pago-table th {
-            color: #555;
-            border-bottom: 1px solid #ccc;
-            padding: 3px;
+            color: #64748b;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 4px;
             font-size: 8.5px;
             text-align: left;
+            text-transform: uppercase;
           }
           .pago-table td {
-            padding: 4px 3px;
+            padding: 6px 4px;
           }
           .totals-box {
-            border: 1.5px solid #000;
-            border-radius: 12px;
-            padding: 10px 12px;
-            background: #fafafa;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 14px;
+            background: #f8fafc;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
           }
           .totals-table {
             width: 100%;
             border-collapse: collapse;
           }
           .totals-table td {
-            padding: 3.5px 2px;
-            border-bottom: 1px dashed #ddd;
+            padding: 5px 2px;
+            border-bottom: 1px dashed #e2e8f0;
+            font-size: 9.5px;
+            color: #475569;
           }
           .totals-table tr:last-child td {
             border-bottom: none;
           }
           .totals-table tr.total-row {
-            border-top: 1.5px solid #000;
-            font-weight: 900;
-            font-size: 11px;
-            color: #000;
+            border-top: 1.5px solid #0f172a;
+            font-weight: 700;
+            font-size: 11.5px;
+            color: #0f172a;
+          }
+          .totals-table tr.total-row td {
+            color: #0f172a;
           }
           @media print {
             .no-print {
@@ -1734,6 +1834,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             .ride-container {
               width: 100%;
               max-width: 100%;
+            }
+            .auth-box, .receptor-box, .items-table, .pago-box, .info-box, .totals-box {
+              box-shadow: none !important;
             }
           }
         </style>
