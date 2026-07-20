@@ -2,11 +2,12 @@ import Groq from 'groq-sdk';
 import { OpenAI } from 'openai';
 import { getChatHistory, saveMessage, saveMemory, getMemories } from './database';
 import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
-import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient, findClients, get_sri_credential, downloadClientProofFile } from './database_ops';
+import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient, findClients, get_sri_credential, downloadClientProofFile, setPrimaryPhone, setSignatureInfo, getMonthlyCollectionReport } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { pendingDialogs, bot, startPaymentFlowForClient, startDeclarationFlowForClient } from './index';
 import { InputFile } from 'grammy';
+
 
 require('dotenv').config();
 
@@ -92,7 +93,14 @@ Una vez que tengas recopilados los datos obligatorios (1-4), ejecuta la herramie
 
 HABILIDAD: MENSAJES DE COBRO: Cuando Santiago diga "genera el mensaje de cobro para [cliente] por $[monto]" o similar, usa la herramienta 'generate_cobro_message' para crear un mensaje profesional listo para copiar y enviar por WhatsApp. Pide el monto si no lo dice.
 
-HABILIDAD: ALERTAS DE CREDENCIALES: Cuando Santiago pregunte "¿alguna clave va a vencer?" o "revisa credenciales", usa 'get_signature_alerts' para escanear todas las claves SRI y alertar sobre las que estén próximas a expirar.`;
+HABILIDAD: ALERTAS DE CREDENCIALES: Cuando Santiago pregunte "¿alguna clave va a vencer?" o "revisa credenciales", usa 'get_signature_alerts' para escanear todas las claves SRI y alertar sobre las que estén próximas a expirar.
+
+HABILIDAD: TELÉFONO PRINCIPAL: Cuando Santiago diga "pon este número como principal", "actualiza el teléfono principal de [cliente]" o similar, usa 'set_primary_phone'. Esto moverá ese número al primer lugar de la lista.
+
+HABILIDAD: FIRMA ELECTRÓNICA: Cuando Santiago diga "actualiza la firma de [cliente]", "la firma de [cliente] vence el [fecha]", "la clave de firma de [cliente] es [clave]", usa 'set_signature_info'. Acepta clave nueva, fecha de caducidad o ambas.
+
+HABILIDAD: REPORTE DE COBRANZA MENSUAL: Cuando Santiago pregunte "¿cuánto he cobrado este mes?", "dame el reporte de cobros", "¿quién me debe?", usa 'get_monthly_collection_report'. Genera un resumen con total recaudado, pendiente, eficiencia y lista de deudores.`;
+
 
 
 // Tool logic implementation
@@ -284,6 +292,15 @@ _Baku._`;
     },
     get_sri_credential: async ({ ruc }: { ruc: string }, chatId: string) => {
         return await get_sri_credential(ruc);
+    },
+    set_primary_phone: async ({ identifier, phone }: { identifier: string; phone: string }, chatId: string) => {
+        return await setPrimaryPhone(identifier, phone);
+    },
+    set_signature_info: async ({ identifier, signaturePassword, expirationDate }: { identifier: string; signaturePassword?: string; expirationDate?: string }, chatId: string) => {
+        return await setSignatureInfo(identifier, signaturePassword, expirationDate);
+    },
+    get_monthly_collection_report: async (args: any, chatId: string) => {
+        return await getMonthlyCollectionReport();
     }
 };
 
@@ -401,7 +418,10 @@ const toolDefinitions = [
     { type: "function", function: { name: "generate_cobro_message", description: "Genera mensaje profesional de cobro listo para enviar por WhatsApp. Úsalo cuando Santiago pida 'generar mensaje de cobro', 'redactar cobro', 'mensaje para cobrar' a un cliente.", parameters: { type: "object", properties: { ruc: { type: "string", description: "RUC del cliente (opcional si se da nombre)" }, clientName: { type: "string", description: "Nombre del cliente" }, amount: { type: "number", description: "Monto a cobrar en USD" }, period: { type: "string", description: "Periodo de la deuda ej: Mayo 2026" }, paymentInfo: { type: "string", description: "Método de pago preferido (opcional)" } }, required: ["amount"] } } },
     { type: "function", function: { name: "get_signature_alerts", description: "Revisa el estado de las credenciales SRI de todos los clientes y alerta sobre contraseñas próximas a expirar o vencidas.", parameters: { type: "object", properties: {} } } },
     { type: "function", function: { name: "get_sri_credential", description: "Busca la clave SRI de un cliente que no está en el sistema, pero sí en la base de datos de claves locales importadas. Úsalo si el RUC no está en la base de datos principal pero necesitas su clave.", parameters: { type: "object", properties: { ruc: { type: "string", description: "El número de RUC completo (13 dígitos)" } }, required: ["ruc"] } } },
-    { type: "function", function: { name: "download_client_proof", description: "Descarga y envía el comprobante PDF oficial de declaración de un cliente para un período específico.", parameters: { type: "object", properties: { ruc: { type: "string", description: "Número de RUC del cliente" }, period: { type: "string", description: "El periodo del comprobante a descargar (ej: '2026-04' o '2025')" }, type: { type: "string", enum: ["IVA", "RENTA"], description: "El tipo de impuesto (opcional)" } }, required: ["ruc", "period"] } } }
+    { type: "function", function: { name: "download_client_proof", description: "Descarga y envía el comprobante PDF oficial de declaración de un cliente para un período específico.", parameters: { type: "object", properties: { ruc: { type: "string", description: "Número de RUC del cliente" }, period: { type: "string", description: "El periodo del comprobante a descargar (ej: '2026-04' o '2025')" }, type: { type: "string", enum: ["IVA", "RENTA"], description: "El tipo de impuesto (opcional)" } }, required: ["ruc", "period"] } } },
+    { type: "function", function: { name: "set_primary_phone", description: "Establece un número de teléfono como el PRINCIPAL (el primero de la lista) para un cliente. Usar cuando Santiago diga 'pon este número como principal', 'actualiza el teléfono principal de...', etc.", parameters: { type: "object", properties: { identifier: { type: "string", description: "Nombre o RUC del cliente" }, phone: { type: "string", description: "El número de teléfono a establecer como principal" } }, required: ["identifier", "phone"] } } },
+    { type: "function", function: { name: "set_signature_info", description: "Actualiza la información de firma electrónica de un cliente: clave de firma y/o fecha de caducidad. Usar cuando Santiago diga 'actualiza la firma de...', 'la firma de [cliente] vence el...', etc.", parameters: { type: "object", properties: { identifier: { type: "string", description: "Nombre o RUC del cliente" }, signaturePassword: { type: "string", description: "Nueva clave de la firma electrónica (opcional)" }, expirationDate: { type: "string", description: "Fecha de caducidad de la firma en formato YYYY-MM-DD (opcional)" } }, required: ["identifier"] } } },
+    { type: "function", function: { name: "get_monthly_collection_report", description: "Genera un reporte completo de cobranza del mes actual: total recaudado, total pendiente, eficiencia y lista de deudores. Usar cuando Santiago pregunte '¿cuánto he cobrado?', 'dame el reporte de cobros del mes', 'quién me debe este mes', etc.", parameters: { type: "object", properties: {} } } }
 ];
 
 // Función para convertir herramientas de formato OpenAI/OpenRouter a la especificación nativa del SDK de Google (tipos en MAYÚSCULAS)

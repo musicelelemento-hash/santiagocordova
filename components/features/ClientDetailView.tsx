@@ -1085,6 +1085,27 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         onCancel={() => setShowFrequencyModal(false)}
                     />
                 )}
+
+                {/* ── Barra Flotante de Cristal de Guardado Rápido (No invasivo) ── */}
+                {isEditing && (
+                    <div className="fixed lg:absolute bottom-28 right-6 z-[350] animate-in fade-in slide-in-from-bottom-5 duration-300">
+                        <div className="flex items-center gap-3 p-3 bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+                            <button
+                                onClick={() => setIsEditing(false)}
+                                className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-350 hover:text-white transition-all rounded-xl hover:bg-white/5 active:scale-95"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20 flex items-center gap-1.5"
+                            >
+                                <Save size={12} strokeWidth={2.5} />
+                                <span>Guardar</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
     );
 });

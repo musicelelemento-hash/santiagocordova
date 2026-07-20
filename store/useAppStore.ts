@@ -42,6 +42,7 @@ const sanitizeSingleClient = (c: any): Client => {
     hasActiveElderlyDevolucionIva: rawTaxProfile.hasActiveElderlyDevolucionIva ?? false,
     requiresIce: rawTaxProfile.requiresIce ?? false,
     requiresAnexoPvp: rawTaxProfile.requiresAnexoPvp ?? false,
+    clientStartPeriod: rawTaxProfile.clientStartPeriod || c.clientStartPeriod
   };
 
   // Forzar consistencia estricta e inviolable según el régimen
@@ -64,6 +65,7 @@ const sanitizeSingleClient = (c: any): Client => {
     phones: Array.isArray(c.phones) ? c.phones : [c.phone || ''],
     address: c.address || '',
     economicActivity: c.economicActivity || '',
+    clientStartPeriod: c.clientStartPeriod || rawTaxProfile.clientStartPeriod,
     declarations: Array.isArray(c.declarations) ? c.declarations.map((d: any) => ({
       ...d,
       is_paid: typeof d.is_paid === 'boolean' ? d.is_paid : d.status === DeclarationStatus.Pagada

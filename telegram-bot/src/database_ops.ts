@@ -1135,7 +1135,7 @@ export async function getClientsStatusReport() {
 // ─────────────────────────────────────────────
 // LIGHTWEIGHT SINGLE-FIELD READ — minimal tokens
 // ─────────────────────────────────────────────
-const FIELD_LABELS: Record<string, string> = {
+export const FIELD_LABELS: Record<string, string> = {
     sri_password:                 'Clave SRI',
     sriPassword:                  'Clave SRI',
     clave:                        'Clave SRI',
@@ -1203,9 +1203,19 @@ const FIELD_LABELS: Record<string, string> = {
     vigencia_facturador:          'Vencimiento del Facturador',
     vigenciaFacturador:           'Vencimiento del Facturador',
     caducidad_facturador:         'Vencimiento del Facturador',
+    clientStartPeriod:            'Inicio de Obligaciones',
+    client_start_period:          'Inicio de Obligaciones',
+    inicio_obligaciones:          'Inicio de Obligaciones',
+    ivaFrequency:                 'Frecuencia IVA',
+    frecuencia_iva:               'Frecuencia IVA',
 };
 
-const FIELD_DB_MAPPING: Record<string, string> = {
+export const FIELD_DB_MAPPING: Record<string, string> = {
+    clientStartPeriod:            'client_start_period',
+    client_start_period:          'client_start_period',
+    inicio_obligaciones:          'client_start_period',
+    ivaFrequency:                 'iva_frequency',
+    frecuencia_iva:               'iva_frequency',
     sri_password:                 'sri_password',
     sriPassword:                  'sri_password',
     clave:                        'sri_password',
@@ -1333,10 +1343,33 @@ export async function quickUpdateClient(identifier: string, field: string, value
             parsedValue = Array.isArray(value) ? value : [String(value)];
         }
 
-        const { error: updateErr } = await supabase
-            .from('clients')
-            .update({ [dbField]: parsedValue, updated_at: new Date().toISOString() })
-            .eq('id', client.id);
+        let updateErr;
+        if (dbField === 'client_start_period' || dbField === 'iva_frequency') {
+            const { data: freshClient, error: getErr } = await supabase
+                .from('clients')
+                .select('tax_profile')
+                .eq('id', client.id)
+                .single();
+            if (getErr) throw getErr;
+
+            const subField = dbField === 'client_start_period' ? 'clientStartPeriod' : 'ivaFrequency';
+            const updatedProfile = {
+                ...(freshClient?.tax_profile || {}),
+                [subField]: parsedValue
+            };
+
+            const { error } = await supabase
+                .from('clients')
+                .update({ tax_profile: updatedProfile, updated_at: new Date().toISOString() })
+                .eq('id', client.id);
+            updateErr = error;
+        } else {
+            const { error } = await supabase
+                .from('clients')
+                .update({ [dbField]: parsedValue, updated_at: new Date().toISOString() })
+                .eq('id', client.id);
+            updateErr = error;
+        }
 
         if (updateErr) throw updateErr;
 
@@ -1650,6 +1683,164 @@ export async function downloadClientProofFile(
     }
 }
 
+/**
+
+ * Sets a specific phone number as the PRIMARY (first in the list) for a client.
+ * If the phone doesn't exist, it's added to the front.
+ */
+export async function setPrimaryPhone(identifier: string, phone: string): Promise<string> {
+    console.log(`📞 setPrimaryPhone: "${identifier}" → ${phone}`);
+    try {
+        const clients = await findClients(identifier, 'id, name, ruc, phones');
+        if (!clients || clients.length === 0)
+            return `❌ No encontré "${identifier}" en la base de datos. Baku.`;
+        if (clients.length > 1) {
+            const list = clients.map((c: any) => `• ${c.name} (RUC: \`${c.ruc}\`)`).join('\n');
+            return `Encontré ${clients.length} clientes. ¿Cuál es?\n${list}`;
+        }
+        const client = clients[0];
+        const existingPhones: string[] = client.phones || [];
+        const clean = phone.replace(/\D/g, '');
+        // Remove the phone if it already exists, then put it first
+        const filtered = existingPhones.filter((p: string) => p.replace(/\D/g, '') !== clean);
+        const newPhones = [clean, ...filtered];
+
+        const { error } = await supabase
+            .from('clients')
+            .update({ phones: newPhones, updated_at: new Date().toISOString() })
+            .eq('id', client.id);
+        if (error) throw error;
+
+        await logAuditAction('Teléfono Principal (Bot)', `${client.name} → ${clean}`, 'client', 'info');
+        return `✅ *${client.name}* — Teléfono principal actualizado a: \`${clean}\`.\nLista actual: ${newPhones.join(', ')}. Baku.`;
+    } catch (err: any) {
+        return `Error: ${err.message}. Baku.`;
+    }
+}
+
+/**
+ * Updates electronic signature info (password, expiration date) for a client.
+ */
+export async function setSignatureInfo(
+    identifier: string,
+    signaturePassword?: string,
+    expirationDate?: string
+): Promise<string> {
+    console.log(`🔐 setSignatureInfo: "${identifier}"`);
+    try {
+        const clients = await findClients(identifier, 'id, name, ruc');
+        if (!clients || clients.length === 0)
+            return `❌ No encontré "${identifier}". Baku.`;
+        if (clients.length > 1) {
+            const list = clients.map((c: any) => `• ${c.name} (\`${c.ruc}\`)`).join('\n');
+            return `Encontré ${clients.length} clientes. ¿Cuál es?\n${list}`;
+        }
+        const client = clients[0];
+        const updates: any = { updated_at: new Date().toISOString() };
+        const parts: string[] = [];
+
+        if (signaturePassword) {
+            updates.signature_password = signaturePassword;
+            parts.push(`Clave Firma → \`${signaturePassword}\``);
+        }
+        if (expirationDate) {
+            updates.signature_expiration = expirationDate;
+            parts.push(`Caducidad → \`${expirationDate}\``);
+        }
+        if (parts.length === 0)
+            return `❌ No enviaste ni clave ni fecha de caducidad. Baku.`;
+
+        const { error } = await supabase.from('clients').update(updates).eq('id', client.id);
+        if (error) throw error;
+
+        await logAuditAction('Firma Electrónica (Bot)', `${client.name} → ${parts.join(' | ')}`, 'client', 'info');
+        return `✅ *${client.name}* — Firma electrónica actualizada:\n${parts.join('\n')}. Baku.`;
+    } catch (err: any) {
+        return `Error: ${err.message}. Baku.`;
+    }
+}
+
+/**
+ * Generates a full collection report for the current month:
+ * - Total collected vs. pending
+ * - List of debtors with amounts
+ */
+export async function getMonthlyCollectionReport(): Promise<string> {
+    console.log(`💰 getMonthlyCollectionReport`);
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('name, ruc, regime, declaration_history, fee_structure, is_courtesy')
+            .eq('is_deleted', false)
+            .eq('is_active', true);
+        if (error) throw error;
+        if (!clients || clients.length === 0) return '❌ No hay clientes activos. Baku.';
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const currentMonthPeriod = `${year}-${month < 10 ? '0' + month : month}`;
+        // Also check last month
+        const lastMonthDate = new Date(year, month - 2, 1);
+        const lastMonthPeriod = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+        let totalCollected = 0;
+        let totalPending = 0;
+        const debtors: { name: string; ruc: string; amount: number; periods: string[] }[] = [];
+        const collectors: string[] = [];
+
+        for (const c of clients as any[]) {
+            if (c.is_courtesy) continue;
+            const obligations = getClientObligations(c);
+            const ivaFee = obligations.ivaFrequency === 'Mensual' ? (c.fee_structure?.monthly ?? 5)
+                         : obligations.ivaFrequency === 'Semestral' ? (c.fee_structure?.semestral ?? 10)
+                         : 0;
+
+            const history = c.declaration_history || [];
+            const relevantDecls = history.filter((d: any) =>
+                (d.period === currentMonthPeriod || d.period === lastMonthPeriod) &&
+                (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)
+            );
+
+            const paidDecls = relevantDecls.filter((d: any) => d.is_paid);
+            const unpaidDecls = relevantDecls.filter((d: any) => !d.is_paid);
+
+            if (paidDecls.length > 0) {
+                const amount = paidDecls.length * ivaFee;
+                totalCollected += amount;
+                collectors.push(`✅ ${c.name}: $${amount.toFixed(2)}`);
+            }
+            if (unpaidDecls.length > 0 && ivaFee > 0) {
+                const amount = unpaidDecls.length * ivaFee;
+                totalPending += amount;
+                debtors.push({ name: c.name, ruc: c.ruc, amount, periods: unpaidDecls.map((d: any) => d.period) });
+            }
+        }
+
+        debtors.sort((a, b) => b.amount - a.amount);
+
+        let report = `📊 *REPORTE DE COBRANZA — ${now.toLocaleString('es-EC', { month: 'long', year: 'numeric' }).toUpperCase()}*\n\n`;
+        report += `💚 *Recaudado:* $${totalCollected.toFixed(2)}\n`;
+        report += `🔴 *Pendiente:* $${totalPending.toFixed(2)}\n`;
+        report += `📈 *Eficiencia:* ${totalCollected + totalPending > 0 ? Math.round(totalCollected / (totalCollected + totalPending) * 100) : 0}%\n\n`;
+
+        if (debtors.length > 0) {
+            report += `⚠️ *DEUDORES ACTIVOS (${debtors.length}):*\n`;
+            debtors.slice(0, 15).forEach(d => {
+                report += `• ${d.name}: *$${d.amount.toFixed(2)}* (${d.periods.join(', ')})\n`;
+            });
+            if (debtors.length > 15) report += `_... y ${debtors.length - 15} más._\n`;
+        } else {
+            report += `🎉 ¡Sin deudores pendientes este mes!\n`;
+        }
+
+        report += `\nBaku.`;
+        return report;
+    } catch (err: any) {
+        return `Error al generar reporte: ${err.message}. Baku.`;
+    }
+}
+
 export function convertMarkdownToTelegramHtml(markdown: string): string {
     if (!markdown) return '';
 
@@ -1680,3 +1871,4 @@ export function convertMarkdownToTelegramHtml(markdown: string): string {
 
     return html;
 }
+

@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml } from './database_ops';
+import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -146,11 +146,56 @@ function buildClientKeyboard(clients: any[]): InlineKeyboard {
     return kb;
 }
 
+/** Muestra la ficha del perfil del cliente con botones de edición */
+async function showClientProfileCard(chatId: string, client: any, ctx: any) {
+    const ruc = client.ruc || "";
+    const regime = client.regime || 'Régimen General';
+    const isPopular = regime === 'Rimpe Negocio Popular';
+    const isEmprendedor = regime === 'Rimpe Emprendedor';
+    const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+    
+    // Normalizar inicio de obligaciones
+    const rawTaxProfile = client.tax_profile || {};
+    const clientStartPeriod = client.clientStartPeriod || rawTaxProfile.clientStartPeriod || 'No configurado';
+    
+    let obligationsText = "";
+    if (ivaFrequency === 'Mensual') obligationsText = 'IVA Mensual';
+    else if (ivaFrequency === 'Semestral') obligationsText = 'IVA Semestral';
+    else obligationsText = 'Exento / Ninguno';
+
+    let cardText = `👤 <b>EXPEDIENTE: ${client.name}</b>\n`;
+    if (client.trade_name) cardText += `🏢 <b>Nombre Comercial:</b> ${client.trade_name}\n`;
+    cardText += `🆔 <b>RUC:</b> <code>${ruc}</code>\n`;
+    cardText += `⚖️ <b>Régimen:</b> ${regime}\n`;
+    cardText += `🔄 <b>Frecuencia IVA:</b> ${obligationsText}\n`;
+    cardText += `📅 <b>Inicio Obligaciones:</b> <code>${clientStartPeriod}</code>\n`;
+    cardText += `📧 <b>Email:</b> ${client.email || '<i>(vacío)</i>'}\n`;
+    cardText += `📞 <b>Telf:</b> ${client.phones ? client.phones.join(', ') : '<i>(vacío)</i>'}\n`;
+    cardText += `🔑 <b>Clave SRI:</b> <code>${client.sri_password || '<i>(vacío)</i>'}</code>\n`;
+    cardText += `🔑 <b>Clave Firma:</b> <code>${client.signature_password || '<i>(vacío)</i>'}</code>\n`;
+    if (client.signature_expiration) cardText += `⏳ <b>Vence Firma:</b> ${client.signature_expiration}\n`;
+    if (client.notes) cardText += `📝 <b>Notas:</b> ${client.notes}\n`;
+
+    const kb = new InlineKeyboard()
+        .text('📅 Editar Inicio Oblig.', `baku_prof_edit:${ruc}:clientStartPeriod`).row()
+        .text('🔄 Editar Frecuencia IVA', `baku_prof_edit:${ruc}:ivaFrequency`).row()
+        .text('⚖️ Editar Régimen', `baku_prof_edit:${ruc}:regime`).row()
+        .text('🔑 Editar Clave SRI', `baku_prof_edit:${ruc}:sri_password`).row()
+        .text('📧 Editar Correo', `baku_prof_edit:${ruc}:email`).row()
+        .text('📞 Editar Teléfono', `baku_prof_edit:${ruc}:phones`).row()
+        .text('❌ Cerrar Perfil', 'baku_cancel');
+
+    await ctx.reply(convertMarkdownToTelegramHtml(cardText), {
+        parse_mode: 'HTML',
+        reply_markup: kb
+    });
+}
+
 /** Sets up a pending dialog and shows a client selection keyboard */
 async function showClientSelection(
     chatId: string,
     clients: any[],
-    dialogType: 'mark_payment' | 'mark_declaration' | 'field_query',
+    dialogType: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field',
     data: DialogState['data'],
     ctx: any,
     message: string = '🔍 Encontré varios clientes. Selecciona el correcto:'
@@ -170,6 +215,7 @@ async function showClientSelection(
 
 async function showOperationalMenu(ctx: any) {
     const kb = new InlineKeyboard()
+        .text('👤 Ver Perfil de Cliente', 'baku_cmd:view_profile').row()
         .text('💰 Registrar Pago', 'baku_cmd:reg_payment').row()
         .text('👤 Ver Claves SRI', 'baku_cmd:see_sri_key').row()
         .text('🔑 Clave Firma Electrónica', 'baku_cmd:see_sig_key').row()
@@ -417,13 +463,35 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         return true;
     }
 
+    // --- PROFILE shortcuts ---
+    const profileMatch = t.match(/(?:perfil|expediente|ficha)\s+(?:de\s+)?(.+)/);
+    if (profileMatch) {
+        const identifier = extractId(profileMatch[1]);
+        if (identifier && identifier.length >= 2) {
+            const clients = await findClients(identifier, '*');
+            if (clients.length === 0) {
+                await ctx.reply(`❌ No encontré ningún cliente con "${identifier}". Baku.`);
+                return true;
+            }
+            if (clients.length === 1) {
+                await showClientProfileCard(chatId, clients[0], ctx);
+                return true;
+            }
+            await showClientSelection(
+                chatId, clients, 'view_profile', {},
+                ctx, `🔍 Encontré <b>${clients.length}</b> clientes con "${identifier}". Selecciona el que necesitas:`
+            );
+            return true;
+        }
+    }
+
     return false; // No shortcut matched — send to AI
 }
 
 export interface DialogState {
-  type: 'mark_payment' | 'mark_declaration' | 'field_query';
+  type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field';
   chatId: string;
-  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name';
+  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value';
   client?: any;
   candidates?: any[];
   data: {
@@ -431,8 +499,8 @@ export interface DialogState {
     method?: 'pdf' | 'click';
     type?: 'IVA' | 'RENTA';
     isFuture?: boolean;
-    field?: string;    // For field_query: which field to read/write
-    value?: any;       // For field_query: value to write (if update)
+    field?: string;    // For field_query/edit_profile_field: which field to read/write
+    value?: any;       // For field_query/edit_profile_field: value to write (if update)
   };
 }
 
@@ -761,6 +829,17 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
                     }
                     pendingDialogs.delete(chatId);
                 }
+            } else if (dialog.type === 'view_profile' as any) {
+                if (matches.length > 1) {
+                    await showClientSelection(
+                        chatId, matches, 'view_profile', dialog.data, ctx,
+                        `🔍 Encontré <b>${matches.length}</b> clientes. Selecciona el correcto:`
+                    );
+                } else {
+                    const client = matches[0];
+                    await showClientProfileCard(chatId, client, ctx);
+                    pendingDialogs.delete(chatId);
+                }
             }
         } catch (err: any) {
             await ctx.reply(`Error al buscar clientes: ${err.message}. Baku.`);
@@ -948,6 +1027,30 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
             return;
         }
     }
+
+    if (dialog.type === 'edit_profile_field') {
+        if (dialog.step === 'ask_field_value') {
+            await ctx.replyWithChatAction('typing');
+            const client = dialog.client;
+            const field = dialog.data.field!;
+
+            try {
+                // Perform the update
+                const result = await quickUpdateClient(client.ruc, field, text);
+                pendingDialogs.delete(chatId);
+                await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+
+                // Show the updated profile card again!
+                const updatedClients = await findClients(client.ruc, '*');
+                if (updatedClients && updatedClients.length > 0) {
+                    await showClientProfileCard(chatId, updatedClients[0], ctx);
+                }
+            } catch (err: any) {
+                await ctx.reply(`❌ Error al actualizar el perfil: ${err.message}. Baku.`);
+            }
+            return;
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────
@@ -964,6 +1067,100 @@ bot.on('callback_query:data', async (ctx) => {
     if (data === 'baku_cancel') {
         pendingDialogs.delete(chatId);
         try { await ctx.editMessageText('❌ Operación cancelada. Baku.'); } catch(e) {}
+        return;
+    }
+
+    if (data.startsWith('baku_prof_edit:')) {
+        const parts = data.split(':');
+        const ruc = parts[1];
+        const field = parts[2];
+
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        
+        // Fetch the client to have context
+        const clients = await findClients(ruc, '*');
+        if (!clients || clients.length === 0) {
+            await ctx.reply("❌ Error: No se encontró al cliente. Baku.");
+            return;
+        }
+        const client = clients[0];
+
+        // If it's a select field, show specific options inline
+        if (field === 'ivaFrequency') {
+            pendingDialogs.set(chatId, {
+                type: 'edit_profile_field',
+                chatId,
+                step: 'ask_field_value',
+                client,
+                data: { field }
+            });
+            const kb = new InlineKeyboard()
+                .text('Mensual', 'baku_val_select:Mensual')
+                .text('Semestral', 'baku_val_select:Semestral')
+                .text('Ninguno', 'baku_val_select:Ninguno').row()
+                .text('❌ Cancelar', 'baku_cancel');
+            await ctx.reply(`🔄 Selecciona la nueva **Frecuencia de IVA** para **${client.name}**:`, {
+                reply_markup: kb
+            });
+        } else if (field === 'regime') {
+            pendingDialogs.set(chatId, {
+                type: 'edit_profile_field',
+                chatId,
+                step: 'ask_field_value',
+                client,
+                data: { field }
+            });
+            const kb = new InlineKeyboard()
+                .text('Régimen General', 'baku_val_select:Régimen General').row()
+                .text('Rimpe Emprendedor', 'baku_val_select:Rimpe Emprendedor').row()
+                .text('Rimpe Negocio Popular', 'baku_val_select:Rimpe Negocio Popular').row()
+                .text('❌ Cancelar', 'baku_cancel');
+            await ctx.reply(`⚖️ Selecciona el nuevo **Régimen Impositivo** para **${client.name}**:`, {
+                reply_markup: kb
+            });
+        } else {
+            pendingDialogs.set(chatId, {
+                type: 'edit_profile_field',
+                chatId,
+                step: 'ask_field_value',
+                client,
+                data: { field }
+            });
+            const fieldLabel = FIELD_LABELS[field] || field;
+            let promptText = `✍️ Escribe el nuevo valor para **${fieldLabel}** de **${client.name}**:`;
+            if (field === 'clientStartPeriod') {
+                promptText += `\n\n💡 _Formatos recomendados:_\n- **Mensual**: \`2026-05\` (Mayo 2026)\n- **Semestral**: \`2026-S1\` o \`2026-S2\``;
+            }
+            await ctx.reply(promptText);
+        }
+        return;
+    }
+
+    if (data.startsWith('baku_val_select:')) {
+        const value = data.replace('baku_val_select:', '');
+        const dialog = pendingDialogs.get(chatId);
+        
+        if (!dialog || dialog.type !== 'edit_profile_field' || dialog.step !== 'ask_field_value') {
+            try { await ctx.editMessageText('⚠️ Este menú ya expiró. Baku.'); } catch(e) {}
+            return;
+        }
+
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        await ctx.replyWithChatAction('typing');
+
+        const client = dialog.client;
+        const field = dialog.data.field!;
+
+        // Perform the update
+        const result = await quickUpdateClient(client.ruc, field, value);
+        pendingDialogs.delete(chatId);
+        await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+
+        // Show the updated profile card again!
+        const updatedClients = await findClients(client.ruc, '*');
+        if (updatedClients.length > 0) {
+            await showClientProfileCard(chatId, updatedClients[0], ctx);
+        }
         return;
     }
 
@@ -1020,7 +1217,15 @@ bot.on('callback_query:data', async (ctx) => {
         // Remove keyboard from the menu message
         try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
         
-        if (cmd === 'reg_payment') {
+        if (cmd === 'view_profile') {
+            pendingDialogs.set(chatId, {
+                type: 'view_profile',
+                chatId,
+                step: 'ask_client_name',
+                data: {}
+            });
+            await ctx.reply("👤 ¿De qué cliente deseas ver el perfil y editar sus datos? (Escribe el nombre o RUC). Baku.");
+        } else if (cmd === 'reg_payment') {
             pendingDialogs.set(chatId, {
                 type: 'mark_payment',
                 chatId,
@@ -1123,6 +1328,9 @@ bot.on('callback_query:data', async (ctx) => {
         await startPaymentFlowForClient(chatId, client, ctx);
     } else if (dialog.type === 'mark_declaration') {
         await startDeclarationFlowForClient(chatId, client, ctx);
+    } else if (dialog.type === 'view_profile' as any) {
+        pendingDialogs.delete(chatId);
+        await showClientProfileCard(chatId, client, ctx);
     }
 });
 

@@ -21,6 +21,7 @@ import { BulkUploadReportModal, BulkUploadResult } from '../components/features/
 import { BulkClientWizardModal } from '../components/features/BulkClientWizardModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
+import { ClientsDashboard } from '../components/features/ClientsDashboard';
 import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
 import { getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
 import { useCampaignContext } from '../hooks/useCampaignContext';
@@ -1475,7 +1476,14 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         transition={{ duration: 0.4 }}
                         className="pb-20"
                     >
-                        {viewMode === 'list' ? (
+                        {activeGroupTab === 'all' ? (
+                            <ClientsDashboard
+                                clients={sortedClients}
+                                serviceFees={serviceFees}
+                                onView={handleOpenClientDetails}
+                                onExportCSV={handleExportCSV}
+                            />
+                        ) : viewMode === 'list' ? (
                             <VirtualClientTable
                                 clients={sortedClients}
                                 serviceFees={serviceFees}

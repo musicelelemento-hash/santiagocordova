@@ -185,7 +185,10 @@ export const SupabaseService = {
       economic_activity: client.economicActivity,
       is_active: client.isActive,
       is_deleted: client.isDeleted,
-      tax_profile: client.taxProfile,
+      tax_profile: {
+        ...(client.taxProfile || {}),
+        clientStartPeriod: client.clientStartPeriod
+      },
       fee_structure: client.fee_structure,
       custom_service_fee: client.customServiceFee,
       is_artisan: client.isArtisan,
@@ -249,7 +252,8 @@ export const SupabaseService = {
       hasActiveDevolucionIva: !!rawTaxProfile.hasActiveDevolucionIva,
       hasActiveElderlyDevolucionIva: !!rawTaxProfile.hasActiveElderlyDevolucionIva,
       requiresIce: !!rawTaxProfile.requiresIce,
-      requiresAnexoPvp: !!rawTaxProfile.requiresAnexoPvp
+      requiresAnexoPvp: !!rawTaxProfile.requiresAnexoPvp,
+      clientStartPeriod: rawTaxProfile.clientStartPeriod || db.client_start_period
     };
 
     // Forzar consistencia estricta según el régimen
@@ -279,6 +283,7 @@ export const SupabaseService = {
       isActive: db.is_active,
       isDeleted: db.is_deleted,
       taxProfile: taxProfile as any,
+      clientStartPeriod: rawTaxProfile.clientStartPeriod || db.client_start_period,
       fee_structure: db.fee_structure,
       customServiceFee: db.custom_service_fee,
       isArtisan: db.is_artisan,

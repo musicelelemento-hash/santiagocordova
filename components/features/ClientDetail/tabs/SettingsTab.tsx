@@ -323,17 +323,92 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 />
                             )}
 
-                            <TaxProfileField 
-                                label="Inicio de Obligaciones" 
-                                value={editedClient.clientStartPeriod || ''} 
-                                icon={LucideIcons.CalendarRange} 
-                                isEditing={isEditing} 
-                                placeholder="AÑO-MES (ej: 2025-01 o 2025-S1)"
-                                onChange={(val) => setEditedClient({ 
-                                    ...editedClient, 
-                                    clientStartPeriod: val
-                                })} 
-                            />
+                            <div className="space-y-3 group/field animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                <div className="flex items-center gap-2.5">
+                                    <LucideIcons.CalendarRange size={13} className="text-primary/50 group-hover/field:text-primary transition-colors" />
+                                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Inicio de Obligaciones</span>
+                                </div>
+                                {isEditing ? (
+                                    editedClient.taxProfile?.ivaFrequency === 'Semestral' ? (
+                                        <div className="space-y-3">
+                                            <div className="flex gap-3">
+                                                <div className="flex-1 relative">
+                                                    <select
+                                                        value={editedClient.clientStartPeriod?.split('-')[0] || new Date().getFullYear().toString()}
+                                                        onChange={(e) => {
+                                                            const year = e.target.value;
+                                                            const sem = editedClient.clientStartPeriod?.split('-')[1] || 'S1';
+                                                            setEditedClient({ ...editedClient, clientStartPeriod: `${year}-${sem}` });
+                                                        }}
+                                                        className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer"
+                                                    >
+                                                        {Array.from({ length: 6 }, (_, i) => (new Date().getFullYear() - 3 + i).toString()).map(y => (
+                                                            <option key={y} value={y} className="bg-slate-900 dark:bg-slate-950 text-slate-900 dark:text-white">{y}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                        <LucideIcons.ChevronDown size={14} />
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 relative">
+                                                    <select
+                                                        value={editedClient.clientStartPeriod?.split('-')[1] || 'S1'}
+                                                        onChange={(e) => {
+                                                            const sem = e.target.value;
+                                                            const year = editedClient.clientStartPeriod?.split('-')[0] || new Date().getFullYear().toString();
+                                                            setEditedClient({ ...editedClient, clientStartPeriod: `${year}-${sem}` });
+                                                        }}
+                                                        className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer"
+                                                    >
+                                                        <option value="S1" className="bg-slate-900 dark:bg-slate-950 text-slate-900 dark:text-white">1er Semestre (S1)</option>
+                                                        <option value="S2" className="bg-slate-900 dark:bg-slate-950 text-slate-900 dark:text-white">2do Semestre (S2)</option>
+                                                    </select>
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                        <LucideIcons.ChevronDown size={14} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {editedClient.clientStartPeriod?.endsWith('-S2') && (
+                                                <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                                                    <LucideIcons.Info size={12} strokeWidth={2.5} />
+                                                    <span>Ciclo S2 activo: Cerrará en diciembre y se declarará en enero.</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <input
+                                            type="month"
+                                            value={editedClient.clientStartPeriod || ''}
+                                            onChange={(e) => setEditedClient({ ...editedClient, clientStartPeriod: e.target.value })}
+                                            className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all cursor-pointer"
+                                        />
+                                    )
+                                ) : (
+                                    <div className="px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 tracking-wide shadow-sm flex items-center justify-between">
+                                        <span>
+                                            {(() => {
+                                                const val = editedClient.clientStartPeriod;
+                                                if (!val) return <span className="text-slate-300 dark:text-slate-650">—</span>;
+                                                if (val.includes('-S1')) return `${val.split('-')[0]} · 1er Semestre (Ene - Jun)`;
+                                                if (val.includes('-S2')) return `${val.split('-')[0]} · 2do Semestre (Jul - Dic)`;
+                                                const parts = val.split('-');
+                                                if (parts.length === 2) {
+                                                    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                                                    const idx = parseInt(parts[1], 10) - 1;
+                                                    if (idx >= 0 && idx < 12) return `${months[idx]} ${parts[0]}`;
+                                                }
+                                                return val;
+                                            })()}
+                                        </span>
+                                        {editedClient.taxProfile?.ivaFrequency === 'Semestral' && editedClient.clientStartPeriod?.endsWith('-S2') && (
+                                            <span className="text-[9px] bg-amber-500/15 text-amber-500 border border-amber-500/25 px-2.5 py-0.5 rounded-xl font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
+                                                <span className="w-1 h-1 rounded-full bg-amber-500"></span>
+                                                Espera en Enero
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                             
                             <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5 space-y-5">
                                 <div className="flex items-center justify-between">

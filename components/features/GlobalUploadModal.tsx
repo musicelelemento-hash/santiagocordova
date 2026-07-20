@@ -24,7 +24,7 @@ interface GlobalUploadModalProps {
 }
 
 export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, onClose }) => {
-    const { clients, setClients } = useAppStore();
+    const { clients, setClients, updateClient } = useAppStore();
     const { toast } = useToast();
     const [isProcessing, setIsProcessing] = useState(false);
     const [results, setResults] = useState<ProcessingResult[]>([]);
@@ -150,6 +150,19 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
 
         if (anyChanges) {
             setClients(updatedClients);
+            
+            // Sync each modified client to the cloud database (Supabase and Firestore)
+            const modifiedClientRucs = new Set(newResults.filter(r => r.status === 'success').map(r => r.ruc));
+            for (const ruc of modifiedClientRucs) {
+                const client = updatedClients.find(c => c.ruc.trim() === ruc?.trim());
+                if (client) {
+                    try {
+                        await updateClient(client.id, { declarations: client.declarations });
+                    } catch (e) {
+                        console.error(`Error syncing client ${client.name} in bulk upload:`, e);
+                    }
+                }
+            }
             toast.success("Varios archivos procesados y sincronizados");
         }
 
