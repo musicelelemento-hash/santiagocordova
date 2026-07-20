@@ -37,6 +37,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [isWorkspaceMode, setIsWorkspaceMode] = useState(false);
+    
+    // Period Sorting State
+    const [sortPeriod, setSortPeriod] = useState<string | null>(null);
+    const [sortDirection, setSortDirection] = useState<'missing_first' | 'completed_first' | null>(null);
 
     // Sync mode when navigating between matrix/renta tabs
     React.useEffect(() => {
@@ -153,16 +157,32 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     };
 
     // Check if client has uploaded all proofs for the displayed matrix periods
-    const isClientUpToDate = (client: Client) => {
-        return periods.every(p => {
-            const obligations = getObligationsForPeriod(client, p);
-            if (obligations.length === 0) return true;
-            const declarations = client.declarations || [];
-            return obligations.every(ob => {
-                const d = findDeclarationForOb(declarations, p, ob.type);
-                return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada || !!d.proof_file) && d.proof_file;
-            });
+    const isClientCompletedForPeriod = (client: Client, p: string) => {
+        const obligations = getObligationsForPeriod(client, p);
+        if (obligations.length === 0) return true;
+        const declarations = client.declarations || [];
+        return obligations.every(ob => {
+            const d = findDeclarationForOb(declarations, p, ob.type);
+            return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada || !!d.proof_file) && d.proof_file;
         });
+    };
+
+    const isClientUpToDate = (client: Client) => {
+        return periods.every(p => isClientCompletedForPeriod(client, p));
+    };
+
+    const handleSortByPeriod = (p: string) => {
+        if (sortPeriod === p) {
+            if (sortDirection === 'missing_first') {
+                setSortDirection('completed_first');
+            } else if (sortDirection === 'completed_first') {
+                setSortPeriod(null);
+                setSortDirection(null);
+            }
+        } else {
+            setSortPeriod(p);
+            setSortDirection('missing_first');
+        }
     };
 
     const filteredClients = useMemo(() => {
@@ -192,6 +212,21 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             if (priorityA !== priorityB) {
                 return priorityA ? -1 : 1;
             }
+
+            // Custom Period Sorting
+            if (sortPeriod && sortDirection) {
+                const isCompletedA = isClientCompletedForPeriod(a, sortPeriod);
+                const isCompletedB = isClientCompletedForPeriod(b, sortPeriod);
+                
+                if (isCompletedA !== isCompletedB) {
+                    if (sortDirection === 'missing_first') {
+                        return isCompletedA ? 1 : -1;
+                    } else {
+                        return isCompletedA ? -1 : 1;
+                    }
+                }
+            }
+
             if (isWorkspaceMode) {
                 const upToDateA = isClientUpToDate(a);
                 const upToDateB = isClientUpToDate(b);
@@ -203,7 +238,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
             return digitA - digitB || a.name.localeCompare(b.name);
         });
-    }, [clients, frequency, matrixMode, isWorkspaceMode, periods]);
+    }, [clients, frequency, matrixMode, isWorkspaceMode, periods, sortPeriod, sortDirection]);
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -364,8 +399,21 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         <tr className="bg-slate-50/50 dark:bg-white/5 border-b border-slate-200/30 dark:border-white/5">
                             <th className="px-6 py-4 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] sticky left-0 bg-slate-50 dark:bg-slate-900 z-20 w-64 border-r border-slate-200/30 dark:border-white/10">Cliente</th>
                             {periods.map(p => (
-                                <th key={p} className="px-4 py-4 text-[9px] font-black text-slate-405 dark:text-slate-450 uppercase tracking-[0.15em] text-center border-r border-slate-200/30 dark:border-white/5 last:border-r-0">
-                                    {formatPeriodForDisplay(p).replace('IVA ', '')}
+                                <th 
+                                    key={p} 
+                                    className="px-4 py-4 text-[9px] font-black text-slate-405 dark:text-slate-450 uppercase tracking-[0.15em] text-center border-r border-slate-200/30 dark:border-white/5 last:border-r-0 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group/th"
+                                    onClick={() => handleSortByPeriod(p)}
+                                    title="Clic para agrupar (Faltantes / Listos)"
+                                >
+                                    <div className="flex items-center justify-center gap-1.5 relative">
+                                        {formatPeriodForDisplay(p).replace('IVA ', '')}
+                                        <div className={`transition-all duration-200 ${sortPeriod === p ? 'opacity-100' : 'opacity-0 group-hover/th:opacity-30'}`}>
+                                            <LucideIcons.ArrowDownUp 
+                                                size={12} 
+                                                className={sortPeriod === p ? (sortDirection === 'missing_first' ? 'text-rose-500' : 'text-emerald-500') : 'text-slate-400'} 
+                                            />
+                                        </div>
+                                    </div>
                                 </th>
                             ))}
                         </tr>
