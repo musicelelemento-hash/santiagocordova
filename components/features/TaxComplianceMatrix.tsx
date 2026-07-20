@@ -597,6 +597,24 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                     )}
 
                                                                     {isDone ? (
+                                                                        <>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                const msg = encodeURIComponent(`Buen día, le adjunto el comprobante de la declaración.`);
+                                                                                const phoneStr = client.phones && client.phones.length > 0 ? client.phones[0].replace(/\D/g, '') : '';
+                                                                                if (phoneStr) {
+                                                                                    const whatsappPhone = phoneStr.startsWith('0') ? '593' + phoneStr.substring(1) : (phoneStr.startsWith('593') ? phoneStr : '593' + phoneStr);
+                                                                                    window.open(`https://wa.me/${whatsappPhone}?text=${msg}`, '_blank');
+                                                                                } else {
+                                                                                    alert('El cliente no tiene un número de teléfono registrado.');
+                                                                                }
+                                                                            }}
+                                                                            className={`absolute -bottom-1.5 -right-1.5 rounded-full p-1 shadow-sm transition-all z-20 bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110`}
+                                                                            title="Notificar por WhatsApp"
+                                                                        >
+                                                                            <LucideIcons.MessageCircle size={10} strokeWidth={2.5} />
+                                                                        </button>
                                                                         <button
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
@@ -611,6 +629,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         >
                                                                             <LucideIcons.DollarSign size={8} strokeWidth={4} />
                                                                         </button>
+                                                                        </>
                                                                     ) : (
                                                                         <button
                                                                             onClick={(e) => {
