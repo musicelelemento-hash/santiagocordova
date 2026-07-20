@@ -196,7 +196,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
     const t = text.toLowerCase().trim();
 
     // Trigger operational menu
-    if (['pagos', 'menú', 'menu', 'santiago', 'opciones', 'inicio', 'comenzar', 'baku'].includes(t)) {
+    if (['pagos', 'menú', 'menu', 'santiago', 'opciones', 'inicio', 'comenzar', 'baku', 'cliente', 'clientes'].includes(t)) {
         await showOperationalMenu(ctx);
         return true;
     }
