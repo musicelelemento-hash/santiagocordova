@@ -5,7 +5,7 @@ import { searchEmails, sendEmail, getUnreadEmails } from './gmail';
 import { searchClient, updateClientData, getDatabaseSummary, getFinancialSummary, getDebtorClients, getUpcomingDeadlines, createClient, markPaymentAsPaid, markPaymentAsUnpaid, getCredentialStatus, detectTaxInconsistencies, deleteClient, createTask, completeTask, clearTasks, getClientsStatusReport, getClientField, quickUpdateClient, findClients, get_sri_credential, downloadClientProofFile } from './database_ops';
 import { clearChatHistory } from './database';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { pendingDialogs, bot } from './index';
+import { pendingDialogs, bot, startPaymentFlowForClient, startDeclarationFlowForClient } from './index';
 import { InputFile } from 'grammy';
 
 require('dotenv').config();
@@ -159,24 +159,16 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
                 data: {}
             });
             const list = matches.map((c: any, i: number) => `${i + 1}. **${c.name}** (RUC: \`${c.ruc || 'N/A'}\`${c.trade_name ? ` | Comercial: *${c.trade_name}*` : ''}${c.regime ? ` | Régimen: *${c.regime}*` : ''})`).join('\n');
-            return `Encontré varios clientes. He iniciado el flujo de confirmación. Por favor, selecciona el número:\n\n${list}\n\nEscribe **cancelar** para salir. Baku.`;
+            return `Encontré varios clientes. He iniciado el flujo de confirmación. Por favor, selecciona el número en el chat:\n\n${list}\n\nEscribe **cancelar** para salir. Baku.`;
         }
 
         const client = matches[0];
-        const regime = client.regime || 'Régimen General';
-        const isPopular = regime === 'Rimpe Negocio Popular';
-        const isEmprendedor = regime === 'Rimpe Emprendedor';
-        const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
-
-        pendingDialogs.set(chatId, {
-            type: 'mark_payment',
-            chatId,
-            step: 'ask_payment_period',
-            client,
-            data: period ? { periods: [period] } : {}
-        });
-
-        return `He iniciado el flujo interactivo de pago para **${client.name}** (IVA: ${ivaFrequency}). ¿Qué período(s) deseas marcar como pagado? (Escribe el período o 'adelantado'). Baku.`;
+        
+        // Use the interactive flow helper from index.ts
+        const mockCtx = { reply: (msg: any, opts?: any) => bot.api.sendMessage(chatId, msg, opts) };
+        await startPaymentFlowForClient(chatId, client, mockCtx);
+        
+        return `He enviado las opciones interactivas de pago a la pantalla del usuario.`;
     },
     mark_declaration: async ({ ruc, type, period }: { ruc: string, type?: 'IVA' | 'RENTA', period?: string }, chatId: string) => {
         const matches = await findClients(ruc, '*');
@@ -190,23 +182,14 @@ const availableTools: Record<string, (args: any, chatId: string) => Promise<stri
                 data: {}
             });
             const list = matches.map((c: any, i: number) => `${i + 1}. **${c.name}** (RUC: \`${c.ruc || 'N/A'}\`${c.trade_name ? ` | Comercial: *${c.trade_name}*` : ''}${c.regime ? ` | Régimen: *${c.regime}*` : ''})`).join('\n');
-            return `Encontré varios clientes. He iniciado el flujo de confirmación. Por favor, selecciona el número:\n\n${list}\n\nEscribe **cancelar** para salir. Baku.`;
+            return `Encontré varios clientes. He iniciado el flujo de confirmación. Por favor, selecciona el número en el chat:\n\n${list}\n\nEscribe **cancelar** para salir. Baku.`;
         }
 
         const client = matches[0];
-        pendingDialogs.set(chatId, {
-            type: 'mark_declaration',
-            chatId,
-            step: type ? 'ask_declaration_period' : 'ask_declaration_type',
-            client,
-            data: { type, periods: period ? [period] : undefined }
-        });
+        const mockCtx = { reply: (msg: any, opts?: any) => bot.api.sendMessage(chatId, msg, opts) };
+        await startDeclarationFlowForClient(chatId, client, mockCtx);
 
-        if (type) {
-            return `He iniciado el flujo interactivo de declaración de **${type}** para **${client.name}**. ¿Para qué período es la declaración? Baku.`;
-        } else {
-            return `He iniciado el flujo interactivo de declaración para **${client.name}**. ¿Qué tipo de declaración es? Responde **IVA** o **RENTA**. Baku.`;
-        }
+        return `He enviado las opciones interactivas de declaración a la pantalla del usuario.`;
     },
     mark_payment_as_unpaid: async ({ ruc, type, period }: { ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string }, chatId: string) => {
         return await markPaymentAsUnpaid(ruc, type, period);

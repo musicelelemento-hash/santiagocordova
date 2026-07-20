@@ -487,7 +487,7 @@ async function initiatePaymentFlow(chatId: string, matches: any[], ctx: any) {
     await startPaymentFlowForClient(chatId, matches[0], ctx);
 }
 
-async function startPaymentFlowForClient(chatId: string, client: any, ctx: any) {
+export async function startPaymentFlowForClient(chatId: string, client: any, ctx: any) {
     const regime = client.regime || 'Régimen General';
     const isPopular = regime === 'Rimpe Negocio Popular';
     const isEmprendedor = regime === 'Rimpe Emprendedor';
@@ -512,19 +512,28 @@ async function startPaymentFlowForClient(chatId: string, client: any, ctx: any) 
         data: {}
     });
 
+    const kb = new InlineKeyboard();
+    if (unpaid.length > 0) {
+        unpaid.forEach((d: any) => {
+            kb.text(`${d.type} ${d.period}`, `baku_pay:${client.ruc}:${d.type}:${d.period}`).row();
+        });
+        if (unpaid.length > 1) {
+            // Se usa ALL_TYPES para simplificar en backend, pero se mandará como 'IVA' al LLM y él resolverá.
+            // O mejor: mandar 'HONORARIOS' y procesará todos si 'todos' es periodo.
+            kb.text(`💸 Pagar TODOS los ${unpaid.length} meses`, `baku_pay:${client.ruc}:HONORARIOS:todos`).row();
+        }
+    }
+    kb.text(`❌ Cancelar`, `baku_cancel`);
+
     await ctx.reply(
         convertMarkdownToTelegramHtml(
             `👤 **Cliente:** ${client.name}\n` +
             `📅 **Frecuencia IVA:** ${ivaFrequency}\n` +
             `💼 **Régimen:** ${regime}\n\n` +
             pendingMsg +
-            `¿Qué período(s) deseas marcar como pagado?\n` +
-            `• Escribe el periodo (ej: \`2026-04\` o \`abril\`)\n` +
-            `• Escribe varios separados por coma (ej: \`2026-04, 2026-05\`)\n` +
-            `• Escribe \`adelantado\` para registrar pagos de meses futuros.\n\n` +
-            `Escribe **cancelar** en cualquier momento para salir. Baku.`
+            `Elige el periodo que deseas marcar como pagado, o escríbelo en el chat:`
         ),
-        { parse_mode: 'HTML' }
+        { parse_mode: 'HTML', reply_markup: kb }
     );
 }
 
@@ -545,11 +554,14 @@ async function initiateDeclarationFlow(chatId: string, matches: any[], ctx: any)
     await startDeclarationFlowForClient(chatId, matches[0], ctx);
 }
 
-async function startDeclarationFlowForClient(chatId: string, client: any, ctx: any) {
+export async function startDeclarationFlowForClient(chatId: string, client: any, ctx: any) {
     const regime = client.regime || 'Régimen General';
     const isPopular = regime === 'Rimpe Negocio Popular';
     const isEmprendedor = regime === 'Rimpe Emprendedor';
     const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+
+    const history = client.declaration_history || [];
+    const pendingDec = history.filter((d: any) => d.status === 'Pendiente');
 
     pendingDialogs.set(chatId, {
         type: 'mark_declaration',
@@ -559,16 +571,22 @@ async function startDeclarationFlowForClient(chatId: string, client: any, ctx: a
         data: {}
     });
 
+    const kb = new InlineKeyboard();
+    if (pendingDec.length > 0) {
+        pendingDec.forEach((d: any) => {
+            kb.text(`Declarar ${d.type} ${d.period}`, `baku_dec_type:${client.ruc}:${d.type}:${d.period}`).row();
+        });
+    }
+    kb.text(`Declarar IVA (Otro)`, `baku_dec_type:${client.ruc}:IVA`).row();
+    kb.text(`Declarar RENTA (Otro)`, `baku_dec_type:${client.ruc}:RENTA`).row();
+    kb.text(`❌ Cancelar`, `baku_cancel`);
+
     await ctx.reply(
         convertMarkdownToTelegramHtml(
             `👤 **Cliente:** ${client.name}\n` +
-            `¿Qué tipo de declaración de impuestos deseas registrar?\n` +
-            `1. **IVA** (Frecuencia: ${ivaFrequency})\n` +
-            `2. **RENTA** (Anual)\n\n` +
-            `Responde **IVA** o **RENTA**.\n\n` +
-            `Escribe **cancelar** en cualquier momento para salir. Baku.`
+            `¿Qué declaración de impuestos deseas registrar? Elige una opción o escríbela en el chat.`
         ),
-        { parse_mode: 'HTML' }
+        { parse_mode: 'HTML', reply_markup: kb }
     );
 }
 
@@ -899,6 +917,53 @@ bot.on('callback_query:data', async (ctx) => {
     if (data === 'baku_cancel') {
         pendingDialogs.delete(chatId);
         try { await ctx.editMessageText('❌ Operación cancelada. Baku.'); } catch(e) {}
+        return;
+    }
+
+    if (data.startsWith('baku_pay:')) {
+        const parts = data.split(':');
+        const ruc = parts[1];
+        const type = parts[2] as 'IVA' | 'RENTA' | 'HONORARIOS';
+        const period = parts[3];
+
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        await ctx.replyWithChatAction('typing');
+
+        pendingDialogs.delete(chatId);
+        const result = await markPaymentAsPaid(ruc, type, period);
+        await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+        await saveMessage(chatId, 'user', `Marcar pago de ${type} (${period}) para cliente ${ruc}`);
+        await saveMessage(chatId, 'assistant', result);
+        return;
+    }
+
+    if (data.startsWith('baku_dec_type:')) {
+        const parts = data.split(':');
+        const ruc = parts[1];
+        const type = parts[2] as 'IVA' | 'RENTA';
+        const period = parts[3];
+
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+
+        const dialog = pendingDialogs.get(chatId);
+        if (!dialog || dialog.step !== 'ask_declaration_type') {
+            await ctx.reply('⚠️ Este menú ya expiró. Por favor repite tu consulta. Baku.');
+            return;
+        }
+
+        dialog.data.type = type;
+
+        if (period) {
+            dialog.data.periods = [period];
+            dialog.step = 'ask_declaration_realizada';
+            pendingDialogs.set(chatId, dialog);
+            await ctx.reply(convertMarkdownToTelegramHtml(`¿Esta declaración de **${type}** del periodo **${period}** ya fue realizada y enviada al SRI? (Responde **SÍ** o **NO**). Baku.`), { parse_mode: 'HTML' });
+        } else {
+            dialog.step = 'ask_declaration_period';
+            pendingDialogs.set(chatId, dialog);
+            const periodExample = type === 'IVA' ? '(ej: `2026-04` o `abril`)' : '(ej: `2025`)';
+            await ctx.reply(convertMarkdownToTelegramHtml(`¿Para qué periodo es la declaración de **${type}**? ${periodExample}. Baku.`), { parse_mode: 'HTML' });
+        }
         return;
     }
 

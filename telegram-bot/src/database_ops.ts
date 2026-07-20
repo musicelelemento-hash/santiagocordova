@@ -777,6 +777,24 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
 
         if (type === 'IVA' || type === 'HONORARIOS') {
             let history = [...(client.declaration_history || [])];
+            
+            if (period === 'todos') {
+                const unpaid = history.filter(d => d.type === type && !d.is_paid && d.status !== 'Pendiente');
+                if (unpaid.length === 0) return `No hay pagos pendientes de ${type} para ${client.name}.`;
+                
+                unpaid.forEach(d => {
+                    d.is_paid = true;
+                    d.paidAt = new Date().toISOString();
+                    d.paid_at = d.paidAt;
+                    d.status = 'Pagada';
+                });
+                
+                const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
+                if (updErr) throw updErr;
+                await logAuditAction('Cobro Múltiple Registrado (Bot)', `${type} TODOS (${unpaid.length} meses) - RUC: ${client.ruc}`, 'finance', 'info');
+                return `✅ Se han marcado como pagados **TODOS** los ${unpaid.length} meses pendientes de **${type}** para ${client.name} en Supabase. Baku.`;
+            }
+
             let targetIdx = -1;
             
             if (period) {
