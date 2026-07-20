@@ -105,8 +105,6 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     // Smart Tabs Logic
     const getInitialGroupTab = () => {
         if (initialFilter?.activeGroupTab) return initialFilter.activeGroupTab;
-        const saved = sessionStorage.getItem('clients_group_tab');
-        if (saved) return saved;
         return 'matrix';
     };
 
