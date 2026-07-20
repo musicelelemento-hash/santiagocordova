@@ -1,7 +1,7 @@
 import { Bot, InlineKeyboard, InputFile } from 'grammy';
 require('dotenv').config();
 import { processChatWithAgentLoop, BOT_NAME, STATUS_ICON } from './agent';
-import { clearChatHistory } from './database';
+import { clearChatHistory, saveMessage } from './database';
 import { getAuthUrl, setTokenFromCode } from './gmail';
 import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
@@ -223,6 +223,8 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
                 const backupCred = await get_sri_credential(identifier.trim());
                 if (!backupCred.includes('\u274c No se encontr')) {
                     await ctx.reply(convertMarkdownToTelegramHtml(backupCred), { parse_mode: 'HTML' });
+                    await saveMessage(chatId, 'user', text);
+                    await saveMessage(chatId, 'assistant', backupCred);
                     return true;
                 }
             }
@@ -233,6 +235,10 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
             const client = clients[0];
             const result = await getClientField(client.ruc, field);
             await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+            
+            // Save to chat history for subsequent context (e.g. "y la clave")
+            await saveMessage(chatId, 'user', text);
+            await saveMessage(chatId, 'assistant', result);
             
             // Si solicitó la clave de firma electrónica, enviamos también el archivo p12 adjunto
             if (field === 'electronicSignaturePassword') {
@@ -278,6 +284,9 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         if (clients.length === 1) {
             const result = await quickUpdateClient(clients[0].ruc, field, value);
             await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+            
+            await saveMessage(chatId, 'user', text);
+            await saveMessage(chatId, 'assistant', result);
             return true;
         }
         await showClientSelection(
@@ -325,28 +334,39 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
     if (payClient && payClient.length > 2) {
         const result = await markPaymentAsPaid(payClient, 'IVA');
         await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+        
+        await saveMessage(chatId, 'user', text);
+        await saveMessage(chatId, 'assistant', result);
         return true;
     }
 
     // --- REPORT shortcuts ---
     if (/(?:quien(?:es)?\s+(?:me\s+)?deb[e|en]|deudores|cartera\s+vencida|cobros\s+pendientes)/.test(t)) {
-        const text = await getDebtorClients();
-        await ctx.reply(convertMarkdownToTelegramHtml(text), { parse_mode: 'HTML' });
+        const resultText = await getDebtorClients();
+        await ctx.reply(convertMarkdownToTelegramHtml(resultText), { parse_mode: 'HTML' });
+        await saveMessage(chatId, 'user', text);
+        await saveMessage(chatId, 'assistant', resultText);
         return true;
     }
     if (/(?:quien(?:es)?\s+falt[a|an]|falta\s+declarar|pendientes\s+(?:de\s+)?(?:sri|declarar)|quien\s+no\s+ha\s+declarado|no\s+han\s+declarado)/.test(t)) {
-        const text = await getClientsStatusReport();
-        await ctx.reply(convertMarkdownToTelegramHtml(text), { parse_mode: 'HTML' });
+        const resultText = await getClientsStatusReport();
+        await ctx.reply(convertMarkdownToTelegramHtml(resultText), { parse_mode: 'HTML' });
+        await saveMessage(chatId, 'user', text);
+        await saveMessage(chatId, 'assistant', resultText);
         return true;
     }
     if (/(?:vencimiento|vence\s+(?:esta|la)\s+semana|pr[oó]ximos?\s+vencimientos?|cuando\s+vence)/.test(t)) {
-        const text = await getUpcomingDeadlines();
-        await ctx.reply(convertMarkdownToTelegramHtml(text), { parse_mode: 'HTML' });
+        const resultText = await getUpcomingDeadlines();
+        await ctx.reply(convertMarkdownToTelegramHtml(resultText), { parse_mode: 'HTML' });
+        await saveMessage(chatId, 'user', text);
+        await saveMessage(chatId, 'assistant', resultText);
         return true;
     }
     if (/(?:^resumen$|estado\s+general|c[oó]mo\s+va\s+(?:todo|la\s+cartera)|panorama\s+general|cu[aá]ntos\s+clientes)/.test(t)) {
-        const text = await getDatabaseSummary();
-        await ctx.reply(convertMarkdownToTelegramHtml(text), { parse_mode: 'HTML' });
+        const resultText = await getDatabaseSummary();
+        await ctx.reply(convertMarkdownToTelegramHtml(resultText), { parse_mode: 'HTML' });
+        await saveMessage(chatId, 'user', text);
+        await saveMessage(chatId, 'assistant', resultText);
         return true;
     }
 
@@ -656,8 +676,26 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
             }
             if (dialog.type === 'mark_payment') {
                 await initiatePaymentFlow(chatId, matches, ctx);
-            } else {
+            } else if (dialog.type === 'mark_declaration') {
                 await initiateDeclarationFlow(chatId, matches, ctx);
+            } else if (dialog.type === 'field_query') {
+                const field = dialog.data.field!;
+                if (matches.length > 1) {
+                    await showClientSelection(
+                        chatId, matches, 'field_query', dialog.data, ctx,
+                        `🔍 Encontré <b>${matches.length}</b> clientes. Selecciona el correcto:`
+                    );
+                } else {
+                    const client = matches[0];
+                    if (dialog.data.value !== undefined) {
+                        const result = await quickUpdateClient(client.ruc, field, dialog.data.value);
+                        await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+                    } else {
+                        const result = await getClientField(client.ruc, field);
+                        await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+                    }
+                    pendingDialogs.delete(chatId);
+                }
             }
         } catch (err: any) {
             await ctx.reply(`Error al buscar clientes: ${err.message}. Baku.`);
@@ -852,7 +890,7 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
 // Handles button taps from client selection menus
 // ─────────────────────────────────────────────────────────
 bot.on('callback_query:data', async (ctx) => {
-    const chatId = ctx.from.id.toString();
+    const chatId = ctx.chat?.id.toString() || ctx.from.id.toString();
     const data = ctx.callbackQuery.data;
 
     // Always answer to dismiss the loading spinner on the button
@@ -952,16 +990,22 @@ bot.on('callback_query:data', async (ctx) => {
             const result = await getClientDeclarationProofsList(ruc);
             pendingDialogs.delete(chatId);
             await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+            await saveMessage(chatId, 'user', `Historial de declaraciones de ${client.name}`);
+            await saveMessage(chatId, 'assistant', result);
         } else if (dialog.data.value !== undefined) {
             // Quick update flow
             const result = await quickUpdateClient(ruc, field, dialog.data.value);
             pendingDialogs.delete(chatId);
             await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+            await saveMessage(chatId, 'user', `Actualizar ${field} de ${client.name} a ${dialog.data.value}`);
+            await saveMessage(chatId, 'assistant', result);
         } else {
             // Field read flow
             const result = await getClientField(ruc, field);
             pendingDialogs.delete(chatId);
             await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+            await saveMessage(chatId, 'user', `Ver ${field} de ${client.name}`);
+            await saveMessage(chatId, 'assistant', result);
         }
     } else if (dialog.type === 'mark_payment') {
         await startPaymentFlowForClient(chatId, client, ctx);
@@ -978,9 +1022,13 @@ bot.on('message:text', async (ctx) => {
   // 1. Try direct command (zero AI tokens — instant, with inline keyboard disambiguation)
   // This is placed FIRST so users can escape stuck dialogs by using a shortcut command.
   try {
+    const beforeDialog = pendingDialogs.get(chatId);
     const directHandled = await tryDirectCommand(text, chatId, ctx);
     if (directHandled) {
-        if (pendingDialogs.has(chatId)) pendingDialogs.delete(chatId);
+        const afterDialog = pendingDialogs.get(chatId);
+        if (beforeDialog && afterDialog === beforeDialog) {
+            pendingDialogs.delete(chatId);
+        }
         return;
     }
   } catch (err: any) {

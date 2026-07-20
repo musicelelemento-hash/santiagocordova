@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   FileText, Plus, Trash2, Settings, CheckCircle2, XCircle, Info, Search, 
   Download, RefreshCw, Check, AlertTriangle, Globe, Activity, Wifi, WifiOff, 
@@ -110,7 +111,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   initialDescription,
   onClearInitialData
 }) => {
-  const { clients, serviceFees } = useAppStore();
+  const { clients, serviceFees, updateClient } = useAppStore();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'factura' | 'retencion' | 'nota_credito' | 'nota_debito' | 'guia' | 'liquidacion' | 'historial' | 'validador' | 'configuracion'>('dashboard');
   const [isFacturacionOpen, setIsFacturacionOpen] = useState(true);
   const [isHerramientasOpen, setIsHerramientasOpen] = useState(true);
@@ -332,6 +333,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [statusFilter, setStatusFilter] = useState('all');
 
   const [clientSearchQuery, setClientSearchQuery] = useState('');
+  
+  const getMaxSecuencialInHistory = (type: 'factura' | 'retencion') => {
+    const filtered = history.filter(h => h.tipo === type && h.secuencial);
+    if (filtered.length === 0) return 0;
+    const numbers = filtered.map(h => parseInt(h.secuencial, 10)).filter(n => !isNaN(n));
+    return numbers.length > 0 ? Math.max(...numbers) : 0;
+  };
   const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [billingMode, setBillingMode] = useState<'detallado' | 'consolidado'>('detallado');
@@ -954,6 +962,61 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Run the full invoicing workflow (Generate, Sign, Send, Authorize)
   const handleProcessDocument = async () => {
+    const nextNum = Math.max(emisorSecuencialInicio, getMaxSecuencialInHistory(docType) + 1);
+    
+    const onSuccessBilling = async (secNum: number) => {
+      // 1. Increment sequential number
+      const nextSecNum = secNum + 1;
+      setEmisorSecuencialInicio(nextSecNum);
+      localStorage.setItem('sc_emisor_secuencial_inicio', String(nextSecNum));
+
+      // 2. Mark declarations as paid / reconcile debt
+      if (selectedClient && selectedPeriods.length > 0) {
+        const client = clients.find(c => c.id === selectedClient);
+        if (client) {
+          const updatedDeclarations = (client.declarations || []).map(d => {
+            const isSelected = selectedPeriods.some(spId => {
+              const [spPeriod, spType] = spId.split(':');
+              return d.period === spPeriod && (d.type === spType || (!d.type && spType === 'IVA'));
+            });
+            if (isSelected) {
+              return {
+                ...d,
+                status: 'Pagada' as any,
+                is_paid: true,
+                paidAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+            }
+            return d;
+          });
+
+          selectedPeriods.forEach(spId => {
+            const [spPeriod, spType] = spId.split(':');
+            const exists = (client.declarations || []).some(d => d.period === spPeriod && (d.type === spType || (!d.type && spType === 'IVA')));
+            if (!exists) {
+              updatedDeclarations.push({
+                period: spPeriod,
+                type: spType as any,
+                status: 'Pagada' as any,
+                is_paid: true,
+                paidAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                amount: pendingObligations.find(o => o.id === spId)?.amount || 0
+              });
+            }
+          });
+
+          try {
+            await updateClient(selectedClient, { declarations: updatedDeclarations });
+            addLog(`Se actualizaron las obligaciones del cliente en la base de datos (${selectedPeriods.length} períodos marcados como pagados).`, 'success');
+          } catch (err) {
+            console.error("Failed to update client declarations:", err);
+          }
+        }
+      }
+    };
+
     setProcessStatus('running');
     setConsoleLogs([]);
     setGeneratedXml('');
@@ -966,7 +1029,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     addLog(`Ambiente: ${ambiente === '1' ? '1 (PRUEBAS)' : '2 (PRODUCCIÓN)'}. Modo: ${isMock ? 'SIMULACIÓN DEMO' : 'API LARAVEL CONECTADA'}`);
 
     // Formulate payload
-    const nextNum = emisorSecuencialInicio + history.filter(h => h.tipo === docType).length;
     const secuencial = String(nextNum).padStart(9, '0');
     const todayStr = new Date().toISOString().split('T')[0];
     const key = generateAccessKeyEcuador(
@@ -1220,6 +1282,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         };
 
         await saveRecordToHistory(newRecord);
+        await onSuccessBilling(nextNum);
       } else {
         const authResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
           method: 'POST',
@@ -1243,6 +1306,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         setProcessStatus(isAuthorized ? 'success' : 'failed');
         if (isAuthorized) {
           setShowWhatsAppModal(true);
+          await onSuccessBilling(nextNum);
         }
 
         let errorMsg = '';
@@ -3038,7 +3102,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     Control de Emisión
                   </h3>
                   <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">
-                    Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'Retención'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span>
+                    Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'Retención'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span> | Siguiente Secuencial: <span className="text-emerald-500 font-mono font-bold">{String(Math.max(emisorSecuencialInicio, getMaxSecuencialInHistory(docType) + 1)).padStart(9, '0')}</span>
                   </p>
                 </div>
               </div>
@@ -3177,7 +3241,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       className="fixed inset-0 z-40" 
                       onClick={() => setIsClientDropdownOpen(false)}
                     />
-                    <div className="absolute top-full left-0 right-0 mt-1.5 glass-card-premium rounded-xl  overflow-hidden z-50 max-h-[200px] overflow-y-auto no-scrollbar">
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-[#0b1329] border border-slate-200 dark:border-white/10 shadow-2xl rounded-xl overflow-hidden z-50 max-h-[200px] overflow-y-auto no-scrollbar">
                       {filteredClientsForSearch.length > 0 ? (
                         <div className="p-1.5 space-y-0.5">
                           {filteredClientsForSearch.map(c => (
@@ -4158,7 +4222,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
       {/* WhatsApp Send Suggestion Modal */}
       {/* WhatsApp Send Suggestion Modal */}
-      {showWhatsAppModal && (
+      {showWhatsAppModal && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="glass-card-premium rounded-[2.5rem]  p-8 max-w-md w-full space-y-6 relative overflow-hidden">
             {/* Background decoration */}
@@ -4244,7 +4308,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     return cleanPhone.length === 9 ? '593' + cleanPhone : cleanPhone;
                   })()
                 }&text=${encodeURIComponent(
-                  `Hola *${buyerName}*,\nLe comparto el detalle de su factura emitida en el SRI por Servicios Contables.\n\n` +
+                  `Hola *${buyerName}*,\nLe comparto el detail de su factura emitida en el SRI por Servicios Contables.\n\n` +
                   `*Total:* $${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}\n` +
                   `*Clave de Acceso:* ${generatedAccessKey}\n\n` +
                   `¡Muchas gracias por su confianza!\n_Santiago Córdova - Soluciones Tributarias_`
@@ -4289,11 +4353,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* FULL SCREEN PROCESS LOADING OVERLAY (Cargando / Validando) */}
-      {processStatus === 'running' && (
+      {processStatus === 'running' && createPortal(
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-2xl p-8 max-w-sm w-full space-y-6 text-center relative overflow-hidden">
             {/* Decorative pulse blur */}
@@ -4349,11 +4414,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               })}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ERROR DETAILS DIALOG MODAL */}
-      {processErrorMessage && (
+      {processErrorMessage && createPortal(
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
           <div className="glass-card-premium rounded-[2.5rem]  p-8 max-w-md w-full space-y-6 relative overflow-hidden text-center">
             {/* Background decoration */}
@@ -4397,7 +4463,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
 

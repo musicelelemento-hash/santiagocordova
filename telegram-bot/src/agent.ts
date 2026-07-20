@@ -719,6 +719,7 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
 
         if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
             // Loop tools
+            let lastToolResponse = '';
             for (const tc of responseMessage.tool_calls) {
                 const toolCall = tc as any;
                 
@@ -759,6 +760,16 @@ export async function processChatWithAgentLoop(chatId: string, userMessage: stri
                     name: toolCall.function.name,
                     content: toolResponse
                 });
+                lastToolResponse = toolResponse;
+            }
+
+            // OPTIMIZACIÓN CRÍTICA ELITE: Si el modelo solo llamó a una herramienta,
+            // podemos retornar directamente la respuesta de la herramienta al usuario.
+            // Esto evita una segunda llamada al LLM para "resumir" algo que ya está formateado en lenguaje natural,
+            // ahorrando el 50% de tokens y previniendo bucles infinitos en modelos pequeños.
+            if (responseMessage.tool_calls.length === 1 && lastToolResponse) {
+                await saveMessage(chatId, 'assistant', lastToolResponse);
+                return lastToolResponse;
             }
         } else {
             // No more tool calls, we are done
