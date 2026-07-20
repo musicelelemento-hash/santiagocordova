@@ -358,16 +358,33 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
     const editVigenciaFactMatch = t.match(/(?:edita|cambia|actualiza|pon|poner)\s+(?:la\s+)?(?:vigencia|caducidad|vencimiento)\s+(?:del\s+)?(?:facturador|sistema)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
     if (editVigenciaFactMatch) return doFieldUpdate(editVigenciaFactMatch[1], 'billing_expiration', editVigenciaFactMatch[2].trim());
 
-    // --- PAYMENT shortcuts (simple, unambiguous) ---
-    const marcaPagoMatch = t.match(/(?:marca|registra|anota)\s+(?:como\s+)?pagado\s+(?:a\s+)?(.+)|(?:a\s+)?(.+?)\s+(?:ya\s+)?pag[oó]/);
-    const payClient = marcaPagoMatch ? (marcaPagoMatch[1] || marcaPagoMatch[2])?.trim() : null;
+    // --- PAYMENT shortcuts (interactive flow) ---
+    const marcaPagoMatch = t.match(/(?:marca|registra|anota)\s+(?:como\s+)?(?:pagado|un\s+pago)\s+(?:de\s+|a\s+)?(.+)|(?:a\s+)?(.+?)\s+(?:ya\s+)?pag[oó]|cu[aá]nto\s+(?:me\s+)?debe\s+(.+)|qu[eé]\s+(?:meses\s+)?me\s+debe\s+(.+)/);
+    const payClient = marcaPagoMatch ? (marcaPagoMatch[1] || marcaPagoMatch[2] || marcaPagoMatch[3] || marcaPagoMatch[4])?.trim() : null;
     if (payClient && payClient.length > 2) {
-        const result = await markPaymentAsPaid(payClient, 'IVA');
-        await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
-        
-        await saveMessage(chatId, 'user', text);
-        await saveMessage(chatId, 'assistant', result);
+        const clients = await findClients(payClient, '*');
+        await initiatePaymentFlow(chatId, clients, ctx);
         return true;
+    }
+
+    // --- PROOF shortcuts ---
+    const comprobanteMatch = t.match(/(?:comprobante|ride|pdf)\s+(?:de\s+la\s+)?(?:declaraci[oó]n\s+)?de\s+(.+)/);
+    if (comprobanteMatch) {
+        const clients = await findClients(comprobanteMatch[1].trim(), 'id, name, ruc, trade_name');
+        if (clients.length === 1) {
+            const result = await getClientDeclarationProofsList(clients[0].ruc);
+            await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });
+            return true;
+        } else if (clients.length > 1) {
+            await showClientSelection(
+                chatId, clients, 'field_query', { field: 'declaration_history' },
+                ctx, `🔍 Encontré <b>${clients.length}</b> clientes. ¿De cuál deseas el comprobante?`
+            );
+            return true;
+        } else {
+             await ctx.reply(`❌ No encontré "${comprobanteMatch[1]}". Baku.`);
+             return true;
+        }
     }
 
     // --- REPORT shortcuts ---
