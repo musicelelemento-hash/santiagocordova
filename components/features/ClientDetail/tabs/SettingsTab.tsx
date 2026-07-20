@@ -376,12 +376,68 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                             )}
                                         </div>
                                     ) : (
-                                        <input
-                                            type="month"
-                                            value={editedClient.clientStartPeriod || ''}
-                                            onChange={(e) => setEditedClient({ ...editedClient, clientStartPeriod: e.target.value })}
-                                            className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all cursor-pointer"
-                                        />
+                                        <div className="flex gap-3">
+                                            <div className="flex-1 relative">
+                                                <select
+                                                    value={(() => {
+                                                        const parts = (editedClient.clientStartPeriod || '').split('-');
+                                                        return parts[0] || new Date().getFullYear().toString();
+                                                    })()}
+                                                    onChange={(e) => {
+                                                        const year = e.target.value;
+                                                        const parts = (editedClient.clientStartPeriod || '').split('-');
+                                                        let month = parts[1] || '01';
+                                                        if (month.startsWith('S')) month = '01';
+                                                        setEditedClient({ ...editedClient, clientStartPeriod: `${year}-${month}` });
+                                                    }}
+                                                    className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer"
+                                                >
+                                                    {Array.from({ length: 6 }, (_, i) => (new Date().getFullYear() - 3 + i).toString()).map(y => (
+                                                        <option key={y} value={y} className="bg-white dark:bg-slate-950 text-slate-900 dark:text-white">{y}</option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                    <LucideIcons.ChevronDown size={14} />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 relative">
+                                                <select
+                                                    value={(() => {
+                                                        const parts = (editedClient.clientStartPeriod || '').split('-');
+                                                        let month = parts[1] || '01';
+                                                        if (month.startsWith('S')) month = '01';
+                                                        return month;
+                                                    })()}
+                                                    onChange={(e) => {
+                                                        const month = e.target.value;
+                                                        const parts = (editedClient.clientStartPeriod || '').split('-');
+                                                        const year = parts[0] || new Date().getFullYear().toString();
+                                                        setEditedClient({ ...editedClient, clientStartPeriod: `${year}-${month}` });
+                                                    }}
+                                                    className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer"
+                                                >
+                                                    {[
+                                                        { val: '01', label: 'Enero' },
+                                                        { val: '02', label: 'Febrero' },
+                                                        { val: '03', label: 'Marzo' },
+                                                        { val: '04', label: 'Abril' },
+                                                        { val: '05', label: 'Mayo' },
+                                                        { val: '06', label: 'Junio' },
+                                                        { val: '07', label: 'Julio' },
+                                                        { val: '08', label: 'Agosto' },
+                                                        { val: '09', label: 'Septiembre' },
+                                                        { val: '10', label: 'Octubre' },
+                                                        { val: '11', label: 'Noviembre' },
+                                                        { val: '12', label: 'Diciembre' }
+                                                    ].map(m => (
+                                                        <option key={m.val} value={m.val} className="bg-white dark:bg-slate-950 text-slate-900 dark:text-white">{m.label}</option>
+                                                    ))}
+                                                </select>
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                    <LucideIcons.ChevronDown size={14} />
+                                                </div>
+                                            </div>
+                                        </div>
                                     )
                                 ) : (
                                     <div className="px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 tracking-wide shadow-sm flex items-center justify-between">
