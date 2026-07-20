@@ -976,7 +976,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         <div className="bg-surface-lowest min-h-screen flex flex-col lg:flex-row max-w-[1600px] mx-auto">
             
             {/* PANEL IZQUIERDO (Lista de Clientes) */}
-            <div className={`flex-1 transition-all duration-500 w-full ${selectedClient ? 'hidden lg:block lg:w-[45%] xl:w-[40%] lg:border-r border-white/5 lg:pr-6 lg:overflow-y-auto' : 'max-w-7xl mx-auto px-2 sm:px-6'}`}>
+            <div className="flex-1 transition-all duration-500 w-full max-w-7xl mx-auto px-2 sm:px-6">
                 <div className="py-6 sm:py-8">
             {/* ZENITH CLIENT MANAGEMENT - ARCHITECTURAL HEADER */}
             <motion.div 
@@ -1484,6 +1484,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 onUploadReceipt={handleUploadReceipt}
                                 frequency={frequencyForList}
                                 isTrashView={activeGroupTab === 'trash'}
+                                isCobrosView={false}
                             />
                         ) : (
                             <VirtualClientList
@@ -1494,6 +1495,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 onUploadReceipt={handleUploadReceipt}
                                 frequency={frequencyForList}
                                 isTrashView={activeGroupTab === 'trash'}
+                                isCobrosView={false}
                             />
                         )}
                     </motion.div>
@@ -1548,6 +1550,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
                                     frequency={frequencyForList}
+                                    isCobrosView={true}
                                 />
                             ) : (
                                 <VirtualClientList
@@ -1563,6 +1566,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
                                     frequency={frequencyForList}
+                                    isCobrosView={true}
                                 />
                             )}
                         </section>
@@ -1597,6 +1601,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
                                     frequency={frequencyForList}
+                                    isCobrosView={true}
                                 />
                             ) : (
                                 <VirtualClientList
@@ -1611,55 +1616,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     onQuickAction={handleQuickAction}
                                     onUploadReceipt={handleUploadReceipt}
                                     frequency={frequencyForList}
+                                    isCobrosView={true}
                                 />
                             )}
                         </section>
-                    </motion.div>
-                ) : isAlertasView ? (
-                    <motion.div
-                        key="alerts"
-                        initial={{ opacity: 0, scale: 1.05 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.4 }}
-                        className="space-y-12 pb-20"
-                    >
-                        {/* ALERTAS CRÍTICAS - TACTICAL VIEW */}
-                        <div className="flex items-center justify-between mb-8">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20">
-                                    <LucideIcons.AlertTriangle size={20} />
-                                </div>
-                                <div>
-                                    <h3 className="text-[10px] font-bold text-primary uppercase tracking-[0.3em] font-premium mb-1">
-                                        VENCIMIENTOS TÁCTICOS
-                                    </h3>
-                                    <p className="text-lg font-bold text-on-surface uppercase tracking-tight font-premium">
-                                        OBLIGACIONES REQUIRIENDO ACCIÓN INMEDIATA
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {viewMode === 'list' ? (
-                            <VirtualClientTable
-                                clients={sortedClients}
-                                serviceFees={serviceFees}
-                                onView={handleOpenClientDetails}
-                                onQuickAction={handleQuickAction}
-                                onUploadReceipt={handleUploadReceipt}
-                                frequency={frequencyForList}
-                            />
-                        ) : (
-                            <VirtualClientList
-                                clients={sortedClients}
-                                serviceFees={serviceFees}
-                                onView={handleOpenClientDetails}
-                                onQuickAction={handleQuickAction}
-                                onUploadReceipt={handleUploadReceipt}
-                                frequency={frequencyForList}
-                            />
-                        )}
                     </motion.div>
                 ) : null}
             </AnimatePresence>
@@ -1754,22 +1714,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             </div> {/* End of inner padding container */}
             </div> {/* End of LEFT PANE */}
 
-            {/* RIGHT PANE: COMMAND CENTER DETAIL */}
+            {/* RIGHT PANE: COMMAND CENTER DETAIL (FULL SCREEN OVERLAY) */}
             {selectedClient && (
-                <div className="w-full lg:w-[55%] xl:w-[60%] lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden lg:p-6 lg:pl-0 z-50">
-                    {/* Mobile Overlay View */}
-                    <div className="lg:hidden fixed inset-0 z-[150] flex items-center justify-center p-0 bg-slate-100/40 dark:bg-slate-950/40 backdrop-blur-3xl overflow-hidden animate-in fade-in duration-700">
-                        <ClientDetailView 
-                            client={selectedClient} 
-                            onSave={handleUpdateClient} 
-                            onBack={handleCloseClientDetails} 
-                            serviceFees={serviceFees} 
-                            sriCredentials={sriCredentialsProp || sriCredentials}
-                            initialTab={(window as any).__TEMP_INITIAL_TAB__ || initialTab}
-                        />
-                    </div>
-                    {/* Desktop Split-Pane View */}
-                    <div className="hidden lg:block w-full h-full shadow-2xl rounded-[2.5rem] overflow-hidden glass-card-premium relative">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 sm:p-4 md:p-8 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md overflow-hidden animate-in fade-in duration-500">
+                    <div className="w-full h-full max-w-[1600px] bg-white dark:bg-[#020617] shadow-2xl sm:rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-white/10 relative flex flex-col animate-in zoom-in-[0.98] duration-500">
                         <ClientDetailView 
                             client={selectedClient} 
                             onSave={handleUpdateClient} 

@@ -19,10 +19,11 @@ interface ClientCardProps {
     frequency?: 'Mensual' | 'Semestral' | 'Anual' | 'all';
     customPeriod?: string;
     isTrashView?: boolean;
+    isCobrosView?: boolean;
 }
 
 
-export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency, customPeriod, isTrashView = false }) => {
+export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees, onView, onQuickAction, onUploadReceipt, onPreview, compact = false, variant = 'tactical', frequency, customPeriod, isTrashView = false, isCobrosView = false }) => {
     const [copied, setCopied] = React.useState(false);
     const [isHovered, setIsHovered] = React.useState(false);
 
@@ -133,13 +134,14 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
         >
             {/* Tonal Accent Strip */}
             <div className={`absolute top-0 left-0 right-0 h-[4px] transition-all duration-700 opacity-90 ${
+                isCobrosView ? (debtSummary.totalDebt >= fee * 3 ? 'bg-gradient-to-r from-rose-500 to-rose-600' : debtSummary.totalDebt > 0 ? 'bg-gradient-to-r from-amber-400 to-orange-500' : 'bg-gradient-to-r from-slate-200 to-slate-300') :
                 isFullyAlDia ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 
                 isOverdue ? 'bg-gradient-to-r from-rose-400 to-rose-500' : 
                 isUrgent ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
                 'bg-gradient-to-r from-blue-300 to-blue-500 dark:from-blue-600 dark:to-blue-400'
             }`}></div>
             
-            <div className={`p-5 sm:p-6 relative z-10 flex flex-col md:flex-row md:items-center h-full justify-between gap-6`}>
+            <div className={`p-5 sm:p-6 relative z-10 flex flex-col md:flex-row md:items-center h-full justify-between gap-6 ${isCobrosView && debtSummary.totalDebt > 0 ? 'bg-rose-50/10 dark:bg-rose-950/10' : ''}`}>
                 {/* 1. Identity & Contact Zone */}
                 <div className="flex items-start md:items-center gap-5 flex-1 min-w-0 md:border-r border-slate-100 dark:border-white/5 md:pr-6">
                     <div className="relative shrink-0 mt-1 md:mt-0">
@@ -208,11 +210,39 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                     </div>
                 </div>
 
-                {/* 2. Intelligence Zone (Obligaciones & Pagos) */}
-                <div className="flex flex-col justify-center gap-2.5 flex-1 md:border-r border-slate-100 dark:border-white/5 md:pr-6 py-2 md:py-0">
-                    <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 hidden md:block">
-                        Estado Express
+                {/* 2. Intelligence Zone OR Cobros Zone */}
+                {isCobrosView ? (
+                    <div className="flex flex-col justify-center gap-1.5 flex-1 md:border-r border-slate-100 dark:border-white/5 md:pr-6 py-2 md:py-0 text-center md:text-left">
+                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+                            Resumen Financiero
+                        </div>
+                        {debtSummary.totalDebt > 0 ? (
+                            <>
+                                <div className="text-3xl md:text-4xl font-black text-rose-600 dark:text-rose-500 tracking-tighter">
+                                    ${debtSummary.totalDebt.toFixed(2)}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                    <span className="text-[10px] font-bold text-rose-500/70 uppercase tracking-wider">Honorarios Pendientes:</span>
+                                    {debtSummary.unpaidPeriods.slice(0, 3).map(p => (
+                                        <span key={p} className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 text-[9px] font-bold uppercase">{formatPeriodForDisplay(p).replace('IVA ', '')}</span>
+                                    ))}
+                                    {debtSummary.unpaidPeriods.length > 3 && (
+                                        <span className="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 text-[9px] font-bold uppercase">+{debtSummary.unpaidPeriods.length - 3} más</span>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-xl font-black text-emerald-500 flex items-center gap-2">
+                                <LucideIcons.ShieldCheck size={24} />
+                                SIN DEUDA
+                            </div>
+                        )}
                     </div>
+                ) : (
+                    <div className="flex flex-col justify-center gap-2.5 flex-1 md:border-r border-slate-100 dark:border-white/5 md:pr-6 py-2 md:py-0">
+                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 hidden md:block">
+                            Estado Express
+                        </div>
                     
                     {dueDate && !client.isDeleted && client.isActive && (
                         <div className={`flex items-center justify-between px-3 py-2 rounded-lg border w-full sm:w-auto ${
@@ -256,6 +286,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                         )}
                     </div>
                 </div>
+                )}
 
                 {/* 3. Action Zone */}
                 <div className="flex flex-col items-start sm:items-end justify-center gap-3 flex-shrink-0 w-full md:w-auto">
@@ -276,6 +307,43 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             <button onClick={(e) => handleAction(e, 'purge')} className="flex-1 sm:flex-none flex items-center justify-center h-10 px-4 rounded-lg bg-rose-500 hover:bg-rose-600 text-white font-bold text-[10px] uppercase tracking-wider transition-transform active:scale-95">
                                 <LucideIcons.Trash2 size={14} className="mr-1.5" />
                                 Eliminar
+                            </button>
+                        </div>
+                    ) : isCobrosView ? (
+                        <div className="flex flex-col gap-2 w-full mt-2 sm:mt-0">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const msg = encodeURIComponent(`Estimado/a ${client.tradeName || client.name}, le recordamos cordialmente que tiene un saldo pendiente de $${debtSummary.totalDebt.toFixed(2)} correspondiente a sus honorarios contables. Agradecemos su pronto pago.`);
+                                    const phone = client.phones && client.phones.length > 0 ? client.phones[0].replace(/\D/g, '') : '';
+                                    if (phone) {
+                                        window.open(`https://wa.me/593${phone.startsWith('0') ? phone.slice(1) : phone}?text=${msg}`, '_blank');
+                                    } else {
+                                        alert('El cliente no tiene teléfono registrado.');
+                                    }
+                                }}
+                                disabled={debtSummary.totalDebt === 0}
+                                className={`flex items-center justify-center gap-2 h-10 w-full px-4 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all ${debtSummary.totalDebt > 0 ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+                            >
+                                <LucideIcons.MessageCircle size={14} />
+                                Recordatorio Amistoso
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const msg = encodeURIComponent(`Aviso Urgente: Estimado/a ${client.tradeName || client.name}, sus servicios contables y declaraciones al SRI se encuentran suspendidos debido a un saldo pendiente de $${debtSummary.totalDebt.toFixed(2)}. Por favor regularizar su pago de inmediato.`);
+                                    const phone = client.phones && client.phones.length > 0 ? client.phones[0].replace(/\D/g, '') : '';
+                                    if (phone) {
+                                        window.open(`https://wa.me/593${phone.startsWith('0') ? phone.slice(1) : phone}?text=${msg}`, '_blank');
+                                    } else {
+                                        alert('El cliente no tiene teléfono registrado.');
+                                    }
+                                }}
+                                disabled={debtSummary.totalDebt === 0}
+                                className={`flex items-center justify-center gap-2 h-10 w-full px-4 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all ${debtSummary.totalDebt > 0 ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-md active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+                            >
+                                <LucideIcons.AlertTriangle size={14} />
+                                Notificación Suspensión
                             </button>
                         </div>
                     ) : (

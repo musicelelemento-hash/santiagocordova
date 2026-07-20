@@ -281,7 +281,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2 ${
                                         isActive 
                                             ? 'bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]' 
-                                            : 'text-slate-405 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white'
+                                            : 'text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white'
                                     }`}
                                 >
                                     <tab.icon size={12} />
@@ -351,7 +351,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     <LucideIcons.CheckSquare size={18} />
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-bold text-slate-405 dark:text-slate-400 uppercase tracking-widest mb-0.5">Declarados</p>
+                                    <p className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-widest mb-0.5">Declarados</p>
                                     <p className="text-xl font-extrabold text-slate-900 dark:text-white leading-none font-premium">
                                         {declaredCount}
                                         <span className="text-xs text-slate-400 font-bold ml-1">/ {denominator}</span>
@@ -363,7 +363,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     <LucideIcons.Paperclip size={18} />
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-bold text-slate-405 dark:text-slate-400 uppercase tracking-widest mb-0.5">Respaldos</p>
+                                    <p className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-widest mb-0.5">Respaldos</p>
                                     <p className="text-xl font-extrabold text-slate-900 dark:text-white leading-none font-premium">
                                         {pdfCount}
                                         <span className="text-xs text-slate-400 font-bold ml-1">/ {denominator}</span>
@@ -373,7 +373,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             <div className="md:col-span-2 glass-card-premium p-4 flex flex-col justify-center tactical-glow-primary hover:translate-y-[-2px] transition-all">
                                 <div className="flex justify-between items-center mb-2">
                                     <div>
-                                        <p className="text-[9px] font-bold text-slate-405 dark:text-slate-400 uppercase tracking-widest">
+                                        <p className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-widest">
                                             {matrixMode === 'RENTA' ? 'Eficiencia Renta' : 'Eficiencia Mensual'}
                                         </p>
                                         <p className="text-[8px] font-bold text-slate-400/80 uppercase tracking-wider mt-0.5">Ciclo {formatPeriodForDisplay(lastPeriod)}</p>
@@ -401,7 +401,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             {periods.map(p => (
                                 <th 
                                     key={p} 
-                                    className="px-4 py-4 text-[9px] font-black text-slate-405 dark:text-slate-450 uppercase tracking-[0.15em] text-center border-r border-slate-200/30 dark:border-white/5 last:border-r-0 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group/th"
+                                    className="px-4 py-4 text-[9px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-[0.15em] text-center border-r border-slate-200/30 dark:border-white/5 last:border-r-0 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group/th"
                                     onClick={() => handleSortByPeriod(p)}
                                     title="Clic para agrupar (Faltantes / Listos)"
                                 >
@@ -432,11 +432,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(43,106,255,0.6)]"></div>
-                                                        <span className="text-[9px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-[0.15em] font-premium">
+                                                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em] font-premium">
                                                             Dígito RUC <span className="font-mono text-primary font-black">{currentDigit}</span>
                                                         </span>
                                                         <span className="text-slate-300 dark:text-white/10 mx-1">|</span>
-                                                        <span className="text-[9px] text-slate-405 dark:text-slate-400 font-mono tracking-wider">
+                                                        <span className="text-[9px] text-slate-400 dark:text-slate-400 font-mono tracking-wider">
                                                             Vence: Día {currentDigit === 1 ? '10' : currentDigit === 2 ? '12' : currentDigit === 3 ? '14' : currentDigit === 4 ? '16' : currentDigit === 5 ? '18' : currentDigit === 6 ? '20' : currentDigit === 7 ? '22' : currentDigit === 8 ? '24' : currentDigit === 9 ? '26' : '28'} de cada mes
                                                         </span>
                                                     </div>
@@ -447,7 +447,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             </td>
                                         </tr>
                                     )}
-                                    <tr className="hover:bg-slate-55/30 dark:hover:bg-slate-950/20 transition-colors group/row">
+                                    <tr className="hover:bg-slate-50/50 dark:bg-white/[0.02] dark:hover:bg-slate-950/20 transition-colors group/row">
                                         <td 
                                             className="px-6 py-4 sticky left-0 bg-white/95 dark:bg-[#020617]/95 backdrop-blur-md z-10 border-r border-slate-200/30 dark:border-white/10 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-950/80 transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.03)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.4)]"
                                             onClick={() => onViewClient(client)}
@@ -457,10 +457,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 {(() => {
                                                     const compliance = getClientCompliance(client, today, (frequency === 'Ninguno' ? 'all' : frequency) as any);
                                                     const dotColor = 
-                                                        compliance.overallColor === 'red' ? 'bg-rose-500 shadow-rose-555/50' :
-                                                        compliance.overallColor === 'orange' ? 'bg-orange-505 shadow-orange-555/50' :
-                                                        compliance.overallColor === 'yellow' ? 'bg-amber-400 shadow-amber-455/50' :
-                                                        compliance.overallColor === 'green' ? 'bg-emerald-505 shadow-emerald-555/50' :
+                                                        compliance.overallColor === 'red' ? 'bg-rose-500 shadow-rose-500/50' :
+                                                        compliance.overallColor === 'orange' ? 'bg-orange-500 shadow-orange-500/50' :
+                                                        compliance.overallColor === 'yellow' ? 'bg-amber-400 shadow-amber-400/50' :
+                                                        compliance.overallColor === 'green' ? 'bg-emerald-500 shadow-emerald-500/50' :
                                                         'bg-slate-400';
                                                     return (
                                                         <div 
@@ -573,7 +573,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         isManualDone ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white border-amber-500/50 shadow-md shadow-amber-500/10 hover:scale-105 hover:shadow-lg z-10 animate-pulse' :
                                                                         d?.isPriority ? 'bg-gradient-to-br from-orange-500 to-rose-500 text-white border-orange-600/50 shadow-md shadow-orange-500/10 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/25 z-10 animate-pulse' :
                                                                         isOverdue ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-500 dark:text-rose-400 border-rose-250 dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-950/30 hover:scale-105' :
-                                                                        'bg-slate-50 dark:bg-slate-900/40 text-slate-405 dark:text-slate-400 border-slate-200/50 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-600 dark:hover:text-slate-200 hover:scale-105'
+                                                                        'bg-slate-50 dark:bg-slate-900/40 text-slate-400 dark:text-slate-400 border-slate-200/50 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-600 dark:hover:text-slate-200 hover:scale-105'
                                                                     }`}
                                                                     title={isDone ? `Ver PDF de ${ob.label}` : isManualDone ? `Atención: Sin PDF de ${ob.label}. Haz click para subirlo.` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
                                                                     onClick={(e) => {
@@ -702,14 +702,14 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 {filteredClients.length === 0 && (
                     <div className="py-20 text-center">
                         <LucideIcons.Inbox size={32} className="mx-auto text-slate-300 dark:text-slate-700 mb-3" />
-                        <p className="text-xs font-bold text-slate-405 dark:text-slate-500 uppercase tracking-widest">No hay clientes para este criterio</p>
+                        <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">No hay clientes para este criterio</p>
                     </div>
                 )}
             </div>
 
             {/* Legend */}
             <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-white/40 dark:bg-slate-900/20 backdrop-blur-md rounded-2xl border border-slate-200/30 dark:border-white/5 no-print">
-                <span className="text-[9px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-widest font-premium">Leyenda de Estados</span>
+                <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Leyenda de Estados</span>
                 <div className="flex flex-wrap items-center gap-6">
                     <div className="flex items-center gap-2">
                         <div className="w-5 h-5 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[9px]">

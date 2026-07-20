@@ -5,7 +5,7 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 import { Client, ServiceFeesConfig, DeclarationStatus, TaxRegime } from '../../types';
 import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, getNextPeriod, safeFormat, requiresIva } from '../../services/sri';
 import { getClientServiceFee } from '../../services/clientService';
-import { TaxFrequency } from '../../services/complianceEngine';
+import { TaxFrequency, getClientDebtSummary } from '../../services/complianceEngine';
 import { isPast, differenceInHours } from 'date-fns';
 import * as LucideIcons from 'lucide-react';
 
@@ -17,10 +17,11 @@ interface VirtualClientTableProps {
     onUploadReceipt: (client: Client, period?: string) => void;
     frequency?: TaxFrequency | 'all';
     isTrashView?: boolean;
+    isCobrosView?: boolean;
 }
 
 const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualClientTableProps>) => {
-    const { clients, serviceFees, onView, onQuickAction, onUploadReceipt, frequency, isTrashView } = data;
+    const { clients, serviceFees, onView, onQuickAction, onUploadReceipt, frequency, isTrashView, isCobrosView } = data;
     const client = clients[index];
     
     const fee = getClientServiceFee(client, serviceFees);
@@ -95,8 +96,10 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const debtSummary = getClientDebtSummary(client, serviceFees, today);
+
     return (
-        <div style={style} className={`flex border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-all items-center px-4 group/row hover:shadow-[inset_4px_0_0_0_theme(colors.primary.DEFAULT)] ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-inset ring-primary/30' : ''}`}>
+        <div style={style} className={`flex border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-all items-center px-4 group/row hover:shadow-[inset_4px_0_0_0_theme(colors.primary.DEFAULT)] ${isRefundAlertActive ? 'animate-heartbeat ring-2 ring-inset ring-primary/30' : ''} ${isCobrosView && debtSummary.totalDebt > 0 ? 'bg-rose-50/20 dark:bg-rose-950/20 hover:bg-rose-50/40 dark:hover:bg-rose-950/40' : ''}`}>
             {/* Estatus Zen */}
             <div className="w-20 shrink-0 flex flex-col items-center group cursor-help relative px-2" title={merit.label}>
                 <div className={`p-2.5 rounded-2xl ${merit.rank === 1 ? 'bg-tertiary/10 text-tertiary shadow-sm' : (merit.rank === 2 ? 'bg-on-surface-variant/10 text-on-surface-variant' : 'bg-primary/10 text-primary')} transition-all group-hover:scale-110`}>
@@ -173,10 +176,26 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                 </div>
             </div>
 
-            {/* Honorarios */}
-            <div className="w-32 shrink-0 px-6 h-full flex flex-col justify-center">
-                <span className="font-bold text-on-surface text-lg font-mono tracking-tighter leading-none">${fee.toFixed(2)}</span>
-                <span className="text-[9px] text-on-surface-variant font-bold uppercase tracking-[0.2em] mt-2">MENSUAL</span>
+            {/* Honorarios / Cobros */}
+            <div className="w-48 shrink-0 px-6 h-full flex flex-col justify-center">
+                {isCobrosView ? (
+                    debtSummary.totalDebt > 0 ? (
+                        <div className="flex flex-col">
+                            <span className="font-black text-rose-600 dark:text-rose-500 text-2xl font-mono tracking-tighter leading-none">${debtSummary.totalDebt.toFixed(2)}</span>
+                            <span className="text-[9px] text-rose-500/70 font-bold uppercase tracking-[0.2em] mt-1">{debtSummary.unpaidPeriodsCount} Periodos</span>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col">
+                            <span className="font-bold text-emerald-500 text-lg font-mono tracking-tighter leading-none">$0.00</span>
+                            <span className="text-[9px] text-emerald-500/70 font-bold uppercase tracking-[0.2em] mt-1">AL DÍA</span>
+                        </div>
+                    )
+                ) : (
+                    <>
+                        <span className="font-bold text-on-surface text-lg font-mono tracking-tighter leading-none">${fee.toFixed(2)}</span>
+                        <span className="text-[9px] text-on-surface-variant font-bold uppercase tracking-[0.2em] mt-2">MENSUAL</span>
+                    </>
+                )}
             </div>
 
             {/* Operaciones */}
@@ -198,6 +217,43 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                             ELIMINAR
                         </button>
                     </>
+                ) : isCobrosView ? (
+                    <div className="flex flex-col gap-1.5 w-full">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const msg = encodeURIComponent(`Estimado/a ${client.tradeName || client.name}, le recordamos cordialmente que tiene un saldo pendiente de $${debtSummary.totalDebt.toFixed(2)} correspondiente a sus honorarios contables. Agradecemos su pronto pago.`);
+                                const phone = client.phones && client.phones.length > 0 ? client.phones[0].replace(/\D/g, '') : '';
+                                if (phone) {
+                                    window.open(`https://wa.me/593${phone.startsWith('0') ? phone.slice(1) : phone}?text=${msg}`, '_blank');
+                                } else {
+                                    alert('El cliente no tiene teléfono registrado.');
+                                }
+                            }}
+                            disabled={debtSummary.totalDebt === 0}
+                            className={`flex items-center justify-center gap-2 py-1.5 rounded-lg font-premium font-bold text-[9px] uppercase tracking-wider transition-all ${debtSummary.totalDebt > 0 ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+                        >
+                            <LucideIcons.MessageCircle size={12} />
+                            R. Amistoso
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const msg = encodeURIComponent(`Aviso Urgente: Estimado/a ${client.tradeName || client.name}, sus servicios contables y declaraciones al SRI se encuentran suspendidos debido a un saldo pendiente de $${debtSummary.totalDebt.toFixed(2)}. Por favor regularizar su pago de inmediato.`);
+                                const phone = client.phones && client.phones.length > 0 ? client.phones[0].replace(/\D/g, '') : '';
+                                if (phone) {
+                                    window.open(`https://wa.me/593${phone.startsWith('0') ? phone.slice(1) : phone}?text=${msg}`, '_blank');
+                                } else {
+                                    alert('El cliente no tiene teléfono registrado.');
+                                }
+                            }}
+                            disabled={debtSummary.totalDebt === 0}
+                            className={`flex items-center justify-center gap-2 py-1.5 rounded-lg font-premium font-bold text-[9px] uppercase tracking-wider transition-all ${debtSummary.totalDebt > 0 ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+                        >
+                            <LucideIcons.AlertTriangle size={12} />
+                            Suspensión
+                        </button>
+                    </div>
                 ) : (
                     <>
                         <button
@@ -229,8 +285,8 @@ export const VirtualClientTable: React.FC<VirtualClientTableProps> = (props) => 
                 <div className="flex-1 px-6">Titular y Regimen</div>
                 <div className="w-48 shrink-0 px-6">Configuración</div>
                 <div className="w-52 shrink-0 px-6">Vencimientos</div>
-                <div className="w-32 shrink-0 px-6">Honorarios</div>
-                <div className="w-64 shrink-0 px-6">Gestión</div>
+                <div className="w-48 shrink-0 px-6">{props.isCobrosView ? 'Total Adeudado' : 'Honorarios'}</div>
+                <div className="w-64 shrink-0 px-6">{props.isCobrosView ? 'Gestión de Cobro' : 'Gestión'}</div>
             </div>
             <div className="flex-1">
                 <AutoSizer>
