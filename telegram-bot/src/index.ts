@@ -318,6 +318,21 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
     const regimenMatch = t.match(/(?:r[eé]gimen|tipo)\s+de\s+(.+)/);
     if (regimenMatch) return doFieldQuery(regimenMatch[1], 'regime');
 
+    const facturadorMatch = t.match(/(?:facturador|sistema\s+de\s+facturaci[oó]n)\s+de\s+(.+)/);
+    if (facturadorMatch) return doFieldQuery(facturadorMatch[1], 'billing_system');
+
+    const usrFactMatch = t.match(/usuario\s+(?:del\s+)?(?:facturador|sistema)\s+de\s+(.+)/);
+    if (usrFactMatch) return doFieldQuery(usrFactMatch[1], 'billing_user');
+
+    const claveFactMatch = t.match(/clave\s+(?:del\s+)?(?:facturador|sistema)\s+de\s+(.+)/);
+    if (claveFactMatch) return doFieldQuery(claveFactMatch[1], 'billing_password');
+
+    const precioFactMatch = t.match(/precio\s+(?:del\s+)?(?:facturador|sistema)\s+de\s+(.+)/);
+    if (precioFactMatch) return doFieldQuery(precioFactMatch[1], 'billing_price');
+
+    const vigenciaFactMatch = t.match(/(?:vigencia|caducidad|vencimiento)\s+(?:del\s+)?(?:facturador|sistema)\s+de\s+(.+)/);
+    if (vigenciaFactMatch) return doFieldQuery(vigenciaFactMatch[1], 'billing_expiration');
+
     // --- FIELD WRITE shortcuts ---
     const editClaveMatch = t.match(/(?:edita|cambia|actualiza|pon|poner)\s+(?:la\s+)?clave\s+(?:sri\s+)?de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
     if (editClaveMatch) return doFieldUpdate(editClaveMatch[1], 'sri_password', editClaveMatch[2].trim());
@@ -327,6 +342,21 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
 
     const editTelMatch = t.match(/(?:edita|cambia|actualiza)\s+(?:el\s+)?(?:tel[eé]fono|tel|cel(?:ular)?)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
     if (editTelMatch) return doFieldUpdate(editTelMatch[1], 'phones', editTelMatch[2].trim());
+
+    const editFacturadorMatch = t.match(/(?:edita|cambia|actualiza|pon|poner)\s+(?:el\s+)?(?:facturador|sistema\s+de\s+facturaci[oó]n)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
+    if (editFacturadorMatch) return doFieldUpdate(editFacturadorMatch[1], 'billing_system', editFacturadorMatch[2].trim());
+
+    const editUsrFactMatch = t.match(/(?:edita|cambia|actualiza|pon|poner)\s+(?:el\s+)?usuario\s+(?:del\s+)?(?:facturador|sistema)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
+    if (editUsrFactMatch) return doFieldUpdate(editUsrFactMatch[1], 'billing_user', editUsrFactMatch[2].trim());
+
+    const editClaveFactMatch = t.match(/(?:edita|cambia|actualiza|pon|poner)\s+(?:la\s+)?clave\s+(?:del\s+)?(?:facturador|sistema)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
+    if (editClaveFactMatch) return doFieldUpdate(editClaveFactMatch[1], 'billing_password', editClaveFactMatch[2].trim());
+
+    const editPrecioFactMatch = t.match(/(?:edita|cambia|actualiza|pon|poner)\s+(?:el\s+)?precio\s+(?:del\s+)?(?:facturador|sistema)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
+    if (editPrecioFactMatch) return doFieldUpdate(editPrecioFactMatch[1], 'billing_price', editPrecioFactMatch[2].trim());
+
+    const editVigenciaFactMatch = t.match(/(?:edita|cambia|actualiza|pon|poner)\s+(?:la\s+)?(?:vigencia|caducidad|vencimiento)\s+(?:del\s+)?(?:facturador|sistema)\s+de\s+(.+?)\s+(?:a|por|=)\s+(.+)/);
+    if (editVigenciaFactMatch) return doFieldUpdate(editVigenciaFactMatch[1], 'billing_expiration', editVigenciaFactMatch[2].trim());
 
     // --- PAYMENT shortcuts (simple, unambiguous) ---
     const marcaPagoMatch = t.match(/(?:marca|registra|anota)\s+(?:como\s+)?pagado\s+(?:a\s+)?(.+)|(?:a\s+)?(.+?)\s+(?:ya\s+)?pag[oó]/);
