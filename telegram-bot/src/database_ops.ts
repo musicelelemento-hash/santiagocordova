@@ -239,6 +239,55 @@ export async function searchClient(query: string) {
 }
 
 /**
+ * Gets a list of clients who have pending payments or pending declarations (RAW DATA).
+ */
+export async function getDebtorClientsRaw(): Promise<any[]> {
+    console.log(`💸 Fetching RAW debtor clients from Supabase...`);
+    try {
+        const { data: clients, error } = await supabase
+            .from('clients')
+            .select('*')
+            .eq('is_deleted', false);
+
+        if (error) throw error;
+        if (!clients || clients.length === 0) return [];
+        
+        const debtors: any[] = [];
+
+        clients.forEach(c => {
+            const regime = c.regime || 'Régimen General';
+            const isPopular = regime === 'Rimpe Negocio Popular';
+            const isEmprendedor = regime === 'Rimpe Emprendedor';
+            const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
+            
+            const unpaidIva = c.declaration_history?.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
+            const unpaidRenta = c.declaration_history?.filter((d: any) => d.type === 'RENTA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
+            
+            const feeKey = ivaFreq === 'Mensual' ? 'monthly' 
+                           : ivaFreq === 'Semestral' ? 'semestral' 
+                           : undefined;
+            const ivaFee = feeKey ? (c.fee_structure?.[feeKey] ?? (ivaFreq === 'Semestral' ? 10 : 5)) : 0;
+            const rentaFee = c.fee_structure?.annual ?? 10;
+            
+            let clientDebt = (unpaidIva.length * ivaFee) + (unpaidRenta.length * rentaFee);
+
+            if (clientDebt > 0) {
+                debtors.push({ 
+                    ...c, 
+                    clientDebt, 
+                    typeLabel: isPopular ? 'Popular' : (ivaFreq === 'Semestral' ? 'Semestral' : 'Mensual') 
+                });
+            }
+        });
+
+        return debtors;
+    } catch (error: any) {
+        console.error("Error getting raw debtors:", error);
+        return [];
+    }
+}
+
+/**
  * Gets a list of clients who have pending payments or pending declarations.
  */
 export async function getDebtorClients() {

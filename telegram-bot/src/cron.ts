@@ -1,17 +1,35 @@
 import cron from 'node-cron';
 import { Bot } from 'grammy';
-import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getCredentialStatus, convertMarkdownToTelegramHtml } from './database_ops';
+import { getDatabaseSummary, getUpcomingDeadlines, getDebtorClients, getDebtorClientsRaw, getCredentialStatus, convertMarkdownToTelegramHtml } from './database_ops';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { syncToSheets } from './google-sync';
 import { supabase } from './supabase';
 import { OpenAI } from 'openai';
+import { searchEmails, sendEmail } from './gmail';
 
 async function generateReportWithAI(prompt: string, systemInstruction?: string): Promise<string> {
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 
-    // 1. Try OpenRouter (Gemini 2.5 Flash / 2.0 Flash)
+    // 1. Try Google Generative AI SDK (Gemini 2.0 Flash) - PRIMARY
+    if (GEMINI_API_KEY && !GEMINI_API_KEY.includes('dummy')) {
+        try {
+            console.log("📡 [Cron AI] Attempting Google Generative AI SDK...");
+            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+            const model = genAI.getGenerativeModel({ 
+                model: "gemini-2.0-flash",
+                ...(systemInstruction ? { systemInstruction } : {})
+            });
+            const result = await model.generateContent(prompt);
+            const text = result.response.text();
+            if (text) return text;
+        } catch (e: any) {
+            console.error("⚠️ [Cron AI] Google SDK failed:", e.message);
+        }
+    }
+
+    // 2. Try OpenRouter (Gemini 2.5 Flash / 2.0 Flash) - FALLBACK 1
     if (OPENROUTER_API_KEY) {
         try {
             console.log("📡 [Cron AI] Attempting OpenRouter...");
@@ -35,7 +53,7 @@ async function generateReportWithAI(prompt: string, systemInstruction?: string):
         }
     }
 
-    // 2. Try Groq (Llama 3.3 70b)
+    // 3. Try Groq (Llama 3.3 70b) - FALLBACK 2
     if (GROQ_API_KEY) {
         try {
             console.log("📡 [Cron AI] Attempting Groq...");
@@ -74,23 +92,6 @@ async function generateReportWithAI(prompt: string, systemInstruction?: string):
             } catch (e2: any) {
                 console.error("⚠️ [Cron AI] Groq failed:", e2.message);
             }
-        }
-    }
-
-    // 3. Try Google Generative AI SDK (Gemini 2.0 Flash)
-    if (GEMINI_API_KEY && !GEMINI_API_KEY.includes('dummy')) {
-        try {
-            console.log("📡 [Cron AI] Attempting Google Generative AI SDK...");
-            const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-            const model = genAI.getGenerativeModel({ 
-                model: "gemini-2.0-flash",
-                ...(systemInstruction ? { systemInstruction } : {})
-            });
-            const result = await model.generateContent(prompt);
-            const text = result.response.text();
-            if (text) return text;
-        } catch (e: any) {
-            console.error("⚠️ [Cron AI] Google SDK failed:", e.message);
         }
     }
 
@@ -164,6 +165,34 @@ Genera el mensaje directamente para Telegram.
 }
 
 export function startCronJobs(bot: Bot) {
+    // Monitoreo SRI Proactivo: 9 AM, 2 PM, 6 PM Lunes a Viernes
+    cron.schedule('0 9,14,18 * * 1-5', async () => {
+        console.log("⏰ Ejecutando monitoreo proactivo del Buzón SRI...");
+        const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
+        const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
+        try {
+            const emails = await searchEmails(adminChatId, "from:sri.gob.ec is:unread", 5);
+            if (!emails.includes("No se encontraron correos") && !emails.includes("no está autorizado") && !emails.includes("Error")) {
+                const systemPrompt = "Eres Baku. Analiza estos correos del SRI y haz un resumen ejecutivo súper corto y directo para Santiago. Enumera de qué clientes son y si hay algo urgente (multas, glosas, claves).";
+                const prompt = `Correos sin leer del SRI:\n${emails}\n\nResume lo más importante y dime si requiere acción inmediata.`;
+                const aiResponse = await generateReportWithAI(prompt, systemPrompt);
+                
+                const htmlResponse = convertMarkdownToTelegramHtml(`🚨 *ALERTA BUZÓN SRI*\n\n${aiResponse}`);
+                try {
+                    await bot.api.sendMessage(adminChatId, htmlResponse, { parse_mode: 'HTML' });
+                } catch (e) {
+                    await bot.api.sendMessage(adminChatId, `🚨 *ALERTA BUZÓN SRI*\n\n${aiResponse}`);
+                }
+            } else {
+                console.log("✅ Monitoreo SRI: Sin novedades urgentes.");
+            }
+        } catch (error) {
+            console.error("❌ Error en Monitoreo SRI cron:", error);
+        }
+    }, {
+        timezone: "America/Guayaquil"
+    });
+
     // Ejecutar todos los días a las 03:30 AM hora de Ecuador
     cron.schedule('30 3 * * *', async () => {
         console.log("⏰ Ejecutando reporte proactivo de madrugada (03:30 AM)...");
@@ -180,9 +209,26 @@ export function startCronJobs(bot: Bot) {
         const rawIds = process.env.TELEGRAM_ALLOWED_USER_IDS || "1879067180";
         const adminChatId = rawIds.replace(/['"]/g, '').split(',').map(id => id.trim())[0];
         try {
+            const debtors = await getDebtorClientsRaw();
+            
+            // Envío de correos automáticos a clientes con email y deuda > 0
+            let emailsSent = 0;
+            for (const debtor of debtors) {
+                if (debtor.email && debtor.clientDebt > 0) {
+                    const subject = `Recordatorio de Honorarios Pendientes - Soluciones Contables Pro`;
+                    const body = `Estimado/a ${debtor.name},\n\nEspero que se encuentre excelente.\n\nEl presente correo es un recordatorio cordial de que mantiene un saldo pendiente por servicios contables y declaraciones SRI por el valor de $${debtor.clientDebt}.\n\nPor favor, realizar el pago a la brevedad posible para mantener sus obligaciones fiscales al día y evitar recargos o multas del SRI.\n\nAtentamente,\nSoluciones Contables Pro`;
+                    try {
+                        await sendEmail(adminChatId, debtor.email, subject, body);
+                        emailsSent++;
+                    } catch (e) {
+                        console.error(`Error enviando correo de cobro a ${debtor.email}:`, e);
+                    }
+                }
+            }
+
             const debtorReport = await getDebtorClients();
             
-            const systemPrompt = `Eres Baku, el asistente fiscal de élite de Santiago Cordova. Es lunes por la mañana (08:00 AM) y es momento de iniciar la cobranza semanal ("Lunes Financiero"). Tu misión es presentarle un resumen ejecutivo y motivador sobre la cartera vencida por cobrar, e instarlo a iniciar gestiones de recuperación de flujo.`;
+            const systemPrompt = `Eres Baku, el asistente fiscal de élite de Santiago Cordova. Es lunes por la mañana (08:00 AM) y es momento de iniciar la cobranza semanal ("Lunes Financiero"). Tu misión es presentarle un resumen ejecutivo y motivador sobre la cartera vencida por cobrar, e instarlo a iniciar gestiones de recuperación de flujo. Además, menciona que el sistema Baku ha enviado ${emailsSent} correos de cobro automáticamente.`;
             const prompt = `
 Reporte actual de deudores de la base de datos:
 ---

@@ -13,7 +13,7 @@ import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
 import { startCronJobs, triggerProactiveReport } from './cron';
 import { supabase } from './supabase';
-
+import { processPaymentReceipt } from './vision';
 
 const pendingPdfs = new Map<string, { buffer: Buffer, data: ValidatedPDF }>();
 
@@ -1198,6 +1198,33 @@ bot.on('message:document', async (ctx) => {
   } catch (err: any) {
     console.error('Error processing document:', err);
     await ctx.reply('Error al procesar el PDF: ' + err.message);
+  }
+});
+
+// Handle incoming photos (Payment Receipts OCR)
+bot.on('message:photo', async (ctx) => {
+  const chatId = ctx.chat.id.toString();
+  if (pendingDialogs.has(chatId)) {
+      await ctx.reply('📸 Tengo un proceso interactivo pendiente. Por favor escribe tu respuesta en texto, o escribe **cancelar** para salir.');
+      return;
+  }
+
+  await ctx.replyWithChatAction('typing');
+  try {
+    const photos = ctx.message.photo;
+    const photo = photos[photos.length - 1]; // get highest resolution
+    const file = await ctx.api.getFile(photo.file_id);
+    const fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${file.file_path}`;
+
+    const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+    const buffer = Buffer.from(response.data);
+
+    const result = await processPaymentReceipt(buffer, 'image/jpeg');
+    
+    await ctx.reply(convertMarkdownToTelegramHtml(result.message), { parse_mode: 'HTML' });
+  } catch (err: any) {
+    console.error('Error processing photo:', err);
+    await ctx.reply('Error al analizar la imagen: ' + err.message);
   }
 });
 
