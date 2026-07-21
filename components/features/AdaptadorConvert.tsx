@@ -21,6 +21,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Base64 binario idéntico a la plantilla oficial template_Productos (3).xls de Zifact
+const OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64 = "0M8R4KGxGuEAAAAAAAAAAAAAAAAAAAAAOwADAP7/CQAGAAAAAAAAAAAAAAABAAAABgAAAAAAAAAAEAAAAAAAAAEAAAD+////AAAAAAcAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8BAAAAAgAAAAMAAAD+////BQAAAAYAAAAHAAAACAAAAAkAAAAKAAAACwAAAAwAAAANAAAADgAAAA8AAAAQAAAAEQAAABIAAAATAAAAFAAAABUAAAAWAAAAFwAAABgAAAAZAAAAGgAAABsAAAAcAAAAHQAAAB4AAAD+////IAAAACEAAAAiAAAA/v////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7/AAAGAQIAAAAAAAAAAAAAAAAAAAAAAAEAAADghZ/y+U9oEKuRCAArJ7PZMAAAAMgAAAAIAAAAAQAAAEgAAAACAAAAUAAAAAMAAABsAAAABAAAAIgAAAAIAAAAmAAAAAwAAACoAAAADQAAALQAAAATAAAAwAAAAAIAAADkBAAAHgAAABQAAABQbGFudGlsbGEgUHJvZHVjdG9zAB4AAAAUAAAAUGxhbnRpbGxhIFByb2R1Y3RvcwAeAAAACAAAAEZhY3RlbAAAHgAAAAgAAABGYWN0ZWwAAEAAAACA/JPj+hjdAUAAAACA/JPj+hjdAQMAAAAAAAAAAAAAAAAAAAAJCBAAAAYFALsNzAfRAAEABgQAAEIAAgCwBD0AEgAAAAAAvCVyFTgAAAAAAAEAWAIiAAIAAAAxAB4A3AAAAAgAkAEAAAAAAAAHAUMAYQBsAGkAYgByAGkA4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAABACAAAMAAAAAAAAAAAAkEkwIEAACAAP+SAOIAOAAAAAAA////AP8AAAAA/wAAAAD/AP//AAD/AP8AAP//AIAAAAAAgAAAAACAAICAAACAAIAAAICAAMDAwACAgIAAmZn/AJkzZgD//8wAzP//AGYAZgD/gIAAAGbMAMzM/wAAAIAA/wD/AP//AAAA//8AgACAAIAAAAAAgIAAAAD/AADM/wDM//8AzP/MAP//mQCZzP8A/5nMAMyZ/wD/zJkAM2b/ADPMzACZzAAA/8wAAP+ZAAD/ZgAAZmaZAJaWlgAAM2YAM5lmAAAzAAAzMwAAmTMAAJkzZgAzM5kAMzMzAIUAGgA0BAAAAAAJAVAAbABhAG4AdABpAGwAbABhAMEBCADBAQAAZ+YBAK4BBAABAAEEFwAIAAEAAAAAAAAA/AAoAQwAAAAMAAAABgABTgBvAG0AYgByAGUAEAABQwBvAGQAaQBnAG8AIABQAHIAaQBuAGMAaQBwAGEAbAAPAAFDAG8AZABpAGcAbwAgAEEAdQB4AGkAbABpAGEAcgAPAAFQAHIAZQBjAGkAbwAgAFUAbgBpAHQAYQByAGkAbwAKAAFDAG8AZABpAGcAbwAgAEkAVgBBAAoAAUMAbwBkAGkAZwBvACAASQBDAEUADQABQwBvAGQAaQBnAG8AIABJAFIAQgBQAE4AUgAMAAFFAHMAdABhAGQAbwAgACgAQQAvAEkAKQAQAAFQAHIAbwBkAHUAYwB0AG8AIABlAGoAZQBtAHAAbABvAAYAAVAAUgBEADAAMAAxAAYAAUEAVQBYADAAMAAxAAEAAUEACgAAAAkIEAAABhAAuw3MB9EAAQAGBAAAKgACAAAAKwACAAAAggACAAEAgAAIAAAAAAAAAAAAgQACAMEEFAADAAAAARUAAwAAAAGDAAIAAACEAAIAAAAmAAgAZmZmZmZm5j8nAAgAZmZmZmZm5j8oAAgAAAAAAAAA6D8pAAgAAAAAAAAA6D+hACIAAQBkAAEAAQABAAIAWAJYAjMzMzMzM9M/MzMzMzMz0z8BAFUAAgAIAH0ADAAAAAAA/hMPAAAAAAB9AAwAAQABAP4TDwAAAAAAfQAMAAIAAgC1Eg8AAAAAAH0ADAADAAMAtRIPAAAAAAB9AAwABAAEANoMDwAAAAAAfQAMAAUABQDaDA8AAAAAAH0ADAAGAAYAbBAPAAAAAAB9AAwABwAHAEgPDwAAAAAAAAIOAAAAAAADAAAAAQAJAAAA/QAKAAAAAAAPAAAAAAD9AAoAAAABAA8AAQAAAP0ACgAAAAIADwACAAAA/QAKAAAAAwAPAAMAAAD9AAoAAAAEAA8ABAAAAP0ACgAAAAUADwAFAAAA/QAKAAAABgAPAAYAAAD9AAoAAAAHAA8ABwAAAP0ACgABAAAADwAIAAAA/QAKAAEAAQAPAAkAAAD9AAoAAQACAA8ACgAAAAMCDgABAAMADwAAAAAAAAAkQAMCDgABAAQADwAAAAAAAAAQQAMCDgABAAUADwAAAAAAAAAAAAMCDgABAAYADwAAAAAAAAAAAP0ACgABAAcADwALAAAAPgISALYGAAAAAEAAAAAAAGQAAAAAAIsIEACLCAAAAAAAAAAAAABkAAAAHQAPAAMAAAAAAAABAAAAAAAAAGcIFwBnCAAAAAAAAAAAAAACAAH//////38AAAoAAAD+/wAABgECAAAAAAAAAAAAAAAAAAAAAAABAAAAAtXN1ZwuGxCTlwgAKyz5rjAAAAC8AAAACAAAAAEAAABIAAAAFwAAAFAAAAALAAAAWAAAABAAAABgAAAAEwAAAGgAAAAWAAAAcAAAAA0AAAB4AAAADAAAAI4AAAACAAAA5AQAAAMAAAAAAAwACwAAAAAAAAALAAAAAAAAAAsAAAAAAAAACwAAAAAAAAAeEAAAAQAAAAoAAABXb3Jrc2hlZXQADBAAAAIAAAAeAAAAEwAAAEZldWlsbGVzIGRlIGNhbGN1bAADAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSAG8AbwB0ACAARQBuAHQAcgB5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFgAFAP//////////AQAAAAAJAgAAAAAAwAAAAAAAAEYAAAAAgPyT4/oY3QGA/JPj+hjdAQEAAADACAAAAAAAAAUAUwB1AG0AbQBhAHIAeQBJAG4AZgBvAHIAbQBhAHQAaQBvAG4AAAAAAAAAAAAAAAAAAAAoAAIAAgAAAAMAAAD/////AAkCAAAAAADAAAAAAAAARgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPgAAAAAAAAAVwBvAHIAawBiAG8AbwBrAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABIAAgD///////////////8ACQIAAAAAAMAAAAAAAABGAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAwAYAAAAAAAAFAEQAbwBjAHUAbQBlAG4AdABTAHUAbQBtAGEAcgB5AEkAbgBmAG8AcgBtAGEAdABpAG8AbgAAAAAAAAAAAAAAOAACAP///////////////wAJAgAAAAAAwAAAAAAAAEYAAAAAAAAAAAAAAAAAAAAAAAAAAB8AAADsAAAAAAAAAP7///8CAAAAAwAAAAQAAAAFAAAA/v////7////9////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
+
 interface ProcessedFile {
     id: string;
     name: string;
@@ -195,7 +198,27 @@ export const AdaptadorConvert: React.FC = () => {
         }
     });
 
-    // Descargar archivo en formato XLSX usando los nombres exactos de plantilla de Zifact
+    // Descargar archivo en formato .XLS inyectando en la plantilla binaria oficial de Zifact
+    const downloadAsXLS = (file: ProcessedFile) => {
+        if (file.type === 'productos') {
+            const workbook = xlsx.read(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64, { type: 'base64', cellStyles: true });
+            const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true });
+            workbook.Sheets['Plantilla'] = newWs;
+            
+            const buf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
+            const blob = new Blob([buf], { type: 'application/vnd.ms-excel' });
+            saveAs(blob, `Productos_Zifact_Migrado.xls`);
+        } else {
+            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
+            const workbook = xlsx.utils.book_new();
+            xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
+            const buf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
+            const blob = new Blob([buf], { type: 'application/vnd.ms-excel' });
+            saveAs(blob, `Clientes_Zifact_Migrado.xls`);
+        }
+    };
+
+    // Descargar archivo en formato XLSX
     const downloadAsXLSX = (file: ProcessedFile) => {
         const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
         const workbook = xlsx.utils.book_new();
@@ -211,40 +234,21 @@ export const AdaptadorConvert: React.FC = () => {
         }
     };
 
-    // Descargar archivo en formato BIFF5 .XLS (sin bucles SST de memoria PHP)
-    const downloadAsXLS = (file: ProcessedFile) => {
-        const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
-        const workbook = xlsx.utils.book_new();
-
-        if (file.type === 'productos') {
-            xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
-            const outFileName = `Productos_Zifact_Migrado.xls`;
-            const buf = xlsx.write(workbook, { bookType: 'biff5', type: 'array' });
-            const blob = new Blob([buf], { type: 'application/vnd.ms-excel' });
-            saveAs(blob, outFileName);
-        } else {
-            xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
-            const outFileName = `Clientes_Zifact_Migrado.xls`;
-            const buf = xlsx.write(workbook, { bookType: 'biff5', type: 'array' });
-            const blob = new Blob([buf], { type: 'application/vnd.ms-excel' });
-            saveAs(blob, outFileName);
-        }
-    };
-
     const downloadAllZip = async () => {
         const successfulFiles = processedFiles.filter(f => f.status === 'success');
         if (successfulFiles.length === 0) return;
 
         const zip = new JSZip();
         for (const file of successfulFiles) {
-            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
-            const workbook = xlsx.utils.book_new();
-
             if (file.type === 'productos') {
-                xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
-                const bufXls = xlsx.write(workbook, { bookType: 'biff5', type: 'array' });
+                const workbook = xlsx.read(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64, { type: 'base64', cellStyles: true });
+                const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true });
+                workbook.Sheets['Plantilla'] = newWs;
+                const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
                 zip.file(`Productos_Zifact_Migrado.xls`, bufXls);
             } else {
+                const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
+                const workbook = xlsx.utils.book_new();
                 xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
                 const bufXlsx = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
                 zip.file(`Clientes_Zifact_Migrado.xlsx`, bufXlsx);
@@ -277,13 +281,13 @@ export const AdaptadorConvert: React.FC = () => {
             <div className="p-6 md:p-10 border-b border-white/5 sticky top-0 bg-[#020617]/95 backdrop-blur-xl z-30 flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#2B6AFF]/10 border border-[#2B6AFF]/20 text-[#2B6AFF] rounded-full text-[10px] font-bold uppercase tracking-widest mb-3">
-                        <ArrowRightLeft size={12} className="animate-pulse" /> Motor Zifact 100% Homologado BIFF5
+                        <ArrowRightLeft size={12} className="animate-pulse" /> Motor Zifact Plantilla Inyectada
                     </div>
                     <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white flex items-center gap-3 font-editorial">
                         Adaptador Ecuafact <span className="text-[#2B6AFF] font-mono">➔</span> Zifact
                     </h1>
                     <p className="text-sm font-light text-slate-400 mt-1 max-w-xl">
-                        Estructura limpia en BIFF5 sin bucles de memoria PHP. Hoja 'Plantilla' oficial para Productos.
+                        Inyección binaria sobre plantilla oficial `template_Productos.xls` de Zifact (0% errores de memoria).
                     </p>
                 </div>
 
@@ -328,7 +332,7 @@ export const AdaptadorConvert: React.FC = () => {
 
                     <div className="glass-card-premium gradient-obsidian border border-white/10 rounded-3xl p-5 flex items-center justify-between">
                         <div className="space-y-1">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Productos (Sin Errores PHP)</span>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Productos (Inyección Oficial)</span>
                             <div className="text-3xl font-mono font-bold text-[#6366F1] tracking-wider">
                                 {productFilesCount}
                             </div>
@@ -368,11 +372,11 @@ export const AdaptadorConvert: React.FC = () => {
                         </h3>
                         
                         <p className="text-xs text-slate-400 font-light max-w-md leading-relaxed">
-                            Sube tus archivos de Ecuafact. Genera la estructura exacta requerida por la plantilla oficial de Zifact.
+                            Sube tus archivos de Ecuafact. Se inyectarán los datos directamente en la plantilla oficial de Zifact.
                         </p>
 
                         <div className="mt-4 flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] text-slate-300">
-                            <Sparkles size={12} className="text-[#04B17B]" /> Detección de Hoja 'Plantilla' y Headers 'Codigo Principal'
+                            <Sparkles size={12} className="text-[#04B17B]" /> Inyección directa en Plantilla Oficial Zifact
                         </div>
                     </div>
                 </div>
@@ -444,7 +448,7 @@ export const AdaptadorConvert: React.FC = () => {
                                                     </div>
                                                     <div className="flex items-center gap-2 text-xs text-slate-400">
                                                         <span className="uppercase tracking-wider font-semibold text-[10px] px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-emerald-400">
-                                                            {file.type === 'productos' ? '.XLS BIFF5' : '.XLSX'}
+                                                            {file.type === 'productos' ? '.XLS (Oficial Inyectado)' : '.XLSX'}
                                                         </span>
                                                         <span>•</span>
                                                         <span className="font-mono text-emerald-400 font-medium">
@@ -475,7 +479,7 @@ export const AdaptadorConvert: React.FC = () => {
                                             <button
                                                 onClick={() => downloadAsXLS(file)}
                                                 className="flex-1 py-2.5 px-3 rounded-xl bg-[#04B17B]/20 hover:bg-[#04B17B]/30 border border-[#04B17B]/40 text-xs font-bold text-[#04B17B] hover:text-emerald-300 flex items-center justify-center gap-2 transition-all shadow-md"
-                                                title="Recomendado: Descargar en .xls BIFF5 para Zifact"
+                                                title="Recomendado: Inyección binaria sobre plantilla oficial Zifact"
                                             >
                                                 <Download size={14} /> Descargar .XLS
                                             </button>
@@ -501,10 +505,10 @@ export const AdaptadorConvert: React.FC = () => {
                         <ShieldCheck className="text-[#04B17B]" size={24} />
                         <div>
                             <h3 className="text-base font-bold text-white uppercase tracking-wider">
-                                Especificación de Plantilla Zifact
+                                Especificación de Inyección Binaria Zifact
                             </h3>
                             <p className="text-xs text-slate-400 font-light">
-                                Homologación estricta con la plantilla oficial `template_Productos (3).xls`.
+                                Inyección directa sobre el contenedor binario original de `template_Productos (3).xls`.
                             </p>
                         </div>
                     </div>
@@ -521,10 +525,10 @@ export const AdaptadorConvert: React.FC = () => {
 
                         <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
                             <div className="flex items-center gap-2 text-xs font-bold text-[#6366F1] uppercase tracking-wider">
-                                <CheckCircle2 size={16} /> Productos (Hoja 'Plantilla' sin tildes)
+                                <CheckCircle2 size={16} /> Productos (Plantilla Oficial)
                             </div>
                             <p className="text-xs text-slate-400 leading-relaxed font-light">
-                                Nombre de hoja <code className="font-mono text-indigo-400 font-semibold">'Plantilla'</code> y formato BIFF5 sin bucles de memoria PHP.
+                                Se leen los sectores binarios originales de Zifact e inyectan los productos de Ecuafact sin reconstruir el libro desde cero.
                             </p>
                         </div>
                     </div>
