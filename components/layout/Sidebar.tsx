@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, RefreshCw, Check, Cloud, WifiOff, AlertCircle, Zap, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LogOut, RefreshCw, Check, Cloud, WifiOff, AlertCircle, Zap, ArrowRightLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Logo } from '../ui/Logo';
 import { Screen, Theme } from '../../types';
 import { SystemPulse } from './SystemPulse';
@@ -55,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
     };
 
-    const addClientItem = navItems.find(i => i.screen === 'add_client' as any);
+    const migracionZifactItem = navItems.find(i => i.screen === 'migracion_zifact' as any);
 
     return (
         <aside className={`hidden md:flex flex-col h-screen fixed left-0 top-0 z-50 border-r transition-all duration-500 overflow-visible no-print ${
@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Navigation Section */}
             <nav className={`flex-1 overflow-y-auto py-6 no-scrollbar ${isCollapsed ? 'px-2 flex flex-col items-center gap-1.5' : 'px-4'}`}>
                 <div className={`flex flex-col gap-1.5 ${isCollapsed ? 'w-full items-center' : ''}`}>
-                    {navItems.filter(i => (i.screen as any) !== 'add_client' && (i.screen as any) !== 'landing').map(({ screen, icon: Icon, label, count }) => (
+                    {navItems.filter(i => (i.screen as any) !== 'add_client' && (i.screen as any) !== 'migracion_zifact' && (i.screen as any) !== 'landing').map(({ screen, icon: Icon, label, count }) => (
                         <button
                             key={screen}
                             onClick={() => onNavigate(screen)}
@@ -169,21 +169,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <span className={`text-[11px] font-black uppercase tracking-widest font-premium transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''}`}>Gestión Inmediata</span>
                     </button>
 
-                    {addClientItem?.onClick && (
+                    {migracionZifactItem?.onClick && (
                         <button 
-                            onClick={addClientItem.onClick} 
-                            title={isCollapsed ? "Nuevo Cliente" : undefined}
+                            onClick={migracionZifactItem.onClick} 
+                            title={isCollapsed ? "Migrar a Zifact" : undefined}
                             className={`group flex items-center rounded-xl border transition-all duration-300 ${
                                 isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-4 py-3 gap-3'
                             } ${
                                 theme === 'dark'
-                                    ? 'bg-slate-800/40 border-white/5 text-slate-400 hover:text-white hover:bg-white/5 hover:border-white/10'
-                                    : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 hover:border-slate-300'
-                        }`}
-                    >
-                        <UserPlus size={18} className="transition-transform group-hover:scale-110 flex-shrink-0" />
-                        <span className={`text-[11px] font-black uppercase tracking-widest font-premium transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''}`}>Nuevo Cliente</span>
-                    </button>
+                                    ? 'bg-slate-800/40 border-white/5 text-[#2B6AFF] hover:text-white hover:bg-[#2B6AFF]/10 hover:border-[#2B6AFF]/20'
+                                    : 'bg-slate-50 border-slate-200 text-[#2B6AFF] hover:text-white hover:bg-[#2B6AFF] hover:border-[#2B6AFF]'
+                            }`}
+                        >
+                            <ArrowRightLeft size={18} className="transition-transform group-hover:scale-110 flex-shrink-0" />
+                            <span className={`text-[11px] font-black uppercase tracking-widest font-premium transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''}`}>Migrar a Zifact</span>
+                        </button>
                     )}
                 </div>
             </nav>

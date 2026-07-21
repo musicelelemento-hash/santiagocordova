@@ -228,7 +228,7 @@ const SpotlightCard = ({ children, className = "", theme = 'dark' }: { children:
 
 // ─── AUTHORITY TICKER ────────────────────────────────────────────────────────
 const AuthorityTicker = ({ theme = 'dark' }: { theme?: 'light' | 'dark' }) => {
-    const items = ["SRI ECUADOR", "SUPERCIAS", "MINISTERIO DE TRABAJO", "IESS", "BANCO CENTRAL", "RIMPE 2026", "RÉGIMEN GENERAL", "IVA • RENTA • RETENCIONES"];
+    const items = ["SRI ECUADOR", "SUPERCIAS", "MINISTERIO DE TRABAJO", "MIGRACIÓN ZIFACT", "ANULACIÓN DE FACTURAS GRATIS", "IESS", "BANCO CENTRAL", "RIMPE 2026", "RÉGIMEN GENERAL", "IVA • RENTA • RETENCIONES"];
     return (
         <div className={`py-16 border-y relative overflow-hidden transition-colors duration-500
             ${theme === 'dark' ? 'bg-[#020617] border-white/5' : 'bg-slate-100/60 border-slate-200/80'}`}>

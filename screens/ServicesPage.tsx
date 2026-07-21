@@ -266,9 +266,17 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 originalPrice: "75.00",
                 save: "20.00",
                 description: "Sistema de facturación web ilimitado + Firma electrónica certificada.",
-                features: ["Firma Electrónica (1 Año)", "Facturación Ilimitada", "App Móvil Incluida", "Control de Inventario"],
+                features: ["Firma Electrónica (1 Año)", "Facturación Ilimitada", "Anulación Facturas GRATIS", "Migración Zifact Incluida"],
                 icon: LucideIcons.Laptop,
                 popular: true
+            },
+            {
+                title: "Migración Ecuafact",
+                price: "0.00",
+                description: "Asistencia para migrar tus clientes y productos desde Ecuafact hacia nuestro Facturador Pro (Zifact).",
+                features: ["Convertidor Automático (Excel)", "Mapeo Inteligente", "Respaldo Seguro", "100% Gratuito"],
+                icon: LucideIcons.ArrowRightLeft,
+                popular: false
             }
         ],
         tax: [

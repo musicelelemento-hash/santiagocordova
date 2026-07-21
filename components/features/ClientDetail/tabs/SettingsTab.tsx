@@ -10,6 +10,7 @@ interface SettingsTabProps {
     setEditedClient: React.Dispatch<React.SetStateAction<Client>>;
     isEditing: boolean;
     onUpdateClientDirect?: (updates: Partial<Client>) => Promise<void>;
+    onStartEdit?: () => void;
 }
 
 const TaxProfileField: React.FC<{
@@ -18,14 +19,26 @@ const TaxProfileField: React.FC<{
     icon: React.ElementType;
     isEditing: boolean;
     onChange: (val: string) => void;
+    onStartEdit?: () => void;
     type?: string;
     options?: { value: string; label: string }[];
     placeholder?: string;
-}> = ({ label, value, icon: Icon, isEditing, onChange, type = 'text', options, placeholder }) => (
+}> = ({ label, value, icon: Icon, isEditing, onChange, onStartEdit, type = 'text', options, placeholder }) => (
     <div className="space-y-3 group/field animate-in fade-in slide-in-from-bottom-2 duration-500">
-        <div className="flex items-center gap-2.5">
-            <Icon size={13} className="text-primary/50 group-hover/field:text-primary transition-colors" />
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{label}</span>
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+                <Icon size={13} className="text-primary/50 group-hover/field:text-primary transition-colors" />
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{label}</span>
+            </div>
+            {(!isEditing && onStartEdit) && (
+                <button
+                    type="button"
+                    onClick={onStartEdit}
+                    className="text-[9px] text-primary hover:text-primary-dark font-black uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover/field:opacity-100 transition-opacity"
+                >
+                    <LucideIcons.Edit3 size={10} /> Editar
+                </button>
+            )}
         </div>
         {isEditing ? (
             type === 'select' ? (
@@ -48,8 +61,12 @@ const TaxProfileField: React.FC<{
                 />
             )
         ) : (
-            <div className="px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 tracking-wide shadow-sm">
-                {options?.find(o => o.value === value)?.label || value || <span className="text-slate-300 dark:text-slate-600">—</span>}
+            <div 
+                onClick={onStartEdit}
+                className={`px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 tracking-wide shadow-sm flex items-center justify-between ${onStartEdit ? 'cursor-pointer hover:border-primary/20 hover:bg-slate-100/50 dark:hover:bg-white/10 transition-all' : ''}`}
+            >
+                <span>{options?.find(o => o.value === value)?.label || value || <span className="text-slate-350 dark:text-slate-650 font-normal">—</span>}</span>
+                {onStartEdit && <LucideIcons.Lock size={10} className="text-slate-300 dark:text-slate-650 opacity-60 group-hover/field:opacity-100 transition-opacity" />}
             </div>
         )}
     </div>
@@ -60,7 +77,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     editedClient,
     setEditedClient,
     isEditing,
-    onUpdateClientDirect
+    onUpdateClientDirect,
+    onStartEdit
 }) => {
     const { toast } = useToast();
     return (
@@ -88,6 +106,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 value={editedClient.ruc} 
                                 icon={LucideIcons.Hash} 
                                 isEditing={isEditing} 
+                                onStartEdit={onStartEdit}
                                 onChange={(val) => setEditedClient({ ...editedClient, ruc: val })} 
                             />
                             <TaxProfileField 
@@ -95,6 +114,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 value={editedClient.name} 
                                 icon={LucideIcons.Building2} 
                                 isEditing={isEditing} 
+                                onStartEdit={onStartEdit}
                                 onChange={(val) => setEditedClient({ ...editedClient, name: val })} 
                             />
                             <TaxProfileField 
@@ -102,6 +122,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 value={editedClient.email} 
                                 icon={LucideIcons.Mail} 
                                 isEditing={isEditing} 
+                                onStartEdit={onStartEdit}
                                 onChange={(val) => setEditedClient({ ...editedClient, email: val })} 
                             />
                             {/* Teléfonos y Canales de WhatsApp Múltiples */}
@@ -156,13 +177,16 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="space-y-3">
+                                    <div 
+                                        onClick={onStartEdit}
+                                        className={`space-y-3 ${onStartEdit ? 'cursor-pointer' : ''}`}
+                                    >
                                         {(client.phones || []).length > 0 ? (
                                             (client.phones || []).map((phone, idx) => {
                                                 const cleanPhone = phone.replace(/\D/g, '');
                                                 const ecuadorianPhone = cleanPhone.startsWith('0') ? '593' + cleanPhone.substring(1) : cleanPhone;
                                                 return (
-                                                    <div key={idx} className="flex items-center justify-between px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 shadow-sm group/phone">
+                                                    <div key={idx} className="flex items-center justify-between px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 shadow-sm group/phone hover:border-primary/20 hover:bg-slate-100/50 dark:hover:bg-white/10 transition-all">
                                                         <div className="flex items-center gap-3">
                                                             <LucideIcons.Smartphone size={14} className="text-slate-400" />
                                                             <span className="font-mono tracking-wider">{phone}</span>
@@ -170,7 +194,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                         <div className="flex gap-2 opacity-60 group-hover/phone:opacity-100 transition-opacity">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => {
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
                                                                     navigator.clipboard.writeText(phone);
                                                                     toast.success("Teléfono copiado al portapapeles.");
                                                                 }}
@@ -184,6 +209,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                                     href={`https://wa.me/${ecuadorianPhone}`}
                                                                     target="_blank"
                                                                     rel="noreferrer"
+                                                                    onClick={(e) => e.stopPropagation()}
                                                                     className="p-2 hover:bg-emerald-500/10 hover:text-emerald-500 rounded-xl text-slate-500 dark:text-slate-400 transition-colors flex items-center justify-center"
                                                                     title="Enviar Mensaje por WhatsApp"
                                                                 >
@@ -195,8 +221,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                 );
                                             })
                                         ) : (
-                                            <div className="px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-300 dark:text-slate-600 italic shadow-sm">
-                                                Sin números telefónicos registrados
+                                            <div className="px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-300 dark:text-slate-650 italic shadow-sm flex items-center justify-between hover:border-primary/20 hover:bg-slate-100/50 dark:hover:bg-white/10 transition-all">
+                                                <span>Sin números telefónicos registrados</span>
+                                                <LucideIcons.Lock size={10} className="text-slate-300 dark:text-slate-650 opacity-60" />
                                             </div>
                                         )}
                                     </div>
@@ -208,6 +235,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                     value={editedClient.address || ''} 
                                     icon={LucideIcons.MapPin} 
                                     isEditing={isEditing} 
+                                    onStartEdit={onStartEdit}
                                     onChange={(val) => setEditedClient({ ...editedClient, address: val })} 
                                 />
                             </div>
@@ -236,6 +264,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 value={editedClient.regime} 
                                 icon={LucideIcons.Globe} 
                                 isEditing={isEditing} 
+                                onStartEdit={onStartEdit}
                                 type="select"
                                 options={[
                                     { value: TaxRegime.RimpeNegocioPopular, label: 'RIMPE Negocio Popular' },
@@ -261,6 +290,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 value={editedClient.taxProfile?.ivaFrequency || 'Mensual'} 
                                 icon={LucideIcons.CalendarDays} 
                                 isEditing={isEditing} 
+                                onStartEdit={onStartEdit}
                                 type="select"
                                 options={[
                                     { value: 'Mensual', label: 'Mensual' },
@@ -281,6 +311,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 value={editedClient.isCourtesy ? 'CORTESIA' : (editedClient.customServiceFee !== undefined ? 'PERSONALIZADA' : 'ESTANDAR')} 
                                 icon={LucideIcons.Coins} 
                                 isEditing={isEditing} 
+                                onStartEdit={onStartEdit}
                                 type="select"
                                 options={[
                                     { value: 'ESTANDAR', label: 'Estándar / Regular' },
@@ -316,6 +347,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                     value={editedClient.customServiceFee?.toString() || '0'} 
                                     icon={LucideIcons.DollarSign} 
                                     isEditing={isEditing} 
+                                    onStartEdit={onStartEdit}
                                     onChange={(val) => setEditedClient({ 
                                         ...editedClient, 
                                         customServiceFee: parseFloat(val) || 0
@@ -324,9 +356,20 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             )}
 
                             <div className="space-y-3 group/field animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                <div className="flex items-center gap-2.5">
-                                    <LucideIcons.CalendarRange size={13} className="text-primary/50 group-hover/field:text-primary transition-colors" />
-                                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Inicio de Obligaciones</span>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2.5">
+                                        <LucideIcons.CalendarRange size={13} className="text-primary/50 group-hover/field:text-primary transition-colors" />
+                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Inicio de Obligaciones</span>
+                                    </div>
+                                    {(!isEditing && onStartEdit) && (
+                                        <button
+                                            type="button"
+                                            onClick={onStartEdit}
+                                            className="text-[9px] text-primary hover:text-primary-dark font-black uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover/field:opacity-100 transition-opacity"
+                                        >
+                                            <LucideIcons.Edit3 size={10} /> Editar
+                                        </button>
+                                    )}
                                 </div>
                                 {isEditing ? (
                                     editedClient.taxProfile?.ivaFrequency === 'Semestral' ? (
@@ -440,7 +483,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                         </div>
                                     )
                                 ) : (
-                                    <div className="px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 tracking-wide shadow-sm flex items-center justify-between">
+                                    <div 
+                                        onClick={onStartEdit}
+                                        className={`px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 tracking-wide shadow-sm flex items-center justify-between ${onStartEdit ? 'cursor-pointer hover:border-primary/20 hover:bg-slate-100/50 dark:hover:bg-white/10 transition-all' : ''}`}
+                                    >
                                         <span>
                                             {(() => {
                                                 const val = editedClient.clientStartPeriod;
@@ -456,12 +502,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                 return val;
                                             })()}
                                         </span>
-                                        {editedClient.taxProfile?.ivaFrequency === 'Semestral' && editedClient.clientStartPeriod?.endsWith('-S2') && (
-                                            <span className="text-[9px] bg-amber-500/15 text-amber-500 border border-amber-500/25 px-2.5 py-0.5 rounded-xl font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
-                                                <span className="w-1 h-1 rounded-full bg-amber-500"></span>
-                                                Espera en Enero
-                                            </span>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {editedClient.taxProfile?.ivaFrequency === 'Semestral' && editedClient.clientStartPeriod?.endsWith('-S2') && (
+                                                <span className="text-[9px] bg-amber-500/15 text-amber-500 border border-amber-500/25 px-2.5 py-0.5 rounded-xl font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
+                                                    <span className="w-1 h-1 rounded-full bg-amber-500"></span>
+                                                    Espera en Enero
+                                                </span>
+                                            )}
+                                            {onStartEdit && <LucideIcons.Lock size={10} className="text-slate-300 dark:text-slate-650 opacity-60 group-hover/field:opacity-100 transition-opacity" />}
+                                        </div>
                                     </div>
                                 )}
                             </div>

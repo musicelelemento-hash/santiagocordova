@@ -15,6 +15,7 @@ import { ClientPortalScreen } from './screens/ClientPortalScreen';
 import { MusicPage } from './screens/MusicPage';
 import { AuditLogScreen } from './screens/AuditLogScreen';
 import { FacturacionSriScreen } from './screens/FacturacionSriScreen';
+import { AdaptadorConvert } from './components/features/AdaptadorConvert';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
 import { NotificationBell } from './components/layout/NotificationBell';
@@ -435,6 +436,7 @@ const App: React.FC = () => {
           }}
         />
       );
+      case 'migracion_zifact': return <AdaptadorConvert />;
       default: return <AdminDashboardScreen navigate={navigate} />;
     }
   };
@@ -450,7 +452,7 @@ const App: React.FC = () => {
     { screen: 'services', icon: LucideIcons.Globe, label: 'Servicios' },
     { screen: 'settings', icon: LucideIcons.Settings, label: 'Ajustes' },
     { screen: 'audit_log', icon: LucideIcons.History, label: 'Auditoría' },
-    { screen: 'add_client' as any, icon: LucideIcons.Users, label: 'Nuevo Cliente', onClick: () => navigate('clients', { initialClientData: { isActive: true } }) },
+    { screen: 'migracion_zifact' as any, icon: LucideIcons.ArrowRightLeft, label: 'Migración Zifact', onClick: () => navigate('migracion_zifact') },
     { screen: 'landing' as any, icon: LucideIcons.Globe, label: 'Sitio Público' },
   ];
 

@@ -847,6 +847,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             setEditedClient={setEditedClient}
             isEditing={isEditing}
             onUpdateClientDirect={handleUpdateClientDirect}
+            onStartEdit={() => setIsEditing(true)}
         />
     );
 
