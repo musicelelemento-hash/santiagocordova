@@ -3,20 +3,62 @@ import { useDropzone } from 'react-dropzone';
 import * as xlsx from 'xlsx';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import * as LucideIcons from 'lucide-react';
+import { 
+    ArrowRightLeft, 
+    UploadCloud, 
+    RefreshCw, 
+    CheckCircle2, 
+    AlertTriangle, 
+    Download, 
+    Package, 
+    Users, 
+    Eye, 
+    Trash2, 
+    Sparkles, 
+    FileSpreadsheet, 
+    FileText, 
+    ShieldCheck, 
+    X,
+    Check,
+    Layers,
+    Info
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ProcessedFile {
+    id: string;
     name: string;
     type: 'productos' | 'clientes';
     data: any[];
+    rawCount: number;
     status: 'success' | 'error';
     message?: string;
+    timestamp: string;
 }
 
 export const AdaptadorConvert: React.FC = () => {
     const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [previewFile, setPreviewFile] = useState<ProcessedFile | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'all' | 'clientes' | 'productos'>('all');
+
+    const mapTipoIdentificacion = (val: string | number) => {
+        const v = String(val).toLowerCase();
+        if (v.includes('ruc') || v === '04' || v === '4') return '04';
+        if (v.includes('cedula') || v.includes('cédula') || v === '05' || v === '5') return '05';
+        if (v.includes('pasaporte') || v === '06' || v === '6') return '06';
+        if (v.includes('final') || v === '07' || v === '7') return '07';
+        return '04';
+    };
+
+    const mapCodigoIva = (val: string | number) => {
+        const v = String(val).replace('%', '').trim();
+        if (v === '5' || v === '5.00') return '5'; 
+        if (v === '4' || v === '15' || v === '15.00') return '4'; 
+        if (v === '0' || v === '0.00' || v.toLowerCase() === 'cero') return '0'; 
+        return '4'; 
+    };
 
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         setIsProcessing(true);
@@ -24,6 +66,10 @@ export const AdaptadorConvert: React.FC = () => {
 
         for (const file of acceptedFiles) {
             try {
+                const data = await file.arrayBuffer();
+                const workbook = xlsx.read(data);
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
                 const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
                 
                 // Buscar la fila de encabezados reales (Ecuafact los pone en la fila 5)
@@ -67,13 +113,12 @@ export const AdaptadorConvert: React.FC = () => {
                 if (type === 'clientes') {
                     mappedData = jsonData.map((row: any) => {
                         const ident = String(row['Identificacion'] || row['identificación'] || row['Identificación No.'] || row['RUC'] || row['Cedula'] || row['RUC/CI'] || '').trim();
-                        // Inferir tipo de identificacion basado en la longitud si no existe columna
                         let tipoIdent = row['Tipo Identificacion'] || row['tipo_identificacion'] || row['Tipo'];
                         if (!tipoIdent) {
-                            if (ident.length === 13) tipoIdent = '04'; // RUC
-                            else if (ident.length === 10) tipoIdent = '05'; // Cedula
-                            else if (ident === '9999999999999') tipoIdent = '07'; // Consumidor final
-                            else tipoIdent = '06'; // Pasaporte
+                            if (ident.length === 13) tipoIdent = '04'; 
+                            else if (ident.length === 10) tipoIdent = '05'; 
+                            else if (ident === '9999999999999') tipoIdent = '07'; 
+                            else tipoIdent = '06'; 
                         }
 
                         return {
@@ -99,19 +144,25 @@ export const AdaptadorConvert: React.FC = () => {
                 }
 
                 newProcessedFiles.push({
+                    id: Math.random().toString(36).substring(2, 9),
                     name: file.name,
                     type,
                     data: mappedData,
-                    status: 'success'
+                    rawCount: jsonData.length,
+                    status: 'success',
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 });
             } catch (error) {
                 console.error("Error processing file", file.name, error);
                 newProcessedFiles.push({
+                    id: Math.random().toString(36).substring(2, 9),
                     name: file.name,
                     type: 'productos',
                     data: [],
+                    rawCount: 0,
                     status: 'error',
-                    message: 'Error al procesar el archivo.'
+                    message: 'No se pudo estructurar las columnas de este archivo.',
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                 });
             }
         }
@@ -119,23 +170,6 @@ export const AdaptadorConvert: React.FC = () => {
         setProcessedFiles(prev => [...prev, ...newProcessedFiles]);
         setIsProcessing(false);
     }, []);
-
-    const mapTipoIdentificacion = (val: string | number) => {
-        const v = String(val).toLowerCase();
-        if (v.includes('ruc') || v === '04' || v === '4') return '04';
-        if (v.includes('cedula') || v.includes('cédula') || v === '05' || v === '5') return '05';
-        if (v.includes('pasaporte') || v === '06' || v === '6') return '06';
-        if (v.includes('final') || v === '07' || v === '7') return '07';
-        return '04'; // default
-    };
-
-    const mapCodigoIva = (val: string | number) => {
-        const v = String(val).replace('%', '').trim();
-        if (v === '5' || v === '5.00') return '5'; // 5%
-        if (v === '4' || v === '15' || v === '15.00') return '4'; // 15%
-        if (v === '0' || v === '0.00' || v.toLowerCase() === 'cero') return '0'; // 0%
-        return '4'; // default to 15% (4) si es desconocido, Zifact maneja 4 como 15%. (En Ecuador era 12%, luego 15%). Zifact pide: 5 (5%), 4 (15%) o 0 (0%).
-    };
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
@@ -145,12 +179,6 @@ export const AdaptadorConvert: React.FC = () => {
         }
     });
 
-    const downloadConverted = (file: ProcessedFile) => {
-        const workbook = createWorkbook(file);
-        const outFileName = `Zifact_${file.type}_Migrado.xlsx`;
-        xlsx.writeFile(workbook, outFileName);
-    };
-
     const createWorkbook = (file: ProcessedFile) => {
         const worksheet = xlsx.utils.json_to_sheet(file.data);
         const workbook = xlsx.utils.book_new();
@@ -158,74 +186,117 @@ export const AdaptadorConvert: React.FC = () => {
         return workbook;
     };
 
-    const downloadAll = async () => {
+    // Descarga en formato XLML (Excel 2003 XML) con extensión .xls para máxima compatibilidad PHP
+    const downloadAsXLS = (file: ProcessedFile) => {
+        const workbook = createWorkbook(file);
+        const outFileName = `Zifact_${file.type}_Migrado.xls`;
+        const xmlBuffer = xlsx.write(workbook, { bookType: 'xlml', type: 'array' });
+        const blob = new Blob([xmlBuffer], { type: 'application/vnd.ms-excel' });
+        saveAs(blob, outFileName);
+    };
+
+    // Descarga en formato XLSX estándar
+    const downloadAsXLSX = (file: ProcessedFile) => {
+        const workbook = createWorkbook(file);
+        const outFileName = `Zifact_${file.type}_Migrado.xlsx`;
+        xlsx.writeFile(workbook, outFileName);
+    };
+
+    const downloadAllZip = async () => {
         const successfulFiles = processedFiles.filter(f => f.status === 'success');
         if (successfulFiles.length === 0) return;
-
-        if (successfulFiles.length === 1) {
-            downloadConverted(successfulFiles[0]);
-            return;
-        }
 
         const zip = new JSZip();
         for (const file of successfulFiles) {
             const workbook = createWorkbook(file);
-            const excelBuffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
-            zip.file(`Zifact_${file.type}_Migrado.xlsx`, excelBuffer);
+            const xmlBuffer = xlsx.write(workbook, { bookType: 'xlml', type: 'array' });
+            zip.file(`Zifact_${file.type}_Migrado.xls`, xmlBuffer);
         }
         
         const content = await zip.generateAsync({ type: 'blob' });
-        saveAs(content, 'Migracion_Zifact.zip');
+        saveAs(content, 'Migracion_Zifact_Completa.zip');
     };
 
+    const removeFile = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setProcessedFiles(prev => prev.filter(f => f.id !== id));
+        if (previewFile?.id === id) setPreviewFile(null);
+    };
+
+    const totalRecords = processedFiles.reduce((acc, f) => acc + (f.status === 'success' ? f.data.length : 0), 0);
+    const clientFilesCount = processedFiles.filter(f => f.type === 'clientes' && f.status === 'success').length;
+    const productFilesCount = processedFiles.filter(f => f.type === 'productos' && f.status === 'success').length;
+
+    const filteredFiles = processedFiles.filter(f => {
+        if (activeTab === 'clientes') return f.type === 'clientes';
+        if (activeTab === 'productos') return f.type === 'productos';
+        return true;
+    });
+
     return (
-        <div className="w-full h-full flex flex-col bg-[#020617] text-white overflow-y-auto custom-scrollbar font-body">
+        <div className="w-full h-full flex flex-col bg-[#020617] text-white overflow-y-auto custom-scrollbar font-body select-none">
             {/* Header */}
-            <div className="p-6 md:p-10 border-b border-white/5 sticky top-0 bg-[#020617]/90 backdrop-blur-md z-20 flex justify-between items-end">
+            <div className="p-6 md:p-10 border-b border-white/5 sticky top-0 bg-[#020617]/95 backdrop-blur-xl z-30 flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#2B6AFF]/10 border border-[#2B6AFF]/20 text-[#2B6AFF] rounded-full text-[10px] font-bold uppercase tracking-widest mb-4">
-                        <LucideIcons.ArrowRightLeft size={12} /> Adaptador Convert
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#2B6AFF]/10 border border-[#2B6AFF]/20 text-[#2B6AFF] rounded-full text-[10px] font-bold uppercase tracking-widest mb-3">
+                        <ArrowRightLeft size={12} className="animate-pulse" /> Motor de Conversión V2.4
                     </div>
-                    <h1 className="text-3xl md:text-5xl font-editorial tracking-tight text-white mb-2">
-                        Migración a Zifact
+                    <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white flex items-center gap-3 font-editorial">
+                        Adaptador Ecuafact <span className="text-[#2B6AFF] font-mono">➔</span> Zifact
                     </h1>
-                    <p className="text-sm font-light text-slate-400">
-                        Sube tus archivos de Productos o Clientes de Ecuafact y obtenlos listos para Zifact.
+                    <p className="text-sm font-light text-slate-400 mt-1 max-w-xl">
+                        Transformación de estructuras de datos con mapeo inteligente de RUCs, cédulas, códigos e impuestos para carga sin errores.
                     </p>
                 </div>
+
                 {processedFiles.length > 0 && (
-                    <button
-                        onClick={downloadAll}
-                        className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] text-white text-xs font-bold uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_20px_rgba(43,106,255,0.4)] flex items-center gap-2"
-                    >
-                        <LucideIcons.Download size={16} /> Descargar Todo
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={downloadAllZip}
+                            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#2B6AFF] via-[#6366F1] to-[#04B17B] text-white text-xs font-bold uppercase tracking-widest hover:scale-[1.03] active:scale-[0.98] transition-all shadow-[0_0_25px_rgba(43,106,255,0.35)] flex items-center gap-2.5"
+                        >
+                            <Download size={16} /> Descargar Todo (.ZIP)
+                        </button>
+                    </div>
                 )}
             </div>
 
-            <div className="p-6 md:p-10 flex flex-col gap-8 flex-1 max-w-5xl mx-auto w-full">
-                {/* Info Panel */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="glass-card-premium gradient-obsidian border border-white/10 rounded-3xl p-6 flex items-start gap-4 hover:translate-y-[-4px] transition-transform duration-300">
-                        <div className="w-12 h-12 rounded-full bg-[#6366F1]/10 text-[#6366F1] flex items-center justify-center flex-shrink-0">
-                            <LucideIcons.Package size={24} />
+            <div className="p-6 md:p-10 flex flex-col gap-8 max-w-6xl mx-auto w-full">
+                {/* Dashboard Metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div className="glass-card-premium gradient-obsidian border border-white/10 rounded-3xl p-5 flex items-center justify-between">
+                        <div className="space-y-1">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Total Registros</span>
+                            <div className="text-3xl font-mono font-bold text-white tracking-wider">
+                                {totalRecords}
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-white mb-1 uppercase tracking-wider">Productos Zifact</h3>
-                            <p className="text-xs text-slate-400 font-light">
-                                Formato soportado: Nombre, Código Principal, Auxiliar, Precio, IVA, ICE, IRPNR, Estado (A/I).
-                            </p>
+                        <div className="w-12 h-12 rounded-2xl bg-[#2B6AFF]/10 text-[#2B6AFF] border border-[#2B6AFF]/20 flex items-center justify-center">
+                            <Layers size={22} />
                         </div>
                     </div>
-                    <div className="glass-card-premium gradient-obsidian border border-white/10 rounded-3xl p-6 flex items-start gap-4 hover:translate-y-[-4px] transition-transform duration-300">
-                        <div className="w-12 h-12 rounded-full bg-[#04B17B]/10 text-[#04B17B] flex items-center justify-center flex-shrink-0">
-                            <LucideIcons.Users size={24} />
+
+                    <div className="glass-card-premium gradient-obsidian border border-white/10 rounded-3xl p-5 flex items-center justify-between">
+                        <div className="space-y-1">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Archivos Clientes</span>
+                            <div className="text-3xl font-mono font-bold text-[#04B17B] tracking-wider">
+                                {clientFilesCount}
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-white mb-1 uppercase tracking-wider">Clientes Zifact</h3>
-                            <p className="text-xs text-slate-400 font-light">
-                                Formato soportado: Nombre, Tipo de Identificación, Identificación, Dirección, Celular, Correo.
-                            </p>
+                        <div className="w-12 h-12 rounded-2xl bg-[#04B17B]/10 text-[#04B17B] border border-[#04B17B]/20 flex items-center justify-center">
+                            <Users size={22} />
+                        </div>
+                    </div>
+
+                    <div className="glass-card-premium gradient-obsidian border border-white/10 rounded-3xl p-5 flex items-center justify-between">
+                        <div className="space-y-1">
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Archivos Productos</span>
+                            <div className="text-3xl font-mono font-bold text-[#6366F1] tracking-wider">
+                                {productFilesCount}
+                            </div>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-[#6366F1]/10 text-[#6366F1] border border-[#6366F1]/20 flex items-center justify-center">
+                            <Package size={22} />
                         </div>
                     </div>
                 </div>
@@ -234,79 +305,299 @@ export const AdaptadorConvert: React.FC = () => {
                 <div
                     {...getRootProps()}
                     className={`
-                        w-full h-64 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all duration-300
+                        relative overflow-hidden w-full h-64 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all duration-500 group
                         ${isDragActive 
-                            ? 'border-[#2B6AFF] bg-[#2B6AFF]/5 scale-[1.02]' 
-                            : 'border-white/10 bg-white/5 hover:border-[#2B6AFF]/50 hover:bg-white/10'
+                            ? 'border-[#2B6AFF] bg-[#2B6AFF]/10 scale-[1.01] tactical-glow-primary' 
+                            : 'border-white/10 bg-white/[0.02] hover:border-[#2B6AFF]/60 hover:bg-white/[0.04]'
                         }
                     `}
                 >
                     <input {...getInputProps()} />
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#2B6AFF]/20 to-[#6366F1]/20 flex items-center justify-center mb-6 text-[#2B6AFF]">
-                        {isProcessing ? (
-                            <LucideIcons.RefreshCw size={32} className="animate-spin" />
-                        ) : (
-                            <LucideIcons.UploadCloud size={32} />
-                        )}
+                    
+                    {/* Background glow texture */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-[#2B6AFF]/5 via-transparent to-[#04B17B]/5 pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity" />
+
+                    <div className="relative z-10 flex flex-col items-center">
+                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[#2B6AFF]/20 via-[#6366F1]/20 to-[#04B17B]/20 border border-white/10 flex items-center justify-center mb-5 text-[#2B6AFF] group-hover:scale-110 transition-transform duration-500 shadow-xl">
+                            {isProcessing ? (
+                                <RefreshCw size={36} className="animate-spin text-[#2B6AFF]" />
+                            ) : (
+                                <UploadCloud size={36} className="group-hover:-translate-y-1 transition-transform" />
+                            )}
+                        </div>
+
+                        <h3 className="text-xl font-bold text-white mb-1 tracking-tight">
+                            {isDragActive ? '¡Suelta tus archivos de Ecuafact aquí!' : 'Arrastra y suelta tus archivos de Ecuafact'}
+                        </h3>
+                        
+                        <p className="text-xs text-slate-400 font-light max-w-md leading-relaxed">
+                            Sube <span className="text-white font-medium">Clientes</span> o <span className="text-white font-medium">Productos</span> (.xls, .xlsx). El sistema detectará los encabezados automáticamente aunque Ecuafact incluya filas vacías.
+                        </p>
+
+                        <div className="mt-4 flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] text-slate-300">
+                            <Sparkles size={12} className="text-[#04B17B]" /> Detección inteligente de RUC/Cédula e IVA 15%/5%
+                        </div>
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-2">
-                        {isDragActive ? 'Suelta los archivos aquí' : 'Arrastra los archivos de Ecuafact'}
-                    </h3>
-                    <p className="text-sm text-slate-400 font-light max-w-sm">
-                        O haz clic para seleccionar. Aceptamos archivos .xls y .xlsx. Sube los archivos de Clientes y Productos juntos o por separado.
-                    </p>
                 </div>
 
-                {/* File List */}
-                <AnimatePresence>
-                    {processedFiles.length > 0 && (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="space-y-4"
-                        >
-                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest px-4 border-b border-white/5 pb-2">
-                                Archivos Procesados
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {processedFiles.map((file, idx) => (
-                                    <button 
-                                        key={idx} 
-                                        onClick={() => file.status === 'success' ? downloadConverted(file) : null}
-                                        className={`glass-card-premium gradient-obsidian border border-white/10 rounded-2xl p-5 flex items-center justify-between group transition-all text-left w-full
-                                            ${file.status === 'success' ? 'hover:border-[#04B17B]/40 hover:bg-[#04B17B]/5 cursor-pointer' : 'opacity-70 cursor-not-allowed'}
-                                        `}
+                {/* Section Header & Tabs */}
+                {processedFiles.length > 0 && (
+                    <div className="space-y-6 animate-in fade-in duration-500">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                            <div className="flex items-center gap-3">
+                                <FileSpreadsheet className="text-[#2B6AFF]" size={20} />
+                                <h2 className="text-lg font-bold text-white uppercase tracking-wider">
+                                    Archivos Convertidos Listos ({processedFiles.length})
+                                </h2>
+                            </div>
+
+                            {/* Filter Tabs */}
+                            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/10">
+                                <button
+                                    onClick={() => setActiveTab('all')}
+                                    className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                                        activeTab === 'all' ? 'bg-[#2B6AFF] text-white shadow-md' : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    Todos ({processedFiles.length})
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('clientes')}
+                                    className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                                        activeTab === 'clientes' ? 'bg-[#04B17B] text-white shadow-md' : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    Clientes ({clientFilesCount})
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('productos')}
+                                    className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                                        activeTab === 'productos' ? 'bg-[#6366F1] text-white shadow-md' : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    Productos ({productFilesCount})
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* File Cards Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <AnimatePresence>
+                                {filteredFiles.map((file) => (
+                                    <motion.div 
+                                        key={file.id} 
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        className="glass-card-premium gradient-obsidian border border-white/10 rounded-3xl p-6 flex flex-col justify-between gap-5 group hover:border-[#2B6AFF]/40 transition-all shadow-xl relative overflow-hidden"
                                     >
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center
-                                                ${file.status === 'success' ? 'bg-[#04B17B]/20 text-[#04B17B]' : 'bg-red-500/20 text-red-400'}
-                                            `}>
-                                                {file.status === 'success' ? <LucideIcons.CheckCircle2 size={20} /> : <LucideIcons.AlertTriangle size={20} />}
-                                            </div>
-                                            <div>
-                                                <div className="font-semibold text-white text-sm truncate max-w-[150px]" title={file.name}>
-                                                    {file.name}
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="flex items-center gap-3.5">
+                                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${
+                                                    file.type === 'clientes' 
+                                                        ? 'bg-[#04B17B]/10 border-[#04B17B]/30 text-[#04B17B]' 
+                                                        : 'bg-[#6366F1]/10 border-[#6366F1]/30 text-[#6366F1]'
+                                                }`}>
+                                                    {file.type === 'clientes' ? <Users size={22} /> : <Package size={22} />}
                                                 </div>
-                                                <div className="text-[10px] text-slate-400 uppercase tracking-wider">
-                                                    {file.type} • {file.status === 'success' ? `${file.data.length} registros` : 'Error'}
+
+                                                <div className="space-y-0.5">
+                                                    <div className="font-bold text-white text-base truncate max-w-[200px]" title={file.name}>
+                                                        {file.name}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                                                        <span className="uppercase tracking-wider font-semibold text-[10px] px-2 py-0.5 rounded-md bg-white/5 border border-white/10">
+                                                            {file.type}
+                                                        </span>
+                                                        <span>•</span>
+                                                        <span className="font-mono text-emerald-400 font-medium">
+                                                            {file.data.length} registros
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        {file.status === 'success' && (
-                                            <div
-                                                className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-slate-300 group-hover:text-white group-hover:bg-[#2B6AFF] group-hover:border-[#2B6AFF] transition-all"
-                                                title="Descargar Convertido"
+
+                                            <button
+                                                onClick={(e) => removeFile(file.id, e)}
+                                                className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                                                title="Eliminar de la lista"
                                             >
-                                                <LucideIcons.Download size={16} className="group-hover:scale-110 transition-transform" />
-                                            </div>
-                                        )}
-                                    </button>
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+
+                                        {/* Action buttons */}
+                                        <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                            <button
+                                                onClick={() => setPreviewFile(file)}
+                                                className="flex-1 py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-center gap-2 transition-all"
+                                            >
+                                                <Eye size={14} className="text-[#2B6AFF]" /> Previsualizar
+                                            </button>
+
+                                            <button
+                                                onClick={() => downloadAsXLS(file)}
+                                                className="flex-1 py-2.5 px-3 rounded-xl bg-[#04B17B]/10 hover:bg-[#04B17B]/20 border border-[#04B17B]/30 text-xs font-semibold text-[#04B17B] hover:text-emerald-300 flex items-center justify-center gap-2 transition-all"
+                                                title="Recomendado para Zifact (Formato Compatibilidad PHP)"
+                                            >
+                                                <Download size={14} /> Descargar .XLS
+                                            </button>
+
+                                            <button
+                                                onClick={() => downloadAsXLSX(file)}
+                                                className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition-all"
+                                                title="Formato Excel estándar (.xlsx)"
+                                            >
+                                                .XLSX
+                                            </button>
+                                        </div>
+                                    </motion.div>
                                 ))}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                )}
+
+                {/* Instructions / Guía de Importación en Zifact */}
+                <div className="glass-card-premium gradient-obsidian border border-white/10 rounded-3xl p-6 md:p-8 space-y-6">
+                    <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+                        <ShieldCheck className="text-[#04B17B]" size={24} />
+                        <div>
+                            <h3 className="text-base font-bold text-white uppercase tracking-wider">
+                                Pasos de Importación en la plataforma Zifact
+                            </h3>
+                            <p className="text-xs text-slate-400 font-light">
+                                Sigue esta secuencia sencilla para cargar tus datos sin bloqueos.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="flex items-start gap-4">
+                            <div className="w-8 h-8 rounded-full bg-[#2B6AFF]/20 text-[#2B6AFF] border border-[#2B6AFF]/30 flex items-center justify-center font-bold text-xs shrink-0">
+                                1
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Descarga en .XLS</h4>
+                                <p className="text-xs text-slate-400 leading-relaxed font-light">
+                                    Utiliza el botón <span className="text-[#04B17B] font-semibold">Descargar .XLS</span> que genera el formato especial compatible con PHP Excel de Zifact.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-4">
+                            <div className="w-8 h-8 rounded-full bg-[#6366F1]/20 text-[#6366F1] border border-[#6366F1]/30 flex items-center justify-center font-bold text-xs shrink-0">
+                                2
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Ingresa a Zifact</h4>
+                                <p className="text-xs text-slate-400 leading-relaxed font-light">
+                                    Dirígete al menú de Zifact en <span className="text-white">Clientes ➔ Cargar Masiva</span> o <span className="text-white">Productos ➔ Cargar Masiva</span>.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-4">
+                            <div className="w-8 h-8 rounded-full bg-[#04B17B]/20 text-[#04B17B] border border-[#04B17B]/30 flex items-center justify-center font-bold text-xs shrink-0">
+                                3
+                            </div>
+                            <div className="space-y-1">
+                                <h4 className="text-xs font-bold text-white uppercase tracking-wider">Sube tu Archivo</h4>
+                                <p className="text-xs text-slate-400 leading-relaxed font-light">
+                                    Selecciona el archivo convertido. El sistema de Zifact procesará todas las filas desde la fila 2 de forma transparente.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Modal de Previsualización de Datos */}
+            <AnimatePresence>
+                {previewFile && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="glass-card-premium gradient-obsidian border border-white/20 rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl"
+                        >
+                            {/* Modal Header */}
+                            <div className="p-6 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2.5 rounded-xl ${previewFile.type === 'clientes' ? 'bg-[#04B17B]/20 text-[#04B17B]' : 'bg-[#6366F1]/20 text-[#6366F1]'}`}>
+                                        {previewFile.type === 'clientes' ? <Users size={20} /> : <Package size={20} />}
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                            {previewFile.name}
+                                        </h3>
+                                        <p className="text-xs text-slate-400">
+                                            Vista previa del mapeo Zifact ({previewFile.data.length} filas detectadas)
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={() => setPreviewFile(null)}
+                                    className="p-2 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 rounded-full transition-all"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            {/* Modal Table Body */}
+                            <div className="p-6 overflow-y-auto overflow-x-auto flex-1 custom-scrollbar">
+                                <table className="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-white/10 text-slate-400 uppercase tracking-wider text-[10px]">
+                                            <th className="p-3 bg-white/5 rounded-l-xl">#</th>
+                                            {previewFile.data[0] && Object.keys(previewFile.data[0]).map((col, idx) => (
+                                                <th key={idx} className="p-3 bg-white/5 whitespace-nowrap font-bold text-slate-200">
+                                                    {col}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {previewFile.data.slice(0, 15).map((row, rIdx) => (
+                                            <tr key={rIdx} className="hover:bg-white/[0.03] transition-colors">
+                                                <td className="p-3 text-slate-500 font-mono">{rIdx + 1}</td>
+                                                {Object.values(row).map((val: any, cIdx) => (
+                                                    <td key={cIdx} className="p-3 text-slate-300 font-mono whitespace-nowrap">
+                                                        {String(val)}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                                {previewFile.data.length > 15 && (
+                                    <div className="text-center py-4 text-xs text-slate-500 border-t border-white/5 italic">
+                                        Mostrando las primeras 15 filas de {previewFile.data.length} registros...
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="p-6 border-t border-white/10 flex items-center justify-between bg-white/[0.02]">
+                                <span className="text-xs text-slate-400">
+                                    Formato listo para exportar sin inconsistencias.
+                                </span>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => downloadAsXLS(previewFile)}
+                                        className="px-5 py-2.5 rounded-xl bg-[#04B17B] text-white text-xs font-bold uppercase tracking-wider hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-lg"
+                                    >
+                                        <Download size={14} /> Descargar .XLS
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
