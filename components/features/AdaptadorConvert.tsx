@@ -211,7 +211,7 @@ export const AdaptadorConvert: React.FC = () => {
         }
     };
 
-    // Descargar archivo en formato BIFF8 .XLS
+    // Descargar archivo en formato BIFF5 .XLS (sin bucles SST de memoria PHP)
     const downloadAsXLS = (file: ProcessedFile) => {
         const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
         const workbook = xlsx.utils.book_new();
@@ -219,13 +219,13 @@ export const AdaptadorConvert: React.FC = () => {
         if (file.type === 'productos') {
             xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
             const outFileName = `Productos_Zifact_Migrado.xls`;
-            const buf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
+            const buf = xlsx.write(workbook, { bookType: 'biff5', type: 'array' });
             const blob = new Blob([buf], { type: 'application/vnd.ms-excel' });
             saveAs(blob, outFileName);
         } else {
             xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
             const outFileName = `Clientes_Zifact_Migrado.xls`;
-            const buf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
+            const buf = xlsx.write(workbook, { bookType: 'biff5', type: 'array' });
             const blob = new Blob([buf], { type: 'application/vnd.ms-excel' });
             saveAs(blob, outFileName);
         }
@@ -242,7 +242,7 @@ export const AdaptadorConvert: React.FC = () => {
 
             if (file.type === 'productos') {
                 xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
-                const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
+                const bufXls = xlsx.write(workbook, { bookType: 'biff5', type: 'array' });
                 zip.file(`Productos_Zifact_Migrado.xls`, bufXls);
             } else {
                 xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
@@ -277,13 +277,13 @@ export const AdaptadorConvert: React.FC = () => {
             <div className="p-6 md:p-10 border-b border-white/5 sticky top-0 bg-[#020617]/95 backdrop-blur-xl z-30 flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#2B6AFF]/10 border border-[#2B6AFF]/20 text-[#2B6AFF] rounded-full text-[10px] font-bold uppercase tracking-widest mb-3">
-                        <ArrowRightLeft size={12} className="animate-pulse" /> Motor Zifact 100% Oficial
+                        <ArrowRightLeft size={12} className="animate-pulse" /> Motor Zifact 100% Homologado BIFF5
                     </div>
                     <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white flex items-center gap-3 font-editorial">
                         Adaptador Ecuafact <span className="text-[#2B6AFF] font-mono">➔</span> Zifact
                     </h1>
                     <p className="text-sm font-light text-slate-400 mt-1 max-w-xl">
-                        Hoja 'Plantilla' oficial para Productos sin ceros iniciales y 'Clientes' con ceros iniciales preservados.
+                        Estructura limpia en BIFF5 sin bucles de memoria PHP. Hoja 'Plantilla' oficial para Productos.
                     </p>
                 </div>
 
@@ -328,7 +328,7 @@ export const AdaptadorConvert: React.FC = () => {
 
                     <div className="glass-card-premium gradient-obsidian border border-white/10 rounded-3xl p-5 flex items-center justify-between">
                         <div className="space-y-1">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Productos (Hoja 'Plantilla')</span>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Productos (Sin Errores PHP)</span>
                             <div className="text-3xl font-mono font-bold text-[#6366F1] tracking-wider">
                                 {productFilesCount}
                             </div>
@@ -444,7 +444,7 @@ export const AdaptadorConvert: React.FC = () => {
                                                     </div>
                                                     <div className="flex items-center gap-2 text-xs text-slate-400">
                                                         <span className="uppercase tracking-wider font-semibold text-[10px] px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-emerald-400">
-                                                            {file.type === 'productos' ? '.XLS (Hoja Plantilla)' : '.XLSX'}
+                                                            {file.type === 'productos' ? '.XLS BIFF5' : '.XLSX'}
                                                         </span>
                                                         <span>•</span>
                                                         <span className="font-mono text-emerald-400 font-medium">
@@ -475,7 +475,7 @@ export const AdaptadorConvert: React.FC = () => {
                                             <button
                                                 onClick={() => downloadAsXLS(file)}
                                                 className="flex-1 py-2.5 px-3 rounded-xl bg-[#04B17B]/20 hover:bg-[#04B17B]/30 border border-[#04B17B]/40 text-xs font-bold text-[#04B17B] hover:text-emerald-300 flex items-center justify-center gap-2 transition-all shadow-md"
-                                                title="Recomendado: Descargar en .xls para Zifact"
+                                                title="Recomendado: Descargar en .xls BIFF5 para Zifact"
                                             >
                                                 <Download size={14} /> Descargar .XLS
                                             </button>
@@ -524,7 +524,7 @@ export const AdaptadorConvert: React.FC = () => {
                                 <CheckCircle2 size={16} /> Productos (Hoja 'Plantilla' sin tildes)
                             </div>
                             <p className="text-xs text-slate-400 leading-relaxed font-light">
-                                Nombre de hoja <code className="font-mono text-indigo-400 font-semibold">'Plantilla'</code> y encabezados sin tilde (<code className="font-mono text-indigo-400">Codigo Principal</code>) para lectura inmediata de PHP Zifact.
+                                Nombre de hoja <code className="font-mono text-indigo-400 font-semibold">'Plantilla'</code> y formato BIFF5 sin bucles de memoria PHP.
                             </p>
                         </div>
                     </div>
