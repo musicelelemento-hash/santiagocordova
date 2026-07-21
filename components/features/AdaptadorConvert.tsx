@@ -137,6 +137,10 @@ export const AdaptadorConvert: React.FC = () => {
                     });
                 } else {
                     mappedData = jsonData.map((row: any) => {
+                        const rawCod = String(row['Código'] || row['Código Principal'] || '1').trim();
+                        // Sin ceros a la izquierda en productos según requerimiento explícito del usuario
+                        const codPrincipal = rawCod.replace(/^0+(?=\d)/, '') || '1';
+
                         const pvpNum = parseFloat(row['PVP'] || row['Precio Unitario'] || row['Precio'] || '0');
                         const codIvaNum = mapCodigoIva(row['IVA'] || row['Código IVA'] || row['Tarifa IVA'] || '5');
                         const codIceNum = parseInt(row['ICE'] || row['Código ICE'] || '0', 10) || 0;
@@ -144,7 +148,7 @@ export const AdaptadorConvert: React.FC = () => {
 
                         return {
                             'Nombre': String(row['Descripción'] || row['Nombre'] || row['Descripcion'] || 'Producto General'),
-                            'Código Principal': String(row['Código'] || row['Código Principal'] || '001'),
+                            'Código Principal': codPrincipal,
                             'Código Auxiliar': String(row['Cod. Aux.'] || row['Código Auxiliar'] || ''),
                             'Precio Unitario': pvpNum,
                             'Código IVA': codIvaNum,
@@ -191,15 +195,13 @@ export const AdaptadorConvert: React.FC = () => {
         }
     });
 
-    // Descargar archivo en formato XLSX optimizado (evita error de memoria en PHP)
+    // Descargar archivo en formato XLSX con 1 sola pestaña (evita bucles y sobrecosto de memoria PHP)
     const downloadAsXLSX = (file: ProcessedFile) => {
         const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
-        const worksheetPlantilla = xlsx.utils.json_to_sheet(file.data, { raw: true });
         const workbook = xlsx.utils.book_new();
 
         if (file.type === 'productos') {
             xlsx.utils.book_append_sheet(workbook, worksheet, 'Productos');
-            xlsx.utils.book_append_sheet(workbook, worksheetPlantilla, 'Plantilla');
             const outFileName = `Productos_Zifact_Migrado.xlsx`;
             xlsx.writeFile(workbook, outFileName);
         } else {
@@ -209,15 +211,13 @@ export const AdaptadorConvert: React.FC = () => {
         }
     };
 
-    // Descargar archivo en formato binario BIFF8 .XLS
+    // Descargar archivo en formato BIFF8 .XLS con 1 sola pestaña
     const downloadAsXLS = (file: ProcessedFile) => {
         const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
-        const worksheetPlantilla = xlsx.utils.json_to_sheet(file.data, { raw: true });
         const workbook = xlsx.utils.book_new();
 
         if (file.type === 'productos') {
             xlsx.utils.book_append_sheet(workbook, worksheet, 'Productos');
-            xlsx.utils.book_append_sheet(workbook, worksheetPlantilla, 'Plantilla');
             const outFileName = `Productos_Zifact_Migrado.xls`;
             const buf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
             const blob = new Blob([buf], { type: 'application/vnd.ms-excel' });
@@ -238,12 +238,10 @@ export const AdaptadorConvert: React.FC = () => {
         const zip = new JSZip();
         for (const file of successfulFiles) {
             const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
-            const worksheetPlantilla = xlsx.utils.json_to_sheet(file.data, { raw: true });
             const workbook = xlsx.utils.book_new();
 
             if (file.type === 'productos') {
                 xlsx.utils.book_append_sheet(workbook, worksheet, 'Productos');
-                xlsx.utils.book_append_sheet(workbook, worksheetPlantilla, 'Plantilla');
                 const bufXlsx = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
                 zip.file(`Productos_Zifact_Migrado.xlsx`, bufXlsx);
             } else {
@@ -254,7 +252,7 @@ export const AdaptadorConvert: React.FC = () => {
         }
         
         const content = await zip.generateAsync({ type: 'blob' });
-        saveAs(content, 'Migracion_Zifact_SinErrores.zip');
+        saveAs(content, 'Migracion_Zifact_Limpia.zip');
     };
 
     const removeFile = (id: string, e: React.MouseEvent) => {
@@ -279,13 +277,13 @@ export const AdaptadorConvert: React.FC = () => {
             <div className="p-6 md:p-10 border-b border-white/5 sticky top-0 bg-[#020617]/95 backdrop-blur-xl z-30 flex flex-col md:flex-row justify-between md:items-center gap-6">
                 <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#2B6AFF]/10 border border-[#2B6AFF]/20 text-[#2B6AFF] rounded-full text-[10px] font-bold uppercase tracking-widest mb-3">
-                        <ArrowRightLeft size={12} className="animate-pulse" /> Motor Zifact 100% Optimizado
+                        <ArrowRightLeft size={12} className="animate-pulse" /> Motor Zifact 100% Homologado
                     </div>
                     <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white flex items-center gap-3 font-editorial">
                         Adaptador Ecuafact <span className="text-[#2B6AFF] font-mono">➔</span> Zifact
                     </h1>
                     <p className="text-sm font-light text-slate-400 mt-1 max-w-xl">
-                        Ceros iniciales de RUC/Celular corregidos y formato .xlsx ligero para evitar errores de memoria en PHP Zifact.
+                        Ceros iniciales en RUCs/Teléfonos para clientes y códigos limpios sin ceros sobrantes para productos.
                     </p>
                 </div>
 
@@ -330,7 +328,7 @@ export const AdaptadorConvert: React.FC = () => {
 
                     <div className="glass-card-premium gradient-obsidian border border-white/10 rounded-3xl p-5 flex items-center justify-between">
                         <div className="space-y-1">
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Productos (Sin Límit. Memoria)</span>
+                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Productos (Sin ceros adel.)</span>
                             <div className="text-3xl font-mono font-bold text-[#6366F1] tracking-wider">
                                 {productFilesCount}
                             </div>
@@ -370,11 +368,11 @@ export const AdaptadorConvert: React.FC = () => {
                         </h3>
                         
                         <p className="text-xs text-slate-400 font-light max-w-md leading-relaxed">
-                            Sube <span className="text-white font-medium">Clientes</span> y <span className="text-white font-medium">Productos</span>. El sistema reconstruye RUCs/Teléfonos y genera formatos livianos para la nube.
+                            Sube <span className="text-white font-medium">Clientes</span> y <span className="text-white font-medium">Productos</span>. Formato limpio de 1 sola pestaña para evitar bloqueos de memoria en el servidor.
                         </p>
 
                         <div className="mt-4 flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] text-slate-300">
-                            <Sparkles size={12} className="text-[#04B17B]" /> Corrección Automática de Ceros Iniciales y Memoria PHP
+                            <Sparkles size={12} className="text-[#04B17B]" /> Clientes con ceros iniciales ok | Productos con código limpio
                         </div>
                     </div>
                 </div>
@@ -386,7 +384,7 @@ export const AdaptadorConvert: React.FC = () => {
                             <div className="flex items-center gap-3">
                                 <FileSpreadsheet className="text-[#2B6AFF]" size={20} />
                                 <h2 className="text-lg font-bold text-white uppercase tracking-wider">
-                                    Archivos Listos ({processedFiles.length})
+                                    Archivos Convertidos ({processedFiles.length})
                                 </h2>
                             </div>
 
@@ -442,11 +440,11 @@ export const AdaptadorConvert: React.FC = () => {
 
                                                 <div className="space-y-0.5">
                                                     <div className="font-bold text-white text-base truncate max-w-[200px]" title={file.name}>
-                                                        {file.type === 'productos' ? 'Productos_Zifact_Migrado.xlsx' : 'Clientes_Zifact_Migrado.xlsx'}
+                                                        {file.type === 'productos' ? 'Productos_Zifact_Migrado.xls' : 'Clientes_Zifact_Migrado.xlsx'}
                                                     </div>
                                                     <div className="flex items-center gap-2 text-xs text-slate-400">
                                                         <span className="uppercase tracking-wider font-semibold text-[10px] px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-emerald-400">
-                                                            {file.type === 'productos' ? '.XLSX (Liviano)' : '.XLSX (Ceros ok)'}
+                                                            {file.type === 'productos' ? '.XLS BIFF8' : '.XLSX'}
                                                         </span>
                                                         <span>•</span>
                                                         <span className="font-mono text-emerald-400 font-medium">
@@ -475,19 +473,19 @@ export const AdaptadorConvert: React.FC = () => {
                                             </button>
 
                                             <button
-                                                onClick={() => downloadAsXLSX(file)}
+                                                onClick={() => downloadAsXLS(file)}
                                                 className="flex-1 py-2.5 px-3 rounded-xl bg-[#04B17B]/20 hover:bg-[#04B17B]/30 border border-[#04B17B]/40 text-xs font-bold text-[#04B17B] hover:text-emerald-300 flex items-center justify-center gap-2 transition-all shadow-md"
-                                                title="Recomendado: Archivo liviano .xlsx"
+                                                title="Recomendado Zifact (.xls)"
                                             >
-                                                <Download size={14} /> Descargar .XLSX
+                                                <Download size={14} /> Descargar .XLS
                                             </button>
 
                                             <button
-                                                onClick={() => downloadAsXLS(file)}
+                                                onClick={() => downloadAsXLSX(file)}
                                                 className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition-all"
-                                                title="Formato .xls legado"
+                                                title="Formato .xlsx"
                                             >
-                                                .XLS
+                                                .XLSX
                                             </button>
                                         </div>
                                     </motion.div>
@@ -503,10 +501,10 @@ export const AdaptadorConvert: React.FC = () => {
                         <ShieldCheck className="text-[#04B17B]" size={24} />
                         <div>
                             <h3 className="text-base font-bold text-white uppercase tracking-wider">
-                                Solución a los Errores de Zifact
+                                Reglas de Conversión Homologada
                             </h3>
                             <p className="text-xs text-slate-400 font-light">
-                                Ajustes de cero inicial y optimización de consumo de memoria PHP en el servidor Zifact.
+                                Especificaciones probadas contra el servidor de Zifact.
                             </p>
                         </div>
                     </div>
@@ -517,16 +515,16 @@ export const AdaptadorConvert: React.FC = () => {
                                 <CheckCircle2 size={16} /> Clientes (Ceros Iniciales)
                             </div>
                             <p className="text-xs text-slate-400 leading-relaxed font-light">
-                                Se restauran automáticamente el <code className="font-mono text-emerald-400">'0'</code> inicial de los RUCs (13 dígitos) y Teléfonos/Celulares (10 u 8 dígitos). Se exportan explícitamente como formato Texto.
+                                Se restauran RUCs (13 dígitos) y Celulares (10 dígitos) antecediendo el <code className="font-mono text-emerald-400">'0'</code> inicial si fue descartado.
                             </p>
                         </div>
 
                         <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
                             <div className="flex items-center gap-2 text-xs font-bold text-[#6366F1] uppercase tracking-wider">
-                                <CheckCircle2 size={16} /> Productos (Error de Memoria Solucionado)
+                                <CheckCircle2 size={16} /> Productos (Código Limpio)
                             </div>
                             <p className="text-xs text-slate-400 leading-relaxed font-light">
-                                Descarga en formato <span className="text-white font-semibold">.XLSX</span> para evitar el error de memoria PHP de Zifact. Incluye pestañas `Productos` y `Plantilla`.
+                                Códigos de productos limpios sin ceros sobrantes adelante (ej: <code className="font-mono text-indigo-400 font-semibold">1</code>). Estructura limpia de 1 sola pestaña.
                             </p>
                         </div>
                     </div>
@@ -550,7 +548,7 @@ export const AdaptadorConvert: React.FC = () => {
                                     </div>
                                     <div>
                                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                            {previewFile.type === 'productos' ? 'Productos_Zifact_Migrado.xlsx' : 'Clientes_Zifact_Migrado.xlsx'}
+                                            {previewFile.type === 'productos' ? 'Productos_Zifact_Migrado.xls' : 'Clientes_Zifact_Migrado.xlsx'}
                                         </h3>
                                         <p className="text-xs text-slate-400">
                                             Vista previa de datos ({previewFile.data.length} filas)
@@ -595,13 +593,13 @@ export const AdaptadorConvert: React.FC = () => {
 
                             <div className="p-6 border-t border-white/10 flex items-center justify-between bg-white/[0.02]">
                                 <span className="text-xs text-slate-400">
-                                    Formatos corregidos con ceros iniciales y compresión de memoria.
+                                    Formatos homologados de 1 sola pestaña.
                                 </span>
                                 <button
-                                    onClick={() => downloadAsXLSX(previewFile)}
+                                    onClick={() => downloadAsXLS(previewFile)}
                                     className="px-5 py-2.5 rounded-xl bg-[#04B17B] text-white text-xs font-bold uppercase tracking-wider hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-lg"
                                 >
-                                    <Download size={14} /> Descargar .XLSX
+                                    <Download size={14} /> Descargar .XLS
                                 </button>
                             </div>
                         </motion.div>
