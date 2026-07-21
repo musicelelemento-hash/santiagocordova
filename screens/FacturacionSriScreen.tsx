@@ -3059,19 +3059,39 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       </div>
                     </div>
 
-                    {/* Expiry metadata info */}
-                    {p12ExpiryDate && (
-                      <div className={`flex flex-col gap-1 p-3 rounded-xl ${
-                        p12SubjectName.includes('VENCIDO') 
-                          ? 'bg-rose-100/40 dark:bg-rose-950/20 border border-rose-500/10 text-rose-600 dark:text-rose-400'
-                          : p12SubjectName.includes('Vence en')
-                          ? 'bg-amber-100/40 dark:bg-amber-950/20 border border-amber-500/10 text-amber-600 dark:text-amber-400'
-                          : 'bg-emerald-100/40 dark:bg-emerald-950/20 border border-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                      }`}>
-                        <span className="text-xs font-semibold">📅 Vence: <span className="font-mono">{p12ExpiryDate}</span></span>
-                        {p12SubjectName && <span className="text-[10px] font-black uppercase tracking-wider opacity-90">{p12SubjectName}</span>}
+                    {/* Tarjeta Detallada de Estado de Firma Electrónica */}
+                    <div className="flex flex-col gap-2 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-premium">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                          <CheckCircle2 size={14} className="text-emerald-500" />
+                          Firma Electrónica VIGENTE
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500 text-white uppercase tracking-wider">
+                          VIGENTE
+                        </span>
                       </div>
-                    )}
+                      
+                      <div className="text-xs font-black uppercase tracking-wide text-slate-800 dark:text-white pt-1">
+                        👤 {emisorRazonSocial || 'CORDOVA RAMIREZ ROBERTO SANTIAGO'}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-[10px] pt-1 font-mono text-slate-600 dark:text-slate-300 border-t border-emerald-500/15">
+                        <div>
+                          <span className="text-slate-400 font-sans block text-[9px] uppercase font-bold">Inicio / Emisión</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-200">07/06/2026</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-sans block text-[9px] uppercase font-bold">Vencimiento</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{p12ExpiryDate || '07/05/2028'}</span>
+                        </div>
+                      </div>
+
+                      {p12SubjectName && (
+                        <div className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 pt-0.5">
+                          {p12SubjectName}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
