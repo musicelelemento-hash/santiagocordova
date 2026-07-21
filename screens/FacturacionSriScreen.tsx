@@ -150,22 +150,28 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     }
     return stored;
   }); // 0 = General, 3 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
-  const [ambiente, setAmbiente] = useState<'1' | '2'>(() => (localStorage.getItem('sc_emisor_ambiente') as '1' | '2') || '1'); // 1 = Pruebas, 2 = Producción
+  const [ambiente, setAmbienteState] = useState<'1' | '2'>(() => (localStorage.getItem('sc_emisor_ambiente') as '1' | '2') || '2'); // Default a 2 (Producción) si el usuario ya está facturando
+
+  const setAmbiente = (newAmbiente: '1' | '2') => {
+    setAmbienteState(newAmbiente);
+    localStorage.setItem('sc_emisor_ambiente', newAmbiente);
+  };
+
   const [p12FileBase64, setP12FileBase64] = useState('');
   const [p12FileName, setP12FileName] = useState('');
   const [p12Password, setP12Password] = useState('ClaveFirma123');
   const [p12ExpiryDate, setP12ExpiryDate] = useState('');
   const [p12SubjectName, setP12SubjectName] = useState('');
 
-  // Carga asíncrona de firma electrónica desde IndexedDB
+  // Carga asíncrona de firma electrónica desde IndexedDB con respaldo en localStorage
   useEffect(() => {
     const loadSignatureFromIndexedDB = async () => {
       try {
-        const base64 = await db.getLocal('sc_sri_p12_base64') || '';
-        const name = await db.getLocal('sc_sri_p12_filename') || '';
-        const password = await db.getLocal('sc_sri_p12_password') || 'ClaveFirma123';
-        const expiry = await db.getLocal('sc_sri_p12_expiry') || '';
-        const subject = await db.getLocal('sc_sri_p12_subject') || '';
+        const base64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
+        const name = (await db.getLocal('sc_sri_p12_filename')) || localStorage.getItem('sc_sri_p12_filename') || '';
+        const password = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123';
+        const expiry = (await db.getLocal('sc_sri_p12_expiry')) || localStorage.getItem('sc_sri_p12_expiry') || '';
+        const subject = (await db.getLocal('sc_sri_p12_subject')) || localStorage.getItem('sc_sri_p12_subject') || '';
         
         setP12FileBase64(base64);
         setP12FileName(name);
@@ -186,6 +192,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const handlePasswordChange = async (val: string) => {
     setP12Password(val);
     await db.setLocal('sc_sri_p12_password', val);
+    localStorage.setItem('sc_sri_p12_password', val);
   };
 
   const handleP12Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,6 +208,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         setP12FileName(file.name);
         await db.setLocal('sc_sri_p12_base64', base64Data);
         await db.setLocal('sc_sri_p12_filename', file.name);
+        await db.setLocal('sc_sri_p12_password', p12Password);
+        localStorage.setItem('sc_sri_p12_base64', base64Data);
+        localStorage.setItem('sc_sri_p12_filename', file.name);
+        localStorage.setItem('sc_sri_p12_password', p12Password);
 
         // Try to extract expiry/subject from the binary DER data embedded in the .p12
         try {
@@ -233,15 +244,18 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             const formatted = expiry.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: '2-digit' });
             setP12ExpiryDate(formatted);
             await db.setLocal('sc_sri_p12_expiry', formatted);
+            localStorage.setItem('sc_sri_p12_expiry', formatted);
 
             const daysLeft = Math.floor((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
             const subjectNote = daysLeft < 0 ? '⚠️ CERTIFICADO VENCIDO' : daysLeft < 60 ? `⚠️ Vence en ${daysLeft} días` : `✓ Válido (${daysLeft} días restantes)`;
             setP12SubjectName(subjectNote);
             await db.setLocal('sc_sri_p12_subject', subjectNote);
+            localStorage.setItem('sc_sri_p12_subject', subjectNote);
           } else {
             setP12ExpiryDate('No detectada');
             setP12SubjectName('Archivo cargado correctamente');
             await db.setLocal('sc_sri_p12_expiry', 'No detectada');
+            localStorage.setItem('sc_sri_p12_expiry', 'No detectada');
             await db.setLocal('sc_sri_p12_subject', 'Archivo cargado correctamente');
           }
         } catch {
@@ -2656,9 +2670,21 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 <span>{connectionStatus === 'connected' ? 'Laravel Online' : 'Offline'}</span>
               </div>
               
-              <div className="text-[9px] font-bold text-slate-400 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-1.5 uppercase font-premium font-sans">
-                Ambiente: {ambiente === '1' ? 'Pruebas' : 'Producción'}
-              </div>
+              <button 
+                onClick={() => {
+                  const nextAmb = ambiente === '1' ? '2' : '1';
+                  setAmbiente(nextAmb);
+                }}
+                className={`text-[9px] font-black border rounded-xl px-3 py-1.5 uppercase font-premium font-sans cursor-pointer transition-all hover:scale-105 active:scale-95 shadow-sm flex items-center gap-1.5 ${
+                  ambiente === '2'
+                    ? 'bg-[#04B17B]/15 border-[#04B17B]/40 text-[#04B17B] dark:text-emerald-400'
+                    : 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400'
+                }`}
+                title="Haz clic aquí para cambiar al instante entre Ambiente 1 (Pruebas) y Ambiente 2 (Producción)"
+              >
+                <span className={`w-2 h-2 rounded-full ${ambiente === '2' ? 'bg-[#04B17B] animate-pulse' : 'bg-amber-500'}`} />
+                Ambiente: {ambiente === '1' ? '1 (PRUEBAS)' : '2 (PRODUCCIÓN)'}
+              </button>
             </div>
           </div>
         )}
