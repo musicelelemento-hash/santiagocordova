@@ -520,8 +520,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   };
 
   const fetchSignatureVigencia = async () => {
-    const storedBase64 = await db.getLocal('sc_sri_p12_base64') || p12FileBase64;
-    const storedPassword = await db.getLocal('sc_sri_p12_password') || p12Password;
+    const storedBase64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || p12FileBase64;
+    const storedPassword = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || p12Password;
     if (!storedBase64) return;
     
     try {
