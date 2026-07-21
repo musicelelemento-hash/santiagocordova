@@ -198,39 +198,41 @@ export const AdaptadorConvert: React.FC = () => {
         }
     });
 
-    // Descargar archivo en formato .XLS inyectando en la plantilla binaria oficial de Zifact
+    // Descargar archivo en formato .XLS usando xlsx.writeFile directo del navegador
     const downloadAsXLS = (file: ProcessedFile) => {
-        if (file.type === 'productos') {
-            const workbook = xlsx.read(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64, { type: 'base64', cellStyles: true });
-            const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true });
-            workbook.Sheets['Plantilla'] = newWs;
-            
-            const buf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
-            const blob = new Blob([buf], { type: 'application/vnd.ms-excel' });
-            saveAs(blob, `Productos_Zifact_Migrado.xls`);
-        } else {
-            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
-            const workbook = xlsx.utils.book_new();
-            xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
-            const buf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
-            const blob = new Blob([buf], { type: 'application/vnd.ms-excel' });
-            saveAs(blob, `Clientes_Zifact_Migrado.xls`);
+        try {
+            if (file.type === 'productos') {
+                const workbook = xlsx.read(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64.trim(), { type: 'base64' });
+                const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true });
+                workbook.Sheets['Plantilla'] = newWs;
+                xlsx.writeFile(workbook, 'Productos_Zifact_Migrado.xls', { bookType: 'biff8' });
+            } else {
+                const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
+                const workbook = xlsx.utils.book_new();
+                xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
+                xlsx.writeFile(workbook, 'Clientes_Zifact_Migrado.xls', { bookType: 'biff8' });
+            }
+        } catch (err) {
+            console.error("Error al descargar XLS:", err);
+            alert("Ocurrió un inconveniente al generar el archivo .XLS. Intente nuevamente.");
         }
     };
 
     // Descargar archivo en formato XLSX
     const downloadAsXLSX = (file: ProcessedFile) => {
-        const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
-        const workbook = xlsx.utils.book_new();
+        try {
+            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
+            const workbook = xlsx.utils.book_new();
 
-        if (file.type === 'productos') {
-            xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
-            const outFileName = `Productos_Zifact_Migrado.xlsx`;
-            xlsx.writeFile(workbook, outFileName);
-        } else {
-            xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
-            const outFileName = `Clientes_Zifact_Migrado.xlsx`;
-            xlsx.writeFile(workbook, outFileName);
+            if (file.type === 'productos') {
+                xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
+                xlsx.writeFile(workbook, 'Productos_Zifact_Migrado.xlsx');
+            } else {
+                xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
+                xlsx.writeFile(workbook, 'Clientes_Zifact_Migrado.xlsx');
+            }
+        } catch (err) {
+            console.error("Error al descargar XLSX:", err);
         }
     };
 
@@ -241,7 +243,7 @@ export const AdaptadorConvert: React.FC = () => {
         const zip = new JSZip();
         for (const file of successfulFiles) {
             if (file.type === 'productos') {
-                const workbook = xlsx.read(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64, { type: 'base64', cellStyles: true });
+                const workbook = xlsx.read(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64.trim(), { type: 'base64' });
                 const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true });
                 workbook.Sheets['Plantilla'] = newWs;
                 const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
