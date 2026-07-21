@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import * as xlsx from 'xlsx';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import * as LucideIcons from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,39 +24,76 @@ export const AdaptadorConvert: React.FC = () => {
 
         for (const file of acceptedFiles) {
             try {
-                const data = await file.arrayBuffer();
-                const workbook = xlsx.read(data);
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = xlsx.utils.sheet_to_json(worksheet);
+                const rawData = xlsx.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+                
+                // Buscar la fila de encabezados reales (Ecuafact los pone en la fila 5)
+                let headerRowIndex = 0;
+                for (let i = 0; i < Math.min(20, rawData.length); i++) {
+                    const rowStr = (rawData[i] || []).join(' ').toLowerCase();
+                    if (rowStr.includes('identificación no') || rowStr.includes('razón social') || rowStr.includes('código') || rowStr.includes('descripción')) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
 
-                // Determinar si es cliente o producto (heurística simple)
-                const isProductos = file.name.toLowerCase().includes('producto') || (jsonData[0] && (jsonData[0] as any)['codigo'] !== undefined);
-                const isClientes = file.name.toLowerCase().includes('cliente') || (jsonData[0] && (jsonData[0] as any)['identificacion'] !== undefined);
+                const headers = (rawData[headerRowIndex] || []).map(h => String(h || '').trim());
+                const jsonData: any[] = [];
+                for (let i = headerRowIndex + 1; i < rawData.length; i++) {
+                    const row = rawData[i];
+                    if (!row || row.length === 0 || row.every((c: any) => !c)) continue;
+                    const obj: any = {};
+                    headers.forEach((h, idx) => {
+                        if (h) obj[h] = row[idx];
+                    });
+                    jsonData.push(obj);
+                }
+
+                // Heurística mejorada
+                const filename = file.name.toLowerCase();
+                const headerStr = headers.join(' ').toLowerCase();
+                const hasClientHeaders = headerStr.includes('identificación') || headerStr.includes('ruc') || headerStr.includes('cedula') || headerStr.includes('razón social');
+                const hasProductHeaders = headerStr.includes('código') || headerStr.includes('precio') || headerStr.includes('pvp') || headerStr.includes('iva');
+
+                const isClientes = filename.includes('cliente') || hasClientHeaders;
+                const isProductos = filename.includes('producto') || hasProductHeaders;
 
                 let type: 'productos' | 'clientes' = 'productos';
+                if (isClientes && !isProductos) type = 'clientes';
+                else if (isProductos && !isClientes) type = 'productos';
+                else if (isClientes) type = 'clientes'; 
+                
                 let mappedData: any[] = [];
 
-                if (isClientes) {
-                    type = 'clientes';
-                    mappedData = jsonData.map((row: any) => ({
-                        'Nombre': row['Nombre'] || row['Razon Social'] || row['razon_social'] || row['nombre_comercial'] || 'SIN NOMBRE',
-                        'Tipo Identificacion': mapTipoIdentificacion(row['Tipo Identificacion'] || row['tipo_identificacion'] || row['Tipo'] || '04'),
-                        'Identificacion': String(row['Identificacion'] || row['identificacion'] || row['RUC'] || row['Cedula'] || row['RUC/CI'] || ''),
-                        'Direccion': row['Direccion'] || row['direccion'] || 'SN',
-                        'Celular': String(row['Celular'] || row['celular'] || row['Telefono'] || row['telefono'] || '9999999999'),
-                        'Correo': row['Correo'] || row['correo'] || row['Email'] || row['email'] || 'correo@ejemplo.com',
-                    }));
+                if (type === 'clientes') {
+                    mappedData = jsonData.map((row: any) => {
+                        const ident = String(row['Identificacion'] || row['identificación'] || row['Identificación No.'] || row['RUC'] || row['Cedula'] || row['RUC/CI'] || '').trim();
+                        // Inferir tipo de identificacion basado en la longitud si no existe columna
+                        let tipoIdent = row['Tipo Identificacion'] || row['tipo_identificacion'] || row['Tipo'];
+                        if (!tipoIdent) {
+                            if (ident.length === 13) tipoIdent = '04'; // RUC
+                            else if (ident.length === 10) tipoIdent = '05'; // Cedula
+                            else if (ident === '9999999999999') tipoIdent = '07'; // Consumidor final
+                            else tipoIdent = '06'; // Pasaporte
+                        }
+
+                        return {
+                            'Nombre': row['Razón Social'] || row['Nombre'] || row['Razon Social'] || row['razon_social'] || row['Nombre Comercial'] || 'SIN NOMBRE',
+                            'Tipo Identificacion': mapTipoIdentificacion(tipoIdent),
+                            'Identificacion': ident || '9999999999',
+                            'Direccion': row['Dirección'] || row['Direccion'] || row['direccion'] || 'SN',
+                            'Celular': String(row['Teléfono'] || row['Celular'] || row['celular'] || row['Telefono'] || row['telefono'] || '9999999999'),
+                            'Correo': row['E-mail'] || row['Correo'] || row['correo'] || row['Email'] || row['email'] || 'correo@ejemplo.com',
+                        };
+                    });
                 } else {
-                    type = 'productos';
                     mappedData = jsonData.map((row: any) => ({
-                        'Nombre': row['Nombre'] || row['nombre'] || row['Descripcion'] || row['descripcion'] || 'Producto General',
-                        'Código Principal': String(row['Código Principal'] || row['codigo_principal'] || row['Codigo'] || row['codigo'] || '001'),
-                        'Código Auxiliar': String(row['Código Auxiliar'] || row['codigo_auxiliar'] || row['Auxiliar'] || ''),
-                        'Precio Unitario': parseFloat(row['Precio Unitario'] || row['precio_unitario'] || row['Precio'] || row['precio'] || '0').toFixed(2),
-                        'Código IVA': mapCodigoIva(row['Código IVA'] || row['codigo_iva'] || row['IVA'] || row['Tarifa IVA'] || '5'),
-                        'Código ICE': String(row['Código ICE'] || row['codigo_ice'] || row['ICE'] || '0'),
-                        'Código IRPNR': String(row['Código IRPNR'] || row['codigo_irpnr'] || '0'),
+                        'Nombre': row['Descripción'] || row['Nombre'] || row['nombre'] || row['Descripcion'] || row['descripcion'] || 'Producto General',
+                        'Codigo Principal': String(row['Código'] || row['Código Principal'] || row['codigo_principal'] || row['Codigo'] || row['codigo'] || '001'),
+                        'Codigo Auxiliar': String(row['Cod. Aux.'] || row['Código Auxiliar'] || row['codigo_auxiliar'] || row['Auxiliar'] || ''),
+                        'Precio Unitario': parseFloat(row['PVP'] || row['Precio Unitario'] || row['precio_unitario'] || row['Precio'] || row['precio'] || '0').toFixed(2),
+                        'Codigo IVA': mapCodigoIva(row['IVA'] || row['Código IVA'] || row['codigo_iva'] || row['Tarifa IVA'] || '5'),
+                        'Codigo ICE': String(row['ICE'] || row['Código ICE'] || row['codigo_ice'] || '0'),
+                        'Codigo IRBPNR': String(row['Código IRPNR'] || row['codigo_irpnr'] || '0'),
                         'Estado (A/I)': 'A'
                     }));
                 }
@@ -107,16 +146,36 @@ export const AdaptadorConvert: React.FC = () => {
     });
 
     const downloadConverted = (file: ProcessedFile) => {
-        const worksheet = xlsx.utils.json_to_sheet(file.data);
-        const workbook = xlsx.utils.book_new();
-        xlsx.utils.book_append_sheet(workbook, worksheet, file.type === 'productos' ? 'Productos' : 'Clientes');
-        // Zifact pide extensiones .xls o .xlsx. Le daremos .xlsx para mejor compatibilidad actual
+        const workbook = createWorkbook(file);
         const outFileName = `Zifact_${file.type}_Migrado.xlsx`;
         xlsx.writeFile(workbook, outFileName);
     };
 
-    const downloadAll = () => {
-        processedFiles.filter(f => f.status === 'success').forEach(downloadConverted);
+    const createWorkbook = (file: ProcessedFile) => {
+        const worksheet = xlsx.utils.json_to_sheet(file.data);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, file.type === 'productos' ? 'Productos' : 'Clientes');
+        return workbook;
+    };
+
+    const downloadAll = async () => {
+        const successfulFiles = processedFiles.filter(f => f.status === 'success');
+        if (successfulFiles.length === 0) return;
+
+        if (successfulFiles.length === 1) {
+            downloadConverted(successfulFiles[0]);
+            return;
+        }
+
+        const zip = new JSZip();
+        for (const file of successfulFiles) {
+            const workbook = createWorkbook(file);
+            const excelBuffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
+            zip.file(`Zifact_${file.type}_Migrado.xlsx`, excelBuffer);
+        }
+        
+        const content = await zip.generateAsync({ type: 'blob' });
+        saveAs(content, 'Migracion_Zifact.zip');
     };
 
     return (
@@ -211,7 +270,13 @@ export const AdaptadorConvert: React.FC = () => {
                             </h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {processedFiles.map((file, idx) => (
-                                    <div key={idx} className="glass-card-premium gradient-obsidian border border-white/10 rounded-2xl p-5 flex items-center justify-between group hover:border-[#04B17B]/40 transition-colors">
+                                    <button 
+                                        key={idx} 
+                                        onClick={() => file.status === 'success' ? downloadConverted(file) : null}
+                                        className={`glass-card-premium gradient-obsidian border border-white/10 rounded-2xl p-5 flex items-center justify-between group transition-all text-left w-full
+                                            ${file.status === 'success' ? 'hover:border-[#04B17B]/40 hover:bg-[#04B17B]/5 cursor-pointer' : 'opacity-70 cursor-not-allowed'}
+                                        `}
+                                    >
                                         <div className="flex items-center gap-4">
                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center
                                                 ${file.status === 'success' ? 'bg-[#04B17B]/20 text-[#04B17B]' : 'bg-red-500/20 text-red-400'}
@@ -228,15 +293,14 @@ export const AdaptadorConvert: React.FC = () => {
                                             </div>
                                         </div>
                                         {file.status === 'success' && (
-                                            <button
-                                                onClick={() => downloadConverted(file)}
-                                                className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-slate-300 hover:text-white hover:bg-[#2B6AFF] hover:border-[#2B6AFF] transition-all"
+                                            <div
+                                                className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-slate-300 group-hover:text-white group-hover:bg-[#2B6AFF] group-hover:border-[#2B6AFF] transition-all"
                                                 title="Descargar Convertido"
                                             >
-                                                <LucideIcons.Download size={16} />
-                                            </button>
+                                                <LucideIcons.Download size={16} className="group-hover:scale-110 transition-transform" />
+                                            </div>
                                         )}
-                                    </div>
+                                    </button>
                                 ))}
                             </div>
                         </motion.div>
