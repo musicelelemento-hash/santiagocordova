@@ -1814,110 +1814,172 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
     const logoHtml = emisorLogo 
       ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 
-      : "<div class='emisor-title' style='font-size: 16px; font-weight: 900; margin-bottom: 15px;'>" + (emisor.nombreComercial || 'EMISOR') + "</div>";
+      : "<div class='emisor-title'>" + (emisor.nombreComercial || 'SOLUCIONES CONTABLES PRO') + "</div>";
 
     printWindow.document.write(`
       <!DOCTYPE html>
-      <html>
+      <html lang="es">
       <head>
-        <title>RIDE Factura ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</title>
+        <title>RIDE_Factura_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}</title>
         <meta charset="utf-8" />
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;750&family=Manrope:wght@700;800&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@700;800;900&display=swap');
+          
+          @page {
+            size: A4 portrait;
+            margin: 10mm 12mm 12mm 12mm;
+          }
+
+          * {
+            box-sizing: border-box;
+          }
           
           body {
-            font-family: 'Inter', -apple-system, sans-serif;
-            font-size: 10px;
-            color: #1e293b;
-            margin: 25px;
-            background: #ffffff;
-            line-height: 1.5;
-          }
-          .ride-container {
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-          }
-          .grid-container {
-            display: grid;
-            grid-template-columns: 1.2fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-          }
-          .emisor-box {
-            padding-right: 10px;
-          }
-          .logo-img {
-            max-height: 70px;
-            max-width: 220px;
-            object-fit: contain;
-            margin-bottom: 12px;
-          }
-          .emisor-title {
-            font-family: 'Manrope', sans-serif;
-            font-size: 18px;
-            font-weight: 800;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 9.5px;
             color: #0f172a;
-            letter-spacing: -0.02em;
+            margin: 20px;
+            background: #ffffff;
+            line-height: 1.4;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          .ride-top-accent {
+            height: 4px;
+            width: 100%;
+            background: linear-gradient(90deg, #2B6AFF 0%, #6366F1 50%, #04B17B 100%);
+            border-radius: 4px 4px 0 0;
             margin-bottom: 15px;
           }
+
+          .ride-container {
+            width: 100%;
+            max-width: 820px;
+            margin: 0 auto;
+          }
+
+          .grid-container {
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+          }
+
+          .emisor-box {
+            padding-right: 8px;
+          }
+
+          .logo-img {
+            max-height: 65px;
+            max-width: 220px;
+            object-fit: contain;
+            margin-bottom: 10px;
+          }
+
+          .emisor-title {
+            font-family: 'Manrope', sans-serif;
+            font-size: 17px;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: -0.03em;
+            margin-bottom: 10px;
+            line-height: 1.2;
+          }
+
           .emisor-name {
             font-family: 'Manrope', sans-serif;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
             color: #0f172a;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
           }
+
+          .emisor-info-line {
+            color: #475569;
+            font-size: 9px;
+            margin-top: 4px;
+            line-height: 1.35;
+          }
+
           .auth-box {
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 16px;
+            border: 1.5px solid #0f172a;
+            border-radius: 14px;
+            padding: 14px;
             background: #f8fafc;
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
           }
+
           .auth-title {
-            font-size: 12px;
-            font-weight: 700;
+            font-family: 'Manrope', sans-serif;
+            font-size: 11px;
+            font-weight: 800;
             color: #0f172a;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
           }
+
+          .auth-doc-type {
+            font-family: 'Manrope', sans-serif;
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            color: #0f172a;
+            margin: 2px 0 4px 0;
+          }
+
           .auth-secuencial {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            font-weight: 750;
+            font-size: 12px;
+            font-weight: 700;
             color: #2b6aff;
             letter-spacing: 0.05em;
+            margin-bottom: 8px;
           }
+
           .auth-details {
-            border-top: 1px solid #e2e8f0;
-            padding-top: 10px;
-            margin-top: 10px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 8px;
+            margin-top: 8px;
           }
+
           .auth-details table {
             width: 100%;
             border-collapse: collapse;
           }
+
           .auth-details td {
-            padding: 3px 0;
+            padding: 2.5px 0;
             vertical-align: top;
+            font-size: 8.5px;
           }
+
           .auth-details td strong {
             color: #475569;
-            font-size: 8.5px;
+            font-size: 8px;
             text-transform: uppercase;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.03em;
           }
+
+          .clave-mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 8.5px;
+            font-weight: 700;
+            word-break: break-all;
+            color: #0f172a;
+            line-height: 1.2;
+          }
+
           .barcode-container {
-            border-top: 1px solid #e2e8f0;
-            padding-top: 10px;
-            margin-top: 10px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 8px;
+            margin-top: 8px;
             text-align: center;
           }
+
           .barcode-lines {
-            height: 35px;
+            height: 32px;
             width: 100%;
-            margin: 6px 0;
+            margin: 4px 0;
             background: repeating-linear-gradient(
               90deg,
               #0f172a,
@@ -1929,332 +1991,373 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               #fff 6px,
               #fff 7px
             );
-            border-radius: 4px;
+            border-radius: 3px;
           }
-          .barcode-text {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 8.5px;
-            color: #475569;
-            word-break: break-all;
-            letter-spacing: 0.02em;
-          }
+
           .receptor-box {
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 14px;
-            margin-bottom: 20px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
             display: grid;
             grid-template-columns: 1.3fr 1fr;
-            gap: 10px;
-            background: #ffffff;
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+            gap: 8px;
+            background: #fafafa;
           }
+
           .receptor-box strong {
             color: #64748b;
             font-size: 8px;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.04em;
+            display: block;
+            margin-bottom: 1px;
           }
+
+          .receptor-val {
+            font-size: 10px;
+            font-weight: 700;
+            color: #0f172a;
+            text-transform: uppercase;
+          }
+
           .items-table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
-            margin-bottom: 20px;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
             overflow: hidden;
           }
+
           .items-table th {
             background: #0f172a;
             color: #ffffff;
+            font-family: 'Manrope', sans-serif;
             text-transform: uppercase;
-            font-size: 8.5px;
-            font-weight: 600;
-            padding: 10px 12px;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 8px 10px;
             border: none;
             letter-spacing: 0.05em;
           }
+
           .items-table td {
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-bottom: 1px solid #f1f5f9;
             border-right: 1px solid #f1f5f9;
+            font-size: 9.5px;
           }
+
           .items-table td:last-child {
             border-right: none;
           }
+
           .items-table tr:last-child td {
             border-bottom: none;
           }
+
           .items-table tr:nth-child(even) {
             background-color: #f8fafc;
           }
+
           .bottom-grid {
             display: grid;
-            grid-template-columns: 1.2fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 16px;
           }
+
           .pago-box, .info-box {
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 14px;
-            margin-bottom: 15px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
             background: #ffffff;
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
           }
+
           .box-title {
             font-family: 'Manrope', sans-serif;
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
             border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 6px;
-            margin-bottom: 10px;
-            font-size: 9.5px;
+            padding-bottom: 5px;
+            margin-bottom: 8px;
+            font-size: 9px;
             color: #0f172a;
             letter-spacing: 0.05em;
           }
+
           .pago-table {
             width: 100%;
             border-collapse: collapse;
           }
+
           .pago-table th {
             color: #64748b;
             border-bottom: 1px solid #e2e8f0;
-            padding: 4px;
-            font-size: 8.5px;
+            padding: 3px;
+            font-size: 8px;
             text-align: left;
             text-transform: uppercase;
           }
+
           .pago-table td {
-            padding: 6px 4px;
+            padding: 5px 3px;
+            font-size: 9px;
           }
+
           .totals-box {
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 14px;
+            border: 1.5px solid #0f172a;
+            border-radius: 14px;
+            padding: 12px 14px;
             background: #f8fafc;
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
           }
+
           .totals-table {
             width: 100%;
             border-collapse: collapse;
           }
+
           .totals-table td {
-            padding: 5px 2px;
+            padding: 4px 2px;
             border-bottom: 1px dashed #e2e8f0;
-            font-size: 9.5px;
+            font-size: 9px;
             color: #475569;
+            font-weight: 600;
           }
+
           .totals-table tr:last-child td {
             border-bottom: none;
           }
+
           .totals-table tr.total-row {
-            border-top: 1.5px solid #0f172a;
-            font-weight: 700;
+            background: #0f172a;
+            color: #ffffff;
+            font-weight: 800;
             font-size: 11.5px;
-            color: #0f172a;
           }
+
           .totals-table tr.total-row td {
-            color: #0f172a;
+            color: #ffffff;
+            padding: 8px 6px;
+            border-radius: 6px;
+            font-family: 'Manrope', sans-serif;
           }
+
           @media print {
             .no-print {
               display: none !important;
             }
             body {
-              margin: 15px;
+              margin: 0;
+              padding: 0;
             }
             .ride-container {
               width: 100%;
               max-width: 100%;
             }
-            .auth-box, .receptor-box, .items-table, .pago-box, .info-box, .totals-box {
-              box-shadow: none !important;
-            }
           }
         </style>
       </head>
       <body>
-        <div class="no-print" style="background: #0f172a; padding: 12px 20px; margin: -25px -25px 20px -25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #2b6aff; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
-          <div style="color: white; font-family: sans-serif; font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.5px;">
-            📄 Vista Previa RIDE - Comprobante Autorizado
+        <!-- Bar de Acciones Superior (Oculta al Imprimir) -->
+        <div class="no-print" style="background: #0f172a; padding: 12px 20px; margin: -20px -20px 20px -20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2b6aff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+          <div style="color: white; font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; items-center; gap: 8px;">
+            📄 COMPROBANTE DE VENTA ELECTRÓNICO (RIDE A4 ÉLITE)
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button onclick="window.print()" style="background: #2b6aff; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-family: sans-serif;">
-              🖨️ Imprimir / Guardar PDF
+          <div style="display: flex; gap: 10px;">
+            <button onclick="window.print()" style="background: linear-gradient(135deg, #2b6aff, #6366f1); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-family: sans-serif; box-shadow: 0 2px 8px rgba(43,106,255,0.3);">
+              📥 Descargar PDF Directo / Imprimir
             </button>
-            <button onclick="window.close()" style="background: #334155; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-family: sans-serif;">
+            <button onclick="window.close()" style="background: #334155; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-family: sans-serif;">
               Cerrar
             </button>
           </div>
         </div>
+
         <div class="ride-container">
+          <div class="ride-top-accent"></div>
+          
           <div class="grid-container">
             <div class="emisor-box">
               ${logoHtml}
               <div class="emisor-name">${emisor.razonSocial}</div>
-              <div style="color: #555; font-weight: 600;">${emisor.nombreComercial}</div>
-              <div style="margin-top: 8px;"><strong>Dirección Matriz:</strong> ${emisor.dirMatriz}</div>
-              <div style="margin-top: 8px;"><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
+              <div style="color: #475569; font-weight: 700; font-size: 10px; text-transform: uppercase;">${emisor.nombreComercial}</div>
+              <div class="emisor-info-line"><strong>Dirección Matriz:</strong> ${emisor.dirMatriz}</div>
+              <div class="emisor-info-line"><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
               ${regimeLabel}
             </div>
+
             <div class="auth-box">
-              <div class="auth-title">R.U.C.: <span style="font-family: monospace; font-size: 13px;">${emisor.ruc}</span></div>
-              <div style="font-size: 13px; font-weight: 900; letter-spacing: 0.5px; margin: 3px 0;">FACTURA</div>
+              <div class="auth-title">R.U.C.: <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;">${emisor.ruc}</span></div>
+              <div class="auth-doc-type">FACTURA</div>
               <div class="auth-secuencial">No. ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</div>
+              
               <div class="auth-details">
                 <table>
                   <tr>
-                    <td style="width: 120px;"><strong>NÚMERO AUTORIZACIÓN:</strong></td>
-                    <td style="font-family: monospace; font-size: 8.5px; word-break: break-all; color: #111;">${comprobante.claveAcceso}</td>
+                    <td style="width: 110px;"><strong>NÚMERO AUTORIZACIÓN:</strong></td>
+                    <td class="clave-mono">${comprobante.claveAcceso}</td>
                   </tr>
                   <tr>
                     <td><strong>FECHA/HORA AUTORIZ.:</strong></td>
-                    <td>${authDateStr}</td>
+                    <td style="font-weight: 700;">${authDateStr}</td>
                   </tr>
                   <tr>
                     <td><strong>AMBIENTE:</strong></td>
-                    <td style="text-transform: uppercase;">${emisor.ambiente}</td>
+                    <td style="text-transform: uppercase; font-weight: 800; color: #2b6aff;">${emisor.ambiente}</td>
                   </tr>
                   <tr>
                     <td><strong>EMISIÓN:</strong></td>
-                    <td>NORMAL</td>
+                    <td style="font-weight: 700;">NORMAL</td>
                   </tr>
                 </table>
               </div>
+
               <div class="barcode-container">
-                <div style="font-size: 8px; font-weight: bold; color: #888; text-transform: uppercase;">Clave de Acceso</div>
+                <div style="font-size: 7.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Clave de Acceso SRI</div>
                 <div class="barcode-lines"></div>
-                <div class="barcode-text">${comprobante.claveAcceso}</div>
+                <div class="clave-mono" style="text-align: center; font-size: 8px;">${comprobante.claveAcceso}</div>
               </div>
             </div>
           </div>
+
           <div class="receptor-box">
             <div>
               <strong>Razón Social / Nombres y Apellidos:</strong>
-              <div style="margin-top: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #111;">${receptor.razonSocial}</div>
+              <div class="receptor-val">${receptor.razonSocial}</div>
             </div>
             <div>
-              <strong>Identificación / RUC:</strong>
-              <div style="margin-top: 3px; font-family: monospace; font-size: 11px; font-weight: bold;">${receptor.identificacion}</div>
+              <strong>Identificación / RUC / Cédula:</strong>
+              <div class="receptor-val" style="font-family: 'JetBrains Mono', monospace;">${receptor.identificacion}</div>
             </div>
             <div style="margin-top: 4px;">
-              <strong>Fecha Emisión:</strong> ${receptor.fechaEmision}
+              <strong>Fecha Emisión:</strong>
+              <div style="font-weight: 700; color: #0f172a;">${receptor.fechaEmision}</div>
             </div>
             <div style="margin-top: 4px;">
-              <strong>Guía de Remisión:</strong> S/N
+              <strong>Guía de Remisión:</strong>
+              <div style="font-weight: 700; color: #0f172a;">S/N</div>
             </div>
-            <div style="grid-column: span 2; border-top: 1px dashed #ddd; padding-top: 4px; margin-top: 2px;">
-              <strong>Dirección del Comprador:</strong> ${receptor.direccion}
+            <div style="grid-column: span 2; border-top: 1px dashed #cbd5e1; padding-top: 6px; margin-top: 2px;">
+              <strong>Dirección del Comprador:</strong>
+              <div style="font-weight: 700; color: #0f172a; text-transform: uppercase;">${receptor.direccion}</div>
             </div>
           </div>
+
           <table class="items-table">
             <thead>
               <tr>
-                <th style="width: 80px;">Cod. Principal</th>
-                <th style="width: 50px; text-align: center;">Cant.</th>
-                <th>Descripción</th>
-                <th style="width: 100px; text-align: right;">P. Unitario</th>
-                <th style="width: 100px; text-align: right;">Subtotal</th>
+                <th style="width: 90px;">Cod. Principal</th>
+                <th style="width: 55px; text-align: center;">Cant.</th>
+                <th>Descripción / Detalle del Servicio</th>
+                <th style="width: 110px; text-align: right;">P. Unitario</th>
+                <th style="width: 110px; text-align: right;">Subtotal</th>
               </tr>
             </thead>
             <tbody>
               ${itemsHtml}
             </tbody>
           </table>
+
           <div class="bottom-grid">
-            <div class="space-y-4">
+            <div>
               <div class="info-box">
                 <div class="box-title">Información Adicional</div>
-                <table style="width: 100%;">
+                <table style="width: 100%; border-collapse: collapse;">
                   <tr>
-                    <td style="width: 100px; font-weight: bold; padding: 2px 0;">Dirección:</td>
-                    <td style="color: #444; text-transform: uppercase;">${receptor.direccion}</td>
+                    <td style="width: 90px; font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Dirección:</td>
+                    <td style="color: #0f172a; font-weight: 700; text-transform: uppercase; font-size: 9px;">${receptor.direccion}</td>
                   </tr>
                   <tr>
-                    <td style="font-weight: bold; padding: 2px 0;">Email:</td>
-                    <td style="color: #444;">${receptor.identificacion === buyerRuc ? buyerEmail || 'correo@cliente.com' : 'correo@cliente.com'}</td>
+                    <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Email:</td>
+                    <td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.identificacion === buyerRuc ? buyerEmail || 'cliente@example.com' : 'cliente@example.com'}</td>
                   </tr>
                   <tr>
-                    <td style="font-weight: bold; padding: 2px 0;">Teléfono:</td>
-                    <td style="color: #444;">${receptor.identificacion === buyerRuc ? buyerPhone || '0999999999' : '0999999999'}</td>
+                    <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Teléfono:</td>
+                    <td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.identificacion === buyerRuc ? buyerPhone || '0999999999' : '0999999999'}</td>
                   </tr>
                   <tr>
-                    <td style="font-weight: bold; padding: 2px 0;">Periodo Fiscal:</td>
-                    <td style="color: #444; font-weight: bold; text-transform: uppercase;">${new Date(comprobante.fechaEmision).toLocaleString('es-EC', {month: 'long', year: 'numeric'}).toUpperCase()}</td>
+                    <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Periodo Fiscal:</td>
+                    <td style="color: #2b6aff; font-weight: 800; text-transform: uppercase; font-size: 9px;">${new Date(comprobante.fechaEmision).toLocaleString('es-EC', {month: 'long', year: 'numeric'}).toUpperCase()}</td>
                   </tr>
                 </table>
               </div>
+
               <div class="pago-box">
-                <div class="box-title">Forma de Pago</div>
+                <div class="box-title">Forma de Pago SRI</div>
                 <table class="pago-table">
                   <thead>
                     <tr>
-                      <th>Descripción</th>
-                      <th style="text-align: right; width: 80px;">Valor</th>
-                      <th style="text-align: right; width: 50px;">Plazo</th>
-                      <th style="text-align: right; width: 60px;">Tiempo</th>
+                      <th>Forma de Pago</th>
+                      <th style="text-align: right; width: 85px;">Valor Total</th>
+                      <th style="text-align: right; width: 45px;">Plazo</th>
+                      <th style="text-align: right; width: 55px;">Tiempo</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td style="font-weight: 600; font-size: 8px;">${formaPagoDesc}</td>
-                      <td style="text-align: right; font-family: monospace; font-weight: bold;">$${formaPagoTotal.toFixed(2)}</td>
-                      <td style="text-align: right;">0</td>
-                      <td style="text-align: right;">Días</td>
+                      <td style="font-weight: 700; font-size: 8.5px; text-transform: uppercase;">${formaPagoDesc}</td>
+                      <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0f172a;">$${formaPagoTotal.toFixed(2)}</td>
+                      <td style="text-align: right; font-weight: 700;">0</td>
+                      <td style="text-align: right; font-weight: 700;">Días</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
+
             <div>
               <div class="totals-box">
                 <table class="totals-table">
                   <tr>
                     <td>SUBTOTAL 15%</td>
-                    <td style="text-align: right; font-family: monospace;">$${subtotal15.toFixed(2)}</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${subtotal15.toFixed(2)}</td>
                   </tr>
                   <tr>
                     <td>SUBTOTAL 0%</td>
-                    <td style="text-align: right; font-family: monospace;">$${subtotal0.toFixed(2)}</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${subtotal0.toFixed(2)}</td>
                   </tr>
                   <tr>
                     <td>SUBTOTAL NO OBJETO IVA</td>
-                    <td style="text-align: right; font-family: monospace;">$0.00</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$0.00</td>
                   </tr>
                   <tr>
                     <td>SUBTOTAL EXENTO IVA</td>
-                    <td style="text-align: right; font-family: monospace;">$0.00</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$0.00</td>
                   </tr>
                   <tr>
                     <td>SUBTOTAL SIN IMPUESTOS</td>
-                    <td style="text-align: right; font-family: monospace;">$${(subtotal15 + subtotal0).toFixed(2)}</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${(subtotal15 + subtotal0).toFixed(2)}</td>
                   </tr>
                   <tr>
                     <td>DESCUENTO</td>
-                    <td style="text-align: right; font-family: monospace;">$0.00</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$0.00</td>
                   </tr>
                   <tr>
                     <td>ICE</td>
-                    <td style="text-align: right; font-family: monospace;">$0.00</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$0.00</td>
                   </tr>
                   <tr>
                     <td>IVA 15%</td>
-                    <td style="text-align: right; font-family: monospace;">$${iva15.toFixed(2)}</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #2b6aff;">$${iva15.toFixed(2)}</td>
                   </tr>
                   <tr class="total-row">
                     <td>VALOR TOTAL</td>
-                    <td style="text-align: right; font-family: monospace;">$${total.toFixed(2)}</td>
+                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$${total.toFixed(2)}</td>
                   </tr>
                 </table>
               </div>
             </div>
           </div>
         </div>
+
         <script>
           window.onload = function() {
             setTimeout(function() {
               window.print();
-            }, 400);
+            }, 350);
           };
         </script>
       </body>
