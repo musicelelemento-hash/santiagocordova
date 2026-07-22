@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { ArrowRight, UserCheck, Users, Calendar, Clock as ClockIcon, FileText, Receipt, UserPlus, Gift, Activity, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { Screen, ClientFilter, TaxRegime, ServiceFeesConfig, Task, Client } from '../types';
 import { differenceInCalendarDays } from 'date-fns';
+import { DashboardMissingMatrixLines } from '../components/features/DashboardMissingMatrixLines';
 
 interface HomeScreenProps {
   navigate: (screen: Screen, options?: { clientFilter?: ClientFilter, initialTaskData?: Partial<Task>, initialClientData?: Partial<Client> }) => void;
@@ -187,9 +188,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
                       </p>
                   </div>
                   <ArrowRight size={18} className="text-rose-400/50 group-hover:text-rose-400 group-hover:translate-x-1 transition-all ml-2" />
-              </div>
-          )}
       </div>
+
+      {/* CAMPAÑA ACTIVA Y LÍNEAS DE MATRIZ DE CLIENTES FALTANTES */}
+      <DashboardMissingMatrixLines
+          clients={clients}
+          navigate={navigate}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
         {allMenuItems.map((item, index) => (
