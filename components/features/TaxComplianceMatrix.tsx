@@ -582,7 +582,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         else onUploadReceipt(client, p, ob.type as any);
                                                                     }}
                                                                 >
-                                                                    <span className={`text-[7px] font-black tracking-widest uppercase mb-1.5 ${isDone || isManualDone || d?.isPriority ? 'opacity-90' : 'opacity-55'}`}>{ob.type}</span>
+                                                                    <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 ${isDone || isManualDone || d?.isPriority ? 'opacity-90' : 'opacity-55'}`}>{ob.type}</span>
                                                                     
                                                                     {isDone ? (
                                                                         <LucideIcons.ShieldCheck size={14} strokeWidth={3} className="text-white drop-shadow-sm" />
@@ -596,8 +596,48 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         <LucideIcons.Upload size={12} strokeWidth={2} className="opacity-40 group-hover/ob:opacity-100 group-hover/ob:scale-110 transition-all" />
                                                                     )}
 
+                                                                    {/* Resaltador / Barra FACTURADO */}
+                                                                    {isPaid && (
+                                                                        <span className="px-1 py-[1.5px] bg-slate-950/85 text-emerald-300 border border-emerald-400/50 rounded text-[6px] font-black uppercase tracking-wider font-mono shadow-sm mt-0.5 leading-none">
+                                                                            FACTURADO
+                                                                        </span>
+                                                                    )}
+
                                                                     {isDone ? (
                                                                         <>
+                                                                        {/* Botón Descargar PDF Directo */}
+                                                                        {hasProof && d?.proof_file?.content && (
+                                                                            <button
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    try {
+                                                                                        const base64 = d.proof_file!.content!;
+                                                                                        const filename = d.proof_file!.name || `comprobante_${client.name}_${p}.pdf`;
+                                                                                        const binaryStr = atob(base64.includes(',') ? base64.split(',')[1] : base64);
+                                                                                        const bytes = new Uint8Array(binaryStr.length);
+                                                                                        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+                                                                                        const blob = new Blob([bytes], { type: 'application/pdf' });
+                                                                                        const url = URL.createObjectURL(blob);
+                                                                                        const a = document.createElement('a');
+                                                                                        a.href = url;
+                                                                                        a.download = filename;
+                                                                                        document.body.appendChild(a);
+                                                                                        a.click();
+                                                                                        document.body.removeChild(a);
+                                                                                        URL.revokeObjectURL(url);
+                                                                                    } catch (err) {
+                                                                                        console.error("Error downloading proof PDF:", err);
+                                                                                        onPreviewReceipt(client, d!);
+                                                                                    }
+                                                                                }}
+                                                                                className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-sm transition-all z-20 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110"
+                                                                                title="Descargar PDF Directo"
+                                                                            >
+                                                                                <LucideIcons.Download size={9} strokeWidth={3} />
+                                                                            </button>
+                                                                        )}
+
+                                                                        {/* Botón WhatsApp */}
                                                                         <button
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();

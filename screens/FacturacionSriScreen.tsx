@@ -159,7 +159,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const [p12FileBase64, setP12FileBase64] = useState('');
   const [p12FileName, setP12FileName] = useState('');
-  const [p12Password, setP12Password] = useState('ClaveFirma123');
+  const [p12Password, setP12Password] = useState(() => localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123');
   const [p12StartDate, setP12StartDate] = useState('');
   const [p12ExpiryDate, setP12ExpiryDate] = useState('');
   const [p12SubjectName, setP12SubjectName] = useState('');

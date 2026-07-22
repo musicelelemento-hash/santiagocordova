@@ -1461,7 +1461,29 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             initialMode={activeGroupTab === 'renta' ? 'RENTA' : 'IVA'}
                             onUploadReceipt={handleUploadReceipt}
                             onPreviewReceipt={(client, declaration) => {
-                                setPreviewItem({ client, declaration });
+                                if (declaration.proof_file?.content) {
+                                    try {
+                                        const base64 = declaration.proof_file.content;
+                                        const filename = declaration.proof_file.name || `declaracion_${client.name}_${declaration.period}.pdf`;
+                                        const binaryStr = atob(base64.includes(',') ? base64.split(',')[1] : base64);
+                                        const bytes = new Uint8Array(binaryStr.length);
+                                        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+                                        const blob = new Blob([bytes], { type: 'application/pdf' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = filename;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        document.body.removeChild(a);
+                                        URL.revokeObjectURL(url);
+                                    } catch (err) {
+                                        console.error(err);
+                                        handleOpenClientDetails(client);
+                                    }
+                                } else {
+                                    handleOpenClientDetails(client);
+                                }
                             }}
                             onTogglePayment={handleTogglePaymentFromMatrix}
                             onTogglePriority={handleTogglePriorityFromMatrix}
