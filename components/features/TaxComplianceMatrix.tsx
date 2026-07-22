@@ -396,14 +396,6 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
     return (
         <div className="space-y-6 animate-fade-in">
-            {/* Banner de Campaña Activa SRI Ecuador */}
-            <SriCampaignWidget
-                clients={clients}
-                selectedDigitFilter={selectedDigitFilter}
-                onSelectDigitFilter={setSelectedDigitFilter}
-                theme={theme}
-            />
-
             {/* Header / Controls */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white/95 dark:bg-slate-900/40 backdrop-blur-xl p-5 rounded-[2rem] border border-slate-200/50 dark:border-white/5 shadow-xl relative overflow-hidden">
                 <div className="flex items-center gap-4">
