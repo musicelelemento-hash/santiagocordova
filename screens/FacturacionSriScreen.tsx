@@ -212,6 +212,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         const base64Data = result.split(',')[1] || result;
         setP12FileBase64(base64Data);
         setP12FileName(file.name);
+        setIsEditingSignature(false);
         await db.setLocal('sc_sri_p12_base64', base64Data);
         await db.setLocal('sc_sri_p12_filename', file.name);
         await db.setLocal('sc_sri_p12_password', p12Password);
@@ -1434,35 +1435,60 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         await saveRecordToHistory(newRecord);
         await onSuccessBilling(nextNum);
       } else {
-        const authResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
-          },
-          body: JSON.stringify({
-            clave_acceso: key,
-            ambiente
-          })
-        });
-        if (!authResponse.ok) throw new Error(`Fallo consulta autorización: ${authResponse.statusText}`);
-        const authData = await authResponse.json();
-        
-        addLog(`Respuesta Autorización SRI: ${JSON.stringify(authData.data || authData.respuesta || authData)}`, 'success');
-        
-        const rawDataStr = typeof authData.data === 'string' ? authData.data : JSON.stringify(authData.data || {});
-        const uppercaseData = rawDataStr.toUpperCase().replace(/[\s\\"]/g, ''); // Remove spaces, backslashes, and quotes
-        const isAuthorized = authData.status && uppercaseData.includes('ESTADO:AUTORIZADO');
+        let isAuthorized = false;
+        let authData: any = null;
+        let errorMsg = '';
+
+        // Reintento automático de consulta de autorización (3 intentos espaciados 3 segundos)
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          addLog(`Solicitando autorización de comprobante para clave de acceso (Intento ${attempt}/3): ${key}...`);
+          await new Promise(r => setTimeout(r, attempt === 1 ? 2500 : 3000));
+
+          try {
+            const authResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+              },
+              body: JSON.stringify({
+                clave_acceso: key,
+                ambiente
+              })
+            });
+
+            if (authResponse.ok) {
+              authData = await authResponse.json();
+              addLog(`Respuesta Autorización SRI (Intento ${attempt}): ${JSON.stringify(authData.data || authData.respuesta || authData)}`, 'info');
+              
+              const rawDataStr = typeof authData.data === 'string' ? authData.data : JSON.stringify(authData.data || {});
+              const uppercaseData = rawDataStr.toUpperCase().replace(/[\s\\"]/g, '');
+
+              if (authData.status && uppercaseData.includes('ESTADO:AUTORIZADO')) {
+                isAuthorized = true;
+                addLog(`✅ Comprobante AUTORIZADO con éxito por el SRI el ${new Date().toLocaleString()}`, 'success');
+                break;
+              } else if (uppercaseData.includes('PROCESO') || uppercaseData.includes('ENPROCESO')) {
+                addLog(`⌛ SRI procesando comprobante... Reintentando en 3s (Intento ${attempt}/3)...`, 'warn');
+              } else {
+                // If SRI gave a definitive rejection error, don't wait further
+                break;
+              }
+            } else {
+              addLog(`⚠️ Respuesta HTTP ${authResponse.status} consultando autorización SRI (Intento ${attempt}/3)`, 'warn');
+            }
+          } catch (e: any) {
+            addLog(`⚠️ Conexión temporal reintentando consulta SRI (Intento ${attempt}/3): ${e.message}`, 'warn');
+          }
+        }
+
         setProcessStatus(isAuthorized ? 'success' : 'failed');
         if (isAuthorized) {
           setShowWhatsAppModal(true);
           await onSuccessBilling(nextNum);
-        }
-
-        let errorMsg = '';
-        if (!isAuthorized) {
+        } else {
           try {
-            const authObj = typeof authData.data === 'string' ? JSON.parse(authData.data) : authData.data;
+            const authObj = typeof authData?.data === 'string' ? JSON.parse(authData.data) : authData?.data;
             const autorizacion = authObj?.RespuestaAutorizacionComprobante?.autorizaciones?.autorizacion;
             if (autorizacion) {
               const mensajesObj = autorizacion.mensajes?.mensaje;
@@ -1470,10 +1496,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               errorMsg = mensajesList.map((m: any) => `${m.mensaje || 'Error'}: ${m.informacionAdicional || ''}`).join(' | ');
             }
           } catch (e) {
-            errorMsg = JSON.stringify(authData.data || authData);
+            errorMsg = JSON.stringify(authData?.data || authData || 'No autorizado por el SRI');
           }
           if (!errorMsg) {
-            errorMsg = 'No autorizado por el SRI (Estado no AUTORIZADO)';
+            errorMsg = 'No autorizado por el SRI (El comprobante aún se encuentra en proceso o fue devuelto)';
           }
           setProcessErrorMessage(errorMsg);
         }
