@@ -160,8 +160,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [p12FileBase64, setP12FileBase64] = useState('');
   const [p12FileName, setP12FileName] = useState('');
   const [p12Password, setP12Password] = useState('ClaveFirma123');
+  const [p12StartDate, setP12StartDate] = useState('');
   const [p12ExpiryDate, setP12ExpiryDate] = useState('');
   const [p12SubjectName, setP12SubjectName] = useState('');
+  const [p12OwnerName, setP12OwnerName] = useState('');
 
   // Carga asíncrona de firma electrónica desde IndexedDB con respaldo en localStorage
   useEffect(() => {
@@ -170,14 +172,18 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         const base64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
         const name = (await db.getLocal('sc_sri_p12_filename')) || localStorage.getItem('sc_sri_p12_filename') || '';
         const password = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123';
+        const start = (await db.getLocal('sc_sri_p12_start')) || localStorage.getItem('sc_sri_p12_start') || '';
         const expiry = (await db.getLocal('sc_sri_p12_expiry')) || localStorage.getItem('sc_sri_p12_expiry') || '';
         const subject = (await db.getLocal('sc_sri_p12_subject')) || localStorage.getItem('sc_sri_p12_subject') || '';
+        const owner = (await db.getLocal('sc_sri_p12_owner')) || localStorage.getItem('sc_sri_p12_owner') || '';
         
         setP12FileBase64(base64);
         setP12FileName(name);
         setP12Password(password);
+        setP12StartDate(start);
         setP12ExpiryDate(expiry);
         setP12SubjectName(subject);
+        setP12OwnerName(owner);
         
         if (base64) {
           setIsEditingSignature(false);
@@ -240,11 +246,34 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
           if (found.length >= 2) {
             found.sort((a, b) => a.getTime() - b.getTime());
+            const startDate = found[0];
             const expiry = found[found.length - 1];
-            const formatted = expiry.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: '2-digit' });
-            setP12ExpiryDate(formatted);
-            await db.setLocal('sc_sri_p12_expiry', formatted);
-            localStorage.setItem('sc_sri_p12_expiry', formatted);
+
+            const formattedStart = startDate.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: '2-digit' });
+            const formattedExpiry = expiry.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: '2-digit' });
+            
+            setP12StartDate(formattedStart);
+            setP12ExpiryDate(formattedExpiry);
+            await db.setLocal('sc_sri_p12_start', formattedStart);
+            await db.setLocal('sc_sri_p12_expiry', formattedExpiry);
+            localStorage.setItem('sc_sri_p12_start', formattedStart);
+            localStorage.setItem('sc_sri_p12_expiry', formattedExpiry);
+
+            // Extract owner name from binary text candidates if found
+            const printableMatches = binaryStr.match(/[A-ZÁÉÍÓÚÑ]{3,}\s+[A-ZÁÉÍÓÚÑ]{3,}(\s+[A-ZÁÉÍÓÚÑ]{3,})*/g);
+            if (printableMatches && printableMatches.length > 0) {
+              const candidate = printableMatches.find(m => 
+                m.length >= 10 && 
+                !m.includes('SECURITY') && !m.includes('BANCO') && !m.includes('CONSEJO') && 
+                !m.includes('AUTORIDAD') && !m.includes('CERTIF') && !m.includes('ECUADOR')
+              );
+              if (candidate) {
+                const owner = candidate.trim();
+                setP12OwnerName(owner);
+                await db.setLocal('sc_sri_p12_owner', owner);
+                localStorage.setItem('sc_sri_p12_owner', owner);
+              }
+            }
 
             const daysLeft = Math.floor((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
             const subjectNote = daysLeft < 0 ? '⚠️ CERTIFICADO VENCIDO' : daysLeft < 60 ? `⚠️ Vence en ${daysLeft} días` : `✓ Válido (${daysLeft} días restantes)`;
@@ -554,7 +583,25 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         if (resData.status && resData.data) {
           const certInfo = resData.data;
           const exp = certInfo.valido_hasta || certInfo.validTo_time_t || certInfo.validTo || '';
+          const start = certInfo.valido_desde || certInfo.validFrom_time_t || certInfo.validFrom || '';
+          const owner = certInfo.propietario || certInfo.subject || certInfo.cn || certInfo.titular || certInfo.razon_social || certInfo.owner || '';
           
+          if (start) {
+            const startDate = new Date(typeof start === 'number' ? start * 1000 : start);
+            if (!isNaN(startDate.getTime())) {
+              const formattedStart = startDate.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: '2-digit' });
+              setP12StartDate(formattedStart);
+              await db.setLocal('sc_sri_p12_start', formattedStart);
+              localStorage.setItem('sc_sri_p12_start', formattedStart);
+            }
+          }
+
+          if (owner) {
+            setP12OwnerName(owner);
+            await db.setLocal('sc_sri_p12_owner', owner);
+            localStorage.setItem('sc_sri_p12_owner', owner);
+          }
+
           let formattedExpiry = '';
           if (exp) {
             const expDate = new Date(typeof exp === 'number' ? exp * 1000 : exp);
@@ -562,11 +609,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               formattedExpiry = expDate.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: '2-digit' });
               setP12ExpiryDate(formattedExpiry);
               await db.setLocal('sc_sri_p12_expiry', formattedExpiry);
+              localStorage.setItem('sc_sri_p12_expiry', formattedExpiry);
               
               const daysLeft = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
               const subjectNote = daysLeft < 0 ? '⚠️ CERTIFICADO VENCIDO' : daysLeft < 60 ? `⚠️ Vence en ${daysLeft} días` : `✓ Válido (${daysLeft} días restantes)`;
               setP12SubjectName(subjectNote);
               await db.setLocal('sc_sri_p12_subject', subjectNote);
+              localStorage.setItem('sc_sri_p12_subject', subjectNote);
             }
           }
         }
@@ -1438,9 +1487,27 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       }
 
     } catch (err: any) {
-      addLog(`Error en el flujo: ${err.message}`, 'error');
+      const errMsg = err.message || '';
+      addLog(`Error en el flujo: ${errMsg}`, 'error');
       setProcessStatus('failed');
-      setProcessErrorMessage(err.message);
+
+      // Detectar error de secuencial ya registrado en SRI (Recepcion / Paso 3)
+      const isSeqError = errMsg.toUpperCase().includes('SECUENCIAL') || errMsg.toUpperCase().includes('3 PASO') || errMsg.toUpperCase().includes('DEVUELTA');
+      if (isSeqError) {
+        const nextAvailable = nextNum;
+        if (docType === 'factura') {
+          setLastSeqFactura(nextAvailable);
+          localStorage.setItem('sc_sri_last_seq_factura', String(nextAvailable));
+        } else {
+          setLastSeqRetencion(nextAvailable);
+          localStorage.setItem('sc_sri_last_seq_retencion', String(nextAvailable));
+        }
+        const autoAdvanceMsg = `${errMsg} | ⚠️ El secuencial ${secuencial} ya estaba registrado en el SRI. Se ha avanzado automáticamente la numeración a ${String(nextAvailable + 1).padStart(9, '0')} para su próximo intento.`;
+        setProcessErrorMessage(autoAdvanceMsg);
+        addLog(`⚠️ El secuencial ${secuencial} ya fue registrado previamente en el SRI. La numeración fue avanzada automáticamente a ${String(nextAvailable + 1).padStart(9, '0')}.`, 'warn');
+      } else {
+        setProcessErrorMessage(errMsg);
+      }
 
       const newRecord: HistoricComprobante = {
         id: Date.now().toString(),
@@ -1454,7 +1521,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         estado: 'Error',
         xml: currentXml,
         ambiente,
-        mensajeError: err.message
+        mensajeError: errMsg
       };
       await saveRecordToHistory(newRecord);
     }
@@ -2381,7 +2448,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate max-w-[130px]">
                               {p12FileName || 'firma.p12'}
                             </span>
-                            <span className="text-[8px] font-mono text-slate-400">Vence: {p12ExpiryDate || 'N/A'}</span>
+                            <span className="text-[8px] font-mono text-slate-400">Inicio: {p12StartDate || 'N/A'} | Vence: {p12ExpiryDate || 'N/A'}</span>
                           </div>
                         </div>
                         <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-lg ${isExpired ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
@@ -2410,7 +2477,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       </div>
                       
                       <div className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-white/5 pt-2">
-                        Propietario: <span className="font-bold text-slate-700 dark:text-slate-300 uppercase block truncate">{p12SubjectName || emisorRazonSocial}</span>
+                        Propietario: <span className="font-bold text-slate-700 dark:text-slate-300 uppercase block truncate">{p12OwnerName || emisorRazonSocial}</span>
                       </div>
                     </div>
                   );
@@ -3150,17 +3217,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       </div>
                       
                       <div className="text-xs font-black uppercase tracking-wide text-slate-800 dark:text-white pt-1">
-                        👤 {emisorRazonSocial || 'CORDOVA RAMIREZ ROBERTO SANTIAGO'}
+                        👤 {p12OwnerName || emisorRazonSocial}
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-[10px] pt-1 font-mono text-slate-600 dark:text-slate-300 border-t border-emerald-500/15">
                         <div>
                           <span className="text-slate-400 font-sans block text-[9px] uppercase font-bold">Inicio / Emisión</span>
-                          <span className="font-bold text-slate-700 dark:text-slate-200">07/06/2026</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-200">{p12StartDate || 'Vigente'}</span>
                         </div>
                         <div>
                           <span className="text-slate-400 font-sans block text-[9px] uppercase font-bold">Vencimiento</span>
-                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{p12ExpiryDate || '07/05/2028'}</span>
+                          <span className="font-bold text-emerald-600 dark:text-emerald-400">{p12ExpiryDate || 'N/A'}</span>
                         </div>
                       </div>
 
@@ -3225,9 +3292,53 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
                     Control de Emisión
                   </h3>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">
-                    Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'Retención'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span> | Siguiente Secuencial: <span className="text-emerald-500 font-mono font-bold">{String(Math.max(emisorSecuencialInicio, getMaxSecuencialInHistory(docType) + 1, (docType === 'factura' ? lastSeqFactura : lastSeqRetencion) + 1)).padStart(9, '0')}</span>
-                  </p>
+                  <div className="flex flex-wrap items-center gap-[6px] mt-1">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase">
+                      Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'Retención'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span> | Siguiente Secuencial: <span className="text-emerald-500 font-mono font-bold">{String(Math.max(emisorSecuencialInicio, getMaxSecuencialInHistory(docType) + 1, (docType === 'factura' ? lastSeqFactura : lastSeqRetencion) + 1)).padStart(9, '0')}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const curr = Math.max(emisorSecuencialInicio, getMaxSecuencialInHistory(docType) + 1, (docType === 'factura' ? lastSeqFactura : lastSeqRetencion) + 1);
+                        if (docType === 'factura') {
+                          setLastSeqFactura(curr);
+                          localStorage.setItem('sc_sri_last_seq_factura', String(curr));
+                        } else {
+                          setLastSeqRetencion(curr);
+                          localStorage.setItem('sc_sri_last_seq_retencion', String(curr));
+                        }
+                      }}
+                      className="px-2 py-0.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-[9px] font-bold uppercase transition-all"
+                      title="Avanzar secuencial +1"
+                    >
+                      +1 Avanzar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = prompt('Ingrese el nuevo número secuencial de inicio (ej: 2 para 000000002):');
+                        if (val) {
+                          const parsed = parseInt(val, 10);
+                          if (!isNaN(parsed) && parsed > 0) {
+                            const lastVal = Math.max(0, parsed - 1);
+                            setEmisorSecuencialInicio(parsed);
+                            localStorage.setItem('sc_emisor_secuencial_inicio', String(parsed));
+                            if (docType === 'factura') {
+                              setLastSeqFactura(lastVal);
+                              localStorage.setItem('sc_sri_last_seq_factura', String(lastVal));
+                            } else {
+                              setLastSeqRetencion(lastVal);
+                              localStorage.setItem('sc_sri_last_seq_retencion', String(lastVal));
+                            }
+                          }
+                        }
+                      }}
+                      className="px-2 py-0.5 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 rounded-lg text-[9px] font-bold uppercase transition-all"
+                      title="Cambiar número secuencial manualmente"
+                    >
+                      ✏️ Modificar
+                    </button>
+                  </div>
                 </div>
               </div>
 
