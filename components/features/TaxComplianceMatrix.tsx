@@ -178,10 +178,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         printWindow.document.close();
     };
     
-    // Period Sorting State
+    // Period & Alphabetical Sorting State
     const [sortPeriod, setSortPeriod] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'missing_first' | 'completed_first' | null>(null);
     const [selectedDigitFilter, setSelectedDigitFilter] = useState<number | null>(null);
+    const [sortOption, setSortOption] = useState<'9th_digit' | 'alphabetical'>('9th_digit');
 
     // Sync mode when navigating between matrix/renta tabs
     React.useEffect(() => {
@@ -380,11 +381,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     return upToDateA ? 1 : -1;
                 }
             }
+            if (sortOption === 'alphabetical') {
+                const nameA = a.tradeName || a.name;
+                const nameB = b.tradeName || b.name;
+                return nameA.localeCompare(nameB);
+            }
+
             const digitA = parseInt(a.ruc[8], 10) === 0 ? 10 : parseInt(a.ruc[8], 10);
             const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
-            return digitA - digitB || a.name.localeCompare(b.name);
+            return digitA - digitB || (a.tradeName || a.name).localeCompare(b.tradeName || b.name);
         });
-    }, [clients, frequency, matrixMode, isWorkspaceMode, periods, sortPeriod, sortDirection, selectedDigitFilter]);
+    }, [clients, frequency, matrixMode, isWorkspaceMode, periods, sortPeriod, sortDirection, selectedDigitFilter, sortOption]);
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -415,6 +422,34 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                    {/* Control de Ordenamiento: Dígito vs Alfabético */}
+                    <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-950/40 p-1 rounded-2xl border border-slate-200/30 dark:border-white/5">
+                        <button
+                            onClick={() => setSortOption('9th_digit')}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                sortOption === '9th_digit'
+                                    ? 'bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]'
+                                    : 'text-slate-400 hover:text-slate-700 dark:hover:text-white'
+                            }`}
+                            title="Ordenar por Nivel / Dígito de RUC (Calendario SRI)"
+                        >
+                            <LucideIcons.Binary size={12} />
+                            <span>Orden Dígito</span>
+                        </button>
+                        <button
+                            onClick={() => setSortOption('alphabetical')}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                sortOption === 'alphabetical'
+                                    ? 'bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]'
+                                    : 'text-slate-400 hover:text-slate-700 dark:hover:text-white'
+                            }`}
+                            title="Ordenar por Nombre Alfabético (A - Z)"
+                        >
+                            <LucideIcons.SortAsc size={12} />
+                            <span>Orden A-Z</span>
+                        </button>
+                    </div>
+
                     {/* Integrated Segmented Control for Mode/Frequency */}
                     <div className="flex items-center gap-1.5 bg-slate-100/80 dark:bg-slate-950/40 p-1 rounded-2xl border border-slate-200/30 dark:border-white/5">
                         {[
