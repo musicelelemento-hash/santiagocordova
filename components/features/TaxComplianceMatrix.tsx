@@ -7,6 +7,9 @@ import { es } from 'date-fns/locale';
 import { getClientCompliance, getObligationsForPeriod } from '../../services/complianceEngine';
 import { useToast } from '../../context/ToastContext';
 
+import { SriCampaignWidget } from './SriCampaignWidget';
+import { getNinthDigit } from '../../services/sri';
+
 import { db } from '../../services/db';
 
 type MatrixMode = 'IVA' | 'RENTA';
@@ -178,6 +181,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     // Period Sorting State
     const [sortPeriod, setSortPeriod] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'missing_first' | 'completed_first' | null>(null);
+    const [selectedDigitFilter, setSelectedDigitFilter] = useState<number | null>(null);
 
     // Sync mode when navigating between matrix/renta tabs
     React.useEffect(() => {
@@ -328,6 +332,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         };
 
         return clients.filter(c => {
+            if (selectedDigitFilter !== null) {
+                const digit = getNinthDigit(c.ruc);
+                if (digit !== selectedDigitFilter) return false;
+            }
+
             const clientFreq = c.taxProfile?.ivaFrequency ||
                 (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' :
                  c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual');
@@ -375,10 +384,18 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
             return digitA - digitB || a.name.localeCompare(b.name);
         });
-    }, [clients, frequency, matrixMode, isWorkspaceMode, periods, sortPeriod, sortDirection]);
+    }, [clients, frequency, matrixMode, isWorkspaceMode, periods, sortPeriod, sortDirection, selectedDigitFilter]);
 
     return (
         <div className="space-y-6 animate-fade-in">
+            {/* Banner de Campaña Activa SRI Ecuador */}
+            <SriCampaignWidget
+                clients={clients}
+                selectedDigitFilter={selectedDigitFilter}
+                onSelectDigitFilter={setSelectedDigitFilter}
+                theme={theme}
+            />
+
             {/* Header / Controls */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white/95 dark:bg-slate-900/40 backdrop-blur-xl p-5 rounded-[2rem] border border-slate-200/50 dark:border-white/5 shadow-xl relative overflow-hidden">
                 <div className="flex items-center gap-4">
