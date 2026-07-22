@@ -266,17 +266,34 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 setFastBillingXml(currentXml);
                 addLog("Firma digital realizada exitosamente (SIMULADA).");
             } else {
+                const activeBase64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
+                const activePassword = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123';
+                
+                if (!activeBase64) {
+                    throw new Error("No se encontró el archivo de Firma Electrónica (.p12). Configúralo en Facturación SRI.");
+                }
+
                 const signRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/firmar`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir' },
                     body: JSON.stringify({
                         tipo: 'factura',
                         xml: currentXml,
-                        clave: p12Password,
-                        certificado_p12_base64: p12Base64
+                        clave: activePassword,
+                        clave_certificado: activePassword,
+                        certificado_p12_base64: activeBase64
                     })
                 });
-                if (!signRes.ok) throw new Error("Error al firmar digitalmente. Revisa la clave de tu firma.");
+
+                if (!signRes.ok) {
+                    let errDetail = signRes.statusText;
+                    try {
+                        const errJson = await signRes.json();
+                        errDetail = errJson.message || errJson.error || errJson.msg || errDetail;
+                    } catch {}
+                    throw new Error(`Error al firmar digitalmente: ${errDetail}`);
+                }
+
                 const signData = await signRes.json();
                 currentXml = signData.data?.xml || signData.xml_firmado || signData.xml;
                 setFastBillingXml(currentXml);

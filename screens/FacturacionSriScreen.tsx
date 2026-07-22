@@ -1201,7 +1201,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         setGeneratedXml(currentXml);
         addLog(`Firma digital XAdES-BES realizada exitosamente (SIMULADA)`, 'success');
       } else {
-        // Sign endpoint
+        // Sign endpoint - Obtener firma y clave desde estado, IndexedDB o localStorage
+        const activeBase64 = p12FileBase64 || (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
+        const activePassword = p12Password || (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123';
+        
+        if (!activeBase64) {
+          throw new Error('No se encontró el archivo de Firma Electrónica (.p12). Vaya a Configuración de API & Emisor y vuelva a subir su archivo de firma .p12.');
+        }
+
         const signResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/firmar`, {
           method: 'POST',
           headers: { 
@@ -1211,12 +1218,21 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           body: JSON.stringify({
             tipo: docType,
             xml: currentXml,
-            clave: p12Password,
-            clave_certificado: p12Password,
-            ...(p12FileBase64 ? { certificado_p12_base64: p12FileBase64 } : {})
+            clave: activePassword,
+            clave_certificado: activePassword,
+            certificado_p12_base64: activeBase64
           })
         });
-        if (!signResponse.ok) throw new Error(`Error en API al firmar: ${signResponse.statusText}`);
+
+        if (!signResponse.ok) {
+          let errDetail = signResponse.statusText;
+          try {
+            const errJson = await signResponse.json();
+            errDetail = errJson.message || errJson.error || errJson.msg || errJson.detalles || errDetail;
+          } catch {}
+          throw new Error(`Error en API al firmar: ${errDetail}`);
+        }
+
         const signData = await signResponse.json();
         currentXml = signData.data?.xml || signData.xml_firmado || signData.xml;
         if (!currentXml) throw new Error('La API de firma no devolvió el XML firmado. Verifique la clave y el archivo .p12.');
