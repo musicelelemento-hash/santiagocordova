@@ -358,11 +358,24 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [billingMode, setBillingMode] = useState<'detallado' | 'consolidado'>('detallado');
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
-  const [isEditingSignature, setIsEditingSignature] = useState(true);
+  // Inicializar desde localStorage sincrónicamente para evitar el flash que pedía
+  // re-configurar la firma en cada sesión. Si ya existe la firma guardada → false.
+  const [isEditingSignature, setIsEditingSignature] = useState<boolean>(
+    () => !localStorage.getItem('sc_sri_p12_base64')
+  );
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [showP12Password, setShowP12Password] = useState(false);
   const [emisorLogo, setEmisorLogo] = useState(() => localStorage.getItem('sc_emisor_logo') || '');
   const [emisorSecuencialInicio, setEmisorSecuencialInicio] = useState(() => Number(localStorage.getItem('sc_emisor_secuencial_inicio')) || 1);
+
+  // Último secuencial usado por tipo — persiste entre sesiones sin depender del historial async.
+  // Clave: 'sc_sri_last_seq_factura' y 'sc_sri_last_seq_retencion'
+  const [lastSeqFactura, setLastSeqFactura] = useState<number>(
+    () => Number(localStorage.getItem('sc_sri_last_seq_factura')) || 0
+  );
+  const [lastSeqRetencion, setLastSeqRetencion] = useState<number>(
+    () => Number(localStorage.getItem('sc_sri_last_seq_retencion')) || 0
+  );
   const [selectedComprobanteForRide, setSelectedComprobanteForRide] = useState<HistoricComprobante | null>(null);
 
   const activeClientObj = useMemo(() => {
@@ -603,11 +616,40 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Load history from Supabase (with IndexedDB fallback)
   useEffect(() => {
+    const syncLastSeqFromHistory = (records: HistoricComprobante[]) => {
+      // Encuentra el máximo secuencial de facturas y retenciones en el historial
+      // y actualiza localStorage si el valor persistido es menor.
+      const maxFact = records
+        .filter(r => r.tipo === 'factura' && r.secuencial)
+        .map(r => parseInt(r.secuencial, 10))
+        .filter(n => !isNaN(n))
+        .reduce((a, b) => Math.max(a, b), 0);
+
+      const maxRet = records
+        .filter(r => r.tipo === 'retencion' && r.secuencial)
+        .map(r => parseInt(r.secuencial, 10))
+        .filter(n => !isNaN(n))
+        .reduce((a, b) => Math.max(a, b), 0);
+
+      const storedFact = Number(localStorage.getItem('sc_sri_last_seq_factura')) || 0;
+      const storedRet = Number(localStorage.getItem('sc_sri_last_seq_retencion')) || 0;
+
+      if (maxFact > storedFact) {
+        localStorage.setItem('sc_sri_last_seq_factura', String(maxFact));
+        setLastSeqFactura(maxFact);
+      }
+      if (maxRet > storedRet) {
+        localStorage.setItem('sc_sri_last_seq_retencion', String(maxRet));
+        setLastSeqRetencion(maxRet);
+      }
+    };
+
     const loadComprobantesHistory = async () => {
       try {
         const dbComprobantes = await SupabaseService.getSriComprobantes();
         if (dbComprobantes && dbComprobantes.length > 0) {
           setHistory(dbComprobantes);
+          syncLastSeqFromHistory(dbComprobantes);
           await db.setLocal('sc_sri_comprobantes_history', dbComprobantes);
           return;
         }
@@ -619,11 +661,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         const stored = await db.getLocal('sc_sri_comprobantes_history');
         if (stored) {
           setHistory(stored);
+          syncLastSeqFromHistory(stored);
         } else {
           const legacy = localStorage.getItem('sc_sri_comprobantes_history');
           if (legacy) {
             const parsed = JSON.parse(legacy);
             setHistory(parsed);
+            syncLastSeqFromHistory(parsed);
             await db.setLocal('sc_sri_comprobantes_history', parsed);
           }
         }
@@ -633,6 +677,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     };
     loadComprobantesHistory();
   }, []);
+
 
   // Auto-scroll logs
   useEffect(() => {
@@ -976,10 +1021,27 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Run the full invoicing workflow (Generate, Sign, Send, Authorize)
   const handleProcessDocument = async () => {
-    const nextNum = Math.max(emisorSecuencialInicio, getMaxSecuencialInHistory(docType) + 1);
+    // Calcular siguiente secuencial robusto:
+    // 1. El configurado como inicio en ajustes
+    // 2. El mayor del historial en memoria (puede estar vacío si aún no cargó)
+    // 3. El último usado persistido directamente en localStorage (siempre disponible)
+    const persistedLast = docType === 'factura' ? lastSeqFactura : lastSeqRetencion;
+    const nextNum = Math.max(
+      emisorSecuencialInicio,
+      getMaxSecuencialInHistory(docType) + 1,
+      persistedLast + 1
+    );
     
     const onSuccessBilling = async (secNum: number) => {
-      // 1. Increment sequential number
+      // 1. Persist the used sequential per type (robust, synchronous — no async dependency)
+      if (docType === 'factura') {
+        setLastSeqFactura(secNum);
+        localStorage.setItem('sc_sri_last_seq_factura', String(secNum));
+      } else {
+        setLastSeqRetencion(secNum);
+        localStorage.setItem('sc_sri_last_seq_retencion', String(secNum));
+      }
+      // 2. Also update the shared "inicio" counter for display in settings
       const nextSecNum = secNum + 1;
       setEmisorSecuencialInicio(nextSecNum);
       localStorage.setItem('sc_emisor_secuencial_inicio', String(nextSecNum));
@@ -3164,7 +3226,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     Control de Emisión
                   </h3>
                   <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">
-                    Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'Retención'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span> | Siguiente Secuencial: <span className="text-emerald-500 font-mono font-bold">{String(Math.max(emisorSecuencialInicio, getMaxSecuencialInHistory(docType) + 1)).padStart(9, '0')}</span>
+                    Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'Retención'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span> | Siguiente Secuencial: <span className="text-emerald-500 font-mono font-bold">{String(Math.max(emisorSecuencialInicio, getMaxSecuencialInHistory(docType) + 1, (docType === 'factura' ? lastSeqFactura : lastSeqRetencion) + 1)).padStart(9, '0')}</span>
                   </p>
                 </div>
               </div>
