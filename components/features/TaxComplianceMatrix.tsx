@@ -7,6 +7,8 @@ import { es } from 'date-fns/locale';
 import { getClientCompliance, getObligationsForPeriod } from '../../services/complianceEngine';
 import { useToast } from '../../context/ToastContext';
 
+import { db } from '../../services/db';
+
 type MatrixMode = 'IVA' | 'RENTA';
 
 interface TaxComplianceMatrixProps {
@@ -16,6 +18,7 @@ interface TaxComplianceMatrixProps {
     onPreviewReceipt: (client: Client, declaration: Declaration) => void;
     onTogglePayment?: (client: Client, period: string, type: 'IVA' | 'RENTA', isPaid: boolean) => void;
     onTogglePriority?: (client: Client, period: string, type: TaxObligationType, isPriority: boolean) => void;
+    onNavigateToBilling?: (clientRuc: string) => void;
     theme?: 'light' | 'dark';
     initialMode?: MatrixMode;
 }
@@ -27,6 +30,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     onPreviewReceipt,
     onTogglePayment,
     onTogglePriority,
+    onNavigateToBilling,
     theme = 'dark',
     initialMode = 'IVA'
 }) => {
@@ -37,6 +41,139 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [isWorkspaceMode, setIsWorkspaceMode] = useState(false);
+    
+    // SRI Authorized Invoices History
+    const [sriHistory, setSriHistory] = useState<any[]>([]);
+    const [activeCellModal, setActiveCellModal] = useState<{
+        client: Client;
+        period: string;
+        declaration: Declaration;
+        obType: TaxObligationType;
+        realInvoice: any | null;
+    } | null>(null);
+
+    React.useEffect(() => {
+        const loadHistory = async () => {
+            try {
+                const stored = (await db.getLocal('sc_sri_comprobantes_history')) || JSON.parse(localStorage.getItem('sc_sri_comprobantes_history') || '[]');
+                setSriHistory(Array.isArray(stored) ? stored : []);
+            } catch (err) {
+                console.error('Error loading SRI history in matrix:', err);
+            }
+        };
+        loadHistory();
+    }, []);
+
+    const findRealInvoice = (clientRuc: string, d?: Declaration) => {
+        if (!sriHistory || sriHistory.length === 0) return null;
+        const cleanRuc = clientRuc.replace(/\D/g, '');
+        
+        // 1. Direct match by secuencial if recorded in declaration
+        const declSec = (d as any)?.invoice_secuencial || (d?.transactionId?.startsWith('001-') ? d.transactionId : null);
+        if (declSec) {
+            const found = sriHistory.find(h => h.estado === 'Autorizado' && (h.secuencial === declSec || h.secuencial?.endsWith(declSec)));
+            if (found) return found;
+        }
+
+        // 2. Match by client RUC in authorized invoices
+        const matches = sriHistory.filter(h => 
+            h.estado === 'Autorizado' && 
+            h.tipo === 'factura' && 
+            (h.rucReceptor?.replace(/\D/g, '') === cleanRuc)
+        );
+
+        if (matches.length === 0) return null;
+        matches.sort((a, b) => new Date(b.fechaEmision || 0).getTime() - new Date(a.fechaEmision || 0).getTime());
+        return matches[0];
+    };
+
+    const printRideFromInvoice = (comprobante: any, clientObj: Client) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+            alert('Por favor, permita las ventanas emergentes (popups) para imprimir el RIDE.');
+            return;
+        }
+        const emisorRuc = localStorage.getItem('sc_emisor_ruc') || '0705787745001';
+        const emisorRazon = localStorage.getItem('sc_emisor_razon_social') || 'CORDOVA RAMIREZ ROBERTO SANTIAGO';
+        const emisorComercial = localStorage.getItem('sc_emisor_nombre_comercial') || 'SOLUCIONES CONTABLES PRO';
+        const emisorDir = localStorage.getItem('sc_emisor_dir_matriz') || 'PASAJE, EL ORO';
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <title>RIDE_Factura_${comprobante.secuencial}</title>
+                <meta charset="utf-8" />
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@700;800;900&display=swap');
+                    @page { size: A4 portrait; margin: 10mm 12mm 12mm 12mm; }
+                    * { box-sizing: border-box; }
+                    body { font-family: 'Inter', sans-serif; font-size: 9.5px; color: #0f172a; margin: 20px; background: #fff; line-height: 1.4; }
+                    .ride-top-accent { height: 4px; width: 100%; background: linear-gradient(90deg, #2B6AFF 0%, #6366F1 50%, #04B17B 100%); border-radius: 4px 4px 0 0; margin-bottom: 15px; }
+                    .grid-container { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; margin-bottom: 16px; }
+                    .emisor-title { font-family: 'Manrope', sans-serif; font-size: 17px; font-weight: 900; color: #0f172a; margin-bottom: 6px; }
+                    .auth-box { border: 1.5px solid #0f172a; border-radius: 14px; padding: 14px; background: #f8fafc; }
+                    .auth-doc-type { font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 900; color: #0f172a; margin: 2px 0 4px 0; }
+                    .auth-secuencial { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #2b6aff; margin-bottom: 8px; }
+                    .receptor-box { border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; background: #fafafa; }
+                    .items-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; }
+                    .items-table th { background: #0f172a; color: #fff; font-family: 'Manrope', sans-serif; font-size: 8px; font-weight: 800; padding: 8px 10px; text-transform: uppercase; }
+                    .items-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; border-right: 1px solid #f1f5f9; font-size: 9.5px; }
+                    .totals-box { border: 1.5px solid #0f172a; border-radius: 14px; padding: 12px 14px; background: #f8fafc; }
+                    .totals-table { width: 100%; border-collapse: collapse; }
+                    .totals-table td { padding: 4px 2px; border-bottom: 1px dashed #e2e8f0; font-size: 9px; }
+                    .totals-table tr.total-row { background: #0f172a; color: #fff; font-weight: 800; }
+                    .totals-table tr.total-row td { color: #fff; padding: 8px 6px; font-family: 'Manrope', sans-serif; }
+                    @media print { .no-print { display: none !important; } body { margin: 0; } }
+                </style>
+            </head>
+            <body>
+                <div class="no-print" style="background: #0f172a; padding: 12px 20px; margin: -20px -20px 20px -20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2b6aff;">
+                    <div style="color: white; font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800;">📄 COMPROBANTE AUTORIZADO SRI</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="window.print()" style="background: #2b6aff; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 10px; font-weight: 800; cursor: pointer;">📥 Descargar PDF / Imprimir</button>
+                        <button onclick="window.close()" style="background: #334155; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 10px; font-weight: 800; cursor: pointer;">Cerrar</button>
+                    </div>
+                </div>
+                <div class="ride-top-accent"></div>
+                <div class="grid-container">
+                    <div>
+                        <div class="emisor-title">${emisorComercial}</div>
+                        <div style="font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">${emisorRazon}</div>
+                        <div><strong>Dirección Matriz:</strong> ${emisorDir}</div>
+                        <div><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
+                    </div>
+                    <div class="auth-box">
+                        <div>R.U.C.: <span style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">${emisorRuc}</span></div>
+                        <div class="auth-doc-type">FACTURA</div>
+                        <div class="auth-secuencial">No. 001-001-${comprobante.secuencial}</div>
+                        <div style="font-size: 8.5px; word-break: break-all; margin-top: 6px;"><strong>AUTORIZACIÓN:</strong> ${comprobante.claveAcceso}</div>
+                        <div style="font-size: 8.5px; margin-top: 4px;"><strong>FECHA:</strong> ${comprobante.fechaEmision}</div>
+                    </div>
+                </div>
+                <div class="receptor-box">
+                    <div><strong>Razón Social:</strong> <div style="font-weight: 700; text-transform: uppercase;">${clientObj.tradeName || clientObj.name}</div></div>
+                    <div><strong>RUC / Cédula:</strong> <div style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">${clientObj.ruc}</div></div>
+                </div>
+                <table class="items-table">
+                    <thead><tr><th>Código</th><th style="text-align: center;">Cant.</th><th>Descripción</th><th style="text-align: right;">P. Unitario</th><th style="text-align: right;">Total</th></tr></thead>
+                    <tbody><tr><td style="font-family: 'JetBrains Mono', monospace;">001</td><td style="text-align: center;">1.00</td><td style="text-transform: uppercase;">Servicios Contables Profesionales</td><td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$${Number(comprobante.total || 0).toFixed(2)}</td><td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${Number(comprobante.total || 0).toFixed(2)}</td></tr></tbody>
+                </table>
+                <div style="display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px;">
+                    <div></div>
+                    <div class="totals-box">
+                        <table class="totals-table">
+                            <tr><td>SUBTOTAL SIN IMPUESTOS</td><td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$${Number(comprobante.total || 0).toFixed(2)}</td></tr>
+                            <tr class="total-row"><td>VALOR TOTAL</td><td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$${Number(comprobante.total || 0).toFixed(2)}</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <script>window.onload = function() { setTimeout(function() { window.print(); }, 350); };</script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
     
     // Period Sorting State
     const [sortPeriod, setSortPeriod] = useState<string | null>(null);
@@ -561,6 +698,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
                                                             const isSent = d?.status === DeclarationStatus.Enviada || isPaid || hasProof;
                                                             
+                                                            const realInvoice = findRealInvoice(client.ruc, d);
+                                                            const isTrulyInvoiced = !!realInvoice || !!(d as any)?.invoice_secuencial;
+
                                                             const isDone = hasProof;
                                                             const isManualDone = !hasProof && (d?.status === DeclarationStatus.Enviada || d?.status === DeclarationStatus.Pagada);
                                                             const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone && !isManualDone;
@@ -575,11 +715,20 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         isOverdue ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-500 dark:text-rose-400 border-rose-250 dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-950/30 hover:scale-105' :
                                                                         'bg-slate-50 dark:bg-slate-900/40 text-slate-400 dark:text-slate-400 border-slate-200/50 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-600 dark:hover:text-slate-200 hover:scale-105'
                                                                     }`}
-                                                                    title={isDone ? `Ver PDF de ${ob.label}` : isManualDone ? `Atención: Sin PDF de ${ob.label}. Haz click para subirlo.` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
+                                                                    title={isDone ? `Ver Comprobante & Facturación de ${ob.label}` : isManualDone ? `Atención: Sin PDF de ${ob.label}. Haz click para subirlo.` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        if (hasProof) onPreviewReceipt(client, d!);
-                                                                        else onUploadReceipt(client, p, ob.type as any);
+                                                                        if (hasProof) {
+                                                                            setActiveCellModal({
+                                                                                client,
+                                                                                period: p,
+                                                                                declaration: d!,
+                                                                                obType: ob.type as any,
+                                                                                realInvoice
+                                                                            });
+                                                                        } else {
+                                                                            onUploadReceipt(client, p, ob.type as any);
+                                                                        }
                                                                     }}
                                                                 >
                                                                     <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 ${isDone || isManualDone || d?.isPriority ? 'opacity-90' : 'opacity-55'}`}>{ob.type}</span>
@@ -596,8 +745,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         <LucideIcons.Upload size={12} strokeWidth={2} className="opacity-40 group-hover/ob:opacity-100 group-hover/ob:scale-110 transition-all" />
                                                                     )}
 
-                                                                    {/* Resaltador / Barra FACTURADO */}
-                                                                    {isPaid && (
+                                                                    {/* Resaltador / Barra FACTURADO solo si consta factura real en registros */}
+                                                                    {isTrulyInvoiced && (
                                                                         <span className="px-1 py-[1.5px] bg-slate-950/85 text-emerald-300 border border-emerald-400/50 rounded text-[6px] font-black uppercase tracking-wider font-mono shadow-sm mt-0.5 leading-none">
                                                                             FACTURADO
                                                                         </span>
@@ -809,15 +958,185 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         background: transparent !important;
                         color: black !important;
                     }
-                    .sticky { position: static !important; }
-                    .bg-white\\/40, .dark\\:bg-slate-900\\/40 { 
-                        background: transparent !important; 
-                        border: none !important;
-                        box-shadow: none !important;
-                    }
-                    h2 { color: black !important; }
-                }
             `}} />
+
+            {/* Modal de Detalle de Celda: Comprobante PDF + Factura SRI */}
+            {activeCellModal && (
+                <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="relative w-full max-w-xl bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-2xl p-6 overflow-hidden flex flex-col gap-6 text-white">
+                        {/* Header */}
+                        <div className="flex items-start justify-between border-b border-white/10 pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-2xl">
+                                    <LucideIcons.ShieldCheck size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-black tracking-tight text-white font-premium">
+                                        Comprobante & Facturación SRI
+                                    </h3>
+                                    <p className="text-xs font-semibold text-slate-400">
+                                        {activeCellModal.client.tradeName || activeCellModal.client.name} — <span className="font-mono text-emerald-400">{activeCellModal.period}</span> ({activeCellModal.obType})
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setActiveCellModal(null)}
+                                className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+                            >
+                                <LucideIcons.X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Content Cards */}
+                        <div className="space-y-4">
+                            {/* 1. Comprobante de Declaración (PDF Subido) */}
+                            <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <LucideIcons.FileText size={16} className="text-emerald-400" />
+                                        <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                            Comprobante de Declaración PDF
+                                        </span>
+                                    </div>
+                                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                        Registrado
+                                    </span>
+                                </div>
+
+                                <div className="text-xs font-mono text-slate-400 truncate">
+                                    Archivo: <span className="text-slate-200">{activeCellModal.declaration.proof_file?.name || `declaracion_${activeCellModal.period}.pdf`}</span>
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    {activeCellModal.declaration.proof_file?.content && (
+                                        <button
+                                            onClick={() => {
+                                                try {
+                                                    const base64 = activeCellModal.declaration.proof_file!.content!;
+                                                    const filename = activeCellModal.declaration.proof_file!.name || `comprobante_${activeCellModal.client.name}_${activeCellModal.period}.pdf`;
+                                                    const binaryStr = atob(base64.includes(',') ? base64.split(',')[1] : base64);
+                                                    const bytes = new Uint8Array(binaryStr.length);
+                                                    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+                                                    const blob = new Blob([bytes], { type: 'application/pdf' });
+                                                    const url = URL.createObjectURL(blob);
+                                                    const a = document.createElement('a');
+                                                    a.href = url;
+                                                    a.download = filename;
+                                                    document.body.appendChild(a);
+                                                    a.click();
+                                                    document.body.removeChild(a);
+                                                    URL.revokeObjectURL(url);
+                                                    toast.success("Comprobante descargado correctamente");
+                                                } catch (err) {
+                                                    console.error(err);
+                                                }
+                                            }}
+                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20"
+                                        >
+                                            <LucideIcons.Download size={14} />
+                                            Descargar PDF
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={() => {
+                                            const decl = activeCellModal.declaration;
+                                            const clientObj = activeCellModal.client;
+                                            setActiveCellModal(null);
+                                            onPreviewReceipt(clientObj, decl);
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                                    >
+                                        <LucideIcons.Eye size={14} />
+                                        Ver Previa
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 2. Estado de Factura SRI de Verdad */}
+                            <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <LucideIcons.Receipt size={16} className={activeCellModal.realInvoice ? "text-sky-400" : "text-amber-400"} />
+                                        <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                            Factura Electrónica SRI
+                                        </span>
+                                    </div>
+                                    {activeCellModal.realInvoice ? (
+                                        <span className="px-2 py-0.5 bg-sky-500/20 text-sky-300 border border-sky-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                            ✅ FACTURA REAL REGISTRADA
+                                        </span>
+                                    ) : (
+                                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                            ⚠️ SIN FACTURA EN REGISTRO
+                                        </span>
+                                    )}
+                                </div>
+
+                                {activeCellModal.realInvoice ? (
+                                    <div className="space-y-2 bg-slate-950/60 p-3.5 rounded-xl border border-sky-500/20 font-mono text-xs">
+                                        <div className="flex justify-between text-slate-300 font-bold">
+                                            <span>Factura Autorizada SRI:</span>
+                                            <span className="text-sky-400">001-001-{activeCellModal.realInvoice.secuencial}</span>
+                                        </div>
+                                        <div className="flex justify-between text-slate-400 text-[10px]">
+                                            <span>Fecha Autorización:</span>
+                                            <span className="text-slate-200">{activeCellModal.realInvoice.fechaEmision}</span>
+                                        </div>
+                                        <div className="flex justify-between text-slate-400 text-[10px]">
+                                            <span>Monto Total:</span>
+                                            <span className="text-emerald-400 font-bold">${Number(activeCellModal.realInvoice.total || 0).toFixed(2)}</span>
+                                        </div>
+                                        <div className="text-[9px] text-slate-400 truncate border-t border-white/5 pt-1.5 mt-1">
+                                            Clave: <span className="text-slate-300">{activeCellModal.realInvoice.claveAcceso}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-slate-400 leading-relaxed bg-amber-500/5 p-3.5 rounded-xl border border-amber-500/20">
+                                        No consta factura electrónica autorizada emitida a este RUC ({activeCellModal.client.ruc}) para esta declaración en el registro local.
+                                    </p>
+                                )}
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    {activeCellModal.realInvoice ? (
+                                        <button
+                                            onClick={() => {
+                                                printRideFromInvoice(activeCellModal.realInvoice, activeCellModal.client);
+                                            }}
+                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-primary/20"
+                                        >
+                                            <LucideIcons.FileText size={14} />
+                                            Ver RIDE Factura (A4)
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                const ruc = activeCellModal.client.ruc;
+                                                setActiveCellModal(null);
+                                                if (onNavigateToBilling) onNavigateToBilling(ruc);
+                                                else toast.info(`Selecciona Facturación SRI para emitir comprobante a ${ruc}`);
+                                            }}
+                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20"
+                                        >
+                                            <LucideIcons.Zap size={14} />
+                                            Emitir Factura SRI Ahora
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="flex justify-end border-t border-white/10 pt-4">
+                            <button
+                                onClick={() => setActiveCellModal(null)}
+                                className="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
