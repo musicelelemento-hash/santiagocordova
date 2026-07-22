@@ -183,6 +183,25 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                             <div className="space-y-3">
                                 <div className="flex flex-wrap items-center justify-center gap-2">
                                     <RegimeBadge regime={client.regime} />
+
+                                    {/* Badge de Inicio de Obligaciones */}
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold border bg-purple-500/10 text-purple-300 dark:text-purple-300 border-purple-500/30 font-mono shadow-sm">
+                                        <CalendarDays size={12} strokeWidth={2.5} className="text-purple-400" />
+                                        Inicio: {(() => {
+                                            const val = client.clientStartPeriod;
+                                            if (!val) return 'Automático';
+                                            if (val.includes('-S1')) return `${val.split('-')[0]} 1er Semestre (Ene-Jun)`;
+                                            if (val.includes('-S2')) return `${val.split('-')[0]} 2do Semestre (Jul-Dic)`;
+                                            const parts = val.split('-');
+                                            if (parts.length === 2) {
+                                                const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                                                const idx = parseInt(parts[1], 10) - 1;
+                                                if (idx >= 0 && idx < 12) return `${months[idx]} ${parts[0]}`;
+                                            }
+                                            return val;
+                                        })()}
+                                    </span>
+
                                     {client.isCourtesy && (
                                         <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold bg-sky-100 text-sky-700 border border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20 uppercase tracking-wider">
                                             Cortesía

@@ -74,6 +74,77 @@ const getColor = (daysRemaining: number | null, declared: boolean, paid: boolean
     return 'gray';
 };
 
+export const isPeriodBeforeClientStart = (client: Client, period: string): boolean => {
+    if (!client.clientStartPeriod) return false;
+    const start = client.clientStartPeriod.trim();
+    if (!start) return false;
+
+    // Remove any suffix like :ICE, :DEV, etc.
+    const cleanPeriod = period.split(':')[0];
+
+    // Case 1: Semestral Period (e.g. '2026-S1')
+    if (cleanPeriod.includes('-S')) {
+        const [pYearStr, pSemStr] = cleanPeriod.split('-S');
+        const pYear = parseInt(pYearStr, 10);
+        const pSem = parseInt(pSemStr, 10);
+
+        if (start.includes('-S')) {
+            const [sYearStr, sSemStr] = start.split('-S');
+            const sYear = parseInt(sYearStr, 10);
+            const sSem = parseInt(sSemStr, 10);
+            if (pYear < sYear) return true;
+            if (pYear === sYear && pSem < sSem) return true;
+            return false;
+        } else if (start.length === 7) { // YYYY-MM
+            const sYear = parseInt(start.substring(0, 4), 10);
+            const sMonth = parseInt(start.substring(5, 7), 10);
+            const sSem = sMonth <= 6 ? 1 : 2;
+            if (pYear < sYear) return true;
+            if (pYear === sYear && pSem < sSem) return true;
+            return false;
+        } else if (start.length === 4) { // YYYY
+            const sYear = parseInt(start, 10);
+            return pYear < sYear;
+        }
+    }
+
+    // Case 2: Monthly Period (e.g. '2026-05')
+    if (/^\d{4}-\d{2}$/.test(cleanPeriod)) {
+        const [pYearStr, pMonthStr] = cleanPeriod.split('-');
+        const pYear = parseInt(pYearStr, 10);
+        const pMonth = parseInt(pMonthStr, 10);
+
+        if (start.length === 7) { // YYYY-MM
+            const [sYearStr, sMonthStr] = start.split('-');
+            const sYear = parseInt(sYearStr, 10);
+            const sMonth = parseInt(sMonthStr, 10);
+            if (pYear < sYear) return true;
+            if (pYear === sYear && pMonth < sMonth) return true;
+            return false;
+        } else if (start.includes('-S')) {
+            const [sYearStr, sSemStr] = start.split('-S');
+            const sYear = parseInt(sYearStr, 10);
+            const sSem = parseInt(sSemStr, 10);
+            const sMonth = sSem === 1 ? 1 : 7;
+            if (pYear < sYear) return true;
+            if (pYear === sYear && pMonth < sMonth) return true;
+            return false;
+        } else if (start.length === 4) {
+            const sYear = parseInt(start, 10);
+            return pYear < sYear;
+        }
+    }
+
+    // Case 3: Annual Renta Period (e.g. '2025')
+    if (/^\d{4}$/.test(cleanPeriod)) {
+        const pYear = parseInt(cleanPeriod, 10);
+        const sYear = parseInt(start.substring(0, 4), 10);
+        return pYear < sYear;
+    }
+
+    return false;
+};
+
 export const getClientFloors = (client: Client): { monthly: string; semestral: string; annual: string } => {
     const clientStartPeriod = client.clientStartPeriod || null;
 
@@ -81,19 +152,29 @@ export const getClientFloors = (client: Client): { monthly: string; semestral: s
     const fallbackSemestral = '2025-S1';
     const fallbackAnnual = '2025';
 
-    const floorMonthly = (clientStartPeriod && !clientStartPeriod.includes('-S') && clientStartPeriod.length === 7)
-        ? clientStartPeriod
-        : fallbackMonthly;
+    let floorMonthly = fallbackMonthly;
+    let floorSemestral = fallbackSemestral;
+    let floorAnnual = fallbackAnnual;
 
-    const floorSemestral = clientStartPeriod?.includes('-S')
-        ? clientStartPeriod
-        : clientStartPeriod
-            ? clientStartPeriod.substring(0, 4) + '-S1'
-            : fallbackSemestral;
-
-    const floorAnnual = clientStartPeriod?.length === 4
-        ? clientStartPeriod
-        : fallbackAnnual;
+    if (clientStartPeriod) {
+        if (clientStartPeriod.includes('-S')) {
+            floorSemestral = clientStartPeriod;
+            const yearStr = clientStartPeriod.split('-S')[0];
+            const semNum = parseInt(clientStartPeriod.split('-S')[1], 10);
+            floorMonthly = `${yearStr}-${semNum === 1 ? '01' : '07'}`;
+            floorAnnual = yearStr;
+        } else if (clientStartPeriod.length === 7) {
+            floorMonthly = clientStartPeriod;
+            const yearStr = clientStartPeriod.substring(0, 4);
+            const monthNum = parseInt(clientStartPeriod.substring(5, 7), 10);
+            floorSemestral = `${yearStr}-S${monthNum <= 6 ? '1' : '2'}`;
+            floorAnnual = yearStr;
+        } else if (clientStartPeriod.length === 4) {
+            floorAnnual = clientStartPeriod;
+            floorSemestral = `${clientStartPeriod}-S1`;
+            floorMonthly = `${clientStartPeriod}-01`;
+        }
+    }
 
     return {
         monthly: floorMonthly,

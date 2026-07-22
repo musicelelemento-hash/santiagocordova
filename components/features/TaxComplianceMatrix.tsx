@@ -4,7 +4,7 @@ import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime, TaxObl
 import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod } from '../../services/sri';
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { getClientCompliance, getObligationsForPeriod } from '../../services/complianceEngine';
+import { getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
 import { useToast } from '../../context/ToastContext';
 
 import { SriCampaignWidget } from './SriCampaignWidget';
@@ -300,6 +300,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
     // Check if client has uploaded all proofs for the displayed matrix periods
     const isClientCompletedForPeriod = (client: Client, p: string) => {
+        if (isPeriodBeforeClientStart(client, p)) return true;
         const obligations = getObligationsForPeriod(client, p);
         if (obligations.length === 0) return true;
         const declarations = client.declarations || [];
@@ -733,6 +734,23 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             </div>
                                         </td>
                                         {periods.map(p => {
+                                            const isBeforeStart = isPeriodBeforeClientStart(client, p);
+                                            if (isBeforeStart) {
+                                                return (
+                                                    <td key={p} className="px-2 py-3 border-r border-slate-200/20 dark:border-white/5 bg-slate-100/30 dark:bg-slate-950/40 opacity-75">
+                                                        <div className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200/30 dark:border-white/5 text-[9px] font-mono text-slate-400 text-center gap-0.5" title={`Obligaciones iniciaron en ${client.clientStartPeriod}`}>
+                                                            <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-wider text-slate-400">
+                                                                <LucideIcons.MinusCircle size={10} />
+                                                                No Aplica
+                                                            </span>
+                                                            <span className="text-[7px] font-bold text-slate-500 font-sans">
+                                                                Inicio {client.clientStartPeriod}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                );
+                                            }
+
                                             const obligations = getObligationsForPeriod(client, p);
                                             const declarations = client.declarations || [];
                                             

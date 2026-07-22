@@ -485,31 +485,34 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 ) : (
                                     <div 
                                         onClick={onStartEdit}
-                                        className={`px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 tracking-wide shadow-sm flex items-center justify-between ${onStartEdit ? 'cursor-pointer hover:border-primary/20 hover:bg-slate-100/50 dark:hover:bg-white/10 transition-all' : ''}`}
+                                        className={`px-5 py-3.5 bg-slate-100 dark:bg-white/10 rounded-2xl border border-slate-200 dark:border-white/10 text-xs font-black text-slate-900 dark:text-white tracking-wide shadow-sm flex items-center justify-between ${onStartEdit ? 'cursor-pointer hover:border-primary/40 hover:bg-slate-200/50 dark:hover:bg-white/15 transition-all' : ''}`}
                                     >
-                                        <span>
-                                            {(() => {
-                                                const val = editedClient.clientStartPeriod;
-                                                if (!val) return <span className="text-slate-300 dark:text-slate-650">—</span>;
-                                                if (val.includes('-S1')) return `${val.split('-')[0]} · 1er Semestre (Ene - Jun)`;
-                                                if (val.includes('-S2')) return `${val.split('-')[0]} · 2do Semestre (Jul - Dic)`;
-                                                const parts = val.split('-');
-                                                if (parts.length === 2) {
-                                                    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-                                                    const idx = parseInt(parts[1], 10) - 1;
-                                                    if (idx >= 0 && idx < 12) return `${months[idx]} ${parts[0]}`;
-                                                }
-                                                return val;
-                                            })()}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <LucideIcons.CalendarDays size={14} className="text-primary" />
+                                            <span className="font-mono text-primary font-extrabold uppercase">
+                                                {(() => {
+                                                    const val = editedClient.clientStartPeriod;
+                                                    if (!val) return <span className="text-slate-400 dark:text-slate-400 font-sans font-normal">Sin fecha configurada (Usa valor por defecto)</span>;
+                                                    if (val.includes('-S1')) return `${val.split('-')[0]} · 1er Semestre (Ene - Jun)`;
+                                                    if (val.includes('-S2')) return `${val.split('-')[0]} · 2do Semestre (Jul - Dic)`;
+                                                    const parts = val.split('-');
+                                                    if (parts.length === 2) {
+                                                        const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                                                        const idx = parseInt(parts[1], 10) - 1;
+                                                        if (idx >= 0 && idx < 12) return `${months[idx]} ${parts[0]}`;
+                                                    }
+                                                    return val;
+                                                })()}
+                                            </span>
+                                        </div>
                                         <div className="flex items-center gap-2">
                                             {editedClient.taxProfile?.ivaFrequency === 'Semestral' && editedClient.clientStartPeriod?.endsWith('-S2') && (
-                                                <span className="text-[9px] bg-amber-500/15 text-amber-500 border border-amber-500/25 px-2.5 py-0.5 rounded-xl font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
-                                                    <span className="w-1 h-1 rounded-full bg-amber-500"></span>
+                                                <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-xl font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
+                                                    <span className="w-1 h-1 rounded-full bg-amber-400"></span>
                                                     Espera en Enero
                                                 </span>
                                             )}
-                                            {onStartEdit && <LucideIcons.Lock size={10} className="text-slate-300 dark:text-slate-650 opacity-60 group-hover/field:opacity-100 transition-opacity" />}
+                                            {onStartEdit && <LucideIcons.Pencil size={12} className="text-slate-400 hover:text-primary transition-colors" />}
                                         </div>
                                     </div>
                                 )}
