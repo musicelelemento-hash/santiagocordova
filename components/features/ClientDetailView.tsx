@@ -51,11 +51,11 @@ const getRecentPeriods = (client: Client, count: number): string[] => {
 
     for (let i = 0; i < count; i++) {
         const period = getPeriod(client, currentDate);
-        
+
         // Filter: only 2026+
-        const isBeforeStart = period.includes('-S') ? period < '2026-S1' : 
-                             (period.length === 4 ? period < '2026' : period < '2026-01');
-        
+        const isBeforeStart = period.includes('-S') ? period < '2026-S1' :
+            (period.length === 4 ? period < '2026' : period < '2026-01');
+
         if (isBeforeStart) break;
 
         if (!periods.includes(period)) periods.push(period);
@@ -70,7 +70,7 @@ const getRecentPeriods = (client: Client, count: number): string[] => {
 const getStatusIndicator = (client: Pick<Client, 'taxProfile' | 'regime'>): string => {
     const profile = client.taxProfile;
     const frequency = profile?.ivaFrequency || (client.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : 'Mensual');
-    
+
     if (frequency === 'Semestral') return 'Semestral';
     if (frequency === 'Ninguno' && profile?.requiresAnnualRenta) return 'Renta';
     if (profile?.hasActiveDevolucionIva) return 'Devolucion';
@@ -125,8 +125,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [obligation, setObligation] = useState(getStatusIndicator(client));
 
     const [monthlyFee, setMonthlyFee] = useState<string>(
-        (client.taxProfile?.ivaFrequency === 'Semestral' 
-            ? (client.fee_structure?.semestral ?? 10) 
+        (client.taxProfile?.ivaFrequency === 'Semestral'
+            ? (client.fee_structure?.semestral ?? 10)
             : (client.fee_structure?.monthly ?? 5)
         ).toString()
     );
@@ -192,12 +192,12 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         if (!isEditing && client) {
             setEditedClient(client);
             setObligation(getStatusIndicator(client));
-            setMonthlyFee((client.taxProfile?.ivaFrequency === 'Semestral' 
-                ? (client.fee_structure?.semestral ?? 10) 
+            setMonthlyFee((client.taxProfile?.ivaFrequency === 'Semestral'
+                ? (client.fee_structure?.semestral ?? 10)
                 : (client.fee_structure?.monthly ?? 5)
             ).toString());
             setAnnualFee((client.fee_structure?.annual ?? 10).toString());
-            
+
             // Si nos pasan initialTab (ej. por navegación)
             if (initialTab) {
                 setActiveTab(initialTab);
@@ -413,23 +413,23 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 const updatedHistory = [...(editedClient.declarations || [])];
                 const idx = updatedHistory.findIndex(d => d.period === period);
                 if (idx !== -1) {
-                    updatedHistory[idx] = { 
-                        ...updatedHistory[idx], 
-                        proof_file: storedFile, 
-                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada, 
+                    updatedHistory[idx] = {
+                        ...updatedHistory[idx],
+                        proof_file: storedFile,
+                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
                         is_paid: editedClient.isCourtesy ? true : updatedHistory[idx].is_paid,
                         paidAt: editedClient.isCourtesy ? new Date().toISOString() : updatedHistory[idx].paidAt,
-                        updatedAt: new Date().toISOString() 
+                        updatedAt: new Date().toISOString()
                     };
                 } else {
-                    updatedHistory.push({ 
-                        period, 
+                    updatedHistory.push({
+                        period,
                         type: 'RENTA',
-                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada, 
-                        is_paid: editedClient.isCourtesy ? true : false, 
+                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        is_paid: editedClient.isCourtesy ? true : false,
                         paidAt: editedClient.isCourtesy ? new Date().toISOString() : undefined,
-                        proof_file: storedFile, 
-                        updatedAt: new Date().toISOString() 
+                        proof_file: storedFile,
+                        updatedAt: new Date().toISOString()
                     });
                 }
                 updatedClient.declarations = updatedHistory;
@@ -444,11 +444,11 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             }
 
             setEditedClient(updatedClient);
-            
+
             // CRITICAL: Explicitly set cloud status to saving before calling onSave
             // onSave (which calls updateClient) will handle the rest
             onSave(updatedClient);
-            
+
             toast.success(extractedData ? `✅ Formulario ${extractedData.formType} validado y guardado.` : "Comprobante guardado.");
 
             if (uploadingTarget.type === 'iva' || uploadingTarget.type === 'renta') {
@@ -461,7 +461,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     feeNum,
                     false
                 );
-                
+
                 if (updatedClient.phones?.length) {
                     setWhatsAppPrompt({
                         clientName: updatedClient.name,
@@ -506,14 +506,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         content: b64
                     };
                 }
-            const updatedClientFull = { ...prev, ...updatedData };
-            onSave(updatedClientFull);
-            return updatedClientFull;
-        });
-        toast.success(extracted.isCertificate ? "Certificado RUC validado y guardado." : "Información SRI validada.");
-    } catch (error) { toast.error("Error al validar PDF."); }
-    finally { setIsAnalyzingPdf(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
-};
+                const updatedClientFull = { ...prev, ...updatedData };
+                onSave(updatedClientFull);
+                return updatedClientFull;
+            });
+            toast.success(extracted.isCertificate ? "Certificado RUC validado y guardado." : "Información SRI validada.");
+        } catch (error) { toast.error("Error al validar PDF."); }
+        finally { setIsAnalyzingPdf(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
+    };
 
     const handleJumpToOwner = () => {
         if (!mismatchData) return;
@@ -531,14 +531,14 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const handleSave = () => {
         const recurringFee = parseFloat(monthlyFee) || (editedClient.taxProfile?.ivaFrequency === 'Semestral' ? 10 : 5);
         const aFeeValue = parseFloat(annualFee) || 10;
-        
-        const toSave = { 
-            ...editedClient, 
-            fee_structure: { 
+
+        const toSave = {
+            ...editedClient,
+            fee_structure: {
                 monthly: editedClient.taxProfile?.ivaFrequency === 'Semestral' ? (client.fee_structure?.monthly ?? 5) : recurringFee,
                 semestral: editedClient.taxProfile?.ivaFrequency === 'Semestral' ? recurringFee : (client.fee_structure?.semestral ?? 10),
-                annual: aFeeValue 
-            } 
+                annual: aFeeValue
+            }
         };
         onSave(toSave);
         setIsEditing(false);
@@ -599,7 +599,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const handleRentaRefundAction = (action: 'start' | 'message_received' | 'confirm' | 'pay' | 'revert_pay' | 'complete' | 'cancel') => {
         let updated = { ...editedClient };
         const now = new Date().toISOString();
-        
+
         if (action === 'start') {
             updated.rentaRefundStatus = 'Solicitado';
             updated.rentaRefundRequestedAt = now;
@@ -618,7 +618,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         } else if (action === 'cancel') {
             updated.rentaRefundStatus = 'Cancelado';
         }
-        
+
         setEditedClient(updated);
         onSave(updated);
         toast.success(`Trámite de devolución Renta: ${action === 'confirm' ? 'Confirmado' : action.replace('_', ' ')}`);
@@ -626,7 +626,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
     const handleElderlyRefundAction = (action: 'start' | 'process' | 'complete' | 'cancel') => {
         let updated = { ...editedClient };
-        
+
         if (action === 'start') {
             updated.elderlyDevolucionIvaStatus = 'Pendiente';
         } else if (action === 'process') {
@@ -636,7 +636,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         } else if (action === 'cancel') {
             updated.elderlyDevolucionIvaStatus = 'Pendiente';
         }
-        
+
         setEditedClient(updated);
         onSave(updated);
         toast.success(`Trámite T.EDAD: ${updated.elderlyDevolucionIvaStatus}`);
@@ -656,15 +656,15 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     };
 
     const handleRevertDeclaration = (period: string) => {
-        const updatedHistory = (editedClient.declarations || []).map(dec => 
-            dec.period === period 
-                ? { 
-                    ...dec, 
-                    status: DeclarationStatus.Pendiente, 
-                    declaredAt: undefined, 
+        const updatedHistory = (editedClient.declarations || []).map(dec =>
+            dec.period === period
+                ? {
+                    ...dec,
+                    status: DeclarationStatus.Pendiente,
+                    declaredAt: undefined,
                     proof_file: undefined,
-                    updatedAt: new Date().toISOString() 
-                } 
+                    updatedAt: new Date().toISOString()
+                }
                 : dec
         );
         onSave({ ...editedClient, declarations: updatedHistory });
@@ -855,258 +855,256 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         <div className="w-full h-full bg-slate-50 dark:bg-slate-900 border-none dark:border-white/5 md:rounded-[2.5rem] flex flex-col relative overflow-hidden group/modal shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] animate-in fade-in duration-700">
             {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed relative to modal) */}
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
-                    <div className="flex items-center gap-1 p-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-[40px] border border-slate-200 dark:border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] pointer-events-auto ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
-                        {(['profile', 'history', 'vault', 'settings'] as const).map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`group relative flex items-center gap-3 px-6 py-4 rounded-[2rem] transition-all duration-700 overflow-hidden ${
-                                    activeTab === tab 
-                                        ? (isDark
-                                            ? 'bg-white text-slate-900 shadow-xl shadow-white/5 scale-[1.08] -translate-y-1'
-                                            : 'bg-slate-900 text-white shadow-xl shadow-slate-200 scale-[1.08] -translate-y-1')
-                                        : (isDark
-                                            ? 'text-slate-400 hover:text-white hover:bg-white/5'
-                                            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50')
+                <div className="flex items-center gap-1 p-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-[40px] border border-slate-200 dark:border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] pointer-events-auto ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
+                    {(['profile', 'history', 'vault', 'settings'] as const).map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`group relative flex items-center gap-3 px-6 py-4 rounded-[2rem] transition-all duration-700 overflow-hidden ${activeTab === tab
+                                    ? (isDark
+                                        ? 'bg-white text-slate-900 shadow-xl shadow-white/5 scale-[1.08] -translate-y-1'
+                                        : 'bg-slate-900 text-white shadow-xl shadow-slate-200 scale-[1.08] -translate-y-1')
+                                    : (isDark
+                                        ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50')
                                 }`}
-                            >
-                                <div className="relative z-10 flex items-center gap-3">
-                                    {tab === 'profile' && <LayoutDashboard size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-12 group-hover:scale-110'}`} />}
-                                    {tab === 'history' && <Activity size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
-                                    {tab === 'vault' && <Lock size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:-translate-y-0.5'}`} />}
-                                    {tab === 'settings' && <Settings size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-90 group-hover:scale-110'}`} />}
-                                    
-                                    <span className={`text-[11px] font-black uppercase tracking-[0.25em] font-premium transition-all duration-700 ${
-                                        activeTab === tab ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0 md:opacity-100 md:max-w-[150px] overflow-hidden'
-                                    }`}>
-                                        {tab === 'profile' ? 'Resumen' : tab === 'history' ? 'Declaraciones' : tab === 'vault' ? 'Bóveda' : 'Configuración'}
-                                    </span>
-                                </div>
-                                {activeTab === tab && (
-                                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(255,255,255,0.1),transparent)] animate-shine"></div>
-                                )}
-                            </button>
-                        ))}
-                        
-                        <div className="w-[1px] h-8 bg-slate-200 dark:bg-white/10 mx-3 hidden md:block"></div>
-                        
-                        <button 
-                            onClick={onBack}
-                            className="hidden md:flex items-center gap-3 px-6 py-4 text-slate-400 hover:text-rose-500 transition-all duration-500 group rounded-[2rem] hover:bg-rose-50 dark:hover:bg-rose-500/10"
-                            title="Regresar al Directorio"
                         >
-                            <X size={16} className="group-hover:rotate-90 transition-transform duration-700" />
-                            <span className="text-[11px] font-black uppercase tracking-[0.25em] font-premium">Salir</span>
+                            <div className="relative z-10 flex items-center gap-3">
+                                {tab === 'profile' && <LayoutDashboard size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-12 group-hover:scale-110'}`} />}
+                                {tab === 'history' && <Activity size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
+                                {tab === 'vault' && <Lock size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:-translate-y-0.5'}`} />}
+                                {tab === 'settings' && <Settings size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-90 group-hover:scale-110'}`} />}
+
+                                <span className={`text-[11px] font-black uppercase tracking-[0.25em] font-premium transition-all duration-700 ${activeTab === tab ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0 md:opacity-100 md:max-w-[150px] overflow-hidden'
+                                    }`}>
+                                    {tab === 'profile' ? 'Resumen' : tab === 'history' ? 'Declaraciones' : tab === 'vault' ? 'Bóveda' : 'Configuración'}
+                                </span>
+                            </div>
+                            {activeTab === tab && (
+                                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(255,255,255,0.1),transparent)] animate-shine"></div>
+                            )}
                         </button>
-                    </div>
+                    ))}
+
+                    <div className="w-[1px] h-8 bg-slate-200 dark:bg-white/10 mx-3 hidden md:block"></div>
+
+                    <button
+                        onClick={onBack}
+                        className="hidden md:flex items-center gap-3 px-6 py-4 text-slate-400 hover:text-rose-500 transition-all duration-500 group rounded-[2rem] hover:bg-rose-50 dark:hover:bg-rose-500/10"
+                        title="Regresar al Directorio"
+                    >
+                        <X size={16} className="group-hover:rotate-90 transition-transform duration-700" />
+                        <span className="text-[11px] font-black uppercase tracking-[0.25em] font-premium">Salir</span>
+                    </button>
+                </div>
+            </div>
+
+            <button onClick={onBack} className="absolute top-8 right-8 z-50 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-white/5 text-slate-400 hover:text-blue-600 rounded-2xl transition-all md:flex hidden hover:scale-110 active:scale-90 group/close shadow-xl hover:border-blue-500/30">
+                <X size={24} className="group-hover:rotate-90 transition-transform duration-700" />
+            </button>
+
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+                {/* LEFT COLUMN - Profile Header (Static/Scroll-independent on Desktop) */}
+                <div ref={leftColRef} className="w-full lg:w-[320px] xl:w-[360px] flex-none border-b lg:border-b-0 lg:border-r border-slate-200/50 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/50 p-6 lg:p-10 overflow-y-auto no-scrollbar">
+                    <ClientHeader
+                        client={client}
+                        onBack={onBack}
+                        totalDebt={totalDebt}
+                        isFullyPaid={isFullyPaid}
+                        isFullyDeclared={isFullyDeclared}
+                        complianceStats={complianceStats}
+                        isEditing={isEditing}
+                        onToggleEdit={() => isEditing ? handleSave() : setIsEditing(true)}
+                        editedClient={editedClient}
+                        setEditedClient={setEditedClient}
+                        onCopy={handleCopy}
+                        onWhatsApp={handleWhatsApp}
+                        onOpenSRI={handleOpenSRI}
+                        onShare={handleShareViaWhatsApp}
+                        onDelete={() => setIsDeleteConfirmOpen(true)}
+                        nextDeadline={nextDeadline}
+                    />
                 </div>
 
-                <button onClick={onBack} className="absolute top-8 right-8 z-50 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-white/5 text-slate-400 hover:text-blue-600 rounded-2xl transition-all md:flex hidden hover:scale-110 active:scale-90 group/close shadow-xl hover:border-blue-500/30">
-                    <X size={24} className="group-hover:rotate-90 transition-transform duration-700" />
-                </button>
- 
-                <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-                    {/* LEFT COLUMN - Profile Header (Static/Scroll-independent on Desktop) */}
-                    <div ref={leftColRef} className="w-full lg:w-[320px] xl:w-[360px] flex-none border-b lg:border-b-0 lg:border-r border-slate-200/50 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/50 p-6 lg:p-10 overflow-y-auto no-scrollbar">
-                        <ClientHeader
-                            client={client}
-                            onBack={onBack}
-                            totalDebt={totalDebt}
-                            isFullyPaid={isFullyPaid}
-                            isFullyDeclared={isFullyDeclared}
-                            complianceStats={complianceStats}
-                            isEditing={isEditing}
-                            onToggleEdit={() => isEditing ? handleSave() : setIsEditing(true)}
-                            editedClient={editedClient}
-                            setEditedClient={setEditedClient}
-                            onCopy={handleCopy}
-                            onWhatsApp={handleWhatsApp}
-                            onOpenSRI={handleOpenSRI}
-                            onShare={handleShareViaWhatsApp}
-                            onDelete={() => setIsDeleteConfirmOpen(true)}
-                            nextDeadline={nextDeadline}
-                        />
-                    </div>
- 
-                    {/* RIGHT COLUMN - Main Tab Content */}
-                    <div ref={rightColRef} className="flex-1 overflow-y-auto p-6 sm:p-10 sm:pr-28 pb-40 no-scrollbar relative scroll-smooth bg-white dark:bg-slate-950">
-                        <div className="max-w-[960px] mx-auto animate-in fade-in slide-in-from-bottom-10 duration-1000">
-                            {activeTab === 'profile' && renderProfileTab()}
-                            {activeTab === 'history' && renderHistoryTab()}
-                            {activeTab === 'vault' && renderVaultTab()}
-                            {activeTab === 'settings' && renderSettingsTab()}
-                        </div>
+                {/* RIGHT COLUMN - Main Tab Content */}
+                <div ref={rightColRef} className="flex-1 overflow-y-auto p-6 sm:p-10 sm:pr-28 pb-40 no-scrollbar relative scroll-smooth bg-white dark:bg-slate-950">
+                    <div className="max-w-[960px] mx-auto animate-in fade-in slide-in-from-bottom-10 duration-1000">
+                        {activeTab === 'profile' && renderProfileTab()}
+                        {activeTab === 'history' && renderHistoryTab()}
+                        {activeTab === 'vault' && renderVaultTab()}
+                        {activeTab === 'settings' && renderSettingsTab()}
                     </div>
                 </div>
+            </div>
 
-                {/* Tactical Footer Action Bar - Integrated into context */}
-                <div className={`flex-none p-8 md:px-14 bg-white border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center transition-all duration-700 ${isEditing ? 'opacity-100 translate-y-0 h-auto visible' : 'opacity-0 translate-y-full h-0 invisible'}`}>
-                    <div className="flex items-center gap-6">
-                        <SidebarAction icon={Download} label="Exportar Dossier" onClick={() => toast.info('Generando Reporte Elite...')} />
-                        <div className="hidden lg:flex items-center gap-3 border-l border-slate-100 pl-8 opacity-40 select-none">
-                            <span className="text-[10px] font-black tracking-[0.5em] text-slate-400 font-premium uppercase">CONTROL DE MISIÓN v4.0</span>
-                        </div>
-                    </div>
-                    <div className="flex gap-5">
-                        <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-6 py-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl border border-blue-100 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 transition-all shadow-sm">
-                            {isAnalyzingPdf ? <Loader size={14} className="animate-spin" /> : <ScanLine size={16} />}
-                            <span>MÓDULO SCANNER</span>
-                        </button>
-                        <button onClick={() => setIsEditing(false)} className="px-8 py-4 text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-50 hover:text-slate-900 transition-all rounded-2xl">ABORTAR</button>
-                        <button onClick={handleSave} className="px-10 py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95">GUARDAR DATOS</button>
+            {/* Tactical Footer Action Bar - Integrated into context */}
+            <div className={`flex-none p-8 md:px-14 bg-white border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center transition-all duration-700 ${isEditing ? 'opacity-100 translate-y-0 h-auto visible' : 'opacity-0 translate-y-full h-0 invisible'}`}>
+                <div className="flex items-center gap-6">
+                    <SidebarAction icon={Download} label="Exportar Dossier" onClick={() => toast.info('Generando Reporte Elite...')} />
+                    <div className="hidden lg:flex items-center gap-3 border-l border-slate-100 pl-8 opacity-40 select-none">
+                        <span className="text-[10px] font-black tracking-[0.5em] text-slate-400 font-premium uppercase">CONTROL DE MISIÓN v4.0</span>
                     </div>
                 </div>
-                <input type="file" ref={proofInputRef} className="sr-only" onChange={handleProofUpload} accept=".pdf,image/*" />
-                <input type="file" ref={fileInputRef} className="hidden" onChange={handlePdfUpdate} accept=".pdf" />
+                <div className="flex gap-5">
+                    <button onClick={() => !isAnalyzingPdf && fileInputRef.current?.click()} className="px-6 py-4 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-2xl border border-blue-100 text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 transition-all shadow-sm">
+                        {isAnalyzingPdf ? <Loader size={14} className="animate-spin" /> : <ScanLine size={16} />}
+                        <span>MÓDULO SCANNER</span>
+                    </button>
+                    <button onClick={() => setIsEditing(false)} className="px-8 py-4 text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-slate-50 hover:text-slate-900 transition-all rounded-2xl">ABORTAR</button>
+                    <button onClick={handleSave} className="px-10 py-4 bg-blue-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95">GUARDAR DATOS</button>
+                </div>
+            </div>
+            <input type="file" ref={proofInputRef} className="sr-only" onChange={handleProofUpload} accept=".pdf,image/*" />
+            <input type="file" ref={fileInputRef} className="hidden" onChange={handlePdfUpdate} accept=".pdf" />
 
-                <PdfPreviewModal
-                    isOpen={!!previewItem}
-                    onClose={() => setPreviewItem(null)}
-                    declaration={previewItem}
-                    client={client}
-                    onDownload={() => previewItem?.proof_file && handleDownloadFile(previewItem.proof_file)}
-                />
+            <PdfPreviewModal
+                isOpen={!!previewItem}
+                onClose={() => setPreviewItem(null)}
+                declaration={previewItem}
+                client={client}
+                onDownload={() => previewItem?.proof_file && handleDownloadFile(previewItem.proof_file)}
+            />
 
-                <Modal isOpen={!!confirmation} onClose={() => setConfirmation(null)} title="Confirmar Acción">
-                    <div className="p-6 text-center">
-                        <p className="mb-6">¿Proceder con {confirmation?.action === 'declare' ? 'declaración' : 'pago'} de {confirmation ? formatPeriodForDisplay(confirmation.period) : ''}?</p>
-                        <button onClick={() => handleConfirmAction(false)} className="w-full py-4 bg-brand-navy text-white font-semibold rounded-2xl text-xs uppercase tracking-widest">Confirmar</button>
-                    </div>
-                </Modal>
+            <Modal isOpen={!!confirmation} onClose={() => setConfirmation(null)} title="Confirmar Acción">
+                <div className="p-6 text-center">
+                    <p className="mb-6">¿Proceder con {confirmation?.action === 'declare' ? 'declaración' : 'pago'} de {confirmation ? formatPeriodForDisplay(confirmation.period) : ''}?</p>
+                    <button onClick={() => handleConfirmAction(false)} className="w-full py-4 bg-brand-navy text-white font-semibold rounded-2xl text-xs uppercase tracking-widest">Confirmar</button>
+                </div>
+            </Modal>
 
-                <Modal isOpen={!!whatsAppPrompt} onClose={() => setWhatsAppPrompt(null)} title="🚀 Notificar por WhatsApp" size="2xl">
-                    {whatsAppPrompt && (
-                        <div className="space-y-6 p-4">
-                            <div className="p-4 bg-slate-50 dark:bg-surface-low rounded-2xl border border-slate-100 dark:border-white/5 space-y-2">
-                                <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
-                                    <span>Destinatario</span>
-                                    <span className="text-emerald-500 font-black">Cliente Activo</span>
-                                </div>
-                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                                    {whatsAppPrompt.clientName} ({whatsAppPrompt.phone})
-                                </p>
+            <Modal isOpen={!!whatsAppPrompt} onClose={() => setWhatsAppPrompt(null)} title="🚀 Notificar por WhatsApp" size="2xl">
+                {whatsAppPrompt && (
+                    <div className="space-y-6 p-4">
+                        <div className="p-4 bg-slate-50 dark:bg-surface-low rounded-2xl border border-slate-100 dark:border-white/5 space-y-2">
+                            <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                                <span>Destinatario</span>
+                                <span className="text-emerald-500 font-black">Cliente Activo</span>
                             </div>
-                            
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block ml-1">
-                                    Mensaje Personalizable
-                                </label>
-                                <textarea
-                                    value={whatsAppPrompt.message}
-                                    onChange={(e) => setWhatsAppPrompt({ ...whatsAppPrompt, message: e.target.value })}
-                                    className="w-full h-40 px-5 py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/10 outline-none focus:ring-2 focus:ring-primary/20 text-slate-800 dark:text-slate-100 text-sm font-medium leading-relaxed resize-none shadow-inner"
-                                    placeholder="Escribe el mensaje aquí..."
-                                />
-                            </div>
-
-                            <div className="flex gap-4">
-                                <button
-                                    onClick={() => setWhatsAppPrompt(null)}
-                                    className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-500 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95"
-                                >
-                                    Omitir
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        window.open(`https://wa.me/${whatsAppPrompt.phone}?text=${encodeURIComponent(whatsAppPrompt.message)}`, "_blank");
-                                        setWhatsAppPrompt(null);
-                                    }}
-                                    className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
-                                >
-                                    <MessageCircle size={14} strokeWidth={2.5} />
-                                    Enviar WhatsApp
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </Modal>
-                <Modal isOpen={isReceiptModalOpen} onClose={() => setIsReceiptModalOpen(false)} title="Recibo">
-                    {receiptData && (
-                        <div className="p-4 bg-white rounded-xl">
-                            <div ref={receiptRef} className="text-center font-mono text-sm space-y-3 mb-6">
-                                <h3 className="font-medium">RECIBO</h3>
-                                <div className="p-3 bg-slate-50 rounded-lg">
-                                    <p>{receiptData.clientName}</p>
-                                    <p className="font-medium text-lg">${receiptData.totalAmount.toFixed(2)}</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-3">
-                                <button onClick={handlePrintReceipt} className="flex-1 bg-brand-navy text-white py-3 rounded-xl font-medium">Imprimir</button>
-                                <button onClick={copyReceiptToClipboard} className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-medium">Copiar</button>
-                            </div>
-                        </div>
-                    )}
-                </Modal>
-                <Modal isOpen={!!mismatchData} onClose={() => setMismatchData(null)} title="RUC Erróneo">
-                    <div className="text-center p-4">
-                        <p>El RUC no coincide con {client.name}.</p>
-                        <button onClick={handleJumpToOwner} className="w-full py-4 bg-brand-navy text-white font-semibold rounded-2xl mt-4">Ver Ficha Correcta</button>
-                    </div>
-                </Modal>
-
-                {/* Modal confirmación de papelera */}
-                <Modal isOpen={isDeleteConfirmOpen} onClose={() => setIsDeleteConfirmOpen(false)} title="Enviar a Papelera">
-                    <div className="p-6 text-center space-y-6">
-                        <div className="w-16 h-16 bg-rose-50 dark:bg-rose-500/10 rounded-3xl flex items-center justify-center mx-auto border border-rose-100 dark:border-rose-500/20">
-                            <Trash2 size={28} className="text-rose-500" strokeWidth={1.5} />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-2">{client.name}</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                                Este cliente se moverá a la papelera. Podrás restaurarlo desde la pestaña <strong>Papelera</strong> en el directorio de clientes.
+                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                                {whatsAppPrompt.clientName} ({whatsAppPrompt.phone})
                             </p>
                         </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setIsDeleteConfirmOpen(false)}
-                                className="flex-1 py-3 rounded-2xl bg-slate-100 dark:bg-surface-low/50 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-200 dark:hover:bg-surface-low transition-all active:scale-95"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={handleSoftDelete}
-                                className="flex-1 py-3 rounded-2xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 shadow-lg shadow-rose-200 dark:shadow-rose-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
-                            >
-                                <Trash2 size={16} strokeWidth={2.5} />
-                                Enviar a Papelera
-                            </button>
-                        </div>
-                    </div>
-                </Modal>
-                {/* ── Modal Cambio Frecuencia IVA ── */}
-                {showFrequencyModal && (
-                    <IvaFrequencyChangeModal
-                        client={editedClient}
-                        onConfirm={(updatedClient) => {
-                            setEditedClient(updatedClient);
-                            onSave(updatedClient);
-                            setShowFrequencyModal(false);
-                            toast.success(`✅ Frecuencia IVA cambiada a ${updatedClient.taxProfile?.ivaFrequency} · Período de inicio: ${updatedClient.clientStartPeriod}`);
-                        }}
-                        onCancel={() => setShowFrequencyModal(false)}
-                    />
-                )}
 
-                {/* ── Barra Flotante de Cristal de Guardado Rápido (No invasivo) ── */}
-                {isEditing && (
-                    <div className="fixed bottom-6 right-6 z-[450] animate-in fade-in slide-in-from-bottom-5 duration-300">
-                        <div className="flex items-center gap-3 p-3 bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block ml-1">
+                                Mensaje Personalizable
+                            </label>
+                            <textarea
+                                value={whatsAppPrompt.message}
+                                onChange={(e) => setWhatsAppPrompt({ ...whatsAppPrompt, message: e.target.value })}
+                                className="w-full h-40 px-5 py-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/10 outline-none focus:ring-2 focus:ring-primary/20 text-slate-800 dark:text-slate-100 text-sm font-medium leading-relaxed resize-none shadow-inner"
+                                placeholder="Escribe el mensaje aquí..."
+                            />
+                        </div>
+
+                        <div className="flex gap-4">
                             <button
-                                onClick={() => setIsEditing(false)}
-                                className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-white transition-all rounded-xl hover:bg-white/5 active:scale-95"
+                                onClick={() => setWhatsAppPrompt(null)}
+                                className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-500 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95"
                             >
-                                Cancelar
+                                Omitir
                             </button>
                             <button
-                                onClick={handleSave}
-                                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20 flex items-center gap-1.5"
+                                onClick={() => {
+                                    window.open(`https://wa.me/${whatsAppPrompt.phone}?text=${encodeURIComponent(whatsAppPrompt.message)}`, "_blank");
+                                    setWhatsAppPrompt(null);
+                                }}
+                                className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
                             >
-                                <Save size={12} strokeWidth={2.5} />
-                                <span>Guardar</span>
+                                <MessageCircle size={14} strokeWidth={2.5} />
+                                Enviar WhatsApp
                             </button>
                         </div>
                     </div>
                 )}
-            </div>
+            </Modal>
+            <Modal isOpen={isReceiptModalOpen} onClose={() => setIsReceiptModalOpen(false)} title="Recibo">
+                {receiptData && (
+                    <div className="p-4 bg-white rounded-xl">
+                        <div ref={receiptRef} className="text-center font-mono text-sm space-y-3 mb-6">
+                            <h3 className="font-medium">RECIBO</h3>
+                            <div className="p-3 bg-slate-50 rounded-lg">
+                                <p>{receiptData.clientName}</p>
+                                <p className="font-medium text-lg">${receiptData.totalAmount.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={handlePrintReceipt} className="flex-1 bg-brand-navy text-white py-3 rounded-xl font-medium">Imprimir</button>
+                            <button onClick={copyReceiptToClipboard} className="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-medium">Copiar</button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
+            <Modal isOpen={!!mismatchData} onClose={() => setMismatchData(null)} title="RUC Erróneo">
+                <div className="text-center p-4">
+                    <p>El RUC no coincide con {client.name}.</p>
+                    <button onClick={handleJumpToOwner} className="w-full py-4 bg-brand-navy text-white font-semibold rounded-2xl mt-4">Ver Ficha Correcta</button>
+                </div>
+            </Modal>
+
+            {/* Modal confirmación de papelera */}
+            <Modal isOpen={isDeleteConfirmOpen} onClose={() => setIsDeleteConfirmOpen(false)} title="Enviar a Papelera">
+                <div className="p-6 text-center space-y-6">
+                    <div className="w-16 h-16 bg-rose-50 dark:bg-rose-500/10 rounded-3xl flex items-center justify-center mx-auto border border-rose-100 dark:border-rose-500/20">
+                        <Trash2 size={28} className="text-rose-500" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-2">{client.name}</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Este cliente se moverá a la papelera. Podrás restaurarlo desde la pestaña <strong>Papelera</strong> en el directorio de clientes.
+                        </p>
+                    </div>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setIsDeleteConfirmOpen(false)}
+                            className="flex-1 py-3 rounded-2xl bg-slate-100 dark:bg-surface-low/50 text-slate-600 dark:text-slate-300 font-bold text-sm hover:bg-slate-200 dark:hover:bg-surface-low transition-all active:scale-95"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleSoftDelete}
+                            className="flex-1 py-3 rounded-2xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 shadow-lg shadow-rose-200 dark:shadow-rose-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <Trash2 size={16} strokeWidth={2.5} />
+                            Enviar a Papelera
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+            {/* ── Modal Cambio Frecuencia IVA ── */}
+            {showFrequencyModal && (
+                <IvaFrequencyChangeModal
+                    client={editedClient}
+                    onConfirm={(updatedClient) => {
+                        setEditedClient(updatedClient);
+                        onSave(updatedClient);
+                        setShowFrequencyModal(false);
+                        toast.success(`✅ Frecuencia IVA cambiada a ${updatedClient.taxProfile?.ivaFrequency} · Período de inicio: ${updatedClient.clientStartPeriod}`);
+                    }}
+                    onCancel={() => setShowFrequencyModal(false)}
+                />
+            )}
+
+            {/* ── Barra Flotante de Cristal de Guardado Rápido (No invasivo) ── */}
+            {isEditing && (
+                <div className="fixed bottom-6 right-6 z-[450] animate-in fade-in slide-in-from-bottom-5 duration-300">
+                    <div className="flex items-center gap-3 p-3 bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.4)]">
+                        <button
+                            onClick={() => setIsEditing(false)}
+                            className="px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-white transition-all rounded-xl hover:bg-white/5 active:scale-95"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-blue-500/20 flex items-center gap-1.5"
+                        >
+                            <Save size={12} strokeWidth={2.5} />
+                            <span>Guardar</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 });

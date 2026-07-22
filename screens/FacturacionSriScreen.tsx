@@ -1335,18 +1335,27 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           })
         });
 
-        if (!signResponse.ok) {
-          let errDetail = signResponse.statusText;
-          try {
-            const errJson = await signResponse.json();
-            errDetail = errJson.message || errJson.error || errJson.msg || errJson.detalles || errDetail;
-          } catch {}
-          throw new Error(`Error en API al firmar: ${errDetail}`);
+        const signData = await signResponse.json().catch(() => null);
+
+        if (!signResponse.ok || (signData && signData.status === false)) {
+          let errDetail = '';
+          if (signData) {
+            errDetail = signData.message || signData.error || signData.msg || signData.detalles || signData.mensaje || (typeof signData.data === 'string' ? signData.data : '');
+            if (typeof signData.errors === 'object') {
+              errDetail += ' ' + JSON.stringify(signData.errors);
+            }
+          }
+          if (!errDetail) {
+            errDetail = signResponse.statusText || `Código de error HTTP ${signResponse.status}`;
+          }
+          throw new Error(`Error en API al firmar: ${errDetail}. Verifique que la contraseña de su archivo de firma (.p12) sea la correcta.`);
         }
 
-        const signData = await signResponse.json();
-        currentXml = signData.data?.xml || signData.xml_firmado || signData.xml;
-        if (!currentXml) throw new Error('La API de firma no devolvió el XML firmado. Verifique la clave y el archivo .p12.');
+        currentXml = signData?.data?.xml || signData?.xml_firmado || signData?.xml || signData?.data?.xml_firmado;
+        if (!currentXml) {
+          const detail = signData?.message || signData?.error || 'La API no devolvió la etiqueta XML firmada.';
+          throw new Error(`Error al firmar: ${detail} Verifique la contraseña de su archivo de firma (.p12).`);
+        }
         setGeneratedXml(currentXml);
         addLog(`Firma digital realizada con éxito por el backend`, 'success');
       }
