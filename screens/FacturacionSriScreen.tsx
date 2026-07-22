@@ -112,7 +112,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   onClearInitialData
 }) => {
   const { clients, serviceFees, updateClient } = useAppStore();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'factura' | 'retencion' | 'nota_credito' | 'nota_debito' | 'guia' | 'liquidacion' | 'historial' | 'validador' | 'configuracion'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'factura' | 'retencion' | 'nota_credito' | 'nota_debito' | 'guia' | 'liquidacion' | 'historial' | 'validador' | 'configuracion' | 'firma'>('dashboard');
   const [isFacturacionOpen, setIsFacturacionOpen] = useState(true);
   const [isHerramientasOpen, setIsHerramientasOpen] = useState(true);
   const [isActionsDropdownOpen, setIsActionsDropdownOpen] = useState(false);
@@ -2583,6 +2583,245 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     );
   };
 
+  const renderSignatureManager = () => {
+    return (
+      <div className="glass-card-premium p-6 sm:p-8 space-y-6 animate-fade-in relative z-20 max-w-4xl mx-auto font-premium">
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-white/10 pb-5">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+              <Key size={22} className="animate-pulse" />
+            </div>
+            <div className="text-left">
+              <h3 className="text-base font-black uppercase tracking-widest text-slate-800 dark:text-white flex items-center gap-2">
+                Gestión de Firma Electrónica (.p12)
+              </h3>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-sans">
+                Configuración, Validación de Clave y Estado del Certificado Digital XAdES-BES
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {p12FileBase64 && !isEditingSignature ? (
+              <button
+                type="button"
+                onClick={() => setIsEditingSignature(true)}
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95"
+              >
+                <Edit3 size={12} />
+                <span>Modificar Firma</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!p12FileBase64) {
+                    alert('Por favor, seleccione un archivo de firma .p12 antes de guardar.');
+                    return;
+                  }
+                  await db.setLocal('sc_sri_p12_base64', p12FileBase64);
+                  await db.setLocal('sc_sri_p12_filename', p12FileName);
+                  await db.setLocal('sc_sri_p12_password', p12Password);
+                  localStorage.setItem('sc_sri_p12_base64', p12FileBase64);
+                  localStorage.setItem('sc_sri_p12_filename', p12FileName);
+                  localStorage.setItem('sc_sri_p12_password', p12Password);
+                  setIsEditingSignature(false);
+                  alert('✅ Firma electrónica y contraseña guardadas correctamente.');
+                }}
+                className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md shadow-emerald-600/20 active:scale-95"
+              >
+                <Save size={12} />
+                <span>Guardar Firma</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Guía Visual de Pasos */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className={`p-4 rounded-2xl border transition-all ${p12FileBase64 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-primary/5 border-primary/20 text-primary'}`}>
+            <span className="text-[9px] font-black uppercase tracking-widest block opacity-75 mb-1 font-sans">Paso 1</span>
+            <div className="flex items-center justify-between font-premium">
+              <span className="text-xs font-black uppercase tracking-wider">Archivo .P12</span>
+              {p12FileBase64 ? <CheckCircle2 size={16} /> : <Download size={16} />}
+            </div>
+            <span className="text-[9px] block opacity-80 mt-1 truncate font-mono">
+              {p12FileName || 'Cargar archivo digital'}
+            </span>
+          </div>
+
+          <div className={`p-4 rounded-2xl border transition-all ${p12Password ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400'}`}>
+            <span className="text-[9px] font-black uppercase tracking-widest block opacity-75 mb-1 font-sans">Paso 2</span>
+            <div className="flex items-center justify-between font-premium">
+              <span className="text-xs font-black uppercase tracking-wider">Contraseña</span>
+              {p12Password ? <CheckCircle2 size={16} /> : <Lock size={16} />}
+            </div>
+            <span className="text-[9px] block opacity-80 mt-1 font-mono">
+              {p12Password ? '••••••••' : 'Ingresar contraseña'}
+            </span>
+          </div>
+
+          <div className={`p-4 rounded-2xl border transition-all ${p12FileBase64 && !isEditingSignature ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400'}`}>
+            <span className="text-[9px] font-black uppercase tracking-widest block opacity-75 mb-1 font-sans">Paso 3</span>
+            <div className="flex items-center justify-between font-premium">
+              <span className="text-xs font-black uppercase tracking-wider">Vigencia & Estado</span>
+              {p12FileBase64 ? <Activity size={16} /> : <AlertTriangle size={16} />}
+            </div>
+            <span className="text-[9px] block opacity-80 mt-1 truncate font-sans font-bold">
+              {p12SubjectName || 'Estado de firma'}
+            </span>
+          </div>
+        </div>
+
+        {/* Panel Principal */}
+        {isEditingSignature || !p12FileBase64 ? (
+          <div className="space-y-6 bg-slate-50/50 dark:bg-white/5 p-6 rounded-3xl border border-slate-200 dark:border-white/10">
+            <h4 className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 flex items-center gap-2">
+              <Edit3 size={14} className="text-primary" />
+              Formulario de Edición de Firma
+            </h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Cargar Archivo .p12 */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  1. Seleccionar Archivo (.p12)
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".p12"
+                    onChange={handleP12Upload}
+                    className="hidden"
+                    id="p12-upload-main-manager"
+                  />
+                  <label
+                    htmlFor="p12-upload-main-manager"
+                    className="w-full flex flex-col items-center justify-center gap-2 p-6 bg-white dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-white/20 hover:border-primary rounded-2xl cursor-pointer transition-all text-center group"
+                  >
+                    <div className="p-3 bg-primary/10 text-primary rounded-xl group-hover:scale-110 transition-transform">
+                      <Download size={24} />
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 font-mono truncate max-w-[250px]">
+                      {p12FileName || 'Haga clic para seleccionar archivo .p12'}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-semibold font-sans">
+                      Formatos soportados: PKCS#12 (.p12) emitidos en Ecuador
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Contraseña */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    2. Contraseña del Archivo .p12
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showP12Password ? 'text' : 'password'}
+                      value={p12Password}
+                      onChange={(e) => handlePasswordChange(e.target.value)}
+                      placeholder="Escriba la clave..."
+                      className="w-full pl-4 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-bold outline-none focus:border-primary text-slate-800 dark:text-slate-100 transition-all font-mono"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowP12Password(!showP12Password)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all"
+                    >
+                      {showP12Password ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    fetchSignatureVigencia();
+                    alert('🔍 Verificando contraseña con la API del servidor...');
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
+                >
+                  <RefreshCw size={12} />
+                  Probar y Verificar Clave
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex justify-end">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!p12FileBase64) {
+                    alert('Por favor, seleccione un archivo de firma .p12 antes de guardar.');
+                    return;
+                  }
+                  await db.setLocal('sc_sri_p12_base64', p12FileBase64);
+                  await db.setLocal('sc_sri_p12_filename', p12FileName);
+                  await db.setLocal('sc_sri_p12_password', p12Password);
+                  localStorage.setItem('sc_sri_p12_base64', p12FileBase64);
+                  localStorage.setItem('sc_sri_p12_filename', p12FileName);
+                  localStorage.setItem('sc_sri_p12_password', p12Password);
+                  setIsEditingSignature(false);
+                  alert('✅ Firma electrónica guardada y lista para facturación.');
+                }}
+                className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
+              >
+                💾 Guardar y Bloquear Firma
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Modo Bloqueado / Resumen de Firma Configurada */
+          <div className="space-y-6 animate-fade-in">
+            <div className="p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/25 space-y-5 text-left">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 size={18} />
+                  <span className="text-xs font-black uppercase tracking-wider font-premium">Firma Electrónica Activa y Protegida</span>
+                </div>
+                <span className="px-3 py-1 bg-emerald-500 text-white text-[9px] font-black rounded-full uppercase tracking-wider w-fit">
+                  🔒 Configurada
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 font-mono text-xs text-slate-700 dark:text-slate-200">
+                <div className="space-y-1 bg-white/60 dark:bg-slate-900/50 p-3 rounded-2xl border border-emerald-500/10">
+                  <span className="text-[9px] font-sans font-bold uppercase tracking-wider text-slate-400 block">Propietario / Titular</span>
+                  <span className="font-bold text-slate-900 dark:text-white uppercase truncate block">
+                    👤 {p12OwnerName || emisorRazonSocial}
+                  </span>
+                </div>
+
+                <div className="space-y-1 bg-white/60 dark:bg-slate-900/50 p-3 rounded-2xl border border-emerald-500/10">
+                  <span className="text-[9px] font-sans font-bold uppercase tracking-wider text-slate-400 block">Fecha de Inicio / Emisión</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                    📅 {p12StartDate || 'Vigente'}
+                  </span>
+                </div>
+
+                <div className="space-y-1 bg-white/60 dark:bg-slate-900/50 p-3 rounded-2xl border border-emerald-500/10">
+                  <span className="text-[9px] font-sans font-bold uppercase tracking-wider text-slate-400 block">Fecha de Vencimiento</span>
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 block">
+                    ⏰ {p12ExpiryDate || 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[10px] text-slate-500 font-semibold border-t border-emerald-500/15">
+                <span>Archivo: <strong className="font-mono text-slate-800 dark:text-slate-200">{p12FileName || 'firma.p12'}</strong></span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-bold font-sans">{p12SubjectName}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const handleSaveSettings = () => {
     localStorage.setItem('sc_emisor_ruc', emisorRuc);
     localStorage.setItem('sc_emisor_razon', emisorRazonSocial);
@@ -2724,11 +2963,23 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     </button>
                     <button
                       type="button"
+                      onClick={() => setActiveTab('firma')}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
+                        activeTab === 'firma'
+                          ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black'
+                          : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 dark:text-slate-400'
+                      }`}
+                    >
+                      <Key size={12} className="text-primary" />
+                      <span>Firma Electrónica (.p12)</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setActiveTab('configuracion')}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
                         activeTab === 'configuracion'
                           ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black'
-                          : 'text-slate-500 hover:bg-slate-55 dark:hover:bg-white/5 dark:text-slate-400'
+                          : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 dark:text-slate-400'
                       }`}
                     >
                       <Settings size={12} />
@@ -2740,14 +2991,21 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
             </div>
 
-            {/* Bottom Status Block */}
+            {/* Bottom Status Block (Clickable) */}
             <div className="pt-4 border-t border-slate-200 dark:border-white/5">
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-left space-y-1 font-sans">
-                <span className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">Firma Electrónica</span>
+              <button
+                type="button"
+                onClick={() => setActiveTab('firma')}
+                className="w-full p-3 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-left space-y-1 font-sans transition-all group cursor-pointer"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">Firma Electrónica</span>
+                  <ChevronRight size={10} className="text-emerald-500 group-hover:translate-x-0.5 transition-transform" />
+                </div>
                 <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 block leading-tight">
                   {p12FileBase64 ? '✓ Firma Configurada y Activa' : '⚠️ Pendiente de configurar'}
                 </span>
-              </div>
+              </button>
             </div>
 
           </div>
@@ -2766,7 +3024,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               </div>
               <div className="flex flex-col text-left font-premium">
                 <h2 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-white">
-                  {activeTab === 'factura' ? 'Nueva Factura Electrónica' : activeTab === 'retencion' ? 'Comprobante de Retención' : activeTab === 'validador' ? 'Validador SRI' : activeTab === 'configuracion' ? 'Ajustes del Emisor' : 'Historial Comprobantes'}
+                  {activeTab === 'factura' ? 'Nueva Factura Electrónica' : activeTab === 'retencion' ? 'Comprobante de Retención' : activeTab === 'validador' ? 'Validador SRI' : activeTab === 'configuracion' ? 'Ajustes del Emisor' : activeTab === 'firma' ? 'Gestión de Firma Electrónica (.p12)' : 'Historial Comprobantes'}
                 </h2>
                 <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5 font-sans">
                   Emisor: {emisorRazonSocial || 'No configurado'}
@@ -2883,6 +3141,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
         {/* Views Router */}
         {activeTab === 'dashboard' && renderDashboard()}
+        {activeTab === 'firma' && renderSignatureManager()}
         
         {activeTab === 'nota_credito' && renderUpcomingDocument('Nota de Crédito Electrónica', 'Permite anular o aplicar descuentos/modificaciones a facturas emitidas y autorizadas previamente en el SRI.')}
         {activeTab === 'nota_debito' && renderUpcomingDocument('Nota de Débito Electrónica', 'Permite cobrar intereses, multas o cargos adicionales que aumenten el valor original de una factura.')}
