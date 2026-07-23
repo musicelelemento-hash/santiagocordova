@@ -1882,8 +1882,22 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     }
 
     let regimeLabel = '';
-    if (emisor.regimen === '1') regimeLabel = '<div style="font-size: 8px; font-weight: bold; color: #555; text-transform: uppercase; margin-top: 5px;">Contribuyente Régimen RIMPE - Negocio Popular</div>';
-    else if (emisor.regimen === '2') regimeLabel = '<div style="font-size: 8px; font-weight: bold; color: #555; text-transform: uppercase; margin-top: 5px;">Contribuyente Régimen RIMPE</div>';
+    let contribuyenteRimpeXml = '';
+    try {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(comprobante.xml || '', "text/xml");
+      contribuyenteRimpeXml = xmlDoc.getElementsByTagName("contribuyenteRimpe")[0]?.textContent || '';
+    } catch (e) {}
+
+    if (contribuyenteRimpeXml) {
+      regimeLabel = `<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">${contribuyenteRimpeXml}</div>`;
+    } else if (emisor.regimen === '3' || emisor.regimen === '1') {
+      regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</div>';
+    } else if (emisor.regimen === '2') {
+      regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #2b6aff; border-radius: 4px; display: inline-block;">CONTRIBUYENTE RÉGIMEN RIMPE</div>';
+    } else {
+      regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</div>';
+    }
 
     const logoHtml = emisorLogo 
       ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 

@@ -145,6 +145,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         <div style="font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">${emisorRazon}</div>
                         <div><strong>Dirección Matriz:</strong> ${emisorDir}</div>
                         <div><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
+                        <div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</div>
                     </div>
                     <div class="auth-box">
                         <div>R.U.C.: <span style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">${emisorRuc}</span></div>
