@@ -9,6 +9,7 @@ import { es } from 'date-fns/locale';
 import { ClientCard } from '../components/features/ClientCard';
 import { useToast } from '../context/ToastContext';
 import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
+import { downloadStoredFile } from '../services/fileService';
 import { processBulkPdfs, BulkProcessResult } from '../services/bulkOperations';
 import { BulkUploadReportModal } from '../components/features/BulkUploadReportModal';
 import { ChatBot } from '../components/features/ChatBot';
@@ -1622,12 +1623,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     client={previewState.client}
                     declaration={previewState.declaration}
                     onDownload={() => {
-                        const link = document.createElement('a');
-                        link.href = previewState.declaration.proof_file.url;
-                        link.download = previewState.declaration.proof_file.name;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
+                        if (previewState.declaration?.proof_file) {
+                            downloadStoredFile(previewState.declaration.proof_file);
+                        }
                     }}
                 />
             )}

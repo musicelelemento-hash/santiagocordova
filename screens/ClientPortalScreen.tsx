@@ -5,6 +5,7 @@ import { formatPeriodForDisplay, safeFormat } from '../services/sri';
 import { getClientServiceFee } from '../services/clientService';
 import { getClientCompliance, COMPLIANCE_COLORS } from '../services/complianceEngine';
 import { Logo } from '../components/ui/Logo';
+import { downloadStoredFile, openStoredFileInNewTab } from '../services/fileService';
 
 // ─────────────────────────────────────────────────────────
 // UI SUB-COMPONENTS (Elite Zen v3.2)
@@ -357,29 +358,13 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
         return pending.length * fee;
     }, [localClient.declarations, fee]);
 
-    const handleOpenInNewTab = (decl: Declaration | { proof_file?: StoredFile }) => {
-        if (!decl.proof_file?.content) return;
-        const base64Data = decl.proof_file.content.split(',')[1];
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => URL.revokeObjectURL(url), 100);
+    const handleOpenInNewTab = async (decl: Declaration | { proof_file?: StoredFile }) => {
+        if (!decl.proof_file) return;
+        await openStoredFileInNewTab(decl.proof_file);
     };
 
-    const handleDownloadFile = (file: StoredFile) => {
-        if (!file.content) return;
-        const link = document.createElement('a');
-        link.href = file.content;
-        link.download = file.name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleDownloadFile = async (file: StoredFile) => {
+        await downloadStoredFile(file);
     };
 
     const handleRucPreview = () => {

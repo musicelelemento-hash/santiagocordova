@@ -14,6 +14,7 @@ import { ClientNotes } from '../ClientNotes';
 import { FacturadorCard } from '../FacturadorCard';
 import { useToast } from '../../../../context/ToastContext';
 import { fileToBase64 } from '../../../../services/pdfExtraction';
+import { downloadStoredFile } from '../../../../services/fileService';
 
 interface ProfileTabProps {
     client: Client;
@@ -356,10 +357,9 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    const link = document.createElement('a');
-                                                    link.href = editedClient.signatureFile?.content || '';
-                                                    link.download = editedClient.signatureFile?.name || 'firma.p12';
-                                                    link.click();
+                                                    if (editedClient.signatureFile) {
+                                                        downloadStoredFile(editedClient.signatureFile);
+                                                    }
                                                 }}
                                                 className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                                 title="Descargar Firma"

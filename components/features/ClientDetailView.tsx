@@ -5,6 +5,7 @@ import { summarizeTextWithGemini, analyzeClientPhoto } from '../../services/gemi
 import { extractDataFromSriPdf, extractDataFromDeclarationPdf, fileToBase64 } from '../../services/pdfExtraction';
 import { getClientServiceFee } from '../../services/clientService';
 import { db } from '../../services/db';
+import { downloadStoredFile } from '../../services/fileService';
 import { isPast, subMonths, subYears, addDays, getYear } from 'date-fns';
 import {
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy,
@@ -776,23 +777,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     );
 
     const handleDownloadFile = async (file: StoredFile) => {
-        if (!file?.content) return;
-        let content = file.content;
-        if (content.startsWith('__SPLIT__:') || content.startsWith('__SPLIT__Solid')) {
-            toast.info("Descargando archivo desde la nube...");
-            try {
-                const resolved = await db.rejoinLargeFiles({ content: file.content });
-                content = resolved.content || '';
-            } catch (err) {
-                console.error("Error resolviendo archivo grande:", err);
-                toast.error("Error al descargar el archivo desde la nube.");
-                return;
-            }
-        }
-        const link = document.createElement('a');
-        link.href = content;
-        link.download = file.name;
-        link.click();
+        await downloadStoredFile(file);
     };
 
     const renderHistoryTab = () => (

@@ -23,6 +23,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 import { ClientsDashboard } from '../components/features/ClientsDashboard';
 import { PdfPreviewModal } from '../components/features/ClientDetail/PdfPreviewModal';
+import { downloadStoredFile } from '../services/fileService';
 import { getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
 import { useCampaignContext } from '../hooks/useCampaignContext';
 import { CampaignBanner } from '../components/ui/CampaignBanner';
@@ -1767,11 +1768,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     client={previewItem.client}
                     declaration={previewItem.declaration}
                     onDownload={() => {
-                        if (previewItem.declaration.proof_file) {
-                            const link = document.createElement('a');
-                            link.href = previewItem.declaration.proof_file.content || '';
-                            link.download = previewItem.declaration.proof_file.name;
-                            link.click();
+                        if (previewItem?.declaration?.proof_file) {
+                            downloadStoredFile(previewItem.declaration.proof_file);
                         }
                     }}
                 />

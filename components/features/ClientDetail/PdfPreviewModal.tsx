@@ -1,6 +1,7 @@
-import React from 'react';
-import { X, CheckCircle2, Download, ShieldCheck, FileText, Info } from 'lucide-react';
-import { Declaration, Client } from '../../../types';
+import React, { useState, useEffect } from 'react';
+import { X, CheckCircle2, Download, ShieldCheck, FileText, Info, Loader2 } from 'lucide-react';
+import { Declaration, Client, StoredFile } from '../../../types';
+import { resolveStoredFile } from '../../../services/fileService';
 
 interface PdfPreviewModalProps {
     isOpen: boolean;
@@ -11,12 +12,45 @@ interface PdfPreviewModalProps {
 }
 
 export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClose, declaration, client, onDownload }) => {
+    const [resolvedFile, setResolvedFile] = useState<StoredFile | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        const file = declaration?.proof_file;
+        if (!file || !isOpen) {
+            setResolvedFile(null);
+            setIsLoading(false);
+            return;
+        }
+
+        if (file.content && (file.content.startsWith('__SPLIT__:') || file.content.startsWith('__SPLIT__Solid'))) {
+            setIsLoading(true);
+            resolveStoredFile(file).then(res => {
+                if (isMounted) {
+                    setResolvedFile(res);
+                    setIsLoading(false);
+                }
+            }).catch(() => {
+                if (isMounted) {
+                    setResolvedFile(file);
+                    setIsLoading(false);
+                }
+            });
+        } else {
+            setResolvedFile(file);
+            setIsLoading(false);
+        }
+
+        return () => { isMounted = false; };
+    }, [declaration?.proof_file, isOpen]);
+
     if (!isOpen || !declaration || !declaration.proof_file) return null;
 
-    const pdfData = declaration.proof_file;
+    const pdfData = resolvedFile || declaration.proof_file;
     
     // Extraer base64 puro (sin el prefijo data:...)
-    const base64Content = pdfData.content
+    const base64Content = pdfData.content && !pdfData.content.startsWith('__SPLIT__:')
         ? (pdfData.content.includes(',') ? pdfData.content.split(',')[1] : pdfData.content)
         : null;
     
@@ -37,8 +71,13 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({ isOpen, onClos
             <div className="relative w-full max-w-7xl h-[90vh] bg-white rounded-[2rem] border border-slate-200 shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in zoom-in-95 duration-500">
                 
                 {/* PDF Viewer Area */}
-                <div className="flex-1 bg-slate-100 relative rounded-t-[2rem] md:rounded-l-[2rem] md:rounded-tr-none overflow-hidden">
-                    {pdfSrc ? (
+                <div className="flex-1 bg-slate-100 relative rounded-t-[2rem] md:rounded-l-[2rem] md:rounded-tr-none overflow-hidden flex items-center justify-center">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center gap-4 text-primary">
+                            <Loader2 size={40} className="animate-spin text-primary" />
+                            <p className="text-sm font-bold tracking-wide">Descargando PDF desde la nube...</p>
+                        </div>
+                    ) : pdfSrc ? (
                         <iframe 
                             src={`${pdfSrc}#toolbar=0`} 
                             className="w-full h-full border-none"
