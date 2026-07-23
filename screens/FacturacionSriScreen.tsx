@@ -98,6 +98,22 @@ const mapDescriptionToProduct = (desc: string) => {
   return { code, description: formattedDesc };
 };
 
+export const getEcuadorLocalDateStr = (): string => {
+  try {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Guayaquil',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    return formatter.format(new Date());
+  } catch {
+    const d = new Date();
+    const ecuadorDate = new Date(d.getTime() - (5 * 60 * 60 * 1000));
+    return ecuadorDate.toISOString().split('T')[0];
+  }
+};
+
 interface FacturacionSriScreenProps {
   initialClientId?: string | null;
   initialAmount?: number | null;
@@ -354,7 +370,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       baseImponible: 100.00,
       codDocSustento: '01',
       numDocSustento: '001-001-000004567',
-      fechaEmisionDocSustento: new Date().toISOString().split('T')[0],
+      fechaEmisionDocSustento: getEcuadorLocalDateStr(),
       tipoRetencion: '1', // Renta
       codigoRetencion: '343', // 10%
       porcentajeRetener: 10.0,
@@ -1185,9 +1201,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     addLog(`Iniciando proceso de emisión de ${docType === 'factura' ? 'Factura' : 'Retención'}...`);
     addLog(`Ambiente: ${ambiente === '1' ? '1 (PRUEBAS)' : '2 (PRODUCCIÓN)'}. Modo: ${isMock ? 'SIMULACIÓN DEMO' : 'API LARAVEL CONECTADA'}`);
 
-    // Formulate payload
+    // Formulate payload (usando fecha local de Ecuador America/Guayaquil)
     const secuencial = String(nextNum).padStart(9, '0');
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getEcuadorLocalDateStr();
     const key = generateAccessKeyEcuador(
       todayStr,
       docType === 'factura' ? '01' : '07',
