@@ -188,6 +188,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
                       </p>
                   </div>
                   <ArrowRight size={18} className="text-rose-400/50 group-hover:text-rose-400 group-hover:translate-x-1 transition-all ml-2" />
+              </div>
+          )}
       </div>
 
       {/* CAMPAÑA ACTIVA Y LÍNEAS DE MATRIZ DE CLIENTES FALTANTES */}
