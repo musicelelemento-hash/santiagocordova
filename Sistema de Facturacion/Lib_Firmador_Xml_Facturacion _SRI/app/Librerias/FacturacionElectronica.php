@@ -1416,30 +1416,49 @@ private function getOpenSslErrors()
 
     public function parseDateTime($dateStr)
     {
-        if (empty($dateStr)) {
-            return new \DateTime();
-        }
+        $tz = new \DateTimeZone('America/Guayaquil');
+        $now = new \DateTime('now', $tz);
 
-        $formats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'Y/m/d', 'Y-m-d H:i:s', 'd/m/Y H:i:s'];
-        foreach ($formats as $format) {
-            $d = \DateTime::createFromFormat($format, $dateStr);
-            if ($d && $d->format($format) === $dateStr) {
-                return $d;
+        $parsed = null;
+        if (!empty($dateStr)) {
+            $formats = ['Y-m-d', 'd/m/Y', 'd-m-Y', 'Y/m/d', 'Y-m-d H:i:s', 'd/m/Y H:i:s'];
+            foreach ($formats as $format) {
+                $d = \DateTime::createFromFormat($format, $dateStr, $tz);
+                if ($d && $d->format($format) === $dateStr) {
+                    $parsed = $d;
+                    break;
+                }
+            }
+
+            if (!$parsed) {
+                $cleanStr = str_replace('/', '-', $dateStr);
+                $d = date_create($cleanStr, $tz);
+                if ($d !== false) {
+                    $parsed = $d;
+                }
+            }
+
+            if (!$parsed) {
+                $d = date_create($dateStr, $tz);
+                if ($d !== false) {
+                    $parsed = $d;
+                }
             }
         }
 
-        $cleanStr = str_replace('/', '-', $dateStr);
-        $d = date_create($cleanStr);
-        if ($d !== false) {
-            return $d;
+        if (!$parsed) {
+            return $now;
         }
 
-        $d = date_create($dateStr);
-        if ($d !== false) {
-            return $d;
+        $parsed->setTimezone($tz);
+
+        // Validar tolerancia del SRI: maximo 129600 minutos (90 dias) atras y no posterior al servidor
+        $diffMinutes = ($now->getTimestamp() - $parsed->getTimestamp()) / 60;
+        if ($diffMinutes < 0 || $diffMinutes > 129600) {
+            return $now;
         }
 
-        return new \DateTime();
+        return $parsed;
     }
 
     public function obtenerDatosCertificado($pkcs12Content, $password)
