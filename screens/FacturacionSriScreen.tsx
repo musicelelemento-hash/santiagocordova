@@ -729,6 +729,37 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   }, []);
 
 
+  // Reusar comprobante (especialmente rechazado/con error) como plantilla editable
+  const handleReuseAsTemplate = (row: HistoricComprobante) => {
+    const targetTab = row.tipo === 'retencion' ? 'retencion' : 'factura';
+    setActiveTab(targetTab);
+    setDocType(row.tipo);
+
+    if (row.nombreReceptor) setBuyerName(row.nombreReceptor);
+    if (row.rucReceptor) setBuyerRuc(row.rucReceptor);
+    
+    const foundClient = clients.find(c => c.ruc === row.rucReceptor || c.name === row.nombreReceptor);
+    if (foundClient) {
+      setSelectedClient(foundClient.id);
+      if (foundClient.email) setBuyerEmail(foundClient.email);
+      if (foundClient.phone) setBuyerPhone(foundClient.phone);
+      if (foundClient.address) setBuyerAddress(foundClient.address);
+      setBuyerIdType(foundClient.ruc?.length === 13 ? '04' : '05');
+    } else {
+      setSelectedClient('');
+      setBuyerIdType(row.rucReceptor?.length === 13 ? '04' : '05');
+    }
+
+    setProcessStatus('idle');
+    setConsoleLogs([]);
+    setGeneratedXml('');
+    setGeneratedAccessKey('');
+    setProcessErrorMessage(null);
+    setCurrentStep(0);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Auto-scroll logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -2518,6 +2549,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         </td>
                         <td className="py-3 text-right">
                           <div className="flex justify-end gap-1.5">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleReuseAsTemplate(doc); }}
+                              className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors flex items-center gap-1 text-[9px] font-bold px-1.5"
+                              title="Usar como plantilla y volver a emitir"
+                            >
+                              <RefreshCw size={10} />
+                              <span>Reusar</span>
+                            </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); printRideDocument(doc); }}
                               className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg transition-colors"
@@ -4628,6 +4667,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex justify-end gap-1.5">
+                          <button
+                            onClick={() => handleReuseAsTemplate(row)}
+                            className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
+                            title="Cargar esta plantilla para editar y re-emitir al SRI"
+                          >
+                            <RefreshCw size={11} />
+                            <span>Reusar Plantilla</span>
+                          </button>
                           <button
                             onClick={() => printRideDocument(row)}
                             className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg transition-colors"
