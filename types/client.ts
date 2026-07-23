@@ -152,6 +152,9 @@ export interface Client {
     jurisdiction?: string;
     electronicSignaturePassword?: string;
     signatureFile?: StoredFile;
+    idCardFront?: StoredFile;
+    idCardBack?: StoredFile;
+    idCardSelfie?: StoredFile;
     rucPdf?: StoredFile;
     rucCertificate?: StoredFile;
     sharedAccessKey?: string;

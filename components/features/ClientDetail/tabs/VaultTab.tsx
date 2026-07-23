@@ -155,6 +155,55 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 )}
             </div>
 
+            {/* Respaldo para Tramitar Firma Electrónica */}
+            <div className="bg-slate-900/60 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-slate-700/50 shadow-xl space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                            <LucideIcons.Camera size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-black text-white uppercase tracking-wide">
+                                Respaldo para Tramitar Firma Electrónica
+                            </h3>
+                            <p className="text-slate-400 text-xs mt-0.5">
+                                Requisitos obligatorios (Fotos/PDFs) para la emisión o renovación de la firma digital.
+                            </p>
+                        </div>
+                    </div>
+                    <span className="px-3 py-1 bg-indigo-500/10 text-indigo-300 text-[10px] font-black uppercase tracking-wider rounded-lg border border-indigo-500/20 self-start sm:self-auto">
+                        Tramitación Digital
+                    </span>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                    <VaultCard 
+                        icon={LucideIcons.CreditCard} 
+                        label="Cédula (Frontal / Anverso)" 
+                        file={editedClient.idCardFront} 
+                        onUpload={(f) => handleUploadField('idCardFront', f)} 
+                        onDownload={() => editedClient.idCardFront && onDownloadFile?.(editedClient.idCardFront)} 
+                        onDelete={() => handleDeleteField('idCardFront')}
+                    />
+                    <VaultCard 
+                        icon={LucideIcons.CreditCard} 
+                        label="Cédula (Posterior / Reverso)" 
+                        file={editedClient.idCardBack} 
+                        onUpload={(f) => handleUploadField('idCardBack', f)} 
+                        onDownload={() => editedClient.idCardBack && onDownloadFile?.(editedClient.idCardBack)} 
+                        onDelete={() => handleDeleteField('idCardBack')}
+                    />
+                    <VaultCard 
+                        icon={LucideIcons.UserCheck} 
+                        label="Selfie sosteniendo Cédula" 
+                        file={editedClient.idCardSelfie} 
+                        onUpload={(f) => handleUploadField('idCardSelfie', f)} 
+                        onDownload={() => editedClient.idCardSelfie && onDownloadFile?.(editedClient.idCardSelfie)} 
+                        onDelete={() => handleDeleteField('idCardSelfie')}
+                    />
+                </div>
+            </div>
+
             {/* Simplificación Zen: Notas Directas en lugar de Facturador complejo */}
             <div className="grid grid-cols-1 gap-8">
                 <div className="min-h-[300px]">

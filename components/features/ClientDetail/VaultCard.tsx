@@ -87,13 +87,19 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
                      ) : (
                         <label className="w-11 h-11 flex items-center justify-center bg-slate-100 dark:bg-surface-low hover:bg-primary dark:hover:bg-primary hover:text-white dark:hover:text-white text-slate-500 dark:text-slate-400 cursor-pointer transition-all rounded-xl active:scale-95 border border-slate-200 dark:border-white/5">
                             <LucideIcons.UploadCloud size={18} strokeWidth={2.5} />
-                            <input type="file" className="hidden" onChange={async (e) => {
-                                const f = e.target.files?.[0];
-                                if (f && onUpload) {
-                                    const content = await fileToBase64(f);
-                                    onUpload({ name: f.name, type: 'pdf', size: f.size, lastModified: f.lastModified, content });
-                                }
-                            }} />
+                            <input 
+                                type="file" 
+                                accept="image/*,application/pdf,.p12,.pfx" 
+                                className="hidden" 
+                                onChange={async (e) => {
+                                    const f = e.target.files?.[0];
+                                    if (f && onUpload) {
+                                        const content = await fileToBase64(f);
+                                        const fileType = f.type.startsWith('image/') ? 'image' : 'pdf';
+                                        onUpload({ name: f.name, type: fileType, size: f.size, lastModified: f.lastModified, content });
+                                    }
+                                }} 
+                            />
                         </label>
                     )}
                 </div>

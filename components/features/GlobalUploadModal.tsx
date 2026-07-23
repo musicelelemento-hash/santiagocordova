@@ -31,13 +31,26 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
     const [dragActive, setDragActive] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
+    const [processingProgress, setProcessingProgress] = useState<{ current: number; total: number } | null>(null);
+
     const handleFiles = async (files: FileList | File[]) => {
+        const fileList = Array.from(files);
+        if (fileList.length === 0) return;
+
         setIsProcessing(true);
+        setProcessingProgress({ current: 0, total: fileList.length });
         const newResults: ProcessingResult[] = [];
         let updatedClients = [...clients];
         let anyChanges = false;
+        const modifiedClientRucs = new Set<string>();
 
-        for (const file of Array.from(files)) {
+        for (let i = 0; i < fileList.length; i++) {
+            const file = fileList[i];
+            setProcessingProgress({ current: i + 1, total: fileList.length });
+
+            // Liberar el hilo de UI para mantener la interfaz a 60fps
+            await new Promise(r => setTimeout(r, 10));
+
             if (file.type !== 'application/pdf') {
                 newResults.push({ fileName: file.name, status: 'error', message: 'No es un archivo PDF válido.' });
                 continue;
@@ -82,7 +95,7 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                 };
 
                 // Update Client Data
-                const history = [...client.declarations];
+                const history = [...(client.declarations || [])];
                 let eraPeriod = data.period;
                 let type: TaxObligationType = eraPeriod.includes('-') ? 'IVA' : 'RENTA';
 
@@ -130,12 +143,13 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                     });
                 }
                 updatedClients[clientIndex] = { ...client, declarations: history };
-
+                modifiedClientRucs.add(data.ruc.trim());
                 anyChanges = true;
+
                 newResults.push({
                     fileName: file.name,
                     status: 'success',
-                    message: `Validado y asignado correctamente.`,
+                    message: `Validado y asignado a ${client.name.split(' ')[0]}.`,
                     clientName: client.name,
                     ruc: data.ruc,
                     amount: data.amount,
@@ -151,23 +165,25 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
         if (anyChanges) {
             setClients(updatedClients);
             
-            // Sync each modified client to the cloud database (Supabase and Firestore)
-            const modifiedClientRucs = new Set(newResults.filter(r => r.status === 'success').map(r => r.ruc));
-            for (const ruc of modifiedClientRucs) {
-                const client = updatedClients.find(c => c.ruc.trim() === ruc?.trim());
+            // Sincronización en paralelo sin bloquear la interfaz
+            const syncPromises = Array.from(modifiedClientRucs).map(ruc => {
+                const client = updatedClients.find(c => c.ruc.trim() === ruc);
                 if (client) {
-                    try {
-                        await updateClient(client.id, { declarations: client.declarations });
-                    } catch (e) {
+                    return updateClient(client.id, { declarations: client.declarations }).catch(e => {
                         console.error(`Error syncing client ${client.name} in bulk upload:`, e);
-                    }
+                    });
                 }
-            }
-            toast.success("Varios archivos procesados y sincronizados");
+                return Promise.resolve();
+            });
+
+            Promise.all(syncPromises).then(() => {
+                toast.success(`${modifiedClientRucs.size} cliente(s) actualizados y guardados`);
+            });
         }
 
         setResults(prev => [...newResults, ...prev]);
         setIsProcessing(false);
+        setProcessingProgress(null);
     };
 
     const handleDrag = (e: React.DragEvent) => {
@@ -213,11 +229,19 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-white uppercase tracking-tight">Carga Masiva de Comprobantes</h3>
                     <p className="text-xs text-slate-500 font-medium mt-1 max-w-sm">Suelta aquí tus PDFs. El sistema los leerá, validará el RUC y marcará la obligación como pagada.</p>
 
+                    {processingProgress && (
+                        <div className="mt-3 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-2">
+                            <Loader2 size={12} className="animate-spin" />
+                            <span>Procesando archivo {processingProgress.current} de {processingProgress.total}</span>
+                        </div>
+                    )}
+
                     <button
                         onClick={() => inputRef.current?.click()}
-                        className="mt-6 px-6 py-2.5 bg-brand-navy dark:bg-brand-teal text-white font-semibold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all text-xs uppercase tracking-widest"
+                        disabled={isProcessing}
+                        className="mt-6 px-6 py-2.5 bg-brand-navy dark:bg-brand-teal text-white font-semibold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all text-xs uppercase tracking-widest disabled:opacity-50"
                     >
-                        Seleccionar PDFs
+                        {isProcessing ? 'Procesando PDFs...' : 'Seleccionar PDFs'}
                     </button>
                 </div>
 
