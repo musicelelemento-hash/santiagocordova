@@ -7,7 +7,7 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, getRecentSriInvoices, downloadClientProofFile } from './database_ops';
+import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, getRecentSriInvoices, downloadClientProofFile, processAndSaveDeclarationPdf } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
@@ -150,42 +150,39 @@ function buildClientKeyboard(clients: any[]): InlineKeyboard {
 
 /** Muestra la ficha del perfil del cliente con botones de ediciÃƒÂ³n */
 async function showClientProfileCard(chatId: string, client: any, ctx: any) {
-    const ruc = client.ruc || "";
-    const regime = client.regime || 'RÃƒÂ©gimen General';
+    const ruc = client.ruc || '';
+    const regime = client.regime || 'Régimen General';
     const isPopular = regime === 'Rimpe Negocio Popular';
     const isEmprendedor = regime === 'Rimpe Emprendedor';
     const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
-    
-    // Normalizar inicio de obligaciones
     const rawTaxProfile = client.tax_profile || {};
     const clientStartPeriod = client.clientStartPeriod || rawTaxProfile.clientStartPeriod || 'No configurado';
-    
-    let obligationsText = "";
+
+    let obligationsText = '';
     if (ivaFrequency === 'Mensual') obligationsText = 'IVA Mensual';
     else if (ivaFrequency === 'Semestral') obligationsText = 'IVA Semestral';
     else obligationsText = 'Exento / Ninguno';
 
-    let cardText = `Ã°Å¸â€˜Â¤ <b>EXPEDIENTE: ${client.name}</b>\n`;
-    if (client.trade_name) cardText += `Ã°Å¸ÂÂ¢ <b>Nombre Comercial:</b> ${client.trade_name}\n`;
-    cardText += `Ã°Å¸â€ â€ <b>RUC:</b> <code>${ruc}</code>\n`;
-    cardText += `Ã¢Å¡â€“Ã¯Â¸Â <b>RÃƒÂ©gimen:</b> ${regime}\n`;
-    cardText += `Ã°Å¸â€â€ž <b>Frecuencia IVA:</b> ${obligationsText}\n`;
-    cardText += `Ã°Å¸â€œâ€¦ <b>Inicio Obligaciones:</b> <code>${clientStartPeriod}</code>\n`;
-    cardText += `Ã°Å¸â€œÂ§ <b>Email:</b> ${client.email || '<i>(vacÃƒÂ­o)</i>'}\n`;
-    cardText += `Ã°Å¸â€œÅ¾ <b>Telf:</b> ${client.phones ? client.phones.join(', ') : '<i>(vacÃƒÂ­o)</i>'}\n`;
-    cardText += `Ã°Å¸â€â€˜ <b>Clave SRI:</b> <code>${client.sri_password || '<i>(vacÃƒÂ­o)</i>'}</code>\n`;
-    cardText += `Ã°Å¸â€â€˜ <b>Clave Firma:</b> <code>${client.signature_password || '<i>(vacÃƒÂ­o)</i>'}</code>\n`;
-    if (client.signature_expiration) cardText += `Ã¢ÂÂ³ <b>Vence Firma:</b> ${client.signature_expiration}\n`;
-    if (client.notes) cardText += `Ã°Å¸â€œÂ <b>Notas:</b> ${client.notes}\n`;
+    let cardText = `👤 <b>EXPEDIENTE 360°: ${client.name}</b>\n`;
+    if (client.trade_name) cardText += `🏢 <b>Nombre Comercial:</b> ${client.trade_name}\n`;
+    cardText += `🆔 <b>RUC:</b> <code>${ruc}</code>\n`;
+    cardText += `⚖️ <b>Régimen:</b> ${regime}\n`;
+    cardText += `🔄 <b>Frecuencia IVA:</b> ${obligationsText}\n`;
+    cardText += `📅 <b>Inicio Obligaciones:</b> <code>${clientStartPeriod}</code>\n`;
+    cardText += `📧 <b>Email:</b> ${client.email || '<i>(vacío)</i>'}\n`;
+    cardText += `📞 <b>Telf:</b> ${client.phones ? client.phones.join(', ') : '<i>(vacío)</i>'}\n`;
+    cardText += `🔑 <b>Clave SRI:</b> <code>${client.sri_password || '<i>(vacío)</i>'}</code>\n`;
+    cardText += `🔑 <b>Clave Firma:</b> <code>${client.signature_password || '<i>(vacío)</i>'}</code>\n`;
+    if (client.signature_expiration) cardText += `⏳ <b>Vence Firma:</b> ${client.signature_expiration}\n`;
+    if (client.notes) cardText += `📝 <b>Notas:</b> ${client.notes}\n`;
 
     const kb = new InlineKeyboard()
-        .text('Ã°Å¸â€œâ€¦ Editar Inicio Oblig.', `baku_prof_edit:${ruc}:clientStartPeriod`).row()
-        .text('Ã°Å¸â€â€ž Editar Frecuencia IVA', `baku_prof_edit:${ruc}:ivaFrequency`).row()
-        .text('Ã¢Å¡â€“Ã¯Â¸Â Editar RÃƒÂ©gimen', `baku_prof_edit:${ruc}:regime`).row()
-        .text('Ã°Å¸â€â€˜ Editar Clave SRI', `baku_prof_edit:${ruc}:sri_password`).row()
-        .text('Ã°Å¸â€œÂ§ Editar Correo', `baku_prof_edit:${ruc}:email`).row()
-        .text('Ã°Å¸â€œÅ¾ Editar TelÃƒÂ©fono', `baku_prof_edit:${ruc}:phones`).row()
-        .text('Ã¢ÂÅ’ Cerrar Perfil', 'baku_cancel');
+        .text('💳 Honorarios / Pagar', `baku_hub_pay:${ruc}`)
+        .text('📄 Comprobantes SRI', `baku_hub_proofs:${ruc}`).row()
+        .text('🔐 Firma .p12 / Bóveda', `baku_hub_p12:${ruc}`)
+        .text('📲 Link Portal Cliente', `baku_hub_portal:${ruc}`).row()
+        .text('✏️ Editar Perfil', `baku_hub_edit:${ruc}`)
+        .text('❌ Cerrar Perfil', 'baku_cancel');
 
     await ctx.reply(convertMarkdownToTelegramHtml(cardText), {
         parse_mode: 'HTML',
@@ -1613,6 +1610,75 @@ bot.on('callback_query:data', async (ctx) => {
         return;
     }
 
+    if (data.startsWith('baku_hub_pay:')) {
+        const ruc = data.replace('baku_hub_pay:', '');
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        const clients = await findClients(ruc, '*');
+        if (clients && clients.length > 0) {
+            await initiatePaymentFlow(chatId, clients, ctx);
+        }
+        return;
+    }
+
+    if (data.startsWith('baku_hub_proofs:')) {
+        const ruc = data.replace('baku_hub_proofs:', '');
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        const clients = await findClients(ruc, '*');
+        if (clients && clients.length > 0) {
+            await showProofTypeSelector(chatId, clients[0], ctx);
+        }
+        return;
+    }
+
+    if (data.startsWith('baku_hub_p12:')) {
+        const ruc = data.replace('baku_hub_p12:', '');
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        const clients = await findClients(ruc, '*');
+        if (clients && clients.length > 0) {
+            const c = clients[0];
+            const hasP12 = c.signature_file && c.signature_file.content;
+            let msg = `🔐 <b>Firma Electrónica .p12 — ${c.name}</b>\n\n`;
+            msg += `🔑 <b>Contraseña:</b> <code>${c.signature_password || 'No asignada'}</code>\n`;
+            msg += `⏳ <b>Vencimiento:</b> ${c.signature_expiration || 'No registrado'}\n`;
+            msg += `📁 <b>Estado Archivo:</b> ${hasP12 ? '✅ Guardado en Bóveda (' + c.signature_file.name + ')' : '❌ No subido'}\n\n`;
+            msg += `<i>Para actualizar la firma, simplemente adjunta el archivo .p12 o .pfx directamente en el chat.</i>`;
+            await ctx.reply(convertMarkdownToTelegramHtml(msg), { parse_mode: 'HTML' });
+        }
+        return;
+    }
+
+    if (data.startsWith('baku_hub_portal:')) {
+        const ruc = data.replace('baku_hub_portal:', '');
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        const clients = await findClients(ruc, '*');
+        if (clients && clients.length > 0) {
+            const c = clients[0];
+            const portalUrl = `https://santiagocordova.com/portal?ruc=${c.ruc}`;
+            let msg = `📲 <b>PORTAL INTERACTIVO DEL CLIENTE</b>\n\n`;
+            msg += `👤 <b>Cliente:</b> ${c.name}\n`;
+            msg += `🔗 <b>Enlace Seguro:</b> ${portalUrl}\n\n`;
+            msg += `<b>Mensaje listo para enviar por WhatsApp:</b>\n`;
+            msg += `<code>Estimado(a) ${c.name}, le compartimos el enlace seguro a su Portal de Cliente para consultar su información tributaria y comprobantes: ${portalUrl}</code>`;
+            await ctx.reply(convertMarkdownToTelegramHtml(msg), { parse_mode: 'HTML' });
+        }
+        return;
+    }
+
+    if (data.startsWith('baku_hub_edit:')) {
+        const ruc = data.replace('baku_hub_edit:', '');
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        const kb = new InlineKeyboard()
+            .text('📅 Editar Inicio Oblig.', `baku_prof_edit:${ruc}:clientStartPeriod`).row()
+            .text('🔄 Editar Frecuencia IVA', `baku_prof_edit:${ruc}:ivaFrequency`).row()
+            .text('⚖️ Editar Régimen', `baku_prof_edit:${ruc}:regime`).row()
+            .text('🔑 Editar Clave SRI', `baku_prof_edit:${ruc}:sri_password`).row()
+            .text('📧 Editar Correo', `baku_prof_edit:${ruc}:email`).row()
+            .text('📞 Editar Teléfono', `baku_prof_edit:${ruc}:phones`).row()
+            .text('❌ Cancelar', 'baku_cancel');
+        await ctx.reply('✏️ Selecciona el campo del perfil que deseas modificar:', { reply_markup: kb });
+        return;
+    }
+
     if (data.startsWith('baku_cmd:')) {
         const cmd = data.replace('baku_cmd:', '');
         
@@ -1911,194 +1977,13 @@ async function handleAgentResponse(ctx: any, response: string) {
 
 // Handle incoming documents (PDFs)
 bot.on('message:document', async (ctx) => {
-  const chatId = ctx.chat.id.toString();
-  const doc = ctx.message.document;
-  if (doc.mime_type !== 'application/pdf') {
-    return ctx.reply("Por favor, envÃƒÂ­a ÃƒÂºnicamente archivos PDF del SRI.");
-  }
-
-  await ctx.replyWithChatAction('typing');
-  try {
-    const file = await ctx.getFile();
-    const fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${file.file_path}`;
-
-    const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
-    const buffer = Buffer.from(response.data);
-
-    // 1. Validate PDF
-    const validation = await validateSRIPDF(buffer);
-
-    if (!validation.isValid) {
-      return ctx.reply(`Ã¢Å¡Â Ã¯Â¸Â No he podido validar este documento como un archivo oficial del SRI.\n\nExtraje: RUC ${validation.ruc}, Tipo: ${validation.type}. Ã‚Â¿Es el archivo correcto?`);
-    }
-
-    // Store for confirmation
-    pendingPdfs.set(chatId, { buffer, data: validation });
-
-    // 2. Show Preview
-    let preview = `Ã°Å¸â€œâ€ž *VISTA PREVIA DE DOCUMENTO VALIDADO*\n\n`;
-    preview += `Ã°Å¸â€˜Â¤ *RUC:* \`${validation.ruc}\`\n`;
-    preview += `Ã°Å¸â€œâ€¦ *Periodo:* ${validation.period}\n`;
-    preview += `Ã°Å¸â€œÂ *Tipo:* ${validation.type}\n`;
-    preview += `Ã°Å¸â€™Â° *Monto:* $${validation.amount}\n\n`;
-    preview += `Ã¢Å“â€¦ El sistema ha detectado que el lenguaje y formato concuerdan con el SRI.\n`;
-    preview += `--------------------------\n`;
-    preview += `Ã‚Â¿Deseas guardar este archivo en la carpeta del cliente y sincronizar con la base de datos? (Responde "SÃƒÂ GUARDAR")`;
-
-    await ctx.reply(convertMarkdownToTelegramHtml(preview), { parse_mode: 'HTML' });
-  } catch (err: any) {
-    console.error('Error processing document:', err);
-    await ctx.reply('Error al procesar el PDF: ' + err.message);
-  }
-});
-
-// Handle incoming photos (Payment Receipts OCR)
-bot.on('message:photo', async (ctx) => {
-  const chatId = ctx.chat.id.toString();
-  if (pendingDialogs.has(chatId)) {
-      await ctx.reply('Ã°Å¸â€œÂ¸ Tengo un proceso interactivo pendiente. Por favor escribe tu respuesta en texto, o escribe **cancelar** para salir.');
-      return;
-  }
-
-  await ctx.replyWithChatAction('typing');
-  try {
-    const photos = ctx.message.photo;
-    const photo = photos[photos.length - 1]; // get highest resolution
-    const file = await ctx.api.getFile(photo.file_id);
-    const fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${file.file_path}`;
-
-    const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
-    const buffer = Buffer.from(response.data);
-
-    const result = await processPaymentReceipt(buffer, 'image/jpeg');
-    
-    await ctx.reply(convertMarkdownToTelegramHtml(result.message), { parse_mode: 'HTML' });
-  } catch (err: any) {
-    console.error('Error processing photo:', err);
-    await ctx.reply('Error al analizar la imagen: ' + err.message);
-  }
-});
-
-// Handle incoming voice messages
-bot.on('message:voice', async (ctx) => {
-  const chatId = ctx.chat.id.toString();
-
-  // 1. Check if there is a pending dialog first (same as text handler)
-  if (pendingDialogs.has(chatId)) {
-      await ctx.reply('Ã°Å¸Å½â„¢Ã¯Â¸Â Tengo un proceso interactivo pendiente. Por favor escribe tu respuesta en texto, o escribe **cancelar** para salir.');
-      return;
-  }
-
-  // Indicate bot is thinking/listening
-  await ctx.replyWithChatAction('typing');
-
-  try {
-    const file = await ctx.getFile();
-    const fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${file.file_path}`;
-
-    // Transcribe
-    const transcription = await transcribeAudioUrl(fileUrl);
-    await ctx.reply(`Ã°Å¸Å½Â¤ <b>Transcrito:</b> ${transcription}`, { parse_mode: 'HTML' });
-
-    // 2. Check if a dialog is triggered by the transcribed text
-    const triggered = await handleDialogTriggers(chatId, transcription, ctx);
-    if (triggered) return;
-
-    // 3. Send to agent loop via shared handler
-    const response = await processChatWithAgentLoop(chatId, transcription);
-    await handleAgentResponse(ctx, response);
-
-  } catch (err: any) {
-    console.error('Error in voice loop:', err);
-    await ctx.reply('Ha ocurrido un error procesando tu audio: ' + err.message);
-  }
-});
-
-// REMOVED duplicate bot.catch Ã¢â‚¬â€ the primary handler (line 53) already notifies the user.
-// A second catch would silently override it.
-
-// Start bot with drop_pending_updates to avoid conflict errors
-bot.start({
-  drop_pending_updates: true,
-  onStart: (botInfo) => {
-    console.log(`Ã¢Å“â€¦ ${BOT_NAME} listo: @${botInfo.username}`);
-  }
-}).catch(err => {
-    if (err.description?.includes('Conflict')) {
-        console.error('Ã¢Å¡Â Ã¯Â¸Â BOT CONFLICT: Another instance is running. Please stop it or wait for Render to cycle.');
-    } else {
-        console.error('Ã¢ÂÅ’ Bot startup error:', err);
-    }
-});
-
-// Graceful shutdown to prevent 'Conflict: terminated by other getUpdates request'
-const shutdown = async (signal: string) => {
-    console.log(`Ã°Å¸â€ºâ€˜ Stopping bot gracefully (${signal})...`);
-    try {
-        await bot.stop();
-        console.log('Ã¢Å“â€¦ Bot stopped.');
-        process.exit(0);
-    } catch (e) {
-        console.error('Error during shutdown:', e);
-        process.exit(1);
-    }
-};
-
-process.once('SIGINT', () => shutdown('SIGINT'));
-process.once('SIGTERM', () => shutdown('SIGTERM'));
-
-// Express dummy server for Render
-const app = express();
-
-// Uploadthing API
-app.use(
-  "/api/uploadthing",
-  createRouteHandler({
-    router: ourFileRouter,
-    config: {
-        token: process.env.UPLOADTHING_TOKEN,
-    },
-  })
-);
-
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-  res.send('Bot is running!');
-});
-
-// "Anti-Sleep" Endpoint for self-pinging
-app.get('/ping', (req, res) => {
-  res.send('pong');
-});
-
-app.listen(PORT, () => {
-  console.log(`Ã°Å¸Å’Â Dummy server listening on port ${PORT}`);
-  
-  // Render Anti-Sleep Hack (Alejavi method)
-  // Render spins down free web services after 15 minutes of inactivity.
-  // We ping ourselves every 14 minutes (840000 ms) to keep it awake.
-  const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL; // Optional: e.g. https://my-bot.onrender.com
-  const pingUrl = RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-  
-  setInterval(() => {
-    axios.get(`${pingUrl}/ping`)
-      .then(() => console.log('Ã°Å¸â€â€ž Anti-sleep ping successful'))
-      .catch((err) => console.log('Ã¢Å¡Â Ã¯Â¸Â Anti-sleep ping failed:', err.message));
-  }, 14 * 60 * 1000); // 14 minutes
-  
-  // Initialize Active Assistant (Cron Jobs)
-  startCronJobs(bot);
-});
-
-
-bot.on('message:document', async (ctx) => {
     const chatId = ctx.chat.id.toString();
     const doc = ctx.message.document;
     if (!doc) return;
 
     const fileName = doc.file_name || 'documento';
     const isP12 = fileName.endsWith('.p12') || fileName.endsWith('.pfx');
+    const isPdf = fileName.toLowerCase().endsWith('.pdf');
 
     await ctx.replyWithChatAction('typing');
     try {
@@ -2107,9 +1992,10 @@ bot.on('message:document', async (ctx) => {
         
         const fileUrl = 'https://api.telegram.org/file/bot' + TELEGRAM_BOT_TOKEN + '/' + fileObj.file_path;
         const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
-        const base64Content = Buffer.from(response.data).toString('base64');
+        const buffer = Buffer.from(response.data);
 
         if (isP12) {
+            const base64Content = buffer.toString('base64');
             pendingDialogs.set(chatId, {
                 type: 'upload_p12',
                 chatId,
@@ -2120,6 +2006,9 @@ bot.on('message:document', async (ctx) => {
                 }
             });
             await ctx.reply('🔐 Recibí la Firma Electrónica **' + fileName + '**.\n\n¿A qué cliente pertenece? (Escribe el nombre o RUC). Baku.');
+        } else if (isPdf) {
+            const resText = await processAndSaveDeclarationPdf(buffer, fileName);
+            await ctx.reply(convertMarkdownToTelegramHtml(resText), { parse_mode: 'HTML' });
         } else {
             await ctx.reply('📁 Archivo **' + fileName + '** recibido.');
         }

@@ -1,3 +1,4 @@
+import { validateSRIPDF } from './pdf-validator';
 import { supabase } from './supabase';
 import crypto from 'crypto';
 import { getFirestore } from './firebase-admin-init';
@@ -1955,3 +1956,64 @@ export async function getRecentSriInvoices(limit = 10, rucFilter?: string): Prom
     }
 }
 
+
+
+export async function processAndSaveDeclarationPdf(buffer: Buffer, originalFileName: string): Promise<string> {
+    try {
+        const validated = await validateSRIPDF(buffer);
+        if (!validated.isValid || validated.ruc === 'No encontrado') {
+            return '❌ El archivo PDF enviado no pudo ser identificado como un comprobante de declaración del SRI válido (no se detectó RUC o Tipo de Impuesto).';
+        }
+
+        const ruc = validated.ruc;
+        const { data: rawClients } = await supabase.from('clients').select('*').eq('ruc', ruc).eq('is_deleted', false);
+        if (!rawClients || rawClients.length === 0) {
+            return `❌ Se identificó el RUC **${ruc}** (${validated.type} - ${validated.period}), pero ese cliente no está registrado en la base de datos.`;
+        }
+
+        const client = rawClients[0];
+        const history: any[] = client.declaration_history || [];
+        
+        const type = validated.type as 'IVA' | 'RENTA';
+        const period = validated.period;
+
+        const existingIdx = history.findIndex((h: any) => h.type === type && h.period === period);
+        const newEntry = {
+            period,
+            type,
+            isRealizada: true,
+            method: 'pdf',
+            amount: validated.amount,
+            updatedAt: new Date().toISOString(),
+            proof_file: {
+                name: originalFileName,
+                content: buffer.toString('base64'),
+                uploadedAt: new Date().toISOString()
+            }
+        };
+
+        if (existingIdx >= 0) {
+            history[existingIdx] = { ...history[existingIdx], ...newEntry };
+        } else {
+            history.push(newEntry);
+        }
+
+        const { error } = await supabase.from('clients').update({
+            declaration_history: history,
+            updated_at: new Date().toISOString()
+        }).eq('id', client.id);
+
+        if (error) throw error;
+
+        return `✅ **Comprobante de Declaración Registrado**\n\n` +
+               `👤 **Cliente:** ${client.name}\n` +
+               `🆔 **RUC:** <code>${ruc}</code>\n` +
+               `📊 **Impuesto:** ${type}\n` +
+               `📅 **Periodo:** ${period}\n` +
+               `💵 **Monto a Pagar:** $${validated.amount}\n\n` +
+               `📁 *Guardado exitosamente en el expediente del cliente en Supabase.*`;
+    } catch (e: any) {
+        console.error("Error processing declaration PDF:", e);
+        return `❌ Error al procesar comprobante de declaración: ${e.message}`;
+    }
+}
