@@ -39,10 +39,27 @@ export async function validateSRIPDF(buffer: Buffer): Promise<ValidatedPDF> {
         if (amountMatch) amount = amountMatch[1];
     }
 
+    let rawPeriod = periodMatch ? periodMatch[1].trim() : "No encontrado";
+    const yearMatch = text.match(/\b(20\d{2})\b/);
+    const yearStr = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
+
+    let cleanPeriod = rawPeriod;
+    const upperText = text.toUpperCase();
+    if (upperText.includes("PRIMER SEMESTRE") || upperText.includes("SEMESTRE 1") || upperText.includes("1ER SEMESTRE") || rawPeriod.toUpperCase().includes("1S") || rawPeriod.toUpperCase().includes("S1")) {
+        cleanPeriod = `${yearStr}-S1`;
+    } else if (upperText.includes("SEGUNDO SEMESTRE") || upperText.includes("SEMESTRE 2") || upperText.includes("2DO SEMESTRE") || rawPeriod.toUpperCase().includes("2S") || rawPeriod.toUpperCase().includes("S2")) {
+        cleanPeriod = `${yearStr}-S2`;
+    } else if (rawPeriod !== "No encontrado") {
+        const mmYyyy = rawPeriod.match(/(\d{2})[/-](\d{4})/);
+        if (mmYyyy) {
+            cleanPeriod = `${mmYyyy[2]}-${mmYyyy[1]}`;
+        }
+    }
+
     return {
         ruc: rucMatch ? rucMatch[0] : "No encontrado",
         clientName: "Extraido del PDF",
-        period: periodMatch ? periodMatch[1].trim() : "No encontrado",
+        period: cleanPeriod,
         type,
         amount,
         isValid: !!rucMatch && type !== "Desconocido"
