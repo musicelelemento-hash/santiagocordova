@@ -13,7 +13,8 @@ import { getClientServiceFee } from '../services/clientService';
 import { formatPeriodForDisplay } from '../services/sri';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
-
+// @ts-ignore
+import html2pdf from 'html2pdf.js';
 interface InvoiceItem {
   id: string;
   codigoPrincipal: string;
@@ -2778,15 +2779,16 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 </body>
 </html>`;
 
-    const blob = new Blob([rideDocHtml], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `RIDE_${comprobante.tipo}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const pdfHtml = rideDocHtml.replace('<div class="print-actions">', '<div class="print-actions" style="display:none;">');
+    const opt = {
+      margin:       5,
+      filename:     `RIDE_${comprobante.tipo}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    html2pdf().set(opt).from(pdfHtml).save();
   };
 
   const copyToClipboard = (text: string, subject: string) => {
