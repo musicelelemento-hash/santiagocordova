@@ -62,3 +62,24 @@ DROP POLICY IF EXISTS "Permitir acceso a emisor_settings" ON public.emisor_setti
 CREATE POLICY "Permitir acceso a emisor_settings" 
 ON public.emisor_settings FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
 
+-- RPC for atomic sequence increment
+CREATE OR REPLACE FUNCTION get_next_sri_secuencial(p_tipo VARCHAR)
+RETURNS INT AS $$
+DECLARE
+    v_next INT;
+BEGIN
+    IF p_tipo = 'factura' THEN
+        UPDATE public.emisor_settings
+        SET last_seq_factura = last_seq_factura + 1
+        WHERE id = 'default_emisor'
+        RETURNING last_seq_factura INTO v_next;
+    ELSE
+        UPDATE public.emisor_settings
+        SET last_seq_retencion = last_seq_retencion + 1
+        WHERE id = 'default_emisor'
+        RETURNING last_seq_retencion INTO v_next;
+    END IF;
+    
+    RETURN v_next;
+END;
+$$ LANGUAGE plpgsql;

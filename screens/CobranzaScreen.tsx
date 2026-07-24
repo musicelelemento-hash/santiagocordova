@@ -126,8 +126,14 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             }
 
             // 3. Generar secuencial y clave de acceso
-            const historyList = await SupabaseService.getSriComprobantes().catch(() => []);
-            const nextNum = (Number(localStorage.getItem('sc_emisor_secuencial_inicio')) || 1) + historyList.filter((h: any) => h.tipo === 'factura').length;
+            let nextNum = 0;
+            try {
+                nextNum = await SupabaseService.getNextSriSecuencial('factura');
+            } catch (err: any) {
+                addLog("Error obteniendo el siguiente secuencial desde la base de datos.");
+                setFastBillingStatus('error');
+                return;
+            }
             const secuencial = String(nextNum).padStart(9, '0');
             const todayStr = new Date().toISOString().split('T')[0];
 

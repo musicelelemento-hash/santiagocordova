@@ -437,5 +437,22 @@ export const SupabaseService = {
     } catch (err) {
       console.error('[Supabase] Error saving emisor_settings:', err);
     }
+  },
+
+  async getNextSriSecuencial(tipo: 'factura' | 'retencion'): Promise<number> {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_next_sri_secuencial', { p_tipo: tipo });
+      
+      if (error) {
+        console.error('[Supabase] Error calling get_next_sri_secuencial:', error);
+        throw error;
+      }
+      return data as number;
+    } catch (err) {
+      console.error('[Supabase] Exception in getNextSriSecuencial:', err);
+      // Fallback in case RPC fails (e.g., if the user hasn't run the SQL script yet)
+      throw new Error(`Error obteniendo el siguiente secuencial desde la base de datos para ${tipo}. ¿Ejecutaste el script SQL en Supabase?`);
+    }
   }
 };

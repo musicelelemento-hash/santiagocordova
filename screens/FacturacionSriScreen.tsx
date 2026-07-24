@@ -194,13 +194,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         emisorPtoEmi,
         emisorRegimen,
         ambiente,
-        emisorSecuencialInicio,
-        lastSeqFactura,
-        lastSeqRetencion,
-        p12Base64: p12FileBase64,
-        p12FileName,
-        p12Password,
-        p12StartDate,
         p12ExpiryDate,
         p12SubjectName,
         p12OwnerName,
@@ -241,7 +234,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           if (remote.emisorPtoEmi) { setEmisorPtoEmi(remote.emisorPtoEmi); localStorage.setItem('sc_emisor_pto', remote.emisorPtoEmi); }
           if (remote.emisorRegimen) { setEmisorRegimen(remote.emisorRegimen); localStorage.setItem('sc_emisor_regimen', remote.emisorRegimen); }
           if (remote.ambiente) { setAmbienteState(remote.ambiente); localStorage.setItem('sc_emisor_ambiente', remote.ambiente); }
-          if (remote.emisorSecuencialInicio) { setEmisorSecuencialInicio(remote.emisorSecuencialInicio); localStorage.setItem('sc_emisor_secuencial_inicio', String(remote.emisorSecuencialInicio)); }
           if (remote.lastSeqFactura) { setLastSeqFactura(remote.lastSeqFactura); localStorage.setItem('sc_sri_last_seq_factura', String(remote.lastSeqFactura)); }
           if (remote.lastSeqRetencion) { setLastSeqRetencion(remote.lastSeqRetencion); localStorage.setItem('sc_sri_last_seq_retencion', String(remote.lastSeqRetencion)); }
           if (remote.emisorLogo) { setEmisorLogo(remote.emisorLogo); localStorage.setItem('sc_emisor_logo', remote.emisorLogo); }
@@ -488,7 +480,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [showP12Password, setShowP12Password] = useState(false);
   const [emisorLogo, setEmisorLogo] = useState(() => localStorage.getItem('sc_emisor_logo') || '');
-  const [emisorSecuencialInicio, setEmisorSecuencialInicio] = useState(() => Number(localStorage.getItem('sc_emisor_secuencial_inicio')) || 13);
+  const [emisorLogo, setEmisorLogo] = useState(() => localStorage.getItem('sc_emisor_logo') || '');
 
   // Último secuencial usado por tipo — persiste entre sesiones sin depender del historial async.
   // Clave: 'sc_sri_last_seq_factura' y 'sc_sri_last_seq_retencion'
@@ -1244,19 +1236,19 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Run the full invoicing workflow (Generate, Sign, Send, Authorize)
   const handleProcessDocument = async () => {
-    // Calcular siguiente secuencial robusto:
-    // 1. El configurado como inicio en ajustes
-    // 2. El mayor del historial en memoria (puede estar vacío si aún no cargó)
-    // 3. El último usado persistido directamente en localStorage (siempre disponible)
-    const persistedLast = docType === 'factura' ? lastSeqFactura : lastSeqRetencion;
-    const nextNum = Math.max(
-      emisorSecuencialInicio,
-      getMaxSecuencialInHistory(docType) + 1,
-      persistedLast + 1
-    );
+    // Calcular siguiente secuencial robusto usando base de datos atómicamente:
+    let nextNum = 0;
+    try {
+      nextNum = await SupabaseService.getNextSriSecuencial(docType);
+    } catch (err: any) {
+      setProcessStatus('failed');
+      setProcessErrorMessage(err.message || 'Error obteniendo el siguiente secuencial. Verifica tu conexión y que el script SQL esté aplicado.');
+      addLog(`❌ ${err.message || 'Error obteniendo secuencial'}`, 'error');
+      return;
+    }
     
     const onSuccessBilling = async (secNum: number) => {
-      // 1. Persist the used sequential per type (robust, synchronous — no async dependency)
+      // 1. Persist the used sequential per type locally for UI purposes only
       if (docType === 'factura') {
         setLastSeqFactura(secNum);
         localStorage.setItem('sc_sri_last_seq_factura', String(secNum));
@@ -1264,17 +1256,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         setLastSeqRetencion(secNum);
         localStorage.setItem('sc_sri_last_seq_retencion', String(secNum));
       }
-      // 2. Also update the shared "inicio" counter for display in settings
-      const nextSecNum = secNum + 1;
-      setEmisorSecuencialInicio(nextSecNum);
-      localStorage.setItem('sc_emisor_secuencial_inicio', String(nextSecNum));
-
-      // 3. Sincronizar secuenciales con Supabase en la nube
-      await saveEmisorConfigToSupabase({
-        lastSeqFactura: docType === 'factura' ? secNum : lastSeqFactura,
-        lastSeqRetencion: docType === 'retencion' ? secNum : lastSeqRetencion,
-        emisorSecuencialInicio: nextSecNum
-      });
 
       // 2. Mark declarations as paid / reconcile debt
       if (selectedClient && selectedPeriods.length > 0) {
@@ -3378,7 +3359,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     localStorage.setItem('sc_emisor_regimen', emisorRegimen);
     localStorage.setItem('sc_emisor_ambiente', ambiente);
     localStorage.setItem('sc_facturacion_api_url', apiUrl);
-    localStorage.setItem('sc_emisor_secuencial_inicio', String(emisorSecuencialInicio));
     localStorage.setItem('sc_emisor_logo', emisorLogo);
     
     await saveEmisorConfigToSupabase();
@@ -3699,7 +3679,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         {activeTab === 'configuracion' && (
           <div className="glass-card-premium p-6 space-y-6 animate-fade-in relative z-20">
             <div className="flex justify-between items-center border-b border-slate-200 dark:border-white/10 pb-3 font-premium">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white flex items-center gap-2">
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:white flex items-center gap-2">
                 <Settings size={14} className="text-primary animate-pulse" />
                 Configuración de API & Emisor
               </h3>
@@ -3791,27 +3771,16 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     </select>
                   </div>
 
-                  <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Ambiente de Trabajo</label>
-                    <select
-                      value={ambiente}
-                      onChange={(e) => setAmbiente(e.target.value as any)}
+                  <div className="flex flex-col gap-2">
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500">Entorno del SRI</label>
+                    <select 
                       className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none text-slate-800 dark:text-slate-100"
+                      value={ambiente}
+                      onChange={(e) => setAmbiente(e.target.value as '1' | '2')}
                     >
                       <option value="1">1 - PRUEBAS</option>
                       <option value="2">2 - PRODUCCIÓN</option>
                     </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Secuencial Inicio Factura</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={emisorSecuencialInicio}
-                      onChange={(e) => setEmisorSecuencialInicio(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono font-semibold outline-none focus:border-primary text-slate-800 dark:text-slate-100"
-                    />
                   </div>
 
                   <div>
@@ -4142,50 +4111,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </h3>
                   <div className="flex flex-wrap items-center gap-[6px] mt-1">
                     <span className="text-[9px] text-slate-400 font-bold uppercase">
-                      Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'Retención'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span> | Siguiente Secuencial: <span className="text-emerald-500 font-mono font-bold">{String(Math.max(emisorSecuencialInicio, getMaxSecuencialInHistory(docType) + 1, (docType === 'factura' ? lastSeqFactura : lastSeqRetencion) + 1)).padStart(9, '0')}</span>
+                      Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'Retención'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span> | Último Secuencial Emitido: <span className="text-emerald-500 font-mono font-bold">{String(docType === 'factura' ? lastSeqFactura : lastSeqRetencion).padStart(9, '0')}</span>
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const curr = Math.max(emisorSecuencialInicio, getMaxSecuencialInHistory(docType) + 1, (docType === 'factura' ? lastSeqFactura : lastSeqRetencion) + 1);
-                        if (docType === 'factura') {
-                          setLastSeqFactura(curr);
-                          localStorage.setItem('sc_sri_last_seq_factura', String(curr));
-                        } else {
-                          setLastSeqRetencion(curr);
-                          localStorage.setItem('sc_sri_last_seq_retencion', String(curr));
-                        }
-                      }}
-                      className="px-2 py-0.5 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-[9px] font-bold uppercase transition-all"
-                      title="Avanzar secuencial +1"
-                    >
-                      +1 Avanzar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const val = prompt('Ingrese el nuevo número secuencial de inicio (ej: 2 para 000000002):');
-                        if (val) {
-                          const parsed = parseInt(val, 10);
-                          if (!isNaN(parsed) && parsed > 0) {
-                            const lastVal = Math.max(0, parsed - 1);
-                            setEmisorSecuencialInicio(parsed);
-                            localStorage.setItem('sc_emisor_secuencial_inicio', String(parsed));
-                            if (docType === 'factura') {
-                              setLastSeqFactura(lastVal);
-                              localStorage.setItem('sc_sri_last_seq_factura', String(lastVal));
-                            } else {
-                              setLastSeqRetencion(lastVal);
-                              localStorage.setItem('sc_sri_last_seq_retencion', String(lastVal));
-                            }
-                          }
-                        }
-                      }}
-                      className="px-2 py-0.5 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 rounded-lg text-[9px] font-bold uppercase transition-all"
-                      title="Cambiar número secuencial manualmente"
-                    >
-                      ✏️ Modificar
-                    </button>
                   </div>
                 </div>
               </div>
