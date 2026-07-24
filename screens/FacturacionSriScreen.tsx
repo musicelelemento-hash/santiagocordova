@@ -175,7 +175,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const [p12FileBase64, setP12FileBase64] = useState('');
   const [p12FileName, setP12FileName] = useState('');
-  const [p12Password, setP12Password] = useState(() => localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123');
+  const [p12Password, setP12Password] = useState(() => localStorage.getItem('sc_sri_p12_password') || 'Santiago2026');
   const [p12StartDate, setP12StartDate] = useState('');
   const [p12ExpiryDate, setP12ExpiryDate] = useState('');
   const [p12SubjectName, setP12SubjectName] = useState('');
@@ -255,7 +255,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       try {
         const base64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
         const name = (await db.getLocal('sc_sri_p12_filename')) || localStorage.getItem('sc_sri_p12_filename') || '';
-        const password = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123';
+        const password = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'Santiago2026';
         const start = (await db.getLocal('sc_sri_p12_start')) || localStorage.getItem('sc_sri_p12_start') || '';
         const expiry = (await db.getLocal('sc_sri_p12_expiry')) || localStorage.getItem('sc_sri_p12_expiry') || '';
         const subject = (await db.getLocal('sc_sri_p12_subject')) || localStorage.getItem('sc_sri_p12_subject') || '';
@@ -1444,7 +1444,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       } else {
         // Sign endpoint - Obtener firma y clave desde estado, IndexedDB o localStorage
         const activeBase64 = p12FileBase64 || (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
-        const activePassword = p12Password || (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123';
+        const activePassword = p12Password || (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'Santiago2026';
         
         if (!activeBase64) {
           throw new Error('No se encontró el archivo de Firma Electrónica (.p12). Vaya a Configuración de API & Emisor y vuelva a subir su archivo de firma .p12.');
@@ -3110,13 +3110,23 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   localStorage.setItem('sc_sri_p12_base64', p12FileBase64);
                   localStorage.setItem('sc_sri_p12_filename', p12FileName);
                   localStorage.setItem('sc_sri_p12_password', p12Password);
+                  
+                  await saveEmisorConfigToSupabase({
+                    p12Base64: p12FileBase64,
+                    p12FileName,
+                    p12Password,
+                    p12StartDate,
+                    p12ExpiryDate,
+                    p12SubjectName,
+                    p12OwnerName
+                  });
                   setIsEditingSignature(false);
-                  alert('✅ Firma electrónica y contraseña guardadas correctamente.');
+                  alert(`✅ Firma electrónica (.p12) y clave ("${p12Password}") guardadas y sincronizadas en la Nube. Estarán disponibles automáticamente en todas tus computadoras.`);
                 }}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md shadow-emerald-600/20 active:scale-95"
               >
                 <Save size={12} />
-                <span>Guardar Firma</span>
+                <span>Guardar Firma y Clave en la Nube</span>
               </button>
             )}
           </div>
@@ -3956,6 +3966,38 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           {showP12Password ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!p12FileBase64) {
+                            alert('Por favor, seleccione o suba un archivo de firma .p12 primero.');
+                            return;
+                          }
+                          await db.setLocal('sc_sri_p12_base64', p12FileBase64);
+                          await db.setLocal('sc_sri_p12_filename', p12FileName);
+                          await db.setLocal('sc_sri_p12_password', p12Password);
+                          localStorage.setItem('sc_sri_p12_base64', p12FileBase64);
+                          localStorage.setItem('sc_sri_p12_filename', p12FileName);
+                          localStorage.setItem('sc_sri_p12_password', p12Password);
+                          
+                          await saveEmisorConfigToSupabase({
+                            p12Base64: p12FileBase64,
+                            p12FileName,
+                            p12Password,
+                            p12StartDate,
+                            p12ExpiryDate,
+                            p12SubjectName,
+                            p12OwnerName
+                          });
+                          setIsEditingSignature(false);
+                          alert(`✅ Firma electrónica (.p12) y clave ("${p12Password}") guardadas y sincronizadas en la Nube. Estarán disponibles automáticamente en todas tus computadoras.`);
+                        }}
+                        className="w-full mt-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2 font-premium"
+                      >
+                        <Save size={13} />
+                        <span>Guardar Firma (.p12) y Clave en la Nube</span>
+                      </button>
                     </div>
 
                     {/* Tarjeta Detallada de Estado de Firma Electrónica */}
