@@ -4790,11 +4790,31 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="col-span-2 flex items-center justify-center gap-1.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                    className="col-span-3 flex items-center justify-center gap-1.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
                   >
                     <Globe size={11} />
                     Enviar por WhatsApp
                   </a>
+                  <button
+                    onClick={() => {
+                      setSelectedClient('');
+                      setBuyerName('');
+                      setBuyerRuc('');
+                      setBuyerAddress('');
+                      setBuyerEmail('');
+                      setBuyerPhone('');
+                      setSelectedPeriods([]);
+                      setInvoiceItems([]);
+                      setWithholdings([]);
+                      setProcessStatus('idle');
+                      setConsoleLogs([]);
+                      setCurrentStep(1);
+                    }}
+                    className="col-span-3 flex items-center justify-center gap-1.5 py-2 bg-gradient-azure text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98] shadow-md shadow-primary/20"
+                  >
+                    <Plus size={12} />
+                    Emitir Siguiente Factura (Flujo Rápido PC)
+                  </button>
                 </div>
               </div>
             ) : (
