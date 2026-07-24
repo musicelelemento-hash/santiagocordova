@@ -480,7 +480,6 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [showP12Password, setShowP12Password] = useState(false);
   const [emisorLogo, setEmisorLogo] = useState(() => localStorage.getItem('sc_emisor_logo') || '');
-  const [emisorLogo, setEmisorLogo] = useState(() => localStorage.getItem('sc_emisor_logo') || '');
 
   // Último secuencial usado por tipo — persiste entre sesiones sin depender del historial async.
   // Clave: 'sc_sri_last_seq_factura' y 'sc_sri_last_seq_retencion'
