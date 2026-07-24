@@ -70,6 +70,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const [copiedRuc, setCopiedRuc] = useState<string | null>(null);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [isWorkspaceMode, setIsWorkspaceMode] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
     
     // SRI Authorized Invoices History
     const [sriHistory, setSriHistory] = useState<any[]>([]);
@@ -366,6 +367,13 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 if (digit !== selectedDigitFilter) return false;
             }
 
+            if (searchTerm.trim()) {
+                const q = searchTerm.toLowerCase().trim();
+                const matchName = c.name.toLowerCase().includes(q) || (c.tradeName && c.tradeName.toLowerCase().includes(q));
+                const matchRuc = c.ruc.includes(q);
+                if (!matchName && !matchRuc) return false;
+            }
+
             const clientFreq = c.taxProfile?.ivaFrequency ||
                 (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' :
                  c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual');
@@ -419,7 +427,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             const digitB = parseInt(b.ruc[8], 10) === 0 ? 10 : parseInt(b.ruc[8], 10);
             return digitA - digitB || (a.tradeName || a.name).localeCompare(b.tradeName || b.name);
         });
-    }, [clients, frequency, matrixMode, isWorkspaceMode, periods, sortPeriod, sortDirection, selectedDigitFilter, sortOption]);
+    }, [clients, frequency, matrixMode, isWorkspaceMode, periods, sortPeriod, sortDirection, selectedDigitFilter, sortOption, searchTerm]);
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -442,6 +450,26 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                    {/* Buscador Directo en Matriz */}
+                    <div className="relative flex-1 min-w-[220px] sm:min-w-[280px]">
+                        <LucideIcons.Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="🔍 Buscar cliente o RUC en Matriz..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-9 pr-8 py-2 bg-slate-100/90 dark:bg-slate-950/60 border border-slate-200/50 dark:border-white/10 rounded-2xl text-xs font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all shadow-inner"
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-rose-500 hover:text-white text-slate-400 transition-all"
+                                title="Limpiar filtro"
+                            >
+                                <LucideIcons.X size={10} strokeWidth={3} />
+                            </button>
+                        )}
+                    </div>
                     {/* Control de Ordenamiento: Dígito vs Alfabético */}
                     <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-950/40 p-1 rounded-2xl border border-slate-200/30 dark:border-white/5">
                         <button
