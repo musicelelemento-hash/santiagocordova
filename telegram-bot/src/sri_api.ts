@@ -86,7 +86,11 @@ export function getEcuadorLocalDateStr(): string {
 export async function emitInvoice(client: any, concept: string, amount: number, paymentMethod: string) {
     const emisor = await getEmisorConfig();
     
-    const nextSeqNum = (emisor.lastSeqFactura || 0) + 1;
+    const { data: nextSeqData, error: seqError } = await supabase.rpc('get_next_sri_secuencial', { p_tipo: 'factura' });
+    if (seqError || !nextSeqData) {
+        throw new Error(`Error obteniendo secuencial atómico de Supabase: ${seqError?.message || 'Sin respuesta'}`);
+    }
+    const nextSeqNum = nextSeqData as number;
     const secuencial = String(nextSeqNum).padStart(9, '0');
     const todayStr = getEcuadorLocalDateStr();
     

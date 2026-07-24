@@ -502,7 +502,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
 export interface DialogState {
   type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice';
   chatId: string;
-  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value' | 'ask_invoice_concept' | 'ask_invoice_custom_concept' | 'ask_invoice_payment_method';
+  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value' | 'ask_invoice_concept' | 'ask_invoice_custom_concept' | 'ask_invoice_custom_amount' | 'ask_invoice_payment_method';
   client?: any;
   candidates?: any[];
   data: {
@@ -931,18 +931,30 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
         const client = dialog.client;
         if (dialog.step === 'ask_invoice_custom_concept') {
             dialog.data.invoiceConcept = text;
-            dialog.data.invoiceAmount = 0; // Se rellena con 0 para que el usuario lo edite en la web
+            dialog.step = 'ask_invoice_custom_amount';
+            pendingDialogs.set(chatId, dialog);
+            await ctx.reply("✍️ Ingresa el monto a facturar en USD (subtotal sin impuestos, ej: 150.00):");
+            return;
+        }
+
+        if (dialog.step === 'ask_invoice_custom_amount') {
+            const amount = parseFloat(text.replace(',', '.'));
+            if (isNaN(amount) || amount <= 0) {
+                await ctx.reply("⚠️ Monto inválido. Por favor escribe un valor numérico mayor a cero (ej: 150.00 o 45.50). Baku.");
+                return;
+            }
+            dialog.data.invoiceAmount = amount;
             dialog.step = 'ask_invoice_payment_method';
             pendingDialogs.set(chatId, dialog);
-            
+
             const kb = new InlineKeyboard()
-                .text('Ã°Å¸â€™Âµ Efectivo (Sin Sist. Fin)', `baku_inv_pay:01`).row()
-                .text('Ã°Å¸ÂÂ¦ Transferencia/DepÃƒÂ³sito', `baku_inv_pay:20`).row()
-                .text('Ã°Å¸â€™Â³ Tarjeta de CrÃƒÂ©dito', `baku_inv_pay:19`).row()
-                .text('Ã¢ÂÅ’ Cancelar', `baku_cancel`);
+                .text('💵 Efectivo (Sin Sist. Fin)', 'baku_inv_pay:01').row()
+                .text('🏦 Transferencia/Depósito', 'baku_inv_pay:20').row()
+                .text('💳 Tarjeta de Crédito', 'baku_inv_pay:19').row()
+                .text('❌ Cancelar', 'baku_cancel');
                 
             await ctx.reply(
-                `Ã‚Â¿CuÃƒÂ¡l serÃƒÂ¡ la forma de pago para la factura de ${client.name}?`,
+                `¿Cuál será la forma de pago para la factura de ${client.name} ($${amount.toFixed(2)})?`,
                 { reply_markup: kb }
             );
             return;
