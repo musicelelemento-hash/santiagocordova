@@ -367,5 +367,75 @@ export const SupabaseService = {
       console.error('Error upserting sri comprobante:', err);
       throw err;
     }
+  },
+
+  // --- Emisor Settings & Signature Persistence ---
+  async getEmisorConfig(): Promise<any | null> {
+    try {
+      const { data, error } = await supabase
+        .from('emisor_settings')
+        .select('*')
+        .eq('id', 'default_emisor')
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      return {
+        emisorRuc: data.ruc,
+        emisorRazonSocial: data.razon_social,
+        emisorNombreComercial: data.nombre_comercial,
+        emisorDirMatriz: data.dir_matriz,
+        emisorEstab: data.estab,
+        emisorPtoEmi: data.pto_emi,
+        emisorRegimen: data.regimen,
+        ambiente: data.ambiente,
+        emisorSecuencialInicio: data.secuencial_inicio,
+        lastSeqFactura: data.last_seq_factura,
+        lastSeqRetencion: data.last_seq_retencion,
+        p12Base64: data.p12_base64,
+        p12FileName: data.p12_filename,
+        p12Password: data.p12_password,
+        p12StartDate: data.p12_start,
+        p12ExpiryDate: data.p12_expiry,
+        p12SubjectName: data.p12_subject,
+        p12OwnerName: data.p12_owner,
+        emisorLogo: data.logo_base64
+      };
+    } catch (err) {
+      console.warn('[Supabase] Warning reading emisor_settings:', err);
+      return null;
+    }
+  },
+
+  async upsertEmisorConfig(config: any): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('emisor_settings')
+        .upsert({
+          id: 'default_emisor',
+          ruc: config.emisorRuc,
+          razon_social: config.emisorRazonSocial,
+          nombre_comercial: config.emisorNombreComercial,
+          dir_matriz: config.emisorDirMatriz,
+          estab: config.emisorEstab,
+          pto_emi: config.emisorPtoEmi,
+          regimen: config.emisorRegimen,
+          ambiente: config.ambiente,
+          secuencial_inicio: config.emisorSecuencialInicio,
+          last_seq_factura: config.lastSeqFactura,
+          last_seq_retencion: config.lastSeqRetencion,
+          p12_base64: config.p12Base64,
+          p12_filename: config.p12FileName,
+          p12_password: config.p12Password,
+          p12_start: config.p12StartDate,
+          p12_expiry: config.p12ExpiryDate,
+          p12_subject: config.p12SubjectName,
+          p12_owner: config.p12OwnerName,
+          logo_base64: config.emisorLogo,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+      if (error) throw error;
+    } catch (err) {
+      console.error('[Supabase] Error saving emisor_settings:', err);
+    }
   }
 };

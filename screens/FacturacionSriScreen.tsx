@@ -181,9 +181,77 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [p12SubjectName, setP12SubjectName] = useState('');
   const [p12OwnerName, setP12OwnerName] = useState('');
 
-  // Carga asíncrona de firma electrónica desde IndexedDB con respaldo en localStorage
+  // Función helper para guardar la configuración del emisor y firma electrónica en Supabase y local
+  const saveEmisorConfigToSupabase = async (overrides?: any) => {
+    try {
+      const payload = {
+        emisorRuc,
+        emisorRazonSocial,
+        emisorNombreComercial,
+        emisorDirMatriz,
+        emisorEstab,
+        emisorPtoEmi,
+        emisorRegimen,
+        ambiente,
+        emisorSecuencialInicio,
+        lastSeqFactura,
+        lastSeqRetencion,
+        p12Base64: p12FileBase64,
+        p12FileName,
+        p12Password,
+        p12StartDate,
+        p12ExpiryDate,
+        p12SubjectName,
+        p12OwnerName,
+        emisorLogo,
+        ...overrides
+      };
+      await SupabaseService.upsertEmisorConfig(payload);
+    } catch (err) {
+      console.error('[Supabase] Error al sincronizar emisor:', err);
+    }
+  };
+
+  // Carga asíncrona de firma electrónica y emisor desde Supabase con respaldo en IndexedDB / localStorage
   useEffect(() => {
-    const loadSignatureFromIndexedDB = async () => {
+    const loadSignatureAndEmisor = async () => {
+      // 1. Intentar cargar desde Supabase (sincronización en la nube)
+      try {
+        const remote = await SupabaseService.getEmisorConfig();
+        if (remote) {
+          if (remote.p12Base64) {
+            setP12FileBase64(remote.p12Base64);
+            await db.setLocal('sc_sri_p12_base64', remote.p12Base64);
+            localStorage.setItem('sc_sri_p12_base64', remote.p12Base64);
+            setIsEditingSignature(false);
+          }
+          if (remote.p12FileName) { setP12FileName(remote.p12FileName); localStorage.setItem('sc_sri_p12_filename', remote.p12FileName); }
+          if (remote.p12Password) { setP12Password(remote.p12Password); localStorage.setItem('sc_sri_p12_password', remote.p12Password); }
+          if (remote.p12StartDate) setP12StartDate(remote.p12StartDate);
+          if (remote.p12ExpiryDate) setP12ExpiryDate(remote.p12ExpiryDate);
+          if (remote.p12SubjectName) setP12SubjectName(remote.p12SubjectName);
+          if (remote.p12OwnerName) setP12OwnerName(remote.p12OwnerName);
+
+          if (remote.emisorRuc) { setEmisorRuc(remote.emisorRuc); localStorage.setItem('sc_emisor_ruc', remote.emisorRuc); }
+          if (remote.emisorRazonSocial) { setEmisorRazonSocial(remote.emisorRazonSocial); localStorage.setItem('sc_emisor_razon', remote.emisorRazonSocial); }
+          if (remote.emisorNombreComercial) { setEmisorNombreComercial(remote.emisorNombreComercial); localStorage.setItem('sc_emisor_comercial', remote.emisorNombreComercial); }
+          if (remote.emisorDirMatriz) { setEmisorDirMatriz(remote.emisorDirMatriz); localStorage.setItem('sc_emisor_dir', remote.emisorDirMatriz); }
+          if (remote.emisorEstab) { setEmisorEstab(remote.emisorEstab); localStorage.setItem('sc_emisor_estab', remote.emisorEstab); }
+          if (remote.emisorPtoEmi) { setEmisorPtoEmi(remote.emisorPtoEmi); localStorage.setItem('sc_emisor_pto', remote.emisorPtoEmi); }
+          if (remote.emisorRegimen) { setEmisorRegimen(remote.emisorRegimen); localStorage.setItem('sc_emisor_regimen', remote.emisorRegimen); }
+          if (remote.ambiente) { setAmbienteState(remote.ambiente); localStorage.setItem('sc_emisor_ambiente', remote.ambiente); }
+          if (remote.emisorSecuencialInicio) { setEmisorSecuencialInicio(remote.emisorSecuencialInicio); localStorage.setItem('sc_emisor_secuencial_inicio', String(remote.emisorSecuencialInicio)); }
+          if (remote.lastSeqFactura) { setLastSeqFactura(remote.lastSeqFactura); localStorage.setItem('sc_sri_last_seq_factura', String(remote.lastSeqFactura)); }
+          if (remote.lastSeqRetencion) { setLastSeqRetencion(remote.lastSeqRetencion); localStorage.setItem('sc_sri_last_seq_retencion', String(remote.lastSeqRetencion)); }
+          if (remote.emisorLogo) { setEmisorLogo(remote.emisorLogo); localStorage.setItem('sc_emisor_logo', remote.emisorLogo); }
+
+          if (remote.p12Base64) return; // Si vino de la nube, finalizamos exitosamente
+        }
+      } catch (err) {
+        console.warn('[Supabase] No se pudo obtener emisor_settings desde la nube, probando local:', err);
+      }
+
+      // 2. Fallback local si la nube aún no tenía la firma guardada
       try {
         const base64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
         const name = (await db.getLocal('sc_sri_p12_filename')) || localStorage.getItem('sc_sri_p12_filename') || '';
@@ -208,13 +276,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         console.error('Error loading signature from local db:', err);
       }
     };
-    loadSignatureFromIndexedDB();
+    loadSignatureAndEmisor();
   }, []);
 
   const handlePasswordChange = async (val: string) => {
     setP12Password(val);
     await db.setLocal('sc_sri_p12_password', val);
     localStorage.setItem('sc_sri_p12_password', val);
+    await saveEmisorConfigToSupabase({ p12Password: val });
   };
 
   const handleP12Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -308,6 +377,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           setP12ExpiryDate('No detectada');
           await db.setLocal('sc_sri_p12_expiry', 'No detectada');
         }
+
+        await saveEmisorConfigToSupabase({
+          p12Base64: base64Data,
+          p12FileName: file.name,
+          p12Password
+        });
       }
     };
     reader.readAsDataURL(file);
@@ -1142,6 +1217,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       const nextSecNum = secNum + 1;
       setEmisorSecuencialInicio(nextSecNum);
       localStorage.setItem('sc_emisor_secuencial_inicio', String(nextSecNum));
+
+      // 3. Sincronizar secuenciales con Supabase en la nube
+      await saveEmisorConfigToSupabase({
+        lastSeqFactura: docType === 'factura' ? secNum : lastSeqFactura,
+        lastSeqRetencion: docType === 'retencion' ? secNum : lastSeqRetencion,
+        emisorSecuencialInicio: nextSecNum
+      });
 
       // 2. Mark declarations as paid / reconcile debt
       if (selectedClient && selectedPeriods.length > 0) {
@@ -2453,6 +2535,210 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     printWindow.document.close();
   };
 
+  const downloadRideDocument = (comprobante: HistoricComprobante) => {
+    let emisor = {
+      razonSocial: emisorRazonSocial,
+      nombreComercial: emisorNombreComercial,
+      ruc: emisorRuc,
+      dirMatriz: emisorDirMatriz,
+      estab: emisorEstab,
+      ptoEmi: emisorPtoEmi,
+      secuencial: comprobante.secuencial,
+      claveAcceso: comprobante.claveAcceso,
+      ambiente: comprobante.ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS',
+      regimen: emisorRegimen
+    };
+
+    let receptor = {
+      razonSocial: comprobante.nombreReceptor,
+      identificacion: comprobante.rucReceptor,
+      direccion: comprobante.rucReceptor === buyerRuc ? buyerAddress || 'Pasaje, El Oro' : 'Ecuador',
+      fechaEmision: comprobante.fechaEmision
+    };
+
+    let itemsHtml = '';
+    let subtotal15 = 0;
+    let subtotal0 = comprobante.total;
+    let iva15 = 0;
+    let total = comprobante.total;
+
+    try {
+      if (comprobante.xml) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(comprobante.xml, "text/xml");
+        const razonSocial = xmlDoc.getElementsByTagName("razonSocial")[0]?.textContent;
+        if (razonSocial) emisor.razonSocial = razonSocial;
+        const nombreComercial = xmlDoc.getElementsByTagName("nombreComercial")[0]?.textContent;
+        if (nombreComercial) emisor.nombreComercial = nombreComercial;
+        const ruc = xmlDoc.getElementsByTagName("ruc")[0]?.textContent;
+        if (ruc) emisor.ruc = ruc;
+        const dirMatriz = xmlDoc.getElementsByTagName("dirMatriz")[0]?.textContent;
+        if (dirMatriz) emisor.dirMatriz = dirMatriz;
+        const estab = xmlDoc.getElementsByTagName("estab")[0]?.textContent;
+        if (estab) emisor.estab = estab;
+        const ptoEmi = xmlDoc.getElementsByTagName("ptoEmi")[0]?.textContent;
+        if (ptoEmi) emisor.ptoEmi = ptoEmi;
+
+        const razonSocialComprador = xmlDoc.getElementsByTagName("razonSocialComprador")[0]?.textContent;
+        if (razonSocialComprador) receptor.razonSocial = razonSocialComprador;
+        const identificacionComprador = xmlDoc.getElementsByTagName("identificacionComprador")[0]?.textContent;
+        if (identificacionComprador) receptor.identificacion = identificacionComprador;
+        const direccionComprador = xmlDoc.getElementsByTagName("direccionComprador")[0]?.textContent;
+        if (direccionComprador) receptor.direccion = direccionComprador;
+
+        const detalles = xmlDoc.getElementsByTagName("detalle");
+        if (detalles.length > 0) {
+          itemsHtml = '';
+          subtotal15 = 0;
+          subtotal0 = 0;
+          for (let i = 0; i < detalles.length; i++) {
+            const d = detalles[i];
+            const codigo = d.getElementsByTagName("codigoPrincipal")[0]?.textContent || '001';
+            const descripcion = d.getElementsByTagName("descripcion")[0]?.textContent || 'Servicios Contables';
+            const cantidad = parseFloat(d.getElementsByTagName("cantidad")[0]?.textContent || '1');
+            const precioUnitario = parseFloat(d.getElementsByTagName("precioUnitario")[0]?.textContent || '0');
+            const precioTotalSinImpuesto = parseFloat(d.getElementsByTagName("precioTotalSinImpuesto")[0]?.textContent || (cantidad * precioUnitario).toString());
+
+            let ivaRate = 0;
+            const impuestos = d.getElementsByTagName("impuesto");
+            for (let j = 0; j < impuestos.length; j++) {
+              const imp = impuestos[j];
+              const tarifa = parseFloat(imp.getElementsByTagName("tarifa")[0]?.textContent || '0');
+              if (tarifa > 0) ivaRate = tarifa / 100;
+            }
+
+            if (ivaRate > 0) {
+              subtotal15 += precioTotalSinImpuesto;
+            } else {
+              subtotal0 += precioTotalSinImpuesto;
+            }
+
+            itemsHtml += `<tr>
+              <td style="font-family: monospace;">${codigo}</td>
+              <td style="text-align: center;">${cantidad.toFixed(2)}</td>
+              <td style="text-transform: uppercase;">${descripcion}</td>
+              <td style="text-align: right; font-family: monospace;">$${precioUnitario.toFixed(2)}</td>
+              <td style="text-align: right; font-family: monospace; font-weight: bold;">$${precioTotalSinImpuesto.toFixed(2)}</td>
+            </tr>`;
+          }
+          iva15 = subtotal15 * 0.15;
+          total = subtotal15 + subtotal0 + iva15;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!itemsHtml) {
+      itemsHtml = `<tr><td style="font-family: monospace;">001</td><td style="text-align: center;">1.00</td><td style="text-transform: uppercase;">Servicios Contables Profesionales</td><td style="text-align: right; font-family: monospace;">$${comprobante.total.toFixed(2)}</td><td style="text-align: right; font-family: monospace; font-weight: bold;">$${comprobante.total.toFixed(2)}</td></tr>`;
+    }
+
+    let regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</div>';
+
+    const logoHtml = emisorLogo 
+      ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 
+      : "<div class='emisor-title'>" + (emisor.nombreComercial || 'SOLUCIONES CONTABLES PRO') + "</div>";
+
+    const rideDocHtml = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <title>RIDE_${comprobante.tipo}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@700;800;900&display=swap');
+    @page { size: A4 portrait; margin: 10mm 12mm 12mm 12mm; }
+    * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
+    body { margin: 0; padding: 12px; background: #ffffff; color: #0f172a; font-size: 10px; line-height: 1.3; }
+    .print-actions { margin-bottom: 12px; text-align: right; }
+    .btn-print { background: #2b6aff; color: #ffffff; border: none; padding: 8px 16px; font-weight: 800; font-size: 11px; border-radius: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
+    @media print { .print-actions { display: none !important; } }
+    .invoice-card { border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #ffffff; }
+    .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
+    .emisor-box { padding-right: 12px; border-right: 1px dashed #e2e8f0; }
+    .logo-img { max-height: 55px; width: auto; object-fit: contain; margin-bottom: 8px; }
+    .emisor-title { font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .emisor-razon { font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase; margin-bottom: 8px; }
+    .auth-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
+    .auth-title { font-size: 11px; font-weight: 900; color: #2b6aff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .auth-secuencial { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+    .barcode-container { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; font-weight: 700; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; text-align: center; word-break: break-all; margin-top: 6px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+    .items-table th { background: #f1f5f9; color: #475569; font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 8px; border-bottom: 1px solid #cbd5e1; text-align: left; }
+    .items-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; font-size: 9.5px; font-weight: 500; }
+    .bottom-grid { display: grid; grid-template-columns: 1fr 240px; gap: 16px; }
+    .totales-table { width: 100%; border-collapse: collapse; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+    .totales-table td { padding: 5px 10px; font-size: 9px; font-weight: 600; border-bottom: 1px solid #f1f5f9; }
+    .totales-table tr.total-row td { font-size: 11px; font-weight: 900; color: #2b6aff; background: #eff6ff; border-bottom: none; }
+  </style>
+</head>
+<body>
+  <div class="print-actions">
+    <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
+  </div>
+  <div class="invoice-card">
+    <div class="header-grid">
+      <div class="emisor-box">
+        ${logoHtml}
+        <div class="emisor-razon">${emisor.razonSocial}</div>
+        <div><strong>RUC:</strong> <span style="font-family: monospace;">${emisor.ruc}</span></div>
+        <div><strong>Matriz:</strong> ${emisor.dirMatriz}</div>
+        ${regimeLabel}
+      </div>
+      <div class="auth-box">
+        <div class="auth-title">${comprobante.tipo === 'factura' ? 'FACTURA ELECTRÓNICA' : 'COMPROBANTE DE RETENCIÓN'}</div>
+        <div class="auth-secuencial">No. ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</div>
+        <div><strong>CLAVE DE ACCESO SRI:</strong></div>
+        <div class="barcode-container">${comprobante.claveAcceso}</div>
+        <div style="margin-top: 6px;"><strong>ESTADO:</strong> <span style="color: #04b17b; font-weight: 800;">${comprobante.estado.toUpperCase()}</span></div>
+      </div>
+    </div>
+    <div class="info-grid">
+      <div><strong>Razon Social / Nombre Comprador:</strong> <br/><span style="font-weight: 700; text-transform: uppercase;">${receptor.razonSocial}</span></div>
+      <div><strong>RUC / CI:</strong> <span style="font-family: monospace; font-weight: 700;">${receptor.identificacion}</span></div>
+      <div style="grid-column: span 2;"><strong>Dirección:</strong> <br/><span style="font-weight: 700; text-transform: uppercase;">${receptor.direccion}</span></div>
+    </div>
+    <table class="items-table">
+      <thead>
+        <tr>
+          <th>Cod. Principal</th>
+          <th style="text-align: center;">Cant.</th>
+          <th>Descripción / Detalle del Servicio</th>
+          <th style="text-align: right;">P. Unitario</th>
+          <th style="text-align: right;">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemsHtml}
+      </tbody>
+    </table>
+    <div class="bottom-grid">
+      <div></div>
+      <div>
+        <table class="totales-table">
+          <tr><td>SUBTOTAL 15%</td><td style="text-align: right; font-family: monospace;">$${subtotal15.toFixed(2)}</td></tr>
+          <tr><td>SUBTOTAL 0%</td><td style="text-align: right; font-family: monospace;">$${subtotal0.toFixed(2)}</td></tr>
+          <tr><td>IVA 15%</td><td style="text-align: right; font-family: monospace; font-weight: 700; color: #2b6aff;">$${iva15.toFixed(2)}</td></tr>
+          <tr class="total-row"><td>VALOR TOTAL</td><td style="text-align: right; font-family: monospace;">$${total.toFixed(2)}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([rideDocHtml], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `RIDE_${comprobante.tipo}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const copyToClipboard = (text: string, subject: string) => {
     navigator.clipboard.writeText(text);
     alert(`${subject} copiado al portapapeles.`);
@@ -3020,7 +3306,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     );
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     localStorage.setItem('sc_emisor_ruc', emisorRuc);
     localStorage.setItem('sc_emisor_razon', emisorRazonSocial);
     localStorage.setItem('sc_emisor_comercial', emisorNombreComercial);
@@ -3032,7 +3318,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     localStorage.setItem('sc_facturacion_api_url', apiUrl);
     localStorage.setItem('sc_emisor_secuencial_inicio', String(emisorSecuencialInicio));
     localStorage.setItem('sc_emisor_logo', emisorLogo);
-    alert('Ajustes del emisor y API guardados correctamente.');
+    
+    await saveEmisorConfigToSupabase();
+    alert('Ajustes del emisor guardados y sincronizados correctamente en la nube.');
     setActiveTab('dashboard');
   };
 
@@ -4420,7 +4708,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 pt-2 relative z-10">
+                <div className="grid grid-cols-3 gap-2 pt-2 relative z-10">
                   <button
                     onClick={() => {
                       const currentComp: HistoricComprobante = {
@@ -4438,10 +4726,32 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       };
                       printRideDocument(currentComp);
                     }}
-                    className="flex items-center justify-center gap-1.5 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                    className="flex items-center justify-center gap-1 py-2 bg-primary hover:bg-gradient-azure text-white rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
                   >
-                    <FileText size={12} />
+                    <FileText size={11} />
                     Ver RIDE
+                  </button>
+                  <button
+                    onClick={() => {
+                      const currentComp: HistoricComprobante = {
+                        id: Date.now().toString(),
+                        tipo: docType,
+                        secuencial: generatedAccessKey ? generatedAccessKey.substring(30, 39) : '000000001',
+                        claveAcceso: generatedAccessKey,
+                        rucReceptor: buyerRuc,
+                        nombreReceptor: buyerName,
+                        fechaEmision: generatedAccessKey ? `${generatedAccessKey.substring(4, 8)}-${generatedAccessKey.substring(2, 4)}-${generatedAccessKey.substring(0, 2)}` : new Date().toISOString().split('T')[0],
+                        total: docType === 'factura' ? invoiceTotals.total : withholdingTotal,
+                        estado: 'Autorizado',
+                        xml: generatedXml,
+                        ambiente
+                      };
+                      downloadRideDocument(currentComp);
+                    }}
+                    className="flex items-center justify-center gap-1 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                  >
+                    <Download size={11} />
+                    Bajar RIDE
                   </button>
                   <button
                     onClick={() => {
@@ -4460,9 +4770,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       };
                       downloadXmlFile(currentComp);
                     }}
-                    className="flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                    className="flex items-center justify-center gap-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
                   >
-                    <Download size={12} />
+                    <Download size={11} />
                     XML
                   </button>
                   <a
@@ -4706,9 +5016,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             <span>Reusar Plantilla</span>
                           </button>
                           <button
+                            onClick={() => downloadRideDocument(row)}
+                            className="px-2 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
+                            title="Descargar RIDE (Directo para móviles / PC)"
+                          >
+                            <Download size={11} />
+                            <span>Descargar RIDE</span>
+                          </button>
+                          <button
                             onClick={() => printRideDocument(row)}
                             className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg transition-colors"
-                            title="Imprimir PDF (RIDE)"
+                            title="Imprimir RIDE"
                           >
                             <FileText size={12} />
                           </button>
