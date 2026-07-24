@@ -91,6 +91,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     const handleSelectMatrixMatch = (client: Client) => {
         sessionStorage.setItem('clients_search', client.name);
         sessionStorage.setItem('dashboard_search', client.name);
+        sessionStorage.setItem('matrix_highlight_ruc', client.ruc);
         setIsSearchOpen(false);
         setIsMobileSearchExpanded(false);
         setGlobalQuery('');

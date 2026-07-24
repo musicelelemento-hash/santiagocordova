@@ -71,6 +71,24 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [isWorkspaceMode, setIsWorkspaceMode] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [highlightedRuc, setHighlightedRuc] = useState<string | null>(() => {
+        return sessionStorage.getItem('matrix_highlight_ruc') || null;
+    });
+
+    React.useEffect(() => {
+        const checkHighlight = () => {
+            const h = sessionStorage.getItem('matrix_highlight_ruc');
+            if (h) {
+                setHighlightedRuc(h);
+                const timer = setTimeout(() => {
+                    setHighlightedRuc(null);
+                    sessionStorage.removeItem('matrix_highlight_ruc');
+                }, 5000);
+                return () => clearTimeout(timer);
+            }
+        };
+        checkHighlight();
+    }, []);
     
     // SRI Authorized Invoices History
     const [sriHistory, setSriHistory] = useState<any[]>([]);
@@ -684,7 +702,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             </td>
                                         </tr>
                                     )}
-                                    <tr className="hover:bg-slate-50/50 dark:bg-white/[0.02] dark:hover:bg-slate-950/20 transition-colors group/row">
+                                    <tr className={`transition-all duration-700 group/row ${
+    client.ruc === highlightedRuc
+        ? 'bg-primary/10 dark:bg-primary/20 ring-2 ring-primary border-primary shadow-[0_0_30px_rgba(59,130,246,0.5)] z-20 relative animate-pulse'
+        : 'hover:bg-slate-50/50 dark:bg-white/[0.02] dark:hover:bg-slate-950/20'
+}`}>
                                         <td 
                                             className="px-6 py-4 sticky left-0 bg-white/95 dark:bg-[#020617]/95 backdrop-blur-md z-10 border-r border-slate-200/30 dark:border-white/10 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-950/80 transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.03)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.4)]"
                                             onClick={() => onViewClient(client)}
@@ -714,6 +736,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         <span className="text-xs font-black truncate max-w-[160px] text-slate-900 dark:text-white group-hover/name:text-primary transition-colors font-premium">
                                                             {client.tradeName || client.name}
                                                         </span>
+                                                        {client.ruc === highlightedRuc && (
+                                                            <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-primary text-white shadow-lg shadow-primary/50 animate-bounce shrink-0">
+                                                                🎯 DESTACADO
+                                                            </span>
+                                                        )}
                                                         {isWorkspaceMode && (
                                                             <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
                                                                 isClientUpToDate(client) 
