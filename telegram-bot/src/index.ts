@@ -195,7 +195,7 @@ async function showClientProfileCard(chatId: string, client: any, ctx: any) {
 async function showClientSelection(
     chatId: string,
     clients: any[],
-    dialogType: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field',
+    dialogType: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice',
     data: DialogState['data'],
     ctx: any,
     message: string = '🔍 Encontré varios clientes. Selecciona el correcto:'
@@ -222,6 +222,7 @@ async function showOperationalMenu(ctx: any) {
         .text('📂 Descargar Firma (.p12)', 'baku_cmd:download_p12').row()
         .text('📅 Cuándo Caduca Firma', 'baku_cmd:check_expiry').row()
         .text('📄 Ver Comprobantes', 'baku_cmd:download_proof').row()
+        .text('🧾 Emitir Factura', 'baku_cmd:create_invoice').row()
         .text('📊 Reporte Rápido General', 'baku_cmd:quick_report');
 
     await ctx.reply(
@@ -433,6 +434,14 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
         }
     }
 
+    // --- INVOICE shortcuts ---
+    const invoiceMatch = t.match(/(?:facturar|emitir\s+factura|factura|crear\s+factura)\s+(?:a|de|para)\s+(.+)/);
+    if (invoiceMatch) {
+        const clients = await findClients(invoiceMatch[1].trim(), '*');
+        await initiateInvoiceFlow(chatId, clients, ctx);
+        return true;
+    }
+
     // --- REPORT shortcuts ---
     if (/(?:quien(?:es)?\s+(?:me\s+)?deb[e|en]|deudores|cartera\s+vencida|cobros\s+pendientes)/.test(t)) {
         const resultText = await getDebtorClients();
@@ -489,9 +498,9 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
 }
 
 export interface DialogState {
-  type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field';
+  type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice';
   chatId: string;
-  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value';
+  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value' | 'ask_invoice_concept' | 'ask_invoice_custom_concept' | 'ask_invoice_payment_method';
   client?: any;
   candidates?: any[];
   data: {
@@ -501,6 +510,8 @@ export interface DialogState {
     isFuture?: boolean;
     field?: string;    // For field_query/edit_profile_field: which field to read/write
     value?: any;       // For field_query/edit_profile_field: value to write (if update)
+    invoiceConcept?: string; // For create_invoice
+    invoiceAmount?: number;  // For create_invoice
   };
 }
 
@@ -647,6 +658,54 @@ export async function startPaymentFlowForClient(chatId: string, client: any, ctx
             `💼 **Régimen:** ${regime}\n\n` +
             pendingMsg +
             `Elige el periodo que deseas marcar como pagado, o escríbelo en el chat:`
+        ),
+        { parse_mode: 'HTML', reply_markup: kb }
+    );
+}
+
+async function initiateInvoiceFlow(chatId: string, matches: any[], ctx: any) {
+    if (matches.length === 0) {
+        await ctx.reply("❌ No encontré ningún cliente que coincida con esa búsqueda. Baku.");
+        return;
+    }
+
+    if (matches.length > 1) {
+        await showClientSelection(
+            chatId, matches, 'create_invoice', {},
+            ctx, `🔍 Encontré <b>${matches.length}</b> clientes. ¿A cuál vas a facturar?`
+        );
+        return;
+    }
+
+    await startInvoiceFlowForClient(chatId, matches[0], ctx);
+}
+
+export async function startInvoiceFlowForClient(chatId: string, client: any, ctx: any) {
+    const history = client.declaration_history || [];
+    const unpaid = history.filter((d: any) => !d.is_paid && d.status !== 'Pendiente');
+    
+    pendingDialogs.set(chatId, {
+        type: 'create_invoice',
+        chatId,
+        step: 'ask_invoice_concept',
+        client,
+        data: {}
+    });
+
+    const kb = new InlineKeyboard();
+    if (unpaid.length > 0) {
+        unpaid.forEach((d: any) => {
+            kb.text(`Honorarios ${d.period} - $${d.fee || 0}`, `baku_inv_concept:Honorarios ${d.period}:${d.fee || 0}`).row();
+        });
+    }
+    kb.text(`✏️ Detalle Personalizado`, `baku_inv_custom`).row();
+    kb.text(`❌ Cancelar`, `baku_cancel`);
+
+    await ctx.reply(
+        convertMarkdownToTelegramHtml(
+            `👤 **Cliente Seleccionado:** ${client.name}\n` +
+            `🆔 **RUC:** ${client.ruc}\n\n` +
+            `Elige el concepto a facturar de la lista de honorarios pendientes, o ingresa un detalle libre:`
         ),
         { parse_mode: 'HTML', reply_markup: kb }
     );
@@ -811,6 +870,8 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
                 await initiatePaymentFlow(chatId, matches, ctx);
             } else if (dialog.type === 'mark_declaration') {
                 await initiateDeclarationFlow(chatId, matches, ctx);
+            } else if (dialog.type === 'create_invoice') {
+                await initiateInvoiceFlow(chatId, matches, ctx);
             } else if (dialog.type === 'field_query') {
                 const field = dialog.data.field!;
                 if (matches.length > 1) {
@@ -853,6 +914,8 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
             const selected = dialog.candidates[idx];
             if (dialog.type === 'mark_payment') {
                 await startPaymentFlowForClient(chatId, selected, ctx);
+            } else if (dialog.type === 'create_invoice') {
+                await startInvoiceFlowForClient(chatId, selected, ctx);
             } else {
                 await startDeclarationFlowForClient(chatId, selected, ctx);
             }
@@ -860,6 +923,28 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
             await ctx.reply("⚠️ Selección inválida. Por favor, responde con el número de la lista (ej: 1) o escribe **cancelar** para salir.");
         }
         return;
+    }
+
+    if (dialog.type === 'create_invoice') {
+        const client = dialog.client;
+        if (dialog.step === 'ask_invoice_custom_concept') {
+            dialog.data.invoiceConcept = text;
+            dialog.data.invoiceAmount = 0; // Se rellena con 0 para que el usuario lo edite en la web
+            dialog.step = 'ask_invoice_payment_method';
+            pendingDialogs.set(chatId, dialog);
+            
+            const kb = new InlineKeyboard()
+                .text('💵 Efectivo (Sin Sist. Fin)', `baku_inv_pay:01`).row()
+                .text('🏦 Transferencia/Depósito', `baku_inv_pay:20`).row()
+                .text('💳 Tarjeta de Crédito', `baku_inv_pay:19`).row()
+                .text('❌ Cancelar', `baku_cancel`);
+                
+            await ctx.reply(
+                `¿Cuál será la forma de pago para la factura de ${client.name}?`,
+                { reply_markup: kb }
+            );
+            return;
+        }
     }
 
     if (dialog.type === 'mark_payment') {
@@ -1180,6 +1265,64 @@ bot.on('callback_query:data', async (ctx) => {
         await saveMessage(chatId, 'assistant', result);
         return;
     }
+    if (data.startsWith('baku_inv_concept:')) {
+        const parts = data.split(':');
+        const concept = parts[1];
+        const amount = parseFloat(parts[2]) || 0;
+        
+        const dialog = pendingDialogs.get(chatId);
+        if (!dialog || dialog.type !== 'create_invoice') return;
+        
+        dialog.data.invoiceConcept = concept;
+        dialog.data.invoiceAmount = amount;
+        dialog.step = 'ask_invoice_payment_method';
+        
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        
+        const kb = new InlineKeyboard()
+            .text('💵 Efectivo (Sin Sist. Fin)', `baku_inv_pay:01`).row()
+            .text('🏦 Transferencia/Depósito', `baku_inv_pay:20`).row()
+            .text('💳 Tarjeta de Crédito', `baku_inv_pay:19`).row()
+            .text('❌ Cancelar', `baku_cancel`);
+            
+        await ctx.reply(`¿Cuál será la forma de pago para la factura de ${dialog.client.name}?`, { reply_markup: kb });
+        return;
+    }
+
+    if (data === 'baku_inv_custom') {
+        const dialog = pendingDialogs.get(chatId);
+        if (!dialog || dialog.type !== 'create_invoice') return;
+        
+        dialog.step = 'ask_invoice_custom_concept';
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        
+        await ctx.reply(`✏️ Escribe el concepto o descripción que deseas facturar para ${dialog.client.name}:`);
+        return;
+    }
+
+    if (data.startsWith('baku_inv_pay:')) {
+        const parts = data.split(':');
+        const paymentCode = parts[1];
+        
+        const dialog = pendingDialogs.get(chatId);
+        if (!dialog || dialog.type !== 'create_invoice') return;
+        
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        
+        const ruc = dialog.client.ruc;
+        const concept = dialog.data.invoiceConcept || '';
+        const amount = dialog.data.invoiceAmount || 0;
+        
+        const url = `https://santiagocordova.com/facturacion?clientRuc=${ruc}&concept=${encodeURIComponent(concept)}&amount=${amount}&payment=${paymentCode}`;
+        
+        const kb = new InlineKeyboard()
+            .url('🧾 Abrir Facturador Web', url).row()
+            .text('✅ Completado (Cerrar)', 'baku_cancel');
+            
+        await ctx.reply(`¡Listo! Haz clic en el botón de abajo para abrir la plataforma web con la factura pre-llenada y lista para autorizar:\n\n**Concepto:** ${concept}\n**Total:** $${amount.toFixed(2)}`, { parse_mode: 'Markdown', reply_markup: kb });
+        pendingDialogs.delete(chatId);
+        return;
+    }
 
     if (data.startsWith('baku_dec_type:')) {
         const parts = data.split(':');
@@ -1273,6 +1416,14 @@ bot.on('callback_query:data', async (ctx) => {
                 data: { field: 'declaration_history' }
             });
             await ctx.reply("📄 ¿De qué cliente deseas ver/descargar comprobantes de declaraciones? (Escribe el nombre o RUC). Baku.");
+        } else if (cmd === 'create_invoice') {
+            pendingDialogs.set(chatId, {
+                type: 'create_invoice',
+                chatId,
+                step: 'ask_client_name',
+                data: {}
+            });
+            await ctx.reply("🧾 ¿A qué cliente le deseas emitir la factura? (Escribe el nombre o RUC). Baku.");
         } else if (cmd === 'quick_report') {
             await ctx.replyWithChatAction('typing');
             const summary = await getDatabaseSummary();

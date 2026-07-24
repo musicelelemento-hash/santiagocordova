@@ -571,6 +571,56 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     }
   }, [selectedClient, clients]);
 
+  // Auto-fill from URL parameters (e.g., sent by Telegram Bot)
+  useEffect(() => {
+    if (clients.length === 0) return; // Wait until clients are loaded
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlClientRuc = searchParams.get('clientRuc');
+    
+    // Only run this ONCE if URL params exist
+    if (urlClientRuc && !selectedClient) {
+      const clientObj = clients.find(c => c.ruc === urlClientRuc);
+      if (clientObj) {
+        setActiveTab('factura');
+        selectClientAndInitialize(clientObj.id);
+        
+        const urlConcept = searchParams.get('concept');
+        const urlAmount = searchParams.get('amount');
+        const urlPayment = searchParams.get('payment');
+        
+        // Auto-fill items if concept and amount are provided
+        if (urlConcept && urlAmount) {
+          const amountNum = parseFloat(urlAmount);
+          if (!isNaN(amountNum)) {
+            const currentIvaRate = emisorRegimen === '3' ? 0.00 : 0.15;
+            const tax = Number((amountNum * currentIvaRate).toFixed(2));
+            const newItem = {
+              id: `url-item-${Date.now()}`,
+              codigoPrincipal: '001',
+              descripcion: urlConcept,
+              cantidad: 1,
+              precioUnitario: amountNum,
+              ivaRate: currentIvaRate,
+              subtotal: amountNum,
+              iva: tax,
+              total: Number((amountNum + tax).toFixed(2))
+            };
+            setInvoiceItems([newItem]);
+          }
+        }
+        
+        // Auto-fill payment method
+        if (urlPayment) {
+           setFormaPago(urlPayment);
+        }
+        
+        // Clean URL to prevent re-triggering if user refreshes
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [clients, selectedClient, emisorRegimen]);
+
   // Synchronize selected periods to invoice items
   useEffect(() => {
     if (selectedPeriods.length === 0) return;
