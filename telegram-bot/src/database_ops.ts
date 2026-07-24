@@ -1872,3 +1872,86 @@ export function convertMarkdownToTelegramHtml(markdown: string): string {
     return html;
 }
 
+export async function getDeclarationYears(ruc: string, type?: 'IVA' | 'RENTA'): Promise<string[]> {
+    try {
+        const { data: rawClients } = await supabase.from('clients').select('declaration_history').eq('ruc', ruc).eq('is_deleted', false);
+        if (!rawClients || rawClients.length === 0) return [];
+        const declarations = (rawClients[0].declaration_history || [])
+            .filter((d: any) => d.proof_file && d.proof_file.content && (!type || d.type === type));
+        
+        const years = new Set<string>();
+        declarations.forEach((d: any) => {
+            if (d.period) {
+                const yearMatch = d.period.match(/\b(20\d{2})\b/);
+                if (yearMatch) years.add(yearMatch[1]);
+            }
+        });
+        return Array.from(years).sort().reverse();
+    } catch (e) {
+        console.error("Error getting declaration years:", e);
+        return [];
+    }
+}
+
+export async function getDeclarationProofsByYear(ruc: string, type: 'IVA' | 'RENTA', year: string): Promise<Array<{ period: string; fileName: string; type: string }>> {
+    try {
+        const { data: rawClients } = await supabase.from('clients').select('declaration_history').eq('ruc', ruc).eq('is_deleted', false);
+        if (!rawClients || rawClients.length === 0) return [];
+        const declarations = (rawClients[0].declaration_history || [])
+            .filter((d: any) => d.proof_file && d.proof_file.content && d.type === type && d.period && d.period.includes(year));
+        
+        return declarations.map((d: any) => ({
+            period: d.period,
+            fileName: d.proof_file.name || 'declaracion.pdf',
+            type: d.type
+        }));
+    } catch (e) {
+        console.error("Error getting proofs by year:", e);
+        return [];
+    }
+}
+
+export async function saveClientSignatureP12(ruc: string, base64Content: string, fileName: string, password?: string): Promise<string> {
+    try {
+        const { data: rawClients } = await supabase.from('clients').select('*').eq('ruc', ruc).eq('is_deleted', false);
+        if (!rawClients || rawClients.length === 0) return `❌ No se encontró el cliente con RUC ${ruc}.`;
+        
+        const client = rawClients[0];
+        const updatePayload: any = {
+            signature_file: {
+                name: fileName,
+                content: base64Content,
+                uploadedAt: new Date().toISOString()
+            },
+            updated_at: new Date().toISOString()
+        };
+        
+        if (password) {
+            updatePayload.signature_password = password;
+        }
+
+        const { error } = await supabase.from('clients').update(updatePayload).eq('id', client.id);
+        if (error) throw error;
+
+        return `✅ **Firma Electrónica (.p12)** guardada correctamente en el expediente de **${client.name}**.`;
+    } catch (e: any) {
+        console.error("Error saving P12 signature:", e);
+        return `❌ Error al guardar firma electrónica: ${e.message}`;
+    }
+}
+
+export async function getRecentSriInvoices(limit = 10, rucFilter?: string): Promise<any[]> {
+    try {
+        let query = supabase.from('sri_comprobantes').select('*').order('created_at', { ascending: false }).limit(limit);
+        if (rucFilter) {
+            query = query.eq('ruc_receptor', rucFilter);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+    } catch (e) {
+        console.error("Error fetching recent invoices:", e);
+        return [];
+    }
+}
+

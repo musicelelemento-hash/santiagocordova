@@ -7,14 +7,14 @@ import express from 'express';
 import { transcribeAudioUrl, textToSpeech, updateVoiceConfig, getVoiceStatus } from './voice';
 import { validateSRIPDF, ValidatedPDF } from './pdf-validator';
 import { uploadToDrive } from './google-sync';
-import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING } from './database_ops';
+import { updateClientData, getDebtorClients, getUpcomingDeadlines, getDatabaseSummary, getClientsStatusReport, getClientField, quickUpdateClient, markPaymentAsPaid, findClients, markPaymentsList, markDeclaration, get_sri_credential, saveDeclarationPdf, getClientDeclarationProofsList, convertMarkdownToTelegramHtml, FIELD_LABELS, FIELD_DB_MAPPING, getDeclarationYears, getDeclarationProofsByYear, saveClientSignatureP12, getRecentSriInvoices, downloadClientProofFile } from './database_ops';
 import axios from 'axios';
 import { createRouteHandler } from "uploadthing/express";
 import { ourFileRouter } from "./uploadthing";
 import { startCronJobs, triggerProactiveReport } from './cron';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
-import { emitInvoice } from './sri_api';
+import { emitInvoice, getEmisorConfig } from './sri_api';
 import { generateRidePdfBuffer } from './pdf_generator';
 
 const pendingPdfs = new Map<string, { buffer: Buffer, data: ValidatedPDF }>();
@@ -197,7 +197,7 @@ async function showClientProfileCard(chatId: string, client: any, ctx: any) {
 async function showClientSelection(
     chatId: string,
     clients: any[],
-    dialogType: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice',
+    dialogType: DialogState['type'],
     data: DialogState['data'],
     ctx: any,
     message: string = 'Ã°Å¸â€Â EncontrÃƒÂ© varios clientes. Selecciona el correcto:'
@@ -217,24 +217,66 @@ async function showClientSelection(
 
 async function showOperationalMenu(ctx: any) {
     const kb = new InlineKeyboard()
-        .text('Ã°Å¸â€˜Â¤ Ver Perfil de Cliente', 'baku_cmd:view_profile').row()
-        .text('Ã°Å¸â€™Â° Registrar Pago', 'baku_cmd:reg_payment').row()
-        .text('Ã°Å¸â€˜Â¤ Ver Claves SRI', 'baku_cmd:see_sri_key').row()
-        .text('Ã°Å¸â€â€˜ Clave Firma ElectrÃƒÂ³nica', 'baku_cmd:see_sig_key').row()
-        .text('Ã°Å¸â€œâ€š Descargar Firma (.p12)', 'baku_cmd:download_p12').row()
-        .text('Ã°Å¸â€œâ€¦ CuÃƒÂ¡ndo Caduca Firma', 'baku_cmd:check_expiry').row()
-        .text('Ã°Å¸â€œâ€ž Ver Comprobantes', 'baku_cmd:download_proof').row()
-        .text('Ã°Å¸Â§Â¾ Emitir Factura', 'baku_cmd:create_invoice').row()
-        .text('Ã°Å¸â€œÅ  Reporte RÃƒÂ¡pido General', 'baku_cmd:quick_report');
+        .text('👤 Expediente de Cliente', 'baku_cmd:view_profile').row()
+        .text('💳 Registrar Pago', 'baku_cmd:reg_payment').row()
+        .text('📄 Comprobantes SRI (Declaraciones)', 'baku_cmd:browse_proofs').row()
+        .text('🔐 Firma .p12 / Bóveda', 'baku_cmd:upload_p12').row()
+        .text('🧾 Facturas Emitidas (Historial)', 'baku_cmd:browse_invoices').row()
+        .text('💸 Emitir Nueva Factura', 'baku_cmd:create_invoice').row()
+        .text('🔑 Ver Claves SRI', 'baku_cmd:see_sri_key').row()
+        .text('📊 Reporte Rápido General', 'baku_cmd:quick_report');
 
     await ctx.reply(
-        `Ã°Å¸Å½Â¯ <b>CENTRO DE OPERACIONES TÃƒÂCTICAS Ã¢â‚¬â€ SANTIAGO</b>\n\n` +
-        `Selecciona una acciÃƒÂ³n directa para gestionar la cartera de clientes de forma inmediata:`,
+        `🎯 <b>CENTRO DE OPERACIONES TÁCTICAS — SANTIAGO</b>\n\n` +
+        `Selecciona una acción directa para gestionar la cartera de clientes de forma inmediata:`,
         {
             parse_mode: 'HTML',
             reply_markup: kb
         }
     );
+}
+
+async function showProofTypeSelector(chatId: string, client: any, ctx: any) {
+    const kb = new InlineKeyboard()
+        .text('📊 IVA (Mensual / Semestral)', 'baku_proof_type:' + client.ruc + ':IVA').row()
+        .text('💰 RENTA (Anual)', 'baku_proof_type:' + client.ruc + ':RENTA').row()
+        .text('❌ Cancelar', 'baku_cancel');
+
+    await ctx.reply(
+        convertMarkdownToTelegramHtml(
+            '📄 <b>Comprobantes de Declaración SRI</b>\n\n' +
+            '<b>Cliente:</b> ' + client.name + '\n' +
+            '<b>RUC:</b> <code>' + client.ruc + '</code>\n\n' +
+            'Selecciona el tipo de impuesto que deseas consultar:'
+        ),
+        { parse_mode: 'HTML', reply_markup: kb }
+    );
+}
+
+async function showInvoicesListForClient(chatId: string, rucFilter: string | undefined, ctx: any) {
+    await ctx.replyWithChatAction('typing');
+    const invoices = await getRecentSriInvoices(10, rucFilter);
+    if (!invoices || invoices.length === 0) {
+        await ctx.reply('🧾 No se encontraron facturas autorizadas registradas.');
+        return;
+    }
+
+    let msg = '🧾 <b>FACTURAS EMITIDAS AUTORIZADAS:</b>\n\n';
+    const kb = new InlineKeyboard();
+    invoices.forEach((inv: any) => {
+        const sec = inv.secuencial;
+        const total = Number(inv.total || 0).toFixed(2);
+        const name = (inv.nombre_receptor || 'Cliente').substring(0, 18);
+        msg += '• <b>No. ' + sec + '</b> - ' + name + ' ($' + total + ') [' + inv.fecha_emision + ']\n';
+        kb.text('📥 RIDE PDF #' + sec, 'baku_inv_pdf:' + inv.clave_acceso)
+          .text('📄 XML', 'baku_inv_xml:' + inv.clave_acceso).row();
+    });
+    kb.text('❌ Cerrar', 'baku_cancel');
+
+    await ctx.reply(convertMarkdownToTelegramHtml(msg), {
+        parse_mode: 'HTML',
+        reply_markup: kb
+    });
 }
 
 /**
@@ -500,9 +542,9 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
 }
 
 export interface DialogState {
-  type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice';
+  type: 'mark_payment' | 'mark_declaration' | 'field_query' | 'view_profile' | 'edit_profile_field' | 'create_invoice' | 'browse_proofs' | 'upload_p12' | 'browse_invoices';
   chatId: string;
-  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value' | 'ask_invoice_concept' | 'ask_invoice_custom_concept' | 'ask_invoice_custom_amount' | 'ask_invoice_payment_method';
+  step: 'select_client' | 'ask_payment_period' | 'ask_payment_future_period' | 'confirm_payment' | 'ask_declaration_type' | 'ask_declaration_period' | 'ask_declaration_realizada' | 'ask_declaration_method' | 'confirm_declaration' | 'ask_client_name' | 'ask_field_value' | 'ask_invoice_concept' | 'ask_invoice_custom_concept' | 'ask_invoice_custom_amount' | 'ask_invoice_payment_method' | 'ask_p12_password';
   client?: any;
   candidates?: any[];
   data: {
@@ -514,6 +556,10 @@ export interface DialogState {
     value?: any;       // For field_query/edit_profile_field: value to write (if update)
     invoiceConcept?: string; // For create_invoice
     invoiceAmount?: number;  // For create_invoice
+    p12Base64?: string;
+    p12FileName?: string;
+    selectedType?: 'IVA' | 'RENTA';
+    selectedYear?: string;
   };
 }
 
@@ -903,10 +949,55 @@ async function handleDialogStep(chatId: string, text: string, ctx: any) {
                     await showClientProfileCard(chatId, client, ctx);
                     pendingDialogs.delete(chatId);
                 }
+            } else if (dialog.type === 'upload_p12') {
+                if (matches.length > 1) {
+                    await showClientSelection(
+                        chatId, matches, 'upload_p12', dialog.data, ctx,
+                        `🔐 Encontré <b>${matches.length}</b> clientes. ¿A cuál asignamos la firma .p12?`
+                    );
+                } else {
+                    const client = matches[0];
+                    dialog.client = client;
+                    dialog.step = 'ask_p12_password';
+                    pendingDialogs.set(chatId, dialog);
+                    await ctx.reply(`🔑 Ingresa la contraseña de la firma electrónica de **${client.name}**:`);
+                }
+            } else if (dialog.type === 'browse_proofs') {
+                if (matches.length > 1) {
+                    await showClientSelection(
+                        chatId, matches, 'browse_proofs', dialog.data, ctx,
+                        `📄 Encontré <b>${matches.length}</b> clientes. Selecciona el que deseas consultar:`
+                    );
+                } else {
+                    const client = matches[0];
+                    pendingDialogs.delete(chatId);
+                    await showProofTypeSelector(chatId, client, ctx);
+                }
+            } else if (dialog.type === 'browse_invoices') {
+                if (matches.length > 1) {
+                    await showClientSelection(
+                        chatId, matches, 'browse_invoices', dialog.data, ctx,
+                        `🧾 Encontré <b>${matches.length}</b> clientes. Selecciona de cuál deseas las facturas:`
+                    );
+                } else {
+                    const client = matches[0];
+                    pendingDialogs.delete(chatId);
+                    await showInvoicesListForClient(chatId, client.ruc, ctx);
+                }
             }
         } catch (err: any) {
             await ctx.reply(`Error al buscar clientes: ${err.message}. Baku.`);
         }
+        return;
+    }
+
+    if (dialog.type === 'upload_p12' && dialog.step === 'ask_p12_password') {
+        const client = dialog.client;
+        const password = text.trim();
+        await ctx.replyWithChatAction('typing');
+        const res = await saveClientSignatureP12(client.ruc, dialog.data.p12Base64!, dialog.data.p12FileName!, password);
+        pendingDialogs.delete(chatId);
+        await ctx.reply(convertMarkdownToTelegramHtml(res), { parse_mode: 'HTML' });
         return;
     }
 
@@ -1399,12 +1490,156 @@ bot.on('callback_query:data', async (ctx) => {
         return;
     }
 
+    if (data.startsWith('baku_proof_type:')) {
+        const parts = data.split(':');
+        const ruc = parts[1];
+        const type = parts[2] as 'IVA' | 'RENTA';
+
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        await ctx.replyWithChatAction('typing');
+
+        const years = await getDeclarationYears(ruc, type);
+        if (years.length === 0) {
+            await ctx.reply('📋 No se encontraron declaraciones registradas de ' + type + ' para este cliente.');
+            return;
+        }
+
+        const kb = new InlineKeyboard();
+        years.forEach(y => {
+            kb.text('📅 Año ' + y, 'baku_proof_year:' + ruc + ':' + type + ':' + y).row();
+        });
+        kb.text('❌ Cancelar', 'baku_cancel');
+
+        await ctx.reply(
+            '📅 Selecciona el **año** de las declaraciones de **' + type + '**:',
+            { reply_markup: kb }
+        );
+        return;
+    }
+
+    if (data.startsWith('baku_proof_year:')) {
+        const parts = data.split(':');
+        const ruc = parts[1];
+        const type = parts[2] as 'IVA' | 'RENTA';
+        const year = parts[3];
+
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        await ctx.replyWithChatAction('typing');
+
+        const proofs = await getDeclarationProofsByYear(ruc, type, year);
+        if (proofs.length === 0) {
+            await ctx.reply('📋 No se encontraron comprobantes para ' + type + ' del año ' + year + '.');
+            return;
+        }
+
+        const kb = new InlineKeyboard();
+        proofs.forEach(p => {
+            kb.text('📄 ' + p.type + ' ' + p.period, 'baku_proof_dl:' + ruc + ':' + p.period + ':' + p.type).row();
+        });
+        kb.text('❌ Cancelar', 'baku_cancel');
+
+        await ctx.reply(
+            '📄 Comprobantes disponibles de **' + type + '** (' + year + '):\nPresiona un botón para descargar el PDF:',
+            { reply_markup: kb }
+        );
+        return;
+    }
+
+    if (data.startsWith('baku_proof_dl:')) {
+        const parts = data.split(':');
+        const ruc = parts[1];
+        const period = parts[2];
+        const type = parts[3] as 'IVA' | 'RENTA';
+
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        await ctx.replyWithChatAction('typing');
+
+        const fileResult = await downloadClientProofFile(ruc, period, type);
+        if (!fileResult || fileResult.error || !fileResult.contentBase64) {
+            await ctx.reply('❌ ' + (fileResult?.error || 'No se pudo descargar el comprobante.'));
+            return;
+        }
+
+        const buffer = Buffer.from(fileResult.contentBase64, 'base64');
+        await ctx.replyWithDocument(new InputFile(buffer, fileResult.fileName), {
+            caption: '📄 Comprobante de declaración de **' + type + '** (Periodo: ' + period + ')',
+            parse_mode: 'Markdown'
+        });
+        return;
+    }
+
+    if (data.startsWith('baku_inv_pdf:')) {
+        const key = data.replace('baku_inv_pdf:', '');
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        await ctx.replyWithChatAction('typing');
+
+        const { data: inv } = await supabase.from('sri_comprobantes').select('*').eq('clave_acceso', key).maybeSingle();
+        if (!inv || !inv.xml) {
+            await ctx.reply('❌ No se encontró el XML de la factura en el historial.');
+            return;
+        }
+
+        const emisor = await getEmisorConfig();
+        const pdfBuffer = await generateRidePdfBuffer(
+            { secuencial: inv.secuencial, claveAcceso: inv.clave_acceso, fechaEmision: inv.fecha_emision, total: inv.total },
+            emisor,
+            { razonSocial: inv.nombre_receptor, identificacion: inv.ruc_receptor, direccion: 'Ecuador' },
+            [{ codigoPrincipal: '001', descripcion: 'Facturación SRI', cantidad: '1.00', precioUnitario: Number(inv.total).toFixed(2), precioTotalSinImpuesto: Number(inv.total).toFixed(2), impuesto: { tarifa: '0', valor: '0.00' } }],
+            { subtotal15: 0, subtotal0: Number(inv.total), iva15: 0, total: Number(inv.total) }
+        );
+
+        await ctx.replyWithDocument(new InputFile(pdfBuffer, 'RIDE_factura_' + inv.secuencial + '.pdf'), {
+            caption: '🧾 Factura Autorizada No. ' + inv.secuencial + '\n**Receptor:** ' + inv.nombre_receptor + '\n**Total:** $' + inv.total,
+            parse_mode: 'Markdown'
+        });
+        return;
+    }
+
+    if (data.startsWith('baku_inv_xml:')) {
+        const key = data.replace('baku_inv_xml:', '');
+        try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
+        await ctx.replyWithChatAction('typing');
+
+        const { data: inv } = await supabase.from('sri_comprobantes').select('*').eq('clave_acceso', key).maybeSingle();
+        if (!inv || !inv.xml) {
+            await ctx.reply('❌ No se encontró el XML de la factura.');
+            return;
+        }
+
+        const xmlBuffer = Buffer.from(inv.xml, 'utf8');
+        await ctx.replyWithDocument(new InputFile(xmlBuffer, 'factura_' + inv.secuencial + '.xml'), {
+            caption: '📄 XML firmado No. ' + inv.secuencial
+        });
+        return;
+    }
+
     if (data.startsWith('baku_cmd:')) {
         const cmd = data.replace('baku_cmd:', '');
         
         // Remove keyboard from the menu message
         try { await ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard() }); } catch(e) {}
         
+        if (cmd === 'browse_proofs') {
+            pendingDialogs.set(chatId, {
+                type: 'browse_proofs',
+                chatId,
+                step: 'ask_client_name',
+                data: {}
+            });
+            await ctx.reply('📄 ¿De qué cliente deseas consultar comprobantes de declaración? (Escribe el nombre o RUC):');
+            return;
+        }
+
+        if (cmd === 'upload_p12') {
+            await ctx.reply('🔐 **Subida de Firma Electrónica (.p12)**\n\nPor favor adjunta o reenvía el archivo **.p12** o **.pfx** directamente a este chat de Telegram.');
+            return;
+        }
+
+        if (cmd === 'browse_invoices') {
+            await showInvoicesListForClient(chatId, undefined, ctx);
+            return;
+        }
+
         if (cmd === 'view_profile') {
             pendingDialogs.set(chatId, {
                 type: 'view_profile',
@@ -1854,4 +2089,42 @@ app.listen(PORT, () => {
   
   // Initialize Active Assistant (Cron Jobs)
   startCronJobs(bot);
+});
+
+
+bot.on('message:document', async (ctx) => {
+    const chatId = ctx.chat.id.toString();
+    const doc = ctx.message.document;
+    if (!doc) return;
+
+    const fileName = doc.file_name || 'documento';
+    const isP12 = fileName.endsWith('.p12') || fileName.endsWith('.pfx');
+
+    await ctx.replyWithChatAction('typing');
+    try {
+        const fileObj = await ctx.api.getFile(doc.file_id);
+        if (!fileObj.file_path) throw new Error('No se pudo obtener la ruta del archivo en Telegram');
+        
+        const fileUrl = 'https://api.telegram.org/file/bot' + TELEGRAM_BOT_TOKEN + '/' + fileObj.file_path;
+        const response = await axios.get(fileUrl, { responseType: 'arraybuffer' });
+        const base64Content = Buffer.from(response.data).toString('base64');
+
+        if (isP12) {
+            pendingDialogs.set(chatId, {
+                type: 'upload_p12',
+                chatId,
+                step: 'ask_client_name',
+                data: {
+                    p12Base64: base64Content,
+                    p12FileName: fileName
+                }
+            });
+            await ctx.reply('🔐 Recibí la Firma Electrónica **' + fileName + '**.\n\n¿A qué cliente pertenece? (Escribe el nombre o RUC). Baku.');
+        } else {
+            await ctx.reply('📁 Archivo **' + fileName + '** recibido.');
+        }
+    } catch (err: any) {
+        console.error('Error al procesar documento enviado:', err);
+        await ctx.reply('❌ Error al procesar el archivo: ' + err.message);
+    }
 });
