@@ -1,3 +1,4 @@
+import { arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Client, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField, TaxObligationType } from '../types';
 import * as LucideIcons from 'lucide-react';
@@ -560,7 +561,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         // CRITICAL FIX: Leer siempre el cliente FRESCO del store, no el snapshot del card
         const freshClient = clients.find(c => c.id === client.id) || client;
         const history = [...(freshClient.declarations || [])];
-        const idx = history.findIndex(d => d.period === period);
+        const idx = history.findIndex(d => arePeriodsEqual(d.period, period));
         const newStatus = action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pagada;
 
         const existingEntry = history[idx];
@@ -859,7 +860,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 const idx = history.findIndex(d => d.period === period);
 
                 // Detección de Duplicados
-                const isDuplicate = history.some(d => d.period === period && d.proof_file?.metadata?.sriId === data.id);
+                const isDuplicate = history.some(d => arePeriodsEqual(d.period, period) && d.proof_file?.metadata?.sriId === data.id);
 
                 // Determine payment status
                 const existingDecl = history.find(d => d.period === period);
@@ -898,7 +899,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
                 const entry: Declaration = {
                     period,
-                    type: period.includes('-') ? 'IVA' : 'RENTA',
+                    type: (data.formType === 'IVA' ? 'IVA' : (data.formType === 'RENTA' ? 'RENTA' : (period.includes('-') ? 'IVA' : 'RENTA'))),
                     status: DeclarationStatus.Enviada,
                     updatedAt: nowIso,
                     declaredAt: nowIso,

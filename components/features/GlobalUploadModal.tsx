@@ -1,3 +1,4 @@
+import { arePeriodsEqual } from './TaxComplianceMatrix';
 import React, { useState, useRef } from 'react';
 import { Modal } from '../ui/Modal';
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, X, Search, User, Calendar, DollarSign, ExternalLink, Plus, Eye, Download } from 'lucide-react';
@@ -97,7 +98,7 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                 // Update Client Data
                 const history = [...(client.declarations || [])];
                 let eraPeriod = data.period;
-                let type: TaxObligationType = eraPeriod.includes('-') ? 'IVA' : 'RENTA';
+                let type: TaxObligationType = (data.formType === 'IVA' ? 'IVA' : (data.formType === 'RENTA' ? 'RENTA' : (eraPeriod.includes('-') ? 'IVA' : 'RENTA'))) as TaxObligationType;
 
                 if (data.formType === 'ICE') {
                     if (!eraPeriod.includes(':ICE')) {
@@ -116,7 +117,7 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                     type = 'PVP';
                 }
 
-                const idx = history.findIndex(d => d.period === eraPeriod);
+                const idx = history.findIndex(d => arePeriodsEqual(d.period, eraPeriod));
 
                 if (idx !== -1) {
                     history[idx] = {

@@ -2003,7 +2003,7 @@ export async function processAndSaveDeclarationPdf(buffer: Buffer, originalFileN
         const type = validated.type as 'IVA' | 'RENTA';
         const period = validated.period;
 
-        const existingIdx = history.findIndex((h: any) => h.type === type && h.period === period);
+        const existingIdx = history.findIndex((h: any) => h.type === type && arePeriodsEqual(h.period, period));
         const newEntry = {
             period,
             type,

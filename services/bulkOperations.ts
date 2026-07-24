@@ -1,3 +1,4 @@
+import { arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
 
 import { v4 as uuidv4 } from 'uuid';
 import { Client, TaxRegime, DeclarationStatus, StoredFile, TaxObligationType } from '../types';
@@ -146,7 +147,7 @@ export const processBulkPdfs = async (
                 }
             } else if ((data as any).period) {
                 let decPeriod = (data as any).period;
-                let type: TaxObligationType = (decPeriod.includes('-') ? 'IVA' : 'RENTA') as TaxObligationType;
+                let type: TaxObligationType = (data.formType === 'IVA' ? 'IVA' : (data.formType === 'RENTA' ? 'RENTA' : (decPeriod.includes('-') ? 'IVA' : 'RENTA'))) as TaxObligationType;
 
                 if (data.formType === 'ICE') {
                     if (!decPeriod.includes(':ICE')) {
@@ -165,26 +166,24 @@ export const processBulkPdfs = async (
                     type = 'PVP';
                 }
 
-                const existingDec = client.declarations.find(d => d.period === decPeriod);
+                const existingDec = client.declarations.find(d => arePeriodsEqual(d.period, decPeriod));
                 
-                if (existingDec && (existingDec.status === DeclarationStatus.Enviada || existingDec.status === DeclarationStatus.Pagada)) {
-                    // Evitar duplicados si ya está enviada o pagada, pero adjuntar el archivo
+                const newDec = {
+                    period: decPeriod,
+                    type,
+                    status: client.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                    updatedAt: new Date().toISOString(),
+                    declaredAt: (data as any).declarationDate || new Date().toISOString(),
+                    amount: (data as any).amount || 0,
+                    proof_file: storedFile,
+                    is_paid: client.isCourtesy ? true : (existingDec ? existingDec.is_paid : false),
+                    paidAt: client.isCourtesy ? new Date().toISOString() : (existingDec ? existingDec.paidAt : undefined)
+                };
+
+                const newHistory = [...client.declarations.filter(d => !arePeriodsEqual(d.period, decPeriod)), newDec];
+                updates.declarations = newHistory;
+                if (existingDec && existingDec.proof_file) {
                     status = 'duplicate';
-                } else {
-                    const newDec = {
-                        period: decPeriod,
-                        type,
-                        status: client.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
-                        updatedAt: new Date().toISOString(),
-                        declaredAt: (data as any).declarationDate || new Date().toISOString(),
-                        amount: (data as any).amount || 0,
-                        proof_file: storedFile,
-                        is_paid: client.isCourtesy ? true : false,
-                        paidAt: client.isCourtesy ? new Date().toISOString() : undefined
-                    };
- 
-                    const newHistory = [...client.declarations.filter(d => d.period !== decPeriod), newDec];
-                    updates.declarations = newHistory;
                 }
             }
 

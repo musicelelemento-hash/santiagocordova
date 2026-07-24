@@ -206,29 +206,37 @@ export const extractDataFromDeclarationPdf = async (file: File): Promise<{
     const months = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
     const monthIndex = months.findIndex(m => cleanText.includes(m));
 
-    // Buscar específicamente "EJERCICIO FISCAL" (muy común en Renta)
     const fiscalYearMatch = cleanText.match(/EJERCICIO FISCAL\s*[:]?\s*(202[3-6])/) || cleanText.match(/AÑO\s*[:]?\s*(202[3-6])/);
     const yearMatch = fiscalYearMatch || cleanText.match(/\b(202[3-6])\b/);
+    const detectedYear = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
 
-    // Mejora para Formato "Período fiscal: MES AÑO"
-    const fiscalPeriodMatch = cleanText.match(/PER[IÍ]ODO FISCAL\s*[:]?\s*([A-Z]+)\s*(202[3-6])/);
+    // Detección Semestral Explícita (1er / 2do Semestre)
+    if (cleanText.includes("PRIMER SEMESTRE") || cleanText.includes("SEMESTRE 1") || cleanText.includes("1ER SEMESTRE") || cleanText.includes("SEMESTRAL 1")) {
+      period = `${detectedYear}-S1`;
+      if (formType === 'DESCONOCIDO') formType = 'IVA';
+    } else if (cleanText.includes("SEGUNDO SEMESTRE") || cleanText.includes("SEMESTRE 2") || cleanText.includes("2DO SEMESTRE") || cleanText.includes("SEMESTRAL 2")) {
+      period = `${detectedYear}-S2`;
+      if (formType === 'DESCONOCIDO') formType = 'IVA';
+    } else {
+      const fiscalPeriodMatch = cleanText.match(/PER[IÍ]ODO FISCAL\s*[:]?\s*([A-Z]+)\s*(202[3-6])/);
 
-    if (fiscalPeriodMatch) {
-      const mName = fiscalPeriodMatch[1];
-      const year = fiscalPeriodMatch[2];
-      const mIdx = months.findIndex(m => mName.includes(m));
-      if (mIdx !== -1) {
-        period = `${year}-${(mIdx + 1).toString().padStart(2, '0')}`;
-      }
-    } else if (monthIndex !== -1 && yearMatch) {
-      const mNumeric = (monthIndex + 1).toString().padStart(2, '0');
-      period = `${yearMatch[1]}-${mNumeric}`;
-    } else if (yearMatch) {
-      period = yearMatch[1];
-      if (formType.includes('RENTA') && period === '2026' && !fiscalYearMatch) {
-        const currentMonth = new Date().getMonth() + 1;
-        if (currentMonth <= 6) {
-          period = '2025';
+      if (fiscalPeriodMatch) {
+        const mName = fiscalPeriodMatch[1];
+        const year = fiscalPeriodMatch[2];
+        const mIdx = months.findIndex(m => mName.includes(m));
+        if (mIdx !== -1) {
+          period = `${year}-${(mIdx + 1).toString().padStart(2, '0')}`;
+        }
+      } else if (monthIndex !== -1 && yearMatch) {
+        const mNumeric = (monthIndex + 1).toString().padStart(2, '0');
+        period = `${yearMatch[1]}-${mNumeric}`;
+      } else if (yearMatch) {
+        period = yearMatch[1];
+        if (formType.includes('RENTA') && period === '2026' && !fiscalYearMatch) {
+          const currentMonth = new Date().getMonth() + 1;
+          if (currentMonth <= 6) {
+            period = '2025';
+          }
         }
       }
     }
