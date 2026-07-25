@@ -925,12 +925,19 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             <LucideIcons.ExternalLink size={8} />
                                                         </a>
 
-                                                        {/* Estado / Botón Notificación WhatsApp por Cliente */}
+                                                        {/* Icono Minimalista de Notificación WhatsApp por Cliente (Solo cuando hay comprobante y no está todo pagado) */}
                                                         {(() => {
                                                             const activePeriod = periods[0];
                                                             const clientDecls = client.declarations || [];
                                                             const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
                                                             const mainDecl = findDeclarationForOb(clientDecls, activePeriod, mainObType);
+                                                            
+                                                            // Si no hay declaración/comprobante cargado, o si ya está todo pagado, NO MOSTRAR (0 ruido visual)
+                                                            const hasProof = !!mainDecl?.proof_file || mainDecl?.status === DeclarationStatus.Enviada || mainDecl?.status === DeclarationStatus.Pagada;
+                                                            const isPaid = mainDecl?.status === DeclarationStatus.Pagada || !!mainDecl?.is_paid || client.isCourtesy;
+                                                            
+                                                            if (!hasProof || isPaid) return null;
+
                                                             const isNotified = !!mainDecl?.isNotifiedWhatsApp;
 
                                                             return (
@@ -944,21 +951,22 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         e.stopPropagation();
                                                                         handleToggleWhatsAppNotification(client, activePeriod, mainObType, mainDecl);
                                                                     }}
-                                                                    className={`p-1 px-1.5 rounded transition-all border flex items-center gap-1 ${
+                                                                    className={`p-1 rounded-md transition-all border flex items-center justify-center ${
                                                                         isNotified
-                                                                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500 font-bold'
-                                                                            : 'bg-amber-500/20 border-amber-500/40 text-amber-500 font-bold hover:bg-amber-500/30'
+                                                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20'
+                                                                            : 'bg-amber-500/20 border-amber-500/50 text-amber-500 hover:bg-amber-500/30 animate-pulse shadow-sm shadow-amber-500/20'
                                                                     }`}
-                                                                    title={isNotified ? `Cliente NOTIFICADO por WhatsApp (Clic: enviar WhatsApp | Clic derecho: alternar estado)` : `PENDIENTE de notificar WhatsApp (Clic: enviar WhatsApp | Clic derecho: alternar estado)`}
+                                                                    title={
+                                                                        isNotified
+                                                                            ? `Notificado por WhatsApp - Esperando comprobante de pago (Clic: reenviar | Clic derecho: alternar)`
+                                                                            : `⚠️ Comprobante listo - FALTANTE DE AVISAR AL CLIENTE (Clic: enviar WhatsApp con saludo ${getTimeBasedGreeting()} | Clic derecho: marcar)`
+                                                                    }
                                                                 >
                                                                     {isNotified ? (
-                                                                        <LucideIcons.BookmarkCheck size={9} strokeWidth={2.5} />
+                                                                        <LucideIcons.CheckCheck size={10} strokeWidth={2.5} />
                                                                     ) : (
-                                                                        <LucideIcons.Bookmark size={9} strokeWidth={2.5} />
+                                                                        <LucideIcons.BellRing size={10} strokeWidth={2.5} />
                                                                     )}
-                                                                    <span className="text-[7.5px] uppercase tracking-wider font-mono">
-                                                                        {isNotified ? 'Notificado' : 'Notificar'}
-                                                                    </span>
                                                                 </button>
                                                             );
                                                         })()}
