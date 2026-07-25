@@ -1,5 +1,6 @@
 import { arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Client, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField, TaxObligationType } from '../types';
 import * as LucideIcons from 'lucide-react';
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat } from '../services/sri';
@@ -1747,9 +1748,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             </div> {/* End of LEFT PANE */}
 
             {/* RIGHT PANE: COMMAND CENTER DETAIL (FULL SCREEN OVERLAY) */}
-            {selectedClient && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-0 sm:p-4 md:p-8 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-md overflow-hidden animate-in fade-in duration-500">
-                    <div className="w-full h-full max-w-[1600px] bg-white dark:bg-[#020617] shadow-2xl sm:rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-white/10 relative flex flex-col animate-in zoom-in-[0.98] duration-500">
+            {selectedClient && createPortal(
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center p-0 sm:p-4 md:p-8 bg-slate-950/80 backdrop-blur-md overflow-hidden animate-in fade-in duration-300">
+                    <div className="w-full h-full max-w-[1600px] bg-white dark:bg-[#020617] shadow-2xl sm:rounded-[2.5rem] overflow-hidden border border-slate-200 dark:border-white/10 relative flex flex-col animate-in zoom-in-[0.98] duration-300 my-auto">
                         <ClientDetailView 
                             client={selectedClient} 
                             onSave={handleUpdateClient} 
@@ -1759,7 +1760,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             initialTab={(window as any).__TEMP_INITIAL_TAB__ || initialTab}
                         />
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {previewItem && (
