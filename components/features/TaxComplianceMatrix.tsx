@@ -924,6 +924,44 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         >
                                                             <LucideIcons.ExternalLink size={8} />
                                                         </a>
+
+                                                        {/* Estado / Botón Notificación WhatsApp por Cliente */}
+                                                        {(() => {
+                                                            const activePeriod = periods[0];
+                                                            const clientDecls = client.declarations || [];
+                                                            const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
+                                                            const mainDecl = findDeclarationForOb(clientDecls, activePeriod, mainObType);
+                                                            const isNotified = !!mainDecl?.isNotifiedWhatsApp;
+
+                                                            return (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleSendWhatsAppNotification(client, activePeriod, mainObType, mainDecl);
+                                                                    }}
+                                                                    onContextMenu={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        handleToggleWhatsAppNotification(client, activePeriod, mainObType, mainDecl);
+                                                                    }}
+                                                                    className={`p-1 px-1.5 rounded transition-all border flex items-center gap-1 ${
+                                                                        isNotified
+                                                                            ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500 font-bold'
+                                                                            : 'bg-amber-500/20 border-amber-500/40 text-amber-500 font-bold hover:bg-amber-500/30'
+                                                                    }`}
+                                                                    title={isNotified ? `Cliente NOTIFICADO por WhatsApp (Clic: enviar WhatsApp | Clic derecho: alternar estado)` : `PENDIENTE de notificar WhatsApp (Clic: enviar WhatsApp | Clic derecho: alternar estado)`}
+                                                                >
+                                                                    {isNotified ? (
+                                                                        <LucideIcons.BookmarkCheck size={9} strokeWidth={2.5} />
+                                                                    ) : (
+                                                                        <LucideIcons.Bookmark size={9} strokeWidth={2.5} />
+                                                                    )}
+                                                                    <span className="text-[7.5px] uppercase tracking-wider font-mono">
+                                                                        {isNotified ? 'Notificado' : 'Notificar'}
+                                                                    </span>
+                                                                </button>
+                                                            );
+                                                        })()}
                                                     </div>
 
                                                     <span className="text-[9px] font-mono font-bold text-slate-400 tracking-wider mt-1 print-only hidden">
@@ -1019,28 +1057,6 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         <span className="px-1 py-[1.5px] bg-slate-950/85 text-emerald-300 border border-emerald-400/50 rounded text-[6px] font-black uppercase tracking-wider font-mono shadow-sm mt-0.5 leading-none">
                                                                             FACTURADO
                                                                         </span>
-                                                                    )}
-
-                                                                    {/* Icono de Etiqueta / Bookmark (Estado Notificado WhatsApp) */}
-                                                                    {(isDone || isManualDone || isSent) && (
-                                                                        <div 
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                handleToggleWhatsAppNotification(client, p, ob.type as any, d);
-                                                                            }}
-                                                                            className={`absolute -top-1.5 -right-1.5 p-0.5 rounded-full transition-all duration-300 shadow-md ${
-                                                                                d?.isNotifiedWhatsApp 
-                                                                                    ? 'bg-emerald-400 text-slate-950 ring-2 ring-emerald-300 shadow-emerald-500/40 scale-110' 
-                                                                                    : 'bg-amber-500 hover:bg-amber-400 text-white ring-1 ring-amber-300/60 hover:scale-110'
-                                                                            }`}
-                                                                            title={d?.isNotifiedWhatsApp ? `Notificado WhatsApp el ${d.notifiedWhatsAppAt ? format(new Date(d.notifiedWhatsAppAt), 'dd/MM/yyyy HH:mm') : 'recientemente'}` : `Pendiente de notificar WhatsApp (Clic para marcar/enviar)`}
-                                                                        >
-                                                                            {d?.isNotifiedWhatsApp ? (
-                                                                                <LucideIcons.BookmarkCheck size={10} strokeWidth={3} />
-                                                                            ) : (
-                                                                                <LucideIcons.Bookmark size={10} strokeWidth={2.5} />
-                                                                            )}
-                                                                        </div>
                                                                     )}
 
                                                                     {isDone ? (
