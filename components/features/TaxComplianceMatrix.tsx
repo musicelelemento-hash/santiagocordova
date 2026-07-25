@@ -1281,6 +1281,80 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     </div>
                 </div>
             )}
+
+            {/* Command Dock Flotante de Matriz (Navegación Móvil y Scroll Rápido) */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[95vw] md:max-w-2xl w-auto animate-in slide-in-from-bottom-8 duration-500 no-print">
+                <div className="backdrop-blur-3xl bg-slate-950/90 border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_20px_rgba(59,130,246,0.2)] rounded-full px-3 py-2 flex items-center gap-2 sm:gap-3 text-white">
+                    
+                    {/* Selector de Modo (Mensual / Semestral / Renta) */}
+                    <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/10">
+                        {[
+                            { id: 'dock-iva-mensual', label: 'Mensual', short: 'M', mode: 'IVA' as MatrixMode, freq: 'Mensual' as IvaFrequency, icon: LucideIcons.Calendar },
+                            { id: 'dock-iva-semestral', label: 'Semestral', short: 'S', mode: 'IVA' as MatrixMode, freq: 'Semestral' as IvaFrequency, icon: LucideIcons.CalendarRange },
+                            { id: 'dock-renta-anual', label: 'Renta', short: 'R', mode: 'RENTA' as MatrixMode, freq: 'Ninguno' as IvaFrequency, icon: LucideIcons.Award }
+                        ].map(tab => {
+                            const isActive = matrixMode === tab.mode && (tab.mode === 'RENTA' || frequency === tab.freq);
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => {
+                                        setMatrixMode(tab.mode);
+                                        if (tab.mode === 'IVA') setFrequency(tab.freq);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 ${
+                                        isActive
+                                            ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-[1.05]'
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                    title={`Cambiar vista a ${tab.label}`}
+                                >
+                                    <tab.icon size={12} />
+                                    <span className="hidden sm:inline">{tab.label}</span>
+                                    <span className="inline sm:hidden">{tab.short}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Separador */}
+                    <div className="h-5 w-px bg-white/10 hidden sm:block" />
+
+                    {/* Buscador Rápido Flotante */}
+                    <div className="relative flex-1 min-w-[110px] max-w-[170px] sm:max-w-[210px]">
+                        <LucideIcons.Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="Filtrar..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-8 pr-6 py-1.5 bg-white/5 hover:bg-white/10 focus:bg-slate-900 border border-white/10 focus:border-primary/50 rounded-full text-[11px] font-semibold text-white placeholder:text-slate-500 focus:outline-none transition-all"
+                        />
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
+                                <LucideIcons.X size={10} />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Botón Scroll to Top ↑ */}
+                    <button
+                        onClick={() => {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            const main = document.querySelector('main');
+                            if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="p-2 rounded-full bg-primary/20 hover:bg-primary text-primary hover:text-white border border-primary/30 transition-all duration-300 shadow-md hover:scale-110 active:scale-95 shrink-0"
+                        title="Subir al inicio de la Matriz (Scroll to Top)"
+                    >
+                        <LucideIcons.ArrowUp size={14} strokeWidth={2.5} />
+                    </button>
+
+                    {/* Total Clientes Badge */}
+                    <span className="hidden md:inline-flex px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-mono font-bold text-slate-400">
+                        {filteredClients.length}
+                    </span>
+                </div>
+            </div>
         </div>
     );
 };
