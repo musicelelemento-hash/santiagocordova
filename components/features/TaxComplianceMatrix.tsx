@@ -38,6 +38,7 @@ import { SriCampaignWidget } from './SriCampaignWidget';
 import { getNinthDigit } from '../../services/sri';
 
 import { db } from '../../services/db';
+import { useAppStore } from '../../store/useAppStore';
 
 type MatrixMode = 'IVA' | 'RENTA';
 
@@ -262,6 +263,97 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const [sortDirection, setSortDirection] = useState<'missing_first' | 'completed_first' | null>(null);
     const [selectedDigitFilter, setSelectedDigitFilter] = useState<number | null>(null);
     const [sortOption, setSortOption] = useState<'9th_digit' | 'alphabetical'>('9th_digit');
+
+    // Helper: Saludo dinámico según horario local (Buen día, Buenas tardes, Buenas noches)
+    const getTimeBasedGreeting = (): string => {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return '¡Buen día!';
+        if (hour >= 12 && hour < 19) return '¡Buenas tardes!';
+        return '¡Buenas noches!';
+    };
+
+    // Alternar estado de Notificado WhatsApp manualmente
+    const handleToggleWhatsAppNotification = (client: Client, period: string, obType: string, decl?: Declaration) => {
+        const declarations = client.declarations || [];
+        const existingDecl = findDeclarationForOb(declarations, period, obType);
+        
+        const nowIso = new Date().toISOString();
+        const currentNotified = !!existingDecl?.isNotifiedWhatsApp;
+        const newNotifiedStatus = !currentNotified;
+
+        let updatedDeclarations: Declaration[];
+        if (existingDecl) {
+            updatedDeclarations = declarations.map(d => {
+                const matchPeriod = arePeriodsEqual(d.period, period) || d.period === period;
+                const matchType = d.type === obType || (!d.type && (obType === 'IVA' || obType === 'RENTA'));
+                if (matchPeriod && matchType) {
+                    return {
+                        ...d,
+                        isNotifiedWhatsApp: newNotifiedStatus,
+                        notifiedWhatsAppAt: newNotifiedStatus ? nowIso : undefined,
+                        updatedAt: nowIso
+                    };
+                }
+                return d;
+            });
+        } else {
+            updatedDeclarations = [
+                ...declarations,
+                {
+                    period,
+                    type: obType as TaxObligationType,
+                    status: DeclarationStatus.Enviada,
+                    isNotifiedWhatsApp: true,
+                    notifiedWhatsAppAt: nowIso,
+                    updatedAt: nowIso
+                }
+            ];
+        }
+
+        useAppStore.getState().updateClient(client.id, { declarations: updatedDeclarations });
+
+        if (activeCellModal && activeCellModal.client.id === client.id) {
+            const updatedDecl = updatedDeclarations.find(d => findDeclarationForOb([d], period, obType));
+            if (updatedDecl) {
+                setActiveCellModal({
+                    ...activeCellModal,
+                    client: { ...client, declarations: updatedDeclarations },
+                    declaration: updatedDecl
+                });
+            }
+        }
+
+        if (newNotifiedStatus) {
+            toast.success(`Declaración de ${client.tradeName || client.name} marcada como NOTIFICADA`);
+        } else {
+            toast.info(`Declaración de ${client.tradeName || client.name} marcada como PENDIENTE de notificar`);
+        }
+    };
+
+    // Enviar WhatsApp directo con Saludo Automático por Horario
+    const handleSendWhatsAppNotification = (client: Client, period: string, obType: string, decl?: Declaration) => {
+        const phone = (client.phones && client.phones.length > 0 && client.phones[0]) ? client.phones[0] : '';
+        const greeting = getTimeBasedGreeting();
+        const clientName = client.tradeName || client.name;
+        const displayPeriod = formatPeriodForDisplay(period);
+
+        const messageText = `${greeting} Estimado/a ${clientName}, le confirmo que su declaración de ${obType} correspondiente al período ${displayPeriod} ha sido realizada y procesada exitosamente en el SRI. Le adjunto el comprobante oficial. Saludos cordiales, Soluciones Contables Pro.`;
+        
+        let cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.startsWith('09')) cleanPhone = '593' + cleanPhone.substring(1);
+        if (!cleanPhone.startsWith('593') && cleanPhone.length === 9) cleanPhone = '593' + cleanPhone;
+
+        const whatsappUrl = cleanPhone 
+            ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(messageText)}`
+            : `https://wa.me/?text=${encodeURIComponent(messageText)}`;
+
+        window.open(whatsappUrl, '_blank');
+
+        // Automáticamente marcar como notificado
+        if (!decl?.isNotifiedWhatsApp) {
+            handleToggleWhatsAppNotification(client, period, obType, decl);
+        }
+    };
 
     // Sync mode when navigating between matrix/renta tabs
     React.useEffect(() => {
@@ -929,6 +1021,28 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         </span>
                                                                     )}
 
+                                                                    {/* Icono de Etiqueta / Bookmark (Estado Notificado WhatsApp) */}
+                                                                    {(isDone || isManualDone || isSent) && (
+                                                                        <div 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleToggleWhatsAppNotification(client, p, ob.type as any, d);
+                                                                            }}
+                                                                            className={`absolute -top-1.5 -right-1.5 p-0.5 rounded-full transition-all duration-300 shadow-md ${
+                                                                                d?.isNotifiedWhatsApp 
+                                                                                    ? 'bg-emerald-400 text-slate-950 ring-2 ring-emerald-300 shadow-emerald-500/40 scale-110' 
+                                                                                    : 'bg-amber-500 hover:bg-amber-400 text-white ring-1 ring-amber-300/60 hover:scale-110'
+                                                                            }`}
+                                                                            title={d?.isNotifiedWhatsApp ? `Notificado WhatsApp el ${d.notifiedWhatsAppAt ? format(new Date(d.notifiedWhatsAppAt), 'dd/MM/yyyy HH:mm') : 'recientemente'}` : `Pendiente de notificar WhatsApp (Clic para marcar/enviar)`}
+                                                                        >
+                                                                            {d?.isNotifiedWhatsApp ? (
+                                                                                <LucideIcons.BookmarkCheck size={10} strokeWidth={3} />
+                                                                            ) : (
+                                                                                <LucideIcons.Bookmark size={10} strokeWidth={2.5} />
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+
                                                                     {isDone ? (
                                                                         <>
                                                                         {/* Botón Descargar PDF Directo */}
@@ -1298,6 +1412,56 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             Emitir Factura SRI Ahora
                                         </button>
                                     )}
+                                </div>
+                            </div>
+
+                            {/* 3. Notificación WhatsApp al Cliente */}
+                            <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <LucideIcons.BookmarkCheck size={16} className={activeCellModal.declaration.isNotifiedWhatsApp ? "text-emerald-400" : "text-amber-400"} />
+                                        <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                            Notificación WhatsApp al Cliente
+                                        </span>
+                                    </div>
+                                    {activeCellModal.declaration.isNotifiedWhatsApp ? (
+                                        <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                            <LucideIcons.CheckCheck size={12} />
+                                            NOTIFICADO ({activeCellModal.declaration.notifiedWhatsAppAt ? format(new Date(activeCellModal.declaration.notifiedWhatsAppAt), 'dd/MM HH:mm') : 'WhatsApp'})
+                                        </span>
+                                    ) : (
+                                        <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                            <LucideIcons.Bookmark size={12} />
+                                            PENDIENTE DE NOTIFICAR
+                                        </span>
+                                    )}
+                                </div>
+
+                                <p className="text-xs text-slate-400 leading-relaxed bg-slate-950/40 p-3 rounded-xl border border-white/5 font-sans">
+                                    <span className="font-bold text-slate-300">Mensaje automático:</span> "{getTimeBasedGreeting()} Estimado/a {activeCellModal.client.tradeName || activeCellModal.client.name}, le confirmo que su declaración de {activeCellModal.obType} ({formatPeriodForDisplay(activeCellModal.period)}) fue procesada..."
+                                </p>
+
+                                <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                                    <button
+                                        onClick={() => handleSendWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
+                                        className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20"
+                                    >
+                                        <LucideIcons.MessageSquare size={14} />
+                                        Enviar WhatsApp ({getTimeBasedGreeting()})
+                                    </button>
+
+                                    <button
+                                        onClick={() => handleToggleWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
+                                        className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border ${
+                                            activeCellModal.declaration.isNotifiedWhatsApp
+                                                ? 'bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border-slate-700 hover:border-rose-500/40'
+                                                : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
+                                        }`}
+                                        title="Cambiar marca de notificación sin enviar mensaje por WhatsApp"
+                                    >
+                                        <LucideIcons.Tag size={14} />
+                                        <span>{activeCellModal.declaration.isNotifiedWhatsApp ? 'Marcar Pendiente' : 'Marcar Notificado'}</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>

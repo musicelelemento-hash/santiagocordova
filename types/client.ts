@@ -79,6 +79,8 @@ export interface Declaration {
     reminders?: Array<{ date: string; channel: 'email' | 'whatsapp', type: ReminderType }>;
     isPriority?: boolean;
     proof_file?: StoredFile;
+    isNotifiedWhatsApp?: boolean;
+    notifiedWhatsAppAt?: string;
 }
 
 export interface ClientFeeStructure {
