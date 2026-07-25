@@ -25,6 +25,7 @@ export function arePeriodsEqual(p1?: string, p2?: string): boolean {
 }
 
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime, TaxObligationType } from '../../types';
 import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod } from '../../services/sri';
@@ -1282,8 +1283,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
             )}
 
-            {/* Command Dock Flotante de Matriz (Navegación Móvil y Scroll Rápido) */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 max-w-[95vw] md:max-w-2xl w-auto animate-in slide-in-from-bottom-8 duration-500 no-print">
+            {/* Command Dock Flotante de Matriz via Portal (TRULY FLOATS OVER ENTIRE VIEWPORT WHILE SCROLLING) */}
+            {createPortal(
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] max-w-[95vw] md:max-w-2xl w-auto animate-in slide-in-from-bottom-8 duration-500 no-print">
                 <div className="backdrop-blur-3xl bg-slate-950/90 border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_20px_rgba(59,130,246,0.2)] rounded-full px-3 py-2 flex items-center gap-2 sm:gap-3 text-white">
                     
                     {/* Selector de Modo (Mensual / Semestral / Renta) */}
@@ -1354,7 +1356,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         {filteredClients.length}
                     </span>
                 </div>
-            </div>
+            </div>,
+            document.body
+        )}
         </div>
     );
 };
