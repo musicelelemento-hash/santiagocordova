@@ -81,6 +81,7 @@ export interface Declaration {
     proof_file?: StoredFile;
     isNotifiedWhatsApp?: boolean;
     notifiedWhatsAppAt?: string;
+    notificationCount?: number;
 }
 
 export interface ClientFeeStructure {

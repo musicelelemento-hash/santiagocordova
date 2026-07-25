@@ -330,14 +330,35 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         }
     };
 
-    // Enviar WhatsApp directo con Saludo Automático por Horario
+    const [postUploadModal, setPostUploadModal] = useState<{
+        client: Client;
+        period: string;
+        obType: TaxObligationType;
+        declaration: Declaration;
+    } | null>(null);
+
+    // Enviar WhatsApp directo con Saludo Automático por Horario y Mensajería Dinámica por Etapa (1: Envío Comprobante, 2: Recordatorio Cobro, 3+: Seguimiento)
     const handleSendWhatsAppNotification = (client: Client, period: string, obType: string, decl?: Declaration) => {
         const phone = (client.phones && client.phones.length > 0 && client.phones[0]) ? client.phones[0] : '';
         const greeting = getTimeBasedGreeting();
         const clientName = client.tradeName || client.name;
         const displayPeriod = formatPeriodForDisplay(period);
+        const currentCount = decl?.notificationCount || 0;
+        const isPaid = decl?.status === DeclarationStatus.Pagada || !!decl?.is_paid || client.isCourtesy;
 
-        const messageText = `${greeting} Estimado/a ${clientName}, le confirmo que su declaración de ${obType} correspondiente al período ${displayPeriod} ha sido realizada y procesada exitosamente en el SRI. Le adjunto el comprobante oficial. Saludos cordiales, Soluciones Contables Pro.`;
+        const fee = client.fee_structure?.monthly || client.customServiceFee || 15;
+
+        let messageText = '';
+        if (currentCount === 0 || !decl?.isNotifiedWhatsApp) {
+            // ETAPA 1: Notificación Inicial (Envío de Comprobante)
+            messageText = `${greeting} Estimado/a ${clientName}, le confirmo que su declaración de ${obType} correspondiente al período ${displayPeriod} ha sido realizada y procesada exitosamente en el SRI. Le adjunto el comprobante oficial. Saludos cordiales, Soluciones Contables Pro.`;
+        } else if (!isPaid && currentCount === 1) {
+            // ETAPA 2: Primer Recordatorio de Pago / Cobro
+            messageText = `${greeting} Estimado/a ${clientName}, le recordamos amablemente que mantenemos pendiente el pago de honorarios por su declaración de ${obType} (${displayPeriod}) por un valor de $${fee}. Quedamos atentos a su comprobante de transferencia. Saludos, Soluciones Contables Pro.`;
+        } else {
+            // ETAPA 3+: Seguimiento Insistente de Pago
+            messageText = `${greeting} Estimado/a ${clientName}, nos comunicamos para darle seguimiento al saldo pendiente de $${fee} por su declaración de ${obType} (${displayPeriod}). Le agradecemos enormemente su colaboración enviándonos el comprobante de transferencia a la brevedad posible. Saludos, Soluciones Contables Pro.`;
+        }
         
         let cleanPhone = phone.replace(/\D/g, '');
         if (cleanPhone.startsWith('09')) cleanPhone = '593' + cleanPhone.substring(1);
@@ -349,10 +370,57 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
         window.open(whatsappUrl, '_blank');
 
-        // Automáticamente marcar como notificado
-        if (!decl?.isNotifiedWhatsApp) {
-            handleToggleWhatsAppNotification(client, period, obType, decl);
+        // Actualizar el estado de notificación e incrementar el contador de notificaciones
+        const declarations = client.declarations || [];
+        const existingDecl = findDeclarationForOb(declarations, period, obType);
+        const nowIso = new Date().toISOString();
+        const nextCount = currentCount + 1;
+
+        let updatedDeclarations: Declaration[];
+        if (existingDecl) {
+            updatedDeclarations = declarations.map(d => {
+                const matchPeriod = arePeriodsEqual(d.period, period) || d.period === period;
+                const matchType = d.type === obType || (!d.type && (obType === 'IVA' || obType === 'RENTA'));
+                if (matchPeriod && matchType) {
+                    return {
+                        ...d,
+                        isNotifiedWhatsApp: true,
+                        notifiedWhatsAppAt: nowIso,
+                        notificationCount: nextCount,
+                        updatedAt: nowIso
+                    };
+                }
+                return d;
+            });
+        } else {
+            updatedDeclarations = [
+                ...declarations,
+                {
+                    period,
+                    type: obType as TaxObligationType,
+                    status: DeclarationStatus.Enviada,
+                    isNotifiedWhatsApp: true,
+                    notifiedWhatsAppAt: nowIso,
+                    notificationCount: 1,
+                    updatedAt: nowIso
+                }
+            ];
         }
+
+        useAppStore.getState().updateClient(client.id, { declarations: updatedDeclarations });
+
+        if (activeCellModal && activeCellModal.client.id === client.id) {
+            const updatedDecl = updatedDeclarations.find(d => findDeclarationForOb([d], period, obType));
+            if (updatedDecl) {
+                setActiveCellModal({
+                    ...activeCellModal,
+                    client: { ...client, declarations: updatedDeclarations },
+                    declaration: updatedDecl
+                });
+            }
+        }
+
+        toast.success(`Notificación Etapa ${nextCount} enviada a ${clientName}`);
     };
 
     // Sync mode when navigating between matrix/renta tabs
@@ -1441,52 +1509,77 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                             {/* 3. Notificación WhatsApp al Cliente */}
                             <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <LucideIcons.BookmarkCheck size={16} className={activeCellModal.declaration.isNotifiedWhatsApp ? "text-emerald-400" : "text-amber-400"} />
-                                        <span className="text-xs font-black uppercase tracking-wider text-slate-200">
-                                            Notificación WhatsApp al Cliente
-                                        </span>
-                                    </div>
-                                    {activeCellModal.declaration.isNotifiedWhatsApp ? (
-                                        <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
-                                            <LucideIcons.CheckCheck size={12} />
-                                            NOTIFICADO ({activeCellModal.declaration.notifiedWhatsAppAt ? format(new Date(activeCellModal.declaration.notifiedWhatsAppAt), 'dd/MM HH:mm') : 'WhatsApp'})
-                                        </span>
-                                    ) : (
-                                        <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
-                                            <LucideIcons.Bookmark size={12} />
-                                            PENDIENTE DE NOTIFICAR
-                                        </span>
-                                    )}
-                                </div>
+                                {(() => {
+                                    const currentCount = activeCellModal.declaration.notificationCount || 0;
+                                    const isPaid = activeCellModal.declaration.status === DeclarationStatus.Pagada || !!activeCellModal.declaration.is_paid || activeCellModal.client.isCourtesy;
+                                    const isNotified = !!activeCellModal.declaration.isNotifiedWhatsApp;
 
-                                <p className="text-xs text-slate-400 leading-relaxed bg-slate-950/40 p-3 rounded-xl border border-white/5 font-sans">
-                                    <span className="font-bold text-slate-300">Mensaje automático:</span> "{getTimeBasedGreeting()} Estimado/a {activeCellModal.client.tradeName || activeCellModal.client.name}, le confirmo que su declaración de {activeCellModal.obType} ({formatPeriodForDisplay(activeCellModal.period)}) fue procesada..."
-                                </p>
+                                    let stageLabel = "Etapa 1: Notificación Inicial";
+                                    let buttonLabel = `Enviar Comprobante WhatsApp (${getTimeBasedGreeting()})`;
+                                    let stageColor = "text-emerald-400";
+                                    let IconComponent = LucideIcons.Send;
 
-                                <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
-                                    <button
-                                        onClick={() => handleSendWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
-                                        className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20"
-                                    >
-                                        <LucideIcons.MessageSquare size={14} />
-                                        Enviar WhatsApp ({getTimeBasedGreeting()})
-                                    </button>
+                                    if (isNotified && !isPaid) {
+                                        if (currentCount <= 1) {
+                                            stageLabel = "Etapa 2: Primer Recordatorio de Pago";
+                                            buttonLabel = `Enviar Recordatorio de Cobro (${getTimeBasedGreeting()})`;
+                                            stageColor = "text-amber-400";
+                                            IconComponent = LucideIcons.BellRing;
+                                        } else {
+                                            stageLabel = `Etapa ${currentCount + 1}: Seguimiento de Pago`;
+                                            buttonLabel = `Enviar Mensaje de Seguimiento de Pago`;
+                                            stageColor = "text-rose-400";
+                                            IconComponent = LucideIcons.AlertCircle;
+                                        }
+                                    }
 
-                                    <button
-                                        onClick={() => handleToggleWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
-                                        className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border ${
-                                            activeCellModal.declaration.isNotifiedWhatsApp
-                                                ? 'bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border-slate-700 hover:border-rose-500/40'
-                                                : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
-                                        }`}
-                                        title="Cambiar marca de notificación sin enviar mensaje por WhatsApp"
-                                    >
-                                        <LucideIcons.Tag size={14} />
-                                        <span>{activeCellModal.declaration.isNotifiedWhatsApp ? 'Marcar Pendiente' : 'Marcar Notificado'}</span>
-                                    </button>
-                                </div>
+                                    return (
+                                        <>
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <IconComponent size={16} className={stageColor} />
+                                                    <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                                        Notificación WhatsApp ({stageLabel})
+                                                    </span>
+                                                </div>
+                                                {isNotified ? (
+                                                    <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                                        <LucideIcons.CheckCheck size={12} />
+                                                        NOTIFICADO ({currentCount}x)
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                                        <LucideIcons.Bookmark size={12} />
+                                                        PENDIENTE DE NOTIFICAR
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                                                <button
+                                                    onClick={() => handleSendWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
+                                                    className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20"
+                                                >
+                                                    <IconComponent size={14} />
+                                                    {buttonLabel}
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleToggleWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
+                                                    className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border ${
+                                                        activeCellModal.declaration.isNotifiedWhatsApp
+                                                            ? 'bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border-slate-700 hover:border-rose-500/40'
+                                                            : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
+                                                    }`}
+                                                    title="Cambiar marca de notificación sin enviar mensaje por WhatsApp"
+                                                >
+                                                    <LucideIcons.Tag size={14} />
+                                                    <span>{activeCellModal.declaration.isNotifiedWhatsApp ? 'Marcar Pendiente' : 'Marcar Notificado'}</span>
+                                                </button>
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
 
@@ -1617,6 +1710,93 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     );
                 })(),
                 document.body
+            )}
+
+            {/* Modal Emergente Post-Subida de Comprobante (3 Acciones Rápidas) */}
+            {postUploadModal && (
+                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[10000] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-slate-900 border border-white/15 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-300">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
+                                    <LucideIcons.FileCheck size={22} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Comprobante Registrado</h3>
+                                    <p className="text-[10px] text-slate-400 font-mono mt-0.5">{postUploadModal.client.tradeName || postUploadModal.client.name}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setPostUploadModal(null)}
+                                className="p-2 text-slate-400 hover:text-white rounded-full bg-white/5 hover:bg-white/10 transition-all"
+                            >
+                                <LucideIcons.X size={16} />
+                            </button>
+                        </div>
+
+                        <div className="p-4 bg-slate-950/60 rounded-2xl border border-white/5 space-y-2 text-xs">
+                            <div className="flex justify-between text-slate-300">
+                                <span className="text-slate-400">Obligación:</span>
+                                <span className="font-bold text-white uppercase">{postUploadModal.obType} - {formatPeriodForDisplay(postUploadModal.period)}</span>
+                            </div>
+                            <div className="flex justify-between text-slate-300">
+                                <span className="text-slate-400">Estado Notificación:</span>
+                                <span className="text-amber-400 font-bold uppercase">Pendiente de avisar</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2.5 pt-1">
+                            {/* Acción 1: Notificar por WhatsApp de una vez */}
+                            <button
+                                onClick={() => {
+                                    const modalData = postUploadModal;
+                                    setPostUploadModal(null);
+                                    handleSendWhatsAppNotification(modalData.client, modalData.period, modalData.obType, modalData.declaration);
+                                }}
+                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
+                            >
+                                <LucideIcons.MessageSquare size={16} />
+                                📲 Enviar Notificación WhatsApp ({getTimeBasedGreeting()})
+                            </button>
+
+                            {/* Acción 2: Marcar como Pagado Ahora */}
+                            <button
+                                onClick={() => {
+                                    const modalData = postUploadModal;
+                                    setPostUploadModal(null);
+                                    if (onTogglePayment) {
+                                        onTogglePayment(modalData.client, modalData.period, modalData.obType as any, true);
+                                    } else {
+                                        const decls = modalData.client.declarations || [];
+                                        const updatedDecls = decls.map(d => {
+                                            if (arePeriodsEqual(d.period, modalData.period)) {
+                                                return { ...d, is_paid: true, status: DeclarationStatus.Pagada, paidAt: new Date().toISOString() };
+                                            }
+                                            return d;
+                                        });
+                                        useAppStore.getState().updateClient(modalData.client.id, { declarations: updatedDecls });
+                                    }
+                                    toast.success(`Declaración marcada como PAGADA`);
+                                }}
+                                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                            >
+                                <LucideIcons.CheckCircle2 size={16} />
+                                💳 Marcar como Pagado Ahora
+                            </button>
+
+                            {/* Acción 3: Cerrar / Notificar Luego */}
+                            <button
+                                onClick={() => {
+                                    toast.info("Comprobante guardado. Notificación dejada PENDIENTE para después.");
+                                    setPostUploadModal(null);
+                                }}
+                                className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                            >
+                                ✕ Cerrar (Notificar Luego)
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
