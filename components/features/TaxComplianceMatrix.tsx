@@ -90,6 +90,38 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         };
         checkHighlight();
     }, []);
+
+    // Floating Command Dock Scroll & Opacity Tracking
+    const [scrollY, setScrollY] = useState(0);
+
+    React.useEffect(() => {
+        const handleScroll = () => {
+            const mainEl = document.querySelector('main');
+            const currentScroll = Math.max(
+                window.scrollY || 0,
+                document.documentElement?.scrollTop || 0,
+                mainEl ? mainEl.scrollTop : 0
+            );
+            setScrollY(currentScroll);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        document.addEventListener('scroll', handleScroll, { passive: true });
+        const mainEl = document.querySelector('main');
+        if (mainEl) {
+            mainEl.addEventListener('scroll', handleScroll, { passive: true });
+        }
+
+        handleScroll();
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            document.removeEventListener('scroll', handleScroll);
+            if (mainEl) {
+                mainEl.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, []);
     
     // SRI Authorized Invoices History
     const [sriHistory, setSriHistory] = useState<any[]>([]);
@@ -1283,82 +1315,121 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
             )}
 
-            {/* Command Dock Flotante de Matriz via Portal (TRULY FLOATS OVER ENTIRE VIEWPORT WHILE SCROLLING) */}
+            {/* Command Dock Flotante de Matriz via Portal (Adapta opacidad según Scroll & Integración Visual) */}
             {createPortal(
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] max-w-[95vw] md:max-w-2xl w-auto animate-in slide-in-from-bottom-8 duration-500 no-print">
-                <div className="backdrop-blur-3xl bg-slate-950/90 border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_20px_rgba(59,130,246,0.2)] rounded-full px-3 py-2 flex items-center gap-2 sm:gap-3 text-white">
-                    
-                    {/* Selector de Modo (Mensual / Semestral / Renta) */}
-                    <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/10">
-                        {[
-                            { id: 'dock-iva-mensual', label: 'Mensual', short: 'M', mode: 'IVA' as MatrixMode, freq: 'Mensual' as IvaFrequency, icon: LucideIcons.Calendar },
-                            { id: 'dock-iva-semestral', label: 'Semestral', short: 'S', mode: 'IVA' as MatrixMode, freq: 'Semestral' as IvaFrequency, icon: LucideIcons.CalendarRange },
-                            { id: 'dock-renta-anual', label: 'Renta', short: 'R', mode: 'RENTA' as MatrixMode, freq: 'Ninguno' as IvaFrequency, icon: LucideIcons.Award }
-                        ].map(tab => {
-                            const isActive = matrixMode === tab.mode && (tab.mode === 'RENTA' || frequency === tab.freq);
-                            return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => {
-                                        setMatrixMode(tab.mode);
-                                        if (tab.mode === 'IVA') setFrequency(tab.freq);
-                                    }}
-                                    className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 ${
-                                        isActive
-                                            ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-[1.05]'
-                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
-                                    }`}
-                                    title={`Cambiar vista a ${tab.label}`}
-                                >
-                                    <tab.icon size={12} />
-                                    <span className="hidden sm:inline">{tab.label}</span>
-                                    <span className="inline sm:hidden">{tab.short}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                (() => {
+                    const isHeader = scrollY < 100;
+                    let calculatedOpacity = 0;
+                    if (!isHeader) {
+                        if (scrollY >= 360) {
+                            calculatedOpacity = 1;
+                        } else {
+                            // Entre encabezado y fila 3/4 (100px a 360px)
+                            // 1a fila (~100px): ~15% de opacidad. Crece suavemente a 100% al llegar al cliente 3 u 4.
+                            calculatedOpacity = 0.15 + ((scrollY - 100) / 260) * 0.85;
+                        }
+                    }
 
-                    {/* Separador */}
-                    <div className="h-5 w-px bg-white/10 hidden sm:block" />
+                    return (
+                        <div 
+                            className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] max-w-[95vw] md:max-w-2xl w-auto no-print transition-all duration-500 group ${
+                                isHeader ? 'pointer-events-none translate-y-8 scale-95 opacity-0' : 'pointer-events-auto translate-y-0 scale-100'
+                            }`}
+                            style={{
+                                opacity: isHeader ? 0 : calculatedOpacity
+                            }}
+                        >
+                            <div className="backdrop-blur-2xl bg-slate-900/90 dark:bg-slate-950/90 border border-slate-700/60 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_20px_rgba(59,130,246,0.15)] group-hover:!opacity-100 rounded-full px-3.5 py-2 flex items-center gap-2 sm:gap-3 text-slate-900 dark:text-white transition-all duration-300">
+                                
+                                {/* Selector de Modo (Mensual / Semestral / Renta) */}
+                                <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/5 p-1 rounded-full border border-slate-200/50 dark:border-white/10">
+                                    {[
+                                        { id: 'dock-iva-mensual', label: 'Mensual', short: 'M', mode: 'IVA' as MatrixMode, freq: 'Mensual' as IvaFrequency, icon: LucideIcons.Calendar },
+                                        { id: 'dock-iva-semestral', label: 'Semestral', short: 'S', mode: 'IVA' as MatrixMode, freq: 'Semestral' as IvaFrequency, icon: LucideIcons.CalendarRange },
+                                        { id: 'dock-renta-anual', label: 'Renta', short: 'R', mode: 'RENTA' as MatrixMode, freq: 'Ninguno' as IvaFrequency, icon: LucideIcons.Award }
+                                    ].map(tab => {
+                                        const isActive = matrixMode === tab.mode && (tab.mode === 'RENTA' || frequency === tab.freq);
+                                        return (
+                                            <button
+                                                key={tab.id}
+                                                onClick={() => {
+                                                    setMatrixMode(tab.mode);
+                                                    if (tab.mode === 'IVA') setFrequency(tab.freq);
+                                                }}
+                                                className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 ${
+                                                    isActive
+                                                        ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-[1.03]'
+                                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10'
+                                                }`}
+                                                title={`Cambiar vista a ${tab.label}`}
+                                            >
+                                                <tab.icon size={12} />
+                                                <span className="hidden sm:inline">{tab.label}</span>
+                                                <span className="inline sm:hidden">{tab.short}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
 
-                    {/* Buscador Rápido Flotante */}
-                    <div className="relative flex-1 min-w-[110px] max-w-[170px] sm:max-w-[210px]">
-                        <LucideIcons.Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Filtrar..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-8 pr-6 py-1.5 bg-white/5 hover:bg-white/10 focus:bg-slate-900 border border-white/10 focus:border-primary/50 rounded-full text-[11px] font-semibold text-white placeholder:text-slate-500 focus:outline-none transition-all"
-                        />
-                        {searchTerm && (
-                            <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
-                                <LucideIcons.X size={10} />
-                            </button>
-                        )}
-                    </div>
+                                {/* Separador */}
+                                <div className="h-5 w-px bg-slate-300/60 dark:bg-white/15 hidden sm:block" />
 
-                    {/* Botón Scroll to Top ↑ */}
-                    <button
-                        onClick={() => {
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                            const main = document.querySelector('main');
-                            if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="p-2 rounded-full bg-primary/20 hover:bg-primary text-primary hover:text-white border border-primary/30 transition-all duration-300 shadow-md hover:scale-110 active:scale-95 shrink-0"
-                        title="Subir al inicio de la Matriz (Scroll to Top)"
-                    >
-                        <LucideIcons.ArrowUp size={14} strokeWidth={2.5} />
-                    </button>
+                                {/* Buscador Rápido Flotante */}
+                                <div className="relative flex-1 min-w-[110px] max-w-[170px] sm:max-w-[200px]">
+                                    <LucideIcons.Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Filtrar cliente..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="w-full pl-8 pr-6 py-1.5 bg-slate-100/80 dark:bg-white/5 hover:bg-slate-200/50 dark:hover:bg-white/10 focus:bg-white dark:focus:bg-slate-900 border border-slate-200/50 dark:border-white/10 focus:border-primary/50 rounded-full text-[11px] font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none transition-all"
+                                    />
+                                    {searchTerm && (
+                                        <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 dark:hover:text-white">
+                                            <LucideIcons.X size={10} />
+                                        </button>
+                                    )}
+                                </div>
 
-                    {/* Total Clientes Badge */}
-                    <span className="hidden md:inline-flex px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-mono font-bold text-slate-400">
-                        {filteredClients.length}
-                    </span>
-                </div>
-            </div>,
-            document.body
-        )}
+                                {/* Contenedor de Botones de Navegación (Scroll Top / Bottom) */}
+                                <div className="flex items-center gap-1.5">
+                                    {/* Botón Scroll to Top ↑ */}
+                                    <button
+                                        onClick={() => {
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            const main = document.querySelector('main');
+                                            if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+                                        }}
+                                        className="p-2 rounded-full bg-primary/10 dark:bg-primary/20 hover:bg-primary text-primary hover:text-white border border-primary/20 dark:border-primary/30 transition-all duration-300 shadow-sm hover:scale-110 active:scale-95 shrink-0"
+                                        title="Subir al inicio de la Matriz (Scroll to Top)"
+                                    >
+                                        <LucideIcons.ArrowUp size={14} strokeWidth={2.5} />
+                                    </button>
+
+                                    {/* Botón Scroll to Bottom ↓ */}
+                                    <button
+                                        onClick={() => {
+                                            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+                                            const main = document.querySelector('main');
+                                            if (main) main.scrollTo({ top: main.scrollHeight, behavior: 'smooth' });
+                                        }}
+                                        className="p-2 rounded-full bg-slate-100/80 dark:bg-white/5 hover:bg-primary text-slate-600 dark:text-slate-300 hover:text-white border border-slate-200/60 dark:border-white/10 hover:border-primary transition-all duration-300 shadow-sm hover:scale-110 active:scale-95 shrink-0"
+                                        title="Bajar al final de la Matriz (Scroll to Bottom)"
+                                    >
+                                        <LucideIcons.ArrowDown size={14} strokeWidth={2.5} />
+                                    </button>
+                                </div>
+
+                                {/* Total Clientes Badge */}
+                                <span className="hidden md:inline-flex px-2.5 py-1 rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-[9px] font-mono font-bold text-slate-600 dark:text-slate-400">
+                                    {filteredClients.length}
+                                </span>
+                            </div>
+                        </div>
+                    );
+                })(),
+                document.body
+            )}
         </div>
     );
 };
