@@ -5290,8 +5290,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       {/* WhatsApp Send Suggestion Modal */}
       {/* WhatsApp Send Suggestion Modal */}
       {showWhatsAppModal && createPortal(
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="glass-card-premium rounded-[2.5rem]  p-8 max-w-md w-full space-y-6 relative overflow-hidden">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[10000] flex items-center justify-center p-4 animate-fade-in">
+          <div className="glass-card-premium rounded-[2.5rem] p-8 max-w-md w-full space-y-6 relative overflow-hidden my-auto">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
             
@@ -5426,8 +5426,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
       {/* FULL SCREEN PROCESS LOADING OVERLAY (Cargando / Validando) */}
       {processStatus === 'running' && createPortal(
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-2xl p-8 max-w-sm w-full space-y-6 text-center relative overflow-hidden">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[10000] flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-2xl p-8 max-w-sm w-full space-y-6 text-center relative overflow-hidden my-auto">
             {/* Decorative pulse blur */}
             <div className="absolute -top-12 -left-12 w-32 h-32 bg-primary/20 rounded-full blur-2xl animate-pulse"></div>
             <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl animate-pulse"></div>
@@ -5487,7 +5487,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
       {/* ERROR DETAILS DIALOG MODAL */}
       {processErrorMessage && createPortal(
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 animate-fade-in">
           <div className="glass-card-premium rounded-[2.5rem]  p-8 max-w-md w-full space-y-6 relative overflow-hidden text-center">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>

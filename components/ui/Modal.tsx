@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -36,18 +36,18 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
 
   const modalSize = size ? sizeClasses[size] : 'max-w-2xl';
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6"
       style={{
-        background: 'rgba(0,0,0,0.75)',
+        background: 'rgba(0,0,0,0.8)',
         backdropFilter: 'blur(12px)',
         overflow: 'hidden'
       }}
       onClick={handleBackdropClick}
     >
       <div
-        className={`relative w-full ${modalSize} flex flex-col rounded-[2rem] overflow-hidden shadow-2xl`}
+        className={`relative w-full ${modalSize} flex flex-col rounded-[2rem] overflow-hidden shadow-2xl my-auto`}
         style={{
           maxHeight: 'calc(100vh - 3rem)',
           background: 'linear-gradient(145deg, #0f172a 0%, #1e293b 100%)',
@@ -68,23 +68,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
 
         {/* Header */}
         {title ? (
-          <div
-            className="flex items-center justify-between px-8 py-5 flex-shrink-0"
-            style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                style={{
-                  width: 4, height: 28, borderRadius: 4,
-                  background: 'linear-gradient(180deg, #6366f1, #8b5cf6)'
-                }}
-              />
-              <h3 className="text-xl font-black text-white tracking-tight">{title}</h3>
-            </div>
+          <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-white/[0.06]">
+            <h3 className="text-lg font-black text-white font-premium tracking-wide">
+              {title}
+            </h3>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white transition-all hover:bg-white/10 active:scale-90"
-              style={{ backdropFilter: 'blur(8px)' }}
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-90"
             >
               <X size={20} strokeWidth={2.5} />
             </button>
@@ -110,6 +100,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
           }
         `}</style>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
