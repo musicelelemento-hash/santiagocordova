@@ -2255,33 +2255,85 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const downloadRideDocument = (comprobante: HistoricComprobante) => {
     const { cssStyles, cardContentHtml, filename } = generateRideParts(comprobante);
-    const autoPrintDocHtml = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <title>${filename.replace('.pdf', '')}</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>${cssStyles}</style>
-</head>
-<body>
-  ${cardContentHtml}
-  <script>
-    window.onload = function() {
-      setTimeout(function() {
-        window.print();
-      }, 250);
-    };
-  </script>
-</body>
-</html>`;
 
-    const win = window.open('', '_blank');
-    if (win) {
-      win.document.write(autoPrintDocHtml);
-      win.document.close();
-    } else {
-      alert("Por favor permite las ventanas emergentes para guardar o descargar el PDF.");
-    }
+    // Create a temporary visible modal overlay for crisp html2canvas capture on mobile and desktop
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.zIndex = '999999';
+    overlay.style.backgroundColor = 'rgba(15, 23, 42, 0.85)';
+    overlay.style.backdropFilter = 'blur(4px)';
+    overlay.style.display = 'flex';
+    overlay.style.flexDirection = 'column';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.padding = '16px';
+    overlay.style.overflow = 'auto';
+
+    const loadingText = document.createElement('div');
+    loadingText.style.color = '#ffffff';
+    loadingText.style.fontFamily = 'system-ui, sans-serif';
+    loadingText.style.fontSize = '13px';
+    loadingText.style.fontWeight = '800';
+    loadingText.style.marginBottom = '12px';
+    loadingText.style.textTransform = 'uppercase';
+    loadingText.style.letterSpacing = '1px';
+    loadingText.innerText = 'Generando PDF del RIDE para descarga...';
+    overlay.appendChild(loadingText);
+
+    const container = document.createElement('div');
+    container.style.backgroundColor = '#ffffff';
+    container.style.padding = '16px';
+    container.style.borderRadius = '14px';
+    container.style.width = '794px';
+    container.style.maxWidth = '95vw';
+    container.style.maxHeight = '75vh';
+    container.style.overflowY = 'auto';
+    container.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.5)';
+    container.innerHTML = `<style>${cssStyles}</style>${cardContentHtml}`;
+
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
+
+    const opt = {
+      margin:       5,
+      filename:     filename,
+      image:        { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        logging: false,
+        backgroundColor: '#ffffff'
+      },
+      jsPDF:        { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+    };
+
+    setTimeout(() => {
+      try {
+        if (typeof html2pdf !== 'undefined') {
+          html2pdf().set(opt).from(container).save().then(() => {
+            if (document.body.contains(overlay)) {
+              document.body.removeChild(overlay);
+            }
+          }).catch((err: any) => {
+            console.error('Error al generar PDF con html2pdf:', err);
+            if (document.body.contains(overlay)) {
+              document.body.removeChild(overlay);
+            }
+          });
+        } else {
+          window.print();
+          if (document.body.contains(overlay)) {
+            document.body.removeChild(overlay);
+          }
+        }
+      } catch (err) {
+        console.error('Error al descargar PDF:', err);
+        if (document.body.contains(overlay)) {
+          document.body.removeChild(overlay);
+        }
+      }
+    }, 250);
   };
 
   const printRideDocument = (comprobante: HistoricComprobante) => {
