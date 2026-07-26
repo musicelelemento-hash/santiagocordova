@@ -2255,44 +2255,33 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const downloadRideDocument = (comprobante: HistoricComprobante) => {
     const { cssStyles, cardContentHtml, filename } = generateRideParts(comprobante);
-
-    const tempDiv = document.createElement('div');
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.left = '0';
-    tempDiv.style.top = '0';
-    tempDiv.style.width = '794px';
-    tempDiv.style.zIndex = '-99999';
-    tempDiv.style.opacity = '0.001';
-    tempDiv.style.backgroundColor = '#ffffff';
-    tempDiv.innerHTML = `<style>${cssStyles}</style>${cardContentHtml}`;
-    document.body.appendChild(tempDiv);
-
-    const opt = {
-      margin:       5,
-      filename:     filename,
-      image:        { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas:  { 
-        scale: 2, 
-        useCORS: true, 
-        logging: false,
-        scrollY: 0,
-        scrollX: 0
-      },
-      jsPDF:        { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+    const autoPrintDocHtml = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <title>${filename.replace('.pdf', '')}</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>${cssStyles}</style>
+</head>
+<body>
+  ${cardContentHtml}
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 250);
     };
+  </script>
+</body>
+</html>`;
 
-    setTimeout(() => {
-      html2pdf().set(opt).from(tempDiv).save().then(() => {
-        if (document.body.contains(tempDiv)) {
-          document.body.removeChild(tempDiv);
-        }
-      }).catch((err: any) => {
-        console.error('Error generating PDF:', err);
-        if (document.body.contains(tempDiv)) {
-          document.body.removeChild(tempDiv);
-        }
-      });
-    }, 150);
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(autoPrintDocHtml);
+      win.document.close();
+    } else {
+      alert("Por favor permite las ventanas emergentes para guardar o descargar el PDF.");
+    }
   };
 
   const printRideDocument = (comprobante: HistoricComprobante) => {
@@ -2425,14 +2414,16 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         </td>
                         <td className="py-3 text-right">
                           <div className="flex justify-end gap-1.5">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleReuseAsTemplate(doc); }}
-                              className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors flex items-center gap-1 text-[9px] font-bold px-1.5"
-                              title="Usar como plantilla y volver a emitir"
-                            >
-                              <RefreshCw size={10} />
-                              <span>Reusar</span>
-                            </button>
+                            {doc.estado !== 'Autorizado' && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleReuseAsTemplate(doc); }}
+                                className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors flex items-center gap-1 text-[9px] font-bold px-1.5"
+                                title="Usar como plantilla y volver a emitir"
+                              >
+                                <RefreshCw size={10} />
+                                <span>Reusar</span>
+                              </button>
+                            )}
                             <button
                               onClick={(e) => { e.stopPropagation(); viewRideDocument(doc); }}
                               className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-600 dark:text-slate-300 hover:text-primary rounded-lg transition-colors flex items-center gap-1 text-[9px] font-bold px-1.5"
@@ -2444,17 +2435,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             <button
                               onClick={(e) => { e.stopPropagation(); downloadRideDocument(doc); }}
                               className="p-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg transition-colors flex items-center gap-1 text-[9px] font-bold px-1.5"
-                              title="Descargar PDF Directo (Para WhatsApp / Archivos)"
+                              title="Descargar / Guardar PDF (Para WhatsApp)"
                             >
                               <Download size={10} />
                               <span>PDF</span>
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); downloadXmlFile(doc); }}
-                              className="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors"
-                              title="Descargar XML"
-                            >
-                              <FileText size={10} />
                             </button>
                           </div>
                         </td>
@@ -4556,14 +4540,16 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex justify-end gap-1.5">
-                          <button
-                            onClick={() => handleReuseAsTemplate(row)}
-                            className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
-                            title="Cargar esta plantilla para editar y re-emitir al SRI"
-                          >
-                            <RefreshCw size={11} />
-                            <span>Reusar Plantilla</span>
-                          </button>
+                          {row.estado !== 'Autorizado' && (
+                            <button
+                              onClick={() => handleReuseAsTemplate(row)}
+                              className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
+                              title="Cargar esta plantilla para editar y re-emitir al SRI"
+                            >
+                              <RefreshCw size={11} />
+                              <span>Reusar Plantilla</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => viewRideDocument(row)}
                             className="px-2 py-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 text-slate-600 dark:text-slate-200 hover:text-primary rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
@@ -4575,17 +4561,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           <button
                             onClick={() => downloadRideDocument(row)}
                             className="px-2 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
-                            title="Descargar PDF Directo (Para WhatsApp / Archivos)"
+                            title="Descargar / Guardar PDF (Para WhatsApp)"
                           >
                             <Download size={11} />
                             <span>Descargar PDF</span>
-                          </button>
-                          <button
-                            onClick={() => downloadXmlFile(row)}
-                            className="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors"
-                            title="Descargar XML"
-                          >
-                            <FileText size={12} />
                           </button>
                           <button
                             onClick={() => copyToClipboard(row.claveAcceso, 'Clave de Acceso')}
