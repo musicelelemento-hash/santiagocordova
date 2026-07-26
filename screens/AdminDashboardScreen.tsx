@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import * as LucideIcons from 'lucide-react';
 import { Screen, Client, DeclarationStatus, TaxRegime, Declaration } from '../types';
 import { useAppStore } from '../store/useAppStore';
-import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay } from '../services/sri';
+import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay, getDaysUntilDue } from '../services/sri';
 import { isPast, isToday, isTomorrow, format, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ClientCard } from '../components/features/ClientCard';
@@ -1207,6 +1207,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     {mesaTrabajoList.map(c => {
                                         const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
                                         const ninthDigit = c.ruc[8] || '0';
+                                        const dueDate = getDueDateForPeriod(c, targetPeriod);
+                                        const daysLeft = getDaysUntilDue(dueDate);
+
                                         return (
                                             <div 
                                                 key={c.id} 
@@ -1214,21 +1217,52 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             >
                                                 <div className="flex justify-between items-start gap-3">
                                                     <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-2 mb-1.5">
-                                                            <span className="w-5 h-5 rounded-md bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black flex items-center justify-center font-mono">
-                                                                {ninthDigit}
-                                                            </span>
-                                                            <h4 className="text-xs font-bold text-slate-900 dark:text-white tracking-tight truncate font-premium">
-                                                                {c.name}
-                                                            </h4>
+                                                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                <span className="w-5 h-5 rounded-md bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black flex items-center justify-center font-mono flex-shrink-0">
+                                                                    {ninthDigit}
+                                                                </span>
+                                                                <h4 className="text-xs font-bold text-slate-900 dark:text-white tracking-tight truncate font-premium">
+                                                                    {c.name}
+                                                                </h4>
+                                                            </div>
                                                         </div>
-                                                        <div className="flex flex-wrap items-center gap-1.5">
-                                                            <span className="px-2 py-0.5 bg-slate-200/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[9px] font-bold font-mono rounded">
-                                                                {c.ruc}
-                                                            </span>
-                                                            <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase rounded">
-                                                                {c.regime.replace('Rimpe ', '')}
-                                                            </span>
+
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="px-2 py-0.5 bg-slate-200/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[9px] font-bold font-mono rounded">
+                                                                    {c.ruc}
+                                                                </span>
+                                                                <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase rounded">
+                                                                    {c.regime.replace('Rimpe ', '')}
+                                                                </span>
+                                                            </div>
+
+                                                            {dueDate && daysLeft !== null && (
+                                                                <span className={`px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1 border transition-all ${
+                                                                    daysLeft < 0
+                                                                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
+                                                                        : daysLeft === 0
+                                                                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 animate-pulse shadow-sm shadow-amber-500/20'
+                                                                        : daysLeft <= 3
+                                                                        ? 'bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400'
+                                                                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                                                                }`}>
+                                                                    <LucideIcons.Clock size={11} className="flex-shrink-0" />
+                                                                    <span>
+                                                                        {daysLeft < 0
+                                                                            ? `Vencido (${Math.abs(daysLeft)}d)`
+                                                                            : daysLeft === 0
+                                                                            ? '¡Vence Hoy!'
+                                                                            : daysLeft === 1
+                                                                            ? 'Falta 1 día'
+                                                                            : `Faltan ${daysLeft} días`}
+                                                                    </span>
+                                                                    <span className="opacity-60 text-[8px] font-mono font-medium ml-0.5">
+                                                                        ({format(dueDate, 'dd/MM')})
+                                                                    </span>
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
