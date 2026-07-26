@@ -2231,10 +2231,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
     // Render directly to PDF download without popup/window.print
     const tempDiv = document.createElement('div');
-    tempDiv.style.position = 'fixed';
-    tempDiv.style.left = '-9999px';
-    tempDiv.style.top = '-9999px';
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '0';
+    tempDiv.style.top = '0';
     tempDiv.style.width = '794px';
+    tempDiv.style.zIndex = '-99999';
+    tempDiv.style.opacity = '0.001';
+    tempDiv.style.backgroundColor = '#ffffff';
     tempDiv.innerHTML = rideDocHtml;
     document.body.appendChild(tempDiv);
 
@@ -2242,20 +2245,28 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       margin:       5,
       filename:     `RIDE_${comprobante.tipo || 'Factura'}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.pdf`,
       image:        { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        logging: false,
+        scrollY: 0,
+        scrollX: 0
+      },
       jsPDF:        { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
     };
 
-    html2pdf().set(opt).from(tempDiv).save().then(() => {
-      if (document.body.contains(tempDiv)) {
-        document.body.removeChild(tempDiv);
-      }
-    }).catch((err: any) => {
-      console.error('Error generating PDF:', err);
-      if (document.body.contains(tempDiv)) {
-        document.body.removeChild(tempDiv);
-      }
-    });
+    setTimeout(() => {
+      html2pdf().set(opt).from(tempDiv).save().then(() => {
+        if (document.body.contains(tempDiv)) {
+          document.body.removeChild(tempDiv);
+        }
+      }).catch((err: any) => {
+        console.error('Error generating PDF:', err);
+        if (document.body.contains(tempDiv)) {
+          document.body.removeChild(tempDiv);
+        }
+      });
+    }, 150);
   };
 
   const printRideDocument = (comprobante: HistoricComprobante) => {
