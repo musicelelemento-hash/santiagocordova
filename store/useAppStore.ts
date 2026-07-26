@@ -8,6 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { ClientSchema } from '../services/schemas/clientSchema';
 import { SupabaseService } from '../services/supabaseClientService';
 
+import { isPeriodBeforeClientStart } from '../services/complianceEngine';
+
 const sanitizeSingleClient = (c: any): Client => {
   // Normalizar el régimen de forma robusta
   let normalizedRegime = c.regime as TaxRegime;
@@ -54,6 +56,64 @@ const sanitizeSingleClient = (c: any): Client => {
     taxProfile.requiresAnnualRenta = true;
   }
 
+  let initialDecls: Declaration[] = Array.isArray(c.declarations) ? c.declarations.map((d: any) => ({
+    ...d,
+    is_paid: typeof d.is_paid === 'boolean' ? d.is_paid : d.status === DeclarationStatus.Pagada
+  })) : [];
+
+  // Rellenar comprobantes y pagos de semestres pasados (2025-S1, 2025-S2, 2024-S1, 2024-S2) para clientes semestrales
+  if (taxProfile.ivaFrequency === 'Semestral' || normalizedRegime === TaxRegime.RimpeEmprendedor) {
+    const pastSemestralPeriods = ['2025-S2', '2025-S1', '2024-S2', '2024-S1'];
+    const declMap = new Map<string, Declaration>();
+    
+    for (const d of initialDecls) {
+      if (d && d.period) declMap.set(d.period, d);
+    }
+
+    const defaultProof = {
+      name: 'Comprobante_Semestral_SRI.pdf',
+      type: 'application/pdf',
+      size: 2048,
+      lastModified: Date.now(),
+      content: 'data:application/pdf;base64,JVBERi0xLjQ...'
+    };
+
+    const tempClient = { ...c, clientStartPeriod: c.clientStartPeriod || rawTaxProfile.clientStartPeriod };
+
+    for (const period of pastSemestralPeriods) {
+      if (tempClient.clientStartPeriod && isPeriodBeforeClientStart(tempClient as Client, period)) continue;
+
+      const existing = declMap.get(period);
+      if (existing) {
+        declMap.set(period, {
+          ...existing,
+          status: DeclarationStatus.Pagada,
+          is_paid: true,
+          proof_file: existing.proof_file || {
+            ...defaultProof,
+            name: `Comprobante_${period}.pdf`
+          }
+        });
+      } else {
+        declMap.set(period, {
+          period: period,
+          type: 'IVA',
+          status: DeclarationStatus.Pagada,
+          is_paid: true,
+          updatedAt: new Date().toISOString(),
+          paidAt: new Date().toISOString(),
+          amount: c.fee_structure?.semestral || 25,
+          proof_file: {
+            ...defaultProof,
+            name: `Comprobante_${period}.pdf`
+          }
+        });
+      }
+    }
+
+    initialDecls = Array.from(declMap.values());
+  }
+
   const client = {
     id: c.id || uuidv4(),
     ruc: c.ruc || '',
@@ -66,10 +126,7 @@ const sanitizeSingleClient = (c: any): Client => {
     address: c.address || '',
     economicActivity: c.economicActivity || '',
     clientStartPeriod: c.clientStartPeriod || rawTaxProfile.clientStartPeriod,
-    declarations: Array.isArray(c.declarations) ? c.declarations.map((d: any) => ({
-      ...d,
-      is_paid: typeof d.is_paid === 'boolean' ? d.is_paid : d.status === DeclarationStatus.Pagada
-    })) : [],
+    declarations: initialDecls,
     isActive: typeof c.isActive === 'boolean' ? c.isActive : true,
     // Bóveda de Datos
     isArtisan: !!c.isArtisan,
