@@ -1084,9 +1084,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             const realInvoice = findRealInvoice(client.ruc, d);
                                                             const isTrulyInvoiced = !!realInvoice || !!(d as any)?.invoice_secuencial;
 
-                                                            const isDone = hasProof;
-                                                            const isManualDone = !hasProof && (d?.status === DeclarationStatus.Enviada || d?.status === DeclarationStatus.Pagada);
-                                                            const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone && !isManualDone;
+                                                            const isDone = hasProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                                                            const isManualDone = false;
+                                                            const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
 
                                                             return (
                                                                 <div 

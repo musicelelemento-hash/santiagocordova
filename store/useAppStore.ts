@@ -47,7 +47,11 @@ const sanitizeSingleClient = (c: any): Client => {
     clientStartPeriod: rawTaxProfile.clientStartPeriod || c.clientStartPeriod
   };
 
-  // Forzar consistencia estricta e inviolable según el régimen
+  // Forzar consistencia estricta e inviolable según el régimen o cliente específico
+  if ((c.name && c.name.toUpperCase().includes('CHALCO')) || (c.tradeName && c.tradeName.toUpperCase().includes('CHALCO'))) {
+    taxProfile.ivaFrequency = 'Semestral';
+  }
+
   if (normalizedRegime === TaxRegime.RimpeNegocioPopular) {
     taxProfile.ivaFrequency = 'Ninguno';
     taxProfile.requiresAnnualRenta = true;

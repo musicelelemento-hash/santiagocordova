@@ -210,11 +210,13 @@ export const extractDataFromDeclarationPdf = async (file: File): Promise<{
     const yearMatch = fiscalYearMatch || cleanText.match(/\b(202[3-6])\b/);
     const detectedYear = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
 
-    // Detección Semestral Explícita (1er / 2do Semestre)
-    if (cleanText.includes("PRIMER SEMESTRE") || cleanText.includes("SEMESTRE 1") || cleanText.includes("1ER SEMESTRE") || cleanText.includes("SEMESTRAL 1")) {
+    // Detección Semestral Explícita (1er / 2do Semestre SRI)
+    const isExplicitSemestralText = cleanText.includes("SEMESTRE") || cleanText.includes("SEMESTRAL") || cleanText.includes("OBLIGACIONES SEMESTRALES");
+
+    if (cleanText.includes("PRIMER SEMESTRE") || cleanText.includes("SEMESTRE 1") || cleanText.includes("1ER SEMESTRE") || cleanText.includes("SEMESTRAL 1") || (isExplicitSemestralText && (cleanText.includes("JUNIO") || cleanText.includes("ENERO - JUNIO")))) {
       period = `${detectedYear}-S1`;
       if (formType === 'DESCONOCIDO') formType = 'IVA';
-    } else if (cleanText.includes("SEGUNDO SEMESTRE") || cleanText.includes("SEMESTRE 2") || cleanText.includes("2DO SEMESTRE") || cleanText.includes("SEMESTRAL 2")) {
+    } else if (cleanText.includes("SEGUNDO SEMESTRE") || cleanText.includes("SEMESTRE 2") || cleanText.includes("2DO SEMESTRE") || cleanText.includes("SEMESTRAL 2") || (isExplicitSemestralText && (cleanText.includes("DICIEMBRE") || cleanText.includes("JULIO - DICIEMBRE")))) {
       period = `${detectedYear}-S2`;
       if (formType === 'DESCONOCIDO') formType = 'IVA';
     } else {
@@ -237,6 +239,16 @@ export const extractDataFromDeclarationPdf = async (file: File): Promise<{
           if (currentMonth <= 6) {
             period = '2025';
           }
+        }
+      }
+
+      // Normalización final si el documento es semestral
+      if (isExplicitSemestralText && period.includes('-')) {
+        const [yrStr, moStr] = period.split('-');
+        if (moStr === '12' || moStr === '07') {
+          period = `${yrStr}-S2`;
+        } else if (moStr === '06' || moStr === '01') {
+          period = `${yrStr}-S1`;
         }
       }
     }

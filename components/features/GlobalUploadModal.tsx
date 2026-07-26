@@ -4,7 +4,7 @@ import { Modal } from '../ui/Modal';
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, X, Search, User, Calendar, DollarSign, ExternalLink, Plus, Eye, Download } from 'lucide-react';
 import { extractDataFromDeclarationPdf, fileToBase64 } from '../../services/pdfExtraction';
 import { useAppStore } from '../../store/useAppStore';
-import { Client, DeclarationStatus, StoredFile, TaxObligationType } from '../../types';
+import { Client, DeclarationStatus, StoredFile, TaxObligationType, TaxRegime } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { formatPeriodForDisplay } from '../../services/sri';
 
@@ -98,6 +98,18 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                 // Update Client Data
                 const history = [...(client.declarations || [])];
                 let eraPeriod = data.period;
+
+                // Si el cliente es semestral y el periodo extraído viene como 2025-12 o 2025-06, normalizar a semestral
+                const isClientSemestral = client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor || data.frequency === 'Semestral';
+                if (isClientSemestral && eraPeriod.includes('-') && !eraPeriod.includes('-S')) {
+                    const [yrStr, moStr] = eraPeriod.split('-');
+                    if (moStr === '12' || moStr === '07') {
+                        eraPeriod = `${yrStr}-S2`;
+                    } else if (moStr === '06' || moStr === '01') {
+                        eraPeriod = `${yrStr}-S1`;
+                    }
+                }
+
                 let type: TaxObligationType = (data.formType === 'IVA' ? 'IVA' : (data.formType === 'RENTA' ? 'RENTA' : (eraPeriod.includes('-') ? 'IVA' : 'RENTA'))) as TaxObligationType;
 
                 if (data.formType === 'ICE') {
