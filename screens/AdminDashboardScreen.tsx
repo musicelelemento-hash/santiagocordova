@@ -18,7 +18,7 @@ import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix'
 import { ComplianceReportExport } from '../components/features/ComplianceReportExport';
 import { ClientWorkspaceModal } from '../components/features/ClientWorkspaceModal';
 import { IvaFrequency } from '../types';
-import { getComplianceSummary, getClientCompliance, ComplianceColor, getClientDebtSummary, getClientUndeclaredSummary } from '../services/complianceEngine';
+import { getComplianceSummary, getClientCompliance, ComplianceColor, getClientDebtSummary, getClientUndeclaredSummary, isPeriodBeforeClientStart } from '../services/complianceEngine';
 import { PortfolioSemaphore } from '../components/ui/PortfolioSemaphore';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useCampaignContext } from '../hooks/useCampaignContext';
@@ -264,13 +264,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 // CORRECCIÓN: Usamos el periodo actual (campaña) para determinar si está "Al Día"
                 // en lugar del historial global, evitando que periodos viejos bloqueen el progreso.
                 if (!c.isDeleted) {
+                    const isBeforeStart = isPeriodBeforeClientStart(c, currentP);
                     const currentPeriodIsDeclared = ivaDecl?.status === DeclarationStatus.Enviada
                         || ivaDecl?.status === DeclarationStatus.Pagada
                         || !!ivaDecl?.proof_file;
                     const currentPeriodIsPaid = !!ivaDecl?.is_paid;
 
-                    // "Completado" = el periodo actual está declarado (independientemente del historial)
-                    const isCurrentPeriodDone = currentPeriodIsDeclared;
+                    // "Completado" = el periodo actual está declarado o el cliente no tiene obligación aún (empieza en períodos futuros)
+                    const isCurrentPeriodDone = currentPeriodIsDeclared || isBeforeStart;
                     const isCobroPending = currentPeriodIsDeclared && !currentPeriodIsPaid;
 
                     if (isCurrentPeriodDone && !isCobroPending) {
@@ -403,6 +404,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             
             const freq = c.taxProfile?.ivaFrequency || (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : (c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual'));
             if (freq !== targetFreq) return false;
+
+            // Si el período de la campaña es anterior al inicio de obligaciones del cliente, no tiene pendiente
+            if (isPeriodBeforeClientStart(c, targetPeriod)) return false;
 
             const dec = (c.declarations || []).find(d => d.period === targetPeriod);
             const isDone = dec?.status === DeclarationStatus.Enviada || dec?.status === DeclarationStatus.Pagada || !!dec?.proof_file;

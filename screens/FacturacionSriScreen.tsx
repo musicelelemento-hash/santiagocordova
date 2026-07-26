@@ -1852,718 +1852,51 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const printRideDocument = (comprobante: HistoricComprobante) => {
-    let emisor = {
-      razonSocial: emisorRazonSocial,
-      nombreComercial: emisorNombreComercial,
-      ruc: emisorRuc,
-      dirMatriz: emisorDirMatriz,
-      estab: emisorEstab,
-      ptoEmi: emisorPtoEmi,
-      secuencial: comprobante.secuencial,
-      claveAcceso: comprobante.claveAcceso,
-      ambiente: comprobante.ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS',
-      regimen: emisorRegimen
-    };
-
-    let receptor = {
-      razonSocial: comprobante.nombreReceptor,
-      identificacion: comprobante.rucReceptor,
-      direccion: comprobante.rucReceptor === buyerRuc ? buyerAddress || 'Pasaje, El Oro' : 'Ecuador',
-      fechaEmision: comprobante.fechaEmision
-    };
-
-    let itemsHtml = '';
-    let subtotal15 = 0;
-    let subtotal0 = comprobante.total;
-    let iva15 = 0;
-    let total = comprobante.total;
-    let formaPagoDesc = 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
-    let formaPagoTotal = comprobante.total;
-
-    try {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(comprobante.xml, "text/xml");
-      
-      const razonSocial = xmlDoc.getElementsByTagName("razonSocial")[0]?.textContent;
-      if (razonSocial) emisor.razonSocial = razonSocial;
-      const nombreComercial = xmlDoc.getElementsByTagName("nombreComercial")[0]?.textContent;
-      if (nombreComercial) emisor.nombreComercial = nombreComercial;
-      const ruc = xmlDoc.getElementsByTagName("ruc")[0]?.textContent;
-      if (ruc) emisor.ruc = ruc;
-      const dirMatriz = xmlDoc.getElementsByTagName("dirMatriz")[0]?.textContent;
-      if (dirMatriz) emisor.dirMatriz = dirMatriz;
-      const estab = xmlDoc.getElementsByTagName("estab")[0]?.textContent;
-      if (estab) emisor.estab = estab;
-      const ptoEmi = xmlDoc.getElementsByTagName("ptoEmi")[0]?.textContent;
-      if (ptoEmi) emisor.ptoEmi = ptoEmi;
-
-      const razonSocialComprador = xmlDoc.getElementsByTagName("razonSocialComprador")[0]?.textContent;
-      if (razonSocialComprador) receptor.razonSocial = razonSocialComprador;
-      const identificacionComprador = xmlDoc.getElementsByTagName("identificacionComprador")[0]?.textContent;
-      if (identificacionComprador) receptor.identificacion = identificacionComprador;
-      const direccionComprador = xmlDoc.getElementsByTagName("direccionComprador")[0]?.textContent;
-      if (direccionComprador) receptor.direccion = direccionComprador;
-
-      const detalles = xmlDoc.getElementsByTagName("detalle");
-      if (detalles.length > 0) {
-        for (let i = 0; i < detalles.length; i++) {
-          const d = detalles[i];
-          const codigo = d.getElementsByTagName("codigoPrincipal")[0]?.textContent || '001';
-          const descripcion = d.getElementsByTagName("descripcion")[0]?.textContent || 'Servicios Contables';
-          const cantidad = Number(d.getElementsByTagName("cantidad")[0]?.textContent || 1);
-          const precioUnitario = Number(d.getElementsByTagName("precioUnitario")[0]?.textContent || comprobante.total);
-          const precioTotalSinImpuesto = Number(d.getElementsByTagName("precioTotalSinImpuesto")[0]?.textContent || comprobante.total);
-          
-          itemsHtml += "<tr><td style='font-family: monospace;'>" + codigo + "</td><td style='text-align: center;'>" + cantidad.toFixed(2) + "</td><td style='text-transform: uppercase;'>" + descripcion + "</td><td style='text-align: right; font-family: monospace;'>$" + precioUnitario.toFixed(2) + "</td><td style='text-align: right; font-family: monospace; font-weight: bold;'>$" + precioTotalSinImpuesto.toFixed(2) + "</td></tr>";
-        }
+  const getSmartPeriodoFiscal = (
+    fechaEmisionStr: string,
+    itemsText: string,
+    buyerRucInput?: string,
+    comprobantePeriodo?: string
+  ): string => {
+    const client = clients.find(c => c.ruc === buyerRucInput);
+    const clientIvaFreq = client?.taxProfile?.ivaFrequency;
+    const text = (itemsText + ' ' + (comprobantePeriodo || '')).toUpperCase();
+    
+    let year = new Date().getFullYear();
+    let month = new Date().getMonth() + 1;
+    if (fechaEmisionStr) {
+      const d = new Date(fechaEmisionStr);
+      if (!isNaN(d.getTime())) {
+        year = d.getFullYear();
+        month = d.getMonth() + 1;
       }
+    }
 
-      const totalImpuestos = xmlDoc.getElementsByTagName("totalImpuesto");
-      if (totalImpuestos.length > 0) {
-        subtotal0 = 0;
-        for (let i = 0; i < totalImpuestos.length; i++) {
-          const imp = totalImpuestos[i];
-          const codigoPorcentaje = imp.getElementsByTagName("codigoPorcentaje")[0]?.textContent;
-          const baseImponible = Number(imp.getElementsByTagName("baseImponible")[0]?.textContent || 0);
-          const valor = Number(imp.getElementsByTagName("valor")[0]?.textContent || 0);
-          
-          if (codigoPorcentaje === '4' || codigoPorcentaje === '2') {
-            subtotal15 = baseImponible;
-            iva15 = valor;
-          } else if (codigoPorcentaje === '0') {
-            subtotal0 = baseImponible;
-          }
-        }
-        total = Number(xmlDoc.getElementsByTagName("importeTotal")[0]?.textContent || comprobante.total);
+    if (text.includes('1ER SEMESTRE') || text.includes('1ERA SEMESTRE') || text.includes('PRIMER SEMESTRE') || text.includes('S1') || text.includes('-S1')) {
+      const matchedYear = text.match(/\b(20\d\d)\b/)?.[1] || year.toString();
+      return `1ER SEMESTRE ${matchedYear} (ENE - JUN)`;
+    }
+    if (text.includes('2DO SEMESTRE') || text.includes('2DA SEMESTRE') || text.includes('SEGUNDO SEMESTRE') || text.includes('S2') || text.includes('-S2')) {
+      const matchedYear = text.match(/\b(20\d\d)\b/)?.[1] || (year - 1).toString();
+      return `2DO SEMESTRE ${matchedYear} (JUL - DIC)`;
+    }
+
+    const isSemestral = text.includes('SEMESTRAL') || text.includes('SEMESTRE') || clientIvaFreq === 'Semestral';
+    if (isSemestral) {
+      if (month >= 5 && month <= 9) {
+        return `1ER SEMESTRE ${year} (ENE - JUN)`;
+      } else {
+        const sem2Year = month <= 4 ? year - 1 : year;
+        return `2DO SEMESTRE ${sem2Year} (JUL - DIC)`;
       }
-
-      const pago = xmlDoc.getElementsByTagName("pago")[0];
-      if (pago) {
-        const code = pago.getElementsByTagName("formaPago")[0]?.textContent;
-        const descMap: Record<string, string> = {
-          '01': 'SIN UTILIZACION DEL SISTEMA FINANCIERO (EFECTIVO)',
-          '19': 'TARJETA DE CREDITO',
-          '20': 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO (TRANSFERENCIA)',
-          '17': 'DINERO ELECTRONICO / DIGITAL'
-        };
-        formaPagoDesc = descMap[code || '01'] || 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
-        formaPagoTotal = Number(pago.getElementsByTagName("total")[0]?.textContent || total);
-      }
-    } catch (e) {
-      console.error(e);
     }
 
-    let authDateStr = '';
-    try {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(comprobante.xml || '', "text/xml");
-      const fechaAutorizacion = xmlDoc.getElementsByTagName("fechaAutorizacion")[0]?.textContent;
-      if (fechaAutorizacion) {
-        if (fechaAutorizacion.includes('T')) {
-          const parts = fechaAutorizacion.split('T');
-          const dateParts = parts[0].split('-'); // YYYY-MM-DD
-          const timeParts = parts[1].split('-')[0].split('+')[0]; // HH:MM:SS
-          authDateStr = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]} ${timeParts}`;
-        } else {
-          authDateStr = fechaAutorizacion;
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    if (!authDateStr) {
-      const now = new Date();
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const year = now.getFullYear();
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
-      authDateStr = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-    }
-
-    if (!itemsHtml) {
-      itemsHtml = "<tr><td style='font-family: monospace;'>001</td><td style='text-align: center;'>1.00</td><td style='text-transform: uppercase;'>Servicios Contables Profesionales</td><td style='text-align: right; font-family: monospace;'>$" + comprobante.total.toFixed(2) + "</td><td style='text-align: right; font-family: monospace; font-weight: bold;'>$" + comprobante.total.toFixed(2) + "</td></tr>";
-    }
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Por favor, permita las ventanas emergentes (popups) para poder imprimir el RIDE.');
-      return;
-    }
-
-    let regimeLabel = '';
-    let contribuyenteRimpeXml = '';
-    try {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(comprobante.xml || '', "text/xml");
-      contribuyenteRimpeXml = xmlDoc.getElementsByTagName("contribuyenteRimpe")[0]?.textContent || '';
-    } catch (e) {}
-
-    if (contribuyenteRimpeXml) {
-      regimeLabel = `<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">${contribuyenteRimpeXml}</div>`;
-    } else if (emisor.regimen === '3' || emisor.regimen === '1') {
-      regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</div>';
-    } else if (emisor.regimen === '2') {
-      regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #2b6aff; border-radius: 4px; display: inline-block;">CONTRIBUYENTE RÉGIMEN RIMPE</div>';
-    } else {
-      regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</div>';
-    }
-
-    const logoHtml = emisorLogo 
-      ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 
-      : "<div class='emisor-title'>" + (emisor.nombreComercial || 'SOLUCIONES CONTABLES PRO') + "</div>";
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html lang="es">
-      <head>
-        <title>RIDE_Factura_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}</title>
-        <meta charset="utf-8" />
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@700;800;900&display=swap');
-          
-          @page {
-            size: A4 portrait;
-            margin: 10mm 12mm 12mm 12mm;
-          }
-
-          * {
-            box-sizing: border-box;
-          }
-          
-          body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            font-size: 9.5px;
-            color: #0f172a;
-            margin: 20px;
-            background: #ffffff;
-            line-height: 1.4;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-
-          .ride-top-accent {
-            height: 4px;
-            width: 100%;
-            background: linear-gradient(90deg, #2B6AFF 0%, #6366F1 50%, #04B17B 100%);
-            border-radius: 4px 4px 0 0;
-            margin-bottom: 15px;
-          }
-
-          .ride-container {
-            width: 100%;
-            max-width: 820px;
-            margin: 0 auto;
-          }
-
-          .grid-container {
-            display: grid;
-            grid-template-columns: 1.15fr 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
-          }
-
-          .emisor-box {
-            padding-right: 8px;
-          }
-
-          .logo-img {
-            max-height: 65px;
-            max-width: 220px;
-            object-fit: contain;
-            margin-bottom: 10px;
-          }
-
-          .emisor-title {
-            font-family: 'Manrope', sans-serif;
-            font-size: 17px;
-            font-weight: 900;
-            color: #0f172a;
-            letter-spacing: -0.03em;
-            margin-bottom: 10px;
-            line-height: 1.2;
-          }
-
-          .emisor-name {
-            font-family: 'Manrope', sans-serif;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: #0f172a;
-            margin-bottom: 4px;
-          }
-
-          .emisor-info-line {
-            color: #475569;
-            font-size: 9px;
-            margin-top: 4px;
-            line-height: 1.35;
-          }
-
-          .auth-box {
-            border: 1.5px solid #0f172a;
-            border-radius: 14px;
-            padding: 14px;
-            background: #f8fafc;
-          }
-
-          .auth-title {
-            font-family: 'Manrope', sans-serif;
-            font-size: 11px;
-            font-weight: 800;
-            color: #0f172a;
-            margin-bottom: 3px;
-          }
-
-          .auth-doc-type {
-            font-family: 'Manrope', sans-serif;
-            font-size: 15px;
-            font-weight: 900;
-            letter-spacing: 0.05em;
-            color: #0f172a;
-            margin: 2px 0 4px 0;
-          }
-
-          .auth-secuencial {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            font-weight: 700;
-            color: #2b6aff;
-            letter-spacing: 0.05em;
-            margin-bottom: 8px;
-          }
-
-          .auth-details {
-            border-top: 1px solid #cbd5e1;
-            padding-top: 8px;
-            margin-top: 8px;
-          }
-
-          .auth-details table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-
-          .auth-details td {
-            padding: 2.5px 0;
-            vertical-align: top;
-            font-size: 8.5px;
-          }
-
-          .auth-details td strong {
-            color: #475569;
-            font-size: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-          }
-
-          .clave-mono {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 8.5px;
-            font-weight: 700;
-            word-break: break-all;
-            color: #0f172a;
-            line-height: 1.2;
-          }
-
-          .barcode-container {
-            border-top: 1px solid #cbd5e1;
-            padding-top: 8px;
-            margin-top: 8px;
-            text-align: center;
-          }
-
-          .barcode-lines {
-            height: 32px;
-            width: 100%;
-            margin: 4px 0;
-            background: repeating-linear-gradient(
-              90deg,
-              #0f172a,
-              #0f172a 2px,
-              #fff 2px,
-              #fff 4px,
-              #0f172a 4px,
-              #0f172a 6px,
-              #fff 6px,
-              #fff 7px
-            );
-            border-radius: 3px;
-          }
-
-          .receptor-box {
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            padding: 12px 14px;
-            margin-bottom: 16px;
-            display: grid;
-            grid-template-columns: 1.3fr 1fr;
-            gap: 8px;
-            background: #fafafa;
-          }
-
-          .receptor-box strong {
-            color: #64748b;
-            font-size: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            display: block;
-            margin-bottom: 1px;
-          }
-
-          .receptor-val {
-            font-size: 10px;
-            font-weight: 700;
-            color: #0f172a;
-            text-transform: uppercase;
-          }
-
-          .items-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin-bottom: 16px;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            overflow: hidden;
-          }
-
-          .items-table th {
-            background: #0f172a;
-            color: #ffffff;
-            font-family: 'Manrope', sans-serif;
-            text-transform: uppercase;
-            font-size: 8px;
-            font-weight: 800;
-            padding: 8px 10px;
-            border: none;
-            letter-spacing: 0.05em;
-          }
-
-          .items-table td {
-            padding: 8px 10px;
-            border-bottom: 1px solid #f1f5f9;
-            border-right: 1px solid #f1f5f9;
-            font-size: 9.5px;
-          }
-
-          .items-table td:last-child {
-            border-right: none;
-          }
-
-          .items-table tr:last-child td {
-            border-bottom: none;
-          }
-
-          .items-table tr:nth-child(even) {
-            background-color: #f8fafc;
-          }
-
-          .bottom-grid {
-            display: grid;
-            grid-template-columns: 1.15fr 1fr;
-            gap: 16px;
-          }
-
-          .pago-box, .info-box {
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 12px;
-            background: #ffffff;
-          }
-
-          .box-title {
-            font-family: 'Manrope', sans-serif;
-            font-weight: 800;
-            text-transform: uppercase;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 5px;
-            margin-bottom: 8px;
-            font-size: 9px;
-            color: #0f172a;
-            letter-spacing: 0.05em;
-          }
-
-          .pago-table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-
-          .pago-table th {
-            color: #64748b;
-            border-bottom: 1px solid #e2e8f0;
-            padding: 3px;
-            font-size: 8px;
-            text-align: left;
-            text-transform: uppercase;
-          }
-
-          .pago-table td {
-            padding: 5px 3px;
-            font-size: 9px;
-          }
-
-          .totals-box {
-            border: 1.5px solid #0f172a;
-            border-radius: 14px;
-            padding: 12px 14px;
-            background: #f8fafc;
-          }
-
-          .totals-table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-
-          .totals-table td {
-            padding: 4px 2px;
-            border-bottom: 1px dashed #e2e8f0;
-            font-size: 9px;
-            color: #475569;
-            font-weight: 600;
-          }
-
-          .totals-table tr:last-child td {
-            border-bottom: none;
-          }
-
-          .totals-table tr.total-row {
-            background: #0f172a;
-            color: #ffffff;
-            font-weight: 800;
-            font-size: 11.5px;
-          }
-
-          .totals-table tr.total-row td {
-            color: #ffffff;
-            padding: 8px 6px;
-            border-radius: 6px;
-            font-family: 'Manrope', sans-serif;
-          }
-
-          @media print {
-            .no-print {
-              display: none !important;
-            }
-            body {
-              margin: 0;
-              padding: 0;
-            }
-            .ride-container {
-              width: 100%;
-              max-width: 100%;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <!-- Bar de Acciones Superior (Oculta al Imprimir) -->
-        <div class="no-print" style="background: #0f172a; padding: 12px 20px; margin: -20px -20px 20px -20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2b6aff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-          <div style="color: white; font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; items-center; gap: 8px;">
-            📄 COMPROBANTE DE VENTA ELECTRÓNICO (RIDE A4 ÉLITE)
-          </div>
-          <div style="display: flex; gap: 10px;">
-            <button onclick="window.print()" style="background: linear-gradient(135deg, #2b6aff, #6366f1); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-family: sans-serif; box-shadow: 0 2px 8px rgba(43,106,255,0.3);">
-              📥 Descargar PDF Directo / Imprimir
-            </button>
-            <button onclick="window.close()" style="background: #334155; color: white; border: none; padding: 8px 14px; border-radius: 8px; font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase; font-family: sans-serif;">
-              Cerrar
-            </button>
-          </div>
-        </div>
-
-        <div class="ride-container">
-          <div class="ride-top-accent"></div>
-          
-          <div class="grid-container">
-            <div class="emisor-box">
-              ${logoHtml}
-              <div class="emisor-name">${emisor.razonSocial}</div>
-              <div style="color: #475569; font-weight: 700; font-size: 10px; text-transform: uppercase;">${emisor.nombreComercial}</div>
-              <div class="emisor-info-line"><strong>Dirección Matriz:</strong> ${emisor.dirMatriz}</div>
-              <div class="emisor-info-line"><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
-              ${regimeLabel}
-            </div>
-
-            <div class="auth-box">
-              <div class="auth-title">R.U.C.: <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;">${emisor.ruc}</span></div>
-              <div class="auth-doc-type">FACTURA</div>
-              <div class="auth-secuencial">No. ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</div>
-              
-              <div class="auth-details">
-                <table>
-                  <tr>
-                    <td style="width: 110px;"><strong>NÚMERO AUTORIZACIÓN:</strong></td>
-                    <td class="clave-mono">${comprobante.claveAcceso}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>FECHA/HORA AUTORIZ.:</strong></td>
-                    <td style="font-weight: 700;">${authDateStr}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>AMBIENTE:</strong></td>
-                    <td style="text-transform: uppercase; font-weight: 800; color: #2b6aff;">${emisor.ambiente}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>EMISIÓN:</strong></td>
-                    <td style="font-weight: 700;">NORMAL</td>
-                  </tr>
-                </table>
-              </div>
-
-              <div class="barcode-container">
-                <div style="font-size: 7.5px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">Clave de Acceso SRI</div>
-                <div class="barcode-lines"></div>
-                <div class="clave-mono" style="text-align: center; font-size: 8px;">${comprobante.claveAcceso}</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="receptor-box">
-            <div>
-              <strong>Razón Social / Nombres y Apellidos:</strong>
-              <div class="receptor-val">${receptor.razonSocial}</div>
-            </div>
-            <div>
-              <strong>Identificación / RUC / Cédula:</strong>
-              <div class="receptor-val" style="font-family: 'JetBrains Mono', monospace;">${receptor.identificacion}</div>
-            </div>
-            <div style="margin-top: 4px;">
-              <strong>Fecha Emisión:</strong>
-              <div style="font-weight: 700; color: #0f172a;">${receptor.fechaEmision}</div>
-            </div>
-            <div style="margin-top: 4px;">
-              <strong>Guía de Remisión:</strong>
-              <div style="font-weight: 700; color: #0f172a;">S/N</div>
-            </div>
-            <div style="grid-column: span 2; border-top: 1px dashed #cbd5e1; padding-top: 6px; margin-top: 2px;">
-              <strong>Dirección del Comprador:</strong>
-              <div style="font-weight: 700; color: #0f172a; text-transform: uppercase;">${receptor.direccion}</div>
-            </div>
-          </div>
-
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th style="width: 90px;">Cod. Principal</th>
-                <th style="width: 55px; text-align: center;">Cant.</th>
-                <th>Descripción / Detalle del Servicio</th>
-                <th style="width: 110px; text-align: right;">P. Unitario</th>
-                <th style="width: 110px; text-align: right;">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-
-          <div class="bottom-grid">
-            <div>
-              <div class="info-box">
-                <div class="box-title">Información Adicional</div>
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="width: 90px; font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Dirección:</td>
-                    <td style="color: #0f172a; font-weight: 700; text-transform: uppercase; font-size: 9px;">${receptor.direccion}</td>
-                  </tr>
-                  <tr>
-                    <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Email:</td>
-                    <td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.identificacion === buyerRuc ? buyerEmail || 'cliente@example.com' : 'cliente@example.com'}</td>
-                  </tr>
-                  <tr>
-                    <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Teléfono:</td>
-                    <td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.identificacion === buyerRuc ? buyerPhone || '0999999999' : '0999999999'}</td>
-                  </tr>
-                  <tr>
-                    <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Periodo Fiscal:</td>
-                    <td style="color: #2b6aff; font-weight: 800; text-transform: uppercase; font-size: 9px;">${new Date(comprobante.fechaEmision).toLocaleString('es-EC', {month: 'long', year: 'numeric'}).toUpperCase()}</td>
-                  </tr>
-                </table>
-              </div>
-
-              <div class="pago-box">
-                <div class="box-title">Forma de Pago SRI</div>
-                <table class="pago-table">
-                  <thead>
-                    <tr>
-                      <th>Forma de Pago</th>
-                      <th style="text-align: right; width: 85px;">Valor Total</th>
-                      <th style="text-align: right; width: 45px;">Plazo</th>
-                      <th style="text-align: right; width: 55px;">Tiempo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style="font-weight: 700; font-size: 8.5px; text-transform: uppercase;">${formaPagoDesc}</td>
-                      <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0f172a;">$${formaPagoTotal.toFixed(2)}</td>
-                      <td style="text-align: right; font-weight: 700;">0</td>
-                      <td style="text-align: right; font-weight: 700;">Días</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div>
-              <div class="totals-box">
-                <table class="totals-table">
-                  <tr>
-                    <td>SUBTOTAL 15%</td>
-                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${subtotal15.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>SUBTOTAL 0%</td>
-                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${subtotal0.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>SUBTOTAL NO OBJETO IVA</td>
-                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$0.00</td>
-                  </tr>
-                  <tr>
-                    <td>SUBTOTAL EXENTO IVA</td>
-                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$0.00</td>
-                  </tr>
-                  <tr>
-                    <td>SUBTOTAL SIN IMPUESTOS</td>
-                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${(subtotal15 + subtotal0).toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>DESCUENTO</td>
-                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$0.00</td>
-                  </tr>
-                  <tr>
-                    <td>ICE</td>
-                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$0.00</td>
-                  </tr>
-                  <tr>
-                    <td>IVA 15%</td>
-                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #2b6aff;">$${iva15.toFixed(2)}</td>
-                  </tr>
-                  <tr class="total-row">
-                    <td>VALOR TOTAL</td>
-                    <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$${total.toFixed(2)}</td>
-                  </tr>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-            }, 350);
-          };
-        </script>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
+    const monthNames = [
+      'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+      'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+    ];
+    const mName = monthNames[month - 1] || 'ENERO';
+    return `${mName} ${year}`;
   };
 
   const downloadRideDocument = (comprobante: HistoricComprobante) => {
@@ -2588,10 +1921,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     };
 
     let itemsHtml = '';
+    let rawItemsText = '';
     let subtotal15 = 0;
     let subtotal0 = comprobante.total;
     let iva15 = 0;
     let total = comprobante.total;
+    let formaPagoDesc = 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
+    let formaPagoTotal = comprobante.total;
 
     try {
       if (comprobante.xml) {
@@ -2626,6 +1962,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             const d = detalles[i];
             const codigo = d.getElementsByTagName("codigoPrincipal")[0]?.textContent || '001';
             const descripcion = d.getElementsByTagName("descripcion")[0]?.textContent || 'Servicios Contables';
+            rawItemsText += ' ' + descripcion;
             const cantidad = parseFloat(d.getElementsByTagName("cantidad")[0]?.textContent || '1');
             const precioUnitario = parseFloat(d.getElementsByTagName("precioUnitario")[0]?.textContent || '0');
             const precioTotalSinImpuesto = parseFloat(d.getElementsByTagName("precioTotalSinImpuesto")[0]?.textContent || (cantidad * precioUnitario).toString());
@@ -2655,6 +1992,19 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           iva15 = subtotal15 * 0.15;
           total = subtotal15 + subtotal0 + iva15;
         }
+
+        const pago = xmlDoc.getElementsByTagName("pago")[0];
+        if (pago) {
+          const code = pago.getElementsByTagName("formaPago")[0]?.textContent;
+          const descMap: Record<string, string> = {
+            '01': 'SIN UTILIZACION DEL SISTEMA FINANCIERO (EFECTIVO)',
+            '19': 'TARJETA DE CREDITO',
+            '20': 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO (TRANSFERENCIA)',
+            '17': 'DINERO ELECTRONICO / DIGITAL'
+          };
+          formaPagoDesc = descMap[code || '01'] || 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO';
+          formaPagoTotal = Number(pago.getElementsByTagName("total")[0]?.textContent || total);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -2663,6 +2013,42 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     if (!itemsHtml) {
       itemsHtml = `<tr><td style="font-family: monospace;">001</td><td style="text-align: center;">1.00</td><td style="text-transform: uppercase;">Servicios Contables Profesionales</td><td style="text-align: right; font-family: monospace;">$${comprobante.total.toFixed(2)}</td><td style="text-align: right; font-family: monospace; font-weight: bold;">$${comprobante.total.toFixed(2)}</td></tr>`;
     }
+
+    let authDateStr = '';
+    try {
+      if (comprobante.xml) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(comprobante.xml || '', "text/xml");
+        const fechaAutorizacion = xmlDoc.getElementsByTagName("fechaAutorizacion")[0]?.textContent;
+        if (fechaAutorizacion) {
+          if (fechaAutorizacion.includes('T')) {
+            const parts = fechaAutorizacion.split('T');
+            const dateParts = parts[0].split('-');
+            const timeParts = parts[1].split('-')[0].split('+')[0];
+            authDateStr = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]} ${timeParts}`;
+          } else {
+            authDateStr = fechaAutorizacion;
+          }
+        }
+      }
+    } catch (e) {}
+
+    if (!authDateStr) {
+      const now = new Date();
+      const day = String(now.getDate()).padStart(2, '0');
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const year = now.getFullYear();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      authDateStr = `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+
+    const smartPeriodoFiscal = getSmartPeriodoFiscal(
+      comprobante.fechaEmision,
+      rawItemsText,
+      receptor.identificacion,
+      (comprobante as any).period
+    );
 
     let regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</div>';
 
@@ -2678,97 +2064,202 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@700;800;900&display=swap');
-    @page { size: A4 portrait; margin: 10mm 12mm 12mm 12mm; }
+    @page { size: A4 portrait; margin: 8mm 10mm 10mm 10mm; }
     * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
-    body { margin: 0; padding: 12px; background: #ffffff; color: #0f172a; font-size: 10px; line-height: 1.3; }
-    .print-actions { margin-bottom: 12px; text-align: right; }
-    .btn-print { background: #2b6aff; color: #ffffff; border: none; padding: 8px 16px; font-weight: 800; font-size: 11px; border-radius: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
-    @media print { .print-actions { display: none !important; } }
-    .invoice-card { border: 1px solid #cbd5e1; border-radius: 12px; padding: 16px; margin-bottom: 12px; background: #ffffff; }
-    .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
-    .emisor-box { padding-right: 12px; border-right: 1px dashed #e2e8f0; }
-    .logo-img { max-height: 55px; width: auto; object-fit: contain; margin-bottom: 8px; }
-    .emisor-title { font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    .emisor-razon { font-size: 11px; font-weight: 700; color: #334155; text-transform: uppercase; margin-bottom: 8px; }
-    .auth-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
-    .auth-title { font-size: 11px; font-weight: 900; color: #2b6aff; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    .auth-secuencial { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
-    .barcode-container { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; font-weight: 700; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; text-align: center; word-break: break-all; margin-top: 6px; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
-    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-    .items-table th { background: #f1f5f9; color: #475569; font-size: 8.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 8px; border-bottom: 1px solid #cbd5e1; text-align: left; }
-    .items-table td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; font-size: 9.5px; font-weight: 500; }
-    .bottom-grid { display: grid; grid-template-columns: 1fr 240px; gap: 16px; }
-    .totales-table { width: 100%; border-collapse: collapse; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
-    .totales-table td { padding: 5px 10px; font-size: 9px; font-weight: 600; border-bottom: 1px solid #f1f5f9; }
-    .totales-table tr.total-row td { font-size: 11px; font-weight: 900; color: #2b6aff; background: #eff6ff; border-bottom: none; }
+    body { margin: 0; padding: 12px; background: #ffffff; color: #0f172a; font-size: 9.5px; line-height: 1.3; }
+    .invoice-card { border: 1.5px solid #0f172a; border-radius: 14px; padding: 16px; background: #ffffff; }
+    .header-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .emisor-box { padding-right: 8px; }
+    .logo-img { max-height: 60px; max-width: 220px; object-fit: contain; margin-bottom: 8px; }
+    .emisor-title { font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 4px; }
+    .emisor-name { font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0f172a; margin-bottom: 4px; }
+    .auth-box { border: 1.5px solid #0f172a; border-radius: 14px; padding: 14px; background: #f8fafc; }
+    .auth-title { font-family: 'Manrope', sans-serif; font-size: 11px; font-weight: 800; color: #0f172a; margin-bottom: 3px; }
+    .auth-doc-type { font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 900; color: #0f172a; margin: 2px 0 4px 0; }
+    .auth-secuencial { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #2b6aff; margin-bottom: 8px; }
+    .barcode-container { border-top: 1px solid #cbd5e1; padding-top: 8px; margin-top: 8px; text-align: center; }
+    .receptor-box { border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 8px; background: #fafafa; }
+    .receptor-val { font-size: 10px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
+    .items-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 12px; overflow: hidden; }
+    .items-table th { background: #0f172a; color: #ffffff; font-family: 'Manrope', sans-serif; text-transform: uppercase; font-size: 8px; font-weight: 800; padding: 8px 10px; text-align: left; }
+    .items-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; font-size: 9.5px; }
+    .bottom-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; }
+    .info-box, .pago-box { border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 12px; background: #ffffff; }
+    .box-title { font-family: 'Manrope', sans-serif; font-weight: 800; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; margin-bottom: 8px; font-size: 9px; color: #0f172a; }
+    .totals-box { border: 1.5px solid #0f172a; border-radius: 14px; padding: 12px 14px; background: #f8fafc; }
+    .totals-table { width: 100%; border-collapse: collapse; }
+    .totals-table td { padding: 4px 2px; border-bottom: 1px dashed #e2e8f0; font-size: 9px; color: #475569; font-weight: 600; }
+    .totals-table tr.total-row td { background: #0f172a; color: #ffffff; font-weight: 800; font-size: 11.5px; padding: 8px 6px; border-radius: 6px; }
   </style>
 </head>
 <body>
-  <div class="print-actions">
-    <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Guardar como PDF</button>
-  </div>
   <div class="invoice-card">
     <div class="header-grid">
       <div class="emisor-box">
         ${logoHtml}
-        <div class="emisor-razon">${emisor.razonSocial}</div>
-        <div><strong>RUC:</strong> <span style="font-family: monospace;">${emisor.ruc}</span></div>
-        <div><strong>Matriz:</strong> ${emisor.dirMatriz}</div>
+        <div class="emisor-name">${emisor.razonSocial}</div>
+        <div style="color: #475569; font-weight: 700; font-size: 10px; text-transform: uppercase;">${emisor.nombreComercial}</div>
+        <div style="margin-top: 4px; font-size: 9px; color: #475569;"><strong>Dirección Matriz:</strong> ${emisor.dirMatriz}</div>
+        <div style="font-size: 9px; color: #475569;"><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
         ${regimeLabel}
       </div>
       <div class="auth-box">
-        <div class="auth-title">${comprobante.tipo === 'factura' ? 'FACTURA ELECTRÓNICA' : 'COMPROBANTE DE RETENCIÓN'}</div>
+        <div class="auth-title">R.U.C.: <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;">${emisor.ruc}</span></div>
+        <div class="auth-doc-type">${comprobante.tipo === 'factura' ? 'FACTURA' : 'COMPROBANTE DE RETENCIÓN'}</div>
         <div class="auth-secuencial">No. ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</div>
-        <div><strong>CLAVE DE ACCESO SRI:</strong></div>
-        <div class="barcode-container">${comprobante.claveAcceso}</div>
-        <div style="margin-top: 6px;"><strong>ESTADO:</strong> <span style="color: #04b17b; font-weight: 800;">${comprobante.estado.toUpperCase()}</span></div>
+        <div style="font-size: 8.5px; margin-bottom: 6px;"><strong>AUTORIZACIÓN:</strong> <br/><span style="font-family: monospace; font-size: 8px;">${comprobante.claveAcceso}</span></div>
+        <div style="font-size: 8.5px;"><strong>FECHA/HORA:</strong> ${authDateStr}</div>
+        <div style="font-size: 8.5px;"><strong>AMBIENTE:</strong> <span style="color: #2b6aff; font-weight: 800;">${emisor.ambiente}</span></div>
+        <div class="barcode-container">
+          <div style="font-size: 7.5px; font-weight: 800; color: #64748b; text-transform: uppercase;">Clave de Acceso SRI</div>
+          <div style="font-family: monospace; font-size: 8px; margin-top: 2px;">${comprobante.claveAcceso}</div>
+        </div>
       </div>
     </div>
-    <div class="info-grid">
-      <div><strong>Razon Social / Nombre Comprador:</strong> <br/><span style="font-weight: 700; text-transform: uppercase;">${receptor.razonSocial}</span></div>
-      <div><strong>RUC / CI:</strong> <span style="font-family: monospace; font-weight: 700;">${receptor.identificacion}</span></div>
-      <div style="grid-column: span 2;"><strong>Dirección:</strong> <br/><span style="font-weight: 700; text-transform: uppercase;">${receptor.direccion}</span></div>
+
+    <div class="receptor-box">
+      <div>
+        <strong style="color: #64748b; font-size: 8px;">RAZÓN SOCIAL / CLIENTE:</strong>
+        <div class="receptor-val">${receptor.razonSocial}</div>
+      </div>
+      <div>
+        <strong style="color: #64748b; font-size: 8px;">RUC / CÉDULA:</strong>
+        <div class="receptor-val" style="font-family: 'JetBrains Mono', monospace;">${receptor.identificacion}</div>
+      </div>
+      <div style="margin-top: 4px;">
+        <strong style="color: #64748b; font-size: 8px;">FECHA EMISIÓN:</strong>
+        <div style="font-weight: 700; color: #0f172a;">${receptor.fechaEmision}</div>
+      </div>
+      <div style="margin-top: 4px;">
+        <strong style="color: #64748b; font-size: 8px;">GUÍA DE REMISIÓN:</strong>
+        <div style="font-weight: 700; color: #0f172a;">S/N</div>
+      </div>
+      <div style="grid-column: span 2; border-top: 1px dashed #cbd5e1; padding-top: 6px; margin-top: 2px;">
+        <strong style="color: #64748b; font-size: 8px;">DIRECCIÓN DEL COMPRADOR:</strong>
+        <div style="font-weight: 700; color: #0f172a; text-transform: uppercase;">${receptor.direccion}</div>
+      </div>
     </div>
+
     <table class="items-table">
       <thead>
         <tr>
-          <th>Cod. Principal</th>
-          <th style="text-align: center;">Cant.</th>
+          <th style="width: 90px;">Cod. Principal</th>
+          <th style="width: 55px; text-align: center;">Cant.</th>
           <th>Descripción / Detalle del Servicio</th>
-          <th style="text-align: right;">P. Unitario</th>
-          <th style="text-align: right;">Subtotal</th>
+          <th style="width: 110px; text-align: right;">P. Unitario</th>
+          <th style="width: 110px; text-align: right;">Subtotal</th>
         </tr>
       </thead>
       <tbody>
         ${itemsHtml}
       </tbody>
     </table>
+
     <div class="bottom-grid">
-      <div></div>
       <div>
-        <table class="totales-table">
-          <tr><td>SUBTOTAL 15%</td><td style="text-align: right; font-family: monospace;">$${subtotal15.toFixed(2)}</td></tr>
-          <tr><td>SUBTOTAL 0%</td><td style="text-align: right; font-family: monospace;">$${subtotal0.toFixed(2)}</td></tr>
-          <tr><td>IVA 15%</td><td style="text-align: right; font-family: monospace; font-weight: 700; color: #2b6aff;">$${iva15.toFixed(2)}</td></tr>
-          <tr class="total-row"><td>VALOR TOTAL</td><td style="text-align: right; font-family: monospace;">$${total.toFixed(2)}</td></tr>
-        </table>
+        <div class="info-box">
+          <div class="box-title">Información Adicional</div>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="width: 90px; font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Dirección:</td>
+              <td style="color: #0f172a; font-weight: 700; text-transform: uppercase; font-size: 9px;">${receptor.direccion}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Email:</td>
+              <td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.identificacion === buyerRuc ? buyerEmail || 'cliente@example.com' : 'cliente@example.com'}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Teléfono:</td>
+              <td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.identificacion === buyerRuc ? buyerPhone || '0999999999' : '0999999999'}</td>
+            </tr>
+            <tr>
+              <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Periodo Fiscal:</td>
+              <td style="color: #2b6aff; font-weight: 800; text-transform: uppercase; font-size: 9px;">${smartPeriodoFiscal}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="pago-box">
+          <div class="box-title">Forma de Pago SRI</div>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr>
+                <th style="color: #64748b; border-bottom: 1px solid #e2e8f0; padding: 3px; font-size: 8px; text-align: left;">Forma de Pago</th>
+                <th style="text-align: right; width: 85px; color: #64748b; border-bottom: 1px solid #e2e8f0; padding: 3px; font-size: 8px;">Valor Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight: 700; font-size: 8.5px; text-transform: uppercase;">${formaPagoDesc}</td>
+                <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0f172a;">$${formaPagoTotal.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <div class="totals-box">
+          <table class="totals-table">
+            <tr>
+              <td>SUBTOTAL 15%</td>
+              <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${subtotal15.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>SUBTOTAL 0%</td>
+              <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${subtotal0.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>SUBTOTAL SIN IMPUESTOS</td>
+              <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700;">$${(subtotal15 + subtotal0).toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>IVA 15%</td>
+              <td style="text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #2b6aff;">$${iva15.toFixed(2)}</td>
+            </tr>
+            <tr class="total-row">
+              <td>VALOR TOTAL</td>
+              <td style="text-align: right; font-family: 'JetBrains Mono', monospace;">$${total.toFixed(2)}</td>
+            </tr>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 </body>
 </html>`;
 
-    const pdfHtml = rideDocHtml.replace('<div class="print-actions">', '<div class="print-actions" style="display:none;">');
+    // Render directly to PDF download without popup/window.print
+    const tempDiv = document.createElement('div');
+    tempDiv.style.position = 'fixed';
+    tempDiv.style.left = '-9999px';
+    tempDiv.style.top = '-9999px';
+    tempDiv.style.width = '794px';
+    tempDiv.innerHTML = rideDocHtml;
+    document.body.appendChild(tempDiv);
+
     const opt = {
       margin:       5,
-      filename:     `RIDE_${comprobante.tipo}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      filename:     `RIDE_${comprobante.tipo || 'Factura'}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.pdf`,
+      image:        { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      jsPDF:        { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
     };
-    
-    html2pdf().set(opt).from(pdfHtml).save();
+
+    html2pdf().set(opt).from(tempDiv).save().then(() => {
+      if (document.body.contains(tempDiv)) {
+        document.body.removeChild(tempDiv);
+      }
+    }).catch((err: any) => {
+      console.error('Error generating PDF:', err);
+      if (document.body.contains(tempDiv)) {
+        document.body.removeChild(tempDiv);
+      }
+    });
+  };
+
+  const printRideDocument = (comprobante: HistoricComprobante) => {
+    downloadRideDocument(comprobante);
   };
 
   const copyToClipboard = (text: string, subject: string) => {
