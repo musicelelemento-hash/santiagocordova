@@ -258,11 +258,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         printWindow.document.close();
     };
     
-    // Period & Alphabetical Sorting State
+    // Period, Alphabetical & Color Priority Sorting State
     const [sortPeriod, setSortPeriod] = useState<string | null>(null);
     const [sortDirection, setSortDirection] = useState<'missing_first' | 'completed_first' | null>(null);
     const [selectedDigitFilter, setSelectedDigitFilter] = useState<number | null>(null);
-    const [sortOption, setSortOption] = useState<'9th_digit' | 'alphabetical'>('9th_digit');
+    const [sortOption, setSortOption] = useState<'9th_digit' | 'alphabetical' | 'color_orange' | 'color_red' | 'color_green' | 'color_priority'>('9th_digit');
 
     // Helper: Saludo dinámico según horario local (Buen día, Buenas tardes, Buenas noches)
     const getTimeBasedGreeting = (): string => {
@@ -628,6 +628,47 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     return upToDateA ? 1 : -1;
                 }
             }
+
+            // Ordenamiento por Semáforo / Color del Cliente (Naranja, Rojo, Verde)
+            if (sortOption.startsWith('color_')) {
+                const getWeight = (c: Client) => {
+                    const comp = getClientCompliance(c, today, (frequency === 'Ninguno' ? 'all' : frequency) as any);
+                    const color = comp.overallColor;
+                    if (sortOption === 'color_orange') {
+                        if (color === 'orange') return 1;
+                        if (color === 'red') return 2;
+                        if (color === 'yellow') return 3;
+                        if (color === 'green') return 4;
+                        return 5;
+                    }
+                    if (sortOption === 'color_red') {
+                        if (color === 'red') return 1;
+                        if (color === 'orange') return 2;
+                        if (color === 'yellow') return 3;
+                        if (color === 'green') return 4;
+                        return 5;
+                    }
+                    if (sortOption === 'color_green') {
+                        if (color === 'green') return 1;
+                        if (color === 'orange') return 2;
+                        if (color === 'yellow') return 3;
+                        if (color === 'red') return 4;
+                        return 5;
+                    }
+                    if (sortOption === 'color_priority') {
+                        const prio: Record<string, number> = { red: 1, orange: 2, yellow: 3, green: 4, gray: 5 };
+                        return prio[color] || 5;
+                    }
+                    return 5;
+                };
+
+                const weightA = getWeight(a);
+                const weightB = getWeight(b);
+                if (weightA !== weightB) {
+                    return weightA - weightB;
+                }
+            }
+
             if (sortOption === 'alphabetical') {
                 const nameA = a.tradeName || a.name;
                 const nameB = b.tradeName || b.name;
@@ -681,8 +722,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </button>
                         )}
                     </div>
-                    {/* Control de Ordenamiento: Dígito vs Alfabético */}
-                    <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-950/40 p-1 rounded-2xl border border-slate-200/30 dark:border-white/5">
+                    {/* Control de Ordenamiento: Dígito vs Semáforo de Colores vs Alfabético */}
+                    <div className="flex flex-wrap items-center gap-1 bg-slate-100/80 dark:bg-slate-950/40 p-1 rounded-2xl border border-slate-200/30 dark:border-white/5">
                         <button
                             onClick={() => setSortOption('9th_digit')}
                             className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
@@ -690,11 +731,51 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     ? 'bg-primary text-white shadow-md shadow-primary/20 scale-[1.02]'
                                     : 'text-slate-400 hover:text-slate-700 dark:hover:text-white'
                             }`}
-                            title="Ordenar por Nivel / Dígito de RUC (Calendario SRI)"
+                            title="Ordenar por Dígito RUC (Calendario SRI)"
                         >
                             <LucideIcons.Binary size={12} />
-                            <span>Orden Dígito</span>
+                            <span>Dígito</span>
                         </button>
+
+                        <button
+                            onClick={() => setSortOption('color_orange')}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border ${
+                                sortOption === 'color_orange'
+                                    ? 'bg-orange-500 text-white border-orange-600 shadow-md shadow-orange-500/20 scale-[1.02]'
+                                    : 'bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-500/20'
+                            }`}
+                            title="Ver Naranjas Primero (Declarado, Falta Cancelar/Cobrar)"
+                        >
+                            <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
+                            <span>Naranjas</span>
+                        </button>
+
+                        <button
+                            onClick={() => setSortOption('color_red')}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border ${
+                                sortOption === 'color_red'
+                                    ? 'bg-rose-600 text-white border-rose-700 shadow-md shadow-rose-500/20 scale-[1.02]'
+                                    : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20'
+                            }`}
+                            title="Ver Rojos Primero (Vencidos / Urgentes)"
+                        >
+                            <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+                            <span>Rojos</span>
+                        </button>
+
+                        <button
+                            onClick={() => setSortOption('color_green')}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border ${
+                                sortOption === 'color_green'
+                                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-md shadow-emerald-500/20 scale-[1.02]'
+                                    : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20'
+                            }`}
+                            title="Ver Verdes Primero (Al Día y Pagados)"
+                        >
+                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                            <span>Verdes</span>
+                        </button>
+
                         <button
                             onClick={() => setSortOption('alphabetical')}
                             className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
@@ -705,7 +786,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             title="Ordenar por Nombre Alfabético (A - Z)"
                         >
                             <LucideIcons.SortAsc size={12} />
-                            <span>Orden A-Z</span>
+                            <span>A-Z</span>
                         </button>
                     </div>
 
@@ -870,7 +951,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         {filteredClients.map((client, index) => {
                             const currentDigit = parseInt(client.ruc[8], 10);
                             const prevDigit = index > 0 ? parseInt(filteredClients[index - 1].ruc[8], 10) : null;
-                            const showDivider = !isWorkspaceMode && (currentDigit !== prevDigit);
+                            const showDivider = sortOption === '9th_digit' && !isWorkspaceMode && (currentDigit !== prevDigit);
 
                             return (
                                 <React.Fragment key={client.id}>
@@ -921,9 +1002,23 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         />
                                                     );
                                                 })()}
-                                                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-mono font-bold tracking-wider transition-colors bg-slate-100 dark:bg-white/5 text-slate-500 group-hover/name:bg-primary group-hover/name:text-white">
-                                                    {client.ruc[8]}
-                                                </div>
+                                                {(() => {
+                                                    const compliance = getClientCompliance(client, today, (frequency === 'Ninguno' ? 'all' : frequency) as any);
+                                                    const colorClasses = 
+                                                        compliance.overallColor === 'red' ? 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400 font-black shadow-sm shadow-rose-500/10' :
+                                                        compliance.overallColor === 'orange' ? 'bg-orange-500/15 border-orange-500/40 text-orange-600 dark:text-orange-400 font-black shadow-sm shadow-orange-500/10 animate-pulse' :
+                                                        compliance.overallColor === 'yellow' ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 font-black' :
+                                                        compliance.overallColor === 'green' ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-black' :
+                                                        'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500';
+                                                    return (
+                                                        <div 
+                                                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-mono tracking-wider transition-all border ${colorClasses}`}
+                                                            title={`Semáforo: ${compliance.overallColor.toUpperCase()} (${compliance.score}% al día)`}
+                                                        >
+                                                            {client.ruc[8]}
+                                                        </div>
+                                                    );
+                                                })()}
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-xs font-black truncate max-w-[160px] text-slate-900 dark:text-white group-hover/name:text-primary transition-colors font-premium">
