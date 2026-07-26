@@ -1899,7 +1899,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     return `${mName} ${year}`;
   };
 
-  const downloadRideDocument = (comprobante: HistoricComprobante) => {
+  const generateRideParts = (comprobante: HistoricComprobante) => {
     let emisor = {
       razonSocial: emisorRazonSocial,
       nombreComercial: emisorNombreComercial,
@@ -2056,18 +2056,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 
       : "<div class='emisor-title'>" + (emisor.nombreComercial || 'SOLUCIONES CONTABLES PRO') + "</div>";
 
-    const rideDocHtml = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <title>RIDE_${comprobante.tipo}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}</title>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
+    const cssStyles = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@700;800;900&display=swap');
     @page { size: A4 portrait; margin: 8mm 10mm 10mm 10mm; }
     * { box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif; }
     body { margin: 0; padding: 12px; background: #ffffff; color: #0f172a; font-size: 9.5px; line-height: 1.3; }
-    .invoice-card { border: 1.5px solid #0f172a; border-radius: 14px; padding: 16px; background: #ffffff; }
+    .invoice-card { border: 1.5px solid #0f172a; border-radius: 14px; padding: 16px; background: #ffffff; width: 794px; margin: 0 auto; }
     .header-grid { display: grid; grid-template-columns: 1.15fr 1fr; gap: 16px; margin-bottom: 16px; }
     .emisor-box { padding-right: 8px; }
     .logo-img { max-height: 60px; max-width: 220px; object-fit: contain; margin-bottom: 8px; }
@@ -2090,9 +2084,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     .totals-table { width: 100%; border-collapse: collapse; }
     .totals-table td { padding: 4px 2px; border-bottom: 1px dashed #e2e8f0; font-size: 9px; color: #475569; font-weight: 600; }
     .totals-table tr.total-row td { background: #0f172a; color: #ffffff; font-weight: 800; font-size: 11.5px; padding: 8px 6px; border-radius: 6px; }
-  </style>
-</head>
-<body>
+    `;
+
+    const cardContentHtml = `
   <div class="invoice-card">
     <div class="header-grid">
       <div class="emisor-box">
@@ -2225,11 +2219,43 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         </div>
       </div>
     </div>
-  </div>
+  </div>`;
+
+    const fullDocHtml = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <title>RIDE_${comprobante.tipo}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>${cssStyles}</style>
+</head>
+<body>
+  ${cardContentHtml}
 </body>
 </html>`;
 
-    // Render directly to PDF download without popup/window.print
+    return {
+      cssStyles,
+      cardContentHtml,
+      fullDocHtml,
+      filename: `RIDE_${comprobante.tipo || 'Factura'}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.pdf`,
+    };
+  };
+
+  const viewRideDocument = (comprobante: HistoricComprobante) => {
+    const { fullDocHtml } = generateRideParts(comprobante);
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(fullDocHtml);
+      win.document.close();
+    } else {
+      alert("Por favor permite las ventanas emergentes para ver el RIDE.");
+    }
+  };
+
+  const downloadRideDocument = (comprobante: HistoricComprobante) => {
+    const { cssStyles, cardContentHtml, filename } = generateRideParts(comprobante);
+
     const tempDiv = document.createElement('div');
     tempDiv.style.position = 'absolute';
     tempDiv.style.left = '0';
@@ -2238,12 +2264,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     tempDiv.style.zIndex = '-99999';
     tempDiv.style.opacity = '0.001';
     tempDiv.style.backgroundColor = '#ffffff';
-    tempDiv.innerHTML = rideDocHtml;
+    tempDiv.innerHTML = `<style>${cssStyles}</style>${cardContentHtml}`;
     document.body.appendChild(tempDiv);
 
     const opt = {
       margin:       5,
-      filename:     `RIDE_${comprobante.tipo || 'Factura'}_${emisor.estab}_${emisor.ptoEmi}_${comprobante.secuencial}.pdf`,
+      filename:     filename,
       image:        { type: 'jpeg' as const, quality: 0.98 },
       html2canvas:  { 
         scale: 2, 
@@ -2270,7 +2296,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   };
 
   const printRideDocument = (comprobante: HistoricComprobante) => {
-    downloadRideDocument(comprobante);
+    viewRideDocument(comprobante);
   };
 
   const copyToClipboard = (text: string, subject: string) => {
@@ -2408,18 +2434,27 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                               <span>Reusar</span>
                             </button>
                             <button
-                              onClick={(e) => { e.stopPropagation(); printRideDocument(doc); }}
-                              className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg transition-colors"
-                              title="Imprimir PDF (RIDE)"
+                              onClick={(e) => { e.stopPropagation(); viewRideDocument(doc); }}
+                              className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-600 dark:text-slate-300 hover:text-primary rounded-lg transition-colors flex items-center gap-1 text-[9px] font-bold px-1.5"
+                              title="Ver RIDE en Pantalla / Previsualizar"
                             >
-                              <FileText size={11} />
+                              <Eye size={10} />
+                              <span>Ver</span>
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); downloadRideDocument(doc); }}
+                              className="p-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg transition-colors flex items-center gap-1 text-[9px] font-bold px-1.5"
+                              title="Descargar PDF Directo (Para WhatsApp / Archivos)"
+                            >
+                              <Download size={10} />
+                              <span>PDF</span>
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); downloadXmlFile(doc); }}
                               className="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors"
                               title="Descargar XML"
                             >
-                              <Download size={11} />
+                              <FileText size={10} />
                             </button>
                           </div>
                         </td>
@@ -4530,26 +4565,27 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             <span>Reusar Plantilla</span>
                           </button>
                           <button
-                            onClick={() => downloadRideDocument(row)}
-                            className="px-2 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
-                            title="Descargar RIDE (Directo para móviles / PC)"
+                            onClick={() => viewRideDocument(row)}
+                            className="px-2 py-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 text-slate-600 dark:text-slate-200 hover:text-primary rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
+                            title="Ver RIDE en Pantalla / Previsualizar"
                           >
-                            <Download size={11} />
-                            <span>Descargar RIDE</span>
+                            <Eye size={11} />
+                            <span>Ver RIDE</span>
                           </button>
                           <button
-                            onClick={() => printRideDocument(row)}
-                            className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg transition-colors"
-                            title="Imprimir RIDE"
+                            onClick={() => downloadRideDocument(row)}
+                            className="px-2 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
+                            title="Descargar PDF Directo (Para WhatsApp / Archivos)"
                           >
-                            <FileText size={12} />
+                            <Download size={11} />
+                            <span>Descargar PDF</span>
                           </button>
                           <button
                             onClick={() => downloadXmlFile(row)}
                             className="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors"
                             title="Descargar XML"
                           >
-                            <Download size={12} />
+                            <FileText size={12} />
                           </button>
                           <button
                             onClick={() => copyToClipboard(row.claveAcceso, 'Clave de Acceso')}
