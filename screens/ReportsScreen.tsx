@@ -22,26 +22,26 @@ interface ReportsScreenProps {
     navigate: (screen: Screen, options?: { clientIdToView?: string }) => void;
 }
 
-const COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#F43F5E', '#8B5CF6'];
+const COLORS = ['#14b8a6', '#0ea5e9', '#f59e0b', '#f43f5e', '#8b5cf6'];
 
 const MetricCard: React.FC<{ title: string; value: string; description: string; color: string; icon: React.ElementType; trend?: string }> = ({ title, value, description, color, icon: Icon, trend }) => (
-    <div className="p-4 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] glass-tactical border border-white/5 shadow-2xl relative overflow-hidden group transition-all duration-500 hover:scale-[1.02] hover:bg-white/10 hover:border-sky-400/30">
-        <div className={`absolute -right-10 -top-10 w-24 h-24 sm:w-32 sm:h-32 rounded-full blur-[60px] sm:blur-[70px] opacity-10 transition-all duration-700 group-hover:opacity-30 group-hover:scale-150 ${color}`}></div>
+    <div className="p-5 sm:p-6 rounded-[2rem] glass-tactical border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden group transition-all duration-500 hover:scale-[1.02] hover:border-brand-teal/30">
+        <div className={`absolute -right-10 -top-10 w-24 h-24 sm:w-32 sm:h-32 rounded-full blur-[60px] opacity-10 transition-all duration-700 group-hover:opacity-30 ${color}`}></div>
         <div className="relative z-10">
-            <div className="flex justify-between items-start mb-4 sm:mb-6">
-                <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 shadow-inner group-hover:border-sky-400/40 transition-colors group-hover:rotate-3 group-hover:scale-110 duration-500">
-                    <Icon size={20} className="text-sky-400 sm:w-6 sm:h-6 transition-colors group-hover:text-sky-400" />
+            <div className="flex justify-between items-start mb-4">
+                <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-inner group-hover:border-brand-teal/40 transition-colors">
+                    <Icon size={20} className="text-brand-teal" />
                 </div>
                 {trend && (
-                    <span className="text-xs sm:text-[11px] font-semibold bg-emerald-400/10 text-emerald-400 px-2 sm:px-3 py-1 rounded-full flex items-center border border-emerald-400/20 uppercase tracking-[0.1em] shadow-lg shadow-emerald-400/10">
+                    <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full flex items-center border border-emerald-500/20 uppercase tracking-widest font-mono">
                         <TrendingUp size={10} className="mr-1.5" /> {trend}
                     </span>
                 )}
             </div>
-            <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400 mb-1 group-hover:text-sky-400 transition-colors duration-500">{title}</p>
-            <h3 className="text-3xl sm:text-4xl font-display font-semibold text-slate-900 dark:text-white tracking-tighter leading-none mb-1 sm:mb-2 group-hover:tracking-tight transition-all duration-500">{value}</h3>
-            <div className="flex items-center gap-2 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/5 group-hover:border-sky-400/20 transition-colors duration-500">
-                <p className="text-xs sm:text-[11px] font-semibold text-slate-500 uppercase tracking-widest opacity-70 group-hover:opacity-100 transition-opacity whitespace-pre-wrap">{description}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 group-hover:text-brand-teal transition-colors">{title}</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none mb-2">{value}</h3>
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60">
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{description}</p>
             </div>
         </div>
     </div>

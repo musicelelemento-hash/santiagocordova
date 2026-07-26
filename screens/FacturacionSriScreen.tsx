@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { 
   FileText, Plus, Trash2, Settings, CheckCircle2, XCircle, Info, Search, 
   Download, RefreshCw, Check, AlertTriangle, Globe, Activity, Wifi, WifiOff, 
-  Copy, ExternalLink, Eye, EyeOff, ChevronRight, Play, Database, CreditCard, User, AlertCircle,
+  Copy, ExternalLink, Eye, EyeOff, ChevronRight, Play, Zap, Database, CreditCard, User, AlertCircle,
   Lock, Key, Edit3, Save, Home, ChevronDown, ChevronUp, Sliders, Building2, Mail
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
@@ -875,7 +875,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     if (foundClient) {
       setSelectedClient(foundClient.id);
       if (foundClient.email) setBuyerEmail(foundClient.email);
-      if (foundClient.phone) setBuyerPhone(foundClient.phone);
+      if (foundClient.phones?.[0]) setBuyerPhone(foundClient.phones[0]);
       if (foundClient.address) setBuyerAddress(foundClient.address);
       setBuyerIdType(foundClient.ruc?.length === 13 ? '04' : '05');
     } else {
@@ -3366,181 +3366,153 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 min-h-[calc(100vh-120px)] relative">
-      
-      {/* 1. Sidebar Nav (Internal Nested Sidebar) */}
-      <div className="lg:w-[260px] w-full shrink-0">
-        <div className="lg:sticky lg:top-24 space-y-4">
-          <div className="glass-card-premium p-4 space-y-6">
-            
-            {/* Header: Workspace title */}
-            <div className="flex items-center gap-3 px-2 border-b border-slate-200 dark:border-white/5 pb-4">
-              <div className="p-2 bg-primary/10 rounded-xl text-primary">
-                <FileText size={18} />
-              </div>
-              <div className="flex flex-col text-left font-premium">
-                <span className="text-[11px] font-black uppercase tracking-widest text-slate-800 dark:text-white">Facturación</span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider font-mono">SRI offline v1.0</span>
-              </div>
+    <div className="space-y-6 min-h-[calc(100vh-120px)] relative animate-fade-in pt-4 sm:pt-0">
+      {/* ZENITH SRI HEADER & HUB TABS */}
+      <div className="glass-tactical p-4 sm:p-6 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-brand-teal/10 rounded-2xl text-brand-teal border border-brand-teal/20">
+              <FileText size={22} className="animate-pulse" />
             </div>
-            
-            {/* Menu Options */}
-            <div className="space-y-4">
-              
-              {/* Category: General */}
-              <div className="space-y-1">
-                <span className="px-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-2">Mi Oficina</span>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('dashboard')}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider font-premium transition-all ${
-                    activeTab === 'dashboard'
-                      ? 'bg-primary text-white shadow-md shadow-primary/20'
-                      : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 dark:text-slate-400'
-                  }`}
-                >
-                  <Home size={14} />
-                  <span>Escritorio</span>
-                </button>
-              </div>
-
-              {/* Category: Emisión */}
-              <div className="space-y-1">
-                <button
-                  type="button"
-                  onClick={() => setIsFacturacionOpen(!isFacturacionOpen)}
-                  className="w-full flex items-center justify-between px-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                >
-                  <span>Emisión SRI</span>
-                  {isFacturacionOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                </button>
-                
-                {isFacturacionOpen && (
-                  <div className="space-y-1 pl-1 border-l border-slate-100 dark:border-white/5 ml-2">
-                    {[
-                      { id: 'factura', label: 'Factura', badge: null },
-                      { id: 'nota_credito', label: 'Nota Crédito', badge: null },
-                      { id: 'nota_debito', label: 'Nota Débito', badge: null },
-                      { id: 'guia', label: 'Guía Remisión', badge: null },
-                      { id: 'liquidacion', label: 'Liquidación', badge: null }
-                    ].map(sub => (
-                      <button
-                        key={sub.id}
-                        type="button"
-                        onClick={() => setActiveTab(sub.id as any)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
-                          activeTab === sub.id
-                            ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black'
-                            : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 dark:text-slate-400'
-                        }`}
-                      >
-                        <span className="truncate">{sub.label}</span>
-                        {sub.badge && (
-                          <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 text-[8px] font-bold text-slate-400 rounded-md shrink-0 scale-90 font-sans">
-                            {sub.badge}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Category: Archivo */}
-              <div className="space-y-1">
-                <span className="px-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-2">Historial</span>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('historial')}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider font-premium transition-all ${
-                    activeTab === 'historial'
-                      ? 'bg-primary text-white shadow-md shadow-primary/20'
-                      : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 dark:text-slate-400'
-                  }`}
-                >
-                  <Database size={14} />
-                  <span>Historial XML</span>
-                </button>
-              </div>
-
-              {/* Category: Herramientas */}
-              <div className="space-y-1">
-                <button
-                  type="button"
-                  onClick={() => setIsHerramientasOpen(!isHerramientasOpen)}
-                  className="w-full flex items-center justify-between px-2 text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                >
-                  <span>Herramientas</span>
-                  {isHerramientasOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                </button>
-                
-                {isHerramientasOpen && (
-                  <div className="space-y-1 pl-1 border-l border-slate-100 dark:border-white/5 ml-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('validador')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
-                        activeTab === 'validador'
-                          ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black'
-                          : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 dark:text-slate-400'
-                      }`}
-                    >
-                      <CheckCircle2 size={12} />
-                      <span>Validar RUC/Cédula</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('firma')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
-                        activeTab === 'firma'
-                          ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black'
-                          : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 dark:text-slate-400'
-                      }`}
-                    >
-                      <Key size={12} className="text-primary" />
-                      <span>Firma Electrónica (.p12)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('configuracion')}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
-                        activeTab === 'configuracion'
-                          ? 'bg-slate-100 dark:bg-white/10 text-slate-900 dark:text-white font-black'
-                          : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5 dark:text-slate-400'
-                      }`}
-                    >
-                      <Settings size={12} />
-                      <span>Ajustes Emisor & API</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-            </div>
-
-            {/* Bottom Status Block (Clickable) */}
-            <div className="pt-4 border-t border-slate-200 dark:border-white/5">
-              <button
-                type="button"
-                onClick={() => setActiveTab('firma')}
-                className="w-full p-3 bg-emerald-500/10 hover:bg-emerald-500/15 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-left space-y-1 font-sans transition-all group cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[8px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">Firma Electrónica</span>
-                  <ChevronRight size={10} className="text-emerald-500 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 block leading-tight">
-                  {p12FileBase64 ? '✓ Firma Configurada y Activa' : '⚠️ Pendiente de configurar'}
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-brand-teal uppercase tracking-widest px-2 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20">
+                  SRI Ecosistema v4.0
                 </span>
-              </button>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  • {ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-display font-semibold text-slate-900 dark:text-white tracking-tight">
+                Facturación <span className="text-brand-teal">Electrónica SRI</span>
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className={`px-3 py-1.5 rounded-xl border text-[11px] font-semibold uppercase tracking-wider flex items-center gap-2 ${
+              connectionStatus === 'connected' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${connectionStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+              <span>{connectionStatus === 'connected' ? 'API Conectada' : 'Modo Local'}</span>
             </div>
 
+            <div className={`px-3 py-1.5 rounded-xl border text-[11px] font-semibold uppercase tracking-wider flex items-center gap-2 ${
+              p12FileBase64 ? 'bg-brand-teal/10 border-brand-teal/20 text-brand-teal' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'
+            }`}>
+              <Key size={12} />
+              <span>{p12FileBase64 ? 'Firma OK' : 'Sin Firma P12'}</span>
+            </div>
           </div>
         </div>
+
+        {/* 4 PRIMARY ZEN HUB TABS */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-[11px] font-semibold uppercase tracking-widest transition-all ${
+              activeTab === 'dashboard'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xl ring-1 ring-brand-teal/30 scale-[1.02] z-10'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <Home size={14} className={activeTab === 'dashboard' ? 'text-brand-teal' : ''} />
+            <span>Escritorio SRI</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('factura')}
+            className={`flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-[11px] font-semibold uppercase tracking-widest transition-all ${
+              ['factura', 'retencion', 'nota_credito', 'nota_debito', 'guia', 'liquidacion'].includes(activeTab)
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xl ring-1 ring-brand-teal/30 scale-[1.02] z-10'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <Zap size={14} className={['factura', 'retencion', 'nota_credito', 'nota_debito', 'guia', 'liquidacion'].includes(activeTab) ? 'text-brand-teal' : ''} />
+            <span>Emisor Electrónico</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('historial')}
+            className={`flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-[11px] font-semibold uppercase tracking-widest transition-all ${
+              activeTab === 'historial'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xl ring-1 ring-brand-teal/30 scale-[1.02] z-10'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <Database size={14} className={activeTab === 'historial' ? 'text-brand-teal' : ''} />
+            <span>Bóveda Histórica</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('configuracion')}
+            className={`flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-[11px] font-semibold uppercase tracking-widest transition-all ${
+              ['firma', 'configuracion', 'validador'].includes(activeTab)
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xl ring-1 ring-brand-teal/30 scale-[1.02] z-10'
+                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+            }`}
+          >
+            <Settings size={14} className={['firma', 'configuracion', 'validador'].includes(activeTab) ? 'text-brand-teal' : ''} />
+            <span>Firma & Config</span>
+          </button>
+        </div>
+
+        {/* SUB-SELECTOR SEGMENTADO CUANDO SE ELIGE UN HUB */}
+        {['factura', 'retencion', 'nota_credito', 'nota_debito', 'guia', 'liquidacion'].includes(activeTab) && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pt-2 border-t border-slate-200 dark:border-slate-800">
+            {[
+              { id: 'factura', label: '📄 Factura' },
+              { id: 'retencion', label: '🛡️ Retención Renta/IVA' },
+              { id: 'nota_credito', label: '📝 Nota de Crédito' },
+              { id: 'nota_debito', label: '📋 Nota de Débito' },
+              { id: 'guia', label: '🚛 Guía de Remisión' }
+            ].map(sub => (
+              <button
+                key={sub.id}
+                type="button"
+                onClick={() => setActiveTab(sub.id as any)}
+                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                  activeTab === sub.id
+                    ? 'bg-brand-teal/10 text-brand-teal border border-brand-teal/30'
+                    : 'bg-slate-50 dark:bg-slate-900/40 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                }`}
+              >
+                {sub.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {['firma', 'configuracion', 'validador'].includes(activeTab) && (
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pt-2 border-t border-slate-200 dark:border-slate-800">
+            {[
+              { id: 'configuracion', label: '⚙️ Ajustes Emisor & API' },
+              { id: 'firma', label: '🔑 Firma Electrónica (.P12)' },
+              { id: 'validador', label: '🛡️ Validar Cédula / RUC' }
+            ].map(sub => (
+              <button
+                key={sub.id}
+                type="button"
+                onClick={() => setActiveTab(sub.id as any)}
+                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                  activeTab === sub.id
+                    ? 'bg-brand-teal/10 text-brand-teal border border-brand-teal/30'
+                    : 'bg-slate-50 dark:bg-slate-900/40 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                }`}
+              >
+                {sub.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* 2. Main Content Area */}
-      <div className={`flex-1 min-w-0 space-y-6 ${(activeTab === 'factura' || activeTab === 'retencion') ? 'pb-28' : ''}`}>
+      {/* CONTENIDO PRINCIPAL */}
+      <div className={`w-full ${(activeTab === 'factura' || activeTab === 'retencion') ? 'pb-28' : ''}`}>
         
         {/* Dynamic top bar inside content area to show connection status */}
         {activeTab !== 'dashboard' && (

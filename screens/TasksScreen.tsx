@@ -277,90 +277,111 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
     }
 
     return (
-        <div className="space-y-8 animate-fade-in relative pb-24">
+        <div className="space-y-6 animate-fade-in relative pb-24 pt-4 sm:pt-0">
             {/* ELITE TACTICAL HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10 px-1 sm:px-0">
                 <div className="animate-fade-in-left w-full sm:w-auto">
                     <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/20">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
-                            <span className="text-xs font-semibold text-emerald-400 uppercase tracking-widest">Active Operations</span>
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-teal/10 border border-brand-teal/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.8)]"></div>
+                            <span className="text-xs font-semibold text-brand-teal uppercase tracking-widest">Active Operations</span>
                         </div>
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Internal Node v3.0</span>
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Santiago Cordova Protocol</span>
                     </div>
                     <h2 className="text-4xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-tight sm:leading-[0.85] tracking-tighter mb-2">
-                        Tactical <span className="text-gradient-sky">Tasks</span>
+                        Tactical <span className="text-brand-teal">Tasks</span>
                     </h2>
                     <div className="flex items-center gap-2 text-slate-500 text-[11px] font-medium uppercase tracking-widest">
-                        <Activity size={12} className="text-sky-400" />
+                        <Activity size={12} className="text-brand-teal" />
                         <span>Gestión y Despliegue de Obligaciones</span>
                     </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto animate-fade-in-right">
-                    <div className="flex bg-white/5 backdrop-blur-xl p-1.5 rounded-[1.5rem] border border-white/10 shadow-lg">
+                    <div className="flex p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800">
                         <button 
                             onClick={() => setActiveTab('all')} 
-                            className={`px-6 py-3 rounded-2xl text-xs font-semibold uppercase tracking-widest transition-all ${activeTab === 'all' ? 'bg-sky-500 text-white shadow-xl shadow-sky-500/30' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-6 py-3 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all ${activeTab === 'all' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xl ring-1 ring-brand-teal/30 scale-105' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                         >
                             General
                         </button>
                         <button 
                             onClick={() => setActiveTab('orders')} 
-                            className={`px-6 py-3 rounded-2xl text-xs font-semibold uppercase tracking-widest transition-all relative ${activeTab === 'orders' ? 'bg-sky-500 text-white shadow-xl shadow-sky-500/30' : 'text-slate-400 hover:text-slate-200'}`}
+                            className={`px-6 py-3 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all relative ${activeTab === 'orders' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xl ring-1 ring-brand-teal/30 scale-105' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
                         >
                             Work Orders
-                            {stats.orders > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white rounded-full flex items-center justify-center text-[11px] font-semibold border-2 border-slate-950 shadow-xl shadow-orange-500/40">{stats.orders}</span>}
+                            {stats.orders > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg">{stats.orders}</span>}
                         </button>
                     </div>
                     
                     <button 
                         onClick={() => openAndPrepareModal()} 
-                        className="flex items-center gap-2 bg-slate-900 dark:bg-white dark:text-slate-900 text-white px-8 py-4 rounded-[1.5rem] shadow-2xl hover:scale-105 active:scale-95 transition-all text-xs font-semibold uppercase tracking-[0.2em]"
+                        className="flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-4 rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all text-xs font-semibold uppercase tracking-[0.2em]"
                     >
-                        <Plus size={18} />
+                        <Plus size={18} className="text-brand-teal" />
                         NUEVA TAREA
                     </button>
                 </div>
             </div>
 
-            {/* QUICK STATS SPHERES */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative z-10">
-                {[
-                    { label: 'Carga Total', value: stats.total, icon: Briefcase, color: 'sky' },
-                    { label: 'Órdenes Activas', value: stats.orders, icon: Zap, color: 'orange', pulse: true },
-                    { label: 'Vencimientos', value: stats.urgent, icon: Clock, color: 'rose' }
-                ].map((stat, i) => (
-                    <div key={i} className="group glass-tactical border-white/5 p-6 rounded-[2rem] sm:rounded-[2.5rem] relative overflow-hidden transition-all hover:bg-white/10">
-                        <div className={`absolute -right-4 -bottom-4 opacity-5 text-${stat.color}-500 group-hover:scale-125 transition-transform duration-700`}>
-                            <stat.icon size={120} />
+            {/* ZENITH TASK STRIP */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
+                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/10 text-primary rounded-2xl border border-primary/20">
+                            <Briefcase size={20} />
                         </div>
-                        <div className="flex items-center gap-4">
-                            <div className={`p-4 bg-${stat.color}-500/10 rounded-2xl border border-${stat.color}-500/20`}>
-                                <stat.icon size={24} className={`text-${stat.color}-500 ${stat.pulse ? 'animate-pulse' : ''}`} />
-                            </div>
-                            <div>
-                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-1">{stat.label}</p>
-                                <p className={`text-4xl font-display font-semibold text-slate-900 dark:text-white leading-none`}>
-                                    {stat.value}
-                                </p>
-                            </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Carga Total</p>
+                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">{stats.total}</p>
                         </div>
                     </div>
-                ))}
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                        Registradas
+                    </span>
+                </div>
+
+                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl border border-amber-500/20">
+                            <Zap size={20} className="animate-pulse" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Work Orders</p>
+                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">{stats.orders}</p>
+                        </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                        Pendientes PDF
+                    </span>
+                </div>
+
+                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-rose-500/10 text-rose-500 rounded-2xl border border-rose-500/20">
+                            <Clock size={20} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Vencimientos Próximos</p>
+                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">{stats.urgent}</p>
+                        </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                        Urgent (&le; 3d)
+                    </span>
+                </div>
             </div>
 
             {/* SEARCH TACTICAL SCANNER */}
             <div className="relative group z-10 px-1 sm:px-0">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-sky-400 transition-colors" size={20} />
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors" size={18} />
                 <input 
                     type="text" 
-                    placeholder="SCANN TASK / CLIENT / RUC..." 
+                    placeholder="IDENTIFICADOR / CLIENTE / RUC..." 
                     value={searchTerm} 
                     onChange={(e) => setSearchTerm(e.target.value)} 
-                    className="w-full h-16 pl-16 pr-8 bg-white/5 backdrop-blur-2xl border-2 border-white/5 hover:border-white/10 focus:border-sky-400/50 rounded-[2rem] text-sm font-medium tracking-widest text-slate-900 dark:text-white placeholder:text-slate-500/50 outline-none transition-all shadow-2xl"
+                    className="w-full pl-14 pr-6 py-4 sm:py-5 bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl text-[11px] font-semibold uppercase tracking-widest placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-teal/10 focus:border-brand-teal/30 transition-all text-slate-900 dark:text-white"
                 />
-                <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-transparent via-sky-400/20 to-transparent scale-x-0 group-focus-within:scale-x-100 transition-transform duration-700" />
             </div>
 
             {taskFilter?.clientId && (

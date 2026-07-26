@@ -145,10 +145,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     }, [sortOption]);
 
     useEffect(() => {
-        setIsMatrixView(['matrix', 'renta', 'ordenes', 'vencidos'].includes(activeGroupTab));
-        setIsWorkspaceView(['all', 'mensual', 'semestral', 'al-dia', 'trash'].includes(activeGroupTab));
-        setIsCobrosView(activeGroupTab === 'cobros');
-        setIsAlertasView(false); // Eliminado para unificar con Matrix
+        setIsMatrixView(['matrix', 'matriz', 'renta'].includes(activeGroupTab));
+        setIsWorkspaceView(['all', 'directorio', 'mensual', 'semestral', 'al-dia', 'vencidos', 'trash', 'papelera'].includes(activeGroupTab));
+        setIsCobrosView(['cobros', 'recaudacion'].includes(activeGroupTab));
+        setIsAlertasView(false);
     }, [activeGroupTab]);
 
     useEffect(() => {
@@ -250,9 +250,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
     const filteredClients = useMemo(() => {
         return clients.filter(client => {
-            // Lógica de Papelera: Si estamos en la pestaña trash, solo mostrar isDeleted.
+            // Lógica de Papelera: Si estamos en la pestaña trash/papelera, solo mostrar isDeleted.
             // Si NO estamos en trash, ocultar isDeleted.
-            if (activeGroupTab === 'trash') {
+            if (activeGroupTab === 'trash' || activeGroupTab === 'papelera') {
                 if (!client.isDeleted) return false;
             } else {
                 if (client.isDeleted) return false;
@@ -1065,126 +1065,72 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             )}
 
 
-            {/* TACTICAL COMMAND BAR - Minimalista y Limpio (Zen) */}
+            {/* TACTICAL COMMAND BAR - Minimalista Zen Directorio v4.0 */}
             <div className="bg-surface p-4 sm:p-5 rounded-[2rem] border border-outline-variant/30 flex flex-col xl:flex-row gap-5 items-center justify-between mb-8 mx-1 sm:mx-0 shadow-sm relative z-20">
-                {/* Tactical Segmented Control for Tabs - CONTEXTUAL por campaña */}
-                <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 w-full xl:w-auto shrink-0">
-                    {[
-                        // Tabs fijas — siempre visibles
-                        { id: 'all', label: 'Todos', icon: LucideIcons.Users, always: true },
-                        { id: 'al-dia', label: 'Al Día', icon: LucideIcons.ShieldCheck, always: true },
-                        { id: 'vencidos', label: 'Alertas', icon: LucideIcons.AlertTriangle, always: true },
-                        { id: 'cobros', label: 'Cobros', icon: LucideIcons.DollarSign, always: true },
-                        // Tabs contextuales — visibles según campaña activa
-                        {
-                            id: 'mensual',
-                            label: campaign.showMensualTab ? `Mensual` : 'IVA Mensual',
-                            icon: campaign.showMensualTab ? LucideIcons.Zap : LucideIcons.Calendar,
-                            always: false,
-                            showWhen: campaign.showMensualTab || activeGroupTab === 'mensual',
-                            isCampaignActive: campaign.showMensualTab,
-                            campaignColor: 'violet',
-                            badge: campaign.showMensualTab ? globalStats.vencidos : undefined,
-                        },
-                        {
-                            id: 'semestral',
-                            label: 'Semestral',
-                            icon: LucideIcons.CalendarRange,
-                            always: false,
-                            // Semestral visible en julio, enero, o si ya está seleccionado
-                            showWhen: campaign.showSemestralTab || campaign.isSemestralMonth || activeGroupTab === 'semestral',
-                            isCampaignActive: campaign.isSemestralMonth,
-                            campaignColor: 'blue',
-                            badge: campaign.isSemestralMonth ? (
-                                clients.filter(c => !c.isDeleted && c.isActive && c.taxProfile?.ivaFrequency === 'Semestral').length
-                            ) : undefined,
-                        },
-                        {
-                            id: 'renta',
-                            label: 'Renta',
-                            icon: LucideIcons.Award,
-                            always: false,
-                            // Renta visible en mar-jun, o si ya está seleccionado
-                            showWhen: campaign.showRentaTab || campaign.isRentaMonth || activeGroupTab === 'renta',
-                            isCampaignActive: campaign.isRentaMonth,
-                            campaignColor: 'emerald',
-                        },
-                        // Matriz y papelera siempre disponibles
-                        { id: 'matrix', label: 'Matriz', icon: LucideIcons.LayoutGrid, always: true },
-                        { id: 'trash', label: 'Papelera', icon: LucideIcons.Trash2, always: true },
-                    ]
-                    .filter(tab => tab.always || (tab as any).showWhen || activeGroupTab === tab.id)
-                    .map((tab) => {
-                        const isActive = activeGroupTab === tab.id;
-                        const isCampaignActive = (tab as any).isCampaignActive;
-                        const campaignColor = (tab as any).campaignColor;
-                        const badge = (tab as any).badge;
+                {/* 4 PRIMARY ZEN TABS */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
+                    <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 shrink-0">
+                        {[
+                            { id: 'all', label: 'Directorio', icon: LucideIcons.Users },
+                            { id: 'matrix', label: 'Matriz Fiscal', icon: LucideIcons.LayoutGrid },
+                            { id: 'cobros', label: 'Recaudación', icon: LucideIcons.DollarSign, badge: globalStats.cobros },
+                            { id: 'trash', label: 'Papelera', icon: LucideIcons.Trash2 },
+                        ].map((tab) => {
+                            const isSelected = 
+                                (tab.id === 'all' && ['all', 'directorio', 'al-dia', 'vencidos', 'mensual', 'semestral', 'renta'].includes(activeGroupTab)) ||
+                                (tab.id === 'matrix' && ['matrix', 'matriz'].includes(activeGroupTab)) ||
+                                (tab.id === 'cobros' && ['cobros', 'recaudacion'].includes(activeGroupTab)) ||
+                                (tab.id === 'trash' && ['trash', 'papelera'].includes(activeGroupTab));
 
-                        const getTabStyle = () => {
-                            if (isActive) return 'bg-primary text-white shadow-md';
-                            if (isCampaignActive) {
-                                const colorMap: Record<string, string> = {
-                                    violet: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 ring-1 ring-violet-400/40',
-                                    blue: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 ring-1 ring-blue-400/40',
-                                    emerald: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 ring-1 ring-emerald-400/40',
-                                };
-                                return colorMap[campaignColor] || 'text-slate-500 hover:text-slate-700';
-                            }
-                            return 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5';
-                        };
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveGroupTab(tab.id as any)}
+                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 shrink-0 ${
+                                        isSelected
+                                            ? 'bg-primary text-white shadow-md shadow-primary/20'
+                                            : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'
+                                    }`}
+                                >
+                                    <tab.icon size={14} />
+                                    <span>{tab.label}</span>
+                                    {tab.badge !== undefined && tab.badge > 0 && (
+                                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                                            isSelected ? 'bg-white/20 text-white' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                                        }`}>
+                                            {tab.badge}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
 
-                        const getIconColor = () => {
-                            if (isActive) return 'text-white';
-                            if (isCampaignActive) {
-                                const colorMap: Record<string, string> = {
-                                    violet: 'text-violet-500',
-                                    blue: 'text-blue-500',
-                                    emerald: 'text-emerald-500',
-                                };
-                                return colorMap[campaignColor] || 'text-slate-400';
-                            }
-                            return 'text-slate-400';
-                        };
-
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveGroupTab(tab.id as any)}
-                                className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all shrink-0 ${getTabStyle()}`}
-                            >
-                                {/* Pulse ring para campaña activa */}
-                                {isCampaignActive && !isActive && (
-                                    <div className="absolute inset-0 rounded-xl animate-pulse opacity-30"
-                                        style={{
-                                            background: campaignColor === 'blue' ? 'rgba(59,130,246,0.15)' :
-                                                        campaignColor === 'emerald' ? 'rgba(16,185,129,0.15)' :
-                                                        'rgba(139,92,246,0.15)'
-                                        }}
-                                    />
-                                )}
-                                <tab.icon size={14} className={getIconColor()} />
-                                <span>{tab.label}</span>
-                                {/* Badge de conteo si hay campaña activa */}
-                                {badge !== undefined && badge > 0 && (
-                                    <span className={`flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-black ${
-                                        isActive
-                                            ? 'bg-white/25 text-white'
-                                            : campaignColor === 'blue' ? 'bg-blue-500 text-white'
-                                            : campaignColor === 'violet' ? 'bg-violet-500 text-white'
-                                            : 'bg-emerald-500 text-white'
-                                    }`}>{badge}</span>
-                                )}
-                                {/* Punto pulsante para semestral en mes activo */}
-                                {isCampaignActive && !isActive && badge === undefined && (
-                                    <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
-                                        campaignColor === 'blue' ? 'bg-blue-400' :
-                                        campaignColor === 'emerald' ? 'bg-emerald-400' :
-                                        'bg-violet-400'
-                                    }`} />
-                                )}
-                            </button>
-                        );
-                    })}
+                    {/* SUB-FILTROS DE OBLIGACIÓN (Visibles al estar en pestaña Directorio) */}
+                    {['all', 'directorio', 'al-dia', 'vencidos', 'mensual', 'semestral', 'renta'].includes(activeGroupTab) && (
+                        <div className="flex overflow-x-auto no-scrollbar gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200/50 dark:border-white/5">
+                            {[
+                                { id: 'all', label: 'Todos' },
+                                { id: 'al-dia', label: 'Al Día' },
+                                { id: 'vencidos', label: 'Alertas SRI' },
+                                { id: 'mensual', label: 'IVA Mensual' },
+                                { id: 'semestral', label: 'IVA Semestral' },
+                                { id: 'renta', label: 'Renta' },
+                            ].map(sub => (
+                                <button
+                                    key={sub.id}
+                                    onClick={() => setActiveGroupTab(sub.id as any)}
+                                    className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
+                                        activeGroupTab === sub.id
+                                            ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
+                                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                    }`}
+                                >
+                                    {sub.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Actions & Toggles */}
@@ -1313,45 +1259,6 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 )}
             </AnimatePresence>
 
-            {/* MINI HEALTH DASHBOARD (Only visible when Al Día, Vencidos or Por Cobrar is selected to provide context) */}
-            {['all', 'al-dia', 'vencidos', 'cobros', 'ordenes'].includes(activeGroupTab) && (
-                <div className="mb-8 flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 p-5 rounded-3xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/30">
-                                <LucideIcons.ShieldCheck size={20} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Cartera en Orden</p>
-                                <p className="text-xl font-black text-slate-800 dark:text-white">{globalStats.elite} Clientes</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex-1 p-5 rounded-3xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/30">
-                                <LucideIcons.AlertTriangle size={20} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">Alertas SRI</p>
-                                <p className="text-xl font-black text-slate-800 dark:text-white">{globalStats.vencidos} Clientes</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex-1 p-5 rounded-3xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-amber-500 text-white rounded-xl shadow-lg shadow-amber-500/30">
-                                <LucideIcons.DollarSign size={20} />
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Cobros Pendientes</p>
-                                <p className="text-xl font-black text-slate-800 dark:text-white">{globalStats.cobros} Clientes</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* IVA MENSUAL PROGRESS WORKFLOW - Zen Mode */}
             {
                 activeGroupTab === 'mensual' && (
@@ -1376,20 +1283,6 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         }}
                                     />
                                 </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => setSortOption('9th_digit')}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${sortOption === '9th_digit' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white dark:bg-white/5 text-slate-400 border border-slate-200 dark:border-white/5 hover:bg-slate-50'}`}
-                                >
-                                    Calendario SRI
-                                </button>
-                                <button
-                                    onClick={() => setSortOption('name')}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${sortOption === 'name' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white dark:bg-white/5 text-slate-400 border border-slate-200 dark:border-white/5 hover:bg-slate-50'}`}
-                                >
-                                    A - Z
-                                </button>
                             </div>
                         </div>
                     </div>

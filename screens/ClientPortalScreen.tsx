@@ -398,40 +398,41 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
     return (
         <div className="min-h-screen bg-[#FDFDFD] font-body text-slate-900 selection:bg-teal-500/10 selection:text-teal-600">
             {/* 💎 Elite Top Navigation */}
-            <nav className="bg-white/80 backdrop-blur-xl sticky top-0 z-50 px-8 py-5 border-b border-slate-100/50">
+            <nav className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50 px-4 sm:px-8 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800">
                 <div className="max-w-6xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-5">
-                        <div className="w-12 h-12 bg-slate-900 rounded-[1.25rem] flex items-center justify-center text-white shadow-2xl shadow-slate-300 transform transition-transform hover:rotate-6">
-                            <Logo className="w-7 h-7" />
+                    <div className="flex items-center gap-3 sm:gap-5">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl flex items-center justify-center shadow-xl transform transition-transform hover:rotate-6">
+                            <Logo className="w-6 h-6 sm:w-7 sm:h-7" />
                         </div>
-                        <div className="border-l border-slate-200 pl-5">
-                            <h1 className="text-[10px] font-bold text-slate-900 uppercase tracking-[0.3em] leading-none mb-1.5">Bóveda Privada</h1>
-                            <p className="text-xs text-teal-600 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                        <div className="border-l border-slate-200 dark:border-slate-800 pl-3 sm:pl-5">
+                            <h1 className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-[0.25em] leading-none mb-1">Bóveda Privada</h1>
+                            <p className="text-[11px] text-brand-teal font-bold uppercase tracking-widest flex items-center gap-1">
                                 <LucideIcons.Shield size={10} strokeWidth={3} />
-                                Santiago Cordova
+                                Santiago Cordova Protocol
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-4 sm:gap-8">
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-slate-800 tracking-tight leading-tight">{localClient.name}</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-white tracking-tight leading-tight">{localClient.name}</p>
                             <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mt-0.5">{localClient.ruc}</p>
                         </div>
                         <button
                             onClick={onLogout}
-                            className="w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-all active:scale-95 border border-slate-100"
+                            className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-rose-500 hover:text-white transition-all active:scale-95 border border-slate-200 dark:border-slate-700"
+                            title="Cerrar Sesión"
                         >
-                            <LucideIcons.LogOut size={20} />
+                            <LucideIcons.LogOut size={18} />
                         </button>
                     </div>
                 </div>
             </nav>
 
-            <main className="max-w-6xl mx-auto px-6 py-12">
-                {/* 🎚️ Zen Navigation Tabs */}
-                <div className="flex justify-center mb-20">
-                    <div className="inline-flex p-1.5 bg-slate-100/40 rounded-[2rem] border border-slate-200/50 backdrop-blur-md shadow-inner">
+            <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
+                {/* 🎚️ Zen Navigation Tabs (Mobile & PC Responsive) */}
+                <div className="flex justify-center mb-8 sm:mb-16">
+                    <div className="inline-flex p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 backdrop-blur-md shadow-inner w-full sm:w-auto overflow-x-auto">
                         {[
                             { id: 'overview', label: 'Centro de Mando', icon: LucideIcons.LayoutDashboard },
                             { id: 'vault', label: 'Bóveda', icon: LucideIcons.ShieldCheck },
@@ -440,13 +441,13 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center gap-3 px-10 py-4 rounded-3xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 ${activeTab === tab.id
-                                    ? 'bg-white text-slate-900 shadow-xl shadow-slate-200/50 border border-slate-100'
-                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/40'
+                                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-10 py-3 sm:py-4 rounded-xl sm:rounded-3xl text-[10px] font-bold uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${activeTab === tab.id
+                                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg border border-slate-200 dark:border-slate-700 ring-1 ring-brand-teal/20 scale-105'
+                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                                     }`}
                             >
-                                <tab.icon size={16} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-                                {tab.label}
+                                <tab.icon size={15} strokeWidth={activeTab === tab.id ? 2.5 : 2} className={activeTab === tab.id ? 'text-brand-teal' : ''} />
+                                <span>{tab.label}</span>
                             </button>
                         ))}
                     </div>

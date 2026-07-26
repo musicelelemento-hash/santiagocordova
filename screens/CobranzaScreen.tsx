@@ -131,7 +131,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 nextNum = await SupabaseService.getNextSriSecuencial('factura');
             } catch (err: any) {
                 addLog("Error obteniendo el siguiente secuencial desde la base de datos.");
-                setFastBillingStatus('error');
+                setFastBillingStep('failed');
                 return;
             }
             const secuencial = String(nextNum).padStart(9, '0');
@@ -588,94 +588,61 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 <CampaignBanner campaign={campaignContext} compact />
             </div>
 
-            {/* FINANCIAL INTELLIGENCE HUB (Status Sphere) */}
-            <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal/20 via-brand-navy/10 to-transparent rounded-[1.5rem] sm:rounded-[2.5rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-                
-                <button 
-                    onClick={() => setIsAnalysisExpanded(!isAnalysisExpanded)}
-                    className="relative w-full glass-tactical p-4 sm:p-10 rounded-[1.8rem] sm:rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden text-left transition-all duration-500 hover:border-brand-teal/30"
-                >
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-brand-teal/5 blur-[100px] rounded-full -mr-32 -mt-32" />
-                    
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 sm:gap-10 relative z-10">
-                        <div className="flex items-center gap-6 sm:gap-10">
-                            <div className="relative shrink-0">
-                                <div className="absolute -inset-4 bg-brand-teal/10 rounded-full blur-2xl animate-pulse"></div>
-                                <div className="w-20 h-20 sm:w-32 sm:h-32 rounded-full border-4 sm:border-[6px] border-slate-100 dark:border-slate-800/50 flex items-center justify-center relative bg-white dark:bg-slate-900/60 backdrop-blur-3xl shadow-inner-premium">
-                                    <svg className="w-full h-full -rotate-90 scale-110">
-                                        <circle
-                                            cx="50%" cy="50%" r="40%"
-                                            stroke="currentColor" strokeWidth="6" fill="transparent"
-                                            className="text-slate-100 dark:text-slate-800"
-                                        />
-                                        <circle
-                                            cx="50%" cy="50%" r="40%"
-                                            stroke="url(#aurora-gradient)" strokeWidth="6" fill="transparent"
-                                            strokeDasharray="251"
-                                            strokeDashoffset={251 - (251 * (financialData.collected.reduce((s, i) => s + i.amount, 0) / (financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0) || 1))) * 100 / 100}
-                                            className="transition-all duration-1000 ease-out drop-shadow-[0_0_12px_rgba(20,184,166,0.5)]"
-                                            strokeLinecap="round"
-                                        />
-                                        <defs>
-                                            <linearGradient id="aurora-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                <stop offset="0%" stopColor="#14b8a6" />
-                                                <stop offset="100%" stopColor="#0ea5e9" />
-                                            </linearGradient>
-                                        </defs>
-                                    </svg>
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-lg sm:text-3xl font-semibold text-slate-900 dark:text-brand-teal leading-none tracking-tighter">
-                                            {Math.round((financialData.collected.reduce((s, i) => s + i.amount, 0) / (financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0) || 1)) * 100)}%
-                                        </span>
-                                        <span className="text-[11px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mt-1 sm:mt-2">REVENUE</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="min-w-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className="w-8 h-1 bg-brand-teal rounded-full" />
-                                    <span className="text-[11px] sm:text-[11px] font-semibold text-brand-teal uppercase tracking-[0.3em]">Tactical Intelligence Hub</span>
-                                </div>
-                                <h3 className="text-2xl sm:text-4xl font-semibold text-slate-900 dark:text-white leading-[0.9] tracking-tighter mb-2 sm:mb-4">
-                                    BALANCE DE <br className="hidden sm:block" /> RENDIMIENTO <span className="text-brand-teal opacity-50 font-display">Elite</span>
-                                </h3>
-                                <div className="flex gap-4">
-                                    <div className="flex flex-col">
-                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Target Monthly</span>
-                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">$ {(financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0)).toFixed(0)}</span>
-                                    </div>
-                                    <div className="w-px h-8 bg-slate-200 dark:bg-slate-800" />
-                                    <div className="flex flex-col">
-                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Health Score</span>
-                                        <span className="text-sm font-medium text-emerald-400">OPTIMAL</span>
-                                    </div>
-                                </div>
-                            </div>
+            {/* ZENITH FINANCIAL STRIP - KPI Bar Minimalista */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
+                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-rose-500/10 text-rose-500 rounded-2xl border border-rose-500/20">
+                            <LucideIcons.AlertTriangle size={20} />
                         </div>
-
-                        <div className="flex items-center justify-between sm:justify-end gap-6 sm:gap-12 bg-slate-50 dark:bg-black/20 p-5 sm:p-0 rounded-3xl sm:bg-transparent border border-slate-100 dark:border-transparent">
-                            <div className="flex items-center gap-6 sm:gap-10">
-                                <div className="flex flex-col items-start sm:items-end">
-                                    <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500/60 uppercase tracking-widest leading-none mb-2">Por Recaudar</span>
-                                    <span className="text-lg sm:text-3xl font-semibold text-rose-400 font-display tracking-tight">
-                                        ${financialData.receivable.reduce((s, i) => s + i.amount, 0).toFixed(2)}
-                                    </span>
-                                </div>
-                                <div className="w-px h-10 sm:h-16 bg-slate-200 dark:bg-slate-800" />
-                                <div className="flex flex-col items-start sm:items-end">
-                                    <span className="text-[11px] sm:text-[11px] font-semibold text-slate-500/60 uppercase tracking-widest leading-none mb-2">Total Cobrado</span>
-                                    <span className="text-lg sm:text-3xl font-semibold text-brand-teal font-display tracking-tight">
-                                        ${financialData.collected.reduce((s, i) => s + i.amount, 0).toFixed(2)}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className={`p-2 sm:p-3 rounded-2xl transition-all duration-500 ${isAnalysisExpanded ? 'rotate-180 bg-brand-teal text-white shadow-lg shadow-brand-teal/30' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
-                                <LucideIcons.ChevronDown size={24} />
-                            </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest font-premium">Por Recaudar</p>
+                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">
+                                ${financialData.receivable.reduce((s, i) => s + i.amount, 0).toFixed(2)}
+                            </p>
                         </div>
                     </div>
-                </button>
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                        {financialData.receivable.length} Pendientes
+                    </span>
+                </div>
+
+                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl border border-emerald-500/20">
+                            <LucideIcons.CheckCircle size={20} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest font-premium">Efectivo Cobrado</p>
+                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">
+                                ${financialData.collected.reduce((s, i) => s + i.amount, 0).toFixed(2)}
+                            </p>
+                        </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        {financialData.collected.length} Pagados
+                    </span>
+                </div>
+
+                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 bg-primary/10 text-primary rounded-2xl border border-primary/20">
+                            <LucideIcons.Activity size={20} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-primary uppercase tracking-widest font-premium">Cobertura Mensual</p>
+                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">
+                                {Math.round((financialData.collected.reduce((s, i) => s + i.amount, 0) / (financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0) || 1)) * 100)}%
+                            </p>
+                        </div>
+                    </div>
+                    <div className="w-16 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-white/10">
+                        <div 
+                            className="h-full bg-primary transition-all duration-700" 
+                            style={{ width: `${Math.round((financialData.collected.reduce((s, i) => s + i.amount, 0) / ((financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0)) || 1)) * 100)}%` }}
+                        />
+                    </div>
+                </div>
             </div>
 
             {/* TACTICAL FILTERS & SEARCH */}
@@ -724,60 +691,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <div className="lg:col-span-1 glass-tactical rounded-[2.5rem] p-8 border border-slate-200 dark:border-slate-800 h-fit relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-48 h-48 bg-brand-teal/10 blur-[100px] rounded-full"></div>
-                    <div className="relative z-10">
-                        <h3 className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
-                            <LucideIcons.ShieldAlert size={14} className="text-brand-teal" />
-                            Security Analysis
-                        </h3>
-                        <div className="h-64 w-full mb-8 relative">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie 
-                                        data={chartData} 
-                                        cx="50%" cy="50%" 
-                                        innerRadius={65} 
-                                        outerRadius={95} 
-                                        paddingAngle={8} 
-                                        dataKey="value"
-                                        stroke="none"
-                                        animationBegin={0}
-                                        animationDuration={1500}
-                                    >
-                                        {chartData.map((entry, index) => <Cell key={index} fill={entry.color} />)}
-                                    </Pie>
-                                    <ReTooltip 
-                                        contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', color: '#fff', padding: '12px' }}
-                                        itemStyle={{ fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.1em' }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pt-2">
-                                <span className="text-2xl font-semibold text-slate-900 dark:text-white leading-none tracking-tighter">
-                                    ${(financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0)).toFixed(0)}
-                                </span>
-                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-[0.2em] mt-1">ESTIMATED</span>
-                            </div>
-                        </div>
-                        
-                        <div className="space-y-4">
-                            {chartData.map((d, i) => (
-                                <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800/50">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]" style={{ backgroundColor: d.color }}></div>
-                                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{d.name}</span>
-                                    </div>
-                                    <span className="text-sm font-semibold text-slate-900 dark:text-white font-mono">${d.value.toFixed(2)}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="lg:col-span-3">
-                    <div className="glass-tactical rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col relative group shadow-2xl">
+            {/* FULL WIDTH FINANCIAL GRID */}
+            <div className="w-full">
+                <div className="glass-tactical rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col relative group shadow-2xl">
                         <div className="relative z-10 p-5 sm:p-6 bg-white/50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center backdrop-blur-2xl">
                             <button onClick={() => {
                                 if (selectedItems.size === currentList.length) setSelectedItems(new Set());
@@ -897,7 +813,6 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         </div>
                     </div>
                 </div>
-            </div>
 
             <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Autorizar Transacción Financiera">
                 <div className="p-4 sm:p-8 space-y-10">

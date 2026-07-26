@@ -63,28 +63,23 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
             {/* Encabezado Premium Bóveda */}
-            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-[2rem] p-8 md:p-10 relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[80px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
+            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-[2rem] p-6 sm:p-8 relative overflow-hidden shadow-xl border border-slate-700/50">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-teal/20 blur-[80px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
                 <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-500/10 blur-[60px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/2"></div>
                 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                            <LucideIcons.Shield size={32} />
+                    <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-brand-teal shadow-xl">
+                            <LucideIcons.Shield size={28} />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
-                                Bóveda Privada <span className="px-2 py-1 bg-emerald-500/20 text-emerald-300 text-[9px] uppercase tracking-widest rounded-lg border border-emerald-500/30">Encriptación Activa</span>
+                            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-3">
+                                Mi Bóveda (Firma Contable) <span className="px-2.5 py-1 bg-brand-teal/20 text-brand-teal text-[9px] font-bold uppercase tracking-widest rounded-lg border border-brand-teal/30">Encriptación Activa</span>
                             </h2>
-                            <p className="text-slate-300 font-medium text-sm mt-1 max-w-lg">
-                                Espacio seguro de almacenamiento. Protege y organiza documentos fiscales, firmas electrónicas y claves de acceso de tu cliente.
+                            <p className="text-slate-300 font-medium text-xs mt-1 max-w-lg">
+                                Bóveda central del despacho. Administra tokens `.p12` de firma electrónica, llaves privadas, requisitos de tramitación y expedientes certificados.
                             </p>
                         </div>
-                    </div>
-                    <div className="flex gap-3">
-                        <button className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-[10px] uppercase tracking-widest border border-white/10 transition-colors backdrop-blur-sm flex items-center gap-2">
-                            <LucideIcons.Key size={14} /> Solicitar Claves
-                        </button>
                     </div>
                 </div>
             </div>

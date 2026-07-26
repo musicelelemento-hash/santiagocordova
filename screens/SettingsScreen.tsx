@@ -495,21 +495,21 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
     return (
         <div className="space-y-6 pb-24 animate-fade-in relative pt-4 sm:pt-0">
             {/* ZENITH CONTROL HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10 px-1 sm:px-0 mb-12">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10 px-1 sm:px-0 mb-8">
                 <div className="animate-fade-in-left w-full sm:w-auto">
-                    <div className="flex items-center justify-between sm:justify-start gap-3 mb-4 text-center sm:text-left">
-                        <div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-xl">
-                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-                            <span className="text-xs font-bold text-primary uppercase tracking-[0.3em]">Protocolo Maestro Zenith</span>
+                    <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-teal/10 border border-brand-teal/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.8)]"></div>
+                            <span className="text-xs font-semibold text-brand-teal uppercase tracking-widest">Master Protocol</span>
                         </div>
-                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.25em] opacity-60 sm:block hidden">• Arquitectura de Paz</span>
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Santiago Cordova Protocol</span>
                     </div>
-                    <h2 className="text-4xl sm:text-6xl font-display font-extrabold text-slate-900 dark:text-white leading-[0.9] tracking-tighter mb-4">
-                        Centro de <span className="text-primary italic font-serif opacity-90">Control</span>
+                    <h2 className="text-4xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-tight sm:leading-[0.85] tracking-tighter mb-2">
+                        Centro de <span className="text-brand-teal">Control</span>
                     </h2>
-                    <div className="flex items-center gap-3 text-slate-400 text-xs font-bold uppercase tracking-[0.2em] ml-1">
-                        <div className="w-8 h-[1px] bg-primary/30"></div>
-                        <span>Gestión de Infraestructura y Bóveda</span>
+                    <div className="flex items-center gap-2 text-slate-500 text-[11px] font-medium uppercase tracking-widest">
+                        <LucideIcons.ShieldCheck size={12} className="text-brand-teal" />
+                        <span>Gestión de Infraestructura, Honorarios y Bóveda</span>
                     </div>
                 </div>
             </div>

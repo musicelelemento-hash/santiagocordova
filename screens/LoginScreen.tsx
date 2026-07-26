@@ -54,77 +54,77 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#020617] relative overflow-hidden font-body selection:bg-[#00A896] selection:text-white">
+        <div className="min-h-screen flex items-center justify-center bg-slate-950 relative overflow-hidden font-body selection:bg-brand-teal selection:text-white">
             {/* --- BACKGROUND FX --- */}
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 z-0"></div>
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 z-0"></div>
 
             {/* Aurora Blobs */}
-            <div className={`absolute top-0 right-0 w-[800px] h-[800px] bg-[#00A896]/10 rounded-full blur-[120px] -mr-40 -mt-40 transition-all duration-[2000ms] ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}></div>
-            <div className={`absolute bottom-0 left-0 w-[600px] h-[600px] bg-sky-400/10 rounded-full blur-[120px] -ml-20 -mb-20 transition-all duration-[2000ms] delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}></div>
+            <div className={`absolute top-0 right-0 w-[800px] h-[800px] bg-brand-teal/10 rounded-full blur-[120px] -mr-40 -mt-40 transition-all duration-[2000ms] ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}></div>
+            <div className={`absolute bottom-0 left-0 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] -ml-20 -mb-20 transition-all duration-[2000ms] delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}></div>
 
             {/* --- MAIN CARD --- */}
-            <div className={`relative z-10 w-full max-w-[420px] p-8 transition-all duration-700 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+            <div className={`relative z-10 w-full max-w-[420px] p-6 transition-all duration-700 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
 
                 {/* Back Button */}
                 <button
                     onClick={onBack}
-                    className="absolute top-0 left-8 -mt-12 flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-medium uppercase tracking-widest group"
+                    className="absolute top-0 left-6 -mt-12 flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-xs font-semibold uppercase tracking-widest group"
                 >
-                    <div className="p-1 rounded-full border border-slate-700 group-hover:border-white transition-colors">
-                        <LucideIcons.ChevronLeft size={14} />
+                    <div className="p-1.5 rounded-xl border border-slate-800 group-hover:border-brand-teal/50 transition-colors bg-slate-900/50">
+                        <LucideIcons.ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
                     </div>
                     Volver
                 </button>
 
-                <div className="bg-white/5 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden relative">
+                <div className="bg-slate-900/80 backdrop-blur-2xl rounded-[2.5rem] border border-slate-800 shadow-2xl overflow-hidden relative">
                     {/* Glossy Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
 
                     <div className="p-8 relative z-10">
                         {/* Header */}
-                        <div className="text-center mb-10">
-                            <div className="inline-flex p-4 bg-gradient-to-br from-[#0B2149] to-[#020617] rounded-3xl shadow-lg border border-white/10 mb-6">
+                        <div className="text-center mb-8">
+                            <div className="inline-flex p-4 bg-slate-950 rounded-3xl shadow-xl border border-slate-800 mb-5">
                                 <Logo className="w-10 h-10" />
                             </div>
-                            <h2 className="text-2xl font-display font-semibold text-white tracking-tight">
+                            <h2 className="text-2xl font-display font-bold text-white tracking-tight">
                                 {loginType === 'admin' ? 'Comando Central' : 'Bóveda del Cliente'}
                             </h2>
-                            <p className="text-slate-400 text-xs mt-3 font-medium tracking-wide flex justify-center items-center gap-2">
-                                <LucideIcons.ShieldCheck size={12} className="text-[#00A896]" /> ACCESO SEGURO SSL
+                            <p className="text-slate-400 text-[11px] font-semibold uppercase tracking-widest mt-2 flex justify-center items-center gap-2">
+                                <LucideIcons.ShieldCheck size={14} className="text-brand-teal" /> Acceso Seguro SSL
                             </p>
                         </div>
 
                         {/* Toggle */}
-                        <div className="grid grid-cols-2 gap-2 bg-black/20 p-1.5 rounded-2xl mb-8 border border-white/5">
+                        <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl mb-8 border border-slate-800">
                             <button
                                 onClick={() => { setLoginType('client'); setError(''); }}
-                                className={`py-3 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'client' ? 'bg-[#00A896] text-white shadow-lg shadow-teal-900/50' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                                className={`py-3 text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'client' ? 'bg-brand-teal text-white shadow-lg shadow-brand-teal/20 scale-105' : 'text-slate-400 hover:text-white'}`}
                             >
                                 <LucideIcons.Briefcase size={14} /> Clientes
                             </button>
                             <button
                                 onClick={() => { setLoginType('admin'); setError(''); }}
-                                className={`py-3 text-xs font-semibold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'admin' ? 'bg-white text-[#0B2149] shadow-lg' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}
+                                className={`py-3 text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'admin' ? 'bg-white text-slate-900 shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
                             >
                                 <LucideIcons.Lock size={14} /> Admin
                             </button>
                         </div>
 
                         {/* Form */}
-                        <form onSubmit={handleLogin} className="space-y-6">
+                        <form onSubmit={handleLogin} className="space-y-5">
                             <div className="space-y-2">
-                                <label className="text-[11px] font-semibold text-[#00A896] uppercase tracking-[0.2em] ml-2">
+                                <label className="text-[10px] font-bold text-brand-teal uppercase tracking-widest ml-1">
                                     {loginType === 'client' ? 'Identificación (RUC)' : 'ID Usuario'}
                                 </label>
                                 <div className="group relative">
-                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-focus-within:text-white">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-teal">
                                         <LucideIcons.User size={18} />
                                     </div>
                                     <input
                                         type="text"
                                         value={identifier}
                                         onChange={(e) => { setIdentifier(e.target.value); setError(''); }}
-                                        className="w-full h-14 bg-[#020617]/50 border border-white/10 rounded-2xl pl-14 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#00A896] focus:ring-1 focus:ring-[#00A896] transition-all font-mono tracking-wide"
+                                        className="w-full h-13 bg-slate-950/60 border border-slate-800 rounded-2xl pl-12 pr-4 text-xs font-mono font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal/50 focus:ring-4 focus:ring-brand-teal/10 transition-all"
                                         placeholder={loginType === 'client' ? "1790000000001" : "Usuario"}
                                         autoComplete={loginType === 'client' ? "username" : "username"}
                                         name="username"
@@ -134,18 +134,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[11px] font-semibold text-[#00A896] uppercase tracking-[0.2em] ml-2">
+                                <label className="text-[10px] font-bold text-brand-teal uppercase tracking-widest ml-1">
                                     {loginType === 'client' ? 'Contraseña SRI' : 'Clave de Acceso'}
                                 </label>
                                 <div className="group relative">
-                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 transition-colors group-focus-within:text-white">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-teal">
                                         <LucideIcons.Lock size={18} />
                                     </div>
                                     <input
                                         type="password"
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                                        className="w-full h-14 bg-[#020617]/50 border border-white/10 rounded-2xl pl-14 pr-4 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#00A896] focus:ring-1 focus:ring-[#00A896] transition-all tracking-widest"
+                                        className="w-full h-13 bg-slate-950/60 border border-slate-800 rounded-2xl pl-12 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal/50 focus:ring-4 focus:ring-brand-teal/10 transition-all font-mono"
                                         placeholder="••••••••"
                                         autoComplete="current-password"
                                         name="password"
@@ -154,18 +154,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                             </div>
 
                             {error && (
-                                <div className="p-4 bg-rose-400/10 border border-rose-400/20 rounded-2xl flex items-center gap-3 animate-fade-in-down backdrop-blur-sm">
-                                    <div className="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></div>
-                                    <p className="text-red-200 text-xs font-medium">{error}</p>
+                                <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 backdrop-blur-sm">
+                                    <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
+                                    <p className="text-rose-300 text-xs font-medium">{error}</p>
                                 </div>
                             )}
 
                             <button
                                 type="submit"
                                 disabled={isSubmitting || !identifier}
-                                className="w-full h-16 mt-4 bg-gradient-to-r from-[#00A896] to-teal-500 hover:to-teal-400 text-white font-semibold rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-[0.2em] shadow-2xl shadow-teal-900/30 hover:shadow-teal-500/20 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
+                                className="w-full h-14 mt-4 bg-brand-teal hover:bg-teal-500 text-white font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest shadow-xl shadow-brand-teal/20 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
                             >
-                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out skew-y-12"></div>
                                 <span className="relative z-10 flex items-center gap-3">
                                     {isSubmitting ? (
                                         <>
@@ -182,10 +181,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                     </div>
 
                     {/* Footer Info */}
-                    <div className="bg-[#020617]/40 p-4 text-center border-t border-white/5 backdrop-blur-md">
-                        <p className="text-xs text-slate-500 font-medium">
-                            Protegido por reCAPTCHA Enterprise. <br />
-                            <span className="opacity-50">v2.5.0 Stable Build</span>
+                    <div className="bg-slate-950/60 p-4 text-center border-t border-slate-800/80">
+                        <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
+                            Protegido por reCAPTCHA Enterprise <br />
+                            <span className="opacity-40">Santiago Cordova Protocol v4.0</span>
                         </p>
                     </div>
                 </div>

@@ -104,6 +104,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const mesaFileInputRef = React.useRef<HTMLInputElement>(null);
 
     // Mesa de Trabajo Táctica — estados faltantes
+    const [hubTab, setHubTab] = useState<'operativa' | 'cargas' | 'alertas'>('operativa');
     const [mesaTrabajoTab, setMesaTrabajoTab] = useState<'mensual' | 'semestral'>('mensual');
     const [mesaUploadingTarget, setMesaUploadingTarget] = useState<{ client: Client; period: string } | null>(null);
     const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string; fileUrl?: string } | null>(null);
@@ -1075,544 +1076,349 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 </div>
             )}
 
-            {/* ── UNIDAD DE PROCESAMIENTO DIGITAL (DRAG & DROP ZONE) ── */}
-            {showUploader && (
-            <div className="relative z-30 px-4 sm:px-0 no-print">
-                <div 
-                    onDragEnter={handleDrag}
-                    onDragOver={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDrop={handleDrop}
-                    className={`relative overflow-hidden rounded-2xl border transition-all duration-500 p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[160px] ${
-                        dragActive 
-                            ? 'bg-blue-600/10 border-blue-500 scale-[1.01] shadow-lg shadow-blue-500/20' 
-                            : 'bg-white/80 dark:bg-[hsl(222,47%,4%)] border-slate-200/60 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/10 hover:shadow-md'
-                    }`}
-                    onClick={() => fileInputRef.current?.click()}
-                >
-                    {/* Background glows */}
-                    <div className="absolute inset-0 pointer-events-none opacity-30">
-                        <div className="absolute top-0 left-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl" />
-                        <div className="absolute bottom-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl" />
-                    </div>
-
-                    <input type="file" multiple accept=".pdf" ref={fileInputRef} onChange={handleBulkUpload} className="hidden" />
-
-                    {isProcessing ? (
-                        <div className="flex flex-col items-center gap-3 relative z-10 py-4">
-                            <LucideIcons.Loader2 className="animate-spin text-blue-500" size={36} />
-                            <div className="space-y-1">
-                                <p className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Procesando Inteligencia de Documentos...</p>
-                                <p className="text-xs text-slate-400 animate-pulse">Analizando estructura PDF SRI & extracción de metadatos</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col items-center gap-4 relative z-10 py-2">
-                            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/30 dark:border-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400">
-                                <LucideIcons.UploadCloud size={24} className="animate-pulse" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <p className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Unidad de Procesamiento Digital</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg leading-relaxed">
-                                    Arrastre y suelte sus PDFs aquí (RUCs o Comprobantes), o haga clic para buscar.
-                                </p>
-                                <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
-                                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 border border-blue-200/20 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-md">
-                                        📄 Certificados RUC (Registro)
-                                    </span>
-                                    <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/20 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-md">
-                                        🧾 Comprobantes SRI (Declaración)
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            )}
-
-
-
-            {/* HISTORIAL RECIENTE DENTRO DEL WIDGET (Siempre visible si contiene elementos) */}
-            {recentUploads.length > 0 && (
-                <div className="relative z-30 px-4 sm:px-0 no-print">
-                    <div className="bg-white/70 dark:bg-[hsl(222,47%,3%)] rounded-2xl border border-slate-200/60 dark:border-white/[0.05] p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-white/[0.04]">
-                            <div className="flex items-center gap-2">
-                                <LucideIcons.History size={14} className="text-slate-400" />
-                                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Cargas Recientes de la Sesión</h4>
-                            </div>
-                            <button 
-                                onClick={() => setRecentUploads([])}
-                                className="text-[9px] font-bold uppercase tracking-wider text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300"
-                            >
-                                Limpiar Historial
-                            </button>
-                        </div>
-                        
-                        <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
-                            {recentUploads.map((res, i) => {
-                                const matchedClient = clients.find(c => c.ruc === res.ruc);
-                                const isNew = res.status === 'new_client';
-                                const isDup = res.status === 'duplicate';
-                                const isErr = res.status === 'error';
-                                
-                                return (
-                                    <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04] rounded-xl hover:border-slate-200 dark:hover:white/10 transition-all">
-                                        <div className="flex items-start gap-3 min-w-0 flex-1">
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                                                isErr ? 'bg-rose-500/10 text-rose-500' :
-                                                isDup ? 'bg-amber-500/10 text-amber-500' :
-                                                isNew ? 'bg-sky-500/10 text-sky-500' : 'bg-emerald-500/10 text-emerald-500'
-                                            }`}>
-                                                {isErr ? <LucideIcons.FileWarning size={14} /> :
-                                                 isDup ? <LucideIcons.Copy size={14} /> :
-                                                 isNew ? <LucideIcons.UserPlus size={14} /> : <LucideIcons.CheckCircle2 size={14} />}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate uppercase">
-                                                        {res.clientName || res.fileName}
-                                                    </span>
-                                                    <span className={`text-[8px] font-black tracking-widest px-1.5 py-0.5 rounded uppercase ${
-                                                        isErr ? 'bg-rose-500/15 text-rose-500' :
-                                                        isDup ? 'bg-amber-500/15 text-amber-500' :
-                                                        isNew ? 'bg-sky-500/15 text-sky-500' : 'bg-emerald-500/15 text-emerald-500'
-                                                    }`}>
-                                                        {isErr ? 'Error' : isDup ? 'Duplicado' : isNew ? 'Nuevo Cliente' : 'Exitoso'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400 font-mono">
-                                                    <span>{res.ruc || 'S/RUC'}</span>
-                                                    {res.period && (
-                                                        <>
-                                                            <span>•</span>
-                                                            <span className="text-blue-500 dark:text-blue-400 uppercase font-bold">{res.period}</span>
-                                                        </>
-                                                    )}
-                                                    {res.amount !== undefined && (
-                                                        <>
-                                                            <span>•</span>
-                                                            <span className="text-emerald-500 font-bold">${res.amount.toFixed(2)}</span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                                {res.error && (
-                                                    <p className="text-[10px] text-rose-500 italic mt-1">{res.error}</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                                            {/* WhatsApp Notification Button */}
-                                            {!isErr && matchedClient && matchedClient.phones && matchedClient.phones[0] && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        const greeting = new Date().getHours() >= 12 ? (new Date().getHours() >= 19 ? "Buenas noches" : "Buenas tardes") : "Buen día";
-                                                        const statusMsg = res.isPaid 
-                                                            ? "Le informo que los honorarios por este trámite ya se encuentran cancelados. ¡Muchas gracias!"
-                                                            : "Le informo que el pago de honorarios por este trámite se encuentra pendiente de registro.";
-                                                        const message = `¡Hola ${res.clientName}! 👋 ${greeting}. Le informo que su declaración de ${res.type || 'Impuestos'} del periodo ${res.period || ''} fue procesada con éxito. Adjunto el comprobante de la declaración.\n\n${statusMsg}\n\n¡Gracias por su confianza!`;
-                                                        const phone = matchedClient.phones![0].replace(/\D/g, '');
-                                                        const fullPhone = phone.startsWith('593') ? phone : `593${phone.substring(1)}`;
-                                                        window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`, '_blank');
-                                                    }}
-                                                    className="p-2 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-500 rounded-lg border border-emerald-500/20 transition-all text-xs"
-                                                    title="Notificar por WhatsApp"
-                                                >
-                                                    <LucideIcons.MessageCircle size={14} />
-                                                </button>
-                                            )}
-                                            {/* Client Detail Workspace Button */}
-                                            {matchedClient && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); setWorkspaceClient({ client: matchedClient, period: res.period }); }}
-                                                    className="px-3 py-1.5 bg-blue-500/10 hover:bg-blue-500 hover:text-white text-blue-500 rounded-lg border border-blue-500/20 transition-all text-[9px] font-black uppercase tracking-wider"
-                                                >
-                                                    Expediente
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-blue-400/3 dark:bg-blue-500/5 blur-[150px] rounded-full pointer-events-none" />
-            <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-emerald-400/3 dark:bg-emerald-500/5 blur-[130px] rounded-full pointer-events-none" />
-
             {/* ══════════════════════════════════════════════════════
-                MANDO CENTRAL — HERO PREMIUM
+                CENTRO OPERATIVO Y MESA DE TRABAJO TÁCTICA v4.0
             ══════════════════════════════════════════════════════ */}
-
-
-            {/* ── ZEN ANALYTICS PANEL ── */}
-            <div className="relative z-20 px-4 sm:px-0 no-print">
-                <div className="bg-white dark:bg-[hsl(222,47%,4%)] rounded-2xl border border-slate-200/70 dark:border-white/[0.06] shadow-sm overflow-hidden">
-                    <button 
-                        onClick={() => setExpandAnalytics(!expandAnalytics)}
-                        className="w-full px-6 py-4 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.02] hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
-                                <LucideIcons.BarChart2 size={16} />
-                            </div>
-                            <span className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Inteligencia de Negocio</span>
-                        </div>
-                        <LucideIcons.ChevronDown size={18} className={`text-slate-400 transition-transform duration-500 ${expandAnalytics ? 'rotate-180' : ''}`} />
-                    </button>
+            <div className="relative z-30 px-4 sm:px-0 mt-6">
+                <div className="bg-white dark:bg-[hsl(222,47%,4%)] rounded-[2.5rem] border border-slate-200/60 dark:border-white/[0.06] p-6 sm:p-8 shadow-xl shadow-slate-200/40 dark:shadow-none backdrop-blur-xl">
                     
-                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandAnalytics ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                        <div className="p-6 border-t border-slate-100 dark:border-white/[0.05]">
-                            <div className="h-[250px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <RechartsBarChart
-                                        data={[
-                                            { name: 'Activos', value: kpis.total, color: '#3b82f6' },
-                                            { name: 'Al Día', value: completados.length, color: '#10b981' },
-                                            { name: 'Pendientes', value: pendientes.length, color: '#f59e0b' },
-                                            { name: 'Urgentes', value: urgentPriorities.length, color: '#f43f5e' }
-                                        ]}
-                                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                    >
-                                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                        <Tooltip 
-                                            cursor={{fill: 'transparent'}}
-                                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '12px', color: '#fff', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }}
-                                            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                                        />
-                                        <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                                            {
-                                                [
-                                                    { name: 'Activos', value: kpis.total, color: '#3b82f6' },
-                                                    { name: 'Al Día', value: completados.length, color: '#10b981' },
-                                                    { name: 'Pendientes', value: pendientes.length, color: '#f59e0b' },
-                                                    { name: 'Urgentes', value: urgentPriorities.length, color: '#f43f5e' }
-                                                ].map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                                ))
-                                            }
-                                        </Bar>
-                                    </RechartsBarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* ── EXECUTIVE FUNNEL INBOX WIDGET ── */}
-            <div className="relative z-30 px-4 sm:px-0">
-                <div className="bg-white dark:bg-[hsl(222,47%,4%)] rounded-[2.5rem] border border-slate-200/60 dark:border-white/[0.06] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
-                    <div className="flex items-center justify-between mb-8">
+                    {/* HUB NAVIGATION TABS */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-100 dark:border-white/[0.05]">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
-                                <LucideIcons.Inbox size={16} />
-                            </div>
-                            <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] font-premium">Buzón de Control Ejecutivo</h3>
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Campaña Activa</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* CARD 1: PENDIENTES SRI */}
-                        <div 
-                            onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'vencidos' } })}
-                            className="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] p-6 hover:shadow-lg transition-all duration-300 cursor-pointer"
-                        >
-                            <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl group-hover:scale-110 transition-transform">
-                                    <LucideIcons.Zap size={20} />
-                                </div>
-                                <LucideIcons.ArrowUpRight size={20} className="text-slate-300 dark:text-slate-700 group-hover:text-rose-500 transition-colors" />
-                            </div>
-                            <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-premium">En Proceso</h4>
-                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none mt-2">
-                                {pendientes.length + urgentPriorities.length}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-2">Declaraciones pendientes o vencidas</p>
-                        </div>
-
-                        {/* CARD 2: POR COBRAR */}
-                        <div 
-                            onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'cobros' } })}
-                            className="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] p-6 hover:shadow-lg transition-all duration-300 cursor-pointer"
-                        >
-                            <div className="absolute top-0 left-0 w-full h-1 bg-amber-500" />
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-2xl group-hover:scale-110 transition-transform">
-                                    <LucideIcons.DollarSign size={20} />
-                                </div>
-                                <LucideIcons.ArrowUpRight size={20} className="text-slate-300 dark:text-slate-700 group-hover:text-amber-500 transition-colors" />
-                            </div>
-                            <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-premium">Por Cobrar</h4>
-                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none mt-2">
-                                {cobros.length}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-2">Honorarios pendientes de registro</p>
-                        </div>
-
-                        {/* CARD 3: COMPLETADOS */}
-                        <div 
-                            onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'al-dia' } })}
-                            className="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] p-6 hover:shadow-lg transition-all duration-300 cursor-pointer"
-                        >
-                            <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500" />
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform">
-                                    <LucideIcons.ShieldCheck size={20} />
-                                </div>
-                                <LucideIcons.ArrowUpRight size={20} className="text-slate-300 dark:text-slate-700 group-hover:text-emerald-500 transition-colors" />
-                            </div>
-                            <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] font-premium">Procesados</h4>
-                            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none mt-2">
-                                {completados.length}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-2">Clientes al día esta campaña</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* ── MESA DE TRABAJO TÁCTICA ── */}
-            <div className="relative z-30 px-4 sm:px-0 mt-8">
-                <div className="bg-white dark:bg-[hsl(222,47%,4%)] rounded-[2.5rem] border border-slate-200/60 dark:border-white/[0.06] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20">
-                                <LucideIcons.Briefcase size={16} />
+                            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
+                                <LucideIcons.Command size={18} strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] font-premium">Mesa de Trabajo Táctica</h3>
-                                <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Campaña Activa 1 de Julio</p>
+                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.15em] font-premium">Centro Operativo Táctico</h3>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Gestión Inmediata & Herramientas Rápidas</p>
                             </div>
                         </div>
-                        
-                        <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-xl border border-slate-200/40 dark:border-white/5">
+
+                        {/* TAB PILLS */}
+                        <div className="flex items-center gap-1.5 bg-slate-100/80 dark:bg-white/[0.04] p-1.5 rounded-2xl border border-slate-200/50 dark:border-white/5 overflow-x-auto hide-scrollbar">
                             <button
-                                onClick={() => setMesaTrabajoTab('mensual')}
-                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
-                                    mesaTrabajoTab === 'mensual'
-                                        ? 'bg-blue-600 text-white shadow-md'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                onClick={() => setHubTab('operativa')}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                                    hubTab === 'operativa'
+                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }`}
                             >
-                                Mensuales (Junio)
+                                <LucideIcons.Zap size={14} />
+                                <span>Mesa Operativa</span>
+                                {mesaTrabajoList.length > 0 && (
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                                        hubTab === 'operativa' ? 'bg-white/20 text-white' : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                                    }`}>
+                                        {mesaTrabajoList.length}
+                                    </span>
+                                )}
                             </button>
+
                             <button
-                                onClick={() => setMesaTrabajoTab('semestral')}
-                                className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
-                                    mesaTrabajoTab === 'semestral'
-                                        ? 'bg-blue-600 text-white shadow-md'
-                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                onClick={() => setHubTab('cargas')}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                                    hubTab === 'cargas'
+                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }`}
                             >
-                                Semestrales (1er Semestre)
+                                <LucideIcons.UploadCloud size={14} />
+                                <span>Cargas & Bóveda</span>
+                                {recentUploads.length > 0 && (
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                                        hubTab === 'cargas' ? 'bg-white/20 text-white' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                                    }`}>
+                                        {recentUploads.length}
+                                    </span>
+                                )}
+                            </button>
+
+                            <button
+                                onClick={() => setHubTab('alertas')}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                                    hubTab === 'alertas'
+                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <LucideIcons.AlertTriangle size={14} />
+                                <span>Alertas Especiales</span>
+                                {(activeRentaRefunds.length + expiringSignatures.length) > 0 && (
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                                        hubTab === 'alertas' ? 'bg-white/20 text-white' : 'bg-rose-500/15 text-rose-500'
+                                    }`}>
+                                        {activeRentaRefunds.length + expiringSignatures.length}
+                                    </span>
+                                )}
                             </button>
                         </div>
                     </div>
 
-                    {mesaTrabajoList.length === 0 ? (
-                        <div className="p-12 text-center border-2 border-dashed border-slate-200 dark:border-white/5 rounded-3xl">
-                            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-500 mb-4">
-                                <LucideIcons.CheckCircle2 size={24} />
-                            </div>
-                            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">¡Todo al Día!</h4>
-                            <p className="text-xs text-slate-400 mt-1">No quedan clientes pendientes en esta campaña.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-h-[450px] overflow-y-auto pr-2 custom-scrollbar">
-                            {mesaTrabajoList.map(c => {
-                                const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
-                                return (
-                                    <div 
-                                        key={c.id} 
-                                        className="group relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] p-6 hover:shadow-lg transition-all duration-300 flex flex-col justify-between gap-4"
+                    {/* TAB CONTENT 1: MESA OPERATIVA */}
+                    {hubTab === 'operativa' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Campaña Actual:</span>
+                                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest px-2.5 py-1 bg-slate-100 dark:bg-white/5 rounded-lg border border-slate-200/50 dark:border-white/5">
+                                        {mesaTrabajoTab === 'mensual' ? `Junio (${monthlyPeriodStr})` : `1er Semestre (${semestralPeriodStr})`}
+                                    </span>
+                                </div>
+
+                                <div className="flex bg-slate-100/70 dark:bg-white/5 p-1 rounded-xl border border-slate-200/40 dark:border-white/5">
+                                    <button
+                                        onClick={() => setMesaTrabajoTab('mensual')}
+                                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                                            mesaTrabajoTab === 'mensual'
+                                                ? 'bg-blue-600 text-white shadow-sm'
+                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                        }`}
                                     >
-                                        <div className="flex justify-between items-start gap-4">
-                                            <div className="min-w-0">
-                                                <h4 className="text-xs font-black text-slate-800 dark:text-slate-50 uppercase tracking-tight font-premium truncate">{c.name}</h4>
-                                                <div className="flex flex-wrap items-center gap-2 mt-2">
-                                                    <span className="px-2.5 py-1 bg-slate-200/50 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[8px] font-bold font-mono tracking-widest rounded-lg">
-                                                        {c.ruc}
-                                                    </span>
-                                                    <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-bold uppercase rounded-lg">
-                                                        {c.regime}
-                                                    </span>
+                                        Mensuales
+                                    </button>
+                                    <button
+                                        onClick={() => setMesaTrabajoTab('semestral')}
+                                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                                            mesaTrabajoTab === 'semestral'
+                                                ? 'bg-blue-600 text-white shadow-sm'
+                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                        }`}
+                                    >
+                                        Semestrales
+                                    </button>
+                                </div>
+                            </div>
+
+                            {mesaTrabajoList.length === 0 ? (
+                                <div className="p-12 text-center border-2 border-dashed border-slate-200/70 dark:border-white/5 rounded-3xl bg-slate-50/30 dark:bg-white/[0.01]">
+                                    <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto text-emerald-500 mb-3 border border-emerald-200/30 dark:border-emerald-500/20">
+                                        <LucideIcons.CheckCircle2 size={24} />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">¡Todo al Día!</h4>
+                                    <p className="text-xs text-slate-400 mt-1">No quedan clientes pendientes en esta campaña.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+                                    {mesaTrabajoList.map(c => {
+                                        const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
+                                        const ninthDigit = c.ruc[8] || '0';
+                                        return (
+                                            <div 
+                                                key={c.id} 
+                                                className="group relative overflow-hidden rounded-2xl border border-slate-200/70 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] p-5 hover:shadow-xl hover:border-blue-500/30 transition-all duration-300 flex flex-col justify-between gap-4"
+                                            >
+                                                <div className="flex justify-between items-start gap-3">
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2 mb-1.5">
+                                                            <span className="w-5 h-5 rounded-md bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black flex items-center justify-center font-mono">
+                                                                {ninthDigit}
+                                                            </span>
+                                                            <h4 className="text-xs font-bold text-slate-900 dark:text-white tracking-tight truncate font-premium">
+                                                                {c.name}
+                                                            </h4>
+                                                        </div>
+                                                        <div className="flex flex-wrap items-center gap-1.5">
+                                                            <span className="px-2 py-0.5 bg-slate-200/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[9px] font-bold font-mono rounded">
+                                                                {c.ruc}
+                                                            </span>
+                                                            <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase rounded">
+                                                                {c.regime.replace('Rimpe ', '')}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* ACTIONS GRID */}
+                                                <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-200/50 dark:border-white/5">
+                                                    <button
+                                                        onClick={() => handleCopyRuc(c.ruc, c.name)}
+                                                        className="py-2.5 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-bold uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-sm"
+                                                        title="Copiar RUC al Portapapeles"
+                                                    >
+                                                        <LucideIcons.Copy size={13} className="text-slate-400 group-hover:text-blue-500" />
+                                                        <span>RUC</span>
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => window.open("https://srienlinea.sri.gob.ec", "_blank")}
+                                                        className="py-2.5 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-bold uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-sm"
+                                                        title="Abrir SRI en línea"
+                                                    >
+                                                        <LucideIcons.ExternalLink size={13} className="text-slate-400 group-hover:text-sky-500" />
+                                                        <span>Portal</span>
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => handleMesaUploadClick(c, targetPeriod)}
+                                                        className="py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[9px] font-black uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-md shadow-blue-500/20"
+                                                        title="Subir Comprobante PDF de Declaración"
+                                                    >
+                                                        <LucideIcons.UploadCloud size={13} />
+                                                        <span>Subir</span>
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => {
+                                                            if (c.phones?.length) {
+                                                                const feeNum = getClientServiceFee(c, serviceFees, targetPeriod);
+                                                                const generatedMsg = generateDeclarationWhatsAppMessage(
+                                                                    c.name,
+                                                                    mesaTrabajoTab === 'mensual' ? 'IVA' : 'Impuesto a la Renta',
+                                                                    targetPeriod,
+                                                                    feeNum,
+                                                                    false
+                                                                );
+                                                                setWhatsAppPrompt({
+                                                                    clientName: c.name,
+                                                                    phone: c.phones[0].replace(/\D/g, ''),
+                                                                    message: generatedMsg
+                                                                });
+                                                            } else {
+                                                                toast.error("El cliente no tiene teléfono registrado");
+                                                            }
+                                                        }}
+                                                        className="py-2.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white border border-emerald-500/20 rounded-xl text-[9px] font-black uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95"
+                                                        title="Notificar por WhatsApp"
+                                                    >
+                                                        <LucideIcons.MessageCircle size={13} />
+                                                        <span>WApp</span>
+                                                    </button>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-3 gap-2">
-                                            <button
-                                                onClick={() => handleCopyRuc(c.ruc, c.name)}
-                                                className="py-3 bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/20 border border-slate-200/70 dark:border-white/5 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 active:scale-95"
-                                                title="Copiar RUC"
-                                            >
-                                                <LucideIcons.Copy size={12} strokeWidth={2.5} />
-                                                <span>RUC</span>
-                                            </button>
-                                            <button
-                                                onClick={() => window.open("https://srienlinea.sri.gob.ec", "_blank")}
-                                                className="py-3 bg-white dark:bg-white/10 hover:bg-slate-50 dark:hover:bg-white/20 border border-slate-200/70 dark:border-white/5 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 active:scale-95"
-                                                title="Abrir SRI"
-                                            >
-                                                <LucideIcons.ExternalLink size={12} strokeWidth={2.5} />
-                                                <span>Portal</span>
-                                            </button>
-                                            <button
-                                                onClick={() => handleMesaUploadClick(c, targetPeriod)}
-                                                className="py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-lg shadow-blue-500/10"
-                                                title="Subir Comprobante PDF"
-                                            >
-                                                <LucideIcons.UploadCloud size={12} strokeWidth={2.5} />
-                                                <span>Subir</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* Critical Alerts Panel Refinado */}
-            {(expiringSignatures.length > 0 || activeRentaRefunds.length > 0) && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-6">
-                    {/* Renta Refunds Panel - High Priority */}
-                    {activeRentaRefunds.length > 0 && (
-                        <div className="glass-card-premium rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none animate-fade-in-down lg:col-span-full">
-                            <div className="flex items-center justify-between mb-8">
-                                <div className="flex items-center gap-5">
-                                    <div className="p-3 bg-slate-50 dark:bg-white/5 text-slate-400 rounded-2xl">
-                                        <LucideIcons.HandCoins size={24} />
+                    {/* TAB CONTENT 2: CARGAS & BÓVEDA */}
+                    {hubTab === 'cargas' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div 
+                                onDragEnter={handleDrag}
+                                onDragOver={handleDrag}
+                                onDragLeave={handleDrag}
+                                onDrop={handleDrop}
+                                className={`relative overflow-hidden rounded-2xl border transition-all duration-500 p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[160px] ${
+                                    dragActive 
+                                        ? 'bg-blue-600/10 border-blue-500 scale-[1.01] shadow-lg shadow-blue-500/20' 
+                                        : 'bg-slate-50/40 dark:bg-white/[0.02] border-slate-200/70 dark:border-white/[0.06] hover:border-blue-400 hover:shadow-md'
+                                }`}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <input type="file" multiple accept=".pdf" ref={fileInputRef} onChange={handleBulkUpload} className="hidden" />
+
+                                {isProcessing ? (
+                                    <div className="flex flex-col items-center gap-3 py-4">
+                                        <LucideIcons.Loader2 className="animate-spin text-blue-500" size={32} />
+                                        <p className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Procesando Inteligencia de Documentos...</p>
                                     </div>
-                                    <div>
-                                        <h3 className="text-[12px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] font-premium">Devoluciones de Renta</h3>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{activeRentaRefunds.length} expedientes en monitoreo</p>
+                                ) : (
+                                    <div className="flex flex-col items-center gap-3 py-2">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/30 dark:border-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400">
+                                            <LucideIcons.UploadCloud size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Arrastra aquí tus PDFs SRI o RUCs</p>
+                                            <p className="text-[11px] text-slate-400 mt-0.5">El sistema asociará el documento al cliente automáticamente</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-white/5 rounded-full border border-slate-100 dark:border-white/5">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white animate-pulse"></div>
-                                    <span className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest font-premium">ACTIVO</span>
-                                </div>
+                                )}
                             </div>
-                            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-4 custom-scrollbar grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {activeRentaRefunds.map(c => {
-                                    const requestedAt = c.rentaRefundRequestedAt ? new Date(c.rentaRefundRequestedAt) : new Date();
-                                    const hoursPassed = Math.abs(new Date().getTime() - requestedAt.getTime()) / 36e5;
-                                    const isCritical = hoursPassed > 24;
-                                    return (
-                                        <div key={c.id} className={`group/item flex justify-between items-center bg-slate-50/50 dark:bg-white/5 p-5 rounded-[2rem] border border-transparent hover:border-slate-200 dark:hover:border-white/10 transition-all`}>
-                                            <div className="flex flex-col min-w-0 pr-4">
-                                                <span className="text-xs font-black text-slate-800 dark:text-slate-50 uppercase tracking-tight font-premium truncate">{c.name}</span>
-                                                <span className={`text-[9px] font-black uppercase tracking-widest mt-2 ${isCritical ? 'text-rose-500' : 'text-slate-400'}`}>
-                                                    Tiempo: {hoursPassed.toFixed(1)}H {isCritical && '• PRIORIDAD'}
-                                                </span>
+
+                            {/* RECENT UPLOADS */}
+                            {recentUploads.length > 0 && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cargas de la Sesión ({recentUploads.length})</span>
+                                        <button onClick={() => setRecentUploads([])} className="text-[9px] font-bold text-rose-500 uppercase tracking-wider hover:underline">Limpiar</button>
+                                    </div>
+                                    <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
+                                        {recentUploads.map((res, i) => {
+                                            const matchedClient = clients.find(c => c.ruc === res.ruc);
+                                            return (
+                                                <div key={i} className="flex items-center justify-between gap-3 p-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 rounded-xl text-xs">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <LucideIcons.FileText size={14} className="text-blue-500 shrink-0" />
+                                                        <span className="font-bold truncate text-slate-800 dark:text-slate-200 uppercase">{res.clientName || res.fileName}</span>
+                                                        <span className="text-[9px] font-mono text-slate-400">{res.ruc}</span>
+                                                    </div>
+                                                    {matchedClient && (
+                                                        <button onClick={() => setWorkspaceClient({ client: matchedClient, period: res.period })} className="px-2.5 py-1 bg-blue-500/10 text-blue-500 rounded-lg text-[9px] font-bold uppercase">
+                                                            Expediente
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* TAB CONTENT 3: ALERTAS ESPECIALES */}
+                    {hubTab === 'alertas' && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                            {/* REFUNDS */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                                    <div className="flex items-center gap-2">
+                                        <LucideIcons.HandCoins size={16} className="text-amber-500" />
+                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Devoluciones de Renta ({activeRentaRefunds.length})</span>
+                                    </div>
+                                </div>
+
+                                {activeRentaRefunds.length === 0 ? (
+                                    <p className="text-xs text-slate-400 italic p-4 text-center">No hay trámites de devolución pendientes.</p>
+                                ) : (
+                                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                        {activeRentaRefunds.map(c => (
+                                            <div key={c.id} className="flex items-center justify-between p-3.5 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 rounded-xl">
+                                                <div>
+                                                    <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">{c.name}</h5>
+                                                    <p className="text-[10px] text-amber-500 font-bold uppercase mt-0.5">Estado: {c.rentaRefundStatus || 'Solicitado'}</p>
+                                                </div>
+                                                <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="px-3 py-1.5 bg-slate-200/60 dark:bg-white/10 text-slate-800 dark:text-white rounded-lg text-[9px] font-bold uppercase">
+                                                    Ver
+                                                </button>
                                             </div>
-                                            <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="shrink-0 px-6 py-2.5 glass-card-premium text-slate-900 dark:text-white hover:bg-slate-900 dark:hover:bg-white hover:text-white dark:hover:text-slate-900 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all font-premium">
-                                                DETALLE
-                                            </button>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    )}
-                    {/* Expiring Signatures Alert */}
-                    {expiringSignatures.length > 0 && (
-                        <div className="glass-card-premium rounded-[2.5rem] p-8 shadow-xl shadow-slate-200/50 dark:shadow-none animate-fade-in-down lg:col-span-full mt-4">
-                            <div className="flex items-center justify-between mb-8">
-                                <div className="flex items-center gap-5">
-                                    <div className="p-3 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl">
-                                        <LucideIcons.AlertTriangle size={24} />
+                                        ))}
                                     </div>
-                                    <div>
-                                        <h3 className="text-[12px] font-black text-slate-900 dark:text-white uppercase tracking-[0.2em] font-premium">Firmas por Caducar</h3>
-                                        <p className="text-[10px] font-bold text-rose-500/70 uppercase tracking-widest mt-2">{expiringSignatures.length} perfiles requieren renovación</p>
+                                )}
+                            </div>
+
+                            {/* FIRMAS POR CADUCAR */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
+                                    <div className="flex items-center gap-2">
+                                        <LucideIcons.ShieldAlert size={16} className="text-rose-500" />
+                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Firmas por Caducar ({expiringSignatures.length})</span>
                                     </div>
                                 </div>
-                                <LucideIcons.ChevronRight className="text-slate-300" size={20} />
-                            </div>
-                            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-4 custom-scrollbar">
-                                {expiringSignatures.map(c => (
-                                    <div key={c.id} className="group/item flex justify-between items-center bg-slate-50/50 dark:bg-white/5 p-5 rounded-[2rem] border border-transparent hover:border-rose-200 dark:hover:border-rose-900/30 transition-all">
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-black text-slate-800 dark:text-slate-50 uppercase tracking-tight font-premium">{c.name}</span>
-                                            <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest mt-2">VENCE: {c.signatureExpirationDate}</span>
-                                        </div>
-                                        <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="px-6 py-2.5 bg-rose-500 text-white hover:bg-rose-600 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] transition-all font-premium shadow-lg shadow-rose-200/50 dark:shadow-none">
-                                            RENOVAR
-                                        </button>
+
+                                {expiringSignatures.length === 0 ? (
+                                    <p className="text-xs text-slate-400 italic p-4 text-center">Todas las firmas electrónicas están al día.</p>
+                                ) : (
+                                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                        {expiringSignatures.map(c => (
+                                            <div key={c.id} className="flex items-center justify-between p-3.5 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 rounded-xl">
+                                                <div>
+                                                    <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">{c.name}</h5>
+                                                    <p className="text-[10px] text-rose-500 font-bold uppercase mt-0.5">Vence: {c.signatureExpirationDate}</p>
+                                                </div>
+                                                <button onClick={() => navigate('clients', { clientIdToView: c.id })} className="px-3 py-1.5 bg-rose-500 text-white rounded-lg text-[9px] font-bold uppercase shadow-sm">
+                                                    Renovar
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
-                                ))}
+                                )}
                             </div>
                         </div>
                     )}
-                </div>
-            )}
-
-            {/* ── ZEN ANALYTICS PANEL ── */}
-            <div className="relative z-20 px-4 sm:px-0 no-print mt-6">
-                <div className="bg-white dark:bg-[hsl(222,47%,4%)] rounded-2xl border border-slate-200/70 dark:border-white/[0.06] shadow-sm overflow-hidden">
-                    <button 
-                        onClick={() => setExpandAnalytics(!expandAnalytics)}
-                        className="w-full px-6 py-4 flex items-center justify-between bg-slate-50/50 dark:bg-white/[0.02] hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-colors"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
-                                <LucideIcons.BarChart2 size={16} />
-                            </div>
-                            <span className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Inteligencia de Negocio</span>
-                        </div>
-                        <LucideIcons.ChevronDown size={18} className={`text-slate-400 transition-transform duration-500 ${expandAnalytics ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${expandAnalytics ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                        <div className="p-6 border-t border-slate-100 dark:border-white/[0.05]">
-                            <div className="h-[250px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <RechartsBarChart
-                                        data={[
-                                            { name: 'Activos', value: kpis.total, color: '#3b82f6' },
-                                            { name: 'Al Día', value: completados.length, color: '#10b981' },
-                                            { name: 'Pendientes', value: pendientes.length, color: '#f59e0b' },
-                                            { name: 'Urgentes', value: urgentPriorities.length, color: '#f43f5e' }
-                                        ]}
-                                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                    >
-                                        <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
-                                        <Tooltip 
-                                            cursor={{fill: 'transparent'}}
-                                            contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.9)', border: 'none', borderRadius: '12px', color: '#fff', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)' }}
-                                            itemStyle={{ color: '#fff', fontWeight: 'bold' }}
-                                        />
-                                        <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                                            {
-                                                [
-                                                    { name: 'Activos', value: kpis.total, color: '#3b82f6' },
-                                                    { name: 'Al Día', value: completados.length, color: '#10b981' },
-                                                    { name: 'Pendientes', value: pendientes.length, color: '#f59e0b' },
-                                                    { name: 'Urgentes', value: urgentPriorities.length, color: '#f43f5e' }
-                                                ].map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                                ))
-                                            }
-                                        </Bar>
-                                    </RechartsBarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
