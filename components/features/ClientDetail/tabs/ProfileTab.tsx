@@ -268,13 +268,52 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 {/* ── COLUMNA 2: SISTEMA DE FACTURACIÓN, CREDENCIALES & ACCIONES ── */}
                 <div className="space-y-6 flex flex-col">
 
-                    {/* 1. Sistema de Facturación Electrónica del Cliente */}
-                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl border border-slate-200/50 dark:border-white/5 shadow-sm">
-                        <FacturadorCard
-                            config={editedClient.facturadorConfig || {}}
-                            isEditing={isEditing}
-                            onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
-                        />
+                    {/* 1. Acceso Rápido al Sistema de Facturación (Enlace a Bóveda) */}
+                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 space-y-4 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold">
+                                    <FileText size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
+                                        Facturación Electrónica del Cliente
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                                        {editedClient.facturadorConfig?.programName || 'No configurado'}
+                                    </p>
+                                </div>
+                            </div>
+                            <span className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider ${
+                                editedClient.facturadorConfig?.programName
+                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                            }`}>
+                                {editedClient.facturadorConfig?.programName ? 'Configurado' : 'Sin Configurar'}
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                            {editedClient.facturadorConfig?.url && (
+                                <a
+                                    href={editedClient.facturadorConfig.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 p-3 bg-slate-900 text-white hover:bg-slate-800 dark:bg-teal-600 dark:hover:bg-teal-500 rounded-2xl text-xs font-bold transition-all shadow-sm active:scale-95"
+                                >
+                                    <Globe size={14} />
+                                    <span>Abrir Sistema Web</span>
+                                </a>
+                            )}
+                            <button
+                                onClick={() => setActiveTab('vault')}
+                                className="flex items-center justify-center gap-2 p-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl text-xs font-bold transition-all active:scale-95"
+                            >
+                                <ShieldCheck size={14} className="text-teal-500" />
+                                <span>Ver en Bóveda</span>
+                                <ArrowRight size={13} className="text-slate-400" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* 2. Claves de Acceso y Firma Electrónica (.p12) */}

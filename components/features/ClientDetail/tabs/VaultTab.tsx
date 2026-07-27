@@ -5,6 +5,7 @@ import * as LucideIcons from 'lucide-react';
 import { VaultCard } from '../VaultCard';
 import { ClientNotes } from '../ClientNotes';
 import { ClientNote } from '../../../../types';
+import { FacturadorCard } from '../FacturadorCard';
 
 interface VaultTabProps {
     client: Client;
@@ -148,6 +149,15 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                         }}
                     />
                 )}
+            </div>
+
+            {/* ── Sistema de Facturación Electrónica del Cliente (Bóveda Full-Width) ── */}
+            <div className="w-full">
+                <FacturadorCard
+                    config={editedClient.facturadorConfig || {}}
+                    isEditing={isEditing}
+                    onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
+                />
             </div>
 
             {/* Respaldo para Tramitar Firma Electrónica */}
