@@ -48,7 +48,7 @@ interface TaxComplianceMatrixProps {
     onViewClient: (client: Client) => void;
     onUploadReceipt: (client: Client, period: string, type: TaxObligationType) => void;
     onPreviewReceipt: (client: Client, declaration: Declaration) => void;
-    onTogglePayment?: (client: Client, period: string, type: 'IVA' | 'RENTA', isPaid: boolean) => void;
+    onTogglePayment?: (client: Client, period: string, type: TaxObligationType, isPaid: boolean) => void;
     onTogglePriority?: (client: Client, period: string, type: TaxObligationType, isPriority: boolean) => void;
     onNavigateToBilling?: (clientRuc: string) => void;
     theme?: 'light' | 'dark';
@@ -533,7 +533,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             } else if (obType === 'DEVOLUCION') {
                 targetPeriod = `${period}:DEV`;
             }
-            const matchPeriod = arePeriodsEqual(dh.period, targetPeriod) || dh.period === targetPeriod || dh.period === targetPeriod.replace(':', '-');
+            const matchPeriod = dh.period === targetPeriod || dh.period === period || arePeriodsEqual(dh.period, targetPeriod) || arePeriodsEqual(dh.period, period) || dh.period === targetPeriod.replace(':', '-');
             const matchType = dh.type === obType || (!dh.type && (obType === 'IVA' || obType === 'RENTA'));
             return matchPeriod && matchType;
         });
