@@ -1381,9 +1381,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             onViewClient={handleOpenClientDetails}
                             initialMode={activeGroupTab === 'renta' ? 'RENTA' : 'IVA'}
                             onUploadReceipt={handleUploadReceipt}
-                            onPreviewReceipt={(client, declaration) => {
+                            onPreviewReceipt={async (client, declaration) => {
                                 if (declaration.proof_file) {
-                                    const ok = downloadStoredFile(declaration.proof_file, `comprobante_${client.name}_${declaration.period}.pdf`);
+                                    const ok = await downloadStoredFile(declaration.proof_file, `comprobante_${client.name}_${declaration.period}.pdf`);
                                     if (ok) {
                                         toast.success("Comprobante descargado correctamente");
                                     } else {

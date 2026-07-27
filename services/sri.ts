@@ -3,6 +3,7 @@ import { SRI_DUE_DATES, SRI_RENTA_GENERAL_MARCH, SRI_RENTA_NP_MAY } from '../con
 import { Client, TaxRegime, Declaration, DeclarationStatus } from '../types';
 import { format, differenceInCalendarDays, subMonths, subYears, getYear, getMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { db } from './db';
 
 interface ValidationResult {
     isValid: boolean;
@@ -442,16 +443,35 @@ export const generateDeclarationWhatsAppMessage = (
 
 /**
  * Descarga de manera robusta un archivo guardado (PDF, imagen, etc.) 
- * Soportando Blob URLs, URLs externas (HTTP/HTTPS), Data URLs y Base64.
+ * Soportando Blob URLs, URLs externas (HTTP/HTTPS), Data URLs, Base64 y fragmentación en la nube (__SPLIT__:).
  */
-export const downloadStoredFile = (fileObj: any, defaultName: string = 'comprobante.pdf'): boolean => {
+export const downloadStoredFile = async (fileObj: any, defaultName: string = 'comprobante.pdf'): Promise<boolean> => {
     if (!fileObj) return false;
 
     try {
-        const fileName = fileObj.name || defaultName;
-        const content = fileObj.content || fileObj.url || (typeof fileObj === 'string' ? fileObj : null);
+        let fileName = fileObj.name || defaultName;
+        let content = fileObj.content || fileObj.url || (typeof fileObj === 'string' ? fileObj : null);
 
-        if (!content || typeof content !== 'string') return false;
+        // Si el archivo está dividido (__SPLIT__:) en la base de datos/nube, reensamblarlo
+        if (content && (content.startsWith('__SPLIT__:') || content.startsWith('__SPLIT__Solid'))) {
+            try {
+                const resolved = await db.rejoinLargeFiles({ content, proof_file: fileObj });
+                if (resolved) {
+                    if (resolved.content && !resolved.content.startsWith('__SPLIT__:')) {
+                        content = resolved.content;
+                    } else if (resolved.proof_file?.content && !resolved.proof_file.content.startsWith('__SPLIT__:')) {
+                        content = resolved.proof_file.content;
+                    }
+                }
+            } catch (err) {
+                console.error("Error al reensamblar archivo grande desde la nube:", err);
+            }
+        }
+
+        if (!content || typeof content !== 'string' || content.startsWith('__SPLIT__:')) {
+            console.error("Contenido de archivo no disponible o corrupto");
+            return false;
+        }
 
         // Caso 1: Es una URL HTTP, HTTPS o Blob directamente
         if (content.startsWith('http://') || content.startsWith('https://') || content.startsWith('blob:')) {
@@ -500,7 +520,7 @@ export const downloadStoredFile = (fileObj: any, defaultName: string = 'comproba
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 2500);
         return true;
     } catch (err) {
         console.error("Error al descargar archivo guardado:", err);

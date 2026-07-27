@@ -1237,10 +1237,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         {/* Botón Descargar PDF Directo */}
                                                                         {hasProof && (
                                                                             <button
-                                                                                onClick={(e) => {
+                                                                                onClick={async (e) => {
                                                                                     e.stopPropagation();
                                                                                     if (d?.proof_file) {
-                                                                                        const ok = downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
+                                                                                        const ok = await downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
                                                                                         if (ok) {
                                                                                             toast.success("Comprobante descargado correctamente");
                                                                                         } else {
@@ -1487,8 +1487,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 <div className="flex items-center gap-2 pt-1">
                                     {activeCellModal.declaration.proof_file && (
                                         <button
-                                            onClick={() => {
-                                                const ok = downloadStoredFile(
+                                            onClick={async () => {
+                                                const ok = await downloadStoredFile(
                                                     activeCellModal.declaration.proof_file,
                                                     `comprobante_${activeCellModal.client.name}_${activeCellModal.period}.pdf`
                                                 );
