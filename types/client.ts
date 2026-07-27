@@ -129,6 +129,8 @@ export interface FacturadorConfig {
     documentCount?: number;
     price?: number;
     soldByMe?: boolean;
+    providerName?: string;
+    freeSupportAndCancellation?: boolean;
 }
 
 export interface Client {
@@ -155,6 +157,9 @@ export interface Client {
     jurisdiction?: string;
     electronicSignaturePassword?: string;
     signatureFile?: StoredFile;
+    signatureExpirationDate?: string;
+    signatureIssueDate?: string;
+    signatureProvider?: string;
     idCardFront?: StoredFile;
     idCardBack?: StoredFile;
     idCardSelfie?: StoredFile;

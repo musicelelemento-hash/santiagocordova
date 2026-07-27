@@ -511,19 +511,130 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                 )}
 
                 {/* ─────────────────────────────────────────────────────────
-                    BÓVEDA (VAULT) – Credenciales + Documentos
+                    BÓVEDA (VAULT) – Facturación, Credenciales & Documentos KYC
                 ────────────────────────────────────────────────────────── */}
                 {activeTab === 'vault' && (
                     <div className="space-y-14 animate-fade-in-up">
+
+                        {/* ── SECCIÓN: Facturación Electrónica & Licencia ───────── */}
+                        <section className="bg-white p-8 sm:p-10 rounded-[3rem] border border-slate-100 shadow-premium relative overflow-hidden">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-6 border-b border-slate-100 gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 bg-teal-50 text-brand-teal rounded-2xl flex items-center justify-center shadow-lg shadow-teal-100/40 flex-shrink-0">
+                                        <LucideIcons.Receipt size={28} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Sistema de Emisión</p>
+                                        <h3 className="text-2xl sm:text-3xl font-display font-medium text-slate-900 tracking-tight">Facturación Electrónica</h3>
+                                    </div>
+                                </div>
+
+                                {localClient.facturadorConfig?.url && (
+                                    <a
+                                        href={localClient.facturadorConfig.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-6 py-3.5 bg-slate-900 hover:bg-brand-teal text-white rounded-2xl text-[11px] font-bold uppercase tracking-[0.2em] transition-all shadow-xl shadow-slate-200"
+                                    >
+                                        <span>Abrir Portal de Facturación</span>
+                                        <LucideIcons.ExternalLink size={14} />
+                                    </a>
+                                )}
+                            </div>
+
+                            {/* Badge especial de Proveedor Santiago Córdova */}
+                            {(localClient.facturadorConfig?.soldByMe || (localClient.facturadorConfig?.providerName && localClient.facturadorConfig.providerName.toLowerCase().includes('santiago'))) && (
+                                <div className="mb-8 p-5 bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-teal-500/5 border border-teal-500/25 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-brand-teal text-white rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md">
+                                            <LucideIcons.ShieldCheck size={22} />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-teal-900 uppercase tracking-wider">
+                                                Proveedor Oficial: {localClient.facturadorConfig?.providerName || 'Santiago Córdova'}
+                                            </p>
+                                            <p className="text-xs text-teal-700 font-medium">
+                                                Garantía de Servicio: Incluye <strong>Soporte Técnico Especializado</strong> y <strong>Anulación de Facturas Gratis</strong>.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className="px-3.5 py-1.5 bg-brand-teal text-white text-[10px] font-bold uppercase tracking-widest rounded-full flex-shrink-0 shadow-md">
+                                        Soporte Gratuito Incluido
+                                    </span>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {/* Programa */}
+                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Programa / Sistema</p>
+                                    <p className="text-sm font-bold text-slate-800">
+                                        {localClient.facturadorConfig?.programName || 'No configurado'}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 mt-1">
+                                        Proveedor: {localClient.facturadorConfig?.providerName || (localClient.facturadorConfig?.soldByMe ? 'Santiago Córdova' : 'Externo')}
+                                    </p>
+                                </div>
+
+                                {/* Plan / Documentos */}
+                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Plan de Comprobantes</p>
+                                    <p className="text-sm font-bold text-slate-800">
+                                        {localClient.facturadorConfig?.documentStatus || 'Modalidad no definida'}
+                                    </p>
+                                    <p className="text-[11px] text-teal-600 font-semibold mt-1">
+                                        {localClient.facturadorConfig?.documentCount !== undefined
+                                            ? `Cupo: ${localClient.facturadorConfig.documentCount} docs`
+                                            : 'Cupo Ilimitado'}
+                                    </p>
+                                </div>
+
+                                {/* Vencimiento */}
+                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Vencimiento Licencia</p>
+                                    <p className="text-sm font-bold text-slate-800">
+                                        {localClient.facturadorConfig?.expirationDate
+                                            ? safeFormat(localClient.facturadorConfig.expirationDate, 'dd/MM/yyyy')
+                                            : 'Sin fecha registrada'}
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 mt-1">
+                                        Precio Vendido: ${localClient.facturadorConfig?.price?.toFixed(2) || '0.00'}
+                                    </p>
+                                </div>
+
+                                {/* Credencial Facturador */}
+                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Acceso Facturador</p>
+                                        <p className="text-xs font-mono font-bold text-slate-700 truncate">
+                                            Usuario: {localClient.facturadorConfig?.username || 'No registrado'}
+                                        </p>
+                                    </div>
+                                    <div className="mt-2 text-xs font-mono text-slate-500 flex items-center justify-between">
+                                        <span>Clave: ••••••••</span>
+                                        {localClient.facturadorConfig?.password && (
+                                            <button
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(localClient.facturadorConfig?.password || '');
+                                                    alert('Clave del facturador copiada al portapapeles');
+                                                }}
+                                                className="text-[10px] font-bold text-brand-teal hover:underline uppercase"
+                                            >
+                                                Copiar
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
 
                         {/* ── SECCIÓN: Credenciales de Acceso ───────────────────── */}
                         <section>
                             <div className="flex items-center justify-between mb-8 px-2">
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Accesos Digitales</p>
-                                    <h3 className="text-3xl font-display font-medium text-slate-900 tracking-tight">Credenciales</h3>
+                                    <h3 className="text-3xl font-display font-medium text-slate-900 tracking-tight">Credenciales Guardadas</h3>
                                 </div>
-                                {/* Cambiar clave SRI */}
                                 <button
                                     onClick={() => setShowChangePassword(true)}
                                     className="flex items-center gap-3 px-6 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-teal-600 transition-all active:scale-95 shadow-xl shadow-slate-200"
@@ -557,7 +668,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                         <LucideIcons.Fingerprint size={22} />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Estado Firma Electrónica</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Firma Electrónica (.P12)</p>
                                         {signatureExpiry ? (
                                             <div className="flex items-center gap-2">
                                                 <span className={`text-sm font-bold ${signatureExpired ? 'text-rose-500' : signatureWarning ? 'text-amber-500' : 'text-emerald-600'}`}>
@@ -571,14 +682,114 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                         ) : (
                                             <p className="text-sm text-slate-300 italic">Sin fecha registrada</p>
                                         )}
-                                        {signatureExpiry && (
-                                            <p className="text-[10px] text-slate-400 mt-0.5">
-                                                Vencimiento: {safeFormat(signatureExpiry.toISOString(), 'dd/MM/yyyy')}
-                                            </p>
-                                        )}
+                                        <div className="text-[10px] text-slate-400 mt-0.5 space-y-0.5">
+                                            {localClient.signatureProvider && (
+                                                <p>Proveedor: <strong>{localClient.signatureProvider}</strong></p>
+                                            )}
+                                            {signatureExpiry && (
+                                                <p>Vencimiento: {safeFormat(signatureExpiry.toISOString(), 'dd/MM/yyyy')}</p>
+                                            )}
+                                        </div>
                                     </div>
                                     {signatureExpiry && (
                                         <div className={`w-3 h-3 rounded-full flex-shrink-0 ${signatureExpired ? 'bg-rose-400' : signatureWarning ? 'bg-amber-400' : 'bg-emerald-400'} animate-pulse`} />
+                                    )}
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* ── SECCIÓN: Verificación de Identidad KYC (Fotos Cédula) ── */}
+                        <section>
+                            <div className="mb-8 px-2">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Identidad Digital Certificada</p>
+                                <h3 className="text-3xl font-display font-medium text-slate-900 tracking-tight">Verificación de Cédula & Biometría</h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {/* Cédula Frente */}
+                                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between group hover:border-teal-300 transition-all">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center">
+                                                <LucideIcons.Contact size={24} />
+                                            </div>
+                                            <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${localClient.idCardFront ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-400'}`}>
+                                                {localClient.idCardFront ? 'Verificado' : 'No Disponible'}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-base font-display font-bold text-slate-900 mb-1">Cédula (Frente)</h4>
+                                        <p className="text-xs text-slate-400 mb-4">Fotografía clara del anverso del documento de identidad.</p>
+                                    </div>
+
+                                    {localClient.idCardFront ? (
+                                        <button
+                                            onClick={() => handleOpenInNewTab({ proof_file: localClient.idCardFront })}
+                                            className="w-full py-3 bg-slate-900 hover:bg-brand-teal text-white text-xs font-bold rounded-2xl transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <LucideIcons.Eye size={14} /> Ver Cédula Frente
+                                        </button>
+                                    ) : (
+                                        <div className="py-3 bg-slate-50 text-slate-300 text-xs font-semibold rounded-2xl text-center border border-dashed border-slate-200">
+                                            Pendiente de Carga
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Cédula Reverso */}
+                                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between group hover:border-teal-300 transition-all">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                                <LucideIcons.CreditCard size={24} />
+                                            </div>
+                                            <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${localClient.idCardBack ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-400'}`}>
+                                                {localClient.idCardBack ? 'Verificado' : 'No Disponible'}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-base font-display font-bold text-slate-900 mb-1">Cédula (Reverso)</h4>
+                                        <p className="text-xs text-slate-400 mb-4">Fotografía clara del reverso con código de dactilar.</p>
+                                    </div>
+
+                                    {localClient.idCardBack ? (
+                                        <button
+                                            onClick={() => handleOpenInNewTab({ proof_file: localClient.idCardBack })}
+                                            className="w-full py-3 bg-slate-900 hover:bg-brand-teal text-white text-xs font-bold rounded-2xl transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <LucideIcons.Eye size={14} /> Ver Cédula Reverso
+                                        </button>
+                                    ) : (
+                                        <div className="py-3 bg-slate-50 text-slate-300 text-xs font-semibold rounded-2xl text-center border border-dashed border-slate-200">
+                                            Pendiente de Carga
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Selfie Sosteniendo Cédula */}
+                                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between group hover:border-teal-300 transition-all">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
+                                                <LucideIcons.UserCheck size={24} />
+                                            </div>
+                                            <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full ${localClient.idCardSelfie ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-400'}`}>
+                                                {localClient.idCardSelfie ? 'Biometría OK' : 'No Disponible'}
+                                            </span>
+                                        </div>
+                                        <h4 className="text-base font-display font-bold text-slate-900 mb-1">Selfie sosteniendo Cédula</h4>
+                                        <p className="text-xs text-slate-400 mb-4">Fotografía del rostro sosteniendo el documento de identidad.</p>
+                                    </div>
+
+                                    {localClient.idCardSelfie ? (
+                                        <button
+                                            onClick={() => handleOpenInNewTab({ proof_file: localClient.idCardSelfie })}
+                                            className="w-full py-3 bg-slate-900 hover:bg-brand-teal text-white text-xs font-bold rounded-2xl transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <LucideIcons.Eye size={14} /> Ver Foto Selfie
+                                        </button>
+                                    ) : (
+                                        <div className="py-3 bg-slate-50 text-slate-300 text-xs font-semibold rounded-2xl text-center border border-dashed border-slate-200">
+                                            Pendiente de Carga
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -602,7 +813,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     <div className="w-14 h-14 bg-violet-50 text-violet-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                         <LucideIcons.FileKey size={26} />
                                     </div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Firma Electrónica</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Firma Electrónica (.p12)</p>
                                     <h4 className="text-lg font-display font-semibold text-slate-900 mb-2">
                                         {hasSignatureFile ? localClient.signatureFile!.name : 'Token .P12'}
                                     </h4>
