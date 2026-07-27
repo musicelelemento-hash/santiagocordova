@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '../components/ui/Logo';
 import * as LucideIcons from 'lucide-react';
 import { Client } from '../types';
@@ -16,18 +17,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loginType, setLoginType] = useState<'admin' | 'client'>('client');
-    const [isLoaded, setIsLoaded] = useState(false);
-
-    useEffect(() => {
-        setIsLoaded(true);
-    }, []);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showSriHelp, setShowSriHelp] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true);
+    const [fillSuccessMessage, setFillSuccessMessage] = useState('');
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         setError('');
 
-        // Simulación de delay de red para UX "Procesando"
         setTimeout(() => {
             if (loginType === 'admin') {
                 if (identifier === '@Santiago' && password === 'Santiago2026') {
@@ -50,145 +49,356 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                 }
                 setIsSubmitting(false);
             }
-        }, 1200);
+        }, 1100);
+    };
+
+    const handleQuickFill = (type: 'admin' | 'client') => {
+        setError('');
+        if (type === 'admin') {
+            setLoginType('admin');
+            setIdentifier('@Santiago');
+            setPassword('Santiago2026');
+            setFillSuccessMessage('Credenciales de Admin aplicadas');
+        } else {
+            setLoginType('client');
+            const demoClient = clients.length > 0 ? clients[0] : null;
+            if (demoClient) {
+                setIdentifier(demoClient.ruc);
+                setPassword(demoClient.sriPassword || '123456');
+                setFillSuccessMessage(`RUC de ${demoClient.name.split(' ')[0]} aplicado`);
+            } else {
+                setIdentifier('1790000000001');
+                setPassword('123456');
+                setFillSuccessMessage('RUC de prueba aplicado');
+            }
+        }
+        setTimeout(() => setFillSuccessMessage(''), 3000);
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 relative overflow-hidden font-body selection:bg-brand-teal selection:text-white">
-            {/* --- BACKGROUND FX --- */}
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 z-0"></div>
+        <div className="min-h-screen w-full flex items-center justify-center bg-[#030712] relative overflow-hidden font-body selection:bg-brand-teal selection:text-white px-4 py-8">
+            {/* Ambient Lighting & Mesh Gradients */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(13,148,136,0.25),rgba(255,255,255,0))] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_120%,rgba(14,165,233,0.15),rgba(255,255,255,0))] pointer-events-none" />
+            
+            {/* Subtle Grid Overlay */}
+            <div 
+                className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+                style={{
+                    backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.8) 1px, transparent 0)`,
+                    backgroundSize: '28px 28px'
+                }}
+            />
 
-            {/* Aurora Blobs */}
-            <div className={`absolute top-0 right-0 w-[800px] h-[800px] bg-brand-teal/10 rounded-full blur-[120px] -mr-40 -mt-40 transition-all duration-[2000ms] ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}></div>
-            <div className={`absolute bottom-0 left-0 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] -ml-20 -mb-20 transition-all duration-[2000ms] delay-300 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}></div>
+            {/* Glowing Aurora Spheres */}
+            <motion.div
+                animate={{
+                    scale: [1, 1.15, 1],
+                    opacity: [0.35, 0.55, 0.35],
+                    rotate: [0, 90, 0]
+                }}
+                transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute -top-32 -right-32 w-[550px] h-[550px] bg-gradient-to-br from-brand-teal/30 via-teal-500/20 to-sky-500/10 rounded-full blur-[130px] pointer-events-none"
+            />
+            <motion.div
+                animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.25, 0.45, 0.25],
+                    rotate: [0, -90, 0]
+                }}
+                transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+                className="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-gradient-to-tr from-sky-500/20 via-emerald-500/20 to-teal-400/10 rounded-full blur-[140px] pointer-events-none"
+            />
 
-            {/* --- MAIN CARD --- */}
-            <div className={`relative z-10 w-full max-w-[420px] p-6 transition-all duration-700 ${isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-
-                {/* Back Button */}
+            {/* Top Navigation & Live Security Status */}
+            <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20 max-w-6xl mx-auto pointer-events-none">
                 <button
                     onClick={onBack}
-                    className="absolute top-0 left-6 -mt-12 flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-xs font-semibold uppercase tracking-widest group"
+                    className="pointer-events-auto group flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 text-slate-300 hover:text-white hover:border-brand-teal/40 hover:bg-slate-900/80 transition-all shadow-lg text-xs font-semibold uppercase tracking-wider"
                 >
-                    <div className="p-1.5 rounded-xl border border-slate-800 group-hover:border-brand-teal/50 transition-colors bg-slate-900/50">
-                        <LucideIcons.ChevronLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-                    </div>
-                    Volver
+                    <LucideIcons.ChevronLeft size={16} className="text-brand-teal group-hover:-translate-x-0.5 transition-transform" />
+                    <span>Volver al Inicio</span>
                 </button>
 
-                <div className="bg-slate-900/80 backdrop-blur-2xl rounded-[2.5rem] border border-slate-800 shadow-2xl overflow-hidden relative">
-                    {/* Glossy Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none"></div>
+                <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/50 backdrop-blur-xl border border-slate-800/60 text-[11px] font-medium text-slate-400">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span className="text-slate-300 font-mono">SRI Direct</span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-slate-400">256-bit SSL</span>
+                </div>
+            </div>
 
-                    <div className="p-8 relative z-10">
-                        {/* Header */}
-                        <div className="text-center mb-8">
-                            <div className="inline-flex p-4 bg-slate-950 rounded-3xl shadow-xl border border-slate-800 mb-5">
-                                <Logo className="w-10 h-10" />
-                            </div>
-                            <h2 className="text-2xl font-display font-bold text-white tracking-tight">
+            {/* Main Auth Card */}
+            <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="relative z-10 w-full max-w-[460px]"
+            >
+                {/* Outer Glow Wrapper */}
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-brand-teal/40 via-sky-500/20 to-emerald-500/30 rounded-[2.5rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000 group-hover:duration-200" />
+
+                <div className="relative bg-slate-950/85 backdrop-blur-3xl rounded-[2.5rem] border border-slate-800/90 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.8)] overflow-hidden">
+                    {/* Glossy Top Accent Line */}
+                    <div className="h-1 w-full bg-gradient-to-r from-transparent via-brand-teal to-transparent opacity-80" />
+
+                    <div className="p-7 sm:p-9 relative z-10">
+                        {/* Header Header & Brand Badge */}
+                        <div className="text-center mb-7">
+                            <motion.div
+                                whileHover={{ scale: 1.05, rotate: 2 }}
+                                whileTap={{ scale: 0.95 }}
+                                className="inline-flex p-3.5 bg-slate-900/90 rounded-2xl shadow-xl border border-slate-800/80 mb-4 relative group cursor-pointer"
+                            >
+                                <div className="absolute inset-0 bg-brand-teal/20 rounded-2xl blur-md group-hover:blur-lg transition-all opacity-0 group-hover:opacity-100" />
+                                <Logo className="w-10 h-10 relative z-10" />
+                            </motion.div>
+
+                            <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight">
                                 {loginType === 'admin' ? 'Comando Central' : 'Bóveda del Cliente'}
-                            </h2>
-                            <p className="text-slate-400 text-[11px] font-semibold uppercase tracking-widest mt-2 flex justify-center items-center gap-2">
-                                <LucideIcons.ShieldCheck size={14} className="text-brand-teal" /> Acceso Seguro SSL
+                            </h1>
+                            <p className="text-slate-400 text-xs mt-1.5 font-medium flex items-center justify-center gap-1.5">
+                                <LucideIcons.ShieldCheck size={14} className="text-brand-teal" />
+                                <span>{loginType === 'admin' ? 'Acceso Administrativo Privado' : 'Gestión Contable & Tributaria SRI'}</span>
                             </p>
                         </div>
 
-                        {/* Toggle */}
-                        <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl mb-8 border border-slate-800">
+                        {/* Role Switcher Tabs */}
+                        <div className="grid grid-cols-2 gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl mb-6 border border-slate-800/80 relative">
                             <button
+                                type="button"
                                 onClick={() => { setLoginType('client'); setError(''); }}
-                                className={`py-3 text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'client' ? 'bg-brand-teal text-white shadow-lg shadow-brand-teal/20 scale-105' : 'text-slate-400 hover:text-white'}`}
+                                className={`relative py-2.5 px-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 z-10 ${
+                                    loginType === 'client' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+                                }`}
                             >
-                                <LucideIcons.Briefcase size={14} /> Clientes
+                                {loginType === 'client' && (
+                                    <motion.div
+                                        layoutId="activeRoleTab"
+                                        className="absolute inset-0 bg-gradient-to-r from-brand-teal to-teal-600 rounded-xl shadow-lg shadow-brand-teal/25"
+                                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                    />
+                                )}
+                                <span className="relative z-10 flex items-center gap-1.5">
+                                    <LucideIcons.Briefcase size={14} /> Cliente SRI
+                                </span>
                             </button>
+
                             <button
+                                type="button"
                                 onClick={() => { setLoginType('admin'); setError(''); }}
-                                className={`py-3 text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${loginType === 'admin' ? 'bg-white text-slate-900 shadow-lg scale-105' : 'text-slate-400 hover:text-white'}`}
+                                className={`relative py-2.5 px-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all duration-200 flex items-center justify-center gap-2 z-10 ${
+                                    loginType === 'admin' ? 'text-slate-950 font-extrabold' : 'text-slate-400 hover:text-slate-200'
+                                }`}
                             >
-                                <LucideIcons.Lock size={14} /> Admin
+                                {loginType === 'admin' && (
+                                    <motion.div
+                                        layoutId="activeRoleTab"
+                                        className="absolute inset-0 bg-white rounded-xl shadow-lg shadow-white/20"
+                                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                                    />
+                                )}
+                                <span className="relative z-10 flex items-center gap-1.5">
+                                    <LucideIcons.Lock size={14} /> Administrador
+                                </span>
                             </button>
                         </div>
 
-                        {/* Form */}
-                        <form onSubmit={handleLogin} className="space-y-5">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-brand-teal uppercase tracking-widest ml-1">
-                                    {loginType === 'client' ? 'Identificación (RUC)' : 'ID Usuario'}
-                                </label>
-                                <div className="group relative">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-teal">
-                                        <LucideIcons.User size={18} />
+                        {/* Quick Demo Helper Pills */}
+                        <div className="mb-6 bg-slate-900/50 rounded-2xl p-2.5 border border-slate-800/60 flex items-center justify-between gap-2">
+                            <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5 ml-1">
+                                <LucideIcons.Sparkles size={13} className="text-amber-400" />
+                                <span>Demo rápido:</span>
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => handleQuickFill('client')}
+                                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 hover:text-brand-teal text-slate-300 text-[10px] font-mono font-bold rounded-lg border border-slate-700/60 transition-colors flex items-center gap-1"
+                                >
+                                    <LucideIcons.UserCheck size={11} /> RUC Demo
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleQuickFill('admin')}
+                                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 hover:text-sky-400 text-slate-300 text-[10px] font-mono font-bold rounded-lg border border-slate-700/60 transition-colors flex items-center gap-1"
+                                >
+                                    <LucideIcons.KeyRound size={11} /> Admin Demo
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Success Notification for Quick Fill */}
+                        <AnimatePresence>
+                            {fillSuccessMessage && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                    animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                    className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-emerald-300 text-xs font-medium"
+                                >
+                                    <LucideIcons.CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0" />
+                                    <span>{fillSuccessMessage}</span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Main Login Form */}
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            {/* Identifier Input Field */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                        <span>{loginType === 'client' ? 'RUC o Identificación SRI' : 'Usuario Admin'}</span>
+                                    </label>
+                                </div>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors">
+                                        {loginType === 'client' ? <LucideIcons.Building size={17} /> : <LucideIcons.User size={17} />}
                                     </div>
                                     <input
                                         type="text"
                                         value={identifier}
                                         onChange={(e) => { setIdentifier(e.target.value); setError(''); }}
-                                        className="w-full h-13 bg-slate-950/60 border border-slate-800 rounded-2xl pl-12 pr-4 text-xs font-mono font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal/50 focus:ring-4 focus:ring-brand-teal/10 transition-all"
-                                        placeholder={loginType === 'client' ? "1790000000001" : "Usuario"}
-                                        autoComplete={loginType === 'client' ? "username" : "username"}
+                                        className="w-full h-12 bg-slate-900/90 border border-slate-800 rounded-2xl pl-11 pr-4 text-xs font-mono font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal/60 focus:ring-4 focus:ring-brand-teal/15 transition-all shadow-inner"
+                                        placeholder={loginType === 'client' ? "Ej: 1790000000001" : "Ej: @Santiago"}
+                                        autoComplete="username"
                                         name="username"
                                         autoFocus
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-brand-teal uppercase tracking-widest ml-1">
-                                    {loginType === 'client' ? 'Contraseña SRI' : 'Clave de Acceso'}
-                                </label>
-                                <div className="group relative">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-brand-teal">
-                                        <LucideIcons.Lock size={18} />
+                            {/* Password Input Field */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                                        <span>{loginType === 'client' ? 'Clave de Acceso SRI' : 'Contraseña Segura'}</span>
+                                    </label>
+                                    {loginType === 'client' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowSriHelp(!showSriHelp)}
+                                            className="text-[10px] text-brand-teal hover:underline font-semibold flex items-center gap-1"
+                                        >
+                                            <LucideIcons.HelpCircle size={12} />
+                                            <span>¿Dónde la obtengo?</span>
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors">
+                                        <LucideIcons.Lock size={17} />
                                     </div>
                                     <input
-                                        type="password"
+                                        type={showPassword ? 'text' : 'password'}
                                         value={password}
                                         onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                                        className="w-full h-13 bg-slate-950/60 border border-slate-800 rounded-2xl pl-12 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal/50 focus:ring-4 focus:ring-brand-teal/10 transition-all font-mono"
-                                        placeholder="••••••••"
+                                        className="w-full h-12 bg-slate-900/90 border border-slate-800 rounded-2xl pl-11 pr-11 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal/60 focus:ring-4 focus:ring-brand-teal/15 transition-all font-mono shadow-inner"
+                                        placeholder="••••••••••••"
                                         autoComplete="current-password"
                                         name="password"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-800/50"
+                                        title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                    >
+                                        {showPassword ? <LucideIcons.EyeOff size={16} /> : <LucideIcons.Eye size={16} />}
+                                    </button>
                                 </div>
                             </div>
 
-                            {error && (
-                                <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 backdrop-blur-sm">
-                                    <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
-                                    <p className="text-rose-300 text-xs font-medium">{error}</p>
-                                </div>
-                            )}
+                            {/* SRI Helper Drawer */}
+                            <AnimatePresence>
+                                {showSriHelp && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        className="p-3 bg-slate-900/80 border border-brand-teal/30 rounded-xl text-[11px] text-slate-300 space-y-1"
+                                    >
+                                        <p className="font-semibold text-brand-teal">📌 Clave SRI (Servicio de Rentas Internas):</p>
+                                        <p className="text-slate-400">Es la misma contraseña con la que ingresa al portal SRI en Línea para emitir facturas y consultar declaraciones.</p>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
-                            <button
+                            {/* Remember Me Checkbox */}
+                            <div className="flex items-center justify-between pt-1">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-brand-teal focus:ring-brand-teal focus:ring-offset-slate-950 cursor-pointer"
+                                    />
+                                    <span className="text-xs text-slate-400 group-hover:text-slate-300 transition-colors font-medium">
+                                        Recordar credenciales en este equipo
+                                    </span>
+                                </label>
+                            </div>
+
+                            {/* Error Notification */}
+                            <AnimatePresence>
+                                {error && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.97 }}
+                                        className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center gap-3 shadow-lg shadow-rose-500/5"
+                                    >
+                                        <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse flex-shrink-0" />
+                                        <p className="text-rose-300 text-xs font-medium leading-relaxed">{error}</p>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Submit Button */}
+                            <motion.button
                                 type="submit"
                                 disabled={isSubmitting || !identifier}
-                                className="w-full h-14 mt-4 bg-brand-teal hover:bg-teal-500 text-white font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest shadow-xl shadow-brand-teal/20 hover:scale-[1.02] active:scale-95 group relative overflow-hidden"
+                                whileHover={{ scale: isSubmitting || !identifier ? 1 : 1.015 }}
+                                whileTap={{ scale: isSubmitting || !identifier ? 1 : 0.98 }}
+                                className="w-full h-13 mt-2 bg-gradient-to-r from-brand-teal to-teal-500 hover:from-teal-400 hover:to-teal-600 text-white font-bold rounded-2xl transition-all duration-300 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest shadow-xl shadow-brand-teal/20 relative overflow-hidden group"
                             >
-                                <span className="relative z-10 flex items-center gap-3">
+                                {/* Shimmer Effect */}
+                                <div className="absolute inset-0 w-1/2 h-full bg-white/20 skew-x-12 -translate-x-full group-hover:translate-x-[300%] transition-transform duration-1000 ease-in-out pointer-events-none" />
+
+                                <span className="relative z-10 flex items-center gap-2.5">
                                     {isSubmitting ? (
                                         <>
-                                            <LucideIcons.Loader size={18} className="animate-spin" /> AUTENTICANDO
+                                            <LucideIcons.Loader size={18} className="animate-spin text-white" />
+                                            <span>Autenticando Acceso...</span>
                                         </>
                                     ) : (
                                         <>
-                                            INGRESAR <LucideIcons.ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                            <span>Ingresar al Sistema</span>
+                                            <LucideIcons.ArrowRight size={17} className="group-hover:translate-x-1 transition-transform text-white" />
                                         </>
                                     )}
                                 </span>
-                            </button>
+                            </motion.button>
                         </form>
                     </div>
 
-                    {/* Footer Info */}
-                    <div className="bg-slate-950/60 p-4 text-center border-t border-slate-800/80">
-                        <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
-                            Protegido por reCAPTCHA Enterprise <br />
-                            <span className="opacity-40">Santiago Cordova Protocol v4.0</span>
+                    {/* Footer Info & Security Seal */}
+                    <div className="bg-slate-900/80 px-6 py-4 text-center border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-medium">
+                            <LucideIcons.BadgeCheck size={14} className="text-brand-teal" />
+                            <span>Servicios Contables Santiago Córdova</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">
+                            v4.2 • SSL Encrypted
                         </p>
                     </div>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 };
+
