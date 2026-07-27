@@ -2,6 +2,7 @@ import React, { useMemo, useState, useRef } from 'react';
 import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, ReminderConfig, BusinessProfile, FinancialItem } from '../types';
 import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, safeFormat } from '../services/sri';
 import { getClientServiceFee } from '../services/clientService';
+import { isPeriodBeforeClientStart } from '../services/complianceEngine';
 import { differenceInCalendarDays, isSameMonth, parseISO, isValid, subMonths } from 'date-fns';
 import {
     AlertTriangle, CheckCircle, MessageSquare, DollarSign,
@@ -416,7 +417,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         const selectedMonth = new Date();
 
         clients.forEach(client => {
-            if (client.isDeleted || client.isActive === false) return;
+            if (client.isDeleted || client.isActive === false || client.isCourtesy) return;
             let fee = getClientServiceFee(client, serviceFees);
             if (fee <= 0) fee = 10.00;
 
@@ -436,6 +437,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             client.declarations.forEach(decl => {
                 processedPeriods.add(decl.period);
                 
+                if (isPeriodBeforeClientStart(client, decl.period)) return;
+
                 if (decl.status === DeclarationStatus.Pagada && decl.paidAt) {
                     const paidDate = parseISO(decl.paidAt);
                     if (isValid(paidDate) && isSameMonth(paidDate, selectedMonth)) {
@@ -459,7 +462,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             const pNow = getPeriod(client, now);
             const pPrev = getPeriod(client, subMonths(now, 1));
             [pNow, pPrev].forEach(p => {
-                if (!processedPeriods.has(p)) {
+                if (!processedPeriods.has(p) && !isPeriodBeforeClientStart(client, p)) {
                     const dueDate = getDueDateForPeriod(client, p) || now;
                     const diff = differenceInCalendarDays(now, dueDate);
                     const item: FinancialItem = {
