@@ -351,6 +351,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 const hasDev = client.taxProfile?.hasActiveDevolucionIva;
                 const hasAnexo = client.taxProfile?.requiresAnexosGastos;
                 if (!hasRenta && !hasDev && !hasAnexo) return false;
+            } else if (activeGroupTab === 'rimpe_np') {
+                return client.regime === TaxRegime.RimpeNegocioPopular;
             }
 
             if (regimeFilter !== 'all' && client.regime !== regimeFilter) return false;
@@ -1132,7 +1134,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     </div>
 
                     {/* SUB-FILTROS DE OBLIGACIÓN (Visibles al estar en pestaña Directorio) */}
-                    {['all', 'directorio', 'al-dia', 'vencidos', 'mensual', 'semestral', 'renta'].includes(activeGroupTab) && (
+                    {['all', 'directorio', 'al-dia', 'vencidos', 'mensual', 'semestral', 'renta', 'rimpe_np'].includes(activeGroupTab) && (
                         <div className="flex overflow-x-auto no-scrollbar gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200/50 dark:border-white/5">
                             {[
                                 { id: 'all', label: 'Todos' },
@@ -1141,19 +1143,65 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 { id: 'mensual', label: 'IVA Mensual' },
                                 { id: 'semestral', label: 'IVA Semestral' },
                                 { id: 'renta', label: 'Renta' },
+                                { id: 'rimpe_np', label: '🏪 RIMPE NP' },
                             ].map(sub => (
                                 <button
                                     key={sub.id}
                                     onClick={() => setActiveGroupTab(sub.id as any)}
                                     className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
                                         activeGroupTab === sub.id
-                                            ? 'bg-white dark:bg-slate-800 text-primary shadow-sm'
+                                            ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-sm'
                                             : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                                     }`}
                                 >
                                     {sub.label}
                                 </button>
                             ))}
+                        </div>
+                    )}
+
+                    {/* BANNER EJECUTIVO DE CAMPAÑA RENTA RIMPE NEGOCIO POPULAR (ENERO - MAYO) */}
+                    {activeGroupTab === 'rimpe_np' && (
+                        <div className="my-4 w-full bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-amber-500/10 backdrop-blur-2xl rounded-3xl p-5 border border-amber-500/20 shadow-sm animate-in fade-in duration-300">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-3.5">
+                                    <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-md shadow-amber-500/20 shrink-0">
+                                        <LucideIcons.Store size={22} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                                            Campaña Renta RIMPE Negocio Popular
+                                            <span className="px-2 py-0.5 bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[9px] font-bold uppercase rounded-lg border border-amber-500/30">
+                                                Enero - Mayo
+                                            </span>
+                                        </h3>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                                            Sin IVA mensual ni semestral. Presentan <strong>1 sola declaración anual de Renta</strong> entre Enero y Mayo.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <div className="text-right hidden md:block">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Contribuyentes</p>
+                                        <p className="text-base font-black text-amber-600 dark:text-amber-400 font-mono">
+                                            {filteredClients.length} Clientes NP
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            const whatsappMsg = encodeURIComponent(
+                                                `Estimado cliente RIMPE Negocio Popular, le recordamos que se encuentra activo el período de Declaración Anual de Impuesto a la Renta (Enero - Mayo). Por favor contáctenos para proceder.`
+                                            );
+                                            window.open(`https://wa.me/?text=${whatsappMsg}`, '_blank');
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 shrink-0"
+                                    >
+                                        <LucideIcons.MessageCircle size={14} />
+                                        <span>WhatsApp Recordatorio NP</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
