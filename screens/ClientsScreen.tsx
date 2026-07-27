@@ -468,43 +468,46 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         setSelectedClient(updatedClient);
     };
 
-    const handleTogglePaymentFromMatrix = (client: Client, period: string, type: TaxObligationType, isPaid: boolean) => {
+    const handleTogglePaymentFromMatrix = (client: Client, period: string, type: TaxObligationType | TaxObligationType[], isPaid: boolean) => {
+        const types = Array.isArray(type) ? type : [type];
         const now = new Date().toISOString();
-        const updatedHistory = [...(client.declarations || [])];
+        let updatedHistory = [...(client.declarations || [])];
 
-        // Formatear correctamente el periodo objetivo según el tipo de obligación
-        let targetPeriod = period;
-        if (type === 'ICE' && !period.includes(':ICE')) targetPeriod = `${period}:ICE`;
-        else if (type === 'PVP' && !period.includes(':PVP')) targetPeriod = `${period}:PVP`;
-        else if (type === 'ANEXO' && !period.includes(':ANEXO') && !period.includes(':GAP')) targetPeriod = `${period}:ANEXO_ICE`;
-        else if (type === 'DEVOLUCION' && !period.includes(':DEV')) targetPeriod = `${period}:DEV`;
+        types.forEach(t => {
+            let targetPeriod = period;
+            if (t === 'ICE' && !period.includes(':ICE')) targetPeriod = `${period}:ICE`;
+            else if (t === 'PVP' && !period.includes(':PVP')) targetPeriod = `${period}:PVP`;
+            else if (t === 'ANEXO' && !period.includes(':ANEXO') && !period.includes(':GAP')) targetPeriod = `${period}:ANEXO_ICE`;
+            else if (t === 'DEVOLUCION' && !period.includes(':DEV')) targetPeriod = `${period}:DEV`;
 
-        const idx = updatedHistory.findIndex(d => {
-            const matchPeriod = d.period === targetPeriod || d.period === period || arePeriodsEqual(d.period, targetPeriod) || arePeriodsEqual(d.period, period);
-            const matchType = d.type === type || (!d.type && (type === 'IVA' || type === 'RENTA'));
-            return matchPeriod && matchType;
+            const idx = updatedHistory.findIndex(d => {
+                const matchPeriod = d.period === targetPeriod || d.period === period || arePeriodsEqual(d.period, targetPeriod) || arePeriodsEqual(d.period, period);
+                const matchType = d.type === t || (!d.type && (t === 'IVA' || t === 'RENTA'));
+                return matchPeriod && matchType;
+            });
+
+            if (idx !== -1) {
+                updatedHistory[idx] = {
+                    ...updatedHistory[idx],
+                    is_paid: isPaid,
+                    paidAt: isPaid ? now : undefined,
+                    status: isPaid ? DeclarationStatus.Pagada : (updatedHistory[idx].status === DeclarationStatus.Pagada ? DeclarationStatus.Enviada : updatedHistory[idx].status),
+                    updatedAt: now
+                };
+            } else {
+                updatedHistory.push({
+                    period: targetPeriod,
+                    type: t,
+                    status: isPaid ? DeclarationStatus.Pagada : DeclarationStatus.Pendiente,
+                    is_paid: isPaid,
+                    paidAt: isPaid ? now : undefined,
+                    updatedAt: now
+                });
+            }
         });
 
-        if (idx !== -1) {
-            updatedHistory[idx] = {
-                ...updatedHistory[idx],
-                is_paid: isPaid,
-                paidAt: isPaid ? now : undefined,
-                status: isPaid ? DeclarationStatus.Pagada : (updatedHistory[idx].status === DeclarationStatus.Pagada ? DeclarationStatus.Enviada : updatedHistory[idx].status),
-                updatedAt: now
-            };
-        } else {
-            updatedHistory.push({
-                period: targetPeriod,
-                type: type,
-                status: isPaid ? DeclarationStatus.Pagada : DeclarationStatus.Pendiente,
-                is_paid: isPaid,
-                paidAt: isPaid ? now : undefined,
-                updatedAt: now
-            });
-        }
         updateClient(client.id, { declarations: updatedHistory });
-        toast.success(isPaid ? `Pago de ${type} (${period}) registrado` : `Pago de ${type} (${period}) revertido`);
+        toast.success(isPaid ? `Pago de honorarios (${period}) registrado` : `Pago de honorarios (${period}) revertido`);
 
         if (isPaid) {
             setTimeout(() => {
@@ -512,7 +515,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 setBillingPromptData({
                     client,
                     amount: feeAmount,
-                    description: `Declaración de ${type} - Período ${period}`
+                    description: `Honorarios de Declaración - Período ${period}`
                 });
             }, 100);
         }

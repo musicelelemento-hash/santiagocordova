@@ -1265,7 +1265,6 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                                 <LucideIcons.Download size={9} strokeWidth={3} />
                                                                             </button>
                                                                         )}
-
                                                                         {/* Botón WhatsApp */}
                                                                         <button
                                                                             onClick={(e) => {
@@ -1283,20 +1282,6 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                             title="Notificar por WhatsApp"
                                                                         >
                                                                             <LucideIcons.MessageCircle size={10} strokeWidth={2.5} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                if (onTogglePayment) onTogglePayment(client, p, ob.type as any, !isPaid);
-                                                                            }}
-                                                                            className={`absolute -top-1.5 -right-1.5 rounded-full p-0.5 shadow-sm transition-all z-20 ${
-                                                                                isPaid 
-                                                                                    ? 'bg-sky-500 text-white shadow-sky-500/20 scale-100' 
-                                                                                    : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-300/30 dark:border-slate-700/30 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110'
-                                                                            }`}
-                                                                            title={isPaid ? "Marcar Honorario como Pendiente" : "Marcar Honorario como Pagado"}
-                                                                        >
-                                                                            <LucideIcons.DollarSign size={8} strokeWidth={4} />
                                                                         </button>
                                                                         </>
                                                                     ) : (
@@ -1323,47 +1308,63 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         })}
                                                         {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-slate-200/30 dark:bg-white/5 my-6 mx-auto" />}
                                                     </div>
-                                                    {obligations.length > 0 && (
-                                                        <div className="mt-2 flex justify-center">
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    const allPaid = obligations.every(ob => {
-                                                                        const d = findDeclarationForOb(declarations, p, ob.type);
-                                                                        return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
-                                                                    });
-                                                                    
-                                                                    obligations.forEach(ob => {
-                                                                        if (onTogglePayment) {
-                                                                            onTogglePayment(client, p, ob.type as any, !allPaid);
-                                                                        }
-                                                                    });
-                                                                }}
-                                                                className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all duration-300 ${
-                                                                    obligations.every(ob => {
-                                                                        const d = findDeclarationForOb(declarations, p, ob.type);
-                                                                        return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
-                                                                    })
-                                                                        ? 'bg-sky-500 hover:bg-sky-600 border-sky-600 text-white shadow-sm active:scale-95'
-                                                                        : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 active:scale-95'
-                                                                }`}
-                                                                title={
-                                                                    obligations.every(ob => {
-                                                                        const d = findDeclarationForOb(declarations, p, ob.type);
-                                                                        return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
-                                                                    }) ? "Marcar todo como Pendiente" : "Marcar Cobro Completo"
-                                                                }
-                                                            >
-                                                                <LucideIcons.Coins size={11} strokeWidth={2.5} />
-                                                                <span>
-                                                                    {obligations.every(ob => {
-                                                                        const d = findDeclarationForOb(declarations, p, ob.type);
-                                                                        return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
-                                                                    }) ? 'COBRADO' : `COBRO COMPLETO ($${getClientServiceFee(client, serviceFees, p)})`}
-                                                                </span>
-                                                            </button>
-                                                        </div>
-                                                    )}
+                                                    {obligations.length > 0 && (() => {
+                                                         const allPaid = obligations.every(ob => {
+                                                             const d = findDeclarationForOb(declarations, p, ob.type);
+                                                             return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+                                                         });
+                                                         const isCellTrulyInvoiced = obligations.some(ob => {
+                                                             const d = findDeclarationForOb(declarations, p, ob.type);
+                                                             const realInvoice = findRealInvoice(client.ruc, d);
+                                                             return !!realInvoice || !!(d as any)?.invoice_secuencial;
+                                                         });
+                                                         const obTypes = obligations.map(ob => ob.type);
+
+                                                         return (
+                                                             <div className="mt-2 flex justify-center">
+                                                                 <button
+                                                                     onClick={(e) => {
+                                                                         e.stopPropagation();
+                                                                         if (onTogglePayment) {
+                                                                             onTogglePayment(client, p, obTypes as any, !allPaid);
+                                                                         }
+                                                                     }}
+                                                                     className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all duration-300 ${
+                                                                         allPaid && isCellTrulyInvoiced
+                                                                             ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white border-blue-400/50 shadow-md shadow-blue-500/25 active:scale-95'
+                                                                             : allPaid
+                                                                                 ? 'bg-sky-500 hover:bg-sky-600 border-sky-600 text-white shadow-sm active:scale-95'
+                                                                                 : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 active:scale-95'
+                                                                     }`}
+                                                                     title={
+                                                                         allPaid && isCellTrulyInvoiced
+                                                                             ? "Cobrado y Facturado (Click para revertir a pendiente)"
+                                                                             : allPaid
+                                                                                 ? "Marcar todo como Pendiente"
+                                                                                 : "Marcar Cobro Completo"
+                                                                     }
+                                                                 >
+                                                                     {allPaid && isCellTrulyInvoiced ? (
+                                                                         <>
+                                                                             <LucideIcons.ShieldCheck size={11} strokeWidth={2.5} className="text-blue-200" />
+                                                                             <span className="flex items-center gap-1">
+                                                                                 <span className="font-black text-white">COBRADO</span>
+                                                                                 <span className="text-blue-200/80 font-bold">|</span>
+                                                                                 <span className="font-black text-blue-100">FACTURADO</span>
+                                                                             </span>
+                                                                         </>
+                                                                     ) : (
+                                                                         <>
+                                                                             <LucideIcons.Coins size={11} strokeWidth={2.5} />
+                                                                             <span>
+                                                                                 {allPaid ? 'COBRADO' : `COBRO COMPLETO ($${getClientServiceFee(client, serviceFees, p)})`}
+                                                                             </span>
+                                                                         </>
+                                                                     )}
+                                                                 </button>
+                                                             </div>
+                                                         );
+                                                     })()}
                                                 </td>
                                             );
                                         })}
