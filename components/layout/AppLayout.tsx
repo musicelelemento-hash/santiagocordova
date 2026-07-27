@@ -146,6 +146,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 onLogout={onLogout}
                 cloudStatus="saved"
                 theme={theme}
+                onOpenSalesModal={() => setIsSalesModalOpen(true)}
             />
 
             {/* Persistent Mobile Navigation Bar */}

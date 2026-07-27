@@ -4,7 +4,7 @@ import {
   FileText, Plus, Trash2, Settings, CheckCircle2, XCircle, Info, Search, 
   Download, RefreshCw, Check, AlertTriangle, Globe, Activity, Wifi, WifiOff, 
   Copy, ExternalLink, Eye, EyeOff, ChevronRight, Play, Zap, Database, CreditCard, User, AlertCircle,
-  Lock, Key, Edit3, Save, Home, ChevronDown, ChevronUp, Sliders, Building2, Mail
+  Lock, Key, Edit3, Save, Home, ChevronDown, ChevronUp, Sliders, Building2, Mail, ShoppingBag
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { Client, TaxRegime, DeclarationStatus } from '../types';
@@ -13,6 +13,7 @@ import { getClientServiceFee } from '../services/clientService';
 import { formatPeriodForDisplay } from '../services/sri';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
+import { SalesComboModal } from '../components/features/SalesComboModal';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 interface InvoiceItem {
@@ -397,6 +398,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   
   // Buyer / Subject Details
   const [buyerName, setBuyerName] = useState('');
+  const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
   const [buyerRuc, setBuyerRuc] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
@@ -2371,6 +2373,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           </div>
           
           <div className="flex flex-wrap gap-2 relative z-10 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsSalesModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-md active:scale-95"
+            >
+              <ShoppingBag size={14} />
+              <span>💳 Registrar Venta de Plan / Combo</span>
+            </button>
             <button
               type="button"
               onClick={() => setActiveTab('factura')}
@@ -5075,6 +5085,39 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         document.body
       )}
 
+
+      {/* Modal de Registro de Ventas de Combos / Firmas */}
+      <SalesComboModal
+        isOpen={isSalesModalOpen}
+        onClose={() => setIsSalesModalOpen(false)}
+        onEmitSriInvoice={(client, description, amount) => {
+          setIsSalesModalOpen(false);
+          setActiveTab('factura');
+          setSelectedClient(client.id);
+          setBuyerName(client.name);
+          setBuyerRuc(client.ruc);
+          setBuyerEmail(client.email || '');
+          setBuyerPhone(client.phones?.[0] || '');
+          setBuyerAddress(client.address || '');
+          setBuyerIdType(client.ruc.length === 13 ? '04' : '05');
+          const initialIva = emisorRegimen === '3' ? 0.00 : 0.15;
+          const sub = amount;
+          const tax = Number((sub * initialIva).toFixed(2));
+          setInvoiceItems([
+            {
+              id: Date.now().toString(),
+              codigoPrincipal: '001',
+              descripcion: description,
+              cantidad: 1,
+              precioUnitario: amount,
+              ivaRate: initialIva,
+              subtotal: sub,
+              iva: tax,
+              total: Number((sub + tax).toFixed(2))
+            }
+          ]);
+        }}
+      />
 
       </div>
     </div>
