@@ -150,28 +150,28 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                     </div>
                 </div>
 
-                {/* ── Barra Express de Credenciales (Minimalista 1-Click) ── */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-                    <div className="flex items-center justify-between px-3 py-2 bg-slate-100/40 dark:bg-slate-900/40 rounded-xl border border-slate-200/40 dark:border-white/5 text-[11px] font-mono">
-                        <span className="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-widest">RUC</span>
-                        <div className="flex items-center gap-1.5">
-                            <span className="font-black text-slate-900 dark:text-slate-100 tracking-wider">{client.ruc}</span>
+                {/* ── Barra Express de Credenciales (Sin Superposición) ── */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-1">
+                    <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-slate-100/50 dark:bg-slate-900/40 rounded-xl border border-slate-200/40 dark:border-white/5 text-xs font-mono min-w-0">
+                        <span className="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-widest shrink-0">RUC</span>
+                        <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                            <span className="font-mono font-black text-slate-900 dark:text-slate-100 tracking-wider text-xs sm:text-sm truncate">{client.ruc}</span>
                             <CopyClipButton text={client.ruc} label="RUC" />
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between px-3 py-2 bg-slate-100/40 dark:bg-slate-900/40 rounded-xl border border-slate-200/40 dark:border-white/5 text-[11px] font-mono">
-                        <span className="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-widest">SRI</span>
-                        <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-slate-700 dark:text-slate-300">{client.sriPassword || '—'}</span>
+                    <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-slate-100/50 dark:bg-slate-900/40 rounded-xl border border-slate-200/40 dark:border-white/5 text-xs font-mono min-w-0">
+                        <span className="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-widest shrink-0">CLAVE SRI</span>
+                        <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                            <span className="font-mono font-bold text-slate-700 dark:text-slate-300 text-xs truncate">{client.sriPassword || '—'}</span>
                             {client.sriPassword && <CopyClipButton text={client.sriPassword} label="SRI" />}
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between px-3 py-2 bg-slate-100/40 dark:bg-slate-900/40 rounded-xl border border-slate-200/40 dark:border-white/5 text-[11px] font-mono">
-                        <span className="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-widest">FIRMA</span>
-                        <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-slate-700 dark:text-slate-300">{client.electronicSignaturePassword || '—'}</span>
+                    <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 bg-slate-100/50 dark:bg-slate-900/40 rounded-xl border border-slate-200/40 dark:border-white/5 text-xs font-mono min-w-0">
+                        <span className="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-widest shrink-0">CLAVE FIRMA</span>
+                        <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                            <span className="font-mono font-bold text-slate-700 dark:text-slate-300 text-xs truncate">{client.electronicSignaturePassword || '—'}</span>
                             {client.electronicSignaturePassword && <CopyClipButton text={client.electronicSignaturePassword} label="Firma" />}
                         </div>
                     </div>

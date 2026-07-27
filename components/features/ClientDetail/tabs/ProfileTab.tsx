@@ -159,32 +159,59 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-6 duration-700">
 
+            {/* ── FILA 1: Mesa de Control Tributario y Cobros (Full Width) ── */}
+            <div className="w-full">
+                <ExecutiveObligationsTable
+                    client={client}
+                    complianceStats={complianceStats}
+                    serviceFees={serviceFees}
+                    onDeclare={(period) => setConfirmation({ action: 'declare', period })}
+                    onQuickPay={handleQuickPay}
+                    onUploadTarget={({ type, period }) => setUploadingTarget({ type, period })}
+                    proofInputRef={proofInputRef}
+                    onRevertDeclaration={handleRevertDeclaration}
+                    onCancelDeclaration={handleCancelDeclaration}
+                />
+            </div>
 
+            {/* ── FILA 2: Dashboard Experto en 2 Columnas Equilibradas ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            {/* ── MIDDLE ROW: Action Core ──────────────────────────── */}
-            <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
-                
-                {/* ── Column 1: Executive Tax & Fee Obligations Table (Span 2) ── */}
-                <div className="2xl:col-span-2 space-y-6">
-                    <ExecutiveObligationsTable
-                        client={client}
-                        complianceStats={complianceStats}
-                        serviceFees={serviceFees}
-                        onDeclare={(period) => setConfirmation({ action: 'declare', period })}
-                        onQuickPay={handleQuickPay}
-                        onUploadTarget={({ type, period }) => setUploadingTarget({ type, period })}
-                        proofInputRef={proofInputRef}
-                        onRevertDeclaration={handleRevertDeclaration}
-                        onCancelDeclaration={handleCancelDeclaration}
-                    />
+                {/* ── COLUMNA 1: INTELIGENCIA FISCAL & ANALÍTICA TRIBUTARIA ── */}
+                <div className="space-y-6 flex flex-col">
+                    
+                    {/* 1. Módulo de Inteligencia Fiscal SRI */}
+                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 space-y-5 shadow-sm">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
+                                    <Activity size={18} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
+                                        Inteligencia Fiscal SRI
+                                    </h3>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                                        Diagnóstico estratégico y régimen de contribuyente
+                                    </p>
+                                </div>
+                            </div>
+                            <span className="px-3 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl text-[10px] font-bold uppercase tracking-wider">
+                                Diagnóstico IA Active
+                            </span>
+                        </div>
 
-                            {/* RIMPE NP: sin IVA, mostrar aviso */}
+                        {/* Ficha de Régimen y Frecuencia */}
+                        <RegimeInfoPanel client={editedClient} />
+
+                        {/* Notificaciones y Trámites Especiales */}
+                        <div className="space-y-3">
+                            {/* RIMPE NP: sin IVA */}
                             {isNegocioPopular && !complianceStats?.renta?.needed && (
                                 <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-500/5 rounded-2xl border border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-400">
                                     <Info size={16} strokeWidth={2} className="mt-0.5 flex-shrink-0" />
                                     <p className="text-xs font-medium leading-relaxed">
                                         RIMPE Negocio Popular no declara IVA. Solo tiene una declaración anual de Impuesto a la Renta RIMPE.
-                                        Verifique que el perfil fiscal esté configurado correctamente.
                                     </p>
                                 </div>
                             )}
@@ -214,13 +241,50 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     onUpload={() => { setUploadingTarget({ type: 'devolucionRenta' }); proofInputRef.current?.click(); }}
                                 />
                             )}
+                        </div>
+                    </div>
+
+                    {/* 2. Gráfico de Historial de Honorarios */}
+                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 shadow-sm flex-1 flex flex-col">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Activity size={14} className="text-blue-500" strokeWidth={2.5} />
+                            Historial de Honorarios y Recaudación
+                        </h3>
+                        <div className="flex-1 min-h-[220px]">
+                            <PaymentHistoryChart client={client} />
+                        </div>
+                    </div>
+
+                    {/* 3. Bitácora / Notas Estructuradas del Cliente */}
+                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 shadow-sm">
+                        <ClientNotes
+                            clientId={client.id}
+                            notes={client.structuredNotes || []}
+                        />
+                    </div>
                 </div>
 
-                {/* ── Column 2: Security & Quick Actions (Span 1) ── */}
-                <div className="space-y-5">
 
-                    {/* Claves de Acceso y Seguridad */}
-                    <div className="glass-card-premium rounded-2xl p-5  space-y-4">
+                {/* ── COLUMNA 2: SISTEMA DE FACTURACIÓN, CREDENCIALES & ACCIONES ── */}
+                <div className="space-y-6 flex flex-col">
+
+                    {/* 1. Sistema de Facturación Electrónica del Cliente */}
+                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl border border-slate-200/50 dark:border-white/5 shadow-sm">
+                        <FacturadorCard
+                            config={editedClient.facturadorConfig || {}}
+                            isEditing={isEditing}
+                            onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
+                        />
+                    </div>
+
+                    {/* 2. Claves de Acceso y Firma Electrónica (.p12) */}
+                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 space-y-4 shadow-sm">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <FileKey size={14} className="text-emerald-500" strokeWidth={2.5} />
+                            Credenciales & Archivo de Firma Electrónica
+                        </h3>
+
+                        {/* Clave SRI */}
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clave SRI</p>
@@ -228,7 +292,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Modo Edición</span>
                                 )}
                             </div>
-                            <div className="flex items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-surface-low/50 rounded-xl border border-slate-100 dark:border-white/5">
+                            <div className="flex items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200/40 dark:border-white/5">
                                 {isEditing ? (
                                     <input
                                         type={passwordVisible ? "text" : "password"}
@@ -238,21 +302,21 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                         placeholder="Clave SRI"
                                     />
                                 ) : (
-                                    <code className="text-sm font-bold text-primary tracking-wider font-mono truncate">
+                                    <code className="text-sm font-bold text-blue-600 dark:text-blue-400 tracking-wider font-mono truncate">
                                         {passwordVisible ? editedClient.sriPassword : '•'.repeat(Math.min(editedClient.sriPassword?.length || 8, 12))}
                                     </code>
                                 )}
                                 <div className="flex items-center gap-1 shrink-0">
                                     <button
                                         onClick={() => handleCopy(editedClient.sriPassword)}
-                                        className="p-1.5 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-all active:scale-90"
+                                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90"
                                         title="Copiar Clave"
                                     >
                                         <Copy size={13} />
                                     </button>
                                     <button
                                         onClick={() => setPasswordVisible(!passwordVisible)}
-                                        className="p-1.5 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-all active:scale-90"
+                                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90"
                                     >
                                         {passwordVisible ? <EyeOff size={13} /> : <Eye size={13} />}
                                     </button>
@@ -263,7 +327,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         {/* Clave Firma Electrónica */}
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Clave Firma Electrónica</p>
-                            <div className="flex items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-surface-low/50 rounded-xl border border-slate-100 dark:border-white/5">
+                            <div className="flex items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200/40 dark:border-white/5">
                                 {isEditing ? (
                                     <input
                                         type={passwordVisible ? "text" : "password"}
@@ -273,7 +337,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                         placeholder="Clave Firma"
                                     />
                                 ) : (
-                                    <code className="text-sm font-bold text-primary tracking-wider font-mono truncate">
+                                    <code className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tracking-wider font-mono truncate">
                                         {editedClient.electronicSignaturePassword 
                                             ? (passwordVisible ? editedClient.electronicSignaturePassword : '•'.repeat(Math.min(editedClient.electronicSignaturePassword.length, 12)))
                                             : 'NO REGISTRADA'}
@@ -283,7 +347,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     {editedClient.electronicSignaturePassword && (
                                         <button
                                             onClick={() => handleCopy(editedClient.electronicSignaturePassword)}
-                                            className="p-1.5 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-all active:scale-90"
+                                            className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90"
                                             title="Copiar Clave"
                                         >
                                             <Copy size={13} />
@@ -291,7 +355,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     )}
                                     <button
                                         onClick={() => setPasswordVisible(!passwordVisible)}
-                                        className="p-1.5 hover:bg-primary/10 rounded-lg text-slate-400 hover:text-primary transition-all active:scale-90"
+                                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90"
                                     >
                                         {passwordVisible ? <EyeOff size={13} /> : <Eye size={13} />}
                                     </button>
@@ -304,10 +368,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                                 <FileKey size={10} className="text-primary/50" /> Archivo de Firma (.p12 / PDF)
                             </p>
-                            <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-surface-low/50 rounded-xl border border-slate-100 dark:border-white/5">
+                            <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200/40 dark:border-white/5">
                                 {editedClient.signatureFile ? (
                                     <div className="flex items-center justify-between w-full">
-                                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200 truncate max-w-[170px] uppercase">
+                                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200 truncate max-w-[200px] uppercase">
                                             {editedClient.signatureFile.name}
                                         </span>
                                         <div className="flex items-center gap-1">
@@ -318,10 +382,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                                         downloadStoredFile(editedClient.signatureFile);
                                                     }
                                                 }}
-                                                className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                                className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
                                                 title="Descargar Firma"
                                             >
-                                                <Download size={13} />
+                                                <Download size={14} />
                                             </button>
                                             {isEditing && (
                                                 <button
@@ -331,10 +395,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                                         delete updated.signatureFile;
                                                         return updated;
                                                     })}
-                                                    className="p-1 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-lg text-rose-400 hover:text-rose-600 dark:hover:text-rose-200"
+                                                    className="p-1.5 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-lg text-rose-400 hover:text-rose-600 dark:hover:text-rose-200"
                                                     title="Eliminar Firma"
                                                 >
-                                                    <Trash2 size={13} />
+                                                    <Trash2 size={14} />
                                                 </button>
                                             )}
                                         </div>
@@ -342,8 +406,8 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                 ) : (
                                     <div className="w-full">
                                         {isEditing ? (
-                                            <label className="w-full flex items-center justify-center gap-2 py-1.5 px-3 bg-slate-100 dark:bg-white/5 hover:bg-primary/10 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg border border-dashed border-slate-300 dark:border-white/10 cursor-pointer transition-all text-xs font-bold">
-                                                <UploadCloud size={13} /> Subir Firma
+                                            <label className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 dark:bg-white/5 hover:bg-primary/10 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg border border-dashed border-slate-300 dark:border-white/10 cursor-pointer transition-all text-xs font-bold">
+                                                <UploadCloud size={14} /> Subir Firma (.p12)
                                                 <input 
                                                     type="file" 
                                                     className="hidden" 
@@ -366,7 +430,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                                 />
                                             </label>
                                         ) : (
-                                            <span className="text-[10px] font-mono font-bold text-slate-300 dark:text-slate-700 uppercase tracking-widest italic opacity-50">NO_ENTRY</span>
+                                            <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest italic">SIN REGISTRO ADJUNTO</span>
                                         )}
                                     </div>
                                 )}
@@ -378,7 +442,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                                 <CalendarDays size={10} className="text-primary/50" /> Vencimiento de Firma
                             </p>
-                            <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-surface-low/50 rounded-xl border border-slate-100 dark:border-white/5">
+                            <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200/40 dark:border-white/5">
                                 {isEditing ? (
                                     <input
                                         type="date"
@@ -395,40 +459,26 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                 )}
                             </div>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-3 pt-2">
-                            <button
-                                onClick={handleOpenSRI}
-                                className="flex flex-col items-center gap-2 p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-primary/5 dark:hover:bg-primary/10 border border-slate-100 dark:border-white/5 hover:border-primary/20 rounded-xl transition-all group active:scale-95"
-                            >
-                                <Globe size={18} className="text-primary group-hover:scale-110 transition-transform" strokeWidth={1.5} />
-                                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 group-hover:text-primary uppercase tracking-wider">Ingresar SRI</span>
-                            </button>
-                            <button
-                                onClick={handleShareViaWhatsApp}
-                                className="flex flex-col items-center gap-2 p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-emerald-500/5 dark:hover:bg-emerald-500/10 border border-slate-100 dark:border-white/5 hover:border-emerald-200 dark:hover:border-emerald-500/30 rounded-xl transition-all group active:scale-95"
-                            >
-                                <Share2 size={18} className="text-emerald-500 group-hover:scale-110 transition-transform" strokeWidth={1.5} />
-                                <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 uppercase tracking-wider">Compartir</span>
-                            </button>
-                        </div>
                     </div>
 
-                    {/* Acciones rápidas */}
-                    <div className="bg-white dark:bg-surface/40 rounded-2xl p-5 border border-slate-100 dark:border-white/10 shadow-sm space-y-3">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Acciones</p>
+                    {/* 3. Centro de Acciones Tácticas */}
+                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 space-y-3 shadow-sm">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <Zap size={14} className="text-amber-500" strokeWidth={2.5} />
+                            Centro de Acciones Tácticas
+                        </p>
 
                         <button
                             onClick={handleWhatsApp}
-                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-emerald-500/5 dark:hover:bg-emerald-500/10 border border-slate-100 dark:border-white/5 hover:border-emerald-200 dark:hover:border-emerald-500/30 rounded-xl transition-all group active:scale-[0.98]"
+                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 hover:bg-emerald-500/5 dark:hover:bg-emerald-500/10 border border-slate-200/40 dark:border-white/5 hover:border-emerald-200 dark:hover:border-emerald-500/30 rounded-2xl transition-all group active:scale-[0.98]"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg text-emerald-500 group-hover:scale-110 transition-transform">
-                                    <MessageCircle size={15} strokeWidth={2} />
+                                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl text-emerald-500 group-hover:scale-110 transition-transform">
+                                    <MessageCircle size={16} strokeWidth={2} />
                                 </div>
                                 <div className="text-left">
-                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">WhatsApp</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">Contactar cliente</p>
+                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">WhatsApp Directo</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Enviar mensaje o cobro al cliente</p>
                                 </div>
                             </div>
                             <ArrowRight size={14} className="text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
@@ -437,15 +487,15 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         {handleEmail && (
                             <button
                                 onClick={handleEmail}
-                                className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-sky-500/5 dark:hover:bg-sky-500/10 border border-slate-100 dark:border-white/5 hover:border-sky-200 dark:hover:border-sky-500/30 rounded-xl transition-all group active:scale-[0.98]"
+                                className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 hover:bg-sky-500/5 dark:hover:bg-sky-500/10 border border-slate-200/40 dark:border-white/5 hover:border-sky-200 dark:hover:border-sky-500/30 rounded-2xl transition-all group active:scale-[0.98]"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-sky-50 dark:bg-sky-500/10 rounded-lg text-sky-500 group-hover:scale-110 transition-transform">
-                                        <Mail size={15} strokeWidth={2} />
+                                    <div className="p-2.5 bg-sky-50 dark:bg-sky-500/10 rounded-xl text-sky-500 group-hover:scale-110 transition-transform">
+                                        <Mail size={16} strokeWidth={2} />
                                     </div>
                                     <div className="text-left">
-                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Correo Electrónico</p>
-                                        <p className="text-[10px] text-slate-400 mt-0.5">Enviar email seguro</p>
+                                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Correo Electrónico Seguro</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">Enviar dossier o comprobantes</p>
                                     </div>
                                 </div>
                                 <ArrowRight size={14} className="text-slate-300 group-hover:text-sky-500 group-hover:translate-x-1 transition-all" />
@@ -453,93 +503,59 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         )}
 
                         <button
-                            onClick={() => setActiveTab('settings')}
-                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-primary/5 dark:hover:bg-primary/10 border border-slate-100 dark:border-white/5 hover:border-primary/20 rounded-xl transition-all group active:scale-[0.98]"
+                            onClick={handleOpenSRI}
+                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 hover:bg-blue-500/5 dark:hover:bg-blue-500/10 border border-slate-200/40 dark:border-white/5 hover:border-blue-200 dark:hover:border-blue-500/30 rounded-2xl transition-all group active:scale-[0.98]"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-slate-100 dark:bg-white/5 rounded-lg text-slate-500 group-hover:bg-primary/10 group-hover:text-primary group-hover:scale-110 transition-all">
-                                    <Settings size={15} strokeWidth={2} />
+                                <div className="p-2.5 bg-blue-50 dark:bg-blue-500/10 rounded-xl text-blue-500 group-hover:scale-110 transition-transform">
+                                    <Globe size={16} strokeWidth={2} />
                                 </div>
                                 <div className="text-left">
-                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Configuración Fiscal</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">Régimen, tarifas, opciones</p>
+                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Portal SRI en Línea</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Abrir acceso directo en nueva pestaña</p>
                                 </div>
                             </div>
-                            <ArrowRight size={14} className="text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                            <ArrowRight size={14} className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
                         </button>
 
-                        {/* ── Cambio de frecuencia IVA ── */}
+                        <button
+                            onClick={handleShareViaWhatsApp}
+                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 hover:bg-purple-500/5 dark:hover:bg-purple-500/10 border border-slate-200/40 dark:border-white/5 hover:border-purple-200 dark:hover:border-purple-500/30 rounded-2xl transition-all group active:scale-[0.98]"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-purple-50 dark:bg-purple-500/10 rounded-xl text-purple-500 group-hover:scale-110 transition-transform">
+                                    <Share2 size={16} strokeWidth={2} />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Compartir Ficha del Cliente</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5">Enviar resumen de estado por WhatsApp</p>
+                                </div>
+                            </div>
+                            <ArrowRight size={14} className="text-slate-300 group-hover:text-purple-500 group-hover:translate-x-1 transition-all" />
+                        </button>
+
+                        {/* Cambio de frecuencia IVA */}
                         {editedClient.taxProfile?.ivaFrequency !== 'Ninguno' && onChangeIvaFrequency && (
                             <button
                                 onClick={onChangeIvaFrequency}
-                                className="w-full flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/15 border border-indigo-100 dark:border-indigo-500/20 hover:border-indigo-300 dark:hover:border-indigo-500/40 rounded-xl transition-all group active:scale-[0.98]"
+                                className="w-full flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/15 border border-indigo-100 dark:border-indigo-500/20 hover:border-indigo-300 dark:hover:border-indigo-500/40 rounded-2xl transition-all group active:scale-[0.98]"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg text-indigo-500 group-hover:scale-110 transition-transform">
-                                        <RefreshCcw size={15} strokeWidth={2} />
+                                    <div className="p-2.5 bg-indigo-100 dark:bg-indigo-500/20 rounded-xl text-indigo-500 group-hover:scale-110 transition-transform">
+                                        <RefreshCcw size={16} strokeWidth={2} />
                                     </div>
                                     <div className="text-left">
                                         <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300">Cambiar Frecuencia IVA</p>
                                         <p className="text-[10px] text-indigo-500/70 dark:text-indigo-400/70 mt-0.5">
-                                            Actual: <strong>{editedClient.taxProfile?.ivaFrequency}</strong> · Artesanos / Cambios de régimen
+                                            Actual: <strong>{editedClient.taxProfile?.ivaFrequency}</strong>
                                         </p>
                                     </div>
                                 </div>
                                 <ArrowRight size={14} className="text-indigo-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
                             </button>
                         )}
-
-                        <button
-                            onClick={() => setActiveTab('history')}
-                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-surface-low/40 hover:bg-primary/5 dark:hover:bg-primary/10 border border-slate-100 dark:border-white/5 hover:border-primary/20 rounded-xl transition-all group active:scale-[0.98]"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-slate-100 dark:bg-white/5 rounded-lg text-slate-500 group-hover:bg-primary/10 group-hover:text-primary group-hover:scale-110 transition-all">
-                                    <CalendarDays size={15} strokeWidth={2} />
-                                </div>
-                                <div className="text-left">
-                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Historial de Declaraciones</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">Ver todos los períodos</p>
-                                </div>
-                            </div>
-                            <ArrowRight size={14} className="text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                        </button>
-                    </div>
-
-
-
                     </div>
                 </div>
-
-            {/* ── BOTTOM ROW: Analytics & Facturador ──────────────────────────── */}
-            <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
-                {/* Gráfico de honorarios */}
-                <div className="bg-white dark:bg-surface/30 rounded-2xl p-6 border border-slate-100 dark:border-white/5 shadow-sm h-full flex flex-col">
-                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5 flex items-center gap-2">
-                        <Activity size={13} className="text-primary" strokeWidth={2.5} />
-                        Historial de Honorarios
-                    </h3>
-                    <div className="flex-1">
-                        <PaymentHistoryChart client={client} />
-                    </div>
-                </div>
-
-                {/* Facturador Electrónico del Cliente */}
-                <div className="h-full flex flex-col">
-                    <FacturadorCard
-                        config={editedClient.facturadorConfig || {}}
-                        isEditing={isEditing}
-                        onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
-                    />
-                </div>
-            </div>
-
-            {/* Notas del cliente */}
-            <div className="pt-2">
-                <ClientNotes
-                    clientId={client.id}
-                    notes={client.structuredNotes || []}
-                />
             </div>
         </div>
     );
