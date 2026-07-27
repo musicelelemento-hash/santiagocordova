@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Check, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent } from 'lucide-react';
 import { Client, DeclarationStatus, TaxRegime } from '../../../types';
 import { safeFormat, getDaysUntilDue } from '../../../services/sri';
 
@@ -21,6 +21,38 @@ interface ClientHeaderProps {
     onDelete?: () => void;
     nextDeadline: Date | null;
 }
+
+// Botón reutilizable de copiar con feedback visual
+const CopyClipButton: React.FC<{ text: string; label?: string; className?: string }> = ({ text, label, className }) => {
+    const [copied, setCopied] = useState(false);
+    const handleCopy = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <button
+            onClick={handleCopy}
+            type="button"
+            className={className || "px-2 py-1 rounded-lg bg-surface-container-low hover:bg-primary/10 text-on-surface-variant hover:text-primary transition-all active:scale-95 border border-outline-variant/10 flex items-center gap-1 text-[10px] font-bold"}
+            title={copied ? "¡Copiado!" : `Copiar ${label || text}`}
+        >
+            {copied ? (
+                <>
+                    <Check size={12} className="text-emerald-500" strokeWidth={3} />
+                    <span className="text-[9px] font-bold text-emerald-500">¡Copiado!</span>
+                </>
+            ) : (
+                <>
+                    <Copy size={11} strokeWidth={2} />
+                    <span className="text-[9px] font-bold uppercase tracking-wider">{label || 'Copiar'}</span>
+                </>
+            )}
+        </button>
+    );
+};
 
 // Badge visual para el régimen fiscal
 const RegimeBadge = ({ regime }: { regime: TaxRegime }) => {
@@ -111,11 +143,14 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                     </button>
                 </div>
 
-                {/* Identificación (RUC) + Papelera */}
+                {/* Identificación (RUC) + Botón Copiar RUC + Papelera */}
                 <div className="flex items-center justify-between gap-3">
-                    <div className="flex-1 flex items-center justify-between px-3 py-2 bg-surface-container-highest/30 backdrop-blur-xl border border-outline-variant/20 text-on-surface-variant rounded-xl text-[11px] font-mono font-bold">
+                    <div className="flex-1 flex items-center justify-between px-3.5 py-2 bg-surface-container-highest/30 backdrop-blur-xl border border-outline-variant/20 text-on-surface-variant rounded-xl text-[11px] font-mono font-bold">
                         <span className="text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[8px] font-sans">RUC / CÉDULA</span>
-                        <span className="text-on-surface font-black tracking-wider">{client.ruc}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-on-surface font-black tracking-wider">{client.ruc}</span>
+                            <CopyClipButton text={client.ruc} label="RUC" />
+                        </div>
                     </div>
 
                     {onDelete && (
@@ -218,9 +253,14 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                                     </div>
                                 </div>
 
-                                <h1 className="text-xl sm:text-2xl font-black text-on-surface tracking-tight leading-snug break-words text-center">
-                                    {client.name}
-                                </h1>
+                                {/* Nombre del Cliente + Botón de Copiar Nombre */}
+                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                    <h1 className="text-xl sm:text-2xl font-black text-on-surface tracking-tight leading-snug break-words text-center">
+                                        {client.name}
+                                    </h1>
+                                    <CopyClipButton text={client.name} label="Nombre" />
+                                </div>
+
                                 {client.tradeName && (
                                     <p className="text-xs text-slate-400 font-medium text-center">{client.tradeName}</p>
                                 )}

@@ -415,8 +415,32 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
 
                     <div className="flex items-center gap-4 sm:gap-8">
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold text-slate-800 dark:text-white tracking-tight leading-tight">{localClient.name}</p>
-                            <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mt-0.5">{localClient.ruc}</p>
+                            <div className="flex items-center justify-end gap-1.5">
+                                <p className="text-sm font-bold text-slate-800 dark:text-white tracking-tight leading-tight">{localClient.name}</p>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(localClient.name);
+                                        alert('Nombre copiado al portapapeles');
+                                    }}
+                                    className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 hover:text-brand-teal transition-all"
+                                    title="Copiar Nombre"
+                                >
+                                    <LucideIcons.Copy size={11} />
+                                </button>
+                            </div>
+                            <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                                <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">{localClient.ruc}</p>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(localClient.ruc);
+                                        alert('RUC copiado al portapapeles');
+                                    }}
+                                    className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 hover:text-brand-teal transition-all"
+                                    title="Copiar RUC"
+                                >
+                                    <LucideIcons.Copy size={11} />
+                                </button>
+                            </div>
                         </div>
                         <button
                             onClick={onLogout}
