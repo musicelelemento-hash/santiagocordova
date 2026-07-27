@@ -23,7 +23,9 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
 
     const [selectedClientId, setSelectedClientId] = useState<string>('');
     const [selectedPackage, setSelectedPackage] = useState<'combo_zifac' | 'combo_ecuafact' | 'solo_firma' | 'custom'>('combo_ecuafact');
-    const [cedulaFile, setCedulaFile] = useState<StoredFile | null>(null);
+    const [idCardFront, setIdCardFront] = useState<StoredFile | null>(null);
+    const [idCardBack, setIdCardBack] = useState<StoredFile | null>(null);
+    const [idCardSelfie, setIdCardSelfie] = useState<StoredFile | null>(null);
 
     // Form fields
     const [programName, setProgramName] = useState('ECUAFACT');
@@ -115,7 +117,9 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         const updatedClient = {
             ...targetClient,
             facturadorConfig: newFacturadorConfig,
-            ...(cedulaFile ? { cedulaFile } : {})
+            ...(idCardFront ? { idCardFront } : {}),
+            ...(idCardBack ? { idCardBack } : {}),
+            ...(idCardSelfie ? { idCardSelfie } : {}),
         };
 
         updateClient(targetClient.id, updatedClient);
@@ -352,64 +356,124 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                             Si dispones de tiempo, puedes adjuntar las fotos de la cédula (anverso/reverso) o PDF del cliente para que queden archivados en su Bóveda para el trámite de la Firma Electrónica.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
-                            <input
-                                type="file"
-                                id="sales-cedula-upload"
-                                accept="image/*,application/pdf"
-                                className="hidden"
-                                onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file || !targetClient) return;
-                                    try {
-                                        toast.info('Cargando documento de identidad...');
-                                        const reader = new FileReader();
-                                        reader.onload = () => {
-                                            const base64 = reader.result as string;
-                                            const storedDoc = {
-                                                name: file.name,
-                                                type: file.type.includes('pdf') ? 'pdf' : 'image',
-                                                size: file.size,
-                                                lastModified: file.lastModified,
-                                                content: base64,
-                                                metadata: { uploadedAt: new Date().toISOString(), formType: 'CEDULA_IDENTIDAD' }
+                        {/* 3 slots de documentos de identidad */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                            {([
+                                { id: 'front', label: 'Cédula Anverso', icon: '🪪', hint: 'Foto frontal de la cédula', state: idCardFront, setter: setIdCardFront, inputId: 'sales-id-front', formType: 'CEDULA_ANVERSO' },
+                                { id: 'back',  label: 'Cédula Reverso', icon: '🔄', hint: 'Foto posterior de la cédula', state: idCardBack,  setter: setIdCardBack,  inputId: 'sales-id-back',  formType: 'CEDULA_REVERSO'  },
+                                { id: 'extra', label: 'Doc. Adicional',  icon: '📎', hint: 'Selfie, carta, poder u otro', state: idCardSelfie, setter: setIdCardSelfie, inputId: 'sales-id-extra', formType: 'CEDULA_EXTRA'   },
+                            ] as const).map(slot => (
+                                <div key={slot.id} className="flex flex-col gap-2">
+                                    {/* Hidden input */}
+                                    <input
+                                        type="file"
+                                        id={slot.inputId}
+                                        accept="image/*,application/pdf"
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const reader = new FileReader();
+                                            reader.onload = () => {
+                                                const stored: StoredFile = {
+                                                    name: file.name,
+                                                    type: file.type.includes('pdf') ? 'pdf' : 'image',
+                                                    size: file.size,
+                                                    lastModified: file.lastModified,
+                                                    content: reader.result as string,
+                                                    metadata: { uploadedAt: new Date().toISOString(), formType: slot.formType }
+                                                };
+                                                slot.setter(stored);
+                                                toast.success(`${slot.label} cargado`);
                                             };
-                                            setCedulaFile(storedDoc);
-                                            toast.success('Documento de cédula cargado correctamente.');
-                                        };
-                                        reader.readAsDataURL(file);
-                                    } catch {
-                                        toast.error('Error al procesar el archivo.');
-                                    }
-                                }}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => document.getElementById('sales-cedula-upload')?.click()}
-                                className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
-                            >
-                                <Upload size={14} />
-                                <span>{cedulaFile ? `✓ ${cedulaFile.name}` : 'Subir Foto de Cédula / PDF'}</span>
-                            </button>
+                                            reader.readAsDataURL(file);
+                                            e.target.value = '';
+                                        }}
+                                    />
 
-                            {cedulaFile && (
-                                <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
-                                    <CheckCircle2 size={14} /> Archivo Cédula Listo
-                                </span>
-                            )}
+                                    {/* Card visual */}
+                                    <button
+                                        type="button"
+                                        onClick={() => document.getElementById(slot.inputId)?.click()}
+                                        className={`relative w-full aspect-[4/3] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all overflow-hidden group ${
+                                            slot.state
+                                                ? 'border-emerald-500 bg-emerald-500/5'
+                                                : 'border-indigo-400/40 bg-indigo-500/5 hover:border-indigo-400 hover:bg-indigo-500/10'
+                                        }`}
+                                    >
+                                        {slot.state && slot.state.type === 'image' && slot.state.content ? (
+                                            /* Preview de imagen */
+                                            <>
+                                                <img
+                                                    src={slot.state.content}
+                                                    alt={slot.label}
+                                                    className="absolute inset-0 w-full h-full object-cover rounded-2xl"
+                                                />
+                                                <div className="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">
+                                                    <Upload size={18} className="text-white" />
+                                                    <span className="text-white text-[10px] font-bold mt-1">Cambiar</span>
+                                                </div>
+                                                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow">
+                                                    <CheckCircle2 size={14} className="text-white" />
+                                                </div>
+                                            </>
+                                        ) : slot.state ? (
+                                            /* PDF u otro archivo */
+                                            <>
+                                                <div className="text-3xl">📄</div>
+                                                <span className="text-[10px] font-bold text-emerald-400 text-center px-2 truncate w-full text-center">{slot.state.name}</span>
+                                                <CheckCircle2 size={14} className="text-emerald-400" />
+                                            </>
+                                        ) : (
+                                            /* Empty state */
+                                            <>
+                                                <span className="text-3xl opacity-60">{slot.icon}</span>
+                                                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">{slot.label}</span>
+                                                <span className="text-[9px] text-slate-500 text-center px-3">{slot.hint}</span>
+                                                <div className="mt-1 flex items-center gap-1 text-[9px] text-indigo-400 font-semibold">
+                                                    <Upload size={10} /> Subir foto / PDF
+                                                </div>
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {/* Label y botón de quitar */}
+                                    <div className="flex items-center justify-between px-1">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{slot.label}</span>
+                                        {slot.state && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); slot.setter(null); }}
+                                                className="text-[9px] text-red-400 hover:text-red-300 font-bold transition-colors"
+                                            >
+                                                ✕ Quitar
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
 
                 {/* Footer Actions */}
                 <div className="p-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="w-full sm:w-auto px-6 py-3 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-bold text-xs uppercase tracking-wider transition-all"
-                    >
-                        Cancelar
-                    </button>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="w-full sm:w-auto px-6 py-3 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-bold text-xs uppercase tracking-wider transition-all"
+                        >
+                            Cancelar
+                        </button>
+                        {/* Indicador de fotos subidas */}
+                        {(idCardFront || idCardBack || idCardSelfie) && (
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-[10px] font-bold text-indigo-400 animate-in fade-in">
+                                <Camera size={11} />
+                                {[idCardFront, idCardBack, idCardSelfie].filter(Boolean).length}/3 fotos
+                            </span>
+                        )}
+                    </div>
 
                     <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                         <button
