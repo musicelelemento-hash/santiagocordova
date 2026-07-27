@@ -39,6 +39,7 @@ import { getNinthDigit } from '../../services/sri';
 
 import { db } from '../../services/db';
 import { useAppStore } from '../../store/useAppStore';
+import { getClientServiceFee } from '../../services/clientService';
 
 type MatrixMode = 'IVA' | 'RENTA';
 
@@ -66,6 +67,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     initialMode = 'IVA'
 }) => {
     const { toast } = useToast();
+    const { serviceFees } = useAppStore();
     const [frequency, setFrequency] = useState<IvaFrequency>('Mensual');
     const [matrixMode, setMatrixMode] = useState<MatrixMode>(initialMode);
     const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
@@ -1321,7 +1323,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         })}
                                                         {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-slate-200/30 dark:bg-white/5 my-6 mx-auto" />}
                                                     </div>
-                                                    {obligations.length > 1 && (
+                                                    {obligations.length > 0 && (
                                                         <div className="mt-2 flex justify-center">
                                                             <button
                                                                 onClick={(e) => {
@@ -1337,23 +1339,28 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         }
                                                                     });
                                                                 }}
-                                                                className={`flex items-center justify-center gap-1 px-2.5 py-0.75 rounded-lg text-[8px] font-bold uppercase tracking-wider border transition-all duration-300 ${
+                                                                className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all duration-300 ${
                                                                     obligations.every(ob => {
                                                                         const d = findDeclarationForOb(declarations, p, ob.type);
                                                                         return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
                                                                     })
                                                                         ? 'bg-sky-500 hover:bg-sky-600 border-sky-600 text-white shadow-sm active:scale-95'
-                                                                        : 'bg-slate-50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 text-slate-500 dark:text-slate-400 border-slate-200/50 dark:border-white/5 hover:border-slate-350 dark:hover:border-white/15 active:scale-95'
+                                                                        : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 active:scale-95'
                                                                 }`}
                                                                 title={
                                                                     obligations.every(ob => {
                                                                         const d = findDeclarationForOb(declarations, p, ob.type);
                                                                         return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
-                                                                    }) ? "Marcar todo como Pendiente" : "Marcar todo como Pagado"
+                                                                    }) ? "Marcar todo como Pendiente" : "Marcar Cobro Completo"
                                                                 }
                                                             >
-                                                                <LucideIcons.Coins size={9} strokeWidth={2.5} />
-                                                                <span>COBRO COMPLETO</span>
+                                                                <LucideIcons.Coins size={11} strokeWidth={2.5} />
+                                                                <span>
+                                                                    {obligations.every(ob => {
+                                                                        const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                        return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+                                                                    }) ? 'COBRADO' : `COBRO COMPLETO ($${getClientServiceFee(client, serviceFees, p)})`}
+                                                                </span>
                                                             </button>
                                                         </div>
                                                     )}
