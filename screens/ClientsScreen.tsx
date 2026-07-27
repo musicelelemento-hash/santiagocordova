@@ -1398,12 +1398,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         a.click();
                                         document.body.removeChild(a);
                                         URL.revokeObjectURL(url);
+                                        toast.success("Comprobante descargado correctamente");
                                     } catch (err) {
                                         console.error(err);
-                                        handleOpenClientDetails(client);
+                                        toast.error("Error al procesar el archivo PDF");
                                     }
                                 } else {
-                                    handleOpenClientDetails(client);
+                                    toast.info("Este comprobante no posee archivo PDF adjunto");
                                 }
                             }}
                             onTogglePayment={handleTogglePaymentFromMatrix}

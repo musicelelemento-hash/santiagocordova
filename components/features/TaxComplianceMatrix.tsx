@@ -1235,34 +1235,39 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                     {isDone ? (
                                                                         <>
                                                                         {/* Botón Descargar PDF Directo */}
-                                                                        {hasProof && d?.proof_file?.content && (
+                                                                        {hasProof && (
                                                                             <button
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
-                                                                                    try {
-                                                                                        const base64 = d.proof_file!.content!;
-                                                                                        const filename = d.proof_file!.name || `comprobante_${client.name}_${p}.pdf`;
-                                                                                        const binaryStr = atob(base64.includes(',') ? base64.split(',')[1] : base64);
-                                                                                        const bytes = new Uint8Array(binaryStr.length);
-                                                                                        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-                                                                                        const blob = new Blob([bytes], { type: 'application/pdf' });
-                                                                                        const url = URL.createObjectURL(blob);
-                                                                                        const a = document.createElement('a');
-                                                                                        a.href = url;
-                                                                                        a.download = filename;
-                                                                                        document.body.appendChild(a);
-                                                                                        a.click();
-                                                                                        document.body.removeChild(a);
-                                                                                        URL.revokeObjectURL(url);
-                                                                                    } catch (err) {
-                                                                                        console.error("Error downloading proof PDF:", err);
-                                                                                        onPreviewReceipt(client, d!);
+                                                                                    if (d?.proof_file?.content) {
+                                                                                        try {
+                                                                                            const base64 = d.proof_file.content;
+                                                                                            const filename = d.proof_file.name || `comprobante_${client.name}_${p}.pdf`;
+                                                                                            const binaryStr = atob(base64.includes(',') ? base64.split(',')[1] : base64);
+                                                                                            const bytes = new Uint8Array(binaryStr.length);
+                                                                                            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+                                                                                            const blob = new Blob([bytes], { type: 'application/pdf' });
+                                                                                            const url = URL.createObjectURL(blob);
+                                                                                            const a = document.createElement('a');
+                                                                                            a.href = url;
+                                                                                            a.download = filename;
+                                                                                            document.body.appendChild(a);
+                                                                                            a.click();
+                                                                                            document.body.removeChild(a);
+                                                                                            URL.revokeObjectURL(url);
+                                                                                            toast.success("Comprobante descargado correctamente");
+                                                                                        } catch (err) {
+                                                                                            console.error("Error downloading proof PDF:", err);
+                                                                                            onPreviewReceipt(client, d!);
+                                                                                        }
+                                                                                    } else {
+                                                                                        toast.info("Este comprobante no posee archivo PDF adjunto");
                                                                                     }
                                                                                 }}
-                                                                                className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-sm transition-all z-20 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110"
-                                                                                title="Descargar PDF Directo"
+                                                                                className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/50 opacity-90 group-hover/ob:opacity-100 scale-100 hover:scale-110 flex items-center justify-center"
+                                                                                title="Descargar PDF Directo del Comprobante"
                                                                             >
-                                                                                <LucideIcons.Download size={9} strokeWidth={3} />
+                                                                                <LucideIcons.Download size={10} strokeWidth={3} />
                                                                             </button>
                                                                         )}
                                                                         {/* Botón WhatsApp */}
