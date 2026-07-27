@@ -10,6 +10,8 @@ interface FacturadorCardProps {
 
 export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isEditing, onChange }) => {
     const [passwordVisible, setPasswordVisible] = React.useState(false);
+    const [localEditing, setLocalEditing] = React.useState(false);
+    const canEdit = isEditing || localEditing;
 
     const handleFieldChange = (field: keyof FacturadorConfig, value: any) => {
         onChange({ ...config, [field]: value });
@@ -43,8 +45,20 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                         <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1 font-premium">Plataforma externa para emisión de comprobantes</p>
                     </div>
                 </div>
-                
                 <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setLocalEditing(!localEditing)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                            canEdit
+                                ? 'bg-amber-500 text-white shadow-md'
+                                : 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300 hover:bg-slate-200'
+                        }`}
+                    >
+                        <LucideIcons.Edit3 size={12} />
+                        <span>{canEdit ? '✓ Modo Edición' : 'Editar Facturador'}</span>
+                    </button>
+
                     {config.url && (
                         <a 
                             href={config.url} 
@@ -95,7 +109,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 <select
                                     value={config.programName || ''}
                                     onChange={(e) => handleFieldChange('programName', e.target.value)}
-                                    disabled={!isEditing}
+                                    disabled={!canEdit}
                                     className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none appearance-none cursor-pointer transition-all disabled:opacity-50"
                                 >
                                     <option value="">No Definido / Ninguno</option>
@@ -121,7 +135,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 type="text"
                                 value={config.url || ''}
                                 onChange={(e) => handleFieldChange('url', e.target.value)}
-                                disabled={!isEditing}
+                                disabled={!canEdit}
                                 placeholder="https://sistema.cliente.com"
                                 className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                             />
@@ -136,7 +150,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 type="text"
                                 value={config.username || ''}
                                 onChange={(e) => handleFieldChange('username', e.target.value)}
-                                disabled={!isEditing}
+                                disabled={!canEdit}
                                 placeholder="RUC / Cédula / Correo"
                                 className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                             />
@@ -152,7 +166,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                     type={passwordVisible ? "text" : "password"}
                                     value={config.password || ''}
                                     onChange={(e) => handleFieldChange('password', e.target.value)}
-                                    disabled={!isEditing}
+                                    disabled={!canEdit}
                                     placeholder="Clave de facturador"
                                     className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                                 />
@@ -185,7 +199,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 <select
                                     value={config.documentStatus || ''}
                                     onChange={(e) => handleFieldChange('documentStatus', e.target.value)}
-                                    disabled={!isEditing}
+                                    disabled={!canEdit}
                                     className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none appearance-none cursor-pointer transition-all disabled:opacity-50"
                                 >
                                     <option value="">No Definido</option>
@@ -210,7 +224,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 type="number"
                                 value={config.documentCount === undefined ? '' : config.documentCount}
                                 onChange={(e) => handleFieldChange('documentCount', e.target.value === '' ? undefined : parseInt(e.target.value))}
-                                disabled={!isEditing}
+                                disabled={!canEdit}
                                 placeholder="Ej: 100 / Ilimitado"
                                 className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                             />
@@ -228,7 +242,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                     step="0.01"
                                     value={config.price === undefined ? '' : config.price}
                                     onChange={(e) => handleFieldChange('price', e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                                    disabled={!isEditing}
+                                    disabled={!canEdit}
                                     placeholder="0.00"
                                     className="w-full pl-8 pr-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                                 />
@@ -244,7 +258,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 type="date"
                                 value={config.expirationDate || ''}
                                 onChange={(e) => handleFieldChange('expirationDate', e.target.value)}
-                                disabled={!isEditing}
+                                disabled={!canEdit}
                                 className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50 [color-scheme:light] dark:[color-scheme:dark] cursor-pointer"
                             />
                         </div>
@@ -258,7 +272,7 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                                 type="text"
                                 value={config.providerName || (config.soldByMe ? 'Santiago Córdova' : '')}
                                 onChange={(e) => handleFieldChange('providerName', e.target.value)}
-                                disabled={!isEditing}
+                                disabled={!canEdit}
                                 placeholder="Ej: Santiago Córdova, Ecuafact, SRI Directo"
                                 className="w-full px-4 py-3 glass-card-premium rounded-xl text-xs font-semibold text-slate-800 dark:text-slate-100 focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                             />
