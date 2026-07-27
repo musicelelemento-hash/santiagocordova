@@ -1,10 +1,11 @@
 import React, { Suspense, useState, useRef, useEffect } from 'react';
-import { Search, X, User, LayoutGrid, Command, Sparkles, Building2 } from 'lucide-react';
+import { Search, X, User, LayoutGrid, Command, Sparkles, Building2, ShoppingBag } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { MobileNavBar } from './MobileNavBar';
 import { Clock } from '../ui/Clock';
 import { NotificationBell } from './NotificationBell';
+import { SalesComboModal } from '../features/SalesComboModal';
 import { Screen, Theme, Client } from '../../types';
 
 interface AppLayoutProps {
@@ -43,6 +44,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     const activeScreen = getScreenFromPath(location.pathname);
 
     const [globalQuery, setGlobalQuery] = useState('');
+    const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isMobileSearchExpanded, setIsMobileSearchExpanded] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -308,14 +310,33 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                         )}
                     </div>
 
-                    {/* Right: Notifications */}
-                    <div className="flex items-center gap-3 shrink-0">
+                    {/* Right: Notifications & Quick Sales Button */}
+                    <div className="flex items-center gap-2.5 shrink-0">
+                        <button
+                            onClick={() => setIsSalesModalOpen(true)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md active:scale-95 shrink-0"
+                            title="Registrar Venta de Plan o Firma Electrónica"
+                        >
+                            <ShoppingBag size={13} />
+                            <span className="hidden sm:inline">💳 Vender Plan / Firma</span>
+                            <span className="sm:hidden">💳 Venta</span>
+                        </button>
+
                         <NotificationBell
                             clients={clients}
                             onSelectClient={onSelectClient || (() => {})}
                         />
                     </div>
                 </header>
+
+                {/* Modal Global de Ventas de Combos / Firmas */}
+                <SalesComboModal
+                    isOpen={isSalesModalOpen}
+                    onClose={() => setIsSalesModalOpen(false)}
+                    onEmitSriInvoice={(client, description, amount) => {
+                        navigate('/facturacion', { state: { targetClient: client, description, amount } });
+                    }}
+                />
 
                 {/* Dynamic Route Content with Suspense Loading */}
                 <div className="flex-1 p-4 md:p-6 pb-24 md:pb-6">

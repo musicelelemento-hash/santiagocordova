@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, CheckCircle2, ShieldCheck, Zap, Key, FileText, ShoppingBag, Calendar, Lock } from 'lucide-react';
-import { Client, FacturadorConfig } from '../../types';
+import { X, Sparkles, CheckCircle2, ShieldCheck, Zap, Key, FileText, ShoppingBag, Calendar, Lock, Camera, Upload } from 'lucide-react';
+import { Client, FacturadorConfig, StoredFile } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { useToast } from '../../context/ToastContext';
 
@@ -22,6 +22,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
 
     const [selectedClientId, setSelectedClientId] = useState<string>('');
     const [selectedPackage, setSelectedPackage] = useState<'combo_zifac' | 'combo_ecuafact' | 'solo_firma' | 'custom'>('combo_ecuafact');
+    const [cedulaFile, setCedulaFile] = useState<StoredFile | null>(null);
 
     // Form fields
     const [programName, setProgramName] = useState('ECUAFACT');
@@ -105,7 +106,8 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
 
         const updatedClient = {
             ...targetClient,
-            facturadorConfig: newFacturadorConfig
+            facturadorConfig: newFacturadorConfig,
+            ...(cedulaFile ? { cedulaFile } : {})
         };
 
         updateClient(targetClient.id, updatedClient);
@@ -315,6 +317,69 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                     <option value={5}>5 Años</option>
                                 </select>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* 3. Requisitos Opcionales (Foto de Cédula / Documentos para Firma - Cuando no estés de apuro) */}
+                    <div className="p-5 bg-indigo-500/5 rounded-2xl border border-indigo-500/20 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
+                                <Camera size={14} className="text-indigo-400" />
+                                3. Documentos de Identidad (Opcional - Cuando no estés de apuro)
+                            </h4>
+                            <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[8px] font-bold uppercase rounded-md">
+                                Trámite de Firma
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                            Si dispones de tiempo, puedes adjuntar las fotos de la cédula (anverso/reverso) o PDF del cliente para que queden archivados en su Bóveda para el trámite de la Firma Electrónica.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                            <input
+                                type="file"
+                                id="sales-cedula-upload"
+                                accept="image/*,application/pdf"
+                                className="hidden"
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file || !targetClient) return;
+                                    try {
+                                        toast.info('Cargando documento de identidad...');
+                                        const reader = new FileReader();
+                                        reader.onload = () => {
+                                            const base64 = reader.result as string;
+                                            const storedDoc = {
+                                                name: file.name,
+                                                type: file.type.includes('pdf') ? 'pdf' : 'image',
+                                                size: file.size,
+                                                lastModified: file.lastModified,
+                                                content: base64,
+                                                metadata: { uploadedAt: new Date().toISOString(), formType: 'CEDULA_IDENTIDAD' }
+                                            };
+                                            setCedulaFile(storedDoc);
+                                            toast.success('Documento de cédula cargado correctamente.');
+                                        };
+                                        reader.readAsDataURL(file);
+                                    } catch {
+                                        toast.error('Error al procesar el archivo.');
+                                    }
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => document.getElementById('sales-cedula-upload')?.click()}
+                                className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                            >
+                                <Upload size={14} />
+                                <span>{cedulaFile ? `✓ ${cedulaFile.name}` : 'Subir Foto de Cédula / PDF'}</span>
+                            </button>
+
+                            {cedulaFile && (
+                                <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                                    <CheckCircle2 size={14} /> Archivo Cédula Listo
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
