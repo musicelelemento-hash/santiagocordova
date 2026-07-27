@@ -549,6 +549,40 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         }, 800);
     };
 
+    const handleSyncAllDeclaredAsPaid = () => {
+        let count = 0;
+        const nowIso = new Date().toISOString();
+        const updatedClients = clients.map(client => {
+            let hasChanges = false;
+            const decls = [...(client.declarations || [])];
+
+            decls.forEach((decl, idx) => {
+                if ((decl.status === DeclarationStatus.Enviada || decl.proof_file) && !decl.is_paid && decl.status !== DeclarationStatus.Pagada) {
+                    decls[idx] = {
+                        ...decl,
+                        status: DeclarationStatus.Pagada,
+                        is_paid: true,
+                        paidAt: nowIso,
+                        updatedAt: nowIso
+                    };
+                    hasChanges = true;
+                    count++;
+                }
+            });
+
+            if (hasChanges) {
+                store.updateClient(client.id, { declarations: decls });
+            }
+            return client;
+        });
+
+        if (count > 0) {
+            toast.success(`¡${count} cobros sincronizados y marcados como PAGADOS exitosamente!`);
+        } else {
+            toast.info("Cobranza ya se encuentra 100% sincronizada y al día con la Matriz.");
+        }
+    };
+
     return (
         <div className="space-y-4 sm:space-y-6 pb-24 animate-fade-in relative pt-4 sm:pt-0">
             {/* ELITE TACTICAL HEADER */}
@@ -571,6 +605,15 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto animate-fade-in-right">
+                    <button 
+                        onClick={handleSyncAllDeclaredAsPaid}
+                        className="flex items-center justify-center gap-2 px-6 py-4.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 w-full sm:w-auto"
+                        title="Marcar como pagados en lote todos los cobros cuyas declaraciones ya están enviadas en la Matriz"
+                    >
+                        <LucideIcons.RefreshCw size={16} />
+                        <span>⚡ Sincronizar Cobros con Matriz</span>
+                    </button>
+
                     <button 
                         onClick={() => setIsPaymentModalOpen(true)}
                         disabled={selectedItems.size === 0}
