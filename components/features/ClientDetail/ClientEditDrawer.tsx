@@ -114,12 +114,12 @@ export const ClientEditDrawer: React.FC<ClientEditDrawerProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[500] flex justify-end bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-            {/* Drawer Backdrop click to close */}
-            <div className="flex-1" onClick={onClose} />
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6 md:p-10 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-300">
+            {/* Modal Backdrop click to close */}
+            <div className="absolute inset-0" onClick={onClose} />
 
-            {/* Main Drawer Window */}
-            <div className="w-full max-w-2xl bg-white dark:bg-slate-950 h-full flex flex-col shadow-2xl border-l border-slate-200 dark:border-white/10 animate-in slide-in-from-right duration-300 relative overflow-hidden">
+            {/* Main Centered Modal Window */}
+            <div className="w-full max-w-4xl xl:max-w-5xl bg-white dark:bg-slate-950 max-h-[90vh] flex flex-col shadow-2xl rounded-3xl border border-slate-200/80 dark:border-white/10 animate-in zoom-in-95 duration-300 relative overflow-hidden z-10">
                 {/* Header */}
                 <div className="p-6 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-white/10 flex items-center justify-between flex-shrink-0">
                     <div className="flex items-center gap-3">
