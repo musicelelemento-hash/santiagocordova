@@ -6,6 +6,7 @@ import { VaultCard } from '../VaultCard';
 import { ClientNotes } from '../ClientNotes';
 import { ClientNote } from '../../../../types';
 import { FacturadorCard } from '../FacturadorCard';
+import { SalesComboModal } from '../../SalesComboModal';
 
 interface VaultTabProps {
     client: Client;
@@ -36,6 +37,8 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     onDownloadFile,
     onUpdateClientDirect
 }) => {
+    const [isSalesModalOpen, setIsSalesModalOpen] = React.useState(false);
+
     const handleUploadField = async (field: keyof Client, file: StoredFile) => {
         if (isEditing) {
             setEditedClient({ ...editedClient, [field]: file });
@@ -157,8 +160,16 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     config={editedClient.facturadorConfig || {}}
                     isEditing={isEditing}
                     onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
+                    onOpenSalesModal={() => setIsSalesModalOpen(true)}
                 />
             </div>
+
+            {/* Modal de Registro de Ventas de Sistemas y Firmas */}
+            <SalesComboModal
+                isOpen={isSalesModalOpen}
+                onClose={() => setIsSalesModalOpen(false)}
+                initialClient={editedClient}
+            />
 
             {/* Respaldo para Tramitar Firma Electrónica */}
             <div className="bg-slate-900/60 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-slate-700/50 shadow-xl space-y-6">

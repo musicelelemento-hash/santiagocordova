@@ -6,9 +6,10 @@ interface FacturadorCardProps {
     config?: FacturadorConfig;
     isEditing: boolean;
     onChange: (config: FacturadorConfig) => void;
+    onOpenSalesModal?: () => void;
 }
 
-export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isEditing, onChange }) => {
+export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isEditing, onChange, onOpenSalesModal }) => {
     const [passwordVisible, setPasswordVisible] = React.useState(false);
     const [localEditing, setLocalEditing] = React.useState(false);
     const canEdit = isEditing || localEditing;
@@ -45,7 +46,17 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                         <p className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1 font-premium">Plataforma externa para emisión de comprobantes</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    {onOpenSalesModal && (
+                        <button
+                            type="button"
+                            onClick={onOpenSalesModal}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
+                        >
+                            <LucideIcons.ShoppingBag size={12} />
+                            <span>💳 Registrar Venta de Plan</span>
+                        </button>
+                    )}
                     <button
                         type="button"
                         onClick={() => setLocalEditing(!localEditing)}
