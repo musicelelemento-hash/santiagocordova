@@ -28,7 +28,7 @@ import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime, TaxObligationType } from '../../types';
-import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod } from '../../services/sri';
+import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod, downloadStoredFile } from '../../services/sri';
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
@@ -1239,29 +1239,15 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                             <button
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
-                                                                                    if (d?.proof_file?.content) {
-                                                                                        try {
-                                                                                            const base64 = d.proof_file.content;
-                                                                                            const filename = d.proof_file.name || `comprobante_${client.name}_${p}.pdf`;
-                                                                                            const binaryStr = atob(base64.includes(',') ? base64.split(',')[1] : base64);
-                                                                                            const bytes = new Uint8Array(binaryStr.length);
-                                                                                            for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-                                                                                            const blob = new Blob([bytes], { type: 'application/pdf' });
-                                                                                            const url = URL.createObjectURL(blob);
-                                                                                            const a = document.createElement('a');
-                                                                                            a.href = url;
-                                                                                            a.download = filename;
-                                                                                            document.body.appendChild(a);
-                                                                                            a.click();
-                                                                                            document.body.removeChild(a);
-                                                                                            URL.revokeObjectURL(url);
+                                                                                    if (d?.proof_file) {
+                                                                                        const ok = downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
+                                                                                        if (ok) {
                                                                                             toast.success("Comprobante descargado correctamente");
-                                                                                        } catch (err) {
-                                                                                            console.error("Error downloading proof PDF:", err);
-                                                                                            onPreviewReceipt(client, d!);
+                                                                                        } else {
+                                                                                            toast.error("No se pudo procesar el archivo PDF del comprobante");
                                                                                         }
                                                                                     } else {
-                                                                                        toast.info("Este comprobante no posee archivo PDF adjunto");
+                                                                                        toast.info("Este comprobante fue registrado sin un archivo PDF adjunto");
                                                                                     }
                                                                                 }}
                                                                                 className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/50 opacity-90 group-hover/ob:opacity-100 scale-100 hover:scale-110 flex items-center justify-center"
@@ -1499,27 +1485,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 </div>
 
                                 <div className="flex items-center gap-2 pt-1">
-                                    {activeCellModal.declaration.proof_file?.content && (
+                                    {activeCellModal.declaration.proof_file && (
                                         <button
                                             onClick={() => {
-                                                try {
-                                                    const base64 = activeCellModal.declaration.proof_file!.content!;
-                                                    const filename = activeCellModal.declaration.proof_file!.name || `comprobante_${activeCellModal.client.name}_${activeCellModal.period}.pdf`;
-                                                    const binaryStr = atob(base64.includes(',') ? base64.split(',')[1] : base64);
-                                                    const bytes = new Uint8Array(binaryStr.length);
-                                                    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-                                                    const blob = new Blob([bytes], { type: 'application/pdf' });
-                                                    const url = URL.createObjectURL(blob);
-                                                    const a = document.createElement('a');
-                                                    a.href = url;
-                                                    a.download = filename;
-                                                    document.body.appendChild(a);
-                                                    a.click();
-                                                    document.body.removeChild(a);
-                                                    URL.revokeObjectURL(url);
+                                                const ok = downloadStoredFile(
+                                                    activeCellModal.declaration.proof_file,
+                                                    `comprobante_${activeCellModal.client.name}_${activeCellModal.period}.pdf`
+                                                );
+                                                if (ok) {
                                                     toast.success("Comprobante descargado correctamente");
-                                                } catch (err) {
-                                                    console.error(err);
+                                                } else {
+                                                    toast.error("El archivo del comprobante no se pudo decodificar");
                                                 }
                                             }}
                                             className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20"

@@ -439,3 +439,71 @@ export const generateDeclarationWhatsAppMessage = (
     
     return msg;
 };
+
+/**
+ * Descarga de manera robusta un archivo guardado (PDF, imagen, etc.) 
+ * Soportando Blob URLs, URLs externas (HTTP/HTTPS), Data URLs y Base64.
+ */
+export const downloadStoredFile = (fileObj: any, defaultName: string = 'comprobante.pdf'): boolean => {
+    if (!fileObj) return false;
+
+    try {
+        const fileName = fileObj.name || defaultName;
+        const content = fileObj.content || fileObj.url || (typeof fileObj === 'string' ? fileObj : null);
+
+        if (!content || typeof content !== 'string') return false;
+
+        // Caso 1: Es una URL HTTP, HTTPS o Blob directamente
+        if (content.startsWith('http://') || content.startsWith('https://') || content.startsWith('blob:')) {
+            const a = document.createElement('a');
+            a.href = content;
+            a.download = fileName;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            return true;
+        }
+
+        // Caso 2: Es Data URL o Base64
+        let base64Data = content;
+        let mimeType = 'application/pdf';
+
+        if (content.startsWith('data:')) {
+            const parts = content.split(';');
+            mimeType = parts[0].replace('data:', '') || 'application/pdf';
+            base64Data = content.substring(content.indexOf(',') + 1);
+        }
+
+        // Limpiar espacios, saltos de línea y formateo inválido
+        base64Data = base64Data.trim().replace(/[\r\n\s]/g, '');
+        
+        // Corregir relleno Base64 (padding '=') si faltara
+        while (base64Data.length % 4 !== 0) {
+            base64Data += '=';
+        }
+
+        // Decodificar binary string
+        const binaryString = window.atob(base64Data);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const blob = new Blob([bytes], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+        return true;
+    } catch (err) {
+        console.error("Error al descargar archivo guardado:", err);
+        return false;
+    }
+};

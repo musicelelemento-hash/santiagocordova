@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Client, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField, TaxObligationType } from '../types';
 import * as LucideIcons from 'lucide-react';
-import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat } from '../services/sri';
+import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat, downloadStoredFile } from '../services/sri';
 import { Modal } from '../components/ui/Modal';
 import { v4 as uuidv4 } from 'uuid';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../services/geminiService';
@@ -1382,29 +1382,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             initialMode={activeGroupTab === 'renta' ? 'RENTA' : 'IVA'}
                             onUploadReceipt={handleUploadReceipt}
                             onPreviewReceipt={(client, declaration) => {
-                                if (declaration.proof_file?.content) {
-                                    try {
-                                        const base64 = declaration.proof_file.content;
-                                        const filename = declaration.proof_file.name || `declaracion_${client.name}_${declaration.period}.pdf`;
-                                        const binaryStr = atob(base64.includes(',') ? base64.split(',')[1] : base64);
-                                        const bytes = new Uint8Array(binaryStr.length);
-                                        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-                                        const blob = new Blob([bytes], { type: 'application/pdf' });
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = filename;
-                                        document.body.appendChild(a);
-                                        a.click();
-                                        document.body.removeChild(a);
-                                        URL.revokeObjectURL(url);
+                                if (declaration.proof_file) {
+                                    const ok = downloadStoredFile(declaration.proof_file, `comprobante_${client.name}_${declaration.period}.pdf`);
+                                    if (ok) {
                                         toast.success("Comprobante descargado correctamente");
-                                    } catch (err) {
-                                        console.error(err);
-                                        toast.error("Error al procesar el archivo PDF");
+                                    } else {
+                                        toast.error("El archivo del comprobante no se pudo procesar");
                                     }
                                 } else {
-                                    toast.info("Este comprobante no posee archivo PDF adjunto");
+                                    toast.info("Este comprobante fue registrado sin un archivo PDF adjunto");
                                 }
                             }}
                             onTogglePayment={handleTogglePaymentFromMatrix}
