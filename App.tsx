@@ -23,6 +23,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { MobileNavBar } from './components/layout/MobileNavBar';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { GlobalUploadModal } from './components/features/GlobalUploadModal';
+import { SalesComboModal } from './components/features/SalesComboModal';
 import { Client, Task, Screen, Theme, ClientFilter, PublicUser, TaxRegime } from './types';
 import { loadDataFromSheet, syncDataToSheet } from './services/sheetApi';
 import { CommandPalette } from './components/CommandPalette';
@@ -280,6 +281,13 @@ const App: React.FC = () => {
 
   // Sincronización a la nube (Refactorizada para permitir manual)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenSales = () => setIsSalesModalOpen(true);
+    window.addEventListener('open-sales-modal', handleOpenSales);
+    return () => window.removeEventListener('open-sales-modal', handleOpenSales);
+  }, []);
 
   const saveData = async () => {
     if (cloudStatus === 'loading') return;
@@ -508,6 +516,7 @@ const App: React.FC = () => {
           activeScreen={activeScreen}
           navItems={navItems}
           onQuickManagement={() => setIsUploadModalOpen(true)}
+          onOpenSalesModal={() => setIsSalesModalOpen(true)}
           onLogout={() => setShowLogoutConfirm(true)}
           cloudStatus={cloudStatus}
           onManualSave={handleManualSave}
@@ -751,6 +760,14 @@ const App: React.FC = () => {
         <GlobalUploadModal
           isOpen={isUploadModalOpen}
           onClose={() => setIsUploadModalOpen(false)}
+        />
+        <SalesComboModal
+          isOpen={isSalesModalOpen}
+          onClose={() => setIsSalesModalOpen(false)}
+          onEmitSriInvoice={(client, description, amount) => {
+            setIsSalesModalOpen(false);
+            navigate('sri_facturacion');
+          }}
         />
 
         <CommandPalette 

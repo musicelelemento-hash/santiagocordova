@@ -182,7 +182,7 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
             const syncPromises = Array.from(modifiedClientRucs).map(ruc => {
                 const client = updatedClients.find(c => c.ruc.trim() === ruc);
                 if (client) {
-                    return updateClient(client.id, { declarations: client.declarations }).catch(e => {
+                    return Promise.resolve(updateClient(client.id, { declarations: client.declarations })).catch(e => {
                         console.error(`Error syncing client ${client.name} in bulk upload:`, e);
                     });
                 }

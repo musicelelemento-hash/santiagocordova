@@ -120,7 +120,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             settings: '/dashboard/ajustes',
             audit_log: '/dashboard/audit',
             services: '/dashboard/convertidor',
-            web_orders: '/dashboard/pedidos'
+            web_orders: '/dashboard/pedidos',
+            scanner: '/dashboard/clientes',
+            migracion_zifact: '/dashboard/convertidor'
         };
         navigate(routeMap[screen] || '/dashboard/clientes');
     };
@@ -153,6 +155,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             <MobileNavBar
                 activeScreen={activeScreen}
                 onNavigate={handleNavigate}
+                navItems={navItems as any}
             />
 
             {/* Main Content Area */}
@@ -325,7 +328,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
                         <NotificationBell
                             clients={clients}
-                            onSelectClient={onSelectClient || (() => {})}
+                            navigate={(screen: Screen) => handleNavigate(screen)}
                         />
                     </div>
                 </header>

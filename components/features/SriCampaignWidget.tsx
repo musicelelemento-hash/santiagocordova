@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Client, DeclarationStatus } from '../../types';
+import { Client, DeclarationStatus, TaxRegime } from '../../types';
 import { getNinthDigit } from '../../services/sri';
 
 interface SriCampaignWidgetProps {
@@ -46,14 +46,14 @@ export const SriCampaignWidget: React.FC<SriCampaignWidgetProps> = ({
     // Clients matching current active digit
     const digitSemestralClients = clients.filter(c => {
         const digit = getNinthDigit(c.ruc);
-        const freq = c.taxProfile?.ivaFrequency || (c.regime === 'RimpeEmprendedor' ? 'Semestral' : 'Mensual');
-        return digit === activeDigit && (freq === 'Semestral' || c.regime === 'RimpeEmprendedor');
+        const freq = c.taxProfile?.ivaFrequency || (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : 'Mensual');
+        return digit === activeDigit && (freq === 'Semestral' || c.regime === TaxRegime.RimpeEmprendedor);
     });
 
     const digitMensualClients = clients.filter(c => {
         const digit = getNinthDigit(c.ruc);
-        const freq = c.taxProfile?.ivaFrequency || (c.regime === 'General' ? 'Mensual' : 'Mensual');
-        return digit === activeDigit && freq === 'Mensual' && c.regime !== 'RimpeEmprendedor' && c.regime !== 'RimpeNegocioPopular';
+        const freq = c.taxProfile?.ivaFrequency || (c.regime === TaxRegime.General ? 'Mensual' : 'Mensual');
+        return digit === activeDigit && freq === 'Mensual' && c.regime !== TaxRegime.RimpeEmprendedor && c.regime !== TaxRegime.RimpeNegocioPopular;
     });
 
     const pendingSemestralCount = digitSemestralClients.filter(c => {

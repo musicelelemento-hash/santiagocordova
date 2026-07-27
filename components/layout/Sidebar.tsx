@@ -291,22 +291,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </button>
                     )}
 
-                    {onOpenSalesModal && (
-                        <button
-                            onClick={onOpenSalesModal}
-                            title={isCollapsed ? "💳 Vender Plan / Firma" : undefined}
-                            className={`
-                                group flex items-center rounded-xl border transition-all duration-300 shadow-md active:scale-95
-                                ${isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-4 py-2.5 gap-3'}
-                                bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white hover:border-amber-500
-                            `}
-                        >
-                            <ShoppingBag size={16} className="transition-transform group-hover:scale-110 flex-shrink-0 text-amber-500" />
-                            <span className={`text-[11px] font-black uppercase tracking-wider transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''}`}>
-                                💳 Vender Plan / Firma
-                            </span>
-                        </button>
-                    )}
+                    <button
+                        onClick={() => {
+                            if (onOpenSalesModal) {
+                                onOpenSalesModal();
+                            } else {
+                                window.dispatchEvent(new CustomEvent('open-sales-modal'));
+                            }
+                        }}
+                        title={isCollapsed ? "💳 Vender Plan / Firma" : undefined}
+                        className={`
+                            group flex items-center rounded-xl border transition-all duration-300 shadow-md active:scale-95
+                            ${isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-4 py-2.5 gap-3'}
+                            bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500 hover:text-white hover:border-amber-500
+                        `}
+                    >
+                        <ShoppingBag size={16} className="transition-transform group-hover:scale-110 flex-shrink-0 text-amber-500" />
+                        <span className={`text-[11px] font-black uppercase tracking-wider transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''}`}>
+                            💳 Vender Plan / Firma
+                        </span>
+                    </button>
                 </div>
             </nav>
 

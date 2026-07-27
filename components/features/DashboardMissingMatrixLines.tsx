@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Client, DeclarationStatus, Screen, ClientFilter, Task } from '../../types';
+import { Client, DeclarationStatus, Screen, ClientFilter, Task, TaxRegime } from '../../types';
 import { getNinthDigit } from '../../services/sri';
 import { isPeriodBeforeClientStart } from '../../services/complianceEngine';
 import { SriCampaignWidget } from './SriCampaignWidget';
@@ -57,7 +57,7 @@ export const DashboardMissingMatrixLines: React.FC<DashboardMissingMatrixLinesPr
             const decls = c.declarations || [];
 
             // 1. Check Semestral S1 2026 missing
-            const isRimpeEmp = c.regime === 'RimpeEmprendedor' || c.taxProfile?.ivaFrequency === 'Semestral';
+            const isRimpeEmp = c.regime === TaxRegime.RimpeEmprendedor || c.taxProfile?.ivaFrequency === 'Semestral';
             if (isRimpeEmp && !isPeriodBeforeClientStart(c, '2026-S1')) {
                 const s1Decl = decls.find(d => d.period.includes('2026-S1') || d.period.includes('2026:S1'));
                 const isS1Done = s1Decl && (s1Decl.status === DeclarationStatus.Enviada || s1Decl.status === DeclarationStatus.Pagada || !!s1Decl.proof_file);
@@ -74,7 +74,7 @@ export const DashboardMissingMatrixLines: React.FC<DashboardMissingMatrixLinesPr
             }
 
             // 2. Check Mensual Junio 2026 missing
-            const isMensual = c.taxProfile?.ivaFrequency === 'Mensual' || (c.regime === 'General' && c.taxProfile?.ivaFrequency !== 'Semestral');
+            const isMensual = c.taxProfile?.ivaFrequency === 'Mensual' || (c.regime === TaxRegime.General && c.taxProfile?.ivaFrequency !== 'Semestral');
             if (isMensual && !isPeriodBeforeClientStart(c, '2026-06')) {
                 const junDecl = decls.find(d => d.period.endsWith('2026-06') || d.period.endsWith('2026-05'));
                 const isJunDone = junDecl && (junDecl.status === DeclarationStatus.Enviada || junDecl.status === DeclarationStatus.Pagada || !!junDecl.proof_file);

@@ -35,7 +35,7 @@ function base64ToUint8Array(base64: string): Uint8Array {
 }
 
 function triggerBrowserDownload(buf: Uint8Array | ArrayBuffer, filename: string, mimeType: string = 'application/vnd.ms-excel') {
-    const blob = new Blob([buf], { type: mimeType });
+    const blob = new Blob([buf as BlobPart], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -230,13 +230,13 @@ export const AdaptadorConvert: React.FC = () => {
             if (file.type === 'productos') {
                 const bytes = base64ToUint8Array(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64.trim());
                 const workbook = xlsx.read(bytes, { type: 'array' });
-                const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true });
+                const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
                 workbook.Sheets['Plantilla'] = newWs;
 
                 const outBuf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
                 triggerBrowserDownload(outBuf, 'Productos_Zifact_Migrado.xls', 'application/vnd.ms-excel');
             } else {
-                const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
+                const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
                 const workbook = xlsx.utils.book_new();
                 xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
 
@@ -252,7 +252,7 @@ export const AdaptadorConvert: React.FC = () => {
     // Descargar archivo en formato XLSX
     const downloadAsXLSX = (file: ProcessedFile) => {
         try {
-            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
+            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
             const workbook = xlsx.utils.book_new();
 
             if (file.type === 'productos') {
@@ -278,12 +278,12 @@ export const AdaptadorConvert: React.FC = () => {
             if (file.type === 'productos') {
                 const bytes = base64ToUint8Array(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64.trim());
                 const workbook = xlsx.read(bytes, { type: 'array' });
-                const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true });
+                const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
                 workbook.Sheets['Plantilla'] = newWs;
                 const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
                 zip.file(`Productos_Zifact_Migrado.xls`, bufXls);
             } else {
-                const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true });
+                const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
                 const workbook = xlsx.utils.book_new();
                 xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
                 const bufXlsx = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
