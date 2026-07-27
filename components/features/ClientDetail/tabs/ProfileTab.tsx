@@ -9,6 +9,7 @@ import {
     FileKey, Download, Trash2, UploadCloud, Mail
 } from 'lucide-react';
 import { TaxObligationCard } from '../TaxObligationCard';
+import { ExecutiveObligationsTable } from '../ExecutiveObligationsTable';
 import { PaymentHistoryChart } from '../PaymentHistoryChart';
 import { ClientNotes } from '../ClientNotes';
 import { FacturadorCard } from '../FacturadorCard';
@@ -163,61 +164,19 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
             {/* ── MIDDLE ROW: Action Core ──────────────────────────── */}
             <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
                 
-                {/* ── Column 1: Tax Obligations (Span 2) ── */}
+                {/* ── Column 1: Executive Tax & Fee Obligations Table (Span 2) ── */}
                 <div className="2xl:col-span-2 space-y-6">
-                    {/* Sección: Obligaciones tributarias */}
-                    <div className="glass-card-premium rounded-2xl p-6 ">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <Zap size={13} className="text-primary" strokeWidth={2.5} />
-                                Obligaciones Tributarias
-                            </h3>
-                            <button
-                                onClick={() => setActiveTab('history')}
-                                className="text-[10px] font-bold text-primary hover:text-primary/70 uppercase tracking-wider flex items-center gap-1 transition-colors"
-                            >
-                                Ver historial <ArrowRight size={12} strokeWidth={2.5} />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            {/* IVA — Solo si NO es RIMPE Negocio Popular */}
-                            {!isNegocioPopular && complianceStats?.iva?.needed && (
-                                <TaxObligationCard
-                                    type="iva"
-                                    title={`IVA ${editedClient.taxProfile?.ivaFrequency === 'Semestral' ? 'Semestral' : 'Mensual'}`}
-                                    period={complianceStats.iva.period}
-                                    isDeclared={complianceStats.iva.isDeclared}
-                                    isPaid={complianceStats.iva.is_paid}
-                                    amount={getClientServiceFee(client, serviceFees, complianceStats.iva.period)}
-                                    hasProofFile={complianceStats.iva.hasProofFile}
-                                    dueDate={getDueDateForPeriod(client, complianceStats.iva.period) || undefined}
-                                    onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats.iva.period })}
-                                    onPay={() => handleQuickPay(complianceStats.iva.period)}
-                                    onRevertDeclaration={() => handleRevertDeclaration(complianceStats.iva.period)}
-                                    onCancel={() => handleCancelDeclaration(complianceStats.iva.period)}
-                                    onUpload={() => { setUploadingTarget({ type: 'iva', period: complianceStats.iva.period }); proofInputRef.current?.click(); }}
-                                />
-                            )}
-
-                            {/* Renta Anual */}
-                            {complianceStats?.renta?.needed && (
-                                <TaxObligationCard
-                                    type="renta"
-                                    title={isNegocioPopular ? 'Impuesto a la Renta RIMPE (Anual)' : 'Impuesto a la Renta (Anual)'}
-                                    period={complianceStats.renta.period}
-                                    isDeclared={complianceStats.renta.isDeclared}
-                                    isPaid={complianceStats.renta.is_paid}
-                                    amount={editedClient.fee_structure?.annual ?? 10}
-                                    hasProofFile={complianceStats.renta.hasProofFile}
-                                    dueDate={getDueDateForPeriod(client, complianceStats.renta.period) || undefined}
-                                    onDeclare={() => setConfirmation({ action: 'declare', period: complianceStats.renta.period })}
-                                    onPay={() => handleQuickPay(complianceStats.renta.period)}
-                                    onRevertDeclaration={() => handleRevertDeclaration(complianceStats.renta.period)}
-                                    onCancel={() => handleCancelDeclaration(complianceStats.renta.period)}
-                                    onUpload={() => { setUploadingTarget({ type: 'renta', period: complianceStats.renta.period }); proofInputRef.current?.click(); }}
-                                />
-                            )}
+                    <ExecutiveObligationsTable
+                        client={client}
+                        complianceStats={complianceStats}
+                        serviceFees={serviceFees}
+                        onDeclare={(period) => setConfirmation({ action: 'declare', period })}
+                        onQuickPay={handleQuickPay}
+                        onUploadTarget={({ type, period }) => setUploadingTarget({ type, period })}
+                        proofInputRef={proofInputRef}
+                        onRevertDeclaration={handleRevertDeclaration}
+                        onCancelDeclaration={handleCancelDeclaration}
+                    />
 
                             {/* RIMPE NP: sin IVA, mostrar aviso */}
                             {isNegocioPopular && !complianceStats?.renta?.needed && (
@@ -255,8 +214,6 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     onUpload={() => { setUploadingTarget({ type: 'devolucionRenta' }); proofInputRef.current?.click(); }}
                                 />
                             )}
-                        </div>
-                    </div>
                 </div>
 
                 {/* ── Column 2: Security & Quick Actions (Span 1) ── */}

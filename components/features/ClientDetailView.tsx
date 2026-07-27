@@ -913,9 +913,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     />
                 </div>
 
-                {/* RIGHT COLUMN - Main Tab Content */}
-                <div ref={rightColRef} className="flex-1 overflow-y-auto p-6 sm:p-10 sm:pr-28 pb-40 no-scrollbar relative scroll-smooth bg-white dark:bg-slate-950">
-                    <div className="max-w-[960px] mx-auto animate-in fade-in slide-in-from-bottom-10 duration-1000">
+                {/* RIGHT COLUMN - Main Tab Content (Full Width on Desktop PC) */}
+                <div ref={rightColRef} className="flex-1 overflow-y-auto p-6 sm:p-10 pb-40 no-scrollbar relative scroll-smooth bg-white dark:bg-slate-950">
+                    <div className="w-full max-w-none animate-in fade-in slide-in-from-bottom-10 duration-1000">
                         {activeTab === 'profile' && renderProfileTab()}
                         {activeTab === 'history' && renderHistoryTab()}
                         {activeTab === 'vault' && renderVaultTab()}
