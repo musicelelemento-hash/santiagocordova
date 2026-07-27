@@ -20,7 +20,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
     const [showPassword, setShowPassword] = useState(false);
     const [showSriHelp, setShowSriHelp] = useState(false);
     const [rememberMe, setRememberMe] = useState(true);
-    const [fillSuccessMessage, setFillSuccessMessage] = useState('');
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,29 +49,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                 setIsSubmitting(false);
             }
         }, 1100);
-    };
-
-    const handleQuickFill = (type: 'admin' | 'client') => {
-        setError('');
-        if (type === 'admin') {
-            setLoginType('admin');
-            setIdentifier('@Santiago');
-            setPassword('Santiago2026');
-            setFillSuccessMessage('Credenciales de Admin aplicadas');
-        } else {
-            setLoginType('client');
-            const demoClient = clients.length > 0 ? clients[0] : null;
-            if (demoClient) {
-                setIdentifier(demoClient.ruc);
-                setPassword(demoClient.sriPassword || '123456');
-                setFillSuccessMessage(`RUC de ${demoClient.name.split(' ')[0]} aplicado`);
-            } else {
-                setIdentifier('1790000000001');
-                setPassword('123456');
-                setFillSuccessMessage('RUC de prueba aplicado');
-            }
-        }
-        setTimeout(() => setFillSuccessMessage(''), 3000);
     };
 
     return (
@@ -206,45 +182,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                 </span>
                             </button>
                         </div>
-
-                        {/* Quick Demo Helper Pills */}
-                        <div className="mb-6 bg-slate-900/50 rounded-2xl p-2.5 border border-slate-800/60 flex items-center justify-between gap-2">
-                            <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5 ml-1">
-                                <LucideIcons.Sparkles size={13} className="text-amber-400" />
-                                <span>Demo rápido:</span>
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                                <button
-                                    type="button"
-                                    onClick={() => handleQuickFill('client')}
-                                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 hover:text-brand-teal text-slate-300 text-[10px] font-mono font-bold rounded-lg border border-slate-700/60 transition-colors flex items-center gap-1"
-                                >
-                                    <LucideIcons.UserCheck size={11} /> RUC Demo
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleQuickFill('admin')}
-                                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 hover:text-sky-400 text-slate-300 text-[10px] font-mono font-bold rounded-lg border border-slate-700/60 transition-colors flex items-center gap-1"
-                                >
-                                    <LucideIcons.KeyRound size={11} /> Admin Demo
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Success Notification for Quick Fill */}
-                        <AnimatePresence>
-                            {fillSuccessMessage && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                                    animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
-                                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                                    className="p-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-emerald-300 text-xs font-medium"
-                                >
-                                    <LucideIcons.CheckCircle2 size={14} className="text-emerald-400 flex-shrink-0" />
-                                    <span>{fillSuccessMessage}</span>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
 
                         {/* Main Login Form */}
                         <form onSubmit={handleLogin} className="space-y-4">
