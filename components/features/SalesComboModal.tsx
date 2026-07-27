@@ -17,8 +17,9 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     initialClient,
     onEmitSriInvoice
 }) => {
-    const { clients, updateClient } = useAppStore();
+    const { clients, updateClient, systemSettings } = useAppStore();
     const { toast } = useToast();
+    const activeCombos = (systemSettings?.combos || []).filter(c => c.isActive);
 
     const [selectedClientId, setSelectedClientId] = useState<string>('');
     const [selectedPackage, setSelectedPackage] = useState<'combo_zifac' | 'combo_ecuafact' | 'solo_firma' | 'custom'>('combo_ecuafact');
@@ -44,25 +45,32 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         }
     }, [initialClient, clients, isOpen]);
 
-    // Presets
-    const handlePackageSelect = (pkg: 'combo_zifac' | 'combo_ecuafact' | 'solo_firma' | 'custom') => {
+    // Presets — usa el combo seleccionado del store
+    const handlePackageSelect = (pkg: 'combo_zifac' | 'combo_ecuafact' | 'solo_firma' | 'custom', comboFromStore?: any) => {
         setSelectedPackage(pkg);
-        if (pkg === 'combo_zifac') {
+        if (comboFromStore) {
+            // Usar datos del store directamente
+            setProgramName(comboFromStore.name);
+            setPrice(comboFromStore.price ?? '');
+            setWebUrl(comboFromStore.accessUrl || '');
+            setDocumentCount(comboFromStore.notes?.match(/(\d+)\s*doc/i)?.[1] ? parseInt(comboFromStore.notes.match(/(\d+)\s*doc/i)[1]) : '');
+            setProviderName('Santiago Córdova');
+        } else if (pkg === 'combo_zifac') {
             setProgramName('ZIFAC');
-            setDocumentCount(0); // 0 = Ilimitado / Plan Anual
-            setPrice(45.00);
-            setWebUrl('https://sistema.zifac.com');
+            setDocumentCount(0);
+            setPrice(activeCombos.find(c => c.category === 'zifact')?.price ?? 55);
+            setWebUrl(systemSettings?.zifactUrl || 'https://sistema.zifac.com');
             setProviderName('Santiago Córdova');
         } else if (pkg === 'combo_ecuafact') {
             setProgramName('ECUAFACT');
             setDocumentCount(60);
-            setPrice(35.00);
-            setWebUrl('https://app.ecuafact.com');
+            setPrice(activeCombos.find(c => c.category === 'ecuafact')?.price ?? 45);
+            setWebUrl(systemSettings?.ecuafactUrl || 'https://app.ecuafact.com');
             setProviderName('Santiago Córdova');
         } else if (pkg === 'solo_firma') {
             setProgramName('Firma Electrónica .p12');
             setDocumentCount(0);
-            setPrice(20.00);
+            setPrice(activeCombos.find(c => c.category === 'firma')?.price ?? 25);
             setWebUrl('');
             setProviderName('Santiago Córdova');
         } else {
@@ -199,57 +207,66 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                         <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-3">
                             2. Seleccionar Paquete / Combo Comercial
                         </label>
+                        {/* Combos dinámicos del store */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            {[
-                                {
-                                    id: 'combo_ecuafact',
-                                    title: 'Combo ECUAFACT',
-                                    desc: '60 Docs + Firma Electrónica',
-                                    badge: 'Más Vendido',
-                                    priceTag: '$35.00',
-                                    color: 'border-emerald-500/40 bg-emerald-500/5'
-                                },
-                                {
-                                    id: 'combo_zifac',
-                                    title: 'Combo ZIFAC',
-                                    desc: 'Ilimitado + Firma Electrónica',
-                                    badge: 'Plan Full',
-                                    priceTag: '$45.00',
-                                    color: 'border-blue-500/40 bg-blue-500/5'
-                                },
-                                {
-                                    id: 'solo_firma',
-                                    title: 'Solo Firma .p12',
-                                    desc: 'Archivo Firma Electrónica',
-                                    badge: '1 a 5 Años',
-                                    priceTag: '$20.00',
-                                    color: 'border-purple-500/40 bg-purple-500/5'
-                                }
+                            {activeCombos.length > 0 ? activeCombos.map(combo => {
+                                const pkgId = combo.category === 'ecuafact' ? 'combo_ecuafact'
+                                    : combo.category === 'zifact' ? 'combo_zifac'
+                                    : combo.category === 'firma' ? 'solo_firma'
+                                    : 'custom';
+                                const colorMap: Record<string, string> = {
+                                    ecuafact: 'border-emerald-500/40 bg-emerald-500/5',
+                                    zifact: 'border-blue-500/40 bg-blue-500/5',
+                                    firma: 'border-purple-500/40 bg-purple-500/5',
+                                    otro: 'border-slate-500/40 bg-slate-500/5',
+                                };
+                                const isSelected = selectedPackage === pkgId && programName === combo.name;
+                                return (
+                                    <button
+                                        key={combo.id}
+                                        type="button"
+                                        onClick={() => handlePackageSelect(pkgId as any, combo)}
+                                        className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
+                                            isSelected
+                                                ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/10 shadow-lg'
+                                                : `${colorMap[combo.category] || colorMap.otro} opacity-80 hover:opacity-100 hover:scale-[1.01]`
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                                                {combo.name}
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-3">
+                                            {combo.notes || combo.category.toUpperCase()}
+                                        </p>
+                                        <p className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono">
+                                            ${combo.price.toFixed(2)}
+                                        </p>
+                                        {combo.accessUrl && (
+                                            <p className="text-[9px] text-slate-400 truncate mt-1">
+                                                🔗 {combo.accessUrl}
+                                            </p>
+                                        )}
+                                    </button>
+                                );
+                            }) : [
+                                { id: 'combo_ecuafact', title: 'Combo ECUAFACT', desc: '60 Docs + Firma', badge: 'Más Vendido', price: 45, color: 'border-emerald-500/40 bg-emerald-500/5' },
+                                { id: 'combo_zifac', title: 'Combo ZIFAC', desc: 'Ilimitado + Firma', badge: 'Plan Full', price: 55, color: 'border-blue-500/40 bg-blue-500/5' },
+                                { id: 'solo_firma', title: 'Solo Firma .p12', desc: 'Archivo Firma', badge: '1-5 Años', price: 25, color: 'border-purple-500/40 bg-purple-500/5' },
                             ].map(pkg => (
-                                <button
-                                    key={pkg.id}
-                                    type="button"
+                                <button key={pkg.id} type="button"
                                     onClick={() => handlePackageSelect(pkg.id as any)}
-                                    className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
-                                        selectedPackage === pkg.id
-                                            ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/10 shadow-lg'
-                                            : `${pkg.color} opacity-80 hover:opacity-100 hover:scale-[1.01]`
+                                    className={`p-4 rounded-2xl border text-left transition-all ${
+                                        selectedPackage === pkg.id ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/10 shadow-lg' : `${pkg.color} opacity-80 hover:opacity-100`
                                     }`}
                                 >
                                     <div className="flex justify-between items-start mb-2">
-                                        <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                                            {pkg.title}
-                                        </span>
-                                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-300 text-[8px] font-bold uppercase rounded-md">
-                                            {pkg.badge}
-                                        </span>
+                                        <span className="text-xs font-black text-slate-900 dark:text-white uppercase">{pkg.title}</span>
+                                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-300 text-[8px] font-bold uppercase rounded-md">{pkg.badge}</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-3">
-                                        {pkg.desc}
-                                    </p>
-                                    <p className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono">
-                                        {pkg.priceTag}
-                                    </p>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">{pkg.desc}</p>
+                                    <p className="text-lg font-black text-amber-600 dark:text-amber-400">${pkg.price.toFixed(2)}</p>
                                 </button>
                             ))}
                         </div>

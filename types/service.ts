@@ -67,3 +67,25 @@ export interface BusinessProfile {
     authNumber?: string;
     currentSequence?: number;
 }
+
+/** Un combo/plan de facturación o firma que el despacho vende */
+export interface SystemComboConfig {
+    id: string;
+    name: string;           // ej. "Combo ECUAFACT 60 docs"
+    price: number;          // precio en USD
+    accessUrl?: string;     // URL directa para ingresar al sistema
+    notes?: string;         // descripción corta
+    category: 'ecuafact' | 'zifact' | 'firma' | 'otro';
+    isActive: boolean;
+}
+
+/** Configuración global del despacho (persiste en localStorage + nube) */
+export interface SystemSettings {
+    combos: SystemComboConfig[];
+    fingerprintDeviceId?: string;     // ID / número de serie del lector biométrico
+    ecuafactUrl?: string;             // URL de acceso rápido Ecuafact
+    zifactUrl?: string;               // URL de acceso rápido Zifact
+    sriUrl?: string;                  // URL de acceso rápido SRI
+    lastUpdated?: string;
+}
+

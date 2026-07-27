@@ -38,6 +38,28 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     onUpdateClientDirect
 }) => {
     const [isSalesModalOpen, setIsSalesModalOpen] = React.useState(false);
+    const [isVaultEditing, setIsVaultEditing] = React.useState(false);
+    const [isSavingVault, setIsSavingVault] = React.useState(false);
+    const [vaultSaved, setVaultSaved] = React.useState(false);
+
+    const handleSaveVault = async () => {
+        if (!onUpdateClientDirect) return;
+        setIsSavingVault(true);
+        try {
+            await onUpdateClientDirect({
+                sriPassword: editedClient.sriPassword,
+                electronicSignaturePassword: editedClient.electronicSignaturePassword,
+                facturadorConfig: editedClient.facturadorConfig,
+            });
+            setVaultSaved(true);
+            setIsVaultEditing(false);
+            setTimeout(() => setVaultSaved(false), 3000);
+        } catch (e) {
+            console.error('Error guardando bóveda:', e);
+        } finally {
+            setIsSavingVault(false);
+        }
+    };
 
     const handleUploadField = async (field: keyof Client, file: StoredFile) => {
         if (isEditing) {
@@ -85,6 +107,39 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                             </p>
                         </div>
                     </div>
+                    {/* Botones de Edición de Bóveda */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                        {vaultSaved && (
+                            <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold animate-in fade-in">
+                                <LucideIcons.CheckCircle size={14} /> Guardado
+                            </span>
+                        )}
+                        {isVaultEditing ? (
+                            <>
+                                <button
+                                    onClick={() => setIsVaultEditing(false)}
+                                    className="px-4 py-2 text-xs font-bold text-slate-300 hover:text-white rounded-xl border border-white/10 hover:border-white/30 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleSaveVault}
+                                    disabled={isSavingVault}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50"
+                                >
+                                    {isSavingVault ? <LucideIcons.Loader size={13} className="animate-spin" /> : <LucideIcons.Save size={13} />}
+                                    {isSavingVault ? 'Guardando...' : '💾 Guardar Bóveda'}
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={() => setIsVaultEditing(true)}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all border border-white/10 hover:border-white/30 active:scale-95"
+                            >
+                                <LucideIcons.Edit3 size={13} /> Editar Claves
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -120,7 +175,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     label="Clave SRI" 
                     isPassword 
                     value={editedClient.sriPassword} 
-                    isEditing={isEditing}
+                    isEditing={isVaultEditing || isEditing}
                     onChange={(val) => setEditedClient({ ...editedClient, sriPassword: val })}
                 />
                 
@@ -129,7 +184,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     label="Clave Firma" 
                     isPassword 
                     value={editedClient.electronicSignaturePassword} 
-                    isEditing={isEditing}
+                    isEditing={isVaultEditing || isEditing}
                     onChange={(val) => setEditedClient({ ...editedClient, electronicSignaturePassword: val })}
                 />
 

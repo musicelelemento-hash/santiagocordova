@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import * as LucideIcons from 'lucide-react';
 console.log("SettingsScreen v2 prefix applied");
-import { Client, TaxRegime, ServiceFeesConfig, Screen, Task, DeclarationStatus, Declaration, ReminderConfig, WebOrder } from '../types';
+import { Client, TaxRegime, ServiceFeesConfig, Screen, Task, DeclarationStatus, Declaration, ReminderConfig, WebOrder, SystemSettings, SystemComboConfig } from '../types';
 import { exportClientsToCSV, parseClientsFromCSV, parseBrowserPasswordsCSV, parseCredentialsCSV } from '../services/csv';
 import { getClientServiceFee } from '../services/clientService';
 import { Modal } from '../components/ui/Modal';
@@ -120,8 +120,68 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
         reminderConfig, setReminderConfig,
         webOrders, setWebOrders,
         sriCredentials, setSriCredentials,
-        exportData, syncFromSheets, resetApp
+        exportData, syncFromSheets, resetApp,
+        systemSettings, setSystemSettings
     } = useAppStore();
+    
+    // ─── Estado local: Configuración de Sistema (Combos & Huella) ────────────
+    const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>(systemSettings);
+    const [isEditingCombos, setIsEditingCombos] = useState(false);
+    const [editingCombo, setEditingCombo] = useState<SystemComboConfig | null>(null);
+    const [isSavingSystem, setIsSavingSystem] = useState(false);
+    const [systemSaved, setSystemSaved] = useState(false);
+
+    const handleSaveSystemSettings = () => {
+        setIsSavingSystem(true);
+        setSystemSettings(localSystemSettings);
+        setTimeout(() => {
+            setIsSavingSystem(false);
+            setSystemSaved(true);
+            setIsEditingCombos(false);
+            setTimeout(() => setSystemSaved(false), 3000);
+        }, 500);
+    };
+
+    const handleAddCombo = () => {
+        const newCombo: SystemComboConfig = {
+            id: `combo-${Date.now()}`,
+            name: 'Nuevo Combo',
+            price: 0,
+            category: 'otro',
+            isActive: true,
+            accessUrl: '',
+            notes: ''
+        };
+        setEditingCombo(newCombo);
+    };
+
+    const handleSaveCombo = (combo: SystemComboConfig) => {
+        const existing = localSystemSettings.combos.find(c => c.id === combo.id);
+        if (existing) {
+            setLocalSystemSettings(prev => ({
+                ...prev,
+                combos: prev.combos.map(c => c.id === combo.id ? combo : c)
+            }));
+        } else {
+            setLocalSystemSettings(prev => ({
+                ...prev,
+                combos: [...prev.combos, combo]
+            }));
+        }
+        setEditingCombo(null);
+    };
+
+    const handleDeleteCombo = (id: string) => {
+        setLocalSystemSettings(prev => ({
+            ...prev,
+            combos: prev.combos.filter(c => c.id !== id)
+        }));
+    };
+
+    // Sync if store changes externally
+    React.useEffect(() => {
+        setLocalSystemSettings(systemSettings);
+    }, [systemSettings]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const passwordFileInputRef = useRef<HTMLInputElement>(null);
     const bulkPdfInputRef = useRef<HTMLInputElement>(null);
@@ -1277,6 +1337,231 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                     </button>
                 </div>
             </Modal>
+
+            {/* ═══════════════════════════════════════════════════════════════
+                SECCIÓN: Combos de Facturación & Configuración de Sistema
+            ═══════════════════════════════════════════════════════════════ */}
+            <div className="mt-8 bg-slate-900 rounded-3xl border border-slate-700/50 shadow-xl overflow-hidden">
+                {/* Header */}
+                <div className="p-6 bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-b border-slate-700/50 flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+                            <LucideIcons.ShoppingBag className="text-amber-400" size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-base font-black text-white uppercase tracking-wide flex items-center gap-3">
+                                Combos &amp; Sistemas de Facturación
+                                {systemSaved && (
+                                    <span className="flex items-center gap-1 text-emerald-400 text-xs font-bold animate-in fade-in">
+                                        <LucideIcons.CheckCircle size={13} /> Guardado
+                                    </span>
+                                )}
+                            </h3>
+                            <p className="text-slate-400 text-xs mt-0.5">Configura combos, precios y URLs. Aparecen automáticamente en el modal de ventas.</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {isEditingCombos ? (
+                            <>
+                                <button onClick={() => { setIsEditingCombos(false); setLocalSystemSettings(systemSettings); }}
+                                    className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white border border-slate-600 rounded-xl transition-all">
+                                    Cancelar
+                                </button>
+                                <button onClick={handleSaveSystemSettings} disabled={isSavingSystem}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/25 active:scale-95 disabled:opacity-60">
+                                    {isSavingSystem ? <LucideIcons.Loader size={13} className="animate-spin" /> : <LucideIcons.Save size={13} />}
+                                    Guardar Todo
+                                </button>
+                            </>
+                        ) : (
+                            <button onClick={() => setIsEditingCombos(true)}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold uppercase border border-white/10 hover:border-white/30 transition-all active:scale-95">
+                                <LucideIcons.Settings size={13} /> Configurar
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="p-6 space-y-8">
+                    {/* Tabla de Combos */}
+                    <div>
+                        <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <LucideIcons.Package size={16} className="text-amber-400" />
+                                Combos / Planes Comerciales
+                            </h4>
+                            {isEditingCombos && (
+                                <button onClick={handleAddCombo}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl text-xs font-bold border border-amber-500/30 transition-all">
+                                    <LucideIcons.Plus size={12} /> Añadir Combo
+                                </button>
+                            )}
+                        </div>
+                        <div className="space-y-3">
+                            {localSystemSettings.combos.map(combo => (
+                                <div key={combo.id}
+                                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${combo.isActive ? 'bg-slate-800/60 border-slate-700/50' : 'bg-slate-900/40 border-slate-800/30 opacity-50'}`}>
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg ${combo.category === 'ecuafact' ? 'bg-emerald-500/20' : combo.category === 'zifact' ? 'bg-blue-500/20' : combo.category === 'firma' ? 'bg-purple-500/20' : 'bg-slate-700'}`}>
+                                        {combo.category === 'firma' ? '🔑' : combo.category === 'ecuafact' ? '📄' : combo.category === 'zifact' ? '⚡' : '📦'}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-sm font-black text-white truncate">{combo.name}</span>
+                                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase ${combo.category === 'ecuafact' ? 'bg-emerald-500/20 text-emerald-300' : combo.category === 'zifact' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'}`}>
+                                                {combo.category}
+                                            </span>
+                                        </div>
+                                        {combo.notes && <p className="text-xs text-slate-400 mt-0.5 truncate">{combo.notes}</p>}
+                                        {combo.accessUrl && (
+                                            <a href={combo.accessUrl} target="_blank" rel="noopener noreferrer"
+                                                className="text-[10px] text-blue-400 hover:underline flex items-center gap-1 mt-0.5 truncate">
+                                                <LucideIcons.ExternalLink size={10} /> {combo.accessUrl}
+                                            </a>
+                                        )}
+                                    </div>
+                                    <div className="text-right flex-shrink-0">
+                                        <span className="text-xl font-black text-amber-400 font-mono">${combo.price.toFixed(2)}</span>
+                                        <p className="text-[9px] text-slate-500 uppercase tracking-widest">USD</p>
+                                    </div>
+                                    {isEditingCombos && (
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            <button onClick={() => setEditingCombo(combo)}
+                                                className="p-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all">
+                                                <LucideIcons.Pencil size={13} />
+                                            </button>
+                                            <button onClick={() => setLocalSystemSettings(prev => ({ ...prev, combos: prev.combos.map(c => c.id === combo.id ? { ...c, isActive: !c.isActive } : c) }))}
+                                                className={`p-2 rounded-xl transition-all ${combo.isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400'}`}>
+                                                {combo.isActive ? <LucideIcons.ToggleRight size={13} /> : <LucideIcons.ToggleLeft size={13} />}
+                                            </button>
+                                            <button onClick={() => handleDeleteCombo(combo.id)}
+                                                className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-all">
+                                                <LucideIcons.Trash2 size={13} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* URLs de Acceso Rápido */}
+                    <div>
+                        <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2 mb-4">
+                            <LucideIcons.Globe size={16} className="text-blue-400" />
+                            URLs de Acceso Rápido
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {([
+                                { key: 'ecuafactUrl', label: 'Ecuafact', icon: '📄' },
+                                { key: 'zifactUrl', label: 'Zifact', icon: '⚡' },
+                                { key: 'sriUrl', label: 'SRI en Línea', icon: '🏛️' },
+                            ] as { key: 'ecuafactUrl' | 'zifactUrl' | 'sriUrl'; label: string; icon: string }[]).map(({ key, label, icon }) => (
+                                <div key={key}>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">{icon} {label}</label>
+                                    <div className="flex items-center gap-2">
+                                        <input type="url" value={localSystemSettings[key] || ''}
+                                            onChange={(e) => isEditingCombos && setLocalSystemSettings(prev => ({ ...prev, [key]: e.target.value }))}
+                                            readOnly={!isEditingCombos}
+                                            className={`flex-1 px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-200 outline-none focus:ring-1 focus:ring-amber-500 transition-all ${!isEditingCombos ? 'opacity-70 cursor-default' : ''}`}
+                                        />
+                                        {localSystemSettings[key] && (
+                                            <a href={localSystemSettings[key]} target="_blank" rel="noopener noreferrer"
+                                                className="p-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all">
+                                                <LucideIcons.ExternalLink size={13} />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Dispositivo de Huella */}
+                    <div>
+                        <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2 mb-4">
+                            <LucideIcons.Fingerprint size={16} className="text-violet-400" />
+                            Dispositivo de Huella Dactilar
+                        </h4>
+                        <div className="flex items-center gap-4 p-5 bg-slate-800/60 rounded-2xl border border-slate-700/50">
+                            <div className="w-12 h-12 rounded-2xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
+                                <LucideIcons.Fingerprint className="text-violet-400" size={24} />
+                            </div>
+                            <div className="flex-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1.5">ID / Número de Serie del Dispositivo</label>
+                                <input type="text" value={localSystemSettings.fingerprintDeviceId || ''}
+                                    onChange={(e) => isEditingCombos && setLocalSystemSettings(prev => ({ ...prev, fingerprintDeviceId: e.target.value }))}
+                                    readOnly={!isEditingCombos}
+                                    placeholder="Ej: FP-2024-001 / SN-A8B7C6D5"
+                                    className={`w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm font-mono text-slate-200 outline-none focus:ring-1 focus:ring-violet-500 transition-all ${!isEditingCombos ? 'opacity-70 cursor-default' : ''}`}
+                                />
+                                <p className="text-slate-500 text-[10px] mt-1.5">Número de serie o ID del lector biométrico para gestión de firmas electrónicas.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Modal editor de Combo */}
+            {editingCombo && (
+                <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+                    <div className="absolute inset-0" onClick={() => setEditingCombo(null)} />
+                    <div className="relative w-full max-w-lg bg-slate-900 rounded-3xl border border-slate-700 shadow-2xl p-6 space-y-5 z-10">
+                        <h3 className="text-base font-black text-white uppercase tracking-wide flex items-center gap-2">
+                            <LucideIcons.Package size={18} className="text-amber-400" />
+                            {localSystemSettings.combos.find(c => c.id === editingCombo.id) ? 'Editar Combo' : 'Nuevo Combo'}
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="sm:col-span-2">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Nombre del Combo</label>
+                                <input type="text" value={editingCombo.name}
+                                    onChange={e => setEditingCombo(prev => prev ? { ...prev, name: e.target.value } : null)}
+                                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white outline-none focus:ring-1 focus:ring-amber-500" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Precio (USD)</label>
+                                <input type="number" step="0.01" min="0" value={editingCombo.price}
+                                    onChange={e => setEditingCombo(prev => prev ? { ...prev, price: parseFloat(e.target.value) || 0 } : null)}
+                                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white outline-none focus:ring-1 focus:ring-amber-500" />
+                            </div>
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Categoría</label>
+                                <select value={editingCombo.category}
+                                    onChange={e => setEditingCombo(prev => prev ? { ...prev, category: e.target.value as any } : null)}
+                                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white outline-none focus:ring-1 focus:ring-amber-500">
+                                    <option value="ecuafact">Ecuafact</option>
+                                    <option value="zifact">Zifact</option>
+                                    <option value="firma">Solo Firma</option>
+                                    <option value="otro">Otro</option>
+                                </select>
+                            </div>
+                            <div className="sm:col-span-2">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">URL de Acceso</label>
+                                <input type="url" value={editingCombo.accessUrl || ''}
+                                    onChange={e => setEditingCombo(prev => prev ? { ...prev, accessUrl: e.target.value } : null)}
+                                    placeholder="https://..."
+                                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white outline-none focus:ring-1 focus:ring-amber-500" />
+                            </div>
+                            <div className="sm:col-span-2">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Descripción / Notas</label>
+                                <input type="text" value={editingCombo.notes || ''}
+                                    onChange={e => setEditingCombo(prev => prev ? { ...prev, notes: e.target.value } : null)}
+                                    placeholder="Ej: Plan anual 60 documentos"
+                                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white outline-none focus:ring-1 focus:ring-amber-500" />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button onClick={() => setEditingCombo(null)}
+                                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white border border-slate-600 rounded-xl transition-all">
+                                Cancelar
+                            </button>
+                            <button onClick={() => editingCombo && handleSaveCombo(editingCombo)}
+                                className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-xs font-black uppercase transition-all shadow-lg active:scale-95">
+                                💾 Guardar Combo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );

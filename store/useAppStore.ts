@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { db } from '../services/db';
 import { loadDataFromSheet } from '../services/sheetApi';
-import { Client, Task, WebOrder, ServiceFeesConfig, ReminderConfig, WhatsAppTemplates, BusinessProfile, TaxRegime, DeclarationStatus, Declaration, AuditLog, ClientNote, NoteCategory } from '../types';
+import { Client, Task, WebOrder, ServiceFeesConfig, ReminderConfig, WhatsAppTemplates, BusinessProfile, TaxRegime, DeclarationStatus, Declaration, AuditLog, ClientNote, NoteCategory, SystemSettings } from '../types';
 import { mockClients, mockTasks, INITIAL_SERVICE_FEES } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { ClientSchema } from '../services/schemas/clientSchema';
@@ -251,6 +251,8 @@ interface AppState {
   syncFromFirebase: () => void;
   syncFromSheets: () => Promise<void>;
   resetApp: () => Promise<void>;
+  systemSettings: SystemSettings;
+  setSystemSettings: (settings: SystemSettings) => void;
   cloudStatus: 'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline';
   setCloudStatus: (status: 'idle' | 'loading' | 'saving' | 'saved' | 'error' | 'offline') => void;
 }
@@ -291,6 +293,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   auditLogs: [],
   isLoaded: false,
   cloudStatus: 'idle',
+  systemSettings: {
+    combos: [
+      { id: 'combo-ecuafact-60', name: 'Combo ECUAFACT 60 docs', price: 45, category: 'ecuafact', isActive: true, accessUrl: 'https://www.ecuafact.com', notes: 'Plan anual 60 documentos' },
+      { id: 'combo-ecuafact-120', name: 'Combo ECUAFACT 120 docs', price: 65, category: 'ecuafact', isActive: true, accessUrl: 'https://www.ecuafact.com', notes: 'Plan anual 120 documentos' },
+      { id: 'combo-zifact', name: 'Combo ZIFACT', price: 55, category: 'zifact', isActive: true, accessUrl: 'https://app.zifact.com', notes: 'Plan anual Zifact' },
+      { id: 'solo-firma', name: 'Solo Firma Electrónica', price: 25, category: 'firma', isActive: true, notes: 'Token USB incluido' },
+    ],
+    ecuafactUrl: 'https://www.ecuafact.com',
+    zifactUrl: 'https://app.zifact.com',
+    sriUrl: 'https://srienlinea.sri.gob.ec',
+    fingerprintDeviceId: '',
+  },
 
   setCloudStatus: (status) => set({ cloudStatus: status }),
 
@@ -667,6 +681,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     db.set('reminderConfig', newConfig);
   },
 
+  setSystemSettings: (settings) => {
+    const updated = { ...settings, lastUpdated: new Date().toISOString() };
+    set({ systemSettings: updated });
+    db.set('systemSettings', updated);
+  },
+
   hydrateFromCloud: async (data: any) => {
     if (!data) return;
 
@@ -782,13 +802,14 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       // ── FASE 1: Carga local instantánea (IndexedDB) ──────────
       // Prioridad: mostrar la UI lo antes posible con datos locales
-      const [localClients, tasks, webOrders, sriCredentials, serviceFees, reminderConfig] = await Promise.all([
+      const [localClients, tasks, webOrders, sriCredentials, serviceFees, reminderConfig, systemSettings] = await Promise.all([
         db.getLocal('clients'),
         db.get<Task[]>('tasks'),
         db.get<WebOrder[]>('webOrders'),
         db.get<Record<string, string>>('sriCredentials'),
         db.get<ServiceFeesConfig>('serviceFees'),
         db.get<ReminderConfig>('reminderConfig'),
+        db.get<SystemSettings>('systemSettings'),
       ]);
 
       const localData = localClients && Array.isArray(localClients) && localClients.length > 0
@@ -803,6 +824,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           webOrders: webOrders || [],
           serviceFees: serviceFees ? { ...INITIAL_SERVICE_FEES, ...serviceFees, ivaSemestral: (serviceFees.ivaSemestral === 5 ? 10 : serviceFees.ivaSemestral) } : INITIAL_SERVICE_FEES,
           reminderConfig: sanitizeReminderConfig(reminderConfig),
+          ...(systemSettings ? { systemSettings: { ...get().systemSettings, ...systemSettings } } : {}),
           isLoaded: true
         });
         console.log(`⚡ Fase 1 (Local): ${localData.length} clientes en ${(performance.now() - t0).toFixed(0)}ms`);
