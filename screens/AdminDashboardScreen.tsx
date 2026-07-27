@@ -16,7 +16,6 @@ import { ChatBot } from '../components/features/ChatBot';
 import { VirtualClientList } from '../components/features/VirtualClientList';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 import { ComplianceReportExport } from '../components/features/ComplianceReportExport';
-import { ClientWorkspaceModal } from '../components/features/ClientWorkspaceModal';
 import { IvaFrequency } from '../types';
 import { getComplianceSummary, getClientCompliance, ComplianceColor, getClientDebtSummary, getClientUndeclaredSummary, isPeriodBeforeClientStart } from '../services/complianceEngine';
 import { PortfolioSemaphore } from '../components/ui/PortfolioSemaphore';
@@ -102,6 +101,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     const [workspaceClient, setWorkspaceClient] = useState<{ client: Client, period?: string } | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const mesaFileInputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        if (workspaceClient?.client) {
+            navigate('clients', { clientIdToView: workspaceClient.client.id });
+            setWorkspaceClient(null);
+        }
+    }, [workspaceClient, navigate]);
 
     // Mesa de Trabajo Táctica — estados faltantes
     const [hubTab, setHubTab] = useState<'operativa' | 'cargas' | 'alertas'>('operativa');
@@ -1477,13 +1483,6 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 isOpen={isBulkModalOpen}
                 onClose={() => setIsBulkModalOpen(false)}
                 results={bulkResults as any}
-            />
-
-            <ClientWorkspaceModal
-                isOpen={!!workspaceClient}
-                onClose={() => setWorkspaceClient(null)}
-                client={workspaceClient?.client || null}
-                initialPeriod={workspaceClient?.period}
             />
 
             <Modal isOpen={!!whatsAppPrompt} onClose={() => setWhatsAppPrompt(null)} title="🚀 Notificar por WhatsApp" size="2xl">

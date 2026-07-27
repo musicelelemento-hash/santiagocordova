@@ -167,7 +167,6 @@ export interface Client {
     rucCertificate?: StoredFile;
     sharedAccessKey?: string;
     iessPassword?: string;
-    signatureExpirationDate?: string;
     vault?: StoredFile[];
     needsVerification?: boolean;
     verificationReason?: string;

@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Client, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField, TaxObligationType } from '../types';
 import * as LucideIcons from 'lucide-react';
-import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat, downloadStoredFile } from '../services/sri';
+import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat } from '../services/sri';
 import { Modal } from '../components/ui/Modal';
 import { v4 as uuidv4 } from 'uuid';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../services/geminiService';
@@ -1383,7 +1383,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             onUploadReceipt={handleUploadReceipt}
                             onPreviewReceipt={async (client, declaration) => {
                                 if (declaration.proof_file) {
-                                    const ok = await downloadStoredFile(declaration.proof_file, `comprobante_${client.name}_${declaration.period}.pdf`);
+                                    const ok = await downloadStoredFile(declaration.proof_file);
                                     if (ok) {
                                         toast.success("Comprobante descargado correctamente");
                                     } else {

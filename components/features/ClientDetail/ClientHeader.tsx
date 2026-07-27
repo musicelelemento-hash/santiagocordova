@@ -143,25 +143,50 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                     </button>
                 </div>
 
-                {/* Identificación (RUC) + Botón Copiar RUC + Papelera */}
-                <div className="flex items-center justify-between gap-3">
-                    <div className="flex-1 flex items-center justify-between px-3.5 py-2 bg-surface-container-highest/30 backdrop-blur-xl border border-outline-variant/20 text-on-surface-variant rounded-xl text-[11px] font-mono font-bold">
-                        <span className="text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[8px] font-sans">RUC / CÉDULA</span>
-                        <div className="flex items-center gap-2">
-                            <span className="text-on-surface font-black tracking-wider">{client.ruc}</span>
-                            <CopyClipButton text={client.ruc} label="RUC" />
+                {/* Barra Express de Credenciales: RUC, Clave SRI, Clave Firma */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 flex items-center justify-between px-3.5 py-2 bg-surface-container-highest/30 backdrop-blur-xl border border-outline-variant/20 text-on-surface-variant rounded-xl text-[11px] font-mono font-bold">
+                            <span className="text-slate-400 dark:text-slate-500 uppercase tracking-widest text-[8px] font-sans">RUC / CÉDULA</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-on-surface font-black tracking-wider">{client.ruc}</span>
+                                <CopyClipButton text={client.ruc} label="RUC" />
+                            </div>
                         </div>
+
+                        {onDelete && (
+                            <button
+                                onClick={onDelete}
+                                title="Enviar a papelera"
+                                className="p-2.5 bg-surface-container-low/50 text-slate-400 rounded-xl border border-outline-variant/10 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-500/30 transition-all active:scale-95 group"
+                            >
+                                <Trash2 size={14} strokeWidth={2} className="group-hover:animate-bounce" />
+                            </button>
+                        )}
                     </div>
 
-                    {onDelete && (
-                        <button
-                            onClick={onDelete}
-                            title="Enviar a papelera"
-                            className="p-2.5 bg-surface-container-low/50 text-slate-400 rounded-xl border border-outline-variant/10 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-200 dark:hover:border-rose-500/30 transition-all active:scale-95 group"
-                        >
-                            <Trash2 size={14} strokeWidth={2} className="group-hover:animate-bounce" />
-                        </button>
-                    )}
+                    {/* Clave SRI & Clave Firma Express */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="flex items-center justify-between px-3 py-1.5 bg-surface-container-low/40 rounded-xl border border-outline-variant/10 text-[10px] font-mono">
+                            <span className="text-slate-400 font-sans text-[8px] uppercase tracking-wider font-bold">CLAVE SRI</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-700 dark:text-slate-200">
+                                    {client.sriPassword || '—'}
+                                </span>
+                                {client.sriPassword && <CopyClipButton text={client.sriPassword} label="SRI" />}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between px-3 py-1.5 bg-surface-container-low/40 rounded-xl border border-outline-variant/10 text-[10px] font-mono">
+                            <span className="text-slate-400 font-sans text-[8px] uppercase tracking-wider font-bold">CLAVE FIRMA</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-700 dark:text-slate-200">
+                                    {client.electronicSignaturePassword || '—'}
+                                </span>
+                                {client.electronicSignaturePassword && <CopyClipButton text={client.electronicSignaturePassword} label="Firma" />}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

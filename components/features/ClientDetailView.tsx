@@ -43,6 +43,7 @@ import { HistoryTab } from './ClientDetail/tabs/HistoryTab';
 import { VaultTab } from './ClientDetail/tabs/VaultTab';
 import { SettingsTab } from './ClientDetail/tabs/SettingsTab';
 import { IvaFrequencyChangeModal } from './ClientDetail/IvaFrequencyChangeModal';
+import { ClientEditDrawer } from './ClientDetail/ClientEditDrawer';
 
 const getRecentPeriods = (client: Client, count: number): string[] => {
     if (!client) return [];
@@ -112,6 +113,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const { whatsappTemplates, setTasks, clients, cloudStatus, setCloudStatus, removeClient, updateClient } = useAppStore();
     const [editedClient, setEditedClient] = useState(client);
     const [isEditing, setIsEditing] = useState(false);
+    const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'vault' | 'settings'>(initialTab || 'profile');
     const [vaultViewMode, setVaultViewMode] = useState<'gallery' | 'list' | 'table'>('gallery');
 
@@ -899,7 +901,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         isFullyDeclared={isFullyDeclared}
                         complianceStats={complianceStats}
                         isEditing={isEditing}
-                        onToggleEdit={() => isEditing ? handleSave() : setIsEditing(true)}
+                        onToggleEdit={() => setIsEditDrawerOpen(true)}
                         editedClient={editedClient}
                         setEditedClient={setEditedClient}
                         onCopy={handleCopy}
@@ -1090,6 +1092,17 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     </div>
                 </div>
             )}
+
+            {/* Drawer Lateral de Edición Estructurada */}
+            <ClientEditDrawer
+                isOpen={isEditDrawerOpen}
+                onClose={() => setIsEditDrawerOpen(false)}
+                client={editedClient}
+                onSave={(updated) => {
+                    setEditedClient(updated);
+                    onSave(updated);
+                }}
+            />
         </div>
     );
 });
