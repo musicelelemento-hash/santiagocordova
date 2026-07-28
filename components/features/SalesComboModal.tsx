@@ -68,18 +68,20 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             setSelectedClientId(initialClient.id);
             setUsername(initialClient.ruc || '');
             setIsChangingClient(false);
-        } else if (clients.length > 0 && !selectedClientId) {
-            setSelectedClientId(clients[0].id);
-            setUsername(clients[0].ruc || '');
+        } else {
+            // Do not force clients[0] (Perez). Let user select or search a client explicitly.
+            setSelectedClientId('');
+            setUsername('');
+            setIsChangingClient(true);
         }
-    }, [initialClient, clients, isOpen]);
+    }, [initialClient, isOpen]);
 
     // Active Target Client
     const targetClient = useMemo(() => {
         if (selectedClientId) {
-            return clients.find(c => c.id === selectedClientId) || initialClient || null;
+            return clients.find(c => c.id === selectedClientId) || null;
         }
-        return initialClient || (clients.length > 0 ? clients[0] : null);
+        return initialClient || null;
     }, [selectedClientId, clients, initialClient]);
 
     // Filtered Client List
@@ -390,13 +392,17 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                 <select
                                     value={selectedClientId}
                                     onChange={(e) => {
-                                        setSelectedClientId(e.target.value);
-                                        const found = clients.find(c => c.id === e.target.value);
-                                        if (found) setUsername(found.ruc);
-                                        setIsChangingClient(false);
+                                        const val = e.target.value;
+                                        setSelectedClientId(val);
+                                        const found = clients.find(c => c.id === val);
+                                        if (found) {
+                                            setUsername(found.ruc || '');
+                                            setIsChangingClient(false);
+                                        }
                                     }}
                                     className="w-full px-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs font-bold text-white focus:border-[#00A896] outline-none cursor-pointer"
                                 >
+                                    <option value="">-- Seleccione un cliente para la venta --</option>
                                     {filteredClients.map(c => (
                                         <option key={c.id} value={c.id}>
                                             {c.name} — RUC: {c.ruc} ({c.regime})
@@ -648,24 +654,38 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#00A896] flex items-center gap-2">
                                     <FileCheck size={16} /> Documento de Autorización Especial EcuaFact
                                 </h4>
+                                {targetClient && (
+                                    <span className="text-[9px] font-bold text-[#00A896] uppercase px-2 py-0.5 bg-[#00A896]/20 rounded">
+                                        Personalizado en tiempo real
+                                    </span>
+                                )}
                             </div>
 
-                            <p className="text-[11px] text-slate-300">
-                                Genera la carta de autorización rellenada automáticamente con los datos de <strong>{targetClient?.name || 'Cliente'}</strong>.
-                            </p>
+                            {targetClient ? (
+                                <>
+                                    <p className="text-[11px] text-slate-300">
+                                        Genera la carta de autorización rellenada automáticamente con los datos de <strong>{targetClient.name}</strong>.
+                                    </p>
 
-                            <div className="p-3 bg-slate-950 rounded-xl border border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
-                                <div><span className="text-slate-500">Fecha:</span> <strong className="text-white block">{getFormattedCurrentDateSpanish()}</strong></div>
-                                <div><span className="text-slate-500">Cliente:</span> <strong className="text-white block truncate">{targetClient?.name || 'N/A'}</strong></div>
-                                <div><span className="text-slate-500">Cédula / RUC:</span> <strong className="text-[#00A896] font-mono block">{targetClient?.ruc || 'N/A'}</strong></div>
-                            </div>
+                                    <div className="p-3 bg-slate-950 rounded-xl border border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                                        <div><span className="text-slate-500">Fecha:</span> <strong className="text-white block">{getFormattedCurrentDateSpanish()}</strong></div>
+                                        <div><span className="text-slate-500">Cliente:</span> <strong className="text-white block truncate">{targetClient.name}</strong></div>
+                                        <div><span className="text-slate-500">Cédula / RUC:</span> <strong className="text-[#00A896] font-mono block">{targetClient.ruc}</strong></div>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs font-medium flex items-center gap-2">
+                                    <Info size={16} className="flex-shrink-0 text-amber-400" />
+                                    <span>Por favor seleccione o cree un cliente arriba para personalizar y descargar su documento de autorización EcuaFact.</span>
+                                </div>
+                            )}
 
                             <div className="flex flex-wrap gap-2 pt-1">
                                 <button
                                     type="button"
                                     disabled={isGeneratingDocx || !targetClient}
                                     onClick={handleDownloadEcuaFactDocx}
-                                    className="px-4 py-2 bg-[#00A896] hover:bg-[#009282] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow flex items-center gap-2 disabled:opacity-50"
+                                    className="px-4 py-2 bg-[#00A896] hover:bg-[#009282] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Download size={14} />
                                     <span>{isGeneratingDocx ? 'Generando .DOCX...' : 'Descargar .DOCX Personalizado'}</span>
@@ -675,7 +695,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                     type="button"
                                     disabled={!targetClient}
                                     onClick={handlePrintEcuaFactAuth}
-                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-2"
+                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Printer size={14} />
                                     <span>Imprimir / Ver Carta</span>
