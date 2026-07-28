@@ -274,7 +274,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                         value={identifier}
                                         onChange={(e) => { setIdentifier(e.target.value); setError(''); }}
                                         className="w-full h-14 bg-slate-900/90 border border-slate-800 rounded-2xl pl-12 pr-4 text-sm font-mono font-bold text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal/60 focus:ring-4 focus:ring-brand-teal/15 transition-all shadow-inner"
-                                        placeholder={loginType === 'client' ? "Ej: 1790000000001" : "Ej: @Santiago"}
+                                        placeholder={loginType === 'client' ? "Ingrese su RUC o Cédula" : "Ingrese su usuario"}
                                         autoComplete="username"
                                         name="username"
                                         autoFocus
