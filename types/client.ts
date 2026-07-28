@@ -190,6 +190,7 @@ export interface Client {
     advanceCredits?: number;
     facturadorConfig?: FacturadorConfig;
     isCourtesy?: boolean;
+    category?: string;
 }
 
 export type ClientFilter = {

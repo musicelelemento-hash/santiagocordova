@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Client, TaxRegime, DeclarationStatus, StoredFile, TaxObligationType } from '../types';
 import { extractDataFromSriPdf, extractDataFromDeclarationPdf, fileToBase64 } from './pdfExtraction';
 import { useAppStore } from '../store/useAppStore';
+import { isCourtesyClient } from './clientService';
 
 export interface BulkProcessResult {
     fileName: string;
@@ -168,16 +169,17 @@ export const processBulkPdfs = async (
 
                 const existingDec = client.declarations.find(d => arePeriodsEqual(d.period, decPeriod));
                 
+                const isCortesia = isCourtesyClient(client);
                 const newDec = {
                     period: decPeriod,
                     type,
-                    status: client.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                    status: isCortesia ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
                     updatedAt: new Date().toISOString(),
                     declaredAt: (data as any).declarationDate || new Date().toISOString(),
                     amount: (data as any).amount || 0,
                     proof_file: storedFile,
-                    is_paid: client.isCourtesy ? true : (existingDec ? existingDec.is_paid : false),
-                    paidAt: client.isCourtesy ? new Date().toISOString() : (existingDec ? existingDec.paidAt : undefined)
+                    is_paid: isCortesia ? true : (existingDec ? existingDec.is_paid : false),
+                    paidAt: isCortesia ? new Date().toISOString() : (existingDec ? existingDec.paidAt : undefined)
                 };
 
                 const newHistory = [...client.declarations.filter(d => !arePeriodsEqual(d.period, decPeriod)), newDec];

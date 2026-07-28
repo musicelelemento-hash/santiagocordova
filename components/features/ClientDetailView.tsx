@@ -3,7 +3,7 @@ import { Client, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, S
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, safeFormat, getWhatsAppUrl, requiresIva, generateDeclarationWhatsAppMessage } from '../../services/sri';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../../services/geminiService';
 import { extractDataFromSriPdf, extractDataFromDeclarationPdf, fileToBase64 } from '../../services/pdfExtraction';
-import { getClientServiceFee } from '../../services/clientService';
+import { getClientServiceFee, isCourtesyClient } from '../../services/clientService';
 import { db } from '../../services/db';
 import { downloadStoredFile } from '../../services/fileService';
 import { isPast, subMonths, subYears, addDays, getYear } from 'date-fns';
@@ -384,15 +384,16 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     type = 'PVP';
                 }
 
+                const isCortesia = isCourtesyClient(editedClient);
                 const idx = updatedHistory.findIndex(d => d.period === targetPeriod);
                 if (idx !== -1) {
                     updatedHistory[idx] = {
                         ...updatedHistory[idx],
                         proof_file: storedFile,
                         amount: extractedData?.amount || updatedHistory[idx].amount,
-                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
-                        is_paid: editedClient.isCourtesy ? true : updatedHistory[idx].is_paid,
-                        paidAt: editedClient.isCourtesy ? new Date().toISOString() : updatedHistory[idx].paidAt,
+                        status: isCortesia ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        is_paid: isCortesia ? true : updatedHistory[idx].is_paid,
+                        paidAt: isCortesia ? new Date().toISOString() : updatedHistory[idx].paidAt,
                         updatedAt: new Date().toISOString(),
                         declaredAt: extractedData?.declarationDate // Guardamos la fecha del SRI
                     };
@@ -400,9 +401,9 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                     updatedHistory.push({
                         period: targetPeriod,
                         type,
-                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
-                        is_paid: editedClient.isCourtesy ? true : false,
-                        paidAt: editedClient.isCourtesy ? new Date().toISOString() : undefined,
+                        status: isCortesia ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        is_paid: isCortesia ? true : false,
+                        paidAt: isCortesia ? new Date().toISOString() : undefined,
                         updatedAt: new Date().toISOString(),
                         declaredAt: extractedData?.declarationDate,
                         proof_file: storedFile,
@@ -415,22 +416,23 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 const period = (currentYear - 1).toString();
                 const updatedHistory = [...(editedClient.declarations || [])];
                 const idx = updatedHistory.findIndex(d => d.period === period);
+                const isCortesia = isCourtesyClient(editedClient);
                 if (idx !== -1) {
                     updatedHistory[idx] = {
                         ...updatedHistory[idx],
                         proof_file: storedFile,
-                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
-                        is_paid: editedClient.isCourtesy ? true : updatedHistory[idx].is_paid,
-                        paidAt: editedClient.isCourtesy ? new Date().toISOString() : updatedHistory[idx].paidAt,
+                        status: isCortesia ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        is_paid: isCortesia ? true : updatedHistory[idx].is_paid,
+                        paidAt: isCortesia ? new Date().toISOString() : updatedHistory[idx].paidAt,
                         updatedAt: new Date().toISOString()
                     };
                 } else {
                     updatedHistory.push({
                         period,
                         type: 'RENTA',
-                        status: editedClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
-                        is_paid: editedClient.isCourtesy ? true : false,
-                        paidAt: editedClient.isCourtesy ? new Date().toISOString() : undefined,
+                        status: isCortesia ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        is_paid: isCortesia ? true : false,
+                        paidAt: isCortesia ? new Date().toISOString() : undefined,
                         proof_file: storedFile,
                         updatedAt: new Date().toISOString()
                     });

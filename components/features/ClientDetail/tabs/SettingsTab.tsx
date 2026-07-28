@@ -308,7 +308,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 
                             <TaxProfileField 
                                 label="Tipo de Tarifa" 
-                                value={editedClient.isCourtesy ? 'CORTESIA' : (editedClient.customServiceFee !== undefined ? 'PERSONALIZADA' : 'ESTANDAR')} 
+                                value={editedClient.isCourtesy || editedClient.customServiceFee === 0 ? 'CORTESIA' : (editedClient.customServiceFee !== undefined ? 'PERSONALIZADA' : 'ESTANDAR')} 
                                 icon={LucideIcons.Coins} 
                                 isEditing={isEditing} 
                                 onStartEdit={onStartEdit}
@@ -316,14 +316,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 options={[
                                     { value: 'ESTANDAR', label: 'Estándar / Regular' },
                                     { value: 'PERSONALIZADA', label: 'Tarifa Personalizada ($)' },
-                                    { value: 'CORTESIA', label: 'Cortesía / Sin Costo' }
+                                    { value: 'CORTESIA', label: 'Cortesía / Trueque / Familia ($0 - Sin Cobro)' }
                                 ]}
                                 onChange={(val) => {
                                     if (val === 'CORTESIA') {
                                         setEditedClient({ 
                                             ...editedClient, 
                                             isCourtesy: true,
-                                            customServiceFee: undefined
+                                            customServiceFee: 0
                                         });
                                     } else if (val === 'ESTANDAR') {
                                         setEditedClient({ 
@@ -341,17 +341,28 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 }} 
                             />
 
-                            {(!editedClient.isCourtesy && editedClient.customServiceFee !== undefined) && (
+                            {(editedClient.isCourtesy || editedClient.customServiceFee === 0) && (
+                                <div className="p-3 bg-sky-500/10 border border-sky-500/30 rounded-2xl flex items-center gap-2.5 text-xs text-sky-400 font-medium">
+                                    <LucideIcons.Info size={16} className="flex-shrink-0" />
+                                    <span>Cliente de Cortesía / Trueque ($0): Las declaraciones se marcan automáticamente como AL DÍA (Pagadas) sin generar cuentas por cobrar.</span>
+                                </div>
+                            )}
+
+                            {(!editedClient.isCourtesy && editedClient.customServiceFee !== undefined && editedClient.customServiceFee > 0) && (
                                 <TaxProfileField 
                                     label="Valor de Tarifa Personalizada ($)" 
                                     value={editedClient.customServiceFee?.toString() || '0'} 
                                     icon={LucideIcons.DollarSign} 
                                     isEditing={isEditing} 
                                     onStartEdit={onStartEdit}
-                                    onChange={(val) => setEditedClient({ 
-                                        ...editedClient, 
-                                        customServiceFee: parseFloat(val) || 0
-                                    })} 
+                                    onChange={(val) => {
+                                        const num = parseFloat(val) || 0;
+                                        setEditedClient({ 
+                                            ...editedClient, 
+                                            isCourtesy: num === 0,
+                                            customServiceFee: num
+                                        });
+                                    }} 
                                 />
                             )}
 

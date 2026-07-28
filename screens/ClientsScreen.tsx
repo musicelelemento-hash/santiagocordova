@@ -1,4 +1,4 @@
-﻿import { arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
+import { arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Client, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField, TaxObligationType } from '../types';
@@ -12,7 +12,7 @@ import { Modal } from '../components/ui/Modal';
 import { v4 as uuidv4 } from 'uuid';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../services/geminiService';
 import { isPast, subMonths, subYears, differenceInCalendarDays } from 'date-fns';
-import { getClientServiceFee } from '../services/clientService';
+import { getClientServiceFee, isCourtesyClient } from '../services/clientService';
 import { useTranscription } from '../hooks/useTranscription';
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { ClientDetailView } from '../components/features/ClientDetailView';
@@ -729,14 +729,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 }
             };
 
+            const isCortesia = isCourtesyClient(freshClient);
             const entry: Declaration = {
                 period,
                 type,
-                status: freshClient.isCourtesy ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                status: isCortesia ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
                 updatedAt: nowIso,
                 declaredAt: nowIso,
-                is_paid: freshClient.isCourtesy ? true : false,
-                paidAt: freshClient.isCourtesy ? nowIso : undefined,
+                is_paid: isCortesia ? true : false,
+                paidAt: isCortesia ? nowIso : undefined,
                 amount: data.amount || 0,
                 transactionId: data.id || `PDF-${Date.now().toString().slice(-4)}`,
                 proof_file: proofFileObj
@@ -751,7 +752,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             const updates: Partial<Client> = { declarations: history };
 
             updateClient(freshClient.id, updates);
-            toast.success(freshClient.isCourtesy ? '¡Comprobante validado! (Tarifa de Cortesía Aplicada)' : '¡Comprobante validado! Obligación marcada como HECHA (Cobro Pendiente)');
+            toast.success(isCortesia ? '¡Comprobante validado! (Tarifa de Cortesía Aplicada)' : '¡Comprobante validado! Obligación marcada como HECHA (Cobro Pendiente)');
 
         } catch (err) {
             console.error("Error procesando PDF:", err);

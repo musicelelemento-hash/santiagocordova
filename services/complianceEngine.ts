@@ -2,6 +2,7 @@ import { Client, Declaration, DeclarationStatus, TaxRegime, TaxObligationType, I
 import { getPeriod, getDueDateForPeriod, getNinthDigit, getDaysUntilDue, requiresIva } from './sri';
 import { SRI_DUE_DATES } from '../constants';
 import { subMonths, format, getYear, getMonth } from 'date-fns';
+import { isCourtesyClient } from './clientService';
 
 // ─────────────────────────────────────────────────────────
 // TYPES
@@ -53,7 +54,7 @@ const isDeclared = (decl: Declaration | undefined): boolean => {
 };
 
 const isPaid = (decl: Declaration | undefined, client?: Client): boolean => {
-    if (client?.isCourtesy) return true;
+    if (client && isCourtesyClient(client)) return true;
     if (!decl) return false;
     return decl.status === DeclarationStatus.Pagada || !!decl.is_paid;
 };

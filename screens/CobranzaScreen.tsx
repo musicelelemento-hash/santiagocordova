@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, ReminderConfig, BusinessProfile, FinancialItem } from '../types';
 import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, safeFormat } from '../services/sri';
-import { getClientServiceFee } from '../services/clientService';
+import { getClientServiceFee, isCourtesyClient } from '../services/clientService';
 import { isPeriodBeforeClientStart } from '../services/complianceEngine';
 import { differenceInCalendarDays, isSameMonth, parseISO, isValid, subMonths } from 'date-fns';
 import {
@@ -417,9 +417,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         const selectedMonth = new Date();
 
         clients.forEach(client => {
-            if (client.isDeleted || client.isActive === false || client.isCourtesy) return;
-            let fee = getClientServiceFee(client, serviceFees);
-            if (fee <= 0) fee = 10.00;
+            if (client.isDeleted || client.isActive === false || isCourtesyClient(client)) return;
+            const fee = getClientServiceFee(client, serviceFees);
+            if (fee <= 0) return; // Courtesy/Trueque/Zero fee clients do not have pending collections
 
             let type: FinancialItem['type'] = 'mensual';
             if (client.taxProfile?.ivaFrequency === 'Semestral') type = 'semestral';

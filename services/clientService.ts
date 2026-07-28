@@ -5,11 +5,23 @@ import { addYears } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
+ * Determines if a client is courtesy, barter, zero-fee, or family/friends.
+ */
+export const isCourtesyClient = (client?: Partial<Client> | null): boolean => {
+    if (!client) return false;
+    if (client.isCourtesy) return true;
+    if (client.customServiceFee === 0) return true;
+    if (client.fee_structure?.monthly === 0 && client.fee_structure?.semestral === 0 && client.fee_structure?.annual === 0) return true;
+    const cat = (client.category || '').toLowerCase();
+    return cat.includes('cortesía') || cat.includes('cortesia') || cat.includes('trueque') || cat.includes('familia') || cat.includes('cero');
+};
+
+/**
  * Calculates the fee for a specific period for a client.
  * If period is provided, it attempts to match Annual/Monthly specific fees.
  */
 export const getClientServiceFee = (client: Client, fees: ServiceFeesConfig, period?: string): number => {
-    if (client.isCourtesy) return 0;
+    if (isCourtesyClient(client)) return 0;
     // 1. Check for specific Period type (Annual vs Recurring)
     if (period) {
         // Annual Period (e.g., "2024")
