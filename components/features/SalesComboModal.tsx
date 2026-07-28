@@ -1,8 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { X, Sparkles, CheckCircle2, ShieldCheck, Zap, Key, FileText, ShoppingBag, Calendar, Lock, Camera, Upload } from 'lucide-react';
-import { Client, FacturadorConfig, StoredFile } from '../../types';
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+    X, Sparkles, CheckCircle2, ShieldCheck, Zap, Key, FileText,
+    ShoppingBag, Calendar, Lock, Camera, Upload, Search, UserPlus,
+    Printer, Download, Layers, ArrowRight, Check, Coins, FileCheck, Info
+} from 'lucide-react';
+import { Client, FacturadorConfig, StoredFile, TaxRegime } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { useToast } from '../../context/ToastContext';
+import { downloadEcuafactDocx, printEcuafactAuthorization, getFormattedCurrentDateSpanish } from '../../services/ecuafactDocxService';
+import { v4 as uuidv4 } from 'uuid';
 
 interface SalesComboModalProps {
     isOpen: boolean;
@@ -11,31 +17,49 @@ interface SalesComboModalProps {
     onEmitSriInvoice?: (client: Client, description: string, amount: number) => void;
 }
 
+type MainCategory = 'firma' | 'zifact' | 'ecuafact' | 'talonario';
+
 export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     isOpen,
     onClose,
     initialClient,
     onEmitSriInvoice
 }) => {
-    const { clients, updateClient, systemSettings } = useAppStore();
+    const { clients, updateClient, addClient, systemSettings } = useAppStore();
     const { toast } = useToast();
-    const activeCombos = (systemSettings?.combos || []).filter(c => c.isActive);
 
+    // Search & Client State
+    const [clientSearchQuery, setClientSearchQuery] = useState('');
     const [selectedClientId, setSelectedClientId] = useState<string>('');
-    const [selectedPackage, setSelectedPackage] = useState<'combo_zifac' | 'combo_ecuafact' | 'solo_firma' | 'custom'>('combo_ecuafact');
-    const [idCardFront, setIdCardFront] = useState<StoredFile | null>(null);
-    const [idCardBack, setIdCardBack] = useState<StoredFile | null>(null);
-    const [idCardSelfie, setIdCardSelfie] = useState<StoredFile | null>(null);
+    const [showQuickCreateClient, setShowQuickCreateClient] = useState(false);
 
-    // Form fields
-    const [programName, setProgramName] = useState('ECUAFACT');
+    // Quick client creation state
+    const [newClientName, setNewClientName] = useState('');
+    const [newClientRuc, setNewClientRuc] = useState('');
+    const [newClientPhone, setNewClientPhone] = useState('');
+    const [newClientRegime, setNewClientRegime] = useState<TaxRegime>(TaxRegime.General);
+
+    // Active Category Step
+    const [activeCategory, setActiveCategory] = useState<MainCategory>('ecuafact');
+
+    // Selected Combo / Pricing State
+    const [programName, setProgramName] = useState('ECUAFACT 60 Docs + Firma');
     const [documentCount, setDocumentCount] = useState<number | ''>(60);
-    const [price, setPrice] = useState<number | ''>(35.00);
+    const [price, setPrice] = useState<number | ''>(55.00);
     const [expirationYears, setExpirationYears] = useState<number>(1);
+    const [includesSignature, setIncludesSignature] = useState<boolean>(true);
     const [webUrl, setWebUrl] = useState('https://app.ecuafact.com');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [providerName, setProviderName] = useState('Santiago Córdova');
+
+    // Identity Documents
+    const [idCardFront, setIdCardFront] = useState<StoredFile | null>(null);
+    const [idCardBack, setIdCardBack] = useState<StoredFile | null>(null);
+    const [idCardSelfie, setIdCardSelfie] = useState<StoredFile | null>(null);
+
+    // Document Generation state
+    const [isGeneratingDocx, setIsGeneratingDocx] = useState(false);
 
     useEffect(() => {
         if (initialClient) {
@@ -47,44 +71,82 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         }
     }, [initialClient, clients, isOpen]);
 
-    // Presets — usa el combo seleccionado del store
-    const handlePackageSelect = (pkg: 'combo_zifac' | 'combo_ecuafact' | 'solo_firma' | 'custom', comboFromStore?: any) => {
-        setSelectedPackage(pkg);
-        if (comboFromStore) {
-            // Usar datos del store directamente
-            setProgramName(comboFromStore.name);
-            setPrice(comboFromStore.price ?? '');
-            setWebUrl(comboFromStore.accessUrl || '');
-            setDocumentCount(comboFromStore.notes?.match(/(\d+)\s*doc/i)?.[1] ? parseInt(comboFromStore.notes.match(/(\d+)\s*doc/i)[1]) : '');
-            setProviderName('Santiago Córdova');
-        } else if (pkg === 'combo_zifac') {
-            setProgramName('ZIFAC');
-            setDocumentCount(0);
-            setPrice(activeCombos.find(c => c.category === 'zifact')?.price ?? 55);
-            setWebUrl(systemSettings?.zifactUrl || 'https://sistema.zifac.com');
-            setProviderName('Santiago Córdova');
-        } else if (pkg === 'combo_ecuafact') {
-            setProgramName('ECUAFACT');
-            setDocumentCount(60);
-            setPrice(activeCombos.find(c => c.category === 'ecuafact')?.price ?? 45);
-            setWebUrl(systemSettings?.ecuafactUrl || 'https://app.ecuafact.com');
-            setProviderName('Santiago Córdova');
-        } else if (pkg === 'solo_firma') {
-            setProgramName('Firma Electrónica .p12');
-            setDocumentCount(0);
-            setPrice(activeCombos.find(c => c.category === 'firma')?.price ?? 25);
-            setWebUrl('');
-            setProviderName('Santiago Córdova');
-        } else {
-            setProgramName('Personalizado');
-            setDocumentCount('');
-            setPrice('');
-        }
-    };
-
-    if (!isOpen) return null;
+    // Filter clients for fast searching
+    const filteredClients = useMemo(() => {
+        if (!clientSearchQuery.trim()) return clients.filter(c => !c.isDeleted && c.isActive !== false).slice(0, 8);
+        const q = clientSearchQuery.toLowerCase().trim();
+        return clients.filter(c =>
+            !c.isDeleted && c.isActive !== false &&
+            (c.name.toLowerCase().includes(q) || c.ruc.includes(q) || (c.tradeName && c.tradeName.toLowerCase().includes(q)))
+        ).slice(0, 10);
+    }, [clients, clientSearchQuery]);
 
     const targetClient = clients.find(c => c.id === selectedClientId) || initialClient;
+
+    // Fast inline client creation
+    const handleQuickCreateClient = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newClientName.trim() || !newClientRuc.trim()) {
+            toast.error("Por favor ingrese el Nombre y RUC del nuevo cliente.");
+            return;
+        }
+
+        const created: Client = {
+            id: uuidv4(),
+            name: newClientName.trim().toUpperCase(),
+            ruc: newClientRuc.trim(),
+            sriPassword: '12345678a',
+            phones: newClientPhone.trim() ? [newClientPhone.trim()] : [],
+            regime: newClientRegime,
+            isActive: true,
+            declarations: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        addClient(created);
+        setSelectedClientId(created.id);
+        setUsername(created.ruc);
+        setShowQuickCreateClient(false);
+        setNewClientName('');
+        setNewClientRuc('');
+        setNewClientPhone('');
+        toast.success(`Cliente ${created.name} creado y seleccionado.`);
+    };
+
+    // Category Change Handler
+    const handleCategoryChange = (cat: MainCategory) => {
+        setActiveCategory(cat);
+        if (cat === 'firma') {
+            setProgramName('Firma Electrónica .p12 (1 Año + Soporte)');
+            setDocumentCount('');
+            setPrice(35.00);
+            setExpirationYears(1);
+            setIncludesSignature(true);
+            setWebUrl('');
+        } else if (cat === 'zifact') {
+            setProgramName('ZIFAC 50 Docs + Firma Electrónica');
+            setDocumentCount(50);
+            setPrice(45.00);
+            setExpirationYears(1);
+            setIncludesSignature(true);
+            setWebUrl(systemSettings?.zifactUrl || 'https://sistema.zifac.com');
+        } else if (cat === 'ecuafact') {
+            setProgramName('ECUAFACT 60 Docs + Firma Electrónica');
+            setDocumentCount(60);
+            setPrice(55.00);
+            setExpirationYears(1);
+            setIncludesSignature(true);
+            setWebUrl(systemSettings?.ecuafactUrl || 'https://app.ecuafact.com');
+        } else {
+            setProgramName('Talonario Físico / Servicio Personalizado');
+            setDocumentCount('');
+            setPrice(25.00);
+            setExpirationYears(1);
+            setIncludesSignature(false);
+            setWebUrl('');
+        }
+    };
 
     const calculateExpirationDate = (): string => {
         const d = new Date();
@@ -106,7 +168,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             username: username || targetClient.ruc,
             password: password || targetClient.sriPassword,
             expirationDate: expDate,
-            documentStatus: selectedPackage === 'solo_firma' ? 'Firma Activa' : (documentCount ? `${documentCount} Docs / Anual` : 'Plan Anual Ilimitado'),
+            documentStatus: activeCategory === 'firma' ? `Firma ${expirationYears} Año(s)` : (documentCount ? `${documentCount} Docs / Anual` : 'Plan Ilimitado'),
             documentCount: typeof documentCount === 'number' ? documentCount : undefined,
             price: typeof price === 'number' ? price : undefined,
             soldByMe: true,
@@ -123,7 +185,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         };
 
         updateClient(targetClient.id, updatedClient);
-        toast.success(`Bóveda de ${targetClient.name} actualizada con el plan ${programName}`);
+        toast.success(`Bóveda de ${targetClient.name} actualizada con ${programName}`);
         return newFacturadorConfig;
     };
 
@@ -132,12 +194,12 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         if (!config || !targetClient) return;
 
         let description = `Venta de Plan ${programName}`;
-        if (selectedPackage === 'combo_ecuafact') {
-            description = `Combo ECUAFACT Plan Anual (${documentCount || 60} Comprobantes + Firma Electrónica)`;
-        } else if (selectedPackage === 'combo_zifac') {
-            description = `Combo ZIFAC Plan Anual (Facturación Ilimitada + Firma Electrónica)`;
-        } else if (selectedPackage === 'solo_firma') {
-            description = `Emisión de Firma Electrónica (.p12) - Vigencia ${expirationYears} Año(s)`;
+        if (activeCategory === 'ecuafact') {
+            description = `Combo ECUAFACT (${documentCount || 60} Comprobantes + Firma Electrónica)`;
+        } else if (activeCategory === 'zifact') {
+            description = `Combo ZIFAC (${documentCount || 50} Comprobantes ${includesSignature ? '+ Firma Electrónica' : ''})`;
+        } else if (activeCategory === 'firma') {
+            description = `Firma Electrónica .p12 — ${expirationYears} Año(s)`;
         }
 
         const finalPrice = typeof price === 'number' ? price : 35.00;
@@ -151,26 +213,55 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         }
     };
 
-    return (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 sm:p-6 bg-slate-950/75 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="absolute inset-0" onClick={onClose} />
+    const handleDownloadEcuaFactDocx = async () => {
+        if (!targetClient) {
+            toast.error("Seleccione un cliente para generar la autorización.");
+            return;
+        }
+        try {
+            setIsGeneratingDocx(true);
+            await downloadEcuafactDocx(targetClient.name, targetClient.ruc);
+            toast.success("Documento .docx descargado correctamente.");
+        } catch (err: any) {
+            toast.error("Error generando archivo: " + err.message);
+        } finally {
+            setIsGeneratingDocx(false);
+        }
+    };
 
-            <div className="w-full max-w-3xl bg-white dark:bg-slate-950 max-h-[92vh] flex flex-col shadow-2xl rounded-3xl border border-slate-200/80 dark:border-white/10 relative overflow-hidden z-10 animate-in zoom-in-95 duration-300">
-                {/* Header */}
-                <div className="p-6 bg-slate-900 text-white border-b border-slate-800 flex items-center justify-between flex-shrink-0">
+    const handlePrintEcuaFactAuth = () => {
+        if (!targetClient) {
+            toast.error("Seleccione un cliente para imprimir la autorización.");
+            return;
+        }
+        printEcuafactAuthorization(targetClient.name, targetClient.ruc);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-250 overflow-y-auto">
+            {/* Backdrop click */}
+            <div className="fixed inset-0" onClick={onClose} />
+
+            {/* Centered Modal Container */}
+            <div className="relative z-10 w-full max-w-4xl my-auto bg-white dark:bg-slate-950 max-h-[92vh] flex flex-col shadow-2xl rounded-3xl border border-slate-200 dark:border-white/10 overflow-hidden animate-in zoom-in-95 duration-200">
+
+                {/* HEADER */}
+                <div className="px-6 py-4 bg-slate-900 text-white border-b border-slate-800 flex items-center justify-between flex-shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold shadow-md">
-                            <ShoppingBag size={22} />
+                        <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold shadow-md">
+                            <ShoppingBag size={20} />
                         </div>
                         <div>
-                            <h2 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
-                                Nueva Venta de Sistema & Firma Electrónica
-                                <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 text-[9px] font-bold uppercase rounded-lg border border-amber-500/30">
-                                    Combos Anuales
+                            <h2 className="text-base font-black text-white tracking-tight flex items-center gap-2">
+                                Catálogo de Combos & Firma Electrónica
+                                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 text-[9px] font-bold uppercase rounded-md border border-amber-500/30">
+                                    Ventas Pro
                                 </span>
                             </h2>
-                            <p className="text-xs text-slate-400 font-medium">
-                                Asigna el plan a la Bóveda del cliente y emite su Factura SRI al instante
+                            <p className="text-[11px] text-slate-400 font-medium">
+                                Asigna planes, autorizaciones EcuaFact y emite tu factura SRI en 1-Clic
                             </p>
                         </div>
                     </div>
@@ -178,193 +269,427 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                         onClick={onClose}
                         className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all"
                     >
-                        <X size={20} />
+                        <X size={18} />
                     </button>
                 </div>
 
-                {/* Body */}
-                <div className="p-6 overflow-y-auto space-y-6 flex-1">
-                    {/* Cliente Selector */}
-                    <div>
-                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-2">
-                            1. Seleccionar Cliente Receptor
-                        </label>
-                        <select
-                            value={selectedClientId}
-                            onChange={(e) => {
-                                setSelectedClientId(e.target.value);
-                                const found = clients.find(c => c.id === e.target.value);
-                                if (found) setUsername(found.ruc);
-                            }}
-                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none"
-                        >
-                            {clients.map(c => (
-                                <option key={c.id} value={c.id}>
-                                    {c.name} — RUC: {c.ruc} ({c.regime})
-                                </option>
-                            ))}
-                        </select>
+                {/* MODAL BODY */}
+                <div className="p-6 overflow-y-auto space-y-6 flex-1 text-left">
+
+                    {/* ── PASO 1: SELECCIÓN / BÚSQUEDA DE CLIENTE CON "+ CREAR NUEVO CLIENTE" ── */}
+                    <div className="p-4 bg-slate-50 dark:bg-slate-900/70 rounded-2xl border border-slate-200 dark:border-white/5 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+                                Seleccionar Cliente Receptor
+                            </label>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowQuickCreateClient(!showQuickCreateClient)}
+                                className="text-xs font-bold text-amber-500 hover:text-amber-400 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 transition-all"
+                            >
+                                <UserPlus size={14} />
+                                {showQuickCreateClient ? 'Cancelar Registro' : '+ Crear Nuevo Cliente'}
+                            </button>
+                        </div>
+
+                        {/* Inline Client Creation Drawer */}
+                        {showQuickCreateClient ? (
+                            <form onSubmit={handleQuickCreateClient} className="p-4 bg-white dark:bg-slate-950 border border-amber-500/30 rounded-2xl space-y-3 animate-in fade-in duration-200">
+                                <h4 className="text-xs font-bold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+                                    <UserPlus size={14} /> Registrar Cliente al Vuelo
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input
+                                        type="text"
+                                        placeholder="Nombre o Razón Social *"
+                                        value={newClientName}
+                                        onChange={(e) => setNewClientName(e.target.value)}
+                                        className="px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-amber-500"
+                                        required
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="RUC o Cédula (13 / 10 dígitos) *"
+                                        value={newClientRuc}
+                                        onChange={(e) => setNewClientRuc(e.target.value)}
+                                        className="px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-amber-500"
+                                        required
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Teléfono / WhatsApp (Opcional)"
+                                        value={newClientPhone}
+                                        onChange={(e) => setNewClientPhone(e.target.value)}
+                                        className="px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-amber-500"
+                                    />
+                                    <select
+                                        value={newClientRegime}
+                                        onChange={(e) => setNewClientRegime(e.target.value as TaxRegime)}
+                                        className="px-3.5 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-amber-500"
+                                    >
+                                        <option value={TaxRegime.General}>Régimen General</option>
+                                        <option value={TaxRegime.RimpeEmprendedor}>RIMPE Emprendedor</option>
+                                        <option value={TaxRegime.RimpeNegocioPopular}>RIMPE Negocio Popular</option>
+                                    </select>
+                                </div>
+                                <div className="flex justify-end gap-2 pt-1">
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md"
+                                    >
+                                        Guardar y Seleccionar
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            /* Live Search Bar + Selector */
+                            <div className="space-y-2">
+                                <div className="relative">
+                                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar cliente por Nombre o RUC..."
+                                        value={clientSearchQuery}
+                                        onChange={(e) => setClientSearchQuery(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium outline-none focus:border-amber-500"
+                                    />
+                                    {clientSearchQuery && (
+                                        <button
+                                            onClick={() => setClientSearchQuery('')}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 text-xs font-bold"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+
+                                <select
+                                    value={selectedClientId}
+                                    onChange={(e) => {
+                                        setSelectedClientId(e.target.value);
+                                        const found = clients.find(c => c.id === e.target.value);
+                                        if (found) setUsername(found.ruc);
+                                    }}
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-900 dark:text-white focus:ring-1 focus:ring-amber-500 outline-none cursor-pointer"
+                                >
+                                    {filteredClients.map(c => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.name} — RUC: {c.ruc} ({c.regime})
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {targetClient && (
+                                    <div className="flex items-center justify-between px-2 text-[11px] text-slate-400 font-medium">
+                                        <span>Cliente seleccionado: <strong className="text-white">{targetClient.name}</strong></span>
+                                        <span className="font-mono text-amber-400">RUC: {targetClient.ruc}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
-                    {/* Selector de Paquetes / Combos */}
+                    {/* ── PASO 2: MAPA CONCEPTUAL DE CATEGORÍAS Y PRODUCTOS ── */}
                     <div>
-                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-3">
-                            2. Seleccionar Paquete / Combo Comercial
+                        <label className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider block mb-3 flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+                            Seleccionar Categoría de Producto / Servicio
                         </label>
-                        {/* Combos dinámicos del store */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            {activeCombos.length > 0 ? activeCombos.map(combo => {
-                                const pkgId = combo.category === 'ecuafact' ? 'combo_ecuafact'
-                                    : combo.category === 'zifact' ? 'combo_zifac'
-                                    : combo.category === 'firma' ? 'solo_firma'
-                                    : 'custom';
-                                const colorMap: Record<string, string> = {
-                                    ecuafact: 'border-emerald-500/40 bg-emerald-500/5',
-                                    zifact: 'border-blue-500/40 bg-blue-500/5',
-                                    firma: 'border-purple-500/40 bg-purple-500/5',
-                                    otro: 'border-slate-500/40 bg-slate-500/5',
-                                };
-                                const isSelected = selectedPackage === pkgId && programName === combo.name;
-                                return (
-                                    <button
-                                        key={combo.id}
-                                        type="button"
-                                        onClick={() => handlePackageSelect(pkgId as any, combo)}
-                                        className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
-                                            isSelected
-                                                ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/10 shadow-lg'
-                                                : `${colorMap[combo.category] || colorMap.otro} opacity-80 hover:opacity-100 hover:scale-[1.01]`
-                                        }`}
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
-                                                {combo.name}
-                                            </span>
-                                        </div>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-3">
-                                            {combo.notes || combo.category.toUpperCase()}
-                                        </p>
-                                        <p className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono">
-                                            ${combo.price.toFixed(2)}
-                                        </p>
-                                        {combo.accessUrl && (
-                                            <p className="text-[9px] text-slate-400 truncate mt-1">
-                                                🔗 {combo.accessUrl}
-                                            </p>
-                                        )}
-                                    </button>
-                                );
-                            }) : [
-                                { id: 'combo_ecuafact', title: 'Combo ECUAFACT', desc: '60 Docs + Firma', badge: 'Más Vendido', price: 45, color: 'border-emerald-500/40 bg-emerald-500/5' },
-                                { id: 'combo_zifac', title: 'Combo ZIFAC', desc: 'Ilimitado + Firma', badge: 'Plan Full', price: 55, color: 'border-blue-500/40 bg-blue-500/5' },
-                                { id: 'solo_firma', title: 'Solo Firma .p12', desc: 'Archivo Firma', badge: '1-5 Años', price: 25, color: 'border-purple-500/40 bg-purple-500/5' },
-                            ].map(pkg => (
-                                <button key={pkg.id} type="button"
-                                    onClick={() => handlePackageSelect(pkg.id as any)}
-                                    className={`p-4 rounded-2xl border text-left transition-all ${
-                                        selectedPackage === pkg.id ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/10 shadow-lg' : `${pkg.color} opacity-80 hover:opacity-100`
+
+                        {/* Category Tabs */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                            {[
+                                { id: 'firma', title: 'Solo Firma (.p12)', icon: Key, color: 'text-purple-400' },
+                                { id: 'zifact', title: 'ZiFact (Software)', icon: Zap, color: 'text-blue-400' },
+                                { id: 'ecuafact', title: 'EcuaFact (Combo)', icon: Sparkles, color: 'text-emerald-400' },
+                                { id: 'talonario', title: 'Talonario / Otros', icon: FileText, color: 'text-amber-400' },
+                            ].map(cat => (
+                                <button
+                                    key={cat.id}
+                                    type="button"
+                                    onClick={() => handleCategoryChange(cat.id as MainCategory)}
+                                    className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center gap-1.5 ${
+                                        activeCategory === cat.id
+                                            ? 'bg-amber-500/10 border-amber-500 text-white shadow-lg ring-1 ring-amber-500/30'
+                                            : 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-white/5 text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                                     }`}
                                 >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-xs font-black text-slate-900 dark:text-white uppercase">{pkg.title}</span>
-                                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-300 text-[8px] font-bold uppercase rounded-md">{pkg.badge}</span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">{pkg.desc}</p>
-                                    <p className="text-lg font-black text-amber-600 dark:text-amber-400">${pkg.price.toFixed(2)}</p>
+                                    <cat.icon size={18} className={cat.color} />
+                                    <span className="text-xs font-bold uppercase tracking-tight">{cat.title}</span>
                                 </button>
                             ))}
                         </div>
-                    </div>
 
-                    {/* Detalle de Configuración */}
-                    <div className="p-5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-white/5 space-y-4">
-                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                            <Sparkles size={14} className="text-amber-500" />
-                            Detalles del Plan a Registrar en Bóveda
-                        </h4>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                                    Nombre del Sistema
-                                </label>
-                                <input
-                                    type="text"
-                                    value={programName}
-                                    onChange={(e) => setProgramName(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-amber-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                                    Cupo de Comprobantes (Docs)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={documentCount}
-                                    onChange={(e) => setDocumentCount(e.target.value === '' ? '' : parseInt(e.target.value))}
-                                    placeholder="Ej: 60 (0 para Ilimitado)"
-                                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-amber-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                                    Precio Cobrado ($)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                                    placeholder="35.00"
-                                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold font-mono outline-none focus:ring-1 focus:ring-amber-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                                    Vigencia del Plan
-                                </label>
-                                <select
-                                    value={expirationYears}
-                                    onChange={(e) => setExpirationYears(parseInt(e.target.value))}
-                                    className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold outline-none focus:ring-1 focus:ring-amber-500"
+                        {/* CATEGORY 1: SOLO FIRMA ELECTRÓNICA */}
+                        {activeCategory === 'firma' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-in fade-in duration-200">
+                                {/* Option A: 1 Año Firma + Soporte ($35) RECOMENDADO */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setProgramName('Firma Electrónica .p12 (1 Año + Soporte SRI)');
+                                        setPrice(35.00);
+                                        setExpirationYears(1);
+                                        setDocumentCount('');
+                                    }}
+                                    className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden ${
+                                        price === 35 && expirationYears === 1 && programName.includes('Soporte')
+                                            ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/10 shadow-lg'
+                                            : 'bg-purple-500/5 border-purple-500/30 hover:border-purple-400'
+                                    }`}
                                 >
-                                    <option value={1}>1 Año (Plan Anual)</option>
-                                    <option value={2}>2 Años</option>
-                                    <option value={3}>3 Años</option>
-                                    <option value={5}>5 Años</option>
-                                </select>
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="text-xs font-black text-white uppercase">1 Año + Soporte</span>
+                                        <span className="px-2 py-0.5 bg-amber-500 text-slate-950 text-[8px] font-black uppercase rounded">Recomendado</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mb-2">Firma + Soporte + Anulación SRI + Configuración en portal SRI</p>
+                                    <p className="text-xl font-black text-amber-400 font-mono">$35.00</p>
+                                </button>
+
+                                {/* Option B: 1 Año Solo Firma ($29) */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setProgramName('Firma Electrónica .p12 (1 Año Solo Firma)');
+                                        setPrice(29.00);
+                                        setExpirationYears(1);
+                                        setDocumentCount('');
+                                    }}
+                                    className={`p-4 rounded-2xl border text-left transition-all ${
+                                        price === 29 && expirationYears === 1
+                                            ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/10 shadow-lg'
+                                            : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+                                    }`}
+                                >
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="text-xs font-black text-white uppercase">1 Año Solo Firma</span>
+                                        <span className="text-[9px] text-slate-400 font-bold">$29</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mb-2">Archivo .p12 básico sin configuración de plataforma</p>
+                                    <p className="text-xl font-black text-purple-400 font-mono">$29.00</p>
+                                </button>
+
+                                {/* Option C: Multiaños (2, 3, 4, 5 Años) */}
+                                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-2">
+                                    <span className="text-xs font-black text-white uppercase block">Multiaños (Solo Firma)</span>
+                                    <select
+                                        value={expirationYears > 1 ? expirationYears : 2}
+                                        onChange={(e) => {
+                                            const yrs = parseInt(e.target.value);
+                                            setExpirationYears(yrs);
+                                            const feeMap: Record<number, number> = { 2: 49, 3: 65, 4: 79, 5: 89 };
+                                            setPrice(feeMap[yrs] || 49);
+                                            setProgramName(`Firma Electrónica .p12 (${yrs} Años)`);
+                                        }}
+                                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none"
+                                    >
+                                        <option value={2}>2 Años — $49.00</option>
+                                        <option value={3}>3 Años — $65.00</option>
+                                        <option value={4}>4 Años — $79.00</option>
+                                        <option value={5}>5 Años — $89.00</option>
+                                    </select>
+                                    <p className="text-[10px] text-amber-400 font-bold">Vigencia seleccionada: {expirationYears} Años</p>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {/* CATEGORY 2: ZIFACT */}
+                        {activeCategory === 'zifact' && (
+                            <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 space-y-4 animate-in fade-in duration-200">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                                            Cantidad de Documentos (Comprobantes)
+                                        </label>
+                                        <select
+                                            value={documentCount}
+                                            onChange={(e) => {
+                                                const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                                                setDocumentCount(val);
+                                                if (val === 50 && includesSignature) setPrice(45);
+                                                else if (val === 50 && !includesSignature) setPrice(25);
+                                            }}
+                                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none"
+                                        >
+                                            <option value={50}>50 Documentos (Popular)</option>
+                                            <option value={75}>75 Documentos</option>
+                                            <option value={100}>100 Documentos</option>
+                                            <option value={200}>200 Documentos</option>
+                                            <option value={500}>500 Documentos</option>
+                                            <option value={0}>Ilimitado (Full)</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
+                                            ¿Incluye Firma Electrónica?
+                                        </label>
+                                        <select
+                                            value={includesSignature ? 'yes' : 'no'}
+                                            onChange={(e) => {
+                                                const inc = e.target.value === 'yes';
+                                                setIncludesSignature(inc);
+                                                if (inc) {
+                                                    setPrice(45.00);
+                                                    setProgramName(`ZIFAC ${documentCount || 50} Docs + Firma Electrónica`);
+                                                } else {
+                                                    setPrice(25.00);
+                                                    setProgramName(`ZIFAC ${documentCount || 50} Docs (Solo Software)`);
+                                                }
+                                            }}
+                                            className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none"
+                                        >
+                                            <option value="yes">Sí — Incluir Firma Electrónica (.p12)</option>
+                                            <option value="no">No — Solo Software de Facturación ZiFact</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center justify-between">
+                                    <span className="text-xs font-bold text-blue-300">Plan Seleccionado: ZiFact {documentCount || 50} Docs {includesSignature ? '+ Firma' : '(Solo Software)'}</span>
+                                    <span className="text-lg font-black text-amber-400 font-mono">${price}.00</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CATEGORY 3: ECUAFACT */}
+                        {activeCategory === 'ecuafact' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in duration-200">
+                                {/* Option A: 60 Docs + Firma ($55) */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setProgramName('ECUAFACT 60 Docs + Firma Electrónica');
+                                        setDocumentCount(60);
+                                        setPrice(55.00);
+                                    }}
+                                    className={`p-4 rounded-2xl border text-left transition-all ${
+                                        documentCount === 60 && price === 55
+                                            ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/10 shadow-lg'
+                                            : 'bg-emerald-500/5 border-emerald-500/30 hover:border-emerald-400'
+                                    }`}
+                                >
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="text-xs font-black text-white uppercase">EcuaFact 60 Docs + Firma</span>
+                                        <span className="px-2 py-0.5 bg-emerald-500 text-slate-950 text-[8px] font-black uppercase rounded">Combo Popular</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mb-2">60 Comprobantes anuales + Firma Electrónica .p12 incluida</p>
+                                    <p className="text-xl font-black text-emerald-400 font-mono">$55.00</p>
+                                </button>
+
+                                {/* Option B: Ilimitado + Firma ($90) */}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setProgramName('ECUAFACT Ilimitado + Firma Electrónica');
+                                        setDocumentCount(0);
+                                        setPrice(90.00);
+                                    }}
+                                    className={`p-4 rounded-2xl border text-left transition-all ${
+                                        documentCount === 0 && price === 90
+                                            ? 'border-amber-500 ring-2 ring-amber-500/30 bg-amber-500/10 shadow-lg'
+                                            : 'bg-emerald-500/5 border-emerald-500/30 hover:border-emerald-400'
+                                    }`}
+                                >
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="text-xs font-black text-white uppercase">EcuaFact Ilimitado + Firma</span>
+                                        <span className="px-2 py-0.5 bg-amber-500 text-slate-950 text-[8px] font-black uppercase rounded">Plan Empresa</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 mb-2">Comprobantes ilimitados anuales + Firma Electrónica .p12 incluida</p>
+                                    <p className="text-xl font-black text-amber-400 font-mono">$90.00</p>
+                                </button>
+                            </div>
+                        )}
+
+                        {/* CATEGORY 4: TALONARIO / OTROS */}
+                        {activeCategory === 'talonario' && (
+                            <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-3 animate-in fade-in duration-200">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <input
+                                        type="text"
+                                        value={programName}
+                                        onChange={(e) => setProgramName(e.target.value)}
+                                        placeholder="Nombre del servicio (Ej: Talonario Físico Impreso)"
+                                        className="px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white outline-none"
+                                    />
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={price}
+                                        onChange={(e) => setPrice(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                                        placeholder="Precio Cobrado ($)"
+                                        className="px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono font-bold text-white outline-none"
+                                    />
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* 3. Requisitos Opcionales (Foto de Cédula / Documentos para Firma - Cuando no estés de apuro) */}
-                    <div className="p-5 bg-indigo-500/5 rounded-2xl border border-indigo-500/20 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center gap-2">
-                                <Camera size={14} className="text-indigo-400" />
-                                3. Documentos de Identidad (Opcional - Cuando no estés de apuro)
-                            </h4>
-                            <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-[8px] font-bold uppercase rounded-md">
-                                Trámite de Firma
-                            </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                            Si dispones de tiempo, puedes adjuntar las fotos de la cédula (anverso/reverso) o PDF del cliente para que queden archivados en su Bóveda para el trámite de la Firma Electrónica.
-                        </p>
+                    {/* ── PASO 3: GENERADOR DE AUTORIZACIÓN ESPECIAL ECUAFACT ── */}
+                    {activeCategory === 'ecuafact' && (
+                        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl space-y-3 animate-in fade-in duration-300">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                                    <FileCheck size={16} /> Documento de Autorización Especial EcuaFact
+                                </h4>
+                                <span className="text-[9px] font-bold text-emerald-300 uppercase px-2 py-0.5 bg-emerald-500/20 rounded">Requisito Obligatorio</span>
+                            </div>
 
-                        {/* 3 slots de documentos de identidad */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                            <p className="text-[11px] text-slate-300">
+                                Genera la carta de autorización rellenada automáticamente con los datos de <strong>{targetClient?.name || 'Cliente'}</strong> para proceder con la emisión en Uanataca/EcuaFact.
+                            </p>
+
+                            {/* Datos auto-completados */}
+                            <div className="p-3 bg-slate-950/80 rounded-xl border border-white/5 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                                <div><span className="text-slate-500">Fecha:</span> <strong className="text-white block">{getFormattedCurrentDateSpanish()}</strong></div>
+                                <div><span className="text-slate-500">Cliente:</span> <strong className="text-white block truncate">{targetClient?.name || 'N/A'}</strong></div>
+                                <div><span className="text-slate-500">Cédula / RUC:</span> <strong className="text-amber-400 font-mono block">{targetClient?.ruc || 'N/A'}</strong></div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-wrap gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    disabled={isGeneratingDocx || !targetClient}
+                                    onClick={handleDownloadEcuaFactDocx}
+                                    className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    <Download size={15} />
+                                    <span>{isGeneratingDocx ? 'Generando .DOCX...' : 'Descargar .DOCX Personalizado'}</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    disabled={!targetClient}
+                                    onClick={handlePrintEcuaFactAuth}
+                                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-2"
+                                >
+                                    <Printer size={15} className="text-emerald-400" />
+                                    <span>Imprimir / Ver Carta</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── PASO 4: REQUISITOS OPCIONALES DE IDENTIDAD ── */}
+                    <div className="p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/20 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-black uppercase tracking-wider text-indigo-300 flex items-center gap-2">
+                                <Camera size={14} className="text-indigo-400" />
+                                Archivos de Identidad para Bóveda (Opcional)
+                            </h4>
+                            <span className="text-[9px] font-bold text-indigo-400 uppercase px-2 py-0.5 bg-indigo-500/20 rounded">Trámite Firma</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {([
-                                { id: 'front', label: 'Cédula Anverso', icon: '🪪', hint: 'Foto frontal de la cédula', state: idCardFront, setter: setIdCardFront, inputId: 'sales-id-front', formType: 'CEDULA_ANVERSO' },
-                                { id: 'back',  label: 'Cédula Reverso', icon: '🔄', hint: 'Foto posterior de la cédula', state: idCardBack,  setter: setIdCardBack,  inputId: 'sales-id-back',  formType: 'CEDULA_REVERSO'  },
-                                { id: 'extra', label: 'Doc. Adicional',  icon: '📎', hint: 'Selfie, carta, poder u otro', state: idCardSelfie, setter: setIdCardSelfie, inputId: 'sales-id-extra', formType: 'CEDULA_EXTRA'   },
+                                { id: 'front', label: 'Cédula Anverso', icon: '🪪', state: idCardFront, setter: setIdCardFront, inputId: 'sales-id-front', formType: 'CEDULA_ANVERSO' },
+                                { id: 'back',  label: 'Cédula Reverso', icon: '🔄', state: idCardBack,  setter: setIdCardBack,  inputId: 'sales-id-back',  formType: 'CEDULA_REVERSO'  },
+                                { id: 'extra', label: 'Doc. Adicional',  icon: '📎', state: idCardSelfie, setter: setIdCardSelfie, inputId: 'sales-id-extra', formType: 'CEDULA_EXTRA'   },
                             ] as const).map(slot => (
-                                <div key={slot.id} className="flex flex-col gap-2">
-                                    {/* Hidden input */}
+                                <div key={slot.id} className="flex flex-col gap-1.5">
                                     <input
                                         type="file"
                                         id={slot.inputId}
@@ -391,89 +716,36 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                         }}
                                     />
 
-                                    {/* Card visual */}
                                     <button
                                         type="button"
                                         onClick={() => document.getElementById(slot.inputId)?.click()}
-                                        className={`relative w-full aspect-[4/3] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all overflow-hidden group ${
+                                        className={`relative w-full py-3 px-3 rounded-xl border border-dashed flex items-center justify-between transition-all ${
                                             slot.state
-                                                ? 'border-emerald-500 bg-emerald-500/5'
-                                                : 'border-indigo-400/40 bg-indigo-500/5 hover:border-indigo-400 hover:bg-indigo-500/10'
+                                                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-300'
+                                                : 'border-indigo-400/30 bg-indigo-500/5 hover:border-indigo-400 text-slate-400'
                                         }`}
                                     >
-                                        {slot.state && slot.state.type === 'image' && slot.state.content ? (
-                                            /* Preview de imagen */
-                                            <>
-                                                <img
-                                                    src={slot.state.content}
-                                                    alt={slot.label}
-                                                    className="absolute inset-0 w-full h-full object-cover rounded-2xl"
-                                                />
-                                                <div className="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl">
-                                                    <Upload size={18} className="text-white" />
-                                                    <span className="text-white text-[10px] font-bold mt-1">Cambiar</span>
-                                                </div>
-                                                <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow">
-                                                    <CheckCircle2 size={14} className="text-white" />
-                                                </div>
-                                            </>
-                                        ) : slot.state ? (
-                                            /* PDF u otro archivo */
-                                            <>
-                                                <div className="text-3xl">📄</div>
-                                                <span className="text-[10px] font-bold text-emerald-400 text-center px-2 truncate w-full text-center">{slot.state.name}</span>
-                                                <CheckCircle2 size={14} className="text-emerald-400" />
-                                            </>
-                                        ) : (
-                                            /* Empty state */
-                                            <>
-                                                <span className="text-3xl opacity-60">{slot.icon}</span>
-                                                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wide">{slot.label}</span>
-                                                <span className="text-[9px] text-slate-500 text-center px-3">{slot.hint}</span>
-                                                <div className="mt-1 flex items-center gap-1 text-[9px] text-indigo-400 font-semibold">
-                                                    <Upload size={10} /> Subir foto / PDF
-                                                </div>
-                                            </>
-                                        )}
+                                        <span className="text-xs font-bold flex items-center gap-2">
+                                            <span>{slot.icon}</span> {slot.label}
+                                        </span>
+                                        {slot.state ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Upload size={14} />}
                                     </button>
-
-                                    {/* Label y botón de quitar */}
-                                    <div className="flex items-center justify-between px-1">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{slot.label}</span>
-                                        {slot.state && (
-                                            <button
-                                                type="button"
-                                                onClick={(e) => { e.stopPropagation(); slot.setter(null); }}
-                                                className="text-[9px] text-red-400 hover:text-red-300 font-bold transition-colors"
-                                            >
-                                                ✕ Quitar
-                                            </button>
-                                        )}
-                                    </div>
                                 </div>
                             ))}
                         </div>
                     </div>
+
                 </div>
 
-                {/* Footer Actions */}
-                <div className="p-5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="w-full sm:w-auto px-6 py-3 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 font-bold text-xs uppercase tracking-wider transition-all"
-                        >
-                            Cancelar
-                        </button>
-                        {/* Indicador de fotos subidas */}
-                        {(idCardFront || idCardBack || idCardSelfie) && (
-                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/30 rounded-xl text-[10px] font-bold text-indigo-400 animate-in fade-in">
-                                <Camera size={11} />
-                                {[idCardFront, idCardBack, idCardSelfie].filter(Boolean).length}/3 fotos
-                            </span>
-                        )}
-                    </div>
+                {/* MODAL FOOTER */}
+                <div className="p-5 bg-slate-900 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="w-full sm:w-auto px-6 py-3 text-slate-400 hover:text-white font-bold text-xs uppercase tracking-wider transition-all"
+                    >
+                        Cancelar
+                    </button>
 
                     <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                         <button
@@ -490,13 +762,14 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                         <button
                             type="button"
                             onClick={handleSaveAndEmitSri}
-                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
                         >
                             <FileText size={16} />
                             <span>Guardar y Emitir Factura SRI (1-Clic)</span>
                         </button>
                     </div>
                 </div>
+
             </div>
         </div>
     );
