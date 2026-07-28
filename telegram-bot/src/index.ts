@@ -1,4 +1,4 @@
-import { Bot, InlineKeyboard, InputFile } from 'grammy';
+﻿import { Bot, InlineKeyboard, InputFile } from 'grammy';
 require('dotenv').config();
 import { processChatWithAgentLoop, BOT_NAME, STATUS_ICON } from './agent';
 import { clearChatHistory, saveMessage } from './database';
@@ -14,7 +14,7 @@ import { ourFileRouter } from "./uploadthing";
 import { startCronJobs, triggerProactiveReport } from './cron';
 import { supabase } from './supabase';
 import { processPaymentReceipt } from './vision';
-import { emitInvoice, getEmisorConfig } from './sri_api';
+import { emitInvoice, getEmisorConfig, wakeUpFacturadorApi } from './sri_api';
 import { generateRidePdfBuffer } from './pdf_generator';
 
 const pendingPdfs = new Map<string, { buffer: Buffer, data: ValidatedPDF }>();
@@ -726,6 +726,9 @@ async function initiateInvoiceFlow(chatId: string, matches: any[], ctx: any) {
 }
 
 export async function startInvoiceFlowForClient(chatId: string, client: any, ctx: any) {
+    // 🔥 Wake-up en caso de entrada directa (botón desde perfil del cliente)
+    wakeUpFacturadorApi().catch(() => {});
+
     const history = client.declaration_history || [];
     const unpaid = history.filter((d: any) => !d.is_paid && d.status !== 'Pendiente');
     
@@ -1415,7 +1418,20 @@ bot.on('callback_query:data', async (ctx) => {
         const concept = dialog.data.invoiceConcept || '';
         const amount = dialog.data.invoiceAmount || 0;
         
-        await ctx.reply(`⏳ Generando y autorizando la factura en el SRI para ${client.name}...`);
+        // Wake-up ping al servidor (puede estar dormido en Render free tier)
+        const wakeMsg = await ctx.reply(
+            `⏳ *Conectando con el servidor de facturación SRI...*\n_(Si estuvo inactivo puede tomar hasta 30 segundos)_`,
+            { parse_mode: 'Markdown' }
+        );
+        await wakeUpFacturadorApi();
+
+        try {
+            await ctx.api.editMessageText(
+                chatId, wakeMsg.message_id,
+                `⚙️ Generando y autorizando la factura para *${client.name}*...`,
+                { parse_mode: 'Markdown' }
+            );
+        } catch(e) {}
         
         try {
             const result = await emitInvoice(client, concept, amount, paymentCode);
@@ -1444,13 +1460,26 @@ bot.on('callback_query:data', async (ctx) => {
                 totals
             );
             
+            try { await ctx.api.deleteMessage(chatId, wakeMsg.message_id); } catch(e) {}
+            
             await ctx.replyWithDocument(new InputFile(pdfBuffer, `RIDE_factura_${result.emisor.emisorEstab}_${result.emisor.emisorPtoEmi}_${result.comprobante.secuencial}.pdf`), {
-                caption: `✅ Factura generada y autorizada con éxito.\n\n**Concepto:** ${concept}\n**Total:** ${total.toFixed(2)}`,
+                caption: `✅ Factura generada y autorizada con éxito.\n\n**Concepto:** ${concept}\n**Total:** $${total.toFixed(2)}`,
                 parse_mode: 'Markdown'
             });
         } catch (error: any) {
             console.error('Error emitiendo factura:', error);
-            await ctx.reply(`❌ Ocurrió un error al emitir la factura:\n${error.message}`);
+            try { await ctx.api.deleteMessage(chatId, wakeMsg.message_id); } catch(e) {}
+            
+            const httpStatus = error?.response?.status;
+            if (httpStatus === 502 || httpStatus === 503 || httpStatus === 504) {
+                await ctx.reply(
+                    `❌ *El servidor de facturación no respondió (Error ${httpStatus}).*\n\n` +
+                    `Esto ocurre cuando el servidor tardó demasiado en despertar. Espera 30 segundos e inténtalo de nuevo — ya debería estar activo.`,
+                    { parse_mode: 'Markdown' }
+                );
+            } else {
+                await ctx.reply(`❌ Error al emitir la factura:\n\`${error.message}\``, { parse_mode: 'Markdown' });
+            }
         }
         
         pendingDialogs.delete(chatId);

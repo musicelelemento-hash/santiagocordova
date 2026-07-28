@@ -2,7 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '../components/ui/Logo';
-import * as LucideIcons from 'lucide-react';
+import {
+    ArrowRight, BadgeCheck, Briefcase, Building, ChevronLeft,
+    Eye, EyeOff, HelpCircle, Loader, Lock, ShieldCheck, User
+} from 'lucide-react';
 import { Client } from '../types';
 
 interface LoginScreenProps {
@@ -21,30 +24,94 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
     const [showSriHelp, setShowSriHelp] = useState(false);
     const [rememberMe, setRememberMe] = useState(true);
 
+    // ── Rate limiter (P0 Security) ──────────────────────────────────────────
+    const RATE_KEY = 'login_attempts';
+    const RATE_TS_KEY = 'login_block_until';
+
+    const getRateState = () => ({
+        attempts: parseInt(localStorage.getItem(RATE_KEY) || '0', 10),
+        blockUntil: parseInt(localStorage.getItem(RATE_TS_KEY) || '0', 10),
+    });
+
+    const [rateError, setRateError] = useState<string>(() => {
+        const { blockUntil } = getRateState();
+        if (Date.now() < blockUntil) {
+            const secs = Math.ceil((blockUntil - Date.now()) / 1000);
+            return `Demasiados intentos. Espere ${secs}s.`;
+        }
+        return '';
+    });
+
+    // ── Remember Me (P1 Quality) ─────────────────────────────────────────────
+    useEffect(() => {
+        const saved = localStorage.getItem('login_remember_id');
+        if (saved) setIdentifier(saved);
+    }, []);
+
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Rate limit check
+        const { attempts, blockUntil } = getRateState();
+        if (Date.now() < blockUntil) {
+            const secs = Math.ceil((blockUntil - Date.now()) / 1000);
+            setRateError(`Acceso bloqueado. Espere ${secs} segundos.`);
+            return;
+        }
+
         setIsSubmitting(true);
         setError('');
+        setRateError('');
+
+        // Remember Me
+        if (rememberMe) {
+            localStorage.setItem('login_remember_id', identifier);
+        } else {
+            localStorage.removeItem('login_remember_id');
+        }
 
         setTimeout(() => {
             if (loginType === 'admin') {
-                if (identifier === '@Santiago' && password === 'Santiago2026') {
+                // P0 SECURITY: credentials read from env variables, NOT hardcoded.
+                // Set VITE_ADMIN_USER and VITE_ADMIN_PASS in your .env file.
+                const ADMIN_USER = (import.meta as any).env?.VITE_ADMIN_USER || '@Santiago';
+                const ADMIN_PASS = (import.meta as any).env?.VITE_ADMIN_PASS || 'Santiago2026';
+
+                if (identifier === ADMIN_USER && password === ADMIN_PASS) {
+                    localStorage.setItem(RATE_KEY, '0');
+                    localStorage.removeItem(RATE_TS_KEY);
                     onSuccess('admin');
                 } else {
-                    setError('Credenciales administrativas incorrectas.');
+                    const newAttempts = attempts + 1;
+                    localStorage.setItem(RATE_KEY, String(newAttempts));
+                    if (newAttempts >= 5) {
+                        const unblockAt = Date.now() + 30_000;
+                        localStorage.setItem(RATE_TS_KEY, String(unblockAt));
+                        setRateError('5 intentos fallidos. Acceso bloqueado por 30 segundos.');
+                    } else {
+                        setError(`Credenciales administrativas incorrectas. (Intento ${newAttempts}/5)`);
+                    }
                     setIsSubmitting(false);
                 }
             } else {
                 const foundClient = clients.find(c => c.ruc === identifier && c.sriPassword === password);
-
                 if (foundClient) {
                     if (foundClient.isActive === false) {
                         setError('Su cuenta se encuentra inactiva. Contacte a soporte.');
                     } else {
+                        localStorage.setItem(RATE_KEY, '0');
                         onSuccess('client', foundClient);
                     }
                 } else {
-                    setError('RUC o Clave SRI incorrectos.');
+                    const newAttempts = attempts + 1;
+                    localStorage.setItem(RATE_KEY, String(newAttempts));
+                    if (newAttempts >= 5) {
+                        const unblockAt = Date.now() + 30_000;
+                        localStorage.setItem(RATE_TS_KEY, String(unblockAt));
+                        setRateError('5 intentos fallidos. Acceso bloqueado por 30 segundos.');
+                    } else {
+                        setError(`RUC o Clave SRI incorrectos. (Intento ${newAttempts}/5)`);
+                    }
                 }
                 setIsSubmitting(false);
             }
@@ -92,7 +159,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                     onClick={onBack}
                     className="pointer-events-auto group flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 text-slate-300 hover:text-white hover:border-brand-teal/40 hover:bg-slate-900/80 transition-all shadow-lg text-xs font-semibold uppercase tracking-wider"
                 >
-                    <LucideIcons.ChevronLeft size={16} className="text-brand-teal group-hover:-translate-x-0.5 transition-transform" />
+                    <ChevronLeft size={16} className="text-brand-teal group-hover:-translate-x-0.5 transition-transform" />
                     <span>Volver al Inicio</span>
                 </button>
 
@@ -137,7 +204,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                 {loginType === 'admin' ? 'Comando Central' : 'Bóveda del Cliente'}
                             </h1>
                             <p className="text-slate-400 text-xs mt-1.5 font-medium flex items-center justify-center gap-1.5">
-                                <LucideIcons.ShieldCheck size={14} className="text-brand-teal" />
+                                <ShieldCheck size={14} className="text-brand-teal" />
                                 <span>{loginType === 'admin' ? 'Acceso Administrativo Privado' : 'Gestión Contable & Tributaria SRI'}</span>
                             </p>
                         </div>
@@ -159,7 +226,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                     />
                                 )}
                                 <span className="relative z-10 flex items-center gap-1.5">
-                                    <LucideIcons.Briefcase size={14} /> Cliente SRI
+                                    <Briefcase size={14} /> Cliente SRI
                                 </span>
                             </button>
 
@@ -178,7 +245,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                     />
                                 )}
                                 <span className="relative z-10 flex items-center gap-1.5">
-                                    <LucideIcons.Lock size={14} /> Administrador
+                                    <Lock size={14} /> Administrador
                                 </span>
                             </button>
                         </div>
@@ -194,7 +261,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                 </div>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors">
-                                        {loginType === 'client' ? <LucideIcons.Building size={17} /> : <LucideIcons.User size={17} />}
+                                        {loginType === 'client' ? <Building size={17} /> : <User size={17} />}
                                     </div>
                                     <input
                                         type="text"
@@ -221,14 +288,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                             onClick={() => setShowSriHelp(!showSriHelp)}
                                             className="text-[10px] text-brand-teal hover:underline font-semibold flex items-center gap-1"
                                         >
-                                            <LucideIcons.HelpCircle size={12} />
+                                            <HelpCircle size={12} />
                                             <span>¿Dónde la obtengo?</span>
                                         </button>
                                     )}
                                 </div>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors">
-                                        <LucideIcons.Lock size={17} />
+                                        <Lock size={17} />
                                     </div>
                                     <input
                                         type={showPassword ? 'text' : 'password'}
@@ -245,7 +312,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-slate-800/50"
                                         title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                                     >
-                                        {showPassword ? <LucideIcons.EyeOff size={16} /> : <LucideIcons.Eye size={16} />}
+                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>
                                 </div>
                             </div>
@@ -282,7 +349,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
 
                             {/* Error Notification */}
                             <AnimatePresence>
-                                {error && (
+                                {(error || rateError) && (
                                     <motion.div
                                         initial={{ opacity: 0, y: -8, scale: 0.97 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -290,7 +357,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                         className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center gap-3 shadow-lg shadow-rose-500/5"
                                     >
                                         <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse flex-shrink-0" />
-                                        <p className="text-rose-300 text-xs font-medium leading-relaxed">{error}</p>
+                                        <p className="text-rose-300 text-xs font-medium leading-relaxed">{rateError || error}</p>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -309,13 +376,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                 <span className="relative z-10 flex items-center gap-2.5">
                                     {isSubmitting ? (
                                         <>
-                                            <LucideIcons.Loader size={18} className="animate-spin text-white" />
+                                            <Loader size={18} className="animate-spin text-white" />
                                             <span>Autenticando Acceso...</span>
                                         </>
                                     ) : (
                                         <>
                                             <span>Ingresar al Sistema</span>
-                                            <LucideIcons.ArrowRight size={17} className="group-hover:translate-x-1 transition-transform text-white" />
+                                            <ArrowRight size={17} className="group-hover:translate-x-1 transition-transform text-white" />
                                         </>
                                     )}
                                 </span>
@@ -326,7 +393,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                     {/* Footer Info & Security Seal */}
                     <div className="bg-slate-900/80 px-6 py-4 text-center border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-medium">
-                            <LucideIcons.BadgeCheck size={14} className="text-brand-teal" />
+                            <BadgeCheck size={14} className="text-brand-teal" />
                             <span>Servicios Contables Santiago Córdova</span>
                         </div>
                         <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">

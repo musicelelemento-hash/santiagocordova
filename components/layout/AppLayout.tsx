@@ -43,6 +43,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
     const activeScreen = getScreenFromPath(location.pathname);
 
+    // 🔥 Wake-up al navegar a Facturación SRI (web y móvil comparten este layout)
+    // Se dispara cuando el usuario presiona "Facturación SRI" en el menú,
+    // así el servidor de Render ya lleva ~30s despertando cuando lleguen al botón de emitir.
+    useEffect(() => {
+        if (location.pathname.includes('/facturacion')) {
+            const API_URL = (import.meta as any).env?.VITE_FACTURACION_API_URL || 'https://facturador-sri-api.onrender.com';
+            fetch(`${API_URL}/api/v1/ping`, {
+                method: 'GET',
+                mode: 'cors',
+                headers: { 'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir' }
+            }).catch(() => {}); // silencioso — solo para despertar
+        }
+    }, [location.pathname]);
+
     const [globalQuery, setGlobalQuery] = useState('');
     const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);

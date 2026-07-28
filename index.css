@@ -33,6 +33,8 @@
     --shadow-lg: 0 25px 50px -12px rgba(0,0,0,0.08);
     --shadow-tactical: 0 30px 60px -12px rgba(15, 23, 42, 0.12), 0 18px 36px -18px rgba(15, 23, 42, 0.08);
     --shadow-premium: 0 0 0 1px rgba(0,0,0,0.03), 0 20px 40px -12px rgba(0,0,0,0.1);
+    /* ← Referenciado por .glass-zen — sombra arquitectónica para modo claro */
+    --architect-shadow: 0 8px 30px -6px rgba(15, 23, 42, 0.06), 0 2px 8px -2px rgba(15, 23, 42, 0.04);
     
     --gradient-azure: linear-gradient(135deg, #2B6AFF 0%, #6366F1 100%);
     --gradient-emerald: linear-gradient(135deg, #04B17B 0%, #10B981 100%);
@@ -232,19 +234,19 @@ h1, h2, h3, h4 {
     mask-size: 100% 100%;
 }
 
-/* Custom Scrollbar Premium */
+/* Custom Scrollbar Premium — adapts to both dark and light mode */
 ::-webkit-scrollbar {
     width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #020617;
+    background: hsl(var(--background));
 }
 
 ::-webkit-scrollbar-thumb {
     background: linear-gradient(to bottom, #00A896, #2B6AFF);
     border-radius: 5px;
-    border: 3px solid #020617;
+    border: 3px solid hsl(var(--background));
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -708,14 +710,7 @@ h1, h2, h3, h4 {
     width: 100%;
 }
 
-.animate-scan {
-    animation: scan 3s linear infinite;
-}
-
-@keyframes scan {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(1000%); }
-}
+/* animate-scan defined once above (lines ~473-481) — duplicate removed */
 
 .progress-ring-circle {
     transition: stroke-dashoffset 0.35s;

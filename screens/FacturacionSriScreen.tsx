@@ -769,6 +769,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     runChecks();
   }, []);
 
+  // ─── Wake-up al montar: despierta el servidor nada más entrar al menú ────────
+  // Se dispara una vez al cargar la pantalla de Facturación SRI, así el servidor
+  // de Render ya está activo cuando el usuario presione "Emitir Factura".
+  useEffect(() => {
+    fetch(`${DEFAULT_API_URL}/api/v1/ping`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: { 'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir' }
+    }).catch(() => {}); // silencioso — solo para despertar
+  }, []); // [] = solo al montar, una vez
+
   // Warm-up: despierta el backend de Render (free tier se duerme tras 15 min)
   // Se dispara cuando el usuario entra a la pestaña de Factura o Retención,
   // antes de que presione cualquier botón — así ya está despierto cuando lo necesita.
@@ -784,6 +795,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       .catch(() => {}); // silencioso — solo para despertar el servidor
     }
   }, [activeTab]);
+
 
   const saveRecordToHistory = async (newRecord: HistoricComprobante) => {
     setHistory(prev => {

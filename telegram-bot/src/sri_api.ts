@@ -1,8 +1,43 @@
 import { supabase } from './supabase';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 const DEFAULT_API_URL = process.env.VITE_FACTURACION_API_URL || 'https://facturador-sri-api.onrender.com';
 const API_PREFIX = '/api/v1';
+const API_KEY = process.env.FACTURACION_API_KEY || '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir';
+
+// ─── Retry helper para manejar cold-starts de Render (502/503/504) ────────────
+async function withRetry<T>(
+    fn: () => Promise<T>,
+    label: string,
+    maxAttempts = 3,
+    delayMs = 8000
+): Promise<T> {
+    let lastError: any;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            return await fn();
+        } catch (err: any) {
+            lastError = err;
+            const status = err?.response?.status;
+            const isRetryable = !status || status === 502 || status === 503 || status === 504 || err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT';
+            if (!isRetryable || attempt === maxAttempts) break;
+            console.warn(`⚠️ [${label}] Intento ${attempt} fallido (${status || err.code}). Reintentando en ${delayMs / 1000}s...`);
+            await new Promise(r => setTimeout(r, delayMs));
+        }
+    }
+    throw lastError;
+}
+
+// ─── Wake-up ping: despierta el servidor de Render antes de facturar ──────────
+export async function wakeUpFacturadorApi(): Promise<boolean> {
+    try {
+        await axios.get(`${DEFAULT_API_URL}/health`, { timeout: 15000 });
+        return true;
+    } catch {
+        // El ping puede fallar (404/502) — lo que importa es que el servidor reciba el request y despierte
+        return true;
+    }
+}
 
 export async function getEmisorConfig() {
     const { data, error } = await supabase
@@ -176,37 +211,50 @@ export async function emitInvoice(client: any, concept: string, amount: number, 
 
     const headers = {
         'Content-Type': 'application/json',
-        'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+        'Authorization': API_KEY
     };
+    const TIMEOUT = 60000; // 60s — Render puede tardar al despertar
 
-    // 1. XML
-    const xmlRes = await axios.post(`${DEFAULT_API_URL}${API_PREFIX}/facturacion/xml`, payload, { headers });
-    if (!xmlRes.data.status) throw new Error('Error al generar XML');
+    // 1. XML (con retry por cold-start 502)
+    const xmlRes = await withRetry(
+        () => axios.post(`${DEFAULT_API_URL}${API_PREFIX}/facturacion/xml`, payload, { headers, timeout: TIMEOUT }),
+        'generar-xml'
+    );
+    if (!xmlRes.data.status) throw new Error('Error al generar XML: ' + (xmlRes.data.message || JSON.stringify(xmlRes.data)));
     const { xml, xml_base64 } = xmlRes.data.data;
 
     // 2. FIRMAR
     if (!emisor.p12Base64 || !emisor.p12Password) throw new Error('No hay firma electrónica configurada');
-    const signRes = await axios.post(`${DEFAULT_API_URL}${API_PREFIX}/facturacion/firmar`, {
-        xml_base64,
-        certificado_p12_base64: emisor.p12Base64,
-        clave: emisor.p12Password
-    }, { headers });
+    const signRes = await withRetry(
+        () => axios.post(`${DEFAULT_API_URL}${API_PREFIX}/facturacion/firmar`, {
+            xml_base64,
+            certificado_p12_base64: emisor.p12Base64,
+            clave: emisor.p12Password
+        }, { headers, timeout: TIMEOUT }),
+        'firmar-xml'
+    );
     if (!signRes.data.status) throw new Error('Error al firmar: ' + signRes.data.message);
     const signedXmlBase64 = signRes.data.data.xml_firmado_base64;
     const signedXmlStr = Buffer.from(signedXmlBase64, 'base64').toString('utf8');
 
     // 3. ENVIAR
-    const sendRes = await axios.post(`${DEFAULT_API_URL}${API_PREFIX}/facturacion/sri/enviar`, {
-        xml_base64: signedXmlBase64,
-        ambiente: emisor.ambiente
-    }, { headers });
+    const sendRes = await withRetry(
+        () => axios.post(`${DEFAULT_API_URL}${API_PREFIX}/facturacion/sri/enviar`, {
+            xml_base64: signedXmlBase64,
+            ambiente: emisor.ambiente
+        }, { headers, timeout: TIMEOUT }),
+        'enviar-sri'
+    );
     if (!sendRes.data.status) throw new Error('Error al enviar al SRI: ' + sendRes.data.message);
 
     // 4. AUTORIZAR
-    const authRes = await axios.post(`${DEFAULT_API_URL}${API_PREFIX}/facturacion/sri/autorizar`, {
-        clave_acceso: key,
-        ambiente: emisor.ambiente
-    }, { headers });
+    const authRes = await withRetry(
+        () => axios.post(`${DEFAULT_API_URL}${API_PREFIX}/facturacion/sri/autorizar`, {
+            clave_acceso: key,
+            ambiente: emisor.ambiente
+        }, { headers, timeout: TIMEOUT }),
+        'autorizar-sri'
+    );
     if (!authRes.data.status) throw new Error('Error al autorizar: ' + authRes.data.message);
 
     // Update sequences

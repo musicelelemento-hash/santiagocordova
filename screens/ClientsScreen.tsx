@@ -1,8 +1,12 @@
-import { arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
+﻿import { arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Client, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField, TaxObligationType } from '../types';
-import * as LucideIcons from 'lucide-react';
+import {
+    AlertCircle, ArrowUpDown, Briefcase, Check, Clock, DollarSign, FileText,
+    Filter, LayoutGrid, LayoutList, MessageCircle, Plus, PlusCircle, Search,
+    Shield, ShieldCheck, Sparkles, Store, Trash2, UploadCloud, Users, X, Zap
+} from 'lucide-react';
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat } from '../services/sri';
 import { Modal } from '../components/ui/Modal';
 import { v4 as uuidv4 } from 'uuid';
@@ -32,15 +36,15 @@ import { CampaignBanner } from '../components/ui/CampaignBanner';
 import { useDebounce } from '../hooks/useDebounce';
 
 const OBLIGATION_GROUPS = [
-    { id: 'all', label: 'Todos', icon: LucideIcons.Users, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
-    { id: 'vencidos', label: 'Vencidos', icon: LucideIcons.AlertCircle, color: 'text-primary bg-primary/10 ring-primary/20' },
-    { id: 'ordenes', label: 'Órdenes', icon: LucideIcons.Zap, color: 'text-tertiary bg-tertiary/10 ring-tertiary/20' },
-    { id: 'cobros', label: 'Por Cobrar', icon: LucideIcons.Sparkles, color: 'text-accent bg-accent/10 ring-accent/20' },
-    { id: 'al-dia', label: 'Al Día', icon: LucideIcons.ShieldCheck, color: 'text-tertiary bg-tertiary/10 ring-tertiary/20' },
-    { id: 'mensual', label: 'IVA Mensual', icon: LucideIcons.Clock, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
-    { id: 'semestral', label: 'IVA Semestral', icon: LucideIcons.Briefcase, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
-    { id: 'matrix', label: 'Matriz Fiscal', icon: LucideIcons.LayoutGrid, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
-    { id: 'trash', label: 'Papelera', icon: LucideIcons.Trash2, color: 'text-primary bg-primary/10 ring-primary/20' },
+    { id: 'all', label: 'Todos', icon: Users, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'vencidos', label: 'Vencidos', icon: AlertCircle, color: 'text-primary bg-primary/10 ring-primary/20' },
+    { id: 'ordenes', label: 'Órdenes', icon: Zap, color: 'text-tertiary bg-tertiary/10 ring-tertiary/20' },
+    { id: 'cobros', label: 'Por Cobrar', icon: Sparkles, color: 'text-accent bg-accent/10 ring-accent/20' },
+    { id: 'al-dia', label: 'Al Día', icon: ShieldCheck, color: 'text-tertiary bg-tertiary/10 ring-tertiary/20' },
+    { id: 'mensual', label: 'IVA Mensual', icon: Clock, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'semestral', label: 'IVA Semestral', icon: Briefcase, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'matrix', label: 'Matriz Fiscal', icon: LayoutGrid, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'trash', label: 'Papelera', icon: Trash2, color: 'text-primary bg-primary/10 ring-primary/20' },
 ];
 
 import { useAppStore } from '../store/useAppStore';
@@ -1033,7 +1037,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     </h2>
                     <div className="flex items-center gap-4 text-on-surface-variant text-[10px] font-bold uppercase tracking-[0.2em] font-premium">
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-low/50 backdrop-blur-md rounded-lg border border-outline-variant/30">
-                            <LucideIcons.Shield size={12} className="text-tertiary" />
+                            <Shield size={12} className="text-tertiary" />
                             <span>MANTENIMIENTO ACTIVOS</span>
                         </div>
                         <span className="px-3 py-1.5 bg-tertiary/10 text-tertiary rounded-lg border border-tertiary/20">{sortedClients.length} EXPEDIENTES</span>
@@ -1047,7 +1051,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         onClick={handleBulkUpload}
                         className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-5 rounded-[1.5rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.2em] border border-outline-variant hover:bg-surface-medium transition-all duration-500 shadow-sm font-premium"
                     >
-                        <LucideIcons.UploadCloud size={18} />
+                        <UploadCloud size={18} />
                         SUBIR PDFs / RUCs
                     </motion.button>
                     
@@ -1058,7 +1062,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-10 py-5 rounded-[1.5rem] bg-primary text-white shadow-tactical font-bold text-[11px] uppercase tracking-[0.2em] transition-all duration-500 font-premium relative overflow-hidden group"
                     >
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                        <LucideIcons.PlusCircle size={18} strokeWidth={2.5} />
+                        <PlusCircle size={18} strokeWidth={2.5} />
                         NUEVO CLIENTE
                     </motion.button>
                 </div>
@@ -1070,7 +1074,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <div className="flex items-center justify-between p-6 rounded-[2rem] bg-surface-low border border-primary/20 shadow-architect">
                         <div className="flex items-center gap-5">
                             <div className="p-4 rounded-2xl bg-primary text-white shadow-architect-lg">
-                                <LucideIcons.Filter size={20} />
+                                <Filter size={20} />
                             </div>
                             <div>
                                 <h4 className="text-[10px] font-bold text-primary uppercase tracking-[0.25em] font-premium mb-1">
@@ -1098,10 +1102,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
                     <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 shrink-0">
                         {[
-                            { id: 'all', label: 'Directorio', icon: LucideIcons.Users },
-                            { id: 'matrix', label: 'Matriz Fiscal', icon: LucideIcons.LayoutGrid },
-                            { id: 'cobros', label: 'Recaudación', icon: LucideIcons.DollarSign, badge: globalStats.cobros },
-                            { id: 'trash', label: 'Papelera', icon: LucideIcons.Trash2 },
+                            { id: 'all', label: 'Directorio', icon: Users },
+                            { id: 'matrix', label: 'Matriz Fiscal', icon: LayoutGrid },
+                            { id: 'cobros', label: 'Recaudación', icon: DollarSign, badge: globalStats.cobros },
+                            { id: 'trash', label: 'Papelera', icon: Trash2 },
                         ].map((tab) => {
                             const isSelected = 
                                 (tab.id === 'all' && ['all', 'directorio', 'al-dia', 'vencidos', 'mensual', 'semestral', 'renta'].includes(activeGroupTab)) ||
@@ -1166,7 +1170,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div className="flex items-center gap-3.5">
                                     <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-md shadow-amber-500/20 shrink-0">
-                                        <LucideIcons.Store size={22} />
+                                        <Store size={22} />
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -1197,7 +1201,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         }}
                                         className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 shrink-0"
                                     >
-                                        <LucideIcons.MessageCircle size={14} />
+                                        <MessageCircle size={14} />
                                         <span>WhatsApp Recordatorio NP</span>
                                     </button>
                                 </div>
@@ -1210,7 +1214,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 <div className="flex items-center gap-3 w-full xl:w-auto shrink-0 justify-between xl:justify-end">
                     {searchTerm && (
                         <div className="flex items-center gap-2.5 px-3.5 py-2 bg-primary/5 hover:bg-primary/10 text-primary border border-primary/20 rounded-xl transition-all duration-300 animate-in fade-in slide-in-from-right-4 shadow-sm shrink-0">
-                            <LucideIcons.Search size={11} className="animate-pulse" />
+                            <Search size={11} className="animate-pulse" />
                             <span className="text-[9px] font-bold uppercase tracking-wider font-premium">Búsqueda:</span>
                             <span className="text-[11px] font-black font-mono tracking-tight">{searchTerm}</span>
                             <button 
@@ -1218,7 +1222,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 className="p-0.5 hover:bg-primary/20 rounded transition-all ml-1"
                                 title="Limpiar Búsqueda"
                             >
-                                <LucideIcons.X size={10} strokeWidth={3} />
+                                <X size={10} strokeWidth={3} />
                             </button>
                         </div>
                     )}
@@ -1230,7 +1234,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 : 'bg-surface-medium text-slate-500 border-outline-variant/30 hover:text-slate-700'}`}
                         title="Filtros Avanzados"
                     >
-                        <LucideIcons.Filter size={18} />
+                        <Filter size={18} />
                     </button>
                     <div className="relative" ref={sortMenuRef}>
                         <button
@@ -1238,7 +1242,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             className="p-3.5 bg-surface-medium border border-outline-variant/30 rounded-xl text-slate-500 hover:text-slate-700 transition-all"
                             title="Ordenar"
                         >
-                            <LucideIcons.ArrowUpDown size={18} />
+                            <ArrowUpDown size={18} />
                         </button>
                         {isSortMenuOpen && (
                             <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-white/5 p-2 z-50">
@@ -1264,13 +1268,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             onClick={() => setViewMode('list')}
                             className={`p-2.5 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
                         >
-                            <LucideIcons.LayoutList size={16} />
+                            <LayoutList size={16} />
                         </button>
                         <button 
                             onClick={() => setViewMode('cards')}
                             className={`p-2.5 rounded-lg transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-800 text-primary shadow-sm' : 'text-slate-400'}`}
                         >
-                            <LucideIcons.LayoutGrid size={16} />
+                            <LayoutGrid size={16} />
                         </button>
                     </div>
                 </div>
@@ -1380,7 +1384,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             onClick={() => setIsComboModalOpen(true)}
                             className="w-full sm:w-auto px-8 py-4 bg-primary text-white font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all duration-500 flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest"
                         >
-                            <LucideIcons.Sparkles size={18} /> Iniciar Gestión $25.00
+                            <Sparkles size={18} /> Iniciar Gestión $25.00
                         </button>
                     </div>
                 )
@@ -1391,7 +1395,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 <div className="mb-8 p-6 bg-rose-50 dark:bg-rose-950/20 border border-rose-250 dark:border-rose-800/30 rounded-3xl flex justify-between items-center animate-fade-in shadow-sm">
                     <div className="flex items-center gap-3">
                         <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-500">
-                            <LucideIcons.Trash2 size={20} />
+                            <Trash2 size={20} />
                         </div>
                         <div>
                             <p className="text-xs font-bold text-rose-750 dark:text-rose-450 uppercase tracking-widest">Papelera de Reciclaje</p>
@@ -1499,7 +1503,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 rounded-2xl bg-orange-500/10 text-orange-500 shadow-sm border border-orange-500/20">
-                                        <LucideIcons.DollarSign size={20} />
+                                        <DollarSign size={20} />
                                     </div>
                                     <div>
                                         <h3 className="text-[10px] font-bold text-orange-500 uppercase tracking-[0.3em] font-premium mb-1">
@@ -1562,7 +1566,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             <div className="flex items-center justify-between mb-8 opacity-60 hover:opacity-100 transition-opacity">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                                        <LucideIcons.ShieldCheck size={20} />
+                                        <ShieldCheck size={20} />
                                     </div>
                                     <div>
                                         <h3 className="text-[10px] font-bold text-emerald-500 uppercase tracking-[0.3em] font-premium mb-1">
@@ -1669,7 +1673,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             onClick={() => { setIsComboModalOpen(false); setIsModalOpen(true); }}
                             className="w-full py-3 bg-brand-navy text-white font-medium rounded-xl flex items-center justify-center gap-2"
                         >
-                            <LucideIcons.Plus size={18} /> Crear Nuevo Cliente con Tarifa Pro
+                            <Plus size={18} /> Crear Nuevo Cliente con Tarifa Pro
                         </button>
                     </div>
                 </div>
@@ -1739,7 +1743,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <div className="p-6 space-y-6 text-slate-800 dark:text-slate-200 text-left">
                         <div className="text-center space-y-2">
                             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2">
-                                <LucideIcons.FileText size={24} />
+                                <FileText size={24} />
                             </div>
                             <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
                                 Generar Factura SRI
@@ -1773,7 +1777,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 }}
                                 className="w-full flex items-center justify-center gap-2 py-3 bg-primary hover:bg-gradient-azure text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.99]"
                             >
-                                <LucideIcons.Check size={14} strokeWidth={3} />
+                                <Check size={14} strokeWidth={3} />
                                 Facturar Solo Este Pago
                             </button>
 
@@ -1789,7 +1793,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 }}
                                 className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all active:scale-[0.99]"
                             >
-                                <LucideIcons.Plus size={14} />
+                                <Plus size={14} />
                                 Facturar y Elegir Más Obligaciones
                             </button>
 

@@ -1,5 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import * as LucideIcons from 'lucide-react';
+﻿import React, { useState, useEffect, useRef } from 'react';
+import {
+    Activity, AlertCircle, AlertTriangle, ArrowRight, ArrowUpRight,
+    Award, BarChart3, Calendar, CalendarClock, Check, ChevronDown,
+    Clock, Download, FileKey, FileText, Fingerprint, Globe,
+    GraduationCap, Grid, Heart, HelpCircle, Home, Layers, Lock,
+    MapPin, Menu, MessageCircle, Moon, Phone, Play, RefreshCw,
+    Search, Shield, ShieldCheck, Sparkles, Star, Store, Sun,
+    TrendingUp, User, Users, X, Zap
+} from 'lucide-react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Logo } from '../components/ui/Logo';
 import { PublicUser } from '../types';
@@ -259,7 +267,7 @@ const TestimonialCard = ({ quote, name, role, stars = 5, theme = 'dark', delay =
             }`}>
             <div className="flex gap-1 mb-6">
                 {Array.from({ length: stars }).map((_, i) => (
-                    <LucideIcons.Star key={i} size={14} className="text-[#d4af37] fill-[#d4af37]" />
+                    <Star key={i} size={14} className="text-[#d4af37] fill-[#d4af37]" />
                 ))}
             </div>
             <p className={`text-base leading-relaxed font-light flex-1 mb-8 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>"{quote}"</p>
@@ -330,7 +338,7 @@ const FaqItem = ({ question, answer, category, theme = 'dark', delay = 0 }: { qu
                         <h3 className={`text-lg md:text-xl font-bold transition-colors ${open ? 'text-[#00A896]' : (theme === 'dark' ? 'text-white' : 'text-slate-800')}`}>{question}</h3>
                     </div>
                     <div className={`w-9 h-9 rounded-full border flex items-center justify-center flex-shrink-0 transition-all duration-300 ${open ? 'bg-[#00A896] border-[#00A896]' : (theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50')}`}>
-                        <LucideIcons.ChevronDown size={18} className={`transition-transform duration-300 ${open ? 'rotate-180 text-white' : (theme === 'dark' ? 'text-white' : 'text-slate-600')}`} />
+                        <ChevronDown size={18} className={`transition-transform duration-300 ${open ? 'rotate-180 text-white' : (theme === 'dark' ? 'text-white' : 'text-slate-600')}`} />
                     </div>
                 </div>
                 <AnimatePresence>
@@ -353,13 +361,25 @@ const FaqItem = ({ question, answer, category, theme = 'dark', delay = 0 }: { qu
 const WhatsAppWidget = ({ phoneNumber }: { phoneNumber: string }) => {
     return (
         <div className="fixed bottom-6 right-6 z-[100] no-print">
-            <a href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20quisiera%20una%20consulta.`} target="_blank" rel="noopener noreferrer" className="relative flex items-center justify-center w-16 h-16 bg-[#25D366] rounded-full text-white shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 group">
-                <div className="absolute inset-0 bg-[#25D366] rounded-full animate-ping opacity-75" />
-                <div className="absolute inset-0 rounded-full border-2 border-white/20" />
-                <svg className="w-8 h-8 relative z-10" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
-                <div className="absolute -top-12 -right-2 bg-white text-slate-800 text-xs font-bold px-3 py-1.5 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                    En línea • Consulta rápida
-                    <div className="absolute -bottom-1 right-5 w-2 h-2 bg-white rotate-45" />
+            <a
+                href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20quisiera%20agendar%20una%20consulta%20tributaria%20gratuita.`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Abrir chat de WhatsApp para consulta gratuita"
+                className="relative flex items-center justify-center w-16 h-16 bg-[#25D366] rounded-full text-white shadow-[0_8px_32px_rgba(37,211,102,0.4)] hover:scale-110 hover:shadow-[0_12px_40px_rgba(37,211,102,0.6)] active:scale-95 transition-all duration-300 group">
+                {/* Ping ring */}
+                <div className="absolute inset-0 bg-[#25D366] rounded-full animate-ping opacity-40" />
+                {/* Border shine */}
+                <div className="absolute inset-0 rounded-full border-2 border-white/30" />
+                {/* WhatsApp SVG */}
+                <svg className="w-8 h-8 relative z-10" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                {/* Tooltip mejorado */}
+                <div className="absolute bottom-full mb-3 right-0 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none translate-y-1 group-hover:translate-y-0">
+                    <div className="bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-2xl whitespace-nowrap border border-white/10 flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-[#25D366] animate-pulse" />
+                        <span>Santiago disponible · Responde en minutos</span>
+                    </div>
+                    <div className="absolute right-6 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-900" />
                 </div>
             </a>
         </div>
@@ -372,7 +392,7 @@ const NewsSection = ({ theme = 'dark', onReadNews }: { theme?: 'light' | 'dark';
         { 
             title: "Nuevos Límites RIMPE 2026", 
             date: "Actualización SRI", 
-            icon: LucideIcons.TrendingUp,
+            icon: TrendingUp,
             impact: "Los límites del régimen RIMPE han sido ajustados para el período fiscal 2026, redefiniendo las categorías de Negocio Popular y Emprendedor. Las multas por categorización incorrecta aumentaron.",
             audience: "Microempresarios, comercios locales y profesionales independientes con facturación menor a $300,000.",
             advice: "Es fundamental revisar su facturación acumulada del 2025 para validar si califica como Negocio Popular (hasta $20,000) o si debe realizar la transición a Emprendedor, evitando sanciones automáticas del SRI."
@@ -380,7 +400,7 @@ const NewsSection = ({ theme = 'dark', onReadNews }: { theme?: 'light' | 'dark';
         { 
             title: "Cambios en Retenciones de IVA", 
             date: "Alerta Fiscal", 
-            icon: LucideIcons.AlertTriangle,
+            icon: AlertTriangle,
             impact: "Nuevos porcentajes y agentes de retención obligatorios designados por el SRI para transacciones digitales y físicas. Se modifican los casilleros del formulario 104.",
             audience: "Empresas designadas como Agentes de Retención y contribuyentes especiales que contraten servicios profesionales.",
             advice: "Configure sus sistemas de facturación con los nuevos códigos de retención (ej. 1%, 2% o 10% según el tipo de servicio). La declaración tardía o incorrecta de retenciones genera intereses acumulativos."
@@ -388,7 +408,7 @@ const NewsSection = ({ theme = 'dark', onReadNews }: { theme?: 'light' | 'dark';
         { 
             title: "Obligaciones Marzo 2026", 
             date: "Calendario", 
-            icon: LucideIcons.CalendarClock,
+            icon: CalendarClock,
             impact: "Plazo improrrogable para la declaración y pago del Impuesto a la Renta de Personas Naturales del ejercicio fiscal 2025.",
             audience: "Todas las personas naturales en Régimen General y RIMPE Emprendedor que superen la fracción básica desgravada.",
             advice: "Reúna sus facturas electrónicas de gastos personales (vivienda, salud, educación, alimentación) y consolide sus ingresos. Presentar la declaración en la fecha exacta según su noveno dígito de RUC evita el recargo del 3% mensual."
@@ -403,7 +423,7 @@ const NewsSection = ({ theme = 'dark', onReadNews }: { theme?: 'light' | 'dark';
                         <h2 className={`text-3xl md:text-5xl font-editorial tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>NOTICIAS TRIBUTARIAS</h2>
                     </div>
                     <button className="hidden md:flex items-center gap-2 text-sm text-[#00A896] hover:text-teal-600 transition-colors">
-                        Ver todas <LucideIcons.ArrowRight size={16} />
+                        Ver todas <ArrowRight size={16} />
                     </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -422,7 +442,7 @@ const NewsSection = ({ theme = 'dark', onReadNews }: { theme?: 'light' | 'dark';
                                 <div className="text-[10px] text-[#00A896] font-bold uppercase tracking-wider mb-3">{item.date}</div>
                                 <h3 className={`text-xl font-bold mb-4 group-hover:text-[#00A896] transition-colors ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{item.title}</h3>
                                 <div className="flex items-center gap-2 text-sm text-slate-400 group-hover:text-[#00A896] transition-colors mt-auto pt-4 border-t border-white/5">
-                                    Leer resumen <LucideIcons.ArrowUpRight size={14} />
+                                    Leer resumen <ArrowUpRight size={14} />
                                 </div>
                             </div>
                         </Reveal>
@@ -447,14 +467,14 @@ const LeadMagnetBanner = ({ phoneNumber, theme = 'dark' }: { phoneNumber: string
                     <div className="absolute -top-20 -right-20 w-64 h-64 bg-[#00A896] rounded-full blur-[100px] opacity-20 pointer-events-none" />
                     <div className="flex-1 text-center md:text-left relative z-10">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00A896]/10 text-[#00A896] text-[10px] font-bold uppercase tracking-widest mb-6 border border-[#00A896]/20">
-                            <LucideIcons.Download size={12} /> Recurso Gratuito
+                            <Download size={12} /> Recurso Gratuito
                         </div>
                         <h2 className={`text-3xl md:text-5xl font-editorial tracking-tighter mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>CALENDARIO TRIBUTARIO 2026</h2>
                         <p className={`text-lg font-light mb-0 max-w-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Descarga la guía en PDF con todas las fechas de vencimiento de SRI, IESS y Supercias para este año.</p>
                     </div>
                     <div className="flex-shrink-0 relative z-10">
                         <a href={`https://wa.me/${phoneNumber}?text=Hola,%20quisiera%20descargar%20el%20Calendario%20Tributario%202026.`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#00A896] text-white rounded-full font-bold uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all duration-300 shadow-xl hover:shadow-[0_0_30px_rgba(0,168,150,0.4)]">
-                            <LucideIcons.FileText size={20} />
+                            <FileText size={20} />
                             <span>Solicitar PDF</span>
                         </a>
                     </div>
@@ -632,7 +652,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         <div className="relative w-72 h-72 border-2 border-white/10 rounded-3xl p-10 glass-premium-2 overflow-hidden">
                             <div className="biometric-scanner" />
                             <div className="absolute inset-0 flex items-center justify-center">
-                                <LucideIcons.Fingerprint size={100} className="text-[#00A896] animate-pulse opacity-50" />
+                                <Fingerprint size={100} className="text-[#00A896] animate-pulse opacity-50" />
                             </div>
                         </div>
                         <div className="mt-10 text-center">
@@ -659,10 +679,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 onClick={() => setSelectedNews(null)}
                                 className={`absolute top-6 right-6 w-10 h-10 rounded-full border flex items-center justify-center transition-colors
                                     ${theme === 'dark' ? 'border-white/10 hover:bg-white/5 text-white' : 'border-slate-200 hover:bg-slate-100 text-slate-600'}`}>
-                                <LucideIcons.X size={18} />
+                                <X size={18} />
                             </button>
                             <div className="flex items-center gap-3 text-xs font-bold text-[#00A896] uppercase tracking-wider mb-6">
-                                <LucideIcons.AlertCircle size={16} />
+                                <AlertCircle size={16} />
                                 {selectedNews.date}
                             </div>
                             <h3 className="text-3xl font-editorial tracking-tight mb-6">{selectedNews.title}</h3>
@@ -743,16 +763,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     ? 'border-white/20 bg-black/20 text-slate-300 hover:text-white hover:bg-white/10' 
                                     : 'border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 shadow-sm'
                                 }`}>
-                                {theme === 'dark' ? <LucideIcons.Sun size={14} /> : <LucideIcons.Moon size={14} />}
+                                {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
                             </button>
                         )}
                         <button onClick={onAdminAccess} className={`hidden md:block text-xs font-medium transition-colors uppercase tracking-wider px-3
-                            ${theme === 'dark' ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-800'}`}>
+                            ${theme === 'dark' ? 'text-slate-500 hover:text-white' : 'text-slate-400 hover:text-slate-800'}`}
+                            aria-label="Acceso al panel administrativo">
                             Acceso
+                        </button>
+                        {/* Mobile hamburger in floating nav */}
+                        <button
+                            onClick={() => setMobileMenuOpen(true)}
+                            className={`md:hidden flex items-center justify-center w-9 h-9 rounded-full border transition-all active:scale-95
+                                ${theme === 'dark' ? 'border-white/10 bg-white/5 text-white' : 'border-slate-200 bg-white text-slate-700 shadow-sm'}`}
+                            aria-label="Abrir menú de navegación"
+                        >
+                            <Menu size={16} />
                         </button>
                         <MagneticButton onClick={onNavigateToServices}>
                             <div className="group relative px-6 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] text-white rounded-full text-xs font-bold uppercase tracking-wider overflow-hidden shadow-lg shadow-blue-500/25 transition-all duration-300 active:scale-95">
-                                <span className="relative z-10 group-hover:text-white transition-colors duration-500">Contratar</span>
+                                <span className="relative z-10 group-hover:text-white transition-colors duration-500">Consultar Gratis</span>
                                 <div className="absolute inset-0 bg-blue-700 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" />
                             </div>
                         </MagneticButton>
@@ -780,7 +810,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             </div>
                             <motion.button initial={{ scale: 0 }} animate={{ scale: 1 }} onClick={() => setMobileMenuOpen(false)}
                                 className="mt-16 w-14 h-14 rounded-full border border-white/20 bg-white/5 flex items-center justify-center mx-auto text-white">
-                                <LucideIcons.X size={28} />
+                                <X size={28} />
                             </motion.button>
                         </div>
                     </motion.div>
@@ -792,27 +822,43 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 <div className={`mobile-island-dock border-holographic relative overflow-hidden transition-colors duration-500
                     ${theme === 'dark' ? 'bg-[#020617]/90 border-white/10' : 'bg-white/95 border-slate-200 shadow-2xl'}`}>
                     <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`touch-scale flex flex-col items-center p-2 transition-all ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
-                        <LucideIcons.Home size={20} className={scrolled ? 'text-[#00A896]' : ''} />
+                    <button
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        aria-label="Ir al inicio"
+                        className={`touch-scale flex flex-col items-center p-2 transition-all ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
+                        <Home size={20} className={scrolled ? 'text-[#00A896]' : ''} />
                         <span className="text-[9px] font-bold mt-1 uppercase tracking-tighter">Inicio</span>
                     </button>
-                    <button onClick={onNavigateToServices} className={`touch-scale flex flex-col items-center p-2 transition-all ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
-                        <LucideIcons.Grid size={20} />
+                    <button
+                        onClick={onNavigateToServices}
+                        aria-label="Ver servicios y precios"
+                        className={`touch-scale flex flex-col items-center p-2 transition-all ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
+                        <Grid size={20} />
                         <span className="text-[9px] font-bold mt-1 uppercase tracking-tighter">Servicios</span>
                     </button>
                     <div className="relative -mt-10 mb-1">
-                        <div className="absolute inset-0 bg-[#00A896] rounded-full blur-xl opacity-50 animate-pulse" />
-                        <a href={`https://wa.me/${phoneNumber}`} target="_blank" rel="noopener noreferrer"
-                            className="relative flex items-center justify-center w-14 h-14 bg-[#00A896] rounded-full text-white shadow-[0_8px_32px_rgba(0,168,150,0.4)] border-4 border-[#020617] active:scale-90 transition-all duration-300">
-                            <LucideIcons.MessageCircle size={24} />
+                        <div className="absolute inset-0 bg-[#00A896] rounded-full blur-xl opacity-60 animate-pulse" />
+                        <a
+                            href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20me%20interesa%20una%20consulta%20tributaria.`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Contactar por WhatsApp"
+                            className="relative flex items-center justify-center w-14 h-14 bg-[#00A896] rounded-full text-white shadow-[0_8px_32px_rgba(0,168,150,0.5)] border-4 border-[#020617] active:scale-90 transition-all duration-300">
+                            <MessageCircle size={24} />
                         </a>
                     </div>
-                    <button onClick={() => setMobileMenuOpen(true)} className={`touch-scale flex flex-col items-center p-2 transition-all ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
-                        <LucideIcons.Menu size={20} />
+                    <button
+                        onClick={() => setMobileMenuOpen(true)}
+                        aria-label="Abrir menú principal"
+                        className={`touch-scale flex flex-col items-center p-2 transition-all ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
+                        <Menu size={20} />
                         <span className="text-[9px] font-bold mt-1 uppercase tracking-tighter">Menú</span>
                     </button>
-                    <button onClick={onAdminAccess} className={`touch-scale flex flex-col items-center p-2 transition-all ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
-                        <LucideIcons.ShieldCheck size={20} />
+                    <button
+                        onClick={onAdminAccess}
+                        aria-label="Acceso al panel de administración"
+                        className={`touch-scale flex flex-col items-center p-2 transition-all ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
+                        <ShieldCheck size={20} />
                         <span className="text-[9px] font-bold mt-1 uppercase tracking-tighter">Admin</span>
                     </button>
                 </div>
@@ -884,10 +930,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     {/* Trust badges row */}
                     <Reveal delay={220}>
                         <div className="flex flex-wrap justify-center gap-3 mb-12 mt-8">
-                            <TrustBadge theme={theme} icon={LucideIcons.Award} label="Años de experiencia" value="10+" />
-                            <TrustBadge theme={theme} icon={LucideIcons.Users} label="Clientes satisfechos" value="500+" />
-                            <TrustBadge theme={theme} icon={LucideIcons.Shield} label="Cumplimiento SRI" value="100%" />
-                            <TrustBadge theme={theme} icon={LucideIcons.MapPin} label="Ubicación" value="El Oro, Ecuador" />
+                            <TrustBadge theme={theme} icon={Award} label="Años de experiencia" value="10+" />
+                            <TrustBadge theme={theme} icon={Users} label="Clientes satisfechos" value="500+" />
+                            <TrustBadge theme={theme} icon={Shield} label="Cumplimiento SRI" value="100%" />
+                            <TrustBadge theme={theme} icon={MapPin} label="Ubicación" value="El Oro, Ecuador" />
                         </div>
                     </Reveal>
 
@@ -901,11 +947,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                         : 'bg-slate-900 text-white hover:bg-slate-800 shadow-xl'
                                     }`}>
                                     <div className="absolute inset-0 flex items-center justify-center gap-2 group-hover:-translate-y-full transition-transform duration-400">
-                                        <LucideIcons.Sparkles size={16} />
+                                        <Sparkles size={16} />
                                         <span>Ver Servicios</span>
                                     </div>
                                     <div className="absolute inset-0 flex items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-400 bg-white text-[#020617] font-extrabold">
-                                        <LucideIcons.ArrowRight size={16} />
+                                        <ArrowRight size={16} />
                                         <span>Comenzar Ahora</span>
                                     </div>
                                 </div>
@@ -917,7 +963,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                         : 'text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
                                     }`}>
                                     <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#2B6AFF]/20 group-hover:border-[#2B6AFF] transition-all">
-                                        <LucideIcons.MessageCircle size={18} className="text-[#2B6AFF]" />
+                                        <MessageCircle size={18} className="text-[#2B6AFF]" />
                                     </div>
                                     <span className="text-xs font-semibold uppercase tracking-widest font-mono">Consulta Gratuita</span>
                                 </div>
@@ -955,10 +1001,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             : 'border-slate-200 bg-white shadow-xl'
                         }`}>
                         {[
-                            { label: "Clientes Activos", end: 500, suffix: "+", icon: LucideIcons.Users },
-                            { label: "Ahorro Generado", end: 1200000, prefix: "$", icon: LucideIcons.TrendingUp },
-                            { label: "Años de Trayectoria", end: 10, suffix: "+", icon: LucideIcons.Award },
-                            { label: "Efectividad SRI", end: 100, suffix: "%", icon: LucideIcons.Activity }
+                            { label: "Clientes Activos", end: 500, suffix: "+", icon: Users },
+                            { label: "Ahorro Generado", end: 1200000, prefix: "$", icon: TrendingUp },
+                            { label: "Años de Trayectoria", end: 10, suffix: "+", icon: Award },
+                            { label: "Efectividad SRI", end: 100, suffix: "%", icon: Activity }
                         ].map((stat, i) => (
                             <StaggerItem key={i}>
                                 <div className={`px-4 py-10 md:px-6 md:py-14 xl:px-10 hover:bg-white/[0.03] transition-colors group relative border-r last:border-r-0 h-full ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
@@ -1011,9 +1057,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left pl-2">Tipo de Actividad Económica</label>
                                             <div className={`grid grid-cols-3 gap-2 p-1.5 rounded-2xl border ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
                                                 {[
-                                                    { id: 'comercial', label: 'Comercio / RIMPE', icon: LucideIcons.Store },
-                                                    { id: 'profesional', label: 'Serv. Profesional', icon: LucideIcons.User },
-                                                    { id: 'discapacidad_3ra_edad', label: '3ra Edad / IVA', icon: LucideIcons.Heart }
+                                                    { id: 'comercial', label: 'Comercio / RIMPE', icon: Store },
+                                                    { id: 'profesional', label: 'Serv. Profesional', icon: User },
+                                                    { id: 'discapacidad_3ra_edad', label: '3ra Edad / IVA', icon: Heart }
                                                 ].map(opt => (
                                                     <button
                                                         key={opt.id}
@@ -1145,7 +1191,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                                             <div>
                                                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full text-[9px] font-bold uppercase tracking-widest mb-4">
-                                                    <LucideIcons.AlertTriangle size={10} /> Fechas Límites Mensuales
+                                                    <AlertTriangle size={10} /> Fechas Límites Mensuales
                                                 </div>
                                                 <h4 className={`text-2xl font-editorial tracking-tight mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
                                                     Vence el día <span className="text-[#00A896]">{deadline.day}</span> de cada mes
@@ -1160,7 +1206,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                         rel="noreferrer"
                                                         className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A896] hover:bg-teal-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105"
                                                     >
-                                                        <LucideIcons.CalendarClock size={12} /> Agendar Recordatorios
+                                                        <CalendarClock size={12} /> Agendar Recordatorios
                                                     </a>
                                                 </div>
                                             </div>
@@ -1229,7 +1275,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 <div className="flex flex-col h-full justify-between p-10 min-h-[440px] text-left">
                                     <div>
                                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#2B6AFF] to-[#6366F1] flex items-center justify-center mb-8 shadow-lg shadow-[#2B6AFF]/20">
-                                            <LucideIcons.BarChart3 className="text-white" size={28} />
+                                            <BarChart3 className="text-white" size={28} />
                                         </div>
                                         <h3 className={`text-3xl md:text-5xl font-editorial font-extrabold tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>GESTIÓN INTEGRAL SRI</h3>
                                         <p className={`text-lg leading-relaxed max-w-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -1238,7 +1284,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     </div>
                                     <div className="flex items-center gap-4 text-[#2B6AFF] font-bold text-xs uppercase tracking-widest group/link cursor-pointer" onClick={onNavigateToServices}>
                                         <span>Ver Detalles</span>
-                                        <LucideIcons.ArrowUpRight size={16} className="group-hover/link:translate-x-1 group-hover/link:-translate-y-1 transition-transform" />
+                                        <ArrowUpRight size={16} className="group-hover/link:translate-x-1 group-hover/link:-translate-y-1 transition-transform" />
                                     </div>
                                 </div>
                             </SpotlightCard>
@@ -1248,7 +1294,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <SpotlightCard theme={theme} className="interactive-card h-full">
                                 <div className="flex flex-col h-full p-10 min-h-[440px] text-left">
                                     <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-8">
-                                        <LucideIcons.Zap className="text-[#6366F1]" size={28} />
+                                        <Zap className="text-[#6366F1]" size={28} />
                                     </div>
                                     <h3 className={`text-3xl font-editorial font-extrabold tracking-tight mb-4 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Facturación Electrónica</h3>
                                     <p className={`leading-relaxed mb-auto ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -1266,7 +1312,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <SpotlightCard theme={theme} className="interactive-card h-full">
                                 <div className="flex flex-col h-full p-10 text-left justify-center">
                                     <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
-                                        <LucideIcons.ShieldCheck className="text-[#04B17B]" size={24} />
+                                        <ShieldCheck className="text-[#04B17B]" size={24} />
                                     </div>
                                     <h3 className={`text-2xl font-editorial font-extrabold tracking-tight mb-2 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Apertura de RUC</h3>
                                     <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -1280,7 +1326,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <SpotlightCard theme={theme} className="interactive-card h-full">
                                 <div className="flex flex-col h-full p-10 text-left justify-center">
                                     <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
-                                        <LucideIcons.FileKey className="text-purple-400" size={24} />
+                                        <FileKey className="text-purple-400" size={24} />
                                     </div>
                                     <h3 className={`text-2xl font-editorial font-extrabold tracking-tight mb-2 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Firma Electrónica</h3>
                                     <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
@@ -1304,7 +1350,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                         <MagneticButton onClick={onNavigateToServices}>
                                             <div className={`inline-flex items-center gap-3 px-8 py-4 rounded-full text-xs font-bold uppercase tracking-[0.2em] transition-all active:scale-95
                                                 ${theme === 'dark' ? 'bg-white text-black hover:bg-[#2B6AFF] hover:text-white' : 'bg-slate-900 text-white hover:bg-[#2B6AFF]'}`}>
-                                                <LucideIcons.Calendar size={14} />
+                                                <Calendar size={14} />
                                                 Agendar Sesión
                                             </div>
                                         </MagneticButton>
@@ -1313,7 +1359,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                         <div className="absolute inset-0 tactical-grid opacity-20" />
                                         <div className="relative">
                                             <div className="absolute inset-0 bg-[#2B6AFF]/20 blur-3xl rounded-full" />
-                                            <LucideIcons.Globe className={`relative z-10 ${theme === 'dark' ? 'text-white/15' : 'text-slate-900/10'}`} size={140} />
+                                            <Globe className={`relative z-10 ${theme === 'dark' ? 'text-white/15' : 'text-slate-900/10'}`} size={140} />
                                         </div>
                                     </div>
                                 </div>
@@ -1326,9 +1372,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <MagneticButton onClick={onNavigateToServices}>
                                 <div className={`inline-flex items-center gap-3 px-10 py-5 border rounded-full text-sm font-medium hover:border-[#00A896]/50 hover:bg-[#00A896]/5 transition-all duration-500
                                     ${theme === 'dark' ? 'border-white/15 text-white' : 'border-slate-200 text-slate-700'}`}>
-                                    <LucideIcons.Layers size={16} className="text-[#00A896]" />
+                                    <Layers size={16} className="text-[#00A896]" />
                                     Ver todos los servicios y precios
-                                    <LucideIcons.ArrowRight size={16} />
+                                    <ArrowRight size={16} />
                                 </div>
                             </MagneticButton>
                         </div>
@@ -1360,7 +1406,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                 <span className="text-4xl font-editorial text-white">SC</span>
                                             </div>
                                             <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-[#00A896] rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(0,168,150,0.5)]">
-                                                <LucideIcons.Check size={14} className="text-white" strokeWidth={3} />
+                                                <Check size={14} className="text-white" strokeWidth={3} />
                                             </div>
                                         </div>
                                         <div>
@@ -1373,10 +1419,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     {/* Credentials */}
                                     <div className="grid grid-cols-2 gap-4 mb-8">
                                         {[
-                                            { icon: LucideIcons.GraduationCap, label: "Ingeniería en C.C.E.E." },
-                                            { icon: LucideIcons.Shield, label: "Agente de Retención SRI" },
-                                            { icon: LucideIcons.Clock, label: "10+ Años de Experiencia" },
-                                            { icon: LucideIcons.Star, label: "Especialista RIMPE 2026" },
+                                            { icon: GraduationCap, label: "Ingeniería en C.C.E.E." },
+                                            { icon: Shield, label: "Agente de Retención SRI" },
+                                            { icon: Clock, label: "10+ Años de Experiencia" },
+                                            { icon: Star, label: "Especialista RIMPE 2026" },
                                         ].map((cred, i) => (
                                             <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
                                                 <cred.icon size={14} className="text-[#00A896] flex-shrink-0" />
@@ -1389,7 +1435,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     <a href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20quiero%20una%20consulta%20gratuita.`}
                                         target="_blank" rel="noopener noreferrer"
                                         className="flex items-center justify-center gap-3 w-full py-4 bg-[#00A896] text-white rounded-2xl font-bold text-sm hover:bg-[#009486] transition-all duration-300 shadow-[0_8px_30px_rgba(0,168,150,0.35)] hover:shadow-[0_12px_40px_rgba(0,168,150,0.5)]">
-                                        <LucideIcons.MessageCircle size={18} />
+                                        <MessageCircle size={18} />
                                         Agendar Consulta Gratuita
                                     </a>
                                 </div>
@@ -1460,7 +1506,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                             ? 'bg-white/5 border-white/10 text-white hover:border-[#00A896]/50 hover:bg-[#00A896]/10' 
                                             : 'bg-white border-slate-200 text-slate-700 hover:border-[#00A896]/50 hover:bg-slate-50 shadow-sm'
                                         }`}>
-                                        <LucideIcons.Play size={14} className="text-[#00A896]" />
+                                        <Play size={14} className="text-[#00A896]" />
                                         Iniciar el Proceso
                                     </div>
                                 </MagneticButton>
@@ -1468,16 +1514,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         </Reveal>
 
                         <div className="space-y-10 text-left">
-                            <ProcessStep theme={theme} number="1" title="Diagnóstico Gratuito" icon={LucideIcons.Search}
+                            <ProcessStep theme={theme} number="1" title="Diagnóstico Gratuito" icon={Search}
                                 description="Evaluamos su situación tributaria actual sin costo. Identificamos riesgos, oportunidades de ahorro y el régimen óptimo para su actividad." delay={50} />
                             <div className="w-[1px] h-8 bg-gradient-to-b from-[#00A896]/50 to-transparent ml-7" />
-                            <ProcessStep theme={theme} number="2" title="Plan Personalizado" icon={LucideIcons.FileText}
+                            <ProcessStep theme={theme} number="2" title="Plan Personalizado" icon={FileText}
                                 description="Diseñamos una hoja de ruta fiscal a medida. Calendarios de obligaciones, estrategia de deducciones y cronograma de gestiones." delay={150} />
                             <div className="w-[1px] h-8 bg-gradient-to-b from-[#00A896]/50 to-transparent ml-7" />
-                            <ProcessStep theme={theme} number="3" title="Ejecución Experta" icon={LucideIcons.Zap}
+                            <ProcessStep theme={theme} number="3" title="Ejecución Experta" icon={Zap}
                                 description="Tramitamos, declaramos y gestionamos todo ante el SRI. Usted recibe reportes claros y tranquilidad total." delay={250} />
                             <div className="w-[1px] h-8 bg-gradient-to-b from-[#00A896]/50 to-transparent ml-7" />
-                            <ProcessStep theme={theme} number="4" title="Seguimiento Continuo" icon={LucideIcons.RefreshCw}
+                            <ProcessStep theme={theme} number="4" title="Seguimiento Continuo" icon={RefreshCw}
                                 description="Monitoreo permanente de su cuenta en el SRI. Alertas preventivas y asesoría proactiva para que nunca sea sorprendido." delay={350} />
                         </div>
                     </div>
@@ -1533,7 +1579,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <div className="text-center">
                                 <div className={`text-6xl font-editorial ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>5.0</div>
                                 <div className="flex gap-1 justify-center mt-2">
-                                    {[...Array(5)].map((_, i) => <LucideIcons.Star key={i} size={16} className="text-[#d4af37] fill-[#d4af37]" />)}
+                                    {[...Array(5)].map((_, i) => <Star key={i} size={16} className="text-[#d4af37] fill-[#d4af37]" />)}
                                 </div>
                                 <div className="text-slate-500 text-xs mt-2 uppercase tracking-wider">Calificación promedio</div>
                             </div>
@@ -1570,7 +1616,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <Reveal delay={50}>
                         <div className="mb-10 space-y-4">
                             <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 bg-opacity-45 shadow-inner backdrop-blur-xl">
-                                <LucideIcons.Search className="text-slate-400 flex-shrink-0" size={18} />
+                                <Search className="text-slate-400 flex-shrink-0" size={18} />
                                 <input
                                     type="text"
                                     placeholder="Buscar pregunta o respuesta fiscal..."
@@ -1580,7 +1626,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 />
                                 {faqSearch && (
                                     <button onClick={() => setFaqSearch("")} className="text-slate-400 hover:text-white">
-                                        <LucideIcons.X size={16} />
+                                        <X size={16} />
                                     </button>
                                 )}
                             </div>
@@ -1619,7 +1665,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             ))
                         ) : (
                             <div className="text-center py-12 text-slate-500 font-light text-sm">
-                                <LucideIcons.HelpCircle className="mx-auto text-slate-400 mb-3" size={32} />
+                                <HelpCircle className="mx-auto text-slate-400 mb-3" size={32} />
                                 No se encontraron respuestas para tu búsqueda. Prueba con otras palabras clave.
                             </div>
                         )}
@@ -1658,13 +1704,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     <div className="group relative px-12 py-6 bg-white text-black rounded-full font-bold text-xs uppercase tracking-[0.3em] overflow-hidden shadow-[0_0_50px_rgba(255,255,255,0.25)] hover:shadow-[#00A896]/50 transition-all duration-700">
                                         <div className="absolute inset-0 bg-[#00A896] transform translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                                         <span className="relative z-10 group-hover:text-white flex items-center gap-3">
-                                            <LucideIcons.MessageCircle size={20} /> WhatsApp Ahora
+                                            <MessageCircle size={20} /> WhatsApp Ahora
                                         </span>
                                     </div>
                                 </MagneticButton>
                                 <div className={`flex items-center gap-3 text-slate-500 text-[11px] font-bold uppercase tracking-[0.4em] px-8 py-6 border rounded-full backdrop-blur-md hover:border-[#00A896]/40 hover:text-[#00A896] transition-all duration-500 cursor-default group
                                     ${theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-slate-200 bg-white shadow-sm'}`}>
-                                    <LucideIcons.MapPin size={18} className="text-[#00A896] group-hover:scale-110 transition-transform" />
+                                    <MapPin size={18} className="text-[#00A896] group-hover:scale-110 transition-transform" />
                                     Pasaje, El Oro · Ecuador
                                 </div>
                             </div>
@@ -1672,13 +1718,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             {/* Contact info */}
                             <div className={`mt-14 pt-10 border-t flex flex-col md:flex-row justify-center gap-10 text-xs text-slate-500 uppercase tracking-widest ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
                                 <a href={`https://wa.me/${phoneNumber}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-[#00A896] transition-colors">
-                                    <LucideIcons.Phone size={14} className="text-[#00A896]" />+593 97 898 0722
+                                    <Phone size={14} className="text-[#00A896]" />+593 97 898 0722
                                 </a>
                                 <div className="flex items-center gap-3">
-                                    <LucideIcons.Clock size={14} className="text-[#00A896]" />Lunes – Viernes · 8h00 – 18h00
+                                    <Clock size={14} className="text-[#00A896]" />Lunes – Viernes · 8h00 – 18h00
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <LucideIcons.MapPin size={14} className="text-[#00A896]" />Pasaje, Provincia de El Oro
+                                    <MapPin size={14} className="text-[#00A896]" />Pasaje, Provincia de El Oro
                                 </div>
                             </div>
                         </div>
@@ -1713,9 +1759,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             </p>
                             <a href={`https://wa.me/${phoneNumber}`} target="_blank" rel="noreferrer"
                                 className="inline-flex items-center gap-2 text-[#00A896] text-xs font-bold uppercase tracking-widest hover:gap-3 transition-all">
-                                <LucideIcons.MessageCircle size={14} />
+                                <MessageCircle size={14} />
                                 Contactar por WhatsApp
-                                <LucideIcons.ArrowRight size={12} />
+                                <ArrowRight size={12} />
                             </a>
                         </div>
 
@@ -1756,16 +1802,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                     <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
                         <div className="text-slate-600 text-[10px] font-bold tracking-[0.3em] uppercase">
-                            © 2026 · <span className="text-[#00A896]">SANTIAGO CÓRDOVA</span> · Todos los derechos reservados
+                            © 2026 · <span className="text-[#00A896]">SANTIAGO CÓRDOVA</span> · Todos los derechos reservados · Pasaje, El Oro · Ecuador
                         </div>
                         <div className="flex items-center gap-6">
-                            <button onClick={handleProtectedAccess} className="text-slate-600 hover:text-white text-[10px] uppercase tracking-[0.3em] transition-colors flex items-center gap-2">
-                                <LucideIcons.Lock size={10} />
+                            <button
+                                onClick={handleProtectedAccess}
+                                aria-label="Acceso al panel privado"
+                                className="text-slate-700 hover:text-white text-[10px] uppercase tracking-[0.3em] transition-colors flex items-center gap-2 group">
+                                <Lock size={10} className="group-hover:text-[#00A896] transition-colors" />
                                 Acceso Privado
                             </button>
-                            <div className="text-slate-700 text-[10px] tracking-[0.3em] uppercase">
-                                Diseñado por <span className="text-slate-500">SUPRA MUSIC INC.</span>
-                            </div>
                         </div>
                     </div>
                 </div>

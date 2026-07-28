@@ -1,6 +1,11 @@
-
+﻿
 import React, { useMemo, useState } from 'react';
-import * as LucideIcons from 'lucide-react';
+import {
+    AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock, Command, Copy,
+    Database, ExternalLink, Eye, EyeOff, FileText, HandCoins, Loader2,
+    MessageCircle, ShieldAlert, Sparkles, TrendingUp, UploadCloud, Users,
+    Vault, Wallet, X, Zap
+} from 'lucide-react';
 import { Screen, Client, DeclarationStatus, TaxRegime, Declaration } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { getPeriod, getDueDateForPeriod, formatPeriodForDisplay, getDaysUntilDue } from '../services/sri';
@@ -766,7 +771,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-[0.3em]">Sistema Activo</span>
                                     </div>
                                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                                        <LucideIcons.Database size={10} className="text-slate-400" />
+                                        <Database size={10} className="text-slate-400" />
                                         <span className="text-[10px] font-bold text-slate-400 tech-font">Firebase Live</span>
                                     </div>
                                 </div>
@@ -797,7 +802,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         }`}
                                         title={showIntelligencePanels ? "Modo minimalista (ocultar paneles)" : "Mostrar paneles de control e inteligencia"}
                                     >
-                                        {showIntelligencePanels ? <LucideIcons.EyeOff size={16} /> : <LucideIcons.Eye size={16} />}
+                                        {showIntelligencePanels ? <EyeOff size={16} /> : <Eye size={16} />}
                                     </button>
                                     <button
                                         onClick={() => setShowUploader(p => !p)}
@@ -808,7 +813,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                 : 'bg-blue-600 dark:bg-blue-500 text-white shadow-blue-500/25'
                                         }`}
                                     >
-                                        {isProcessing ? <LucideIcons.Loader2 size={16} className="animate-spin" /> : <LucideIcons.UploadCloud size={16} className="group-hover:-translate-y-0.5 transition-transform" />}
+                                        {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} className="group-hover:-translate-y-0.5 transition-transform" />}
                                         <span className="hidden sm:inline">SUBIR PDFs / RUCs</span>
                                     </button>
                                 </div>
@@ -834,7 +839,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-100 dark:border-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
                             >
                                 <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25 group-hover:scale-110 transition-transform duration-300 shrink-0">
-                                    <LucideIcons.Users size={20} strokeWidth={2} />
+                                    <Users size={20} strokeWidth={2} />
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Total Clientes</p>
@@ -849,7 +854,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-100 dark:border-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
                             >
                                 <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 group-hover:scale-110 transition-transform duration-300 shrink-0">
-                                    <LucideIcons.TrendingUp size={20} strokeWidth={2} />
+                                    <TrendingUp size={20} strokeWidth={2} />
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Facturación Est.</p>
@@ -876,7 +881,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                 ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-400/25'
                                                 : 'bg-gradient-to-br from-slate-400 to-slate-500 shadow-slate-400/25'
                                         }`}>
-                                            <LucideIcons.Vault size={20} strokeWidth={2} />
+                                            <Vault size={20} strokeWidth={2} />
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Archivo Digital</p>
@@ -898,7 +903,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <div className="relative z-10">
                                     <div className="flex items-center gap-2 mb-2">
                                         <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 group-hover:scale-110 transition-transform">
-                                            <LucideIcons.Wallet size={14} />
+                                            <Wallet size={14} />
                                         </div>
                                         <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Por Cobrar</p>
                                     </div>
@@ -926,7 +931,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                 </div>
                                                 <div className="flex items-center justify-between mt-1.5">
                                                     <p className="text-[10px] text-slate-400">{collectedPercent}% cobrado</p>
-                                                    <LucideIcons.ArrowRight size={12} className="text-rose-400 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                                                    <ArrowRight size={12} className="text-rose-400 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                                                 </div>
                                             </>
                                         );
@@ -979,7 +984,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">{s.desc}</p>
                                         <div className="flex items-center gap-1.5 mt-3 text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 text-emerald-400">
                                             <span>Ver más</span>
-                                            <LucideIcons.ArrowRight size={12} />
+                                            <ArrowRight size={12} />
                                         </div>
                                     </div>
                                 </div>
@@ -997,7 +1002,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <div className="flex items-center gap-5">
                                         <div className="relative shrink-0">
                                             <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-3 rounded-xl text-white shadow-lg shadow-rose-500/30 relative z-10">
-                                                <LucideIcons.ShieldAlert size={20} strokeWidth={2.5} />
+                                                <ShieldAlert size={20} strokeWidth={2.5} />
                                             </div>
                                             <div className="absolute inset-0 bg-rose-400 rounded-xl animate-ping opacity-20" />
                                         </div>
@@ -1026,7 +1031,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             onClick={() => setIsTacticalVisible(false)}
                                             className="p-2 hover:bg-rose-400/10 rounded-lg transition-colors text-slate-400 hover:text-rose-400 opacity-40 group-hover/tactical:opacity-100"
                                         >
-                                            <LucideIcons.X size={16} />
+                                            <X size={16} />
                                         </button>
                                     </div>
                                 </div>
@@ -1053,7 +1058,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl transition-all duration-300">
                         <div className="flex flex-wrap items-center gap-3">
                             <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-                                <LucideIcons.Sparkles size={12} className="text-blue-500 animate-pulse" />
+                                <Sparkles size={12} className="text-blue-500 animate-pulse" />
                                 Resumen Operativo
                             </span>
                             
@@ -1079,7 +1084,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             onClick={() => setShowIntelligencePanels(true)}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all"
                         >
-                            <LucideIcons.Eye size={12} />
+                            <Eye size={12} />
                             Mostrar Paneles
                         </button>
                     </div>
@@ -1096,7 +1101,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-100 dark:border-white/[0.05]">
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
-                                <LucideIcons.Command size={18} strokeWidth={2.5} />
+                                <Command size={18} strokeWidth={2.5} />
                             </div>
                             <div>
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.15em] font-premium">Centro Operativo Táctico</h3>
@@ -1114,7 +1119,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }`}
                             >
-                                <LucideIcons.Zap size={14} />
+                                <Zap size={14} />
                                 <span>Mesa Operativa</span>
                                 {mesaTrabajoList.length > 0 && (
                                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
@@ -1133,7 +1138,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }`}
                             >
-                                <LucideIcons.UploadCloud size={14} />
+                                <UploadCloud size={14} />
                                 <span>Cargas & Bóveda</span>
                                 {recentUploads.length > 0 && (
                                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
@@ -1152,7 +1157,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }`}
                             >
-                                <LucideIcons.AlertTriangle size={14} />
+                                <AlertTriangle size={14} />
                                 <span>Alertas Especiales</span>
                                 {(activeRentaRefunds.length + expiringSignatures.length) > 0 && (
                                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
@@ -1203,7 +1208,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             {mesaTrabajoList.length === 0 ? (
                                 <div className="p-12 text-center border-2 border-dashed border-slate-200/70 dark:border-white/5 rounded-3xl bg-slate-50/30 dark:bg-white/[0.01]">
                                     <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto text-emerald-500 mb-3 border border-emerald-200/30 dark:border-emerald-500/20">
-                                        <LucideIcons.CheckCircle2 size={24} />
+                                        <CheckCircle2 size={24} />
                                     </div>
                                     <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">¡Todo al Día!</h4>
                                     <p className="text-xs text-slate-400 mt-1">No quedan clientes pendientes en esta campaña.</p>
@@ -1254,7 +1259,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                                         ? 'bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400'
                                                                         : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                                                                 }`}>
-                                                                    <LucideIcons.Clock size={11} className="flex-shrink-0" />
+                                                                    <Clock size={11} className="flex-shrink-0" />
                                                                     <span>
                                                                         {daysLeft < 0
                                                                             ? `Vencido (${Math.abs(daysLeft)}d)`
@@ -1280,7 +1285,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                         className="py-2.5 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-bold uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-sm"
                                                         title="Copiar RUC al Portapapeles"
                                                     >
-                                                        <LucideIcons.Copy size={13} className="text-slate-400 group-hover:text-blue-500" />
+                                                        <Copy size={13} className="text-slate-400 group-hover:text-blue-500" />
                                                         <span>RUC</span>
                                                     </button>
 
@@ -1289,7 +1294,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                         className="py-2.5 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-bold uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-sm"
                                                         title="Abrir SRI en línea"
                                                     >
-                                                        <LucideIcons.ExternalLink size={13} className="text-slate-400 group-hover:text-sky-500" />
+                                                        <ExternalLink size={13} className="text-slate-400 group-hover:text-sky-500" />
                                                         <span>Portal</span>
                                                     </button>
 
@@ -1298,7 +1303,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                         className="py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[9px] font-black uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-md shadow-blue-500/20"
                                                         title="Subir Comprobante PDF de Declaración"
                                                     >
-                                                        <LucideIcons.UploadCloud size={13} />
+                                                        <UploadCloud size={13} />
                                                         <span>Subir</span>
                                                     </button>
 
@@ -1325,7 +1330,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                         className="py-2.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white border border-emerald-500/20 rounded-xl text-[9px] font-black uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95"
                                                         title="Notificar por WhatsApp"
                                                     >
-                                                        <LucideIcons.MessageCircle size={13} />
+                                                        <MessageCircle size={13} />
                                                         <span>WApp</span>
                                                     </button>
                                                 </div>
@@ -1356,13 +1361,13 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                                 {isProcessing ? (
                                     <div className="flex flex-col items-center gap-3 py-4">
-                                        <LucideIcons.Loader2 className="animate-spin text-blue-500" size={32} />
+                                        <Loader2 className="animate-spin text-blue-500" size={32} />
                                         <p className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Procesando Inteligencia de Documentos...</p>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center gap-3 py-2">
                                         <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/30 dark:border-blue-500/20 flex items-center justify-center text-blue-500 dark:text-blue-400">
-                                            <LucideIcons.UploadCloud size={20} />
+                                            <UploadCloud size={20} />
                                         </div>
                                         <div>
                                             <p className="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Arrastra aquí tus PDFs SRI o RUCs</p>
@@ -1385,7 +1390,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             return (
                                                 <div key={i} className="flex items-center justify-between gap-3 p-3 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 rounded-xl text-xs">
                                                     <div className="flex items-center gap-2 min-w-0">
-                                                        <LucideIcons.FileText size={14} className="text-blue-500 shrink-0" />
+                                                        <FileText size={14} className="text-blue-500 shrink-0" />
                                                         <span className="font-bold truncate text-slate-800 dark:text-slate-200 uppercase">{res.clientName || res.fileName}</span>
                                                         <span className="text-[9px] font-mono text-slate-400">{res.ruc}</span>
                                                     </div>
@@ -1410,7 +1415,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                                     <div className="flex items-center gap-2">
-                                        <LucideIcons.HandCoins size={16} className="text-amber-500" />
+                                        <HandCoins size={16} className="text-amber-500" />
                                         <span className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Devoluciones de Renta ({activeRentaRefunds.length})</span>
                                     </div>
                                 </div>
@@ -1438,7 +1443,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-2">
                                     <div className="flex items-center gap-2">
-                                        <LucideIcons.ShieldAlert size={16} className="text-rose-500" />
+                                        <ShieldAlert size={16} className="text-rose-500" />
                                         <span className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Firmas por Caducar ({expiringSignatures.length})</span>
                                     </div>
                                 </div>
@@ -1524,7 +1529,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 }}
                                 className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
                             >
-                                <LucideIcons.MessageCircle size={14} strokeWidth={2.5} />
+                                <MessageCircle size={14} strokeWidth={2.5} />
                                 Enviar WhatsApp
                             </button>
                         </div>
@@ -1541,12 +1546,12 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         className="group relative flex items-center gap-3 p-4 bg-gradient-to-br from-amber-400 to-amber-500 text-white rounded-[2rem] shadow-[0_20px_40px_rgba(245,158,11,0.4)] border border-amber-300/30 transition-all hover:scale-110 active:scale-95"
                     >
                         <div className="absolute inset-0 bg-white/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <LucideIcons.HandCoins size={24} className="relative z-10" />
+                        <HandCoins size={24} className="relative z-10" />
                         <span className="font-semibold text-xs tracking-widest uppercase relative z-10 pr-2">
                             {activeRentaRefunds.length} Refund{activeRentaRefunds.length > 1 ? 's' : ''}
                         </span>
                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-rose-400 rounded-full border-2 border-white flex items-center justify-center">
-                            <LucideIcons.AlertCircle size={8} strokeWidth={4} />
+                            <AlertCircle size={8} strokeWidth={4} />
                         </div>
                     </button>
                 </div>
