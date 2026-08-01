@@ -274,6 +274,34 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         return '¡Buenas noches!';
     };
 
+    const handleOpenSriPortal = (client: Client, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+
+        try {
+            const credentialsPayload = {
+                ruc: client.ruc,
+                password: client.sriPassword || '',
+                name: client.name,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('sri_active_credentials', JSON.stringify(credentialsPayload));
+
+            if (client.sriPassword) {
+                navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`);
+            } else {
+                navigator.clipboard.writeText(client.ruc);
+            }
+        } catch (err) {
+            console.error("Error setting active SRI credentials:", err);
+        }
+
+        toast.success(
+            `🔑 Credenciales de ${client.name} cargadas. RUC: ${client.ruc} ${client.sriPassword ? '· Clave lista para autocompletar' : ''}`
+        );
+
+        window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
+    };
+
     // Alternar estado de Notificado WhatsApp manualmente
     const handleToggleWhatsAppNotification = (client: Client, period: string, obType: string, decl?: Declaration) => {
         const declarations = client.declarations || [];
@@ -1128,17 +1156,14 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             </button>
                                                         )}
 
-                                                        {/* Enlace SRI */}
-                                                        <a
-                                                            href="https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT"
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="p-1 rounded border bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-primary hover:border-primary/30 transition-all flex items-center justify-center"
-                                                            title="Ir a SRI en Línea"
+                                                        {/* Enlace SRI con Autocarga de Credenciales */}
+                                                        <button
+                                                            onClick={(e) => handleOpenSriPortal(client, e)}
+                                                            className="p-1 rounded border bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-amber-400 hover:border-amber-400/30 transition-all flex items-center justify-center"
+                                                            title="Abrir SRI en Línea y Cargar Credenciales del Cliente"
                                                         >
                                                             <LucideIcons.ExternalLink size={8} />
-                                                        </a>
+                                                        </button>
 
                                                         {/* Icono Minimalista de Notificación WhatsApp por Cliente (Solo cuando hay comprobante y no está todo pagado) */}
                                                         {(() => {
@@ -1718,10 +1743,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         </div>
 
                         {/* Footer */}
-                        <div className="flex justify-end border-t border-white/10 pt-4">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10 pt-4">
+                            <button
+                                onClick={() => handleOpenSriPortal(activeCellModal.client)}
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95"
+                            >
+                                <LucideIcons.Key size={14} />
+                                <span>🔑 Abrir SRI & Cargar Credenciales</span>
+                            </button>
                             <button
                                 onClick={() => setActiveCellModal(null)}
-                                className="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all"
+                                className="w-full sm:w-auto px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all"
                             >
                                 Cerrar
                             </button>

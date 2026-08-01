@@ -737,7 +737,31 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         window.location.href = `mailto:${client.email}?subject=${subject}&body=${body}`;
     };
 
-    const handleOpenSRI = () => window.open("https://srienlinea.sri.gob.ec/", "_blank");
+    const handleOpenSRI = () => {
+        try {
+            const credentialsPayload = {
+                ruc: client.ruc,
+                password: client.sriPassword || '',
+                name: client.name,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('sri_active_credentials', JSON.stringify(credentialsPayload));
+
+            if (client.sriPassword) {
+                navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`);
+            } else {
+                navigator.clipboard.writeText(client.ruc);
+            }
+        } catch (err) {
+            console.error("Error setting active SRI credentials:", err);
+        }
+
+        toast.success(
+            `🔑 Credenciales de ${client.name} cargadas. RUC: ${client.ruc} ${client.sriPassword ? '· Clave lista para autocompletar' : ''}`
+        );
+
+        window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
+    };
 
     const handleShareViaWhatsApp = () => {
         if (!client.phones?.length || !client.sharedAccessKey) return;
