@@ -713,9 +713,9 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {([
-                                { id: 'front', label: 'Cédula Anverso', icon: '🪪', state: idCardFront, setter: setIdCardFront, inputId: 'sales-id-front', formType: 'CEDULA_ANVERSO' },
-                                { id: 'back',  label: 'Cédula Reverso', icon: '🔄', state: idCardBack,  setter: setIdCardBack,  inputId: 'sales-id-back',  formType: 'CEDULA_REVERSO'  },
-                                { id: 'extra', label: 'Doc. Adicional',  icon: '📎', state: idCardSelfie, setter: setIdCardSelfie, inputId: 'sales-id-extra', formType: 'CEDULA_EXTRA'   },
+                                { id: 'front',  label: 'Cédula Anverso', icon: '🪪', state: idCardFront,  setter: setIdCardFront,  inputId: 'sales-id-front',  formType: 'CEDULA_ANVERSO' },
+                                { id: 'back',   label: 'Cédula Reverso', icon: '🪪', state: idCardBack,   setter: setIdCardBack,   inputId: 'sales-id-back',   formType: 'CEDULA_REVERSO' },
+                                { id: 'selfie', label: 'Foto Selfie',     icon: '📸', state: idCardSelfie, setter: setIdCardSelfie, inputId: 'sales-id-selfie', formType: 'CEDULA_SELFIE'  },
                             ] as const).map(slot => (
                                 <div key={slot.id} className="flex flex-col gap-1.5">
                                     <input
