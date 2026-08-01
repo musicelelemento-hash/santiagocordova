@@ -60,6 +60,21 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             const meta = extractP12Metadata(fileContent, password);
             setP12Meta(meta);
             setP12Error('');
+
+            const formattedExp = meta.notAfter.toISOString().split('T')[0];
+            const formattedIssue = meta.notBefore.toISOString().split('T')[0];
+
+            if (editedClient.signatureExpirationDate !== formattedExp || 
+                editedClient.signatureProvider !== meta.issuerName ||
+                editedClient.signatureIssueDate !== formattedIssue) {
+                
+                setEditedClient(prev => ({
+                    ...prev,
+                    signatureExpirationDate: formattedExp,
+                    signatureIssueDate: formattedIssue,
+                    signatureProvider: meta.issuerName
+                }));
+            }
         } catch (err: any) {
             setP12Meta(null);
             if (password) {
@@ -68,7 +83,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 setP12Error('Se requiere la contraseña de la firma para descifrar.');
             }
         }
-    }, [editedClient.signatureFile, editedClient.electronicSignaturePassword]);
+    }, [editedClient.signatureFile, editedClient.electronicSignaturePassword, editedClient.signatureExpirationDate, editedClient.signatureProvider, editedClient.signatureIssueDate, setEditedClient]);
 
     const handleSaveVault = async () => {
         if (!onUpdateClientDirect) return;
@@ -78,6 +93,9 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 sriPassword: editedClient.sriPassword,
                 electronicSignaturePassword: editedClient.electronicSignaturePassword,
                 facturadorConfig: editedClient.facturadorConfig,
+                signatureExpirationDate: editedClient.signatureExpirationDate,
+                signatureIssueDate: editedClient.signatureIssueDate,
+                signatureProvider: editedClient.signatureProvider,
             });
             setVaultSaved(true);
             setIsVaultEditing(false);
