@@ -39,8 +39,19 @@ export function extractP12Metadata(base64Content: string, password?: string): P1
             throw new Error('No se encontraron certificados en el archivo de firma.');
         }
 
-        // Buscar el primer certificado válido que contenga información útil
-        const cert = certBags[0].cert;
+        // Buscar el certificado del usuario final (evitando certificados de CA intermedia si existen)
+        let cert = certBags[0]?.cert;
+        for (const bag of certBags) {
+            if (bag.cert) {
+                const bc = bag.cert.getExtension('basicConstraints') as any;
+                // Si el certificado no es CA, preferir este
+                if (bc && bc.cA === false) {
+                    cert = bag.cert;
+                    break;
+                }
+            }
+        }
+
         if (!cert) {
             throw new Error('Certificado interno no válido.');
         }
@@ -65,36 +76,67 @@ export function extractP12Metadata(base64Content: string, password?: string): P1
         let ruc: string | undefined = undefined;
         let cedula: string | undefined = undefined;
 
-        // Inspeccionar los atributos del subject para extraer RUC o Cédula (Ecuador)
-        cert.subject.attributes.forEach((attr: any) => {
-            const val = String(attr.value);
-            // El campo serialNumber o OID de identificación suele contener el RUC o la cédula
-            if (attr.name === 'serialNumber' || attr.type === '2.5.4.5') {
-                if (val.length === 10 && /^\d+$/.test(val)) {
-                    cedula = val;
-                } else if (val.length === 13 && /^\d+$/.test(val)) {
-                    ruc = val;
-                    cedula = val.substring(0, 10);
-                }
-            }
+        // Recopilar todos los textos del certificado (Subject Attributes + Extensions) para una inspección exhaustiva
+        const textSources: string[] = [];
 
-            // Búsqueda proactiva por longitud y formato numérico
-            const matchDigits = val.match(/\b\d{10,13}\b/);
-            if (matchDigits) {
-                const num = matchDigits[0];
-                if (num.length === 13) {
-                    ruc = num;
-                } else if (num.length === 10) {
-                    cedula = num;
+        // 1. Atributos del Subject
+        cert.subject.attributes.forEach((attr: any) => {
+            if (attr.value) {
+                if (typeof attr.value === 'string') {
+                    textSources.push(attr.value);
+                } else if (attr.value.value && typeof attr.value.value === 'string') {
+                    textSources.push(attr.value.value);
+                } else {
+                    textSources.push(String(attr.value));
                 }
             }
         });
 
-        // Intentar autocompletar si no se pudo mapear el RUC/Cédula y el Common Name contiene el RUC del dueño
-        if (!ruc) {
-            const rucMatch = commonName.match(/\b\d{13}\b/);
-            if (rucMatch) ruc = rucMatch[0];
+        // 2. Extensiones del Certificado (SAN, SAN altNames, Custom OIDs)
+        if (cert.extensions && Array.isArray(cert.extensions)) {
+            cert.extensions.forEach((ext: any) => {
+                if (ext.altNames && Array.isArray(ext.altNames)) {
+                    ext.altNames.forEach((an: any) => {
+                        if (an.value) textSources.push(String(an.value));
+                    });
+                }
+                if (ext.value && typeof ext.value === 'string') {
+                    textSources.push(ext.value);
+                }
+            });
         }
+
+        // 3. Cadena completa del Subject
+        textSources.push(commonName);
+
+        // Buscar primero un RUC (13 dígitos) o Cédula (10 dígitos) usando expresión regular
+        for (const text of textSources) {
+            // Limpieza de caracteres y búsqueda de secuencias numéricas
+            // Formatos comunes: "RUC: 0105256739001", "0105256739001", "PAS-0105256739", "CI 0105256739"
+            const match13 = text.match(/\b\d{13}\b/) || text.match(/(?:RUC|CED|CI|PAS|ID)?[\s:-]*(\d{13})/i);
+            if (match13 && !ruc) {
+                const candidate = match13[1] || match13[0];
+                if (/^\d{13}$/.test(candidate)) {
+                    ruc = candidate;
+                    cedula = candidate.substring(0, 10);
+                    break;
+                }
+            }
+        }
+
+        if (!ruc) {
+            for (const text of textSources) {
+                const match10 = text.match(/\b\d{10}\b/) || text.match(/(?:RUC|CED|CI|PAS|ID)?[\s:-]*(\d{10})/i);
+                if (match10 && !cedula) {
+                    const candidate = match10[1] || match10[0];
+                    if (/^\d{10}$/.test(candidate)) {
+                        cedula = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
         if (!cedula && ruc) {
             cedula = ruc.substring(0, 10);
         }
@@ -114,3 +156,4 @@ export function extractP12Metadata(base64Content: string, password?: string): P1
         throw new Error(err.message || 'Contraseña incorrecta o firma corrupta.');
     }
 }
+
