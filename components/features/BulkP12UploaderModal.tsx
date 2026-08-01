@@ -91,6 +91,38 @@ const parseNameFromFileName = (filename: string): string => {
     return '';
 };
 
+// Extraer estrictamente: 1er Apellido (index 0), 1er Nombre (index 2) y 2do Nombre (index 3). Excluir siempre el 2do Apellido (index 1).
+const extractValidPasswordNameTokens = (fullName: string): string[] => {
+    if (!fullName) return [];
+    
+    const cleanName = fullName.replace(/[\.\-_]+/g, ' ').trim();
+    const parts = cleanName.split(/\s+/).filter(w => w.length >= 2 && !/^\d+$/.test(w) && !['cert', 'p12', 'pfx', 'identity', 'keystore', 'sri', 'firma'].includes(w.toLowerCase()));
+    
+    if (parts.length === 0) return [];
+    
+    const validTokens: string[] = [];
+
+    if (parts.length === 1) {
+        validTokens.push(parts[0]);
+    } else if (parts.length === 2) {
+        validTokens.push(parts[0]); // Primer Apellido
+        validTokens.push(parts[1]); // Primer Nombre
+    } else if (parts.length >= 3) {
+        // Estructura: [0: Apellido1] [1: Apellido2 (OMITIR SIEMPRE)] [2: Nombre1] [3: Nombre2]
+        validTokens.push(parts[0]); // 1er Apellido (ej: CHANGO, CORDOVA, FAJARDO, LOJA)
+        
+        // SE OMITE OBLIGATORIAMENTE parts[1] (Segundo Apellido: SUMBANA, RAMIREZ, FAREZ, SALINAS)
+        
+        validTokens.push(parts[2]); // 1er Nombre (ej: BYRON, ROBERTO, VICTOR, ANGEL)
+        
+        if (parts[3]) {
+            validTokens.push(parts[3]); // 2do Nombre (ej: PATRICIO, SANTIAGO, MANUEL, ISIDRO)
+        }
+    }
+
+    return validTokens;
+};
+
 // Coincidencia estricta para evitar asociar clientes falsos por 1 sola palabra común (ej: EFRAIN)
 const findMatchingClient = (filename: string, manualRuc: string, clients: Client[]): Client | undefined => {
     const activeClients = clients.filter(c => !c.isDeleted && c.isActive);
@@ -132,7 +164,6 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         const matched = activeClients.find(c => {
             const clientTokens = c.name.toUpperCase().split(/\s+/);
             const matchesCount = nameTokens.filter(t => clientTokens.includes(t)).length;
-            // Exigir al menos 2 palabras (ej: CORDOVA + ROBERTO) para evitar alucinaciones
             return matchesCount >= 2;
         });
         if (matched) return matched;
@@ -167,7 +198,7 @@ const evaluateExpirationComparison = (newExpDate?: Date, existingClient?: Client
     }
 };
 
-// Generar candidatos usando Nombre del cliente O Nombre extraído del archivo
+// Generar candidatos EXCLUSIVAMENTE en formato TitleCase (Primera Mayúscula + Año) y EXCLUYENDO el segundo apellido
 const generatePasswordCandidates = (client?: Client, fileName?: string, storedPasswords?: (string | undefined)[]): string[] => {
     const candidates = new Set<string>();
 
@@ -178,23 +209,18 @@ const generatePasswordCandidates = (client?: Client, fileName?: string, storedPa
     if (client && client.sriPassword) candidates.add(client.sriPassword.trim());
     if (client && client.electronicSignaturePassword) candidates.add(client.electronicSignaturePassword.trim());
 
+    // Usar nombre del cliente o nombre extraído del certificado
     const textName = client ? client.name : parseNameFromFileName(fileName || '');
+    const tokens = extractValidPasswordNameTokens(textName);
 
-    if (!textName) return Array.from(candidates);
-
-    const words = textName.split(/\s+/).filter(w => w.length >= 3 && !/^\d+$/.test(w));
     const years = ['2026', '2025', '2027', '2024'];
 
-    words.forEach(w => {
-        const clean = w.trim();
-        const capitalized = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
-        const lower = clean.toLowerCase();
-        const upper = clean.toUpperCase();
+    tokens.forEach(clean => {
+        // Formato estricto solicitado: Primera Mayúscula, resto minúsculas (ej: Chango, Byron, Patricio, Cordova, Roberto)
+        const titleCase = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
 
         years.forEach(yr => {
-            candidates.add(`${capitalized}${yr}`);
-            candidates.add(`${lower}${yr}`);
-            candidates.add(`${upper}${yr}`);
+            candidates.add(`${titleCase}${yr}`);
         });
     });
 
@@ -222,7 +248,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             const matched = meta.ruc ? clients.find(c => !c.isDeleted && c.ruc.trim() === meta.ruc?.trim()) : item.possibleClientHint;
             const expComp = evaluateExpirationComparison(meta.notAfter, matched);
 
-            // Si es duplicada exacta (misma fecha), sugerir omitir por defecto
             const defaultSaveMode = expComp.status === 'duplicate' ? 'omit' : item.saveMode;
 
             return {
@@ -314,7 +339,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         setQueue(prev => [...prev, ...newQueueItems]);
         setIsProcessing(false);
-        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12 con evaluación de vigencia.`);
+        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12.`);
     };
 
     const handleSelectClientForQueueItem = (itemId: string, selectedClient?: Client) => {
@@ -376,7 +401,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             const existingClient = clients.find(c => !c.isDeleted && c.ruc.trim() === ruc?.trim()) || item.possibleClientHint;
 
             if (existingClient) {
-                // Si la firma en el lote es más antigua que la del cliente en la BD, NO sobreescribir la más reciente
                 const isOlderThanClient = item.expirationComparison?.status === 'older';
                 
                 if (!isOlderThanClient) {
@@ -389,7 +413,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     });
                     updatedCount++;
                 } else {
-                    // Guardar como respaldo secundario sin reemplazar la firma más vigente del perfil
                     backupList.push({
                         id: uuidv4(),
                         titular: existingClient.name,
@@ -480,13 +503,13 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                         <div className="space-y-2 max-w-md">
                             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 text-[10px] font-black uppercase tracking-[0.25em] shadow-lg">
-                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER Y COMPARADOR DE VIGENCIA
+                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER Y PROBADOR DE PATRÓN
                             </div>
                             <h3 className="text-xl font-black text-white uppercase tracking-tight font-display">
-                                Analizando Renovaciones y Duplicados
+                                Probando Claves en Formato Formateado
                             </h3>
                             <p className="text-xs text-slate-300 font-mono leading-relaxed">
-                                Comparando fechas de caducidad con firmas existentes para actualizar la más vigente...
+                                Generando sugerencias TitleCase (1er Apellido, 1er Nombre, 2do Nombre + 2026/2025)...
                             </p>
                         </div>
 
@@ -521,12 +544,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                                <Sparkles size={11} /> Control de Renovaciones & Duplicados Inteligente
+                                <Sparkles size={11} /> Regla de Claves: TitleCase (Excluye 2do Apellido)
                             </span>
                         </div>
-                        <h3 className="text-base font-black text-white">Detección de Renovaciones y Omitir Duplicados</h3>
+                        <h3 className="text-base font-black text-white">Sugerencias Formateadas (Chango2026, Byron2026)</h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Si la firma es una <strong>Renovación</strong> (caducidad posterior), la actualiza automáticamente. Si es <strong>Duplicada o más Antigua</strong>, la omite para proteger la más reciente.
+                            Formato estricto: <strong>Primera Mayúscula + Año</strong> (excluye el segundo apellido). Ej: <em>Chango2026</em>, <em>Byron2026</em>, <em>Patricio2026</em>.
                         </p>
                     </div>
 
@@ -581,6 +604,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                 const isUnlocked = item.status === 'unlocked';
                                 const isError = item.status === 'error';
                                 const expComp = item.expirationComparison;
+
+                                const displayCandidateName = item.possibleClientHint
+                                    ? item.possibleClientHint.name.split(' ')[0]
+                                    : item.extractedNameFromCert
+                                    ? item.extractedNameFromCert.split(' ')[0]
+                                    : 'Nombre';
 
                                 return (
                                     <div
@@ -797,11 +826,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                             </div>
                                         </div>
 
-                                        {/* PILDORAS DE SUGERENCIAS DE CLAVE */}
+                                        {/* PILDORAS DE SUGERENCIAS DE CLAVE STRICT TitleCase */}
                                         {!isUnlocked && item.candidateSuggestions && item.candidateSuggestions.length > 0 && (
                                             <div className="pt-2 border-t border-white/5 flex items-center gap-2 flex-wrap">
                                                 <span className="text-[9px] font-bold text-amber-300 uppercase tracking-widest flex items-center gap-1">
-                                                    <Sparkles size={10} className="text-amber-400 animate-pulse" /> Sugerencias ({item.possibleClientHint?.name.split(' ')[0] || item.extractedNameFromCert?.split(' ')[0] || 'Patrón'}):
+                                                    <Sparkles size={10} className="text-amber-400 animate-pulse" /> Sugerencias ({displayCandidateName}):
                                                 </span>
                                                 {item.candidateSuggestions.map((sug, sIdx) => (
                                                     <button
