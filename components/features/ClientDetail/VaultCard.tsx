@@ -95,7 +95,8 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
                                     const f = e.target.files?.[0];
                                     if (f && onUpload) {
                                         const content = await fileToBase64(f);
-                                        const fileType = f.type.startsWith('image/') ? 'image' : 'pdf';
+                                        const isP12 = f.name.toLowerCase().endsWith('.p12') || f.name.toLowerCase().endsWith('.pfx');
+                                        const fileType = isP12 ? 'p12' : f.type.startsWith('image/') ? 'image' : 'pdf';
                                         onUpload({ name: f.name, type: fileType, size: f.size, lastModified: f.lastModified, content });
                                     }
                                 }} 

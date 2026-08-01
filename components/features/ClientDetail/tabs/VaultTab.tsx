@@ -74,6 +74,16 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     signatureIssueDate: formattedIssue,
                     signatureProvider: meta.issuerName
                 }));
+
+                // Auto-guardar inmediatamente los metadatos en la base de datos / store
+                if (onUpdateClientDirect) {
+                    onUpdateClientDirect({
+                        signatureExpirationDate: formattedExp,
+                        signatureIssueDate: formattedIssue,
+                        signatureProvider: meta.issuerName,
+                        electronicSignaturePassword: password
+                    });
+                }
             }
         } catch (err: any) {
             setP12Meta(null);
@@ -83,7 +93,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 setP12Error('Se requiere la contraseña de la firma para descifrar.');
             }
         }
-    }, [editedClient.signatureFile, editedClient.electronicSignaturePassword, editedClient.signatureExpirationDate, editedClient.signatureProvider, editedClient.signatureIssueDate, setEditedClient]);
+    }, [editedClient.signatureFile, editedClient.electronicSignaturePassword, editedClient.signatureExpirationDate, editedClient.signatureProvider, editedClient.signatureIssueDate, setEditedClient, onUpdateClientDirect]);
 
     const handleSaveVault = async () => {
         if (!onUpdateClientDirect) return;
