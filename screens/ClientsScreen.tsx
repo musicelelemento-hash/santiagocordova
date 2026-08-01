@@ -1157,7 +1157,6 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             );
                         })}
                     </div>
-                </div>
 
                     {/* BANNER EJECUTIVO DE CAMPAÑA RENTA RIMPE NEGOCIO POPULAR (ENERO - MAYO) */}
                     {activeGroupTab === 'rimpe_np' && (

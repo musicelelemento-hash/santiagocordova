@@ -1,4 +1,4 @@
-﻿
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
     BellRing, Briefcase, Calendar, CalendarClock, Check, CheckCircle,
@@ -19,6 +19,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getBackendUrl, syncDataToSheet } from '../services/sheetApi';
 import { extractDataFromSriPdf } from '../services/pdfExtraction';
 import { MigrationUtility } from '../services/migrationUtility';
+import { SriExtensionsStore } from '../components/features/SriExtensionsStore';
 
 // Function to parse CSV content. Placed here to be self-contained within the component logic.
 const importClientsFromCSV = (
@@ -581,9 +582,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
                 </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-10">
+                {/* --- MÓDULO: STORE DE EXTENSIONES SRI --- */}
+                <SriExtensionsStore />
 
-                     {/* --- MÓDULO: CONEXIÓN ESTRATÉGICA --- */}
+                {/* --- MÓDULO: CONEXIÓN ESTRATÉGICA --- */}
                 <div className="p-8 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-white/5 overflow-hidden relative group transition-all duration-700 hover:shadow-primary/5 hover:border-primary/20">
                     <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-[80px] group-hover:bg-primary/10 transition-all duration-700" />
                     
