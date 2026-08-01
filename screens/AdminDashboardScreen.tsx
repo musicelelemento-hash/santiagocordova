@@ -1,10 +1,10 @@
-﻿
+
 import React, { useMemo, useState } from 'react';
 import {
     AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, Clock, Command, Copy,
     Database, ExternalLink, Eye, EyeOff, FileText, HandCoins, Loader2,
     MessageCircle, ShieldAlert, Sparkles, TrendingUp, UploadCloud, Users,
-    Vault, Wallet, X, Zap
+    Vault, Wallet, X, Zap, KeyRound, ShieldOff, ShieldCheck, PhoneCall
 } from 'lucide-react';
 import { Screen, Client, DeclarationStatus, TaxRegime, Declaration } from '../types';
 import { useAppStore } from '../store/useAppStore';
@@ -115,7 +115,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     }, [workspaceClient, navigate]);
 
     // Mesa de Trabajo Táctica — estados faltantes
-    const [hubTab, setHubTab] = useState<'operativa' | 'cargas' | 'alertas'>('operativa');
+    const [hubTab, setHubTab] = useState<'operativa' | 'cargas' | 'alertas' | 'firmas'>('operativa');
+    const [firmasSubTab, setFirmasSubTab] = useState<'vigentes' | 'sin-firma'>('vigentes');
     const [mesaTrabajoTab, setMesaTrabajoTab] = useState<'mensual' | 'semestral'>('mensual');
     const [mesaUploadingTarget, setMesaUploadingTarget] = useState<{ client: Client; period: string } | null>(null);
     const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string; fileUrl?: string } | null>(null);
@@ -327,7 +328,41 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             activeRentaRefunds: refunds,
             complianceSummary: summary
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [clients, debouncedSearchTerm, filter, selectedRegime, selectedObligation, selectedPeriod, serviceFees]);
+
+    // ── SIGNATURE MANAGEMENT DATA ──────────────────────────────
+    const signatureData = useMemo(() => {
+        const today = new Date();
+        const active = clients.filter(c => !c.isDeleted && c.isActive);
+
+        // All clients with signature file, sorted by expiration date ascending
+        const withSignature = active
+            .filter(c => c.signatureFile)
+            .sort((a, b) => {
+                const dateA = a.signatureExpirationDate ? new Date(a.signatureExpirationDate).getTime() : Infinity;
+                const dateB = b.signatureExpirationDate ? new Date(b.signatureExpirationDate).getTime() : Infinity;
+                return dateA - dateB;
+            });
+
+        // Clients WITHOUT signature file
+        const withoutSignature = active
+            .filter(c => !c.signatureFile)
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        // Expiry status helpers
+        const getDaysLeft = (c: Client): number | null => {
+            if (!c.signatureExpirationDate) return null;
+            const exp = new Date(c.signatureExpirationDate);
+            exp.setHours(0,0,0,0);
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            return Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        };
+
+        return { withSignature, withoutSignature, getDaysLeft };
+    }, [clients]);
+
 
     // Data for Matrix Mode
     const matrixPeriods = useMemo(() => {
@@ -1167,6 +1202,25 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     </span>
                                 )}
                             </button>
+
+                            <button
+                                onClick={() => setHubTab('firmas')}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                                    hubTab === 'firmas'
+                                        ? 'bg-teal-600 text-white shadow-md shadow-teal-500/20'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <KeyRound size={14} />
+                                <span>Firmas</span>
+                                {signatureData.withoutSignature.length > 0 && (
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                                        hubTab === 'firmas' ? 'bg-white/20 text-white' : 'bg-teal-500/15 text-teal-600 dark:text-teal-400'
+                                    }`}>
+                                        {signatureData.withoutSignature.length}
+                                    </span>
+                                )}
+                            </button>
                         </div>
                     </div>
 
@@ -1466,6 +1520,229 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    )}
+
+                    {/* TAB CONTENT 4: FIRMAS ELECTRÓNICAS */}
+                    {hubTab === 'firmas' && (
+                        <div className="space-y-6 animate-fade-in">
+                            {/* HEADER + STATS ROW */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/25">
+                                        <KeyRound size={16} strokeWidth={2.5} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">Control de Firmas Electrónicas</h4>
+                                        <p className="text-[10px] text-slate-400 mt-0.5">
+                                            <span className="text-teal-500 font-bold">{signatureData.withSignature.length}</span> con firma ·{' '}
+                                            <span className="text-rose-400 font-bold">{signatureData.withoutSignature.length}</span> sin firma
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* SUB-TABS */}
+                                <div className="flex bg-slate-100/70 dark:bg-white/5 p-1 rounded-xl border border-slate-200/40 dark:border-white/5">
+                                    <button
+                                        onClick={() => setFirmasSubTab('vigentes')}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                                            firmasSubTab === 'vigentes'
+                                                ? 'bg-teal-600 text-white shadow-sm'
+                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                        }`}
+                                    >
+                                        <ShieldCheck size={11} />
+                                        Por Caducidad ({signatureData.withSignature.length})
+                                    </button>
+                                    <button
+                                        onClick={() => setFirmasSubTab('sin-firma')}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                                            firmasSubTab === 'sin-firma'
+                                                ? 'bg-rose-600 text-white shadow-sm'
+                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                        }`}
+                                    >
+                                        <ShieldOff size={11} />
+                                        Sin Firma ({signatureData.withoutSignature.length})
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* SUB-TAB: FIRMAS ORDENADAS POR CADUCIDAD */}
+                            {firmasSubTab === 'vigentes' && (
+                                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+                                    {signatureData.withSignature.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                                            <div className="p-4 rounded-2xl bg-slate-100 dark:bg-white/5">
+                                                <KeyRound size={24} className="text-slate-400" />
+                                            </div>
+                                            <p className="text-sm text-slate-400 font-medium">Ningún cliente tiene firma cargada aún.</p>
+                                            <p className="text-[11px] text-slate-500">Sube el archivo .p12 en la bóveda de cada cliente.</p>
+                                        </div>
+                                    ) : (
+                                        signatureData.withSignature.map((c, idx) => {
+                                            const daysLeft = signatureData.getDaysLeft(c);
+                                            const isExpired = daysLeft !== null && daysLeft < 0;
+                                            const isExpiringSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 30;
+                                            const noDate = daysLeft === null;
+
+                                            const statusColor = isExpired
+                                                ? 'text-rose-500'
+                                                : isExpiringSoon
+                                                ? 'text-amber-500'
+                                                : 'text-teal-500';
+
+                                            const dotColor = isExpired
+                                                ? 'bg-rose-500'
+                                                : isExpiringSoon
+                                                ? 'bg-amber-400 animate-pulse'
+                                                : 'bg-teal-500';
+
+                                            const statusLabel = isExpired
+                                                ? `Caducada hace ${Math.abs(daysLeft!)} días`
+                                                : isExpiringSoon
+                                                ? `Caduca en ${daysLeft} días`
+                                                : noDate
+                                                ? 'Fecha desconocida'
+                                                : `Vigente · ${daysLeft} días restantes`;
+
+                                            const expiryFormatted = c.signatureExpirationDate
+                                                ? (() => {
+                                                    const d = new Date(c.signatureExpirationDate);
+                                                    return isNaN(d.getTime()) ? c.signatureExpirationDate : format(d, "d MMM yyyy", { locale: es });
+                                                })()
+                                                : '—';
+
+                                            return (
+                                                <div
+                                                    key={c.id}
+                                                    className={`group relative overflow-hidden flex items-center justify-between gap-3 p-3.5 rounded-2xl border transition-all duration-300 hover:shadow-md ${
+                                                        isExpired
+                                                            ? 'bg-rose-500/[0.03] border-rose-500/20 hover:border-rose-500/40'
+                                                            : isExpiringSoon
+                                                            ? 'bg-amber-400/[0.03] border-amber-400/20 hover:border-amber-400/40'
+                                                            : 'bg-slate-50/50 dark:bg-white/[0.02] border-slate-200/50 dark:border-white/[0.05] hover:border-teal-400/30'
+                                                    }`}
+                                                >
+                                                    {/* ROW NUMBER + STATUS DOT */}
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                        <span className="text-[9px] font-black text-slate-300 dark:text-slate-700 w-5 text-center shrink-0 tabular-nums">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor}`} />
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase truncate leading-tight">
+                                                                {c.name}
+                                                            </p>
+                                                            <p className="text-[10px] text-slate-400 font-mono mt-0.5">{c.ruc}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* EXPIRY INFO */}
+                                                    <div className="flex items-center gap-3 shrink-0">
+                                                        <div className="text-right hidden sm:block">
+                                                            <p className={`text-[10px] font-black uppercase tracking-wide ${statusColor}`}>
+                                                                {statusLabel}
+                                                            </p>
+                                                            <p className="text-[9px] text-slate-400 font-mono mt-0.5">
+                                                                Vence: {expiryFormatted}
+                                                            </p>
+                                                        </div>
+
+                                                        {/* ACTION BUTTONS */}
+                                                        <div className="flex items-center gap-1.5">
+                                                            {c.phones?.length ? (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        const msg = `Hola ${c.name.split(' ')[0]}, le informamos que su firma electrónica ${isExpired ? 'ha caducado' : `vence el ${expiryFormatted}`}. Contáctenos para gestionar la renovación.`;
+                                                                        setWhatsAppPrompt({ clientName: c.name, phone: c.phones![0].replace(/\D/g,''), message: msg });
+                                                                    }}
+                                                                    className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 transition-all active:scale-95"
+                                                                    title="Notificar por WhatsApp"
+                                                                >
+                                                                    <PhoneCall size={13} />
+                                                                </button>
+                                                            ) : null}
+                                                            <button
+                                                                onClick={() => navigate('clients', { clientIdToView: c.id, initialTab: 'vault' })}
+                                                                className="px-3 py-1.5 bg-slate-200/60 dark:bg-white/10 hover:bg-teal-600 hover:text-white text-slate-800 dark:text-white rounded-xl text-[9px] font-black uppercase transition-all active:scale-95"
+                                                            >
+                                                                Bóveda
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            )}
+
+                            {/* SUB-TAB: SIN FIRMA */}
+                            {firmasSubTab === 'sin-firma' && (
+                                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+                                    {signatureData.withoutSignature.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                                            <div className="p-4 rounded-2xl bg-teal-50 dark:bg-teal-500/10">
+                                                <ShieldCheck size={24} className="text-teal-500" />
+                                            </div>
+                                            <p className="text-sm font-bold text-teal-600 dark:text-teal-400">¡Todos los clientes activos tienen firma cargada!</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center gap-2 p-3.5 rounded-2xl bg-rose-500/[0.05] border border-rose-500/20 mb-3">
+                                                <ShieldOff size={16} className="text-rose-400 shrink-0" />
+                                                <p className="text-[11px] text-rose-400 font-bold">
+                                                    {signatureData.withoutSignature.length} clientes sin firma electrónica — posible oportunidad de venta o ingreso pendiente.
+                                                </p>
+                                            </div>
+                                            {signatureData.withoutSignature.map((c, idx) => (
+                                                <div
+                                                    key={c.id}
+                                                    className="group flex items-center justify-between gap-3 p-3.5 bg-slate-50/50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/[0.05] rounded-2xl transition-all duration-200 hover:border-rose-400/30 hover:bg-rose-500/[0.02]"
+                                                >
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                        <span className="text-[9px] font-black text-slate-300 dark:text-slate-700 w-5 text-center shrink-0 tabular-nums">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-700 shrink-0" />
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase truncate">{c.name}</p>
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <p className="text-[10px] text-slate-400 font-mono">{c.ruc}</p>
+                                                                <span className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded-md uppercase">
+                                                                    {c.regime === 'Régimen General' ? 'General' : c.regime === 'Rimpe Emprendedor' ? 'Emprendedor' : 'Popular'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                        {c.phones?.length ? (
+                                                            <button
+                                                                onClick={() => {
+                                                                    const msg = `Hola ${c.name.split(' ')[0]}, le recordamos que para emitir facturas electrónicas necesita una firma digital vigente. Podemos ayudarle a obtenerla. ¿Le interesa?`;
+                                                                    setWhatsAppPrompt({ clientName: c.name, phone: c.phones![0].replace(/\D/g,''), message: msg });
+                                                                }}
+                                                                className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 transition-all active:scale-95"
+                                                                title="Enviar propuesta por WhatsApp"
+                                                            >
+                                                                <PhoneCall size={13} />
+                                                            </button>
+                                                        ) : null}
+                                                        <button
+                                                            onClick={() => navigate('clients', { clientIdToView: c.id, initialTab: 'vault' })}
+                                                            className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-[9px] font-black uppercase transition-all active:scale-95 shadow-sm shadow-rose-500/20"
+                                                        >
+                                                            + Subir Firma
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
