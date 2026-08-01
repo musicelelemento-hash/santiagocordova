@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Check, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent } from 'lucide-react';
+import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Check, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent, FileX } from 'lucide-react';
 import { Client, DeclarationStatus, TaxRegime } from '../../../types';
 import { safeFormat, getDaysUntilDue } from '../../../services/sri';
 
@@ -17,6 +17,7 @@ interface ClientHeaderProps {
     onCopy?: (text: string) => void;
     onWhatsApp?: () => void;
     onOpenSRI?: () => void;
+    onOpenAnulacionSRI?: () => void;
     onShare?: () => void;
     onDelete?: () => void;
     nextDeadline: Date | null;
@@ -96,6 +97,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
     onCopy,
     onWhatsApp,
     onOpenSRI,
+    onOpenAnulacionSRI,
     onShare,
     onDelete,
     nextDeadline
@@ -124,6 +126,16 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                     </div>
 
                     <div className="flex items-center gap-1.5">
+                        {onOpenAnulacionSRI && (
+                            <button
+                                onClick={onOpenAnulacionSRI}
+                                className="px-2.5 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl border border-rose-500/20 transition-all active:scale-95 flex items-center gap-1.5"
+                                title="Anular Comprobantes SRI para este cliente (Carga Credenciales)"
+                            >
+                                <FileX size={15} strokeWidth={2} />
+                                <span className="text-[10px] font-black uppercase tracking-wider hidden sm:inline">Anulación PDF</span>
+                            </button>
+                        )}
                         <button
                             onClick={onWhatsApp}
                             className="p-2 bg-slate-100/60 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-500 rounded-xl border border-slate-200/40 dark:border-white/5 transition-all active:scale-95"
@@ -134,7 +146,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                         <button
                             onClick={onOpenSRI}
                             className="p-2 bg-slate-100/60 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300 hover:bg-blue-500/10 hover:text-blue-500 rounded-xl border border-slate-200/40 dark:border-white/5 transition-all active:scale-95"
-                            title="Portal SRI en Línea"
+                            title="Portal SRI en Línea (Carga Credenciales)"
                         >
                             <ExternalLink size={15} strokeWidth={2} />
                         </button>

@@ -763,6 +763,37 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
     };
 
+    const handleOpenSRIAnulacion = () => {
+        try {
+            const credentialsPayload = {
+                ruc: client.ruc,
+                password: client.sriPassword || '',
+                name: client.name,
+                target: 'anulacion',
+                timestamp: Date.now()
+            };
+            localStorage.setItem('sri_active_credentials', JSON.stringify(credentialsPayload));
+            localStorage.setItem('sri_auto_nav', JSON.stringify({
+                target: 'solicitud_anulacion',
+                timestamp: Date.now()
+            }));
+
+            if (client.sriPassword) {
+                navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`);
+            } else {
+                navigator.clipboard.writeText(client.ruc);
+            }
+        } catch (err) {
+            console.error("Error setting active SRI credentials for anulacion:", err);
+        }
+
+        toast.success(
+            `📄 Credenciales de ${client.name} cargadas. Abriendo portal de Anulación de Comprobantes SRI...`
+        );
+
+        window.open("https://srienlinea.sri.gob.ec/tuportal-internet/", "_blank");
+    };
+
     const handleShareViaWhatsApp = () => {
         if (!client.phones?.length || !client.sharedAccessKey) return;
         const msg = `Acceso a Bóveda: https://portal.santiagocordova.com/client/${client.id}?token=${client.sharedAccessKey}`;
@@ -854,6 +885,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             notes={client.structuredNotes || []}
             onDownloadFile={handleDownloadFile}
             onUpdateClientDirect={handleUpdateClientDirect}
+            onOpenAnulacionSRI={handleOpenSRIAnulacion}
         />
     );
 
@@ -937,6 +969,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         onCopy={handleCopy}
                         onWhatsApp={handleWhatsApp}
                         onOpenSRI={handleOpenSRI}
+                        onOpenAnulacionSRI={handleOpenSRIAnulacion}
                         onShare={handleShareViaWhatsApp}
                         onDelete={() => setIsDeleteConfirmOpen(true)}
                         nextDeadline={nextDeadline}
