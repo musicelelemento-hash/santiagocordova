@@ -7,6 +7,7 @@ import { ClientNotes } from '../ClientNotes';
 import { ClientNote } from '../../../../types';
 import { FacturadorCard } from '../FacturadorCard';
 import { SalesComboModal } from '../../SalesComboModal';
+import { extractP12Metadata } from '../../../../utils/p12Reader';
 
 interface VaultTabProps {
     client: Client;
@@ -41,6 +42,33 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     const [isVaultEditing, setIsVaultEditing] = React.useState(false);
     const [isSavingVault, setIsSavingVault] = React.useState(false);
     const [vaultSaved, setVaultSaved] = React.useState(false);
+
+    // Estado para metadatos de firma .p12 decodificada en tiempo real
+    const [p12Meta, setP12Meta] = React.useState<any>(null);
+    const [p12Error, setP12Error] = React.useState<string>('');
+
+    React.useEffect(() => {
+        const fileContent = editedClient.signatureFile?.content;
+        const password = editedClient.electronicSignaturePassword;
+        if (!fileContent) {
+            setP12Meta(null);
+            setP12Error('');
+            return;
+        }
+
+        try {
+            const meta = extractP12Metadata(fileContent, password);
+            setP12Meta(meta);
+            setP12Error('');
+        } catch (err: any) {
+            setP12Meta(null);
+            if (password) {
+                setP12Error('Contraseña incorrecta o firma corrupta.');
+            } else {
+                setP12Error('Se requiere la contraseña de la firma para descifrar.');
+            }
+        }
+    }, [editedClient.signatureFile, editedClient.electronicSignaturePassword]);
 
     const handleSaveVault = async () => {
         if (!onUpdateClientDirect) return;
@@ -208,6 +236,74 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     />
                 )}
             </div>
+
+            {/* Estado y Metadatos de la Firma Electrónica Decodificada */}
+            {editedClient.signatureFile && (
+                <div className={`p-6 rounded-[2.5rem] border transition-all duration-500 font-sans
+                    ${p12Meta 
+                        ? p12Meta.isValid 
+                            ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' 
+                            : 'bg-amber-500/5 border-amber-500/20 text-amber-400' 
+                        : 'bg-slate-900/40 border-white/5 text-slate-400'
+                    }`}>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border
+                                ${p12Meta 
+                                    ? p12Meta.isValid 
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 animate-pulse' 
+                                        : 'bg-amber-500/10 border-amber-500/20 text-amber-400' 
+                                    : 'bg-slate-950 border-white/5 text-slate-500'
+                                }`}>
+                                <LucideIcons.KeyRound size={22} />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                    <span>Verificación de Firma Electrónica (.p12)</span>
+                                    {p12Meta && (
+                                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest border
+                                            ${p12Meta.isValid 
+                                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
+                                                : 'bg-red-500/20 text-red-400 border-red-500/30'
+                                            }`}>
+                                            {p12Meta.isValid ? 'Válida / Activa' : 'Caducada / Inactiva'}
+                                        </span>
+                                    )}
+                                </h4>
+                                <p className="text-slate-400 text-[11px] mt-1 font-light">
+                                    {p12Meta 
+                                        ? `Certificado emitido por ${p12Meta.issuerName}.` 
+                                        : p12Error || 'Esperando contraseña de la firma para descifrar...'
+                                    }
+                                </p>
+                            </div>
+                        </div>
+
+                        {p12Meta && (
+                            <div className="flex flex-wrap gap-6 text-[11px] p-4 bg-slate-950/60 rounded-2xl border border-white/5 min-w-[280px]">
+                                <div>
+                                    <span className="text-slate-500 block uppercase tracking-widest font-mono text-[9px]">Titular</span>
+                                    <strong className="text-white font-medium block truncate max-w-[200px]" title={p12Meta.commonName}>
+                                        {p12Meta.commonName}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span className="text-slate-500 block uppercase tracking-widest font-mono text-[9px]">Cédula / RUC</span>
+                                    <strong className="text-[#00A896] font-mono block">
+                                        {p12Meta.ruc || p12Meta.cedula || 'No disponible'}
+                                    </strong>
+                                </div>
+                                <div>
+                                    <span className="text-slate-500 block uppercase tracking-widest font-mono text-[9px]">Caducidad</span>
+                                    <strong className={`${p12Meta.isValid ? 'text-emerald-400' : 'text-red-400'} font-mono block`}>
+                                        {new Date(p12Meta.notAfter).toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                    </strong>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* ── Sistema de Facturación Electrónica del Cliente (Bóveda Full-Width) ── */}
             <div className="w-full">
