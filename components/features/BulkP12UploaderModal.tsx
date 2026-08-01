@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import {
     UploadCloud, KeyRound, CheckCircle2, AlertTriangle, Lock, Unlock,
-    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb, Search, ShieldCheck, Archive, ArrowUpRight, CopyCheck, AlertCircle
+    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb, Search, ShieldCheck, Archive, ArrowUpRight, CopyCheck, AlertCircle, Laptop, Shield
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -17,6 +17,8 @@ interface BulkP12UploaderModalProps {
     onClose: () => void;
 }
 
+type SaveModeOption = 'create_client' | 'system_only' | 'signature_only' | 'backup_only' | 'omit';
+
 interface P12ItemQueue {
     id: string;
     file: File;
@@ -24,13 +26,14 @@ interface P12ItemQueue {
     fileName: string;
     passwordInput: string;
     manualRucInput: string;
-    saveMode: 'create_client' | 'backup_only' | 'omit';
+    saveMode: SaveModeOption;
     status: 'pending' | 'unlocked' | 'error';
     errorMessage?: string;
     unlockedViaPattern?: string;
     candidateSuggestions?: string[];
     possibleClientHint?: Client;
     extractedNameFromCert?: string;
+    isBatchDuplicate?: boolean;
     expirationComparison?: {
         status: 'renewal' | 'duplicate' | 'older' | 'new_client';
         newStr: string;
@@ -108,13 +111,9 @@ const extractValidPasswordNameTokens = (fullName: string): string[] => {
         validTokens.push(parts[0]); // Primer Apellido
         validTokens.push(parts[1]); // Primer Nombre
     } else if (parts.length >= 3) {
-        // Estructura: [0: Apellido1] [1: Apellido2 (OMITIR SIEMPRE)] [2: Nombre1] [3: Nombre2]
         validTokens.push(parts[0]); // 1er Apellido (ej: CHANGO, CORDOVA, FAJARDO, LOJA)
-        
-        // SE OMITE OBLIGATORIAMENTE parts[1] (Segundo Apellido: SUMBANA, RAMIREZ, FAREZ, SALINAS)
-        
+        // SE OMITE parts[1] (2do Apellido: SUMBANA, RAMIREZ, FAREZ, SALINAS)
         validTokens.push(parts[2]); // 1er Nombre (ej: BYRON, ROBERTO, VICTOR, ANGEL)
-        
         if (parts[3]) {
             validTokens.push(parts[3]); // 2do Nombre (ej: PATRICIO, SANTIAGO, MANUEL, ISIDRO)
         }
@@ -123,23 +122,19 @@ const extractValidPasswordNameTokens = (fullName: string): string[] => {
     return validTokens;
 };
 
-// Coincidencia estricta para evitar asociar clientes falsos por 1 sola palabra común (ej: EFRAIN)
+// Coincidencia estricta (incluye clientes en Papelera para rescatar nombres y exige coincidencia de 1er Apellido AND al menos 1 Nombre)
 const findMatchingClient = (filename: string, manualRuc: string, clients: Client[]): Client | undefined => {
-    const activeClients = clients.filter(c => !c.isDeleted && c.isActive);
-
     // 1. RUC / Nombre manual
     if (manualRuc && manualRuc.trim().length >= 3) {
         const cleanReq = manualRuc.trim().toLowerCase();
-        const matched = activeClients.find(c => {
-            return c.ruc.toLowerCase().includes(cleanReq) || c.name.toLowerCase().includes(cleanReq);
-        });
+        const matched = clients.find(c => c.ruc.toLowerCase().includes(cleanReq) || c.name.toLowerCase().includes(cleanReq));
         if (matched) return matched;
     }
 
-    // 2. Nombre exacto de archivo .p12 ya registrado previamente en la Bóveda del cliente
+    // 2. Nombre exacto de archivo .p12 ya registrado en la Bóveda de cualquier cliente (activo o papelera)
     const targetClean = cleanFileName(filename);
     if (targetClean && targetClean.length >= 4) {
-        const matchedByFile = activeClients.find(c => {
+        const matchedByFile = clients.find(c => {
             if (!c.signatureFile?.name) return false;
             const existingClean = cleanFileName(c.signatureFile.name);
             return existingClean && (existingClean === targetClean || existingClean.includes(targetClean));
@@ -150,23 +145,42 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
     // 3. Extraer RUC/Cédula de 10-13 dígitos del nombre del archivo (ej: 0750949810 en 20982240_identity_0750949810.p12)
     const numbersInFile = extractPossibleRucOrCedula(filename);
     for (const num of numbersInFile) {
-        const matched = activeClients.find(c => {
+        const matched = clients.find(c => {
             const rucClean = c.ruc.trim();
             return rucClean === num || rucClean.startsWith(num) || num.startsWith(rucClean.slice(0, 10));
         });
         if (matched) return matched;
     }
 
-    // 4. Probar por NOMBRE EXTRAÍDO DEL CERTIFICADO (exigiendo al menos 2 palabras coincidentes para no alucinar falsos clientes)
+    // 4. Probar por NOMBRE EXTRAÍDO DEL CERTIFICADO (ej: "CORDOVA RAMIREZ ROBERTO SANTIAGO")
+    // EXIGIR coincidencia de Primer Apellido (index 0) Y al menos UN NOMBRE (index 2 o 3)
+    // Evita asociar CORDOVA RAMIREZ ROBERTO SANTIAGO con CORDOVA RAMIREZ DANIEL ESTEBAN
     const extractedName = parseNameFromFileName(filename);
     if (extractedName) {
-        const nameTokens = extractedName.split(/\s+/).filter(w => w.length >= 3);
-        const matched = activeClients.find(c => {
-            const clientTokens = c.name.toUpperCase().split(/\s+/);
-            const matchesCount = nameTokens.filter(t => clientTokens.includes(t)).length;
-            return matchesCount >= 2;
-        });
-        if (matched) return matched;
+        const certTokens = extractedName.split(/\s+/).filter(w => w.length >= 3);
+        
+        if (certTokens.length >= 3) {
+            const surname1 = certTokens[0].toUpperCase();
+            const firstName1 = certTokens[2]?.toUpperCase();
+            const firstName2 = certTokens[3]?.toUpperCase();
+
+            const matched = clients.find(c => {
+                const clientUpper = c.name.toUpperCase();
+                const clientTokens = clientUpper.split(/\s+/);
+                
+                const hasSurname = clientTokens.includes(surname1);
+                const hasFirstName = (firstName1 && clientTokens.includes(firstName1)) || (firstName2 && clientTokens.includes(firstName2));
+
+                return hasSurname && hasFirstName;
+            });
+            if (matched) return matched;
+        } else if (certTokens.length >= 2) {
+            const matched = clients.find(c => {
+                const clientTokens = c.name.toUpperCase().split(/\s+/);
+                return certTokens.every(t => clientTokens.includes(t));
+            });
+            if (matched) return matched;
+        }
     }
 
     return undefined;
@@ -209,16 +223,19 @@ const generatePasswordCandidates = (client?: Client, fileName?: string, storedPa
     if (client && client.sriPassword) candidates.add(client.sriPassword.trim());
     if (client && client.electronicSignaturePassword) candidates.add(client.electronicSignaturePassword.trim());
 
-    // Usar nombre del cliente o nombre extraído del certificado
-    const textName = client ? client.name : parseNameFromFileName(fileName || '');
-    const tokens = extractValidPasswordNameTokens(textName);
+    // Probar palabras del cliente Y palabras extraídas directamente del certificado/archivo
+    const nameFromCert = parseNameFromFileName(fileName || '');
+    const clientName = client ? client.name : '';
+    
+    const tokensClient = extractValidPasswordNameTokens(clientName);
+    const tokensCert = extractValidPasswordNameTokens(nameFromCert);
+    
+    const allTokens = Array.from(new Set([...tokensClient, ...tokensCert]));
 
     const years = ['2026', '2025', '2027', '2024'];
 
-    tokens.forEach(clean => {
-        // Formato estricto solicitado: Primera Mayúscula, resto minúsculas (ej: Chango, Byron, Patricio, Cordova, Roberto)
+    allTokens.forEach(clean => {
         const titleCase = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
-
         years.forEach(yr => {
             candidates.add(`${titleCase}${yr}`);
         });
@@ -245,7 +262,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const tryUnlockItem = (item: P12ItemQueue, passwordToTest: string): P12ItemQueue => {
         try {
             const meta = extractP12Metadata(item.base64Content, passwordToTest);
-            const matched = meta.ruc ? clients.find(c => !c.isDeleted && c.ruc.trim() === meta.ruc?.trim()) : item.possibleClientHint;
+            const matched = meta.ruc ? clients.find(c => c.ruc.trim() === meta.ruc?.trim()) : item.possibleClientHint;
             const expComp = evaluateExpirationComparison(meta.notAfter, matched);
 
             const defaultSaveMode = expComp.status === 'duplicate' ? 'omit' : item.saveMode;
@@ -287,7 +304,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             manualRucInput: rucToUse,
             possibleClientHint: matchedClient,
             extractedNameFromCert: extractedName,
-            candidateSuggestions: candidates.slice(0, 8)
+            candidateSuggestions: candidates.slice(0, 10)
         };
 
         for (const candPassword of candidates) {
@@ -310,6 +327,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         await new Promise(res => setTimeout(res, 500));
 
         const newQueueItems: P12ItemQueue[] = [];
+        const seenSignaturesInBatch = new Set<string>();
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
@@ -331,6 +349,16 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                 };
 
                 const processed = processQueueItemMatching(item);
+
+                // Detección de duplicado exacto dentro del mismo lote
+                const signatureSignatureHash = `${processed.metadata?.ruc || ''}_${processed.metadata?.notAfter?.getTime() || ''}_${cleanFileName(processed.fileName)}`;
+                if (seenSignaturesInBatch.has(signatureSignatureHash) && processed.status === 'unlocked') {
+                    processed.isBatchDuplicate = true;
+                    processed.saveMode = 'omit';
+                } else if (processed.status === 'unlocked' && signatureSignatureHash) {
+                    seenSignaturesInBatch.add(signatureSignatureHash);
+                }
+
                 newQueueItems.push(processed);
             } catch (err) {
                 console.error("Error reading p12 file:", err);
@@ -339,7 +367,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         setQueue(prev => [...prev, ...newQueueItems]);
         setIsProcessing(false);
-        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12.`);
+        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12 con filtro anti-duplicados.`);
     };
 
     const handleSelectClientForQueueItem = (itemId: string, selectedClient?: Client) => {
@@ -363,7 +391,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         }));
     };
 
-    const handleToggleSaveMode = (itemId: string, mode: 'create_client' | 'backup_only' | 'omit') => {
+    const handleToggleSaveMode = (itemId: string, mode: SaveModeOption) => {
         setQueue(prev => prev.map(item => item.id === itemId ? { ...item, saveMode: mode } : item));
     };
 
@@ -398,9 +426,9 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             const expDate = notAfter ? notAfter.toISOString().split('T')[0] : '';
             const issueDate = notBefore ? notBefore.toISOString().split('T')[0] : '';
 
-            const existingClient = clients.find(c => !c.isDeleted && c.ruc.trim() === ruc?.trim()) || item.possibleClientHint;
+            const existingClient = clients.find(c => c.ruc.trim() === ruc?.trim()) || item.possibleClientHint;
 
-            if (existingClient) {
+            if (existingClient && !existingClient.isDeleted) {
                 const isOlderThanClient = item.expirationComparison?.status === 'older';
                 
                 if (!isOlderThanClient) {
@@ -435,10 +463,18 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     password: item.passwordInput,
                     provider: issuerName,
                     expirationDate: expDate,
+                    category: 'Venta Esporádica de Firma',
                     savedAt: new Date().toISOString()
                 });
                 backupCount++;
             } else {
+                // Crear cliente categorizado según la selección del usuario
+                const categoryNote = item.saveMode === 'system_only' 
+                    ? 'Categoría: Solo Venta de Facturador / Sistema Ecuafact'
+                    : item.saveMode === 'signature_only'
+                    ? 'Categoría: Solo Venta de Firma Electrónica'
+                    : 'Categoría: Cliente Contable Completo';
+
                 const newClient: Client = {
                     id: uuidv4(),
                     name: commonName || item.extractedNameFromCert || 'Contribuyente Nuevo',
@@ -447,7 +483,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     email: '',
                     phones: [],
                     declarations: [],
-                    notes: `Creado automáticamente desde Subida Masiva de Firma .p12.\nEmisor: ${issuerName}`,
+                    notes: `${categoryNote}\nCreado automáticamente desde Subida Masiva de Firma .p12.\nEmisor: ${issuerName}`,
                     isActive: true,
                     regime: TaxRegime.General,
                     address: '',
@@ -509,7 +545,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                 Probando Claves en Formato Formateado
                             </h3>
                             <p className="text-xs text-slate-300 font-mono leading-relaxed">
-                                Generando sugerencias TitleCase (1er Apellido, 1er Nombre, 2do Nombre + 2026/2025)...
+                                Evaluando coincidencia estricta (1er Apellido + Nombre), buscando en Papelera y generando sugerencias TitleCase...
                             </p>
                         </div>
 
@@ -530,10 +566,10 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                         <div className="space-y-2 max-w-md">
                             <span className="px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-widest border border-emerald-500/40">
-                                Sincronización de Bóveda y Respaldos
+                                Sincronización de Bóveda y Categorización
                             </span>
                             <h3 className="text-2xl font-black text-white uppercase tracking-tight font-display">
-                                Aplicando Renovaciones y Guardando
+                                Guardando Firmas y Categorías de Cliente
                             </h3>
                         </div>
                     </div>
@@ -544,12 +580,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                                <Sparkles size={11} /> Regla de Claves: TitleCase (Excluye 2do Apellido)
+                                <Sparkles size={11} /> Coincidencia Estricta Nombre + Categorías de Servicio
                             </span>
                         </div>
-                        <h3 className="text-base font-black text-white">Sugerencias Formateadas (Chango2026, Byron2026)</h3>
+                        <h3 className="text-base font-black text-white">Subidor Inteligente con Filtro de Familiares y Duplicados</h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Formato estricto: <strong>Primera Mayúscula + Año</strong> (excluye el segundo apellido). Ej: <em>Chango2026</em>, <em>Byron2026</em>, <em>Patricio2026</em>.
+                            Evita asociar familiares con mismos apellidos (ej: Santiago vs Daniel). Permite guardar clientes por categoría: <strong>Contable Completo</strong>, <strong>Solo Facturador/Ecuafact</strong> o <strong>Solo Firma Esporádica</strong>.
                         </p>
                     </div>
 
@@ -581,7 +617,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                         </div>
                         <div>
                             <p className="text-sm font-black text-white">Haz clic o arrastra tus archivos .p12 aquí</p>
-                            <p className="text-xs text-slate-400 mt-1">Soporta firmas descargadas del SRI (cert-NOMBRE...).</p>
+                            <p className="text-xs text-slate-400 mt-1">Soporta firmas descargadas del SRI (cert-NOMBRE...) e identity_CEDULA.p12.</p>
                         </div>
                     </div>
                 ) : (
@@ -641,10 +677,15 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                 <Check size={10} /> Desbloqueada {item.unlockedViaPattern ? `(${item.unlockedViaPattern})` : ''}
                                                             </span>
                                                         )}
+                                                        {item.isBatchDuplicate && (
+                                                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[9px] font-bold uppercase border border-amber-500/30">
+                                                                ⚠️ Duplicado en mismo lote (Omitido)
+                                                            </span>
+                                                        )}
                                                     </div>
 
                                                     {/* EVALUACIÓN INTELIGENTE DE RENOVACIÓN / DUPLICADOS / ANTIGÜEDAD */}
-                                                    {isUnlocked && expComp && (
+                                                    {isUnlocked && expComp && !item.isBatchDuplicate && (
                                                         <div className="pt-1">
                                                             {expComp.status === 'renewal' && (
                                                                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wide shadow-sm">
@@ -681,7 +722,10 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                 <div className="flex items-center justify-between gap-2 text-[10px] text-teal-400 font-bold">
                                                                     <div className="flex items-center gap-1">
                                                                         <UserCheck size={12} />
-                                                                        <span>Cliente: {item.matchedClient.name} ({item.matchedClient.ruc})</span>
+                                                                        <span>
+                                                                            Cliente: {item.matchedClient.name} ({item.matchedClient.ruc})
+                                                                            {item.matchedClient.isDeleted && <span className="text-amber-400 ml-1">(Papelera)</span>}
+                                                                        </span>
                                                                     </div>
 
                                                                     {/* Selector de Acción de Guardado para Clientes Existentes */}
@@ -711,10 +755,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                             ) : (
                                                                 <div className="flex flex-wrap items-center gap-2 pt-1">
                                                                     <span className="text-[10px] text-amber-300 font-bold flex items-center gap-1">
-                                                                        <AlertTriangle size={11} className="text-amber-400" /> Cliente no registrado. ¿Cómo deseas guardar esta firma?
+                                                                        <AlertTriangle size={11} className="text-amber-400" /> Cliente no registrado. Selecciona la categoría de guardado:
                                                                     </span>
 
-                                                                    <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/10">
+                                                                    {/* Menú de Categorías de Servicio / Ventas */}
+                                                                    <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10 flex-wrap">
                                                                         <button
                                                                             onClick={() => handleToggleSaveMode(item.id, 'create_client')}
                                                                             className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
@@ -723,7 +768,27 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                                     : 'text-slate-400 hover:text-white'
                                                                             }`}
                                                                         >
-                                                                            <UserPlus size={11} /> + Crear Cliente Nuevo
+                                                                            <UserPlus size={11} /> 📊 Contable Completo
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleToggleSaveMode(item.id, 'system_only')}
+                                                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
+                                                                                item.saveMode === 'system_only'
+                                                                                    ? 'bg-cyan-400 text-slate-950 shadow-sm'
+                                                                                    : 'text-slate-400 hover:text-white'
+                                                                            }`}
+                                                                        >
+                                                                            <Laptop size={11} /> 💻 Solo Facturador/Ecuafact
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleToggleSaveMode(item.id, 'signature_only')}
+                                                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
+                                                                                item.saveMode === 'signature_only'
+                                                                                    ? 'bg-purple-400 text-slate-950 shadow-sm'
+                                                                                    : 'text-slate-400 hover:text-white'
+                                                                            }`}
+                                                                        >
+                                                                            <Shield size={11} /> 🔑 Solo Firma Esporádica
                                                                         </button>
                                                                         <button
                                                                             onClick={() => handleToggleSaveMode(item.id, 'backup_only')}
@@ -733,7 +798,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                                     : 'text-slate-400 hover:text-white'
                                                                             }`}
                                                                         >
-                                                                            <Archive size={11} /> 📦 Bóveda de Respaldos (Esporádico)
+                                                                            <Archive size={11} /> 📦 Solo Bóveda Respaldo
                                                                         </button>
                                                                     </div>
                                                                 </div>
