@@ -861,15 +861,17 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         />
     );
 
-    const handleUpdateClientDirect = async (updates: Partial<Client>) => {
+    const handleUpdateClientDirect = React.useCallback(async (updates: Partial<Client>, showNotification: boolean = false) => {
         try {
             await updateClient(client.id, updates);
-            toast.success("Sincronizado correctamente.");
+            if (showNotification) {
+                toast.success("Sincronizado correctamente.");
+            }
         } catch (err) {
             console.error("Error updating client direct:", err);
             toast.error("Error al guardar los datos.");
         }
-    };
+    }, [client.id, updateClient, toast]);
 
     const renderVaultTab = () => (
         <VaultTab

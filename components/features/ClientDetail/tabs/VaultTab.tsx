@@ -21,7 +21,7 @@ interface VaultTabProps {
     setPreviewItem: (item: Declaration | null) => void;
     notes: ClientNote[];
     onDownloadFile?: (file: any) => void;
-    onUpdateClientDirect?: (updates: Partial<Client>) => Promise<void>;
+    onUpdateClientDirect?: (updates: Partial<Client>, showNotification?: boolean) => Promise<void>;
     onOpenAnulacionSRI?: () => void;
 }
 
@@ -48,6 +48,11 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     // Estado para metadatos de firma .p12 decodificada en tiempo real
     const [p12Meta, setP12Meta] = React.useState<any>(null);
     const [p12Error, setP12Error] = React.useState<string>('');
+
+    const onUpdateClientDirectRef = React.useRef(onUpdateClientDirect);
+    React.useEffect(() => {
+        onUpdateClientDirectRef.current = onUpdateClientDirect;
+    }, [onUpdateClientDirect]);
 
     React.useEffect(() => {
         const fileContent = editedClient.signatureFile?.content;
@@ -77,14 +82,14 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     signatureProvider: meta.issuerName
                 }));
 
-                // Auto-guardar inmediatamente los metadatos en la base de datos / store
-                if (onUpdateClientDirect) {
-                    onUpdateClientDirect({
+                // Auto-guardar inmediatamente los metadatos en segundo plano sin toasts ruidosos
+                if (onUpdateClientDirectRef.current) {
+                    onUpdateClientDirectRef.current({
                         signatureExpirationDate: formattedExp,
                         signatureIssueDate: formattedIssue,
                         signatureProvider: meta.issuerName,
                         electronicSignaturePassword: password
-                    });
+                    }, false);
                 }
             }
         } catch (err: any) {
@@ -95,7 +100,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 setP12Error('Se requiere la contraseña de la firma para descifrar.');
             }
         }
-    }, [editedClient.signatureFile, editedClient.electronicSignaturePassword, editedClient.signatureExpirationDate, editedClient.signatureProvider, editedClient.signatureIssueDate, setEditedClient, onUpdateClientDirect]);
+    }, [editedClient.signatureFile?.content, editedClient.electronicSignaturePassword, editedClient.signatureExpirationDate, editedClient.signatureProvider, editedClient.signatureIssueDate, setEditedClient]);
 
     const handleSaveVault = async () => {
         if (!onUpdateClientDirect) return;
@@ -108,7 +113,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 signatureExpirationDate: editedClient.signatureExpirationDate,
                 signatureIssueDate: editedClient.signatureIssueDate,
                 signatureProvider: editedClient.signatureProvider,
-            });
+            }, true);
             setVaultSaved(true);
             setIsVaultEditing(false);
             setTimeout(() => setVaultSaved(false), 3000);
@@ -125,7 +130,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
         } else {
             setEditedClient({ ...editedClient, [field]: file });
             if (onUpdateClientDirect) {
-                await onUpdateClientDirect({ [field]: file });
+                await onUpdateClientDirect({ [field]: file }, true);
             }
         }
     };
@@ -140,7 +145,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             delete updated[field];
             setEditedClient(updated);
             if (onUpdateClientDirect) {
-                await onUpdateClientDirect({ [field]: null as any });
+                await onUpdateClientDirect({ [field]: null as any }, true);
             }
         }
     };
