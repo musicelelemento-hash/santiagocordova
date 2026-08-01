@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Client, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter, ServiceFeesConfig, TranscribableField, TaxObligationType } from '../types';
 import {
-    AlertCircle, ArrowUpDown, Briefcase, Check, Clock, DollarSign, FileText,
+    AlertCircle, AlertTriangle, ArrowUpDown, Briefcase, Check, CheckCircle2, Clock, DollarSign, FileText,
     Filter, LayoutGrid, LayoutList, MessageCircle, Plus, PlusCircle, Search,
     Shield, ShieldCheck, Sparkles, Store, Trash2, UploadCloud, Users, X, Zap
 } from 'lucide-react';
@@ -245,6 +245,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         });
         return stats;
     }, [clients, serviceFees]);
+
+    const trashCount = useMemo(() => clients.filter(c => c.isDeleted).length, [clients]);
 
     useEffect(() => {
         if (initialClientData) {
@@ -1112,38 +1114,41 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             )}
 
 
-            {/* TACTICAL COMMAND BAR - Minimalista Zen Directorio v4.0 */}
+            {/* TACTICAL COMMAND BAR - Barra Unificada Sin Redundancia v5.0 */}
             <div className="bg-surface p-4 sm:p-5 rounded-[2rem] border border-outline-variant/30 flex flex-col xl:flex-row gap-5 items-center justify-between mb-8 mx-1 sm:mx-0 shadow-sm relative z-20">
-                {/* 4 PRIMARY ZEN TABS */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
+                {/* FILTROS UNIFICADOS DE CLIENTES */}
+                <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 w-full xl:w-auto overflow-x-auto no-scrollbar">
                     <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 shrink-0">
                         {[
-                            { id: 'all', label: 'Directorio', icon: Users },
-                            { id: 'matrix', label: 'Declaraciones', icon: LayoutGrid },
-                            { id: 'cobros', label: 'Recaudación', icon: DollarSign, badge: globalStats.cobros },
-                            { id: 'trash', label: 'Papelera', icon: Trash2 },
+                            { id: 'all', label: 'Todos', icon: Users },
+                            { id: 'al-dia', label: 'Al Día', icon: CheckCircle2 },
+                            { id: 'vencidos', label: 'Alertas SRI', icon: AlertTriangle, badge: globalStats.vencidos, badgeStyle: 'bg-rose-500/20 text-rose-500 dark:text-rose-400' },
+                            { id: 'mensual', label: 'IVA Mensual' },
+                            { id: 'semestral', label: 'IVA Semestral' },
+                            { id: 'renta', label: 'Renta' },
+                            { id: 'rimpe_np', label: '🏪 RIMPE NP' },
+                            { id: 'trash', label: 'Papelera', icon: Trash2, badge: trashCount, badgeStyle: 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300' },
                         ].map((tab) => {
-                            const isSelected = 
-                                (tab.id === 'all' && ['all', 'directorio', 'al-dia', 'vencidos', 'mensual', 'semestral', 'renta'].includes(activeGroupTab)) ||
-                                (tab.id === 'matrix' && ['matrix', 'matriz'].includes(activeGroupTab)) ||
-                                (tab.id === 'cobros' && ['cobros', 'recaudacion'].includes(activeGroupTab)) ||
-                                (tab.id === 'trash' && ['trash', 'papelera'].includes(activeGroupTab));
+                            const isSelected = activeGroupTab === tab.id || 
+                                (tab.id === 'all' && activeGroupTab === 'directorio') || 
+                                (tab.id === 'trash' && activeGroupTab === 'papelera');
+                            const Icon = tab.icon;
 
                             return (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveGroupTab(tab.id as any)}
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 shrink-0 ${
+                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 shrink-0 ${
                                         isSelected
                                             ? 'bg-primary text-white shadow-md shadow-primary/20'
                                             : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'
                                     }`}
                                 >
-                                    <tab.icon size={14} />
+                                    {Icon && <Icon size={14} />}
                                     <span>{tab.label}</span>
                                     {tab.badge !== undefined && tab.badge > 0 && (
                                         <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                                            isSelected ? 'bg-white/20 text-white' : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                                            isSelected ? 'bg-white/20 text-white' : tab.badgeStyle || 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
                                         }`}>
                                             {tab.badge}
                                         </span>
@@ -1152,33 +1157,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             );
                         })}
                     </div>
-
-                    {/* SUB-FILTROS DE OBLIGACIÓN (Visibles al estar en pestaña Directorio) */}
-                    {['all', 'directorio', 'al-dia', 'vencidos', 'mensual', 'semestral', 'renta', 'rimpe_np'].includes(activeGroupTab) && (
-                        <div className="flex overflow-x-auto no-scrollbar gap-1 p-1 bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200/50 dark:border-white/5">
-                            {[
-                                { id: 'all', label: 'Todos' },
-                                { id: 'al-dia', label: 'Al Día' },
-                                { id: 'vencidos', label: 'Alertas SRI' },
-                                { id: 'mensual', label: 'IVA Mensual' },
-                                { id: 'semestral', label: 'IVA Semestral' },
-                                { id: 'renta', label: 'Renta' },
-                                { id: 'rimpe_np', label: '🏪 RIMPE NP' },
-                            ].map(sub => (
-                                <button
-                                    key={sub.id}
-                                    onClick={() => setActiveGroupTab(sub.id as any)}
-                                    className={`px-2.5 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
-                                        activeGroupTab === sub.id
-                                            ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-sm'
-                                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                                    }`}
-                                >
-                                    {sub.label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                </div>
 
                     {/* BANNER EJECUTIVO DE CAMPAÑA RENTA RIMPE NEGOCIO POPULAR (ENERO - MAYO) */}
                     {activeGroupTab === 'rimpe_np' && (
