@@ -2,13 +2,14 @@ import React, { useMemo, useState } from 'react';
 import {
     KeyRound, ShieldCheck, ShieldOff, PhoneCall, AlertTriangle,
     CheckCircle2, ArrowRight, Search, FileText, Check, Copy, ExternalLink,
-    List, LayoutGrid
+    List, LayoutGrid, UploadCloud
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAppStore } from '../store/useAppStore';
 import { Screen, TaxRegime } from '../types';
 import { Modal } from '../components/ui/Modal';
+import { BulkP12UploaderModal } from '../components/features/BulkP12UploaderModal';
 
 interface FirmasScreenProps {
     navigate: (screen: Screen, options?: any) => void;
@@ -22,6 +23,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
     const [tab, setTab] = useState<FirmasTab>('vigentes');
     const [viewMode, setViewMode] = useState<ViewMode>('lineal');
     const [searchTerm, setSearchTerm] = useState<string>('');
+    const [isBulkModalOpen, setIsBulkModalOpen] = useState<boolean>(false);
     const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string } | null>(null);
 
     const signatureData = useMemo(() => {
@@ -123,6 +125,15 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             <span className="text-2xl font-black text-slate-300 font-mono">{signatureData.withoutSignature.length}</span>
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Sin Firma</span>
                         </div>
+
+                        {/* Botón de Subida Masiva */}
+                        <button
+                            onClick={() => setIsBulkModalOpen(true)}
+                            className="px-5 py-3.5 rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-teal-500/25 active:scale-95 flex items-center gap-2"
+                        >
+                            <UploadCloud size={18} />
+                            <span>📥 Subidor Masivo (.p12)</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -552,6 +563,12 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                     </div>
                 )}
             </Modal>
+
+            {/* Modal de Subidor Masivo de Firmas .p12 */}
+            <BulkP12UploaderModal
+                isOpen={isBulkModalOpen}
+                onClose={() => setIsBulkModalOpen(false)}
+            />
         </div>
     );
 };
