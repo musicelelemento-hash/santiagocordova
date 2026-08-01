@@ -43,6 +43,7 @@ const OBLIGATION_GROUPS = [
     { id: 'al-dia', label: 'Al Día', icon: ShieldCheck, color: 'text-tertiary bg-tertiary/10 ring-tertiary/20' },
     { id: 'mensual', label: 'IVA Mensual', icon: Clock, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
     { id: 'semestral', label: 'IVA Semestral', icon: Briefcase, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'rimpe_emp', label: 'Rimpe Emprendedor', icon: Zap, color: 'text-purple-400 bg-purple-500/10 ring-purple-500/20' },
     { id: 'matrix', label: 'Declaraciones', icon: LayoutGrid, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
     { id: 'trash', label: 'Papelera', icon: Trash2, color: 'text-primary bg-primary/10 ring-primary/20' },
 ];
@@ -150,7 +151,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
     useEffect(() => {
         setIsMatrixView(['matrix', 'matriz', 'renta'].includes(activeGroupTab));
-        setIsWorkspaceView(['all', 'directorio', 'mensual', 'semestral', 'al-dia', 'vencidos', 'trash', 'papelera'].includes(activeGroupTab));
+        setIsWorkspaceView(['all', 'directorio', 'mensual', 'semestral', 'rimpe_emp', 'rimpe_np', 'al-dia', 'vencidos', 'trash', 'papelera'].includes(activeGroupTab));
         setIsCobrosView(['cobros', 'recaudacion'].includes(activeGroupTab));
         setIsAlertasView(false);
     }, [activeGroupTab]);
@@ -273,11 +274,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             if (query) {
                 if (query.startsWith('r:')) {
-                    const targetRegime = query.substring(2).trim();
+                    const targetRegime = query.substring(2).trim().toUpperCase();
+                    const cReg = (client.regime || '').toUpperCase();
                     searchMatch = (
-                        (targetRegime.includes('pop') && client.regime === TaxRegime.RimpeNegocioPopular) ||
-                        (targetRegime.includes('emp') && client.regime === TaxRegime.RimpeEmprendedor) ||
-                        (targetRegime.includes('gen') && client.regime === TaxRegime.General)
+                        (targetRegime.includes('POP') && cReg.includes('POPULAR')) ||
+                        (targetRegime.includes('EMP') && cReg.includes('EMPRENDEDOR')) ||
+                        (targetRegime.includes('GEN') && (cReg.includes('GENERAL') || cReg === ''))
                     );
                 } else if (query.startsWith('v:')) {
                     const targetStatus = query.substring(2).trim();
@@ -329,7 +331,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 const debtSummary = getClientDebtSummary(client, serviceFees, today);
                 const undeclaredSummary = getClientUndeclaredSummary(client, today);
                 
-                const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
+                const cRegUpper = (client.regime || '').toUpperCase();
+                const isEmpOrPop = cRegUpper.includes('EMPRENDEDOR') || cRegUpper.includes('POPULAR');
+                const needsRenta = client.taxProfile?.requiresAnnualRenta ?? isEmpOrPop;
                 const currentYear = today.getFullYear();
                 const rentaPeriod = (currentYear - 1).toString();
                 const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
@@ -339,27 +343,38 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 return !debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation && isRentaPaid && isRentaDeclared;
             }
 
+            const cRegUpper = (client.regime || '').toUpperCase();
+
             if (activeGroupTab === 'mensual') {
-                const isSemestral = client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor;
+                const isSemestral = client.taxProfile?.ivaFrequency === 'Semestral' || cRegUpper.includes('EMPRENDEDOR');
                 const isAnual = client.taxProfile?.ivaFrequency === 'Ninguno';
-                const isNegocioPopular = client.regime === TaxRegime.RimpeNegocioPopular; // RIMPE NP no declara IVA
+                const isNegocioPopular = cRegUpper.includes('POPULAR'); // RIMPE NP no declara IVA
                 if (isSemestral || isAnual || isNegocioPopular) return false;
             } else if (activeGroupTab === 'semestral') {
-                const isSemestral = client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor;
+                const isSemestral = client.taxProfile?.ivaFrequency === 'Semestral' || cRegUpper.includes('EMPRENDEDOR');
                 if (!isSemestral) return false;
+            } else if (activeGroupTab === 'rimpe_emp') {
+                const isEmp = cRegUpper.includes('EMPRENDEDOR') || client.taxProfile?.ivaFrequency === 'Semestral';
+                if (!isEmp) return false;
+            } else if (activeGroupTab === 'rimpe_np') {
+                const isNP = cRegUpper.includes('POPULAR');
+                if (!isNP) return false;
             } else if (activeGroupTab === 'renta') {
                 const hasRenta = client.taxProfile?.requiresAnnualRenta ||
-                    client.regime === TaxRegime.RimpeEmprendedor ||
-                    client.regime === TaxRegime.RimpeNegocioPopular ||
-                    client.regime === TaxRegime.General;
+                    cRegUpper.includes('EMPRENDEDOR') ||
+                    cRegUpper.includes('POPULAR') ||
+                    cRegUpper.includes('GENERAL');
                 const hasDev = client.taxProfile?.hasActiveDevolucionIva;
                 const hasAnexo = client.taxProfile?.requiresAnexosGastos;
                 if (!hasRenta && !hasDev && !hasAnexo) return false;
-            } else if (activeGroupTab === 'rimpe_np') {
-                return client.regime === TaxRegime.RimpeNegocioPopular;
             }
 
-            if (regimeFilter !== 'all' && client.regime !== regimeFilter) return false;
+            if (regimeFilter !== 'all') {
+                const fReg = regimeFilter.toUpperCase();
+                if (fReg.includes('EMPRENDEDOR') && !cRegUpper.includes('EMPRENDEDOR')) return false;
+                if (fReg.includes('POPULAR') && !cRegUpper.includes('POPULAR')) return false;
+                if (fReg.includes('GENERAL') && (!cRegUpper.includes('GENERAL') && cRegUpper !== '')) return false;
+            }
 
             // FILTRO DE ATENCIÓN URGENTE (Radar de Vencimientos)
             if (initialFilter?.needsAttention) {
