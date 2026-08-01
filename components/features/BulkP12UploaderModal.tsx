@@ -1,14 +1,13 @@
 import React, { useState, useRef } from 'react';
 import {
     UploadCloud, KeyRound, CheckCircle2, AlertTriangle, Lock, Unlock,
-    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle
+    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { extractP12Metadata } from '../../utils/p12Reader';
 import { useToast } from '../../context/ToastContext';
 import { Client, StoredFile, TaxRegime } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
-import { Modal } from '../ui/Modal';
 
 interface BulkP12UploaderModalProps {
     isOpen: boolean;
@@ -23,6 +22,9 @@ interface P12ItemQueue {
     passwordInput: string;
     status: 'pending' | 'unlocked' | 'error';
     errorMessage?: string;
+    unlockedViaPattern?: string;
+    candidateSuggestions?: string[];
+    possibleClientHint?: Client;
     metadata?: {
         ruc?: string;
         commonName?: string;
@@ -38,7 +40,6 @@ const fileToBase64 = (file: File): Promise<string> => {
         const reader = new FileReader();
         reader.onload = () => {
             const result = reader.result as string;
-            // Retornar base64 limpio sin encabezado data:...
             const base64 = result.includes(',') ? result.split(',')[1] : result;
             resolve(base64);
         };
@@ -46,6 +47,37 @@ const fileToBase64 = (file: File): Promise<string> => {
         reader.readAsDataURL(file);
     });
 };
+
+// Generar sugerencias de contraseñas basadas en el patrón Nombre/Apellido + Año (2026, 2025, 2027)
+const generatePasswordCandidates = (clientName?: string, fileName?: string, storedPasswords?: (string | undefined)[]): string[] => {
+    const candidates = new Set<string>();
+
+    (storedPasswords || []).forEach(p => {
+        if (p && p.trim()) candidates.add(p.trim());
+    });
+
+    const textToExtract = `${clientName || ''} ${fileName || ''}`.replace(/[\.\-_]/g, ' ');
+    const words = textToExtract.split(/\s+/).filter(w => w.length >= 3 && !/^\d+$/.test(w) && !['p12', 'pfx', 'firma', 'firmas', 'cert', 'sri', 'cedula', 'ruc'].includes(w.toLowerCase()));
+
+    const years = ['2026', '2025', '2027', '2024'];
+
+    words.forEach(w => {
+        const clean = w.trim();
+        const capitalized = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+        const lower = clean.toLowerCase();
+        const upper = clean.toUpperCase();
+
+        years.forEach(yr => {
+            candidates.add(`${capitalized}${yr}`);
+            candidates.add(`${lower}${yr}`);
+            candidates.add(`${upper}${yr}`);
+        });
+    });
+
+    return Array.from(candidates);
+};
+
+import { Modal } from '../ui/Modal';
 
 export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOpen, onClose }) => {
     const { clients, updateClient, addClient } = useAppStore();
@@ -60,8 +92,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const tryUnlockItem = (item: P12ItemQueue, passwordToTest: string): P12ItemQueue => {
         try {
             const meta = extractP12Metadata(item.base64Content, passwordToTest);
-
-            // Buscar coincidencia de cliente en la base de datos por RUC extraído
             const matched = meta.ruc ? clients.find(c => !c.isDeleted && c.ruc.trim() === meta.ruc?.trim()) : undefined;
 
             return {
@@ -83,7 +113,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                 ...item,
                 passwordInput: passwordToTest,
                 status: 'error',
-                errorMessage: 'Contraseña incorrecta o firma inválida'
+                errorMessage: 'Contraseña incorrecta'
             };
         }
     };
@@ -112,20 +142,35 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     status: 'pending'
                 };
 
-                // 1. Intentar probar si el cliente ya tiene contraseña de firma guardada en la BD
-                // Buscar cliente coincidente por nombre en el archivo (ej: "julio_mosquera.p12")
+                // Buscar posible cliente coincidente por nombre en el archivo o RUC
                 const lowerFileName = file.name.toLowerCase();
                 const possibleClient = clients.find(c => {
-                    if (!c.electronicSignaturePassword) return false;
                     const cleanName = c.name.toLowerCase().replace(/\s+/g, '');
                     const cleanRuc = c.ruc;
                     return lowerFileName.includes(cleanRuc) || lowerFileName.includes(cleanName.split(' ')[0]);
                 });
 
-                if (possibleClient && possibleClient.electronicSignaturePassword) {
-                    const unlocked = tryUnlockItem(item, possibleClient.electronicSignaturePassword);
-                    if (unlocked.status === 'unlocked') {
-                        item = unlocked;
+                // Generar candidatos inteligentes (Primer nombre/apellido + 2026/2025/2027 + claves de la BD)
+                const candidatePasswords = generatePasswordCandidates(
+                    possibleClient?.name,
+                    file.name,
+                    [possibleClient?.electronicSignaturePassword, possibleClient?.sriPassword]
+                );
+
+                item.possibleClientHint = possibleClient;
+                item.candidateSuggestions = candidatePasswords.slice(0, 8);
+
+                // Probar candidatos automáticos de forma finita (sin bucles infinitos)
+                let autoUnlocked = false;
+                for (const candPassword of candidatePasswords) {
+                    const res = tryUnlockItem(item, candPassword);
+                    if (res.status === 'unlocked') {
+                        item = {
+                            ...res,
+                            unlockedViaPattern: candPassword
+                        };
+                        autoUnlocked = true;
+                        break; // Si funciona con el primer nombre/apellido + 2026, no intentar más
                     }
                 }
 
@@ -137,10 +182,9 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         setQueue(prev => [...prev, ...newQueueItems]);
         setIsProcessing(false);
-        toast.success(`Cargados ${newQueueItems.length} archivos .p12 a la cola de verificación.`);
+        toast.success(`Cargados ${newQueueItems.length} archivos .p12 a la cola.`);
     };
 
-    // Probar contraseña manual para un elemento de la cola
     const handleTestPassword = (itemId: string, passwordValue: string) => {
         setQueue(prev => prev.map(item => {
             if (item.id !== itemId) return item;
@@ -148,12 +192,10 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         }));
     };
 
-    // Remover de la cola
     const handleRemoveItem = (itemId: string) => {
         setQueue(prev => prev.filter(i => i.id !== itemId));
     };
 
-    // Aplicar y Vincular todas las firmas desbloqueadas a la base de datos
     const handleApplyAllUnlocked = async () => {
         const unlockedItems = queue.filter(i => i.status === 'unlocked' && i.metadata?.ruc);
         if (unlockedItems.length === 0) {
@@ -178,7 +220,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             const expDate = notAfter ? notAfter.toISOString().split('T')[0] : '';
             const issueDate = notBefore ? notBefore.toISOString().split('T')[0] : '';
 
-            // Buscar si cliente ya existe
             const existingClient = clients.find(c => !c.isDeleted && c.ruc.trim() === ruc?.trim());
 
             if (existingClient) {
@@ -191,7 +232,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                 });
                 updatedCount++;
             } else {
-                // Crear cliente nuevo automáticamente con la información del certificado
                 const newClient: Client = {
                     id: uuidv4(),
                     name: commonName || 'Contribuyente Nuevo',
@@ -242,13 +282,13 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                 <div className="p-5 rounded-2xl bg-gradient-to-r from-teal-500/10 via-cyan-500/5 to-transparent border border-teal-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                                Asignación Masiva Inteligente
+                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
+                                <Sparkles size={11} /> Auto-Probador de Patrón (Nombre + 2026)
                             </span>
                         </div>
-                        <h3 className="text-base font-black text-white">Carga Múltiples Archivos .p12 de Golpe</h3>
+                        <h3 className="text-base font-black text-white">Prueba Automática de Claves (Arce2026, Ruth2026)</h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Arrastra todas tus firmas digitales. El sistema leerá el <strong>RUC y Nombre del Titular</strong> de cada firma y te solicitará la clave para desencriptarla y vincularla al cliente.
+                            Prueba automáticamente las contraseñas basadas en el primer nombre/apellido + <strong>2026/2025</strong>. Si no abre a la primera, detiene la prueba y te ofrece la pista del cliente.
                         </p>
                     </div>
 
@@ -280,7 +320,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                         </div>
                         <div>
                             <p className="text-sm font-black text-white">Haz clic o arrastra tus archivos .p12 aquí</p>
-                            <p className="text-xs text-slate-400 mt-1">Puedes seleccionar 5, 10, 20 o más archivos simultáneamente.</p>
+                            <p className="text-xs text-slate-400 mt-1">Soporta selección de múltiples archivos simultáneamente.</p>
                         </div>
                     </div>
                 ) : (
@@ -298,7 +338,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                         </div>
 
                         {/* Lista Interactiva de Firmas */}
-                        <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                        <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
                             {queue.map((item, idx) => {
                                 const isUnlocked = item.status === 'unlocked';
                                 const isError = item.status === 'error';
@@ -306,69 +346,73 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                 return (
                                     <div
                                         key={item.id}
-                                        className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                                        className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col justify-between gap-3 ${
                                             isUnlocked
                                                 ? 'bg-emerald-950/20 border-emerald-500/30'
                                                 : isError
-                                                ? 'bg-rose-950/20 border-rose-500/30'
+                                                ? 'bg-amber-950/20 border-amber-500/30'
                                                 : 'bg-slate-900/60 border-white/10'
                                         }`}
                                     >
-                                        <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                                            <span className="text-xs font-mono font-bold text-slate-500 w-5 text-center">{idx + 1}</span>
-                                            <div className={`p-2.5 rounded-xl border ${
-                                                isUnlocked ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
-                                                isError ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' :
-                                                'bg-slate-800 text-slate-400 border-white/10'
-                                            }`}>
-                                                {isUnlocked ? <Unlock size={18} /> : <Lock size={18} />}
-                                            </div>
-
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-xs font-bold text-white font-mono truncate">{item.fileName}</p>
-                                                    {isUnlocked && (
-                                                        <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase">
-                                                            Desbloqueada
-                                                        </span>
-                                                    )}
+                                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                                <span className="text-xs font-mono font-bold text-slate-500 w-5 text-center">{idx + 1}</span>
+                                                <div className={`p-2.5 rounded-xl border ${
+                                                    isUnlocked ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                                    isError ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
+                                                    'bg-slate-800 text-slate-400 border-white/10'
+                                                }`}>
+                                                    {isUnlocked ? <Unlock size={18} /> : <Lock size={18} />}
                                                 </div>
 
-                                                {/* Detalle si ya fue unlocked */}
-                                                {isUnlocked && item.metadata && (
-                                                    <div className="mt-1 space-y-0.5 text-[11px]">
-                                                        <p className="font-bold text-emerald-300 uppercase truncate">
-                                                            {item.metadata.commonName || 'Titular Extraído'}
-                                                        </p>
-                                                        <p className="font-mono text-slate-400 text-[10px]">
-                                                            RUC: <strong className="text-white">{item.metadata.ruc || 'No disponible'}</strong> · Emisor: {item.metadata.issuerName || 'N/A'}
-                                                        </p>
-
-                                                        {item.matchedClient ? (
-                                                            <div className="flex items-center gap-1 text-[10px] text-teal-400 font-bold mt-1">
-                                                                <UserCheck size={12} />
-                                                                <span>Vinculado a Cliente Registrado: {item.matchedClient.name}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center gap-1 text-[10px] text-amber-400 font-bold mt-1">
-                                                                <UserPlus size={12} />
-                                                                <span>Cliente Nuevo (Se creará automáticamente en el sistema)</span>
-                                                            </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xs font-bold text-white font-mono truncate">{item.fileName}</p>
+                                                        {isUnlocked && (
+                                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase flex items-center gap-1">
+                                                                <Check size={10} /> Desbloqueada {item.unlockedViaPattern ? `(${item.unlockedViaPattern})` : ''}
+                                                            </span>
                                                         )}
                                                     </div>
-                                                )}
 
-                                                {isError && (
-                                                    <p className="text-[10px] text-rose-400 mt-1 font-bold">
-                                                        ⚠️ {item.errorMessage}
-                                                    </p>
-                                                )}
+                                                    {/* Detalle si ya fue unlocked */}
+                                                    {isUnlocked && item.metadata && (
+                                                        <div className="mt-1 space-y-0.5 text-[11px]">
+                                                            <p className="font-bold text-emerald-300 uppercase truncate">
+                                                                {item.metadata.commonName || 'Titular Extraído'}
+                                                            </p>
+                                                            <p className="font-mono text-slate-400 text-[10px]">
+                                                                RUC: <strong className="text-white">{item.metadata.ruc || 'No disponible'}</strong> · Emisor: {item.metadata.issuerName || 'N/A'}
+                                                            </p>
+
+                                                            {item.matchedClient ? (
+                                                                <div className="flex items-center gap-1 text-[10px] text-teal-400 font-bold mt-1">
+                                                                    <UserCheck size={12} />
+                                                                    <span>Vinculado a Cliente: {item.matchedClient.name}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-1 text-[10px] text-amber-400 font-bold mt-1">
+                                                                    <UserPlus size={12} />
+                                                                    <span>Cliente Nuevo (Se creará en el sistema)</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Pista de Cliente Detectado si no abre a la primera */}
+                                                    {!isUnlocked && item.possibleClientHint && (
+                                                        <div className="mt-1 text-[10px] text-amber-300 font-medium flex items-center gap-1.5 bg-amber-500/10 p-1.5 rounded-lg border border-amber-500/20">
+                                                            <Lightbulb size={12} className="text-amber-400 shrink-0" />
+                                                            <span>
+                                                                Pista de coincidencia: <strong>{item.possibleClientHint.name}</strong> (RUC: {item.possibleClientHint.ruc})
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        {/* Input de Contraseña e Interacción */}
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <div className="relative">
+                                            {/* Input de Contraseña e Interacción */}
+                                            <div className="flex items-center gap-2 shrink-0">
                                                 <input
                                                     type="password"
                                                     value={item.passwordInput}
@@ -379,27 +423,45 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter') handleTestPassword(item.id, item.passwordInput);
                                                     }}
-                                                    placeholder="Ingresa la contraseña .p12..."
-                                                    className="w-48 sm:w-56 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 outline-none font-mono"
+                                                    placeholder="Ingresa la clave..."
+                                                    className="w-40 sm:w-48 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 outline-none font-mono"
                                                 />
+
+                                                <button
+                                                    onClick={() => handleTestPassword(item.id, item.passwordInput)}
+                                                    className="px-3 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold uppercase transition-all shadow-md active:scale-95 flex items-center gap-1"
+                                                    title="Probar contraseña manual"
+                                                >
+                                                    {isUnlocked ? <Check size={14} /> : <Unlock size={14} />}
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleRemoveItem(item.id)}
+                                                    className="p-2 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-xl transition-all"
+                                                    title="Eliminar de la cola"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
                                             </div>
-
-                                            <button
-                                                onClick={() => handleTestPassword(item.id, item.passwordInput)}
-                                                className="px-3 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold uppercase transition-all shadow-md active:scale-95"
-                                                title="Probar contraseña y descifrar firma"
-                                            >
-                                                {isUnlocked ? <Check size={14} /> : <Unlock size={14} />}
-                                            </button>
-
-                                            <button
-                                                onClick={() => handleRemoveItem(item.id)}
-                                                className="p-2 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-xl transition-all"
-                                                title="Eliminar de la cola"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
                                         </div>
+
+                                        {/* PILDORAS DE SUGERENCIAS HINT SI NO DESBLOQUEÓ */}
+                                        {!isUnlocked && item.candidateSuggestions && item.candidateSuggestions.length > 0 && (
+                                            <div className="pt-2 border-t border-white/5 flex items-center gap-2 flex-wrap">
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                                    <Sparkles size={10} className="text-amber-400" /> Sugerencias rápidas:
+                                                </span>
+                                                {item.candidateSuggestions.map((sug, sIdx) => (
+                                                    <button
+                                                        key={sIdx}
+                                                        onClick={() => handleTestPassword(item.id, sug)}
+                                                        className="px-2.5 py-1 bg-white/5 hover:bg-teal-500/20 hover:text-teal-300 text-slate-300 rounded-lg text-[10px] font-mono font-bold border border-white/10 transition-all active:scale-95"
+                                                    >
+                                                        {sug}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -407,7 +469,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     </div>
                 )}
 
-                {/* Footer Modal con Botón de Guardado Masivo */}
+                {/* Footer Modal */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">
                     <div className="text-xs text-slate-400">
                         {unlockedCount > 0 ? (
@@ -415,7 +477,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                 Listas para guardar: {unlockedCount} de {queue.length} firmas
                             </span>
                         ) : (
-                            <span>Ingresa la contraseña de cada firma para descifrarla</span>
+                            <span>Prueba sugerencias o ingresa la clave manual</span>
                         )}
                     </div>
 
