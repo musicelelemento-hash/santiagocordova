@@ -1040,6 +1040,56 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                 {isClientUpToDate(client) ? 'Al Día' : 'Pendiente'}
                                                             </span>
                                                         )}
+                                                        {/* ── Firma Electrónica Neon Dot ── */}
+                                                        {(() => {
+                                                            if (!client.signatureFile) {
+                                                                return (
+                                                                    <span
+                                                                        title="Sin firma electrónica"
+                                                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shrink-0"
+                                                                    >
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                                                                        <span className="text-[8px] font-bold text-slate-400 uppercase hidden sm:inline">Sin firma</span>
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            const daysLeft = client.signatureExpirationDate
+                                                                ? (() => {
+                                                                    const exp = new Date(client.signatureExpirationDate);
+                                                                    exp.setHours(0,0,0,0);
+                                                                    const now = new Date(); now.setHours(0,0,0,0);
+                                                                    return Math.ceil((exp.getTime() - now.getTime()) / 86400000);
+                                                                })()
+                                                                : null;
+                                                            if (daysLeft === null) {
+                                                                return (
+                                                                    <span title="Firma cargada (fecha desconocida)" className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 shrink-0">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" style={{boxShadow:'0 0 6px rgba(20,184,166,0.8)'}} />
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            if (daysLeft < 0) {
+                                                                return (
+                                                                    <span title={`Firma CADUCADA hace ${Math.abs(daysLeft)} días`} className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 shrink-0">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" style={{boxShadow:'0 0 6px rgba(239,68,68,0.8)'}} />
+                                                                        <span className="text-[8px] font-black text-rose-500 uppercase hidden sm:inline">Caducada</span>
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            if (daysLeft <= 30) {
+                                                                return (
+                                                                    <span title={`Firma vence en ${daysLeft} días`} className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 shrink-0">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" style={{boxShadow:'0 0 6px rgba(251,191,36,0.8)'}} />
+                                                                        <span className="text-[8px] font-black text-amber-500 uppercase hidden sm:inline">{daysLeft}d</span>
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            return (
+                                                                <span title={`Firma activa · ${daysLeft} días restantes`} className="flex items-center px-1.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 shrink-0">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" style={{boxShadow:'0 0 6px rgba(20,184,166,0.8)'}} />
+                                                                </span>
+                                                            );
+                                                        })()}
                                                     </div>
 
                                                     <div className="flex items-center gap-1.5 mt-1 no-print">
