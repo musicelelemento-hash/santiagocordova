@@ -125,6 +125,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         if (rightColRef.current) rightColRef.current.scrollTop = 0;
     }, [activeTab]);
 
+    React.useEffect(() => {
+        setEditedClient(client);
+    }, [client]);
+
     const [obligation, setObligation] = useState(getStatusIndicator(client));
 
     const [monthlyFee, setMonthlyFee] = useState<string>(
