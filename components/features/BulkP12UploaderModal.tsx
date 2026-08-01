@@ -1,8 +1,10 @@
 import React, { useState, useRef, useMemo } from 'react';
 import {
     UploadCloud, KeyRound, CheckCircle2, AlertTriangle, Lock, Unlock,
-    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb, Search, ShieldCheck, Archive
+    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb, Search, ShieldCheck, Archive, ArrowUpRight, CopyCheck, AlertCircle
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { useAppStore } from '../../store/useAppStore';
 import { extractP12Metadata } from '../../utils/p12Reader';
 import { useToast } from '../../context/ToastContext';
@@ -22,13 +24,18 @@ interface P12ItemQueue {
     fileName: string;
     passwordInput: string;
     manualRucInput: string;
-    saveMode: 'create_client' | 'backup_only';
+    saveMode: 'create_client' | 'backup_only' | 'omit';
     status: 'pending' | 'unlocked' | 'error';
     errorMessage?: string;
     unlockedViaPattern?: string;
     candidateSuggestions?: string[];
     possibleClientHint?: Client;
     extractedNameFromCert?: string;
+    expirationComparison?: {
+        status: 'renewal' | 'duplicate' | 'older' | 'new_client';
+        newStr: string;
+        existingStr: string;
+    };
     metadata?: {
         ruc?: string;
         commonName?: string;
@@ -134,7 +141,33 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
     return undefined;
 };
 
-// Generar candidatos usando Nombre del cliente O Nombre extraído del archivo (ej: cert-MURILLO-FRANCISCO -> Murillo2026)
+// Evaluador inteligente de fechas de caducidad y firmas duplicadas
+const evaluateExpirationComparison = (newExpDate?: Date, existingClient?: Client) => {
+    if (!newExpDate || !existingClient || !existingClient.signatureExpirationDate) {
+        return {
+            status: 'new_client' as const,
+            newStr: newExpDate ? format(newExpDate, "d MMM yyyy", { locale: es }) : '—',
+            existingStr: 'Sin firma previa'
+        };
+    }
+
+    const newExpTime = new Date(newExpDate).setHours(0, 0, 0, 0);
+    const existingExp = new Date(existingClient.signatureExpirationDate);
+    const existingExpTime = existingExp.setHours(0, 0, 0, 0);
+
+    const newStr = format(newExpDate, "d MMM yyyy", { locale: es });
+    const existingStr = format(existingExp, "d MMM yyyy", { locale: es });
+
+    if (newExpTime > existingExpTime) {
+        return { status: 'renewal' as const, newStr, existingStr };
+    } else if (newExpTime === existingExpTime) {
+        return { status: 'duplicate' as const, newStr, existingStr };
+    } else {
+        return { status: 'older' as const, newStr, existingStr };
+    }
+};
+
+// Generar candidatos usando Nombre del cliente O Nombre extraído del archivo
 const generatePasswordCandidates = (client?: Client, fileName?: string, storedPasswords?: (string | undefined)[]): string[] => {
     const candidates = new Set<string>();
 
@@ -145,7 +178,6 @@ const generatePasswordCandidates = (client?: Client, fileName?: string, storedPa
     if (client && client.sriPassword) candidates.add(client.sriPassword.trim());
     if (client && client.electronicSignaturePassword) candidates.add(client.electronicSignaturePassword.trim());
 
-    // Usar el nombre del cliente si está registrado, o el nombre extraído del nombre de archivo (ej: MURILLO FRANCISCO EFRAIN)
     const textName = client ? client.name : parseNameFromFileName(fileName || '');
 
     if (!textName) return Array.from(candidates);
@@ -188,12 +220,18 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         try {
             const meta = extractP12Metadata(item.base64Content, passwordToTest);
             const matched = meta.ruc ? clients.find(c => !c.isDeleted && c.ruc.trim() === meta.ruc?.trim()) : item.possibleClientHint;
+            const expComp = evaluateExpirationComparison(meta.notAfter, matched);
+
+            // Si es duplicada exacta (misma fecha), sugerir omitir por defecto
+            const defaultSaveMode = expComp.status === 'duplicate' ? 'omit' : item.saveMode;
 
             return {
                 ...item,
                 passwordInput: passwordToTest,
                 status: 'unlocked',
                 errorMessage: undefined,
+                saveMode: defaultSaveMode,
+                expirationComparison: expComp,
                 metadata: {
                     ruc: meta.ruc,
                     commonName: meta.commonName,
@@ -276,7 +314,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         setQueue(prev => [...prev, ...newQueueItems]);
         setIsProcessing(false);
-        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12.`);
+        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12 con evaluación de vigencia.`);
     };
 
     const handleSelectClientForQueueItem = (itemId: string, selectedClient?: Client) => {
@@ -300,7 +338,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         }));
     };
 
-    const handleToggleSaveMode = (itemId: string, mode: 'create_client' | 'backup_only') => {
+    const handleToggleSaveMode = (itemId: string, mode: 'create_client' | 'backup_only' | 'omit') => {
         setQueue(prev => prev.map(item => item.id === itemId ? { ...item, saveMode: mode } : item));
     };
 
@@ -309,9 +347,9 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     };
 
     const handleApplyAllUnlocked = async () => {
-        const unlockedItems = queue.filter(i => i.status === 'unlocked' && i.metadata?.ruc);
+        const unlockedItems = queue.filter(i => i.status === 'unlocked' && i.metadata?.ruc && i.saveMode !== 'omit');
         if (unlockedItems.length === 0) {
-            toast.error("No hay firmas descifradas y listas para guardar.");
+            toast.error("No hay firmas descifradas marcadas para guardar.");
             return;
         }
 
@@ -338,19 +376,37 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             const existingClient = clients.find(c => !c.isDeleted && c.ruc.trim() === ruc?.trim()) || item.possibleClientHint;
 
             if (existingClient) {
-                await updateClient(existingClient.id, {
-                    signatureFile: signatureFileObj,
-                    electronicSignaturePassword: item.passwordInput,
-                    signatureExpirationDate: expDate,
-                    signatureIssueDate: issueDate,
-                    signatureProvider: issuerName
-                });
-                updatedCount++;
+                // Si la firma en el lote es más antigua que la del cliente en la BD, NO sobreescribir la más reciente
+                const isOlderThanClient = item.expirationComparison?.status === 'older';
+                
+                if (!isOlderThanClient) {
+                    await updateClient(existingClient.id, {
+                        signatureFile: signatureFileObj,
+                        electronicSignaturePassword: item.passwordInput,
+                        signatureExpirationDate: expDate,
+                        signatureIssueDate: issueDate,
+                        signatureProvider: issuerName
+                    });
+                    updatedCount++;
+                } else {
+                    // Guardar como respaldo secundario sin reemplazar la firma más vigente del perfil
+                    backupList.push({
+                        id: uuidv4(),
+                        titular: existingClient.name,
+                        ruc: existingClient.ruc,
+                        fileName: item.fileName,
+                        password: item.passwordInput,
+                        provider: issuerName,
+                        expirationDate: expDate,
+                        note: 'Respaldo de firma previa (caducidad menor a la activa)',
+                        savedAt: new Date().toISOString()
+                    });
+                    backupCount++;
+                }
             } else if (item.saveMode === 'backup_only') {
-                // Guardar en Bóveda de Respaldos de Clientes Esporádicos
                 backupList.push({
                     id: uuidv4(),
-                    titular: commonName || 'Cliente Esporádico',
+                    titular: commonName || item.extractedNameFromCert || 'Cliente Esporádico',
                     ruc: ruc || '',
                     fileName: item.fileName,
                     password: item.passwordInput,
@@ -360,7 +416,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                 });
                 backupCount++;
             } else {
-                // Crear nuevo cliente activo en el sistema
                 const newClient: Client = {
                     id: uuidv4(),
                     name: commonName || item.extractedNameFromCert || 'Contribuyente Nuevo',
@@ -398,14 +453,14 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         }
 
         setIsSaving(false);
-        toast.success(`🎉 Proceso completado: ${updatedCount} actualizadas, ${createdCount} creados y ${backupCount} en respaldos esporádicos.`);
+        toast.success(`🎉 Proceso completado: ${updatedCount} actualizadas, ${createdCount} creados y ${backupCount} en respaldos.`);
         setQueue([]);
         onClose();
     };
 
     if (!isOpen) return null;
 
-    const unlockedCount = queue.filter(q => q.status === 'unlocked').length;
+    const unlockedCount = queue.filter(q => q.status === 'unlocked' && q.saveMode !== 'omit').length;
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="📥 Subidor Masivo de Firmas Electrónicas (.p12)" size="4xl">
@@ -425,13 +480,13 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                         <div className="space-y-2 max-w-md">
                             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 text-[10px] font-black uppercase tracking-[0.25em] shadow-lg">
-                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER DE SEGURIDAD Y PARSER SRI
+                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER Y COMPARADOR DE VIGENCIA
                             </div>
                             <h3 className="text-xl font-black text-white uppercase tracking-tight font-display">
-                                Decodificando Certificados .p12
+                                Analizando Renovaciones y Duplicados
                             </h3>
                             <p className="text-xs text-slate-300 font-mono leading-relaxed">
-                                Extrayendo nombres de certificados SRI (ej: cert-MURILLO-FRANCISCO) y evaluando coincidencia estricta de clientes...
+                                Comparando fechas de caducidad con firmas existentes para actualizar la más vigente...
                             </p>
                         </div>
 
@@ -455,7 +510,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                 Sincronización de Bóveda y Respaldos
                             </span>
                             <h3 className="text-2xl font-black text-white uppercase tracking-tight font-display">
-                                Sincronizando Firmas en el Sistema
+                                Aplicando Renovaciones y Guardando
                             </h3>
                         </div>
                     </div>
@@ -466,12 +521,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                                <Sparkles size={11} /> Coincidencia Estricta + Parser de Certificados SRI
+                                <Sparkles size={11} /> Control de Renovaciones & Duplicados Inteligente
                             </span>
                         </div>
-                        <h3 className="text-base font-black text-white">Extracción de Nombres Verdaderos (cert-MURILLO-FRANCISCO)</h3>
+                        <h3 className="text-base font-black text-white">Detección de Renovaciones y Omitir Duplicados</h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Filtra nombres exactos del archivo (ej: <code>MURILLO FRANCISCO</code>) y evita asociar clientes erróneos por coincidencia parcial. Permite guardar clientes esporádicos en Bóveda de Respaldos.
+                            Si la firma es una <strong>Renovación</strong> (caducidad posterior), la actualiza automáticamente. Si es <strong>Duplicada o más Antigua</strong>, la omite para proteger la más reciente.
                         </p>
                     </div>
 
@@ -510,7 +565,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     <div className="space-y-4">
                         <div className="flex items-center justify-between px-2">
                             <span className="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
-                                Cola de Procesamiento ({queue.length} archivos · {unlockedCount} desencriptados)
+                                Cola de Procesamiento ({queue.length} archivos · {unlockedCount} marcadas para guardar)
                             </span>
                             <button
                                 onClick={() => setQueue([])}
@@ -525,11 +580,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                             {queue.map((item, idx) => {
                                 const isUnlocked = item.status === 'unlocked';
                                 const isError = item.status === 'error';
-                                const displayCandidateName = item.possibleClientHint
-                                    ? item.possibleClientHint.name.split(' ')[0]
-                                    : item.extractedNameFromCert
-                                    ? item.extractedNameFromCert.split(' ')[0]
-                                    : 'Nombre';
+                                const expComp = item.expirationComparison;
 
                                 return (
                                     <div
@@ -554,7 +605,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                 </div>
 
                                                 <div className="min-w-0 flex-1 space-y-1">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-2 flex-wrap">
                                                         <p className="text-xs font-bold text-white font-mono truncate">{item.fileName}</p>
                                                         {isUnlocked && (
                                                             <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase flex items-center gap-1 shrink-0 border border-emerald-500/30 shadow-sm">
@@ -563,9 +614,33 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                         )}
                                                     </div>
 
-                                                    {/* Detalle si ya fue unlocked */}
+                                                    {/* EVALUACIÓN INTELIGENTE DE RENOVACIÓN / DUPLICADOS / ANTIGÜEDAD */}
+                                                    {isUnlocked && expComp && (
+                                                        <div className="pt-1">
+                                                            {expComp.status === 'renewal' && (
+                                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wide shadow-sm">
+                                                                    <ArrowUpRight size={13} className="text-emerald-400 animate-bounce" />
+                                                                    <span>🎉 Renovación Detectada (Nueva: <strong>{expComp.newStr}</strong> vs Actual: {expComp.existingStr})</span>
+                                                                </div>
+                                                            )}
+                                                            {expComp.status === 'duplicate' && (
+                                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-[10px] font-bold uppercase tracking-wide">
+                                                                    <CopyCheck size={13} className="text-cyan-400" />
+                                                                    <span>ℹ️ Firma idéntica ya en sistema (Caducidad: {expComp.newStr}) · Omitida por defecto</span>
+                                                                </div>
+                                                            )}
+                                                            {expComp.status === 'older' && (
+                                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold uppercase tracking-wide">
+                                                                    <AlertCircle size={13} className="text-amber-400" />
+                                                                    <span>⚠️ Firma anterior ({expComp.newStr}). La del sistema es más reciente ({expComp.existingStr}).</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Detalle del cliente asignado */}
                                                     {isUnlocked && item.metadata && (
-                                                        <div className="space-y-1 text-[11px]">
+                                                        <div className="space-y-1 text-[11px] pt-1">
                                                             <p className="font-bold text-emerald-300 uppercase truncate">
                                                                 {item.metadata.commonName || item.extractedNameFromCert || 'Titular Extraído'}
                                                             </p>
@@ -574,14 +649,40 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                             </p>
 
                                                             {item.matchedClient ? (
-                                                                <div className="flex items-center gap-1 text-[10px] text-teal-400 font-bold">
-                                                                    <UserCheck size={12} />
-                                                                    <span>Vinculado a Cliente: {item.matchedClient.name} ({item.matchedClient.ruc})</span>
+                                                                <div className="flex items-center justify-between gap-2 text-[10px] text-teal-400 font-bold">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <UserCheck size={12} />
+                                                                        <span>Cliente: {item.matchedClient.name} ({item.matchedClient.ruc})</span>
+                                                                    </div>
+
+                                                                    {/* Selector de Acción de Guardado para Clientes Existentes */}
+                                                                    <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/10">
+                                                                        <button
+                                                                            onClick={() => handleToggleSaveMode(item.id, 'create_client')}
+                                                                            className={`px-2.5 py-0.5 rounded-lg text-[9px] font-bold uppercase transition-all ${
+                                                                                item.saveMode === 'create_client'
+                                                                                    ? 'bg-teal-500 text-slate-950'
+                                                                                    : 'text-slate-400 hover:text-white'
+                                                                            }`}
+                                                                        >
+                                                                            {expComp?.status === 'renewal' ? '🎉 Aplicar Renovación' : 'Guardar en Perfil'}
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleToggleSaveMode(item.id, 'omit')}
+                                                                            className={`px-2.5 py-0.5 rounded-lg text-[9px] font-bold uppercase transition-all ${
+                                                                                item.saveMode === 'omit'
+                                                                                    ? 'bg-slate-700 text-slate-200'
+                                                                                    : 'text-slate-400 hover:text-white'
+                                                                            }`}
+                                                                        >
+                                                                            Omitir
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex flex-wrap items-center gap-2 pt-1">
                                                                     <span className="text-[10px] text-amber-300 font-bold flex items-center gap-1">
-                                                                        <AlertTriangle size={11} className="text-amber-400" /> Cliente no registrado en sistema. ¿Cómo deseas guardar esta firma?
+                                                                        <AlertTriangle size={11} className="text-amber-400" /> Cliente no registrado. ¿Cómo deseas guardar esta firma?
                                                                     </span>
 
                                                                     <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/10">
@@ -696,11 +797,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                             </div>
                                         </div>
 
-                                        {/* PILDORAS DE SUGERENCIAS DE CLAVE DE CLIENTE O NOMBRE EXTRAÍDO DEL ARCHIVO */}
+                                        {/* PILDORAS DE SUGERENCIAS DE CLAVE */}
                                         {!isUnlocked && item.candidateSuggestions && item.candidateSuggestions.length > 0 && (
                                             <div className="pt-2 border-t border-white/5 flex items-center gap-2 flex-wrap">
                                                 <span className="text-[9px] font-bold text-amber-300 uppercase tracking-widest flex items-center gap-1">
-                                                    <Sparkles size={10} className="text-amber-400 animate-pulse" /> Sugerencias ({displayCandidateName}):
+                                                    <Sparkles size={10} className="text-amber-400 animate-pulse" /> Sugerencias ({item.possibleClientHint?.name.split(' ')[0] || item.extractedNameFromCert?.split(' ')[0] || 'Patrón'}):
                                                 </span>
                                                 {item.candidateSuggestions.map((sug, sIdx) => (
                                                     <button
