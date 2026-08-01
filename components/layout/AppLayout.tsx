@@ -30,6 +30,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     // Map route paths to screen names
     const getScreenFromPath = (path: string): Screen => {
         if (path.includes('/facturacion')) return 'sri_facturacion';
+        if (path.includes('/firmas')) return 'firmas';
         if (path.includes('/cobranzas')) return 'cobranza';
         if (path.includes('/tareas')) return 'tasks';
         if (path.includes('/calendario')) return 'calendar';
@@ -126,6 +127,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         const routeMap: Record<Screen, string> = {
             home: '/dashboard',
             clients: '/dashboard/clientes',
+            declaraciones: '/dashboard/clientes',
+            firmas: '/dashboard/firmas',
             sri_facturacion: '/dashboard/facturacion',
             cobranza: '/dashboard/cobranzas',
             tasks: '/dashboard/tareas',

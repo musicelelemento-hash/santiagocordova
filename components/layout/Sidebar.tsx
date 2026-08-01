@@ -11,6 +11,9 @@ interface NavItem {
     count?: number;
     onHover?: () => void;
     onClick?: () => void;
+    isSubItem?: boolean;   // renders indented under group parent
+    groupLabel?: string;   // shows a non-clickable parent header before this item
+    subLabel?: string;     // legacy mini-label
 }
 
 interface SidebarProps {
@@ -32,7 +35,7 @@ interface SidebarProps {
 
 // Groupings for nav items to add visual section separators
 const NAV_GROUPS: { label: string; screens: string[] }[] = [
-    { label: 'Principal', screens: ['home', 'clients', 'firmas', 'cobranza'] },
+    { label: 'Principal', screens: ['home', 'clients', 'declaraciones', 'firmas', 'cobranza'] },
     { label: 'Operaciones', screens: ['sri_facturacion', 'tasks', 'calendar', 'web_orders'] },
     { label: 'Sistema', screens: ['settings', 'audit_log', 'services'] },
 ];
@@ -93,91 +96,103 @@ export const Sidebar: React.FC<SidebarProps> = ({
         groupedNav.push({ label: 'Más', items: remaining });
     }
 
-    const renderNavButton = ({ screen, icon: Icon, label, count, subLabel }: NavItem & { subLabel?: string }) => {
+    const renderNavButton = ({ screen, icon: Icon, label, count, isSubItem, groupLabel }: NavItem) => {
         const isActive = activeScreen === screen;
         const isDark = theme === 'dark';
         const isFirmas = screen === 'firmas';
 
         return (
-            <button
-                key={screen}
-                onClick={() => onNavigate(screen)}
-                title={isCollapsed ? label : undefined}
-                className={`
-                    group relative flex items-center rounded-xl transition-all duration-300
-                    ${isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-4 py-2.5 gap-3'}
-                    ${isActive
-                        ? isFirmas
-                            ? 'bg-gradient-to-r from-teal-500/20 to-cyan-500/10 text-teal-300 border border-teal-500/30 shadow-[0_0_20px_rgba(20,184,166,0.12)]'
-                            : isDark
-                                ? 'bg-gradient-to-r from-[#2B6AFF]/20 to-[#6366F1]/10 text-white border border-[#2B6AFF]/30 shadow-[0_0_20px_rgba(43,106,255,0.12)]'
-                                : 'bg-slate-900 text-white border border-slate-800 shadow-lg'
-                        : isFirmas
-                            ? isDark
-                                ? 'text-teal-500 hover:bg-teal-500/10 hover:text-teal-300 border border-transparent hover:border-teal-500/20'
-                                : 'text-teal-600 hover:bg-teal-50 border border-transparent'
-                            : isDark
-                                ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200 border border-transparent'
-                                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent'
-                    }
-                `}
-            >
-                {/* Icon */}
-                <Icon
-                    size={18}
-                    className={`transition-all duration-300 flex-shrink-0 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}
-                    strokeWidth={isActive ? 2.5 : 2}
-                />
-
-                {/* Label */}
-                <span className={`
-                    text-[12px] font-bold tracking-wide flex-1 text-left transition-all duration-300
-                    ${isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''}
-                `}>
-                    {label}
-                </span>
-
-                {/* Count badge */}
-                {count !== undefined && count > 0 && (
-                    isCollapsed ? (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-slate-900 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
-                    ) : (
-                        <span className={`
-                            px-2 py-0.5 rounded-md text-[9px] font-black border transition-colors duration-300
-                            ${isActive
-                                ? isDark ? 'bg-white/20 text-white border-white/20' : 'bg-white text-slate-900 border-slate-200'
-                                : isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'
-                            }
-                        `}>
-                            {count}
+            <React.Fragment key={screen}>
+                {groupLabel && !isCollapsed && (
+                    <div className="flex items-center gap-2 px-3 pt-3 pb-1">
+                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${
+                            isDark ? 'text-primary/70' : 'text-primary'
+                        }`}>
+                            {groupLabel}
                         </span>
-                    )
+                        <div className={`flex-1 h-px ${isDark ? 'bg-primary/10' : 'bg-primary/20'}`} />
+                    </div>
                 )}
-
-                {/* Firmas neon dot */}
-                {isFirmas && !isCollapsed && (
-                    <span
-                        className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0"
-                        style={{ boxShadow: '0 0 6px rgba(45,212,191,0.9)' }}
-                    />
-                )}
-
-                {/* Left active bar */}
-                {isActive && !isCollapsed && (
-                    <div className={`
-                        absolute left-0 w-[3px] h-5 rounded-r-full
-                        ${isFirmas
-                            ? 'bg-gradient-to-b from-teal-400 to-cyan-500 shadow-[3px_0_10px_rgba(20,184,166,0.5)]'
-                            : 'bg-gradient-to-b from-[#2B6AFF] to-[#6366F1] shadow-[3px_0_10px_rgba(43,106,255,0.5)]'
+                <button
+                    onClick={() => onNavigate(screen)}
+                    title={isCollapsed ? label : undefined}
+                    className={`
+                        group relative flex items-center rounded-xl transition-all duration-300
+                        ${isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-4 py-2.5 gap-3'}
+                        ${isSubItem && !isCollapsed ? 'ml-3.5 w-[calc(100%-0.875rem)] border-l-2 border-primary/20 rounded-l-none pl-3' : ''}
+                        ${isActive
+                            ? isFirmas
+                                ? 'bg-gradient-to-r from-teal-500/20 to-cyan-500/10 text-teal-300 border border-teal-500/30 shadow-[0_0_20px_rgba(20,184,166,0.12)]'
+                                : isDark
+                                    ? 'bg-gradient-to-r from-[#2B6AFF]/20 to-[#6366F1]/10 text-white border border-[#2B6AFF]/30 shadow-[0_0_20px_rgba(43,106,255,0.12)]'
+                                    : 'bg-slate-900 text-white border border-slate-800 shadow-lg'
+                            : isFirmas
+                                ? isDark
+                                    ? 'text-teal-500 hover:bg-teal-500/10 hover:text-teal-300 border border-transparent hover:border-teal-500/20'
+                                    : 'text-teal-600 hover:bg-teal-50 border border-transparent'
+                                : isDark
+                                    ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200 border border-transparent'
+                                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900 border border-transparent'
                         }
-                    `} />
-                )}
+                    `}
+                >
+                    {/* Icon */}
+                    <Icon
+                        size={18}
+                        className={`transition-all duration-300 flex-shrink-0 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}
+                        strokeWidth={isActive ? 2.5 : 2}
+                    />
 
-                {/* Collapsed active dot */}
-                {isActive && isCollapsed && (
-                    <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isFirmas ? 'bg-teal-400 shadow-[0_0_6px_rgba(45,212,191,0.9)]' : 'bg-[#2B6AFF] shadow-[0_0_6px_rgba(43,106,255,0.9)]'}`} />
-                )}
-            </button>
+                    {/* Label */}
+                    <span className={`
+                        text-[12px] font-bold tracking-wide flex-1 text-left transition-all duration-300
+                        ${isCollapsed ? 'opacity-0 w-0 h-0 overflow-hidden' : ''}
+                    `}>
+                        {label}
+                    </span>
+
+                    {/* Count badge */}
+                    {count !== undefined && count > 0 && (
+                        isCollapsed ? (
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-slate-900 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+                        ) : (
+                            <span className={`
+                                px-2 py-0.5 rounded-md text-[9px] font-black border transition-colors duration-300
+                                ${isActive
+                                    ? isDark ? 'bg-white/20 text-white border-white/20' : 'bg-white text-slate-900 border-slate-200'
+                                    : isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'
+                                }
+                            `}>
+                                {count}
+                            </span>
+                        )
+                    )}
+
+                    {/* Firmas neon dot */}
+                    {isFirmas && !isCollapsed && (
+                        <span
+                            className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0"
+                            style={{ boxShadow: '0 0 6px rgba(45,212,191,0.9)' }}
+                        />
+                    )}
+
+                    {/* Left active bar */}
+                    {isActive && !isCollapsed && (
+                        <div className={`
+                            absolute left-0 w-[3px] h-5 rounded-r-full
+                            ${isFirmas
+                                ? 'bg-gradient-to-b from-teal-400 to-cyan-500 shadow-[3px_0_10px_rgba(20,184,166,0.5)]'
+                                : 'bg-gradient-to-b from-[#2B6AFF] to-[#6366F1] shadow-[3px_0_10px_rgba(43,106,255,0.5)]'
+                            }
+                        `} />
+                    )}
+
+                    {/* Collapsed active dot */}
+                    {isActive && isCollapsed && (
+                        <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isFirmas ? 'bg-teal-400 shadow-[0_0_6px_rgba(45,212,191,0.9)]' : 'bg-[#2B6AFF] shadow-[0_0_6px_rgba(43,106,255,0.9)]'}`} />
+                    )}
+                </button>
+            </React.Fragment>
         );
     };
 
@@ -249,22 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         )}
 
                         <div className={`flex flex-col gap-0.5 ${isCollapsed ? 'w-full items-center' : ''}`}>
-                            {group.items.map(item => {
-                                const anyItem = item as any;
-                                return (
-                                    <div key={item.screen}>
-                                        {/* Clientes parent label — shows before Directorio and Firmas as a logical group hint */}
-                                        {anyItem.subLabel && !isCollapsed && (
-                                            <div className="px-4 pt-2 pb-0.5">
-                                                <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${theme === 'dark' ? 'text-slate-700' : 'text-slate-400'}`}>
-                                                    {anyItem.subLabel}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {renderNavButton(anyItem)}
-                                    </div>
-                                );
-                            })}
+                            {group.items.map(item => renderNavButton(item))}
                         </div>
                     </div>
                 ))}

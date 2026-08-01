@@ -407,7 +407,7 @@ const App: React.FC = () => {
       case 'home': return <AdminDashboardScreen navigate={navigate} theme={theme === 'dark' ? 'dark' : 'light'} />;
       case 'clients': return (
         <ClientsScreen 
-          initialFilter={clientFilter} 
+          initialFilter={clientFilter || { activeGroupTab: 'all' }} 
           navigate={navigate} 
           initialClientData={initialClientData} 
           clearInitialClientData={() => setInitialClientData(null)} 
@@ -419,8 +419,25 @@ const App: React.FC = () => {
               setPreviousScreen(null);
             }
           }} 
-          // Pasamos initialTab del estado/options guardado o usar una variable del estado si hace falta
-          // (Lo mejor es añadir el tab al estado del app o en options)
+          initialTab={(window as any).__TEMP_INITIAL_TAB__}
+          globalSearchTerm={globalSearchQuery}
+          setGlobalSearchTerm={setGlobalSearchQuery}
+        />
+      );
+      case 'declaraciones': return (
+        <ClientsScreen 
+          initialFilter={{ activeGroupTab: 'matrix', ...(clientFilter || {}) }} 
+          navigate={navigate} 
+          initialClientData={initialClientData} 
+          clearInitialClientData={() => setInitialClientData(null)} 
+          clientToView={clientToView} 
+          clearClientToView={() => {
+            setClientToView(null);
+            if (previousScreen) {
+              setActiveScreen(previousScreen);
+              setPreviousScreen(null);
+            }
+          }} 
           initialTab={(window as any).__TEMP_INITIAL_TAB__}
           globalSearchTerm={globalSearchQuery}
           setGlobalSearchTerm={setGlobalSearchQuery}
@@ -453,7 +470,8 @@ const App: React.FC = () => {
 
   const navItems = [
     { screen: 'home', icon: LucideIcons.Home, label: 'Dashboard' },
-    { screen: 'clients', icon: LucideIcons.Users, label: 'Directorio', subLabel: 'Clientes' },
+    { screen: 'clients', icon: LucideIcons.Users, label: 'Directorio', groupLabel: 'Clientes', isSubItem: true },
+    { screen: 'declaraciones', icon: LucideIcons.LayoutGrid, label: 'Declaraciones', isSubItem: true },
     { screen: 'firmas', icon: LucideIcons.KeyRound, label: 'Firmas' },
     { screen: 'cobranza', icon: LucideIcons.BarChart, label: 'Cobranza' },
     { screen: 'sri_facturacion', icon: LucideIcons.FileText, label: 'Facturador' },
