@@ -184,9 +184,12 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
             [TaxRegime.RimpeNegocioPopular]: 0
         };
 
-        const activeClients = clients.filter(c => c.isActive !== false);
+        const activeClients = clients.filter(c => c.isActive !== false && !c.isDeleted);
         activeClients.forEach(c => {
-            if (counts[c.regime] !== undefined) counts[c.regime]++;
+            const regUpper = (c.regime || '').toUpperCase();
+            if (regUpper.includes('EMPRENDEDOR')) counts[TaxRegime.RimpeEmprendedor]++;
+            else if (regUpper.includes('POPULAR')) counts[TaxRegime.RimpeNegocioPopular]++;
+            else counts[TaxRegime.General]++;
         });
 
         return [

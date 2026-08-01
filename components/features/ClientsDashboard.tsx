@@ -46,13 +46,21 @@ export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ clients, ser
             else if ((c.declarations || []).some(d => d.is_paid && d.status === DeclarationStatus.Pendiente)) ordenes++;
             else if (!debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation) alDia++;
 
-            const regime = c.regime || TaxRegime.General;
-            if (byRegime[regime] !== undefined) byRegime[regime]++;
-            else byRegime[regime] = (byRegime[regime] || 0) + 1;
+            const regUpper = (c.regime || '').toUpperCase();
+            if (regUpper.includes('EMPRENDEDOR')) {
+                byRegime['Rimpe Emprendedor']++;
+            } else if (regUpper.includes('POPULAR')) {
+                byRegime['Rimpe Negocio Popular']++;
+            } else {
+                byRegime['Régimen General']++;
+            }
 
             const ivaFreq = c.taxProfile?.ivaFrequency;
-            if (ivaFreq === 'Mensual' || (!ivaFreq && regime !== TaxRegime.RimpeEmprendedor && regime !== TaxRegime.RimpeNegocioPopular)) mensual++;
-            else if (ivaFreq === 'Semestral' || regime === TaxRegime.RimpeEmprendedor) semestral++;
+            const isEmp = regUpper.includes('EMPRENDEDOR');
+            const isPop = regUpper.includes('POPULAR');
+
+            if (ivaFreq === 'Mensual' || (!ivaFreq && !isEmp && !isPop)) mensual++;
+            else if (ivaFreq === 'Semestral' || isEmp) semestral++;
             else noiva++;
 
             if (!c.isCourtesy) {
