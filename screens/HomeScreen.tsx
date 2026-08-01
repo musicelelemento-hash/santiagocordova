@@ -137,7 +137,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigate, serviceFees, c
 
     const expiringClients = useMemo(() => {
         const today = new Date();
-        const alertDays = 15;
+        const alertDays = 30;
         return clients.filter(c => {
             let isExpiring = false;
             if (c.signatureExpirationDate) {

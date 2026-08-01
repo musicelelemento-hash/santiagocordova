@@ -178,6 +178,47 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                     3ra Edad
                                 </span>
                             )}
+                            {client.signatureFile ? (() => {
+                                const expDate = client.signatureExpirationDate ? new Date(client.signatureExpirationDate) : null;
+                                let daysLeft = null;
+                                if (expDate) {
+                                    const dExp = new Date(expDate);
+                                    const dToday = new Date(today);
+                                    dExp.setHours(0, 0, 0, 0);
+                                    dToday.setHours(0, 0, 0, 0);
+                                    daysLeft = Math.ceil((dExp.getTime() - dToday.getTime()) / (1000 * 60 * 60 * 24));
+                                }
+                                const isNearExpiry = daysLeft !== null && daysLeft <= 30 && daysLeft > 0;
+                                const isExpired = daysLeft !== null && daysLeft <= 0;
+
+                                return (
+                                    <span 
+                                        title={client.signatureExpirationDate ? `Firma Electrónica Vence: ${new Date(client.signatureExpirationDate + 'T12:00:00').toLocaleDateString()}` : 'Firma cargada'}
+                                        className={`shrink-0 flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border
+                                            ${isExpired
+                                                ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                                : isNearExpiry
+                                                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                                                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.05)]'
+                                            }`}
+                                    >
+                                        <span className={`w-1.5 h-1.5 rounded-full
+                                            ${isExpired
+                                                ? 'bg-rose-500'
+                                                : isNearExpiry
+                                                    ? 'bg-amber-500 animate-pulse'
+                                                    : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                                            }`} 
+                                        />
+                                        <span>Firma</span>
+                                    </span>
+                                );
+                            })() : (
+                                <span className="shrink-0 flex items-center gap-1 text-[9px] px-2 py-0.5 bg-slate-50 dark:bg-white/5 text-slate-400 border border-slate-100 dark:border-white/5 rounded-md font-bold uppercase tracking-wider">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                    <span>Sin Firma</span>
+                                </span>
+                            )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2 mb-2 sm:mb-3">

@@ -206,6 +206,48 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                 <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Activo</span>
                             </div>
+
+                            {client.signatureFile ? (() => {
+                                const expDate = client.signatureExpirationDate ? new Date(client.signatureExpirationDate) : null;
+                                const today = new Date();
+                                let daysLeft = null;
+                                if (expDate) {
+                                    expDate.setHours(0, 0, 0, 0);
+                                    today.setHours(0, 0, 0, 0);
+                                    daysLeft = Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                }
+                                const isNearExpiry = daysLeft !== null && daysLeft <= 30 && daysLeft > 0;
+                                const isExpired = daysLeft !== null && daysLeft <= 0;
+
+                                return (
+                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[9px] font-bold uppercase tracking-wider
+                                        ${isExpired
+                                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
+                                            : isNearExpiry
+                                                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 animate-pulse'
+                                                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                                        }`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full 
+                                            ${isExpired
+                                                ? 'bg-rose-500'
+                                                : isNearExpiry
+                                                    ? 'bg-amber-500'
+                                                    : 'bg-emerald-500'
+                                            }`} 
+                                        />
+                                        <span>
+                                            Firma: {client.signatureExpirationDate 
+                                                ? `Vence ${new Date(client.signatureExpirationDate + 'T12:00:00').toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                                                : 'Cargada'}
+                                        </span>
+                                    </div>
+                                );
+                            })() : (
+                                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/40 dark:border-white/5 text-slate-400 dark:text-slate-500">
+                                    <div className="w-1.5 h-1.5 bg-slate-400 dark:bg-slate-600 rounded-full" />
+                                    <span className="text-[9px] font-bold uppercase tracking-wider">Sin Firma</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex flex-wrap items-center justify-center gap-2">

@@ -364,7 +364,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             // FILTRO DE ATENCIÓN URGENTE (Radar de Vencimientos)
             if (initialFilter?.needsAttention) {
                 const today = new Date();
-                const alertDays = 15;
+                const alertDays = 30;
                 let isExpiring = false;
                 if (client.signatureExpirationDate) {
                     const diff = differenceInCalendarDays(new Date(client.signatureExpirationDate), today);
