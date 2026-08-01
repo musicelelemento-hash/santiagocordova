@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import {
     UploadCloud, KeyRound, CheckCircle2, AlertTriangle, Lock, Unlock,
-    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb, Search
+    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb, Search, ShieldCheck
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { extractP12Metadata } from '../../utils/p12Reader';
@@ -50,7 +50,6 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
-// Limpiar nombre de archivo para comparar duplicados o subidas previas (ej: "keystore (1).p12" -> "keystore")
 const cleanFileName = (filename?: string): string => {
     if (!filename) return '';
     return filename
@@ -60,17 +59,14 @@ const cleanFileName = (filename?: string): string => {
         .trim();
 };
 
-// Extraer secuencias de 9 a 13 dígitos del nombre del archivo (ej: 0701893687 en 23927282_identity_0701893687.p12)
 const extractPossibleRucOrCedula = (filename: string): string[] => {
     const matches = filename.match(/\d{9,13}/g) || [];
     return Array.from(new Set(matches));
 };
 
-// Encontrar cliente por RUC en nombre de archivo, archivo ya subido en Bóveda, o selección manual
 const findMatchingClient = (filename: string, manualRuc: string, clients: Client[]): Client | undefined => {
     const activeClients = clients.filter(c => !c.isDeleted && c.isActive);
 
-    // 1. Coincidencia por archivo .p12 ya cargado previamente en la Bóveda del cliente en la BD
     const targetClean = cleanFileName(filename);
     if (targetClean && targetClean.length >= 4) {
         const matchedByFile = activeClients.find(c => {
@@ -81,7 +77,6 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         if (matchedByFile) return matchedByFile;
     }
 
-    // 2. Probar RUC/Nombre ingresado manualmente por el usuario
     if (manualRuc && manualRuc.trim().length >= 3) {
         const cleanReq = manualRuc.trim().toLowerCase();
         const matched = activeClients.find(c => {
@@ -90,7 +85,6 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         if (matched) return matched;
     }
 
-    // 3. Extraer números de 9-13 dígitos del nombre del archivo (ej: 0701893687 -> RUC 0701893687001)
     const numbersInFile = extractPossibleRucOrCedula(filename);
     for (const num of numbersInFile) {
         const matched = activeClients.find(c => {
@@ -100,7 +94,6 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         if (matched) return matched;
     }
 
-    // 4. Probar por coincidencia de apellido de cliente en el nombre del archivo
     const lowerFileName = filename.toLowerCase();
     return activeClients.find(c => {
         const words = c.name.toLowerCase().split(/\s+/).filter(w => w.length >= 4);
@@ -108,7 +101,6 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
     });
 };
 
-// Generar sugerencias de contraseñas EXCLUSIVAMENTE basadas en el nombre del CLIENTE real
 const generatePasswordCandidates = (client?: Client, storedPasswords?: (string | undefined)[]): string[] => {
     const candidates = new Set<string>();
 
@@ -148,15 +140,14 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const [queue, setQueue] = useState<P12ItemQueue[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [processingStepText, setProcessingStepText] = useState('Analizando estructura PKCS#12...');
 
-    // Clientes activos ordenados para el dropdown selector
     const activeClientsList = useMemo(() => {
         return clients
             .filter(c => !c.isDeleted && c.isActive)
             .sort((a, b) => a.name.localeCompare(b.name));
     }, [clients]);
 
-    // Intentar descifrar un archivo .p12 con una contraseña dada
     const tryUnlockItem = (item: P12ItemQueue, passwordToTest: string): P12ItemQueue => {
         try {
             const meta = extractP12Metadata(item.base64Content, passwordToTest);
@@ -186,7 +177,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         }
     };
 
-    // Evaluar y probar candidatos de clave para un elemento de la cola
     const processQueueItemMatching = (item: P12ItemQueue, manualRucOverride?: string, clientOverride?: Client): P12ItemQueue => {
         const rucToUse = manualRucOverride !== undefined ? manualRucOverride : item.manualRucInput;
         const matchedClient = clientOverride || findMatchingClient(item.fileName, rucToUse, clients);
@@ -199,7 +189,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             candidateSuggestions: candidates.slice(0, 8)
         };
 
-        // Probar candidatos de forma finita (si encuentra coincidencia con Arce2026, desbloquea e interrumpe)
         for (const candPassword of candidates) {
             const res = tryUnlockItem(updatedItem, candPassword);
             if (res.status === 'unlocked') {
@@ -213,11 +202,15 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         return updatedItem;
     };
 
-    // Procesar la selección masiva de archivos
     const handleFilesSelected = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
 
         setIsProcessing(true);
+        setProcessingStepText('Holograma de Seguridad: Analizando certificados y contraseñas...');
+        
+        // Simular efecto de procesamiento holográfico Pro
+        await new Promise(res => setTimeout(res, 600));
+
         const newQueueItems: P12ItemQueue[] = [];
 
         for (let i = 0; i < files.length; i++) {
@@ -247,10 +240,9 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         setQueue(prev => [...prev, ...newQueueItems]);
         setIsProcessing(false);
-        toast.success(`Cargados ${newQueueItems.length} archivos .p12 a la cola.`);
+        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12 con escáner de alta seguridad.`);
     };
 
-    // Cambio explícito de cliente desde el Selector Dropdown
     const handleSelectClientForQueueItem = (itemId: string, selectedClient?: Client) => {
         setQueue(prev => prev.map(item => {
             if (item.id !== itemId) return item;
@@ -258,7 +250,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         }));
     };
 
-    // Ejecutar búsqueda manual al presionar Enter o botón de buscar RUC
     const handleSearchRucForQueueItem = (itemId: string) => {
         setQueue(prev => prev.map(item => {
             if (item.id !== itemId) return item;
@@ -357,14 +348,71 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="📥 Subidor Masivo de Firmas Electrónicas (.p12)" size="4xl">
-            <div className="space-y-6 p-2 md:p-4 text-white">
+            <div className="space-y-6 p-2 md:p-4 text-white relative overflow-hidden">
+
+                {/* ── OVERLAY DE ANIMACIÓN PRO: SCANNER HOLOGRÁFICO CYBER ── */}
+                {isProcessing && (
+                    <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-2xl rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-center space-y-6 animate-in fade-in zoom-in duration-300">
+                        {/* Anillos Holográficos Giratorios */}
+                        <div className="relative w-36 h-36 flex items-center justify-center">
+                            <div className="absolute inset-0 rounded-full border-2 border-dashed border-cyan-400/80 animate-[spin_6s_linear_infinite] shadow-[0_0_30px_rgba(34,211,238,0.6)]" />
+                            <div className="absolute inset-3 rounded-full border-2 border-dashed border-emerald-400/80 animate-[spin_4s_linear_infinite_reverse] shadow-[0_0_20px_rgba(52,211,153,0.6)]" />
+                            <div className="relative p-6 rounded-3xl bg-slate-900/90 border border-white/20 shadow-2xl text-teal-300 flex items-center justify-center">
+                                <FileKey size={42} className="animate-pulse text-cyan-300" />
+                                <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_rgba(34,211,238,1)] animate-bounce top-3" />
+                            </div>
+                        </div>
+
+                        {/* Textos de Estado Cybernético */}
+                        <div className="space-y-2 max-w-md">
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 text-[10px] font-black uppercase tracking-[0.25em] shadow-lg">
+                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER DE SEGURIDAD PKCS#12
+                            </div>
+                            <h3 className="text-xl font-black text-white uppercase tracking-tight font-display">
+                                Analizando y Desencriptando Firmas
+                            </h3>
+                            <p className="text-xs text-slate-300 font-mono leading-relaxed">
+                                {processingStepText}
+                            </p>
+                        </div>
+
+                        {/* Barra de Progreso Neón */}
+                        <div className="w-full max-w-xs h-2.5 bg-slate-800 rounded-full overflow-hidden border border-white/10 p-0.5">
+                            <div className="h-full bg-gradient-to-r from-teal-500 via-cyan-400 to-emerald-400 rounded-full animate-pulse shadow-[0_0_20px_rgba(45,212,191,0.9)] w-full" />
+                        </div>
+                    </div>
+                )}
+
+                {/* ── OVERLAY DE ANIMACIÓN PRO: GUARDADO Y VINCULACIÓN EN BD ── */}
+                {isSaving && (
+                    <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-2xl rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-center space-y-6 animate-in fade-in zoom-in duration-300">
+                        <div className="relative w-36 h-36 flex items-center justify-center">
+                            <div className="absolute inset-0 rounded-full border-2 border-emerald-400/90 animate-[spin_3s_linear_infinite] shadow-[0_0_35px_rgba(52,211,153,0.7)]" />
+                            <div className="relative p-6 rounded-3xl bg-emerald-950/90 border border-emerald-500/40 shadow-2xl text-emerald-400">
+                                <ShieldCheck size={48} className="animate-pulse" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2 max-w-md">
+                            <span className="px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-widest border border-emerald-500/40">
+                                Sincronización de Bóveda en Progreso
+                            </span>
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tight font-display">
+                                Asignando Firmas a los Clientes
+                            </h3>
+                            <p className="text-xs text-slate-300 font-mono leading-relaxed">
+                                Cifrando contraseñas, vinculando certificados `.p12` y actualizando fechas de caducidad en la base de datos...
+                            </p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Header Explicativo */}
                 <div className="p-5 rounded-2xl bg-gradient-to-r from-teal-500/10 via-cyan-500/5 to-transparent border border-teal-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                                <Sparkles size={11} /> Auto-Detección Inteligente por Firma BD o RUC
+                                <Sparkles size={11} /> Escáner Pro Holográfico PKCS#12
                             </span>
                         </div>
                         <h3 className="text-base font-black text-white">Carga Masiva con Selección Directa de Cliente</h3>
@@ -427,9 +475,9 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                 return (
                                     <div
                                         key={item.id}
-                                        className={`p-4.5 rounded-3xl border transition-all duration-300 flex flex-col justify-between gap-3.5 ${
+                                        className={`p-4.5 rounded-3xl border transition-all duration-500 flex flex-col justify-between gap-3.5 ${
                                             isUnlocked
-                                                ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg'
+                                                ? 'bg-emerald-950/30 border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-in fade-in zoom-in-95'
                                                 : isError
                                                 ? 'bg-slate-900/80 border-white/10 hover:border-amber-500/30'
                                                 : 'bg-slate-900/60 border-white/10'
@@ -438,19 +486,19 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                             <div className="flex items-center gap-3.5 min-w-0 flex-1">
                                                 <span className="text-xs font-mono font-bold text-slate-500 w-5 text-center">{idx + 1}</span>
-                                                <div className={`p-2.5 rounded-xl border ${
-                                                    isUnlocked ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                                                <div className={`p-2.5 rounded-xl border transition-all ${
+                                                    isUnlocked ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_10px_rgba(52,211,153,0.5)]' :
                                                     isError ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' :
                                                     'bg-slate-800 text-slate-400 border-white/10'
                                                 }`}>
-                                                    {isUnlocked ? <Unlock size={18} /> : <Lock size={18} />}
+                                                    {isUnlocked ? <Unlock size={18} className="animate-bounce" /> : <Lock size={18} />}
                                                 </div>
 
                                                 <div className="min-w-0 flex-1 space-y-1">
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-xs font-bold text-white font-mono truncate">{item.fileName}</p>
                                                         {isUnlocked && (
-                                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase flex items-center gap-1 shrink-0">
+                                                            <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase flex items-center gap-1 shrink-0 border border-emerald-500/30 shadow-sm">
                                                                 <Check size={10} /> Desbloqueada {item.unlockedViaPattern ? `(${item.unlockedViaPattern})` : ''}
                                                             </span>
                                                         )}
@@ -567,13 +615,13 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                         {!isUnlocked && item.candidateSuggestions && item.candidateSuggestions.length > 0 && (
                                             <div className="pt-2 border-t border-white/5 flex items-center gap-2 flex-wrap">
                                                 <span className="text-[9px] font-bold text-amber-300 uppercase tracking-widest flex items-center gap-1">
-                                                    <Sparkles size={10} className="text-amber-400" /> Sugerencias ({item.possibleClientHint?.name.split(' ')[0]}):
+                                                    <Sparkles size={10} className="text-amber-400 animate-pulse" /> Sugerencias ({item.possibleClientHint?.name.split(' ')[0]}):
                                                 </span>
                                                 {item.candidateSuggestions.map((sug, sIdx) => (
                                                     <button
                                                         key={sIdx}
                                                         onClick={() => handleTestPassword(item.id, sug)}
-                                                        className="px-2.5 py-1 bg-white/5 hover:bg-teal-500/20 hover:text-teal-300 text-slate-200 rounded-lg text-[10px] font-mono font-bold border border-white/10 transition-all active:scale-95"
+                                                        className="px-2.5 py-1 bg-white/5 hover:bg-teal-500/25 hover:text-teal-200 text-slate-200 rounded-lg text-[10px] font-mono font-bold border border-white/10 hover:border-teal-500/40 transition-all active:scale-95 shadow-sm"
                                                     >
                                                         {sug}
                                                     </button>
