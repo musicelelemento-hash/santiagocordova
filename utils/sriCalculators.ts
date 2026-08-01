@@ -80,3 +80,77 @@ export const isOverdue = (dueDate: Date): boolean => {
     // Vencida si hoy es mayor a dueDate
     return isAfter(today, dueDate);
 };
+
+/**
+ * Algoritmo de validación de RUC y Cédula de Ecuador (Módulo 10 y 11)
+ * Valida la provincia, el tercer dígito y el dígito verificador.
+ */
+export const validarIdentificacionEcuatoriana = (id: string): boolean => {
+    const cedula = id.trim();
+    if (cedula.length !== 10 && cedula.length !== 13) return false;
+    
+    const provincia = parseInt(cedula.substring(0, 2), 10);
+    if (provincia < 1 || provincia > 24) return false;
+    
+    const tercerDigito = parseInt(cedula.substring(2, 3), 10);
+    if (tercerDigito < 0 || (tercerDigito > 6 && tercerDigito !== 9)) return false;
+    
+    // Algoritmo Módulo 10 para personas naturales
+    if (tercerDigito < 6) {
+        const digitoVerificador = parseInt(cedula.substring(9, 10), 10);
+        const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+        let suma = 0;
+        
+        for (let i = 0; i < 9; i++) {
+            let valor = parseInt(cedula.charAt(i), 10) * coeficientes[i];
+            if (valor > 9) valor -= 9;
+            suma += valor;
+        }
+        
+        const decenaSuperior = Math.ceil(suma / 10) * 10;
+        const residuo = decenaSuperior - suma;
+        const verificadorCalculado = residuo === 10 ? 0 : residuo;
+        
+        const esIdentificacionValida = verificadorCalculado === digitoVerificador;
+        
+        if (cedula.length === 13) {
+            return esIdentificacionValida && cedula.substring(10, 13) === "001";
+        }
+        return esIdentificacionValida;
+    }
+    
+    // Sociedades privadas / extranjeros (tercer dígito 9 - Módulo 11)
+    if (tercerDigito === 9 && cedula.length === 13) {
+        const digitoVerificador = parseInt(cedula.substring(9, 10), 10);
+        const coeficientes = [4, 3, 2, 7, 6, 5, 4, 3, 2];
+        let suma = 0;
+        
+        for (let i = 0; i < 9; i++) {
+            suma += parseInt(cedula.charAt(i), 10) * coeficientes[i];
+        }
+        
+        const residuo = suma % 11;
+        const verificadorCalculado = residuo === 0 ? 0 : 11 - residuo;
+        
+        return verificadorCalculado === digitoVerificador && cedula.substring(10, 13) === "001";
+    }
+    
+    // Sociedades públicas (tercer dígito 6 - Módulo 11)
+    if (tercerDigito === 6 && cedula.length === 13) {
+        const digitoVerificador = parseInt(cedula.substring(8, 9), 10);
+        const coeficientes = [3, 2, 7, 6, 5, 4, 3, 2];
+        let suma = 0;
+        
+        for (let i = 0; i < 8; i++) {
+            suma += parseInt(cedula.charAt(i), 10) * coeficientes[i];
+        }
+        
+        const residuo = suma % 11;
+        const verificadorCalculado = residuo === 0 ? 0 : 11 - residuo;
+        
+        return verificadorCalculado === digitoVerificador && cedula.substring(9, 13) === "0001";
+    }
+    
+    return false;
+};
+

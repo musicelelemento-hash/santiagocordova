@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Activity, AlertCircle, AlertTriangle, ArrowRight, ArrowUpRight,
     Award, BarChart3, Calendar, CalendarClock, Check, ChevronDown,
@@ -12,6 +12,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { Logo } from '../components/ui/Logo';
 import { PublicUser } from '../types';
 import { useAppStore } from '../store/useAppStore';
+import { validarIdentificacionEcuatoriana } from '../utils/sriCalculators';
 
 interface LandingPageProps {
     onAdminAccess: () => void;
@@ -502,6 +503,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
     // New features states
     const [selectedNews, setSelectedNews] = useState<any | null>(null);
     const [selectedRucDigit, setSelectedRucDigit] = useState<number | null>(1);
+    const [calcRucInput, setCalcRucInput] = useState("");
+    const [rucValidationMsg, setRucValidationMsg] = useState<{ type: 'success' | 'error' | 'none'; text: string; details?: string }>({ type: 'none', text: '' });
     
     // Tax Simulator states
     const [calcIngresos, setCalcIngresos] = useState(15000);
@@ -510,6 +513,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
     // FAQ search states
     const [faqSearch, setFaqSearch] = useState("");
     const [faqCategory, setFaqCategory] = useState("Todo");
+
+    useEffect(() => {
+        const input = calcRucInput.trim();
+        if (!input) {
+            setRucValidationMsg({ type: 'none', text: '' });
+            return;
+        }
+
+        if (validarIdentificacionEcuatoriana(input)) {
+            const digit = parseInt(input.charAt(8), 10);
+            setSelectedRucDigit(digit);
+
+            const thirdDigit = parseInt(input.charAt(2), 10);
+            let details = "";
+            let typeLabel = "";
+            
+            if (thirdDigit < 6) {
+                typeLabel = "Persona Natural";
+                details = "Sujeto a régimen RIMPE (Popular si ingresos ≤ $20K, Emprendedor hasta $300K) o Régimen General. Declaraciones semestrales o mensuales.";
+            } else if (thirdDigit === 9) {
+                typeLabel = "Persona Jurídica (Sociedad Privada)";
+                details = "Obligación de llevar contabilidad de partida doble. Declaración mensual obligatoria de IVA, Renta y retenciones en la fuente.";
+            } else if (thirdDigit === 6) {
+                typeLabel = "Entidad Pública";
+                details = "Sujeto a normas de contabilidad gubernamental y retención especial del 100% de IVA en transacciones públicas.";
+            }
+
+            setRucValidationMsg({
+                type: 'success',
+                text: `✓ Identificación Válida (${typeLabel})`,
+                details: details
+            });
+        } else {
+            if (input.length >= 10) {
+                setRucValidationMsg({
+                    type: 'error',
+                    text: "✗ Identificación Inválida",
+                    details: "El número no supera el algoritmo de validación del SRI (módulos 10/11) o no tiene el formato ecuatoriano válido."
+                });
+            } else {
+                setRucValidationMsg({ type: 'none', text: '' });
+            }
+        }
+    }, [calcRucInput]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -781,7 +828,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <Menu size={16} />
                         </button>
                         <MagneticButton onClick={onNavigateToServices}>
-                            <div className="group relative px-6 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] text-white rounded-full text-xs font-bold uppercase tracking-wider overflow-hidden shadow-lg shadow-blue-500/25 transition-all duration-300 active:scale-95">
+                            <div id="nav-consultar-gratis" className="group relative px-6 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] text-white rounded-full text-xs font-bold uppercase tracking-wider overflow-hidden shadow-lg shadow-blue-500/25 transition-all duration-300 active:scale-95">
                                 <span className="relative z-10 group-hover:text-white transition-colors duration-500">Consultar Gratis</span>
                                 <div className="absolute inset-0 bg-blue-700 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]" />
                             </div>
@@ -796,20 +843,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[100] hud-blur-overlay flex flex-col items-center justify-center p-8 md:hidden">
                         <div className="absolute inset-0 tactical-grid opacity-20 pointer-events-none" />
-                        <div className="w-full max-w-sm relative">
+                        <div className="w-full max-w-sm relative flex flex-col items-center">
                             <div className="absolute -top-10 -left-10 w-20 h-20 border-t-2 border-l-2 border-[#00A896]/50 rounded-tl-3xl" />
                             <div className="absolute -bottom-10 -right-10 w-20 h-20 border-b-2 border-r-2 border-[#00A896]/50 rounded-br-3xl" />
                             <div className="flex flex-col gap-6 text-center">
                                 {navLinks.map((item, i) => (
                                     <motion.button key={item} initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: i * 0.08 }}
                                         onClick={() => { scrollToSection(item === 'Inicio' ? 'top' : item.toLowerCase().replace(' ', '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '')); setMobileMenuOpen(false); }}
-                                        className="text-4xl font-editorial tracking-tighter text-white hover:text-[#00A896] transition-colors">
+                                        className="text-4xl font-editorial tracking-tighter text-white hover:text-[#00A896] transition-colors font-display">
                                         {item.toUpperCase()}
                                     </motion.button>
                                 ))}
                             </div>
+                            
+                            {toggleTheme && (
+                                <motion.button 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                    onClick={() => { toggleTheme(); }}
+                                    className="mt-8 flex items-center justify-center gap-3 px-6 py-3 border border-white/20 bg-white/5 rounded-full text-white text-xs font-bold uppercase tracking-widest hover:bg-white/10 active:scale-95 transition-all"
+                                    aria-label="Cambiar tema claro/oscuro"
+                                >
+                                    {theme === 'dark' ? <Sun size={14} className="text-yellow-400 fill-yellow-400" /> : <Moon size={14} className="text-sky-400 fill-sky-400" />}
+                                    <span>Tema: {theme === 'dark' ? 'Claro' : 'Oscuro'}</span>
+                                </motion.button>
+                            )}
+
                             <motion.button initial={{ scale: 0 }} animate={{ scale: 1 }} onClick={() => setMobileMenuOpen(false)}
-                                className="mt-16 w-14 h-14 rounded-full border border-white/20 bg-white/5 flex items-center justify-center mx-auto text-white">
+                                className="mt-12 w-14 h-14 rounded-full border border-white/20 bg-white/5 flex items-center justify-center mx-auto text-white">
                                 <X size={28} />
                             </motion.button>
                         </div>
@@ -941,7 +1003,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <Reveal delay={280}>
                         <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
                             <MagneticButton onClick={onNavigateToServices}>
-                                <div className={`group relative w-64 h-14 rounded-full font-bold text-xs uppercase tracking-widest overflow-hidden transition-all duration-300 active:scale-95 shadow-lg shadow-blue-500/25 border border-white/10
+                                <div id="hero-ver-servicios" className={`group relative w-64 h-14 rounded-full font-bold text-xs uppercase tracking-widest overflow-hidden transition-all duration-300 active:scale-95 shadow-lg shadow-blue-500/25 border border-white/10
                                     ${theme === 'dark'
                                         ? 'bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] text-white tactical-glow-primary hover:from-[#1A53D9] hover:to-[#5558DD]'
                                         : 'bg-slate-900 text-white hover:bg-slate-800 shadow-xl'
@@ -957,7 +1019,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 </div>
                             </MagneticButton>
                             <MagneticButton href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20me%20interesa%20agendar%20una%20consulta%20gratuita.`} target="_blank" rel="noopener noreferrer">
-                                <div className={`flex items-center gap-3 transition-all duration-300 group px-7 py-4 rounded-full border active:scale-95
+                                <div id="hero-whatsapp-consulta" className={`flex items-center gap-3 transition-all duration-300 group px-7 py-4 rounded-full border active:scale-95
                                     ${theme === 'dark' 
                                         ? 'text-slate-300 hover:text-white border-white/10 hover:bg-white/5 hover:border-[#2B6AFF]/40' 
                                         : 'text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
@@ -1125,6 +1187,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                 <div className="text-base font-mono font-bold text-emerald-500">${recommendation.price}</div>
                                             </div>
                                             <a
+                                                id="simulator-consultar-plan"
                                                 href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20he%20realizado%20la%20simulaci%C3%B3n%20en%20el%20sitio%20web%20y%20me%20recomienda%20el%20plan%20*${encodeURIComponent(recommendation.planTitle)}*%20(${encodeURIComponent(recommendation.regimen)}).%20Quisiera%20agendar%20una%20consulta.`}
                                                 target="_blank"
                                                 rel="noreferrer"
@@ -1165,9 +1228,57 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         <SpotlightCard theme={theme} className="glass-premium-2 shadow-2xl relative">
                             <div className="p-8 md:p-12">
                                 <div className="space-y-8">
-                                    {/* Selector de dígitos */}
-                                    <div className="space-y-4 text-center">
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Selecciona el Noveno Dígito de tu Identificación</label>
+                                    {/* Selector de dígitos y Validador de RUC */}
+                                    <div className="space-y-6 text-center">
+                                        {/* Campo de búsqueda/validación de RUC interactivo */}
+                                        <div className="max-w-md mx-auto space-y-2">
+                                            <label htmlFor="calendar-ruc-input" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Valida tu Cédula o RUC para el SRI</label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                     <Search size={16} className={`${rucValidationMsg.type === 'success' ? 'text-emerald-400' : rucValidationMsg.type === 'error' ? 'text-red-400' : 'text-slate-400'}`} />
+                                                </div>
+                                                <input 
+                                                    id="calendar-ruc-input"
+                                                    type="text"
+                                                    maxLength={13}
+                                                    value={calcRucInput}
+                                                    onChange={e => setCalcRucInput(e.target.value.replace(/\D/g, ''))}
+                                                    placeholder="Escribe tu Cédula o RUC (ej. 0702706813001)"
+                                                    className={`w-full pl-11 pr-10 py-3 bg-white/5 border rounded-2xl text-xs font-semibold outline-none transition-all placeholder-slate-500 font-mono tracking-wider
+                                                        ${rucValidationMsg.type === 'success' ? 'border-emerald-500/50 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10' :
+                                                          rucValidationMsg.type === 'error' ? 'border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/10' :
+                                                          'border-white/10 focus:border-[#00A896] focus:ring-4 focus:ring-[#00A896]/10'
+                                                        }`}
+                                                />
+                                                {calcRucInput && (
+                                                    <button 
+                                                        onClick={() => { setCalcRucInput(''); setRucValidationMsg({ type: 'none', text: '' }); }}
+                                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white transition-colors"
+                                                        aria-label="Limpiar entrada de RUC"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {rucValidationMsg.type !== 'none' && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: -5 }} 
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className={`text-left p-4 rounded-2xl border text-[11px] leading-relaxed
+                                                        ${rucValidationMsg.type === 'success' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400 font-bold' : 'bg-red-500/5 border-red-500/20 text-red-400 font-semibold'}`}
+                                                >
+                                                    <div className="font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                                        {rucValidationMsg.type === 'success' ? <Check size={12} className="stroke-[3]" /> : <AlertTriangle size={12} />}
+                                                        {rucValidationMsg.text}
+                                                    </div>
+                                                    {rucValidationMsg.details && <div className="mt-1.5 text-slate-400 font-light font-sans">{rucValidationMsg.details}</div>}
+                                                 </motion.div>
+                                            )}
+                                        </div>
+
+                                        <div className="w-full h-[1.5px] bg-slate-200/5 dark:bg-white/5 my-4"></div>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center">O selecciona manualmente tu noveno dígito</p>
+
                                         <div className="flex flex-wrap justify-center gap-2 md:gap-3">
                                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(digit => (
                                                 <button
@@ -1186,8 +1297,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     </div>
 
                                     {/* Línea de tiempo y resultados */}
-                                    <div className={`p-6 md:p-8 rounded-3xl border text-left
-                                        ${theme === 'dark' ? 'bg-black/30 border-white/5' : 'bg-white border-slate-200/80 shadow-md'}`}>
+                                    <div className={`p-6 md:p-8 rounded-3xl border text-left transition-all duration-500
+                                        ${rucValidationMsg.type === 'success' 
+                                            ? 'border-emerald-500/30 bg-emerald-500/[0.02] shadow-[0_0_30px_rgba(16,185,129,0.05)]' 
+                                            : theme === 'dark' ? 'bg-black/30 border-white/5' : 'bg-white border-slate-200/80 shadow-md'
+                                        }`}>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                                             <div>
                                                 <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full text-[9px] font-bold uppercase tracking-widest mb-4">
@@ -1201,6 +1315,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                 </p>
                                                 <div className="flex gap-2">
                                                     <a
+                                                        id="calendar-agendar-recordatorios"
                                                         href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20mi%20RUC%20termina%20en%20d%C3%ADgito%20${selectedRucDigit}%20y%20vence%20el%20${deadline.day}%20de%20cada%20mes.%20Quisiera%20asesoramiento%20tributario.`}
                                                         target="_blank"
                                                         rel="noreferrer"
@@ -1701,7 +1816,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                             <div className="flex flex-col sm:flex-row justify-center gap-6 items-center">
                                 <MagneticButton href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20quiero%20agendar%20una%20consulta%20tributaria%20gratuita.`} target="_blank" rel="noreferrer">
-                                    <div className="group relative px-12 py-6 bg-white text-black rounded-full font-bold text-xs uppercase tracking-[0.3em] overflow-hidden shadow-[0_0_50px_rgba(255,255,255,0.25)] hover:shadow-[#00A896]/50 transition-all duration-700">
+                                    <div id="cta-final-whatsapp" className="group relative px-12 py-6 bg-white text-black rounded-full font-bold text-xs uppercase tracking-[0.3em] overflow-hidden shadow-[0_0_50px_rgba(255,255,255,0.25)] hover:shadow-[#00A896]/50 transition-all duration-700">
                                         <div className="absolute inset-0 bg-[#00A896] transform translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                                         <span className="relative z-10 group-hover:text-white flex items-center gap-3">
                                             <MessageCircle size={20} /> WhatsApp Ahora

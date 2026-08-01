@@ -6,6 +6,7 @@ import { AuthModal } from '../components/features/AuthModal';
 import { OrderItem, WebOrder, PublicUser } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppStore } from '../store/useAppStore';
+import { validarIdentificacionEcuatoriana } from '../utils/sriCalculators';
 
 interface ServicesPageProps {
     onAdminAccess: () => void;
@@ -15,76 +16,6 @@ interface ServicesPageProps {
     onLogin: (user: PublicUser) => void;
     onLogout: () => void;
 }
-
-// Helper: Algoritmo de validación de RUC y Cédula de Ecuador (Módulo 10 y 11)
-export const validarIdentificacionEcuatoriana = (id: string): boolean => {
-    const cedula = id.trim();
-    if (cedula.length !== 10 && cedula.length !== 13) return false;
-    
-    const provincia = parseInt(cedula.substring(0, 2), 10);
-    if (provincia < 1 || provincia > 24) return false;
-    
-    const tercerDigito = parseInt(cedula.substring(2, 3), 10);
-    if (tercerDigito < 0 || (tercerDigito > 6 && tercerDigito !== 9)) return false;
-    
-    // Algoritmo Módulo 10 para personas naturales
-    if (tercerDigito < 6) {
-        const digitoVerificador = parseInt(cedula.substring(9, 10), 10);
-        const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
-        let suma = 0;
-        
-        for (let i = 0; i < 9; i++) {
-            let valor = parseInt(cedula.charAt(i), 10) * coeficientes[i];
-            if (valor > 9) valor -= 9;
-            suma += valor;
-        }
-        
-        const decenaSuperior = Math.ceil(suma / 10) * 10;
-        const residuo = decenaSuperior - suma;
-        const verificadorCalculado = residuo === 10 ? 0 : residuo;
-        
-        const esIdentificacionValida = verificadorCalculado === digitoVerificador;
-        
-        if (cedula.length === 13) {
-            return esIdentificacionValida && cedula.substring(10, 13) === "001";
-        }
-        return esIdentificacionValida;
-    }
-    
-    // Sociedades privadas / extranjeros (tercer dígito 9 - Módulo 11)
-    if (tercerDigito === 9 && cedula.length === 13) {
-        const digitoVerificador = parseInt(cedula.substring(9, 10), 10);
-        const coeficientes = [4, 3, 2, 7, 6, 5, 4, 3, 2];
-        let suma = 0;
-        
-        for (let i = 0; i < 9; i++) {
-            suma += parseInt(cedula.charAt(i), 10) * coeficientes[i];
-        }
-        
-        const residuo = suma % 11;
-        const verificadorCalculado = residuo === 0 ? 0 : 11 - residuo;
-        
-        return verificadorCalculado === digitoVerificador && cedula.substring(10, 13) === "001";
-    }
-    
-    // Sociedades públicas (tercer dígito 6 - Módulo 11)
-    if (tercerDigito === 6 && cedula.length === 13) {
-        const digitoVerificador = parseInt(cedula.substring(8, 9), 10);
-        const coeficientes = [3, 2, 7, 6, 5, 4, 3, 2];
-        let suma = 0;
-        
-        for (let i = 0; i < 8; i++) {
-            suma += parseInt(cedula.charAt(i), 10) * coeficientes[i];
-        }
-        
-        const residuo = suma % 11;
-        const verificadorCalculado = residuo === 0 ? 0 : 11 - residuo;
-        
-        return verificadorCalculado === digitoVerificador && cedula.substring(9, 13) === "0001";
-    }
-    
-    return false;
-};
 
 // Componente Local: SpotlightCard reutilizable para el tema Dark Zen
 const SpotlightCard: React.FC<{ children: React.ReactNode; className?: string; popular?: boolean }> = ({ children, className = "", popular = false }) => {
@@ -145,6 +76,33 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
     const [clientRuc, setClientRuc] = useState('');
     const [rucError, setRucError] = useState('');
     const [orderSuccess, setOrderSuccess] = useState(false);
+
+    // Validar RUC/Cédula en tiempo real
+    useEffect(() => {
+        const ruc = clientRuc.trim();
+        if (!ruc) {
+            setRucError('');
+            return;
+        }
+        if (validarIdentificacionEcuatoriana(ruc)) {
+            setRucError('');
+        } else {
+            if (ruc.length >= 10) {
+                setRucError('Identificación inválida para Ecuador. Verifique los dígitos.');
+            } else {
+                setRucError('');
+            }
+        }
+    }, [clientRuc]);
+
+    // Verificar validez total del formulario para habilitar el envío
+    const isFormValid = React.useMemo(() => {
+        const hasName = clientName.trim().length > 0;
+        const hasPhone = clientPhone.trim().length > 0;
+        const ruc = clientRuc.trim();
+        const isRucValid = !ruc || validarIdentificacionEcuatoriana(ruc);
+        return hasName && hasPhone && isRucValid;
+    }, [clientName, clientPhone, clientRuc]);
 
     // Tax Calculator State
     const [calcIngresos, setCalcIngresos] = useState(15000);
@@ -758,61 +716,81 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             </div>
 
                             {/* Campos de Datos */}
-                            <div className="space-y-4">
+                            <div className="space-y-4 font-sans">
                                 <div className="group">
-                                    <label className="block text-[9px] font-bold text-slate-400 uppercase mb-2 ml-4 tracking-wider">Nombre Destinatario</label>
+                                    <label htmlFor="checkout-name" className="block text-[9px] font-bold text-slate-400 uppercase mb-2 ml-4 tracking-wider">Nombre Destinatario</label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                             <LucideIcons.User className="text-slate-500" size={18} />
                                         </div>
                                         <input 
                                             required 
+                                            id="checkout-name"
                                             type="text" 
                                             value={clientName} 
                                             onChange={e => setClientName(e.target.value)} 
-                                            className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 focus:border-[#00A896] rounded-2xl outline-none font-medium text-sm text-white placeholder-slate-600 transition-all" 
+                                            className="w-full pl-12 pr-10 py-4 bg-white/5 border border-white/10 focus:border-[#00A896] rounded-2xl outline-none font-medium text-sm text-white placeholder-slate-600 transition-all" 
                                             placeholder="Juan Pérez" 
                                             disabled={!!currentUser} 
                                         />
+                                        {clientName.trim().length > 0 && (
+                                            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                                <LucideIcons.CheckCircle size={16} className="text-emerald-400" />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-
+ 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="group">
-                                        <label className="block text-[9px] font-bold text-slate-400 uppercase mb-2 ml-4 tracking-wider">WhatsApp de Contacto</label>
+                                        <label htmlFor="checkout-phone" className="block text-[9px] font-bold text-slate-400 uppercase mb-2 ml-4 tracking-wider">WhatsApp de Contacto</label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                                 <LucideIcons.Phone className="text-slate-500" size={18} />
                                             </div>
                                             <input 
                                                 required 
+                                                id="checkout-phone"
                                                 type="tel" 
                                                 value={clientPhone} 
                                                 onChange={e => setClientPhone(e.target.value)} 
-                                                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 focus:border-[#00A896] rounded-2xl outline-none font-medium text-sm text-white placeholder-slate-600 transition-all" 
+                                                className="w-full pl-12 pr-10 py-4 bg-white/5 border border-white/10 focus:border-[#00A896] rounded-2xl outline-none font-medium text-sm text-white placeholder-slate-600 transition-all" 
                                                 placeholder="099 123 4567" 
                                             />
+                                            {clientPhone.trim().length > 0 && (
+                                                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                                    <LucideIcons.CheckCircle size={16} className="text-emerald-400" />
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     
                                     <div className="group">
-                                        <label className="block text-[9px] font-bold text-slate-400 uppercase mb-2 ml-4 tracking-wider">RUC / Cédula</label>
+                                        <label htmlFor="checkout-ruc" className="block text-[9px] font-bold text-slate-400 uppercase mb-2 ml-4 tracking-wider">RUC / Cédula (Opcional)</label>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                                 <LucideIcons.CreditCard className="text-slate-500" size={18} />
                                             </div>
                                             <input 
+                                                id="checkout-ruc"
                                                 type="text" 
                                                 value={clientRuc} 
-                                                onChange={e => {
-                                                    setClientRuc(e.target.value);
-                                                    if (rucError) setRucError('');
-                                                }} 
-                                                className={`w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl outline-none font-medium text-sm text-white placeholder-slate-600 transition-all ${
-                                                    rucError ? 'border-red-500 focus:border-red-500' : 'border-white/10 focus:border-[#00A896]'
+                                                onChange={e => setClientRuc(e.target.value.replace(/\D/g, ''))} 
+                                                className={`w-full pl-12 pr-10 py-4 bg-white/5 border rounded-2xl outline-none font-medium text-sm text-white placeholder-slate-600 transition-all ${
+                                                    rucError ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-[#00A896]'
                                                 }`} 
-                                                placeholder="0702..." 
+                                                placeholder="0702706813001" 
                                             />
+                                            {clientRuc.trim().length > 0 && !rucError && validarIdentificacionEcuatoriana(clientRuc) && (
+                                                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none animate-in fade-in">
+                                                    <LucideIcons.CheckCircle size={16} className="text-emerald-400" />
+                                                </div>
+                                            )}
+                                            {rucError && (
+                                                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none animate-pulse">
+                                                    <LucideIcons.AlertTriangle size={16} className="text-red-400" />
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -820,11 +798,17 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                     <p className="text-red-400 text-[10px] pl-4 font-semibold animate-pulse">{rucError}</p>
                                 )}
                             </div>
-
+ 
                             {/* Botón de Acción */}
                             <button 
+                                id="checkout-submit"
                                 type="submit" 
-                                className="w-full py-5 bg-[#00A896] text-white font-bold rounded-2xl hover:bg-teal-600 transition-all text-xs uppercase tracking-widest shadow-2xl relative overflow-hidden group/submit"
+                                disabled={!isFormValid}
+                                className={`w-full py-5 text-white font-bold rounded-2xl transition-all text-xs uppercase tracking-widest shadow-2xl relative overflow-hidden group/submit ${
+                                    isFormValid 
+                                        ? 'bg-[#00A896] hover:bg-teal-600 hover:shadow-teal-500/20 cursor-pointer active:scale-95' 
+                                        : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50 border border-white/5'
+                                }`}
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/submit:translate-x-full transition-transform duration-1000"></div>
                                 <span className="flex items-center justify-center gap-3">
