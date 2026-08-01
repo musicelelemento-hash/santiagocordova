@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
     UploadCloud, KeyRound, CheckCircle2, AlertTriangle, Lock, Unlock,
     FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb, Search
@@ -50,17 +50,38 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
+// Limpiar nombre de archivo para comparar duplicados o subidas previas (ej: "keystore (1).p12" -> "keystore")
+const cleanFileName = (filename?: string): string => {
+    if (!filename) return '';
+    return filename
+        .toLowerCase()
+        .replace(/\s*\(\d+\)/g, '')
+        .replace(/\.p12|\.pfx/gi, '')
+        .trim();
+};
+
 // Extraer secuencias de 9 a 13 dígitos del nombre del archivo (ej: 0701893687 en 23927282_identity_0701893687.p12)
 const extractPossibleRucOrCedula = (filename: string): string[] => {
     const matches = filename.match(/\d{9,13}/g) || [];
     return Array.from(new Set(matches));
 };
 
-// Encontrar cliente por RUC en nombre de archivo o entrada manual
+// Encontrar cliente por RUC en nombre de archivo, archivo ya subido en Bóveda, o selección manual
 const findMatchingClient = (filename: string, manualRuc: string, clients: Client[]): Client | undefined => {
     const activeClients = clients.filter(c => !c.isDeleted && c.isActive);
 
-    // 1. Probar RUC ingresado manualmente por el usuario
+    // 1. Coincidencia por archivo .p12 ya cargado previamente en la Bóveda del cliente en la BD
+    const targetClean = cleanFileName(filename);
+    if (targetClean && targetClean.length >= 4) {
+        const matchedByFile = activeClients.find(c => {
+            if (!c.signatureFile?.name) return false;
+            const existingClean = cleanFileName(c.signatureFile.name);
+            return existingClean && (existingClean === targetClean || existingClean.includes(targetClean) || targetClean.includes(existingClean));
+        });
+        if (matchedByFile) return matchedByFile;
+    }
+
+    // 2. Probar RUC/Nombre ingresado manualmente por el usuario
     if (manualRuc && manualRuc.trim().length >= 3) {
         const cleanReq = manualRuc.trim().toLowerCase();
         const matched = activeClients.find(c => {
@@ -69,7 +90,7 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         if (matched) return matched;
     }
 
-    // 2. Extraer números de 9-13 dígitos del nombre del archivo (ej: 0701893687 -> RUC 0701893687001)
+    // 3. Extraer números de 9-13 dígitos del nombre del archivo (ej: 0701893687 -> RUC 0701893687001)
     const numbersInFile = extractPossibleRucOrCedula(filename);
     for (const num of numbersInFile) {
         const matched = activeClients.find(c => {
@@ -79,7 +100,7 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         if (matched) return matched;
     }
 
-    // 3. Probar por coincidencia de apellido de cliente en el nombre del archivo
+    // 4. Probar por coincidencia de apellido de cliente en el nombre del archivo
     const lowerFileName = filename.toLowerCase();
     return activeClients.find(c => {
         const words = c.name.toLowerCase().split(/\s+/).filter(w => w.length >= 4);
@@ -100,7 +121,6 @@ const generatePasswordCandidates = (client?: Client, storedPasswords?: (string |
 
     if (!client) return Array.from(candidates);
 
-    // Extraer palabras del nombre real del cliente (evitando números y palabras genéricas)
     const words = client.name.split(/\s+/).filter(w => w.length >= 3 && !/^\d+$/.test(w));
     const years = ['2026', '2025', '2027', '2024'];
 
@@ -128,6 +148,13 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const [queue, setQueue] = useState<P12ItemQueue[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Clientes activos ordenados para el dropdown selector
+    const activeClientsList = useMemo(() => {
+        return clients
+            .filter(c => !c.isDeleted && c.isActive)
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }, [clients]);
 
     // Intentar descifrar un archivo .p12 con una contraseña dada
     const tryUnlockItem = (item: P12ItemQueue, passwordToTest: string): P12ItemQueue => {
@@ -160,9 +187,9 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     };
 
     // Evaluar y probar candidatos de clave para un elemento de la cola
-    const processQueueItemMatching = (item: P12ItemQueue, manualRucOverride?: string): P12ItemQueue => {
+    const processQueueItemMatching = (item: P12ItemQueue, manualRucOverride?: string, clientOverride?: Client): P12ItemQueue => {
         const rucToUse = manualRucOverride !== undefined ? manualRucOverride : item.manualRucInput;
-        const matchedClient = findMatchingClient(item.fileName, rucToUse, clients);
+        const matchedClient = clientOverride || findMatchingClient(item.fileName, rucToUse, clients);
         const candidates = generatePasswordCandidates(matchedClient);
 
         let updatedItem: P12ItemQueue = {
@@ -223,10 +250,19 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         toast.success(`Cargados ${newQueueItems.length} archivos .p12 a la cola.`);
     };
 
-    const handleManualRucChange = (itemId: string, rucValue: string) => {
+    // Cambio explícito de cliente desde el Selector Dropdown
+    const handleSelectClientForQueueItem = (itemId: string, selectedClient?: Client) => {
         setQueue(prev => prev.map(item => {
             if (item.id !== itemId) return item;
-            return processQueueItemMatching(item, rucValue);
+            return processQueueItemMatching(item, selectedClient ? selectedClient.ruc : '', selectedClient);
+        }));
+    };
+
+    // Ejecutar búsqueda manual al presionar Enter o botón de buscar RUC
+    const handleSearchRucForQueueItem = (itemId: string) => {
+        setQueue(prev => prev.map(item => {
+            if (item.id !== itemId) return item;
+            return processQueueItemMatching(item);
         }));
     };
 
@@ -328,12 +364,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                                <Sparkles size={11} /> Auto-Detección por RUC (0701893687 ➔ Arce2026)
+                                <Sparkles size={11} /> Auto-Detección Inteligente por Firma BD o RUC
                             </span>
                         </div>
-                        <h3 className="text-base font-black text-white">Detección por RUC del Archivo + Sugerencias Reales</h3>
+                        <h3 className="text-base font-black text-white">Carga Masiva con Selección Directa de Cliente</h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Lee los 10 o 13 dígitos de RUC contenidos en el nombre del archivo (ej: <code>0701893687</code>), identifica al cliente <strong>(ELADIO ARCE)</strong> y sugiere su patrón de clave verdadero (<strong>Arce2026</strong>).
+                            Verifica si el archivo ya existe en la Bóveda del cliente, lee el RUC del nombre o te permite seleccionar al cliente con 1 clic para probar sus claves (<strong>Arce2026</strong>).
                         </p>
                     </div>
 
@@ -444,25 +480,50 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                         </div>
                                                     )}
 
-                                                    {/* Buscador / Asignador Rápido de RUC o Cliente si no ha desbloqueado */}
+                                                    {/* Selector 1-Clic de Cliente o Buscador RUC sin cuelgues */}
                                                     {!isUnlocked && (
-                                                        <div className="flex items-center gap-2 pt-1">
-                                                            <div className="relative flex-1 max-w-md">
-                                                                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                            {/* Dropdown Selector de Cliente en 1 Clic */}
+                                                            <select
+                                                                value={item.possibleClientHint?.id || ''}
+                                                                onChange={(e) => {
+                                                                    const selectedId = e.target.value;
+                                                                    const selectedClientObj = activeClientsList.find(c => c.id === selectedId);
+                                                                    handleSelectClientForQueueItem(item.id, selectedClientObj);
+                                                                }}
+                                                                className="px-3 py-1.5 bg-black/50 border border-white/15 rounded-xl text-[11px] text-teal-300 font-bold focus:ring-2 focus:ring-teal-500/30 outline-none max-w-[260px] cursor-pointer font-mono"
+                                                            >
+                                                                <option value="" className="bg-slate-900 text-slate-400">-- Seleccionar Cliente (1 Clic) --</option>
+                                                                {activeClientsList.map(c => (
+                                                                    <option key={c.id} value={c.id} className="bg-slate-900 text-white">
+                                                                        {c.name} ({c.ruc})
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+
+                                                            {/* Buscador RUC con botón para no colgar la interfaz mientras escribe */}
+                                                            <div className="flex items-center gap-1">
                                                                 <input
                                                                     type="text"
                                                                     value={item.manualRucInput}
-                                                                    onChange={(e) => handleManualRucChange(item.id, e.target.value)}
-                                                                    placeholder="Pista RUC / Nombre del Cliente (ej: 0701893687 o Arce)..."
-                                                                    className="w-full pl-8 pr-3 py-1.5 bg-black/40 border border-white/10 rounded-xl text-[11px] text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-teal-500/40 outline-none font-mono"
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value;
+                                                                        setQueue(prev => prev.map(q => q.id === item.id ? { ...q, manualRucInput: val } : q));
+                                                                    }}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') handleSearchRucForQueueItem(item.id);
+                                                                    }}
+                                                                    placeholder="RUC manual..."
+                                                                    className="w-28 px-2.5 py-1.5 bg-black/40 border border-white/10 rounded-xl text-[11px] text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-teal-500/40 outline-none font-mono"
                                                                 />
+                                                                <button
+                                                                    onClick={() => handleSearchRucForQueueItem(item.id)}
+                                                                    className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 transition-all text-[10px] font-bold"
+                                                                    title="Buscar RUC e intentar claves"
+                                                                >
+                                                                    <Search size={13} />
+                                                                </button>
                                                             </div>
-
-                                                            {item.possibleClientHint && (
-                                                                <span className="px-2 py-1 rounded-lg bg-teal-500/15 border border-teal-500/30 text-teal-300 text-[10px] font-bold truncate max-w-[220px]">
-                                                                    👤 {item.possibleClientHint.name}
-                                                                </span>
-                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -506,7 +567,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                         {!isUnlocked && item.candidateSuggestions && item.candidateSuggestions.length > 0 && (
                                             <div className="pt-2 border-t border-white/5 flex items-center gap-2 flex-wrap">
                                                 <span className="text-[9px] font-bold text-amber-300 uppercase tracking-widest flex items-center gap-1">
-                                                    <Sparkles size={10} className="text-amber-400" /> Sugerencias de cliente ({item.possibleClientHint?.name.split(' ')[0]}):
+                                                    <Sparkles size={10} className="text-amber-400" /> Sugerencias ({item.possibleClientHint?.name.split(' ')[0]}):
                                                 </span>
                                                 {item.candidateSuggestions.map((sug, sIdx) => (
                                                     <button
@@ -534,7 +595,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                 Listas para guardar: {unlockedCount} de {queue.length} firmas
                             </span>
                         ) : (
-                            <span>Ingresa el RUC/Nombre para sugerir claves de clientes reales</span>
+                            <span>Selecciona el cliente de la lista o escribe el RUC</span>
                         )}
                     </div>
 
