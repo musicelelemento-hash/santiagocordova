@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import {
     UploadCloud, KeyRound, CheckCircle2, AlertTriangle, Lock, Unlock,
-    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb, Search, ShieldCheck
+    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb, Search, ShieldCheck, Archive
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { extractP12Metadata } from '../../utils/p12Reader';
@@ -22,11 +22,13 @@ interface P12ItemQueue {
     fileName: string;
     passwordInput: string;
     manualRucInput: string;
+    saveMode: 'create_client' | 'backup_only';
     status: 'pending' | 'unlocked' | 'error';
     errorMessage?: string;
     unlockedViaPattern?: string;
     candidateSuggestions?: string[];
     possibleClientHint?: Client;
+    extractedNameFromCert?: string;
     metadata?: {
         ruc?: string;
         commonName?: string;
@@ -64,19 +66,29 @@ const extractPossibleRucOrCedula = (filename: string): string[] => {
     return Array.from(new Set(matches));
 };
 
+// Extraer nombre limpio desde patrones del SRI: cert-CORDOVA-RAMIREZ-ROBERTO-SANTIAGO44 -> "CORDOVA RAMIREZ ROBERTO SANTIAGO"
+const parseNameFromFileName = (filename: string): string => {
+    let clean = filename.replace(/\.p12|\.pfx/gi, '');
+    clean = clean.replace(/^[A-Za-z0-9]+_cert-/, 'cert-');
+    
+    if (clean.toLowerCase().includes('cert-')) {
+        const afterCert = clean.split(/cert-/i)[1];
+        if (afterCert) {
+            const withoutNumbers = afterCert.replace(/\d+\s*\(\d+\)$|\d+$/g, '');
+            const formatted = withoutNumbers.replace(/[-_]+/g, ' ').trim();
+            if (formatted.length >= 4) {
+                return formatted.toUpperCase();
+            }
+        }
+    }
+    return '';
+};
+
+// Coincidencia estricta para evitar asociar clientes falsos por 1 sola palabra común (ej: EFRAIN)
 const findMatchingClient = (filename: string, manualRuc: string, clients: Client[]): Client | undefined => {
     const activeClients = clients.filter(c => !c.isDeleted && c.isActive);
 
-    const targetClean = cleanFileName(filename);
-    if (targetClean && targetClean.length >= 4) {
-        const matchedByFile = activeClients.find(c => {
-            if (!c.signatureFile?.name) return false;
-            const existingClean = cleanFileName(c.signatureFile.name);
-            return existingClean && (existingClean === targetClean || existingClean.includes(targetClean) || targetClean.includes(existingClean));
-        });
-        if (matchedByFile) return matchedByFile;
-    }
-
+    // 1. RUC / Nombre manual
     if (manualRuc && manualRuc.trim().length >= 3) {
         const cleanReq = manualRuc.trim().toLowerCase();
         const matched = activeClients.find(c => {
@@ -85,6 +97,18 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         if (matched) return matched;
     }
 
+    // 2. Nombre exacto de archivo .p12 ya registrado previamente en la Bóveda del cliente
+    const targetClean = cleanFileName(filename);
+    if (targetClean && targetClean.length >= 4) {
+        const matchedByFile = activeClients.find(c => {
+            if (!c.signatureFile?.name) return false;
+            const existingClean = cleanFileName(c.signatureFile.name);
+            return existingClean && (existingClean === targetClean || existingClean.includes(targetClean));
+        });
+        if (matchedByFile) return matchedByFile;
+    }
+
+    // 3. Extraer RUC/Cédula de 10-13 dígitos del nombre del archivo (ej: 0750949810 en 20982240_identity_0750949810.p12)
     const numbersInFile = extractPossibleRucOrCedula(filename);
     for (const num of numbersInFile) {
         const matched = activeClients.find(c => {
@@ -94,14 +118,24 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         if (matched) return matched;
     }
 
-    const lowerFileName = filename.toLowerCase();
-    return activeClients.find(c => {
-        const words = c.name.toLowerCase().split(/\s+/).filter(w => w.length >= 4);
-        return words.some(w => lowerFileName.includes(w));
-    });
+    // 4. Probar por NOMBRE EXTRAÍDO DEL CERTIFICADO (exigiendo al menos 2 palabras coincidentes para no alucinar falsos clientes)
+    const extractedName = parseNameFromFileName(filename);
+    if (extractedName) {
+        const nameTokens = extractedName.split(/\s+/).filter(w => w.length >= 3);
+        const matched = activeClients.find(c => {
+            const clientTokens = c.name.toUpperCase().split(/\s+/);
+            const matchesCount = nameTokens.filter(t => clientTokens.includes(t)).length;
+            // Exigir al menos 2 palabras (ej: CORDOVA + ROBERTO) para evitar alucinaciones
+            return matchesCount >= 2;
+        });
+        if (matched) return matched;
+    }
+
+    return undefined;
 };
 
-const generatePasswordCandidates = (client?: Client, storedPasswords?: (string | undefined)[]): string[] => {
+// Generar candidatos usando Nombre del cliente O Nombre extraído del archivo (ej: cert-MURILLO-FRANCISCO -> Murillo2026)
+const generatePasswordCandidates = (client?: Client, fileName?: string, storedPasswords?: (string | undefined)[]): string[] => {
     const candidates = new Set<string>();
 
     (storedPasswords || []).forEach(p => {
@@ -111,9 +145,12 @@ const generatePasswordCandidates = (client?: Client, storedPasswords?: (string |
     if (client && client.sriPassword) candidates.add(client.sriPassword.trim());
     if (client && client.electronicSignaturePassword) candidates.add(client.electronicSignaturePassword.trim());
 
-    if (!client) return Array.from(candidates);
+    // Usar el nombre del cliente si está registrado, o el nombre extraído del nombre de archivo (ej: MURILLO FRANCISCO EFRAIN)
+    const textName = client ? client.name : parseNameFromFileName(fileName || '');
 
-    const words = client.name.split(/\s+/).filter(w => w.length >= 3 && !/^\d+$/.test(w));
+    if (!textName) return Array.from(candidates);
+
+    const words = textName.split(/\s+/).filter(w => w.length >= 3 && !/^\d+$/.test(w));
     const years = ['2026', '2025', '2027', '2024'];
 
     words.forEach(w => {
@@ -140,7 +177,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const [queue, setQueue] = useState<P12ItemQueue[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [processingStepText, setProcessingStepText] = useState('Analizando estructura PKCS#12...');
 
     const activeClientsList = useMemo(() => {
         return clients
@@ -180,12 +216,14 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const processQueueItemMatching = (item: P12ItemQueue, manualRucOverride?: string, clientOverride?: Client): P12ItemQueue => {
         const rucToUse = manualRucOverride !== undefined ? manualRucOverride : item.manualRucInput;
         const matchedClient = clientOverride || findMatchingClient(item.fileName, rucToUse, clients);
-        const candidates = generatePasswordCandidates(matchedClient);
+        const extractedName = parseNameFromFileName(item.fileName);
+        const candidates = generatePasswordCandidates(matchedClient, item.fileName);
 
         let updatedItem: P12ItemQueue = {
             ...item,
             manualRucInput: rucToUse,
             possibleClientHint: matchedClient,
+            extractedNameFromCert: extractedName,
             candidateSuggestions: candidates.slice(0, 8)
         };
 
@@ -206,10 +244,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         if (!files || files.length === 0) return;
 
         setIsProcessing(true);
-        setProcessingStepText('Holograma de Seguridad: Analizando certificados y contraseñas...');
-        
-        // Simular efecto de procesamiento holográfico Pro
-        await new Promise(res => setTimeout(res, 600));
+        await new Promise(res => setTimeout(res, 500));
 
         const newQueueItems: P12ItemQueue[] = [];
 
@@ -228,6 +263,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     fileName: file.name,
                     passwordInput: '',
                     manualRucInput: '',
+                    saveMode: 'create_client',
                     status: 'pending'
                 };
 
@@ -240,7 +276,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         setQueue(prev => [...prev, ...newQueueItems]);
         setIsProcessing(false);
-        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12 con escáner de alta seguridad.`);
+        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12.`);
     };
 
     const handleSelectClientForQueueItem = (itemId: string, selectedClient?: Client) => {
@@ -264,6 +300,10 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         }));
     };
 
+    const handleToggleSaveMode = (itemId: string, mode: 'create_client' | 'backup_only') => {
+        setQueue(prev => prev.map(item => item.id === itemId ? { ...item, saveMode: mode } : item));
+    };
+
     const handleRemoveItem = (itemId: string) => {
         setQueue(prev => prev.filter(i => i.id !== itemId));
     };
@@ -278,6 +318,9 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         setIsSaving(true);
         let updatedCount = 0;
         let createdCount = 0;
+        let backupCount = 0;
+
+        const backupList: any[] = JSON.parse(localStorage.getItem('sri_backup_signatures') || '[]');
 
         for (const item of unlockedItems) {
             const { ruc, commonName, issuerName, notBefore, notAfter } = item.metadata!;
@@ -303,10 +346,24 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     signatureProvider: issuerName
                 });
                 updatedCount++;
+            } else if (item.saveMode === 'backup_only') {
+                // Guardar en Bóveda de Respaldos de Clientes Esporádicos
+                backupList.push({
+                    id: uuidv4(),
+                    titular: commonName || 'Cliente Esporádico',
+                    ruc: ruc || '',
+                    fileName: item.fileName,
+                    password: item.passwordInput,
+                    provider: issuerName,
+                    expirationDate: expDate,
+                    savedAt: new Date().toISOString()
+                });
+                backupCount++;
             } else {
+                // Crear nuevo cliente activo en el sistema
                 const newClient: Client = {
                     id: uuidv4(),
-                    name: commonName || 'Contribuyente Nuevo',
+                    name: commonName || item.extractedNameFromCert || 'Contribuyente Nuevo',
                     ruc: ruc || '',
                     sriPassword: '',
                     email: '',
@@ -336,8 +393,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             }
         }
 
+        if (backupCount > 0) {
+            localStorage.setItem('sri_backup_signatures', JSON.stringify(backupList));
+        }
+
         setIsSaving(false);
-        toast.success(`🎉 Proceso completado: ${updatedCount} firmas actualizadas y ${createdCount} clientes creados.`);
+        toast.success(`🎉 Proceso completado: ${updatedCount} actualizadas, ${createdCount} creados y ${backupCount} en respaldos esporádicos.`);
         setQueue([]);
         onClose();
     };
@@ -350,10 +411,9 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         <Modal isOpen={isOpen} onClose={onClose} title="📥 Subidor Masivo de Firmas Electrónicas (.p12)" size="4xl">
             <div className="space-y-6 p-2 md:p-4 text-white relative overflow-hidden">
 
-                {/* ── OVERLAY DE ANIMACIÓN PRO: SCANNER HOLOGRÁFICO CYBER ── */}
+                {/* OVERLAY DE ANIMACIÓN HOLOGRÁFICA */}
                 {isProcessing && (
                     <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-2xl rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-center space-y-6 animate-in fade-in zoom-in duration-300">
-                        {/* Anillos Holográficos Giratorios */}
                         <div className="relative w-36 h-36 flex items-center justify-center">
                             <div className="absolute inset-0 rounded-full border-2 border-dashed border-cyan-400/80 animate-[spin_6s_linear_infinite] shadow-[0_0_30px_rgba(34,211,238,0.6)]" />
                             <div className="absolute inset-3 rounded-full border-2 border-dashed border-emerald-400/80 animate-[spin_4s_linear_infinite_reverse] shadow-[0_0_20px_rgba(52,211,153,0.6)]" />
@@ -363,27 +423,24 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                             </div>
                         </div>
 
-                        {/* Textos de Estado Cybernético */}
                         <div className="space-y-2 max-w-md">
                             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 text-[10px] font-black uppercase tracking-[0.25em] shadow-lg">
-                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER DE SEGURIDAD PKCS#12
+                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER DE SEGURIDAD Y PARSER SRI
                             </div>
                             <h3 className="text-xl font-black text-white uppercase tracking-tight font-display">
-                                Analizando y Desencriptando Firmas
+                                Decodificando Certificados .p12
                             </h3>
                             <p className="text-xs text-slate-300 font-mono leading-relaxed">
-                                {processingStepText}
+                                Extrayendo nombres de certificados SRI (ej: cert-MURILLO-FRANCISCO) y evaluando coincidencia estricta de clientes...
                             </p>
                         </div>
 
-                        {/* Barra de Progreso Neón */}
                         <div className="w-full max-w-xs h-2.5 bg-slate-800 rounded-full overflow-hidden border border-white/10 p-0.5">
                             <div className="h-full bg-gradient-to-r from-teal-500 via-cyan-400 to-emerald-400 rounded-full animate-pulse shadow-[0_0_20px_rgba(45,212,191,0.9)] w-full" />
                         </div>
                     </div>
                 )}
 
-                {/* ── OVERLAY DE ANIMACIÓN PRO: GUARDADO Y VINCULACIÓN EN BD ── */}
                 {isSaving && (
                     <div className="absolute inset-0 z-50 bg-slate-950/95 backdrop-blur-2xl rounded-[2.5rem] flex flex-col items-center justify-center p-8 text-center space-y-6 animate-in fade-in zoom-in duration-300">
                         <div className="relative w-36 h-36 flex items-center justify-center">
@@ -395,14 +452,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                         <div className="space-y-2 max-w-md">
                             <span className="px-4 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-widest border border-emerald-500/40">
-                                Sincronización de Bóveda en Progreso
+                                Sincronización de Bóveda y Respaldos
                             </span>
                             <h3 className="text-2xl font-black text-white uppercase tracking-tight font-display">
-                                Asignando Firmas a los Clientes
+                                Sincronizando Firmas en el Sistema
                             </h3>
-                            <p className="text-xs text-slate-300 font-mono leading-relaxed">
-                                Cifrando contraseñas, vinculando certificados `.p12` y actualizando fechas de caducidad en la base de datos...
-                            </p>
                         </div>
                     </div>
                 )}
@@ -412,12 +466,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                                <Sparkles size={11} /> Escáner Pro Holográfico PKCS#12
+                                <Sparkles size={11} /> Coincidencia Estricta + Parser de Certificados SRI
                             </span>
                         </div>
-                        <h3 className="text-base font-black text-white">Carga Masiva con Selección Directa de Cliente</h3>
+                        <h3 className="text-base font-black text-white">Extracción de Nombres Verdaderos (cert-MURILLO-FRANCISCO)</h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Verifica si el archivo ya existe en la Bóveda del cliente, lee el RUC del nombre o te permite seleccionar al cliente con 1 clic para probar sus claves (<strong>Arce2026</strong>).
+                            Filtra nombres exactos del archivo (ej: <code>MURILLO FRANCISCO</code>) y evita asociar clientes erróneos por coincidencia parcial. Permite guardar clientes esporádicos en Bóveda de Respaldos.
                         </p>
                     </div>
 
@@ -449,7 +503,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                         </div>
                         <div>
                             <p className="text-sm font-black text-white">Haz clic o arrastra tus archivos .p12 aquí</p>
-                            <p className="text-xs text-slate-400 mt-1">Soporta selección de múltiples archivos simultáneamente.</p>
+                            <p className="text-xs text-slate-400 mt-1">Soporta firmas descargadas del SRI (cert-NOMBRE...).</p>
                         </div>
                     </div>
                 ) : (
@@ -471,6 +525,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                             {queue.map((item, idx) => {
                                 const isUnlocked = item.status === 'unlocked';
                                 const isError = item.status === 'error';
+                                const displayCandidateName = item.possibleClientHint
+                                    ? item.possibleClientHint.name.split(' ')[0]
+                                    : item.extractedNameFromCert
+                                    ? item.extractedNameFromCert.split(' ')[0]
+                                    : 'Nombre';
 
                                 return (
                                     <div
@@ -506,32 +565,55 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                                                     {/* Detalle si ya fue unlocked */}
                                                     {isUnlocked && item.metadata && (
-                                                        <div className="space-y-0.5 text-[11px]">
+                                                        <div className="space-y-1 text-[11px]">
                                                             <p className="font-bold text-emerald-300 uppercase truncate">
-                                                                {item.metadata.commonName || 'Titular Extraído'}
+                                                                {item.metadata.commonName || item.extractedNameFromCert || 'Titular Extraído'}
                                                             </p>
                                                             <p className="font-mono text-slate-400 text-[10px]">
                                                                 RUC: <strong className="text-white">{item.metadata.ruc || 'No disponible'}</strong> · Emisor: {item.metadata.issuerName || 'N/A'}
                                                             </p>
 
                                                             {item.matchedClient ? (
-                                                                <div className="flex items-center gap-1 text-[10px] text-teal-400 font-bold mt-0.5">
+                                                                <div className="flex items-center gap-1 text-[10px] text-teal-400 font-bold">
                                                                     <UserCheck size={12} />
                                                                     <span>Vinculado a Cliente: {item.matchedClient.name} ({item.matchedClient.ruc})</span>
                                                                 </div>
                                                             ) : (
-                                                                <div className="flex items-center gap-1 text-[10px] text-amber-400 font-bold mt-0.5">
-                                                                    <UserPlus size={12} />
-                                                                    <span>Cliente Nuevo (Se creará en el sistema)</span>
+                                                                <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                                    <span className="text-[10px] text-amber-300 font-bold flex items-center gap-1">
+                                                                        <AlertTriangle size={11} className="text-amber-400" /> Cliente no registrado en sistema. ¿Cómo deseas guardar esta firma?
+                                                                    </span>
+
+                                                                    <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/10">
+                                                                        <button
+                                                                            onClick={() => handleToggleSaveMode(item.id, 'create_client')}
+                                                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
+                                                                                item.saveMode === 'create_client'
+                                                                                    ? 'bg-teal-500 text-slate-950 shadow-sm'
+                                                                                    : 'text-slate-400 hover:text-white'
+                                                                            }`}
+                                                                        >
+                                                                            <UserPlus size={11} /> + Crear Cliente Nuevo
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleToggleSaveMode(item.id, 'backup_only')}
+                                                                            className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase transition-all flex items-center gap-1 ${
+                                                                                item.saveMode === 'backup_only'
+                                                                                    ? 'bg-amber-400 text-slate-950 shadow-sm'
+                                                                                    : 'text-slate-400 hover:text-white'
+                                                                            }`}
+                                                                        >
+                                                                            <Archive size={11} /> 📦 Bóveda de Respaldos (Esporádico)
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
                                                             )}
                                                         </div>
                                                     )}
 
-                                                    {/* Selector 1-Clic de Cliente o Buscador RUC sin cuelgues */}
+                                                    {/* Selector de Cliente o Buscador RUC sin alucinaciones */}
                                                     {!isUnlocked && (
                                                         <div className="flex flex-wrap items-center gap-2 pt-1">
-                                                            {/* Dropdown Selector de Cliente en 1 Clic */}
                                                             <select
                                                                 value={item.possibleClientHint?.id || ''}
                                                                 onChange={(e) => {
@@ -541,7 +623,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                 }}
                                                                 className="px-3 py-1.5 bg-black/50 border border-white/15 rounded-xl text-[11px] text-teal-300 font-bold focus:ring-2 focus:ring-teal-500/30 outline-none max-w-[260px] cursor-pointer font-mono"
                                                             >
-                                                                <option value="" className="bg-slate-900 text-slate-400">-- Seleccionar Cliente (1 Clic) --</option>
+                                                                <option value="" className="bg-slate-900 text-slate-400">
+                                                                    {item.extractedNameFromCert
+                                                                        ? `-- ${item.extractedNameFromCert} (Sin Cliente Registrado) --`
+                                                                        : '-- Seleccionar Cliente (1 Clic) --'}
+                                                                </option>
                                                                 {activeClientsList.map(c => (
                                                                     <option key={c.id} value={c.id} className="bg-slate-900 text-white">
                                                                         {c.name} ({c.ruc})
@@ -549,7 +635,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                 ))}
                                                             </select>
 
-                                                            {/* Buscador RUC con botón para no colgar la interfaz mientras escribe */}
                                                             <div className="flex items-center gap-1">
                                                                 <input
                                                                     type="text"
@@ -561,8 +646,8 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                     onKeyDown={(e) => {
                                                                         if (e.key === 'Enter') handleSearchRucForQueueItem(item.id);
                                                                     }}
-                                                                    placeholder="RUC manual..."
-                                                                    className="w-28 px-2.5 py-1.5 bg-black/40 border border-white/10 rounded-xl text-[11px] text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-teal-500/40 outline-none font-mono"
+                                                                    placeholder="Buscar RUC o Nombre..."
+                                                                    className="w-28 sm:w-36 px-2.5 py-1.5 bg-black/40 border border-white/10 rounded-xl text-[11px] text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-teal-500/40 outline-none font-mono"
                                                                 />
                                                                 <button
                                                                     onClick={() => handleSearchRucForQueueItem(item.id)}
@@ -611,11 +696,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                             </div>
                                         </div>
 
-                                        {/* PILDORAS DE SUGERENCIAS DE CLAVE SI HAY CLIENTE VINCULADO */}
+                                        {/* PILDORAS DE SUGERENCIAS DE CLAVE DE CLIENTE O NOMBRE EXTRAÍDO DEL ARCHIVO */}
                                         {!isUnlocked && item.candidateSuggestions && item.candidateSuggestions.length > 0 && (
                                             <div className="pt-2 border-t border-white/5 flex items-center gap-2 flex-wrap">
                                                 <span className="text-[9px] font-bold text-amber-300 uppercase tracking-widest flex items-center gap-1">
-                                                    <Sparkles size={10} className="text-amber-400 animate-pulse" /> Sugerencias ({item.possibleClientHint?.name.split(' ')[0]}):
+                                                    <Sparkles size={10} className="text-amber-400 animate-pulse" /> Sugerencias ({displayCandidateName}):
                                                 </span>
                                                 {item.candidateSuggestions.map((sug, sIdx) => (
                                                     <button
@@ -643,7 +728,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                 Listas para guardar: {unlockedCount} de {queue.length} firmas
                             </span>
                         ) : (
-                            <span>Selecciona el cliente de la lista o escribe el RUC</span>
+                            <span>Desencripta las firmas para guardarlas en clientes o respaldos</span>
                         )}
                     </div>
 
