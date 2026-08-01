@@ -15,6 +15,7 @@ import { ClientPortalScreen } from './screens/ClientPortalScreen';
 import { MusicPage } from './screens/MusicPage';
 import { AuditLogScreen } from './screens/AuditLogScreen';
 import { FacturacionSriScreen } from './screens/FacturacionSriScreen';
+import { FirmasScreen } from './screens/FirmasScreen';
 import { AdaptadorConvert } from './components/features/AdaptadorConvert';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
@@ -444,6 +445,7 @@ const App: React.FC = () => {
           }}
         />
       );
+      case 'firmas': return <FirmasScreen navigate={navigate} />;
       case 'migracion_zifact': return <AdaptadorConvert />;
       default: return <AdminDashboardScreen navigate={navigate} />;
     }
@@ -451,9 +453,10 @@ const App: React.FC = () => {
 
   const navItems = [
     { screen: 'home', icon: LucideIcons.Home, label: 'Dashboard' },
-    { screen: 'clients', icon: LucideIcons.Users, label: 'Clientes' },
+    { screen: 'clients', icon: LucideIcons.Users, label: 'Directorio', subLabel: 'Clientes' },
+    { screen: 'firmas', icon: LucideIcons.KeyRound, label: 'Firmas' },
     { screen: 'cobranza', icon: LucideIcons.BarChart, label: 'Cobranza' },
-    { screen: 'sri_facturacion', icon: LucideIcons.FileText, label: 'Facturación SRI' },
+    { screen: 'sri_facturacion', icon: LucideIcons.FileText, label: 'Facturador' },
     { screen: 'tasks', icon: LucideIcons.CheckCircle, label: 'Tareas' },
     { screen: 'calendar', icon: LucideIcons.CalendarDays, label: 'Agenda' },
     { screen: 'web_orders', icon: LucideIcons.ShoppingCart, label: 'Tienda' },

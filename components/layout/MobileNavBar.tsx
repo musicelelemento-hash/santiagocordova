@@ -16,8 +16,8 @@ interface MobileNavBarProps {
 }
 
 export const MobileNavBar: React.FC<MobileNavBarProps> = ({ navItems, activeScreen, onNavigate }) => {
-    // 5 ítems más usados — incluye Facturación SRI
-    const desiredScreens = ['home', 'clients', 'sri_facturacion', 'tasks', 'settings'];
+    // 5 ítems más usados — incluye Firmas y Facturador
+    const desiredScreens = ['home', 'clients', 'firmas', 'sri_facturacion', 'settings'];
     const mobileItems = desiredScreens
         .map(screenName => navItems.find(i => i.screen === screenName))
         .filter(Boolean) as NavItem[];
@@ -85,14 +85,18 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({ navItems, activeScre
                                 <span className={`
                                     text-[8px] font-black uppercase tracking-[0.08em] leading-none
                                     transition-all duration-300
-                                    ${isActive ? 'text-white' : 'text-slate-600'}
+                                    ${isActive ? (item.screen === 'firmas' ? 'text-teal-300' : 'text-white') : 'text-slate-600'}
                                 `}>
-                                    {item.label === 'Facturación SRI' ? 'Factura' : item.label}
+                                    {item.label === 'Facturador' || item.label === 'Facturación SRI' ? 'Factura' : item.label}
                                 </span>
 
                                 {/* Active dot indicator */}
                                 {isActive && (
-                                    <div className="absolute -bottom-0.5 w-4 h-0.5 rounded-full bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] shadow-[0_0_8px_rgba(43,106,255,0.9)]" />
+                                    <div className={`absolute -bottom-0.5 w-4 h-0.5 rounded-full ${
+                                        item.screen === 'firmas'
+                                            ? 'bg-gradient-to-r from-teal-400 to-cyan-400 shadow-[0_0_8px_rgba(20,184,166,0.9)]'
+                                            : 'bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] shadow-[0_0_8px_rgba(43,106,255,0.9)]'
+                                    }`} />
                                 )}
                             </button>
                         );

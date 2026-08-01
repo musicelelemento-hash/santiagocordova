@@ -43,7 +43,7 @@ const OBLIGATION_GROUPS = [
     { id: 'al-dia', label: 'Al Día', icon: ShieldCheck, color: 'text-tertiary bg-tertiary/10 ring-tertiary/20' },
     { id: 'mensual', label: 'IVA Mensual', icon: Clock, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
     { id: 'semestral', label: 'IVA Semestral', icon: Briefcase, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
-    { id: 'matrix', label: 'Matriz Fiscal', icon: LayoutGrid, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
+    { id: 'matrix', label: 'Declaraciones', icon: LayoutGrid, color: 'text-on-surface-variant bg-surface-low ring-outline-variant' },
     { id: 'trash', label: 'Papelera', icon: Trash2, color: 'text-primary bg-primary/10 ring-primary/20' },
 ];
 
@@ -1104,7 +1104,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 shrink-0">
                         {[
                             { id: 'all', label: 'Directorio', icon: Users },
-                            { id: 'matrix', label: 'Matriz Fiscal', icon: LayoutGrid },
+                            { id: 'matrix', label: 'Declaraciones', icon: LayoutGrid },
                             { id: 'cobros', label: 'Recaudación', icon: DollarSign, badge: globalStats.cobros },
                             { id: 'trash', label: 'Papelera', icon: Trash2 },
                         ].map((tab) => {
