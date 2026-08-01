@@ -1,13 +1,14 @@
 import React, { useState, useRef } from 'react';
 import {
     UploadCloud, KeyRound, CheckCircle2, AlertTriangle, Lock, Unlock,
-    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb
+    FileKey, Trash2, Check, RefreshCw, UserCheck, UserPlus, HelpCircle, Sparkles, Lightbulb, Search
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { extractP12Metadata } from '../../utils/p12Reader';
 import { useToast } from '../../context/ToastContext';
 import { Client, StoredFile, TaxRegime } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
+import { Modal } from '../ui/Modal';
 
 interface BulkP12UploaderModalProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ interface P12ItemQueue {
     base64Content: string;
     fileName: string;
     passwordInput: string;
+    manualRucInput: string;
     status: 'pending' | 'unlocked' | 'error';
     errorMessage?: string;
     unlockedViaPattern?: string;
@@ -48,17 +50,58 @@ const fileToBase64 = (file: File): Promise<string> => {
     });
 };
 
-// Generar sugerencias de contraseñas basadas en el patrón Nombre/Apellido + Año (2026, 2025, 2027)
-const generatePasswordCandidates = (clientName?: string, fileName?: string, storedPasswords?: (string | undefined)[]): string[] => {
+// Extraer secuencias de 9 a 13 dígitos del nombre del archivo (ej: 0701893687 en 23927282_identity_0701893687.p12)
+const extractPossibleRucOrCedula = (filename: string): string[] => {
+    const matches = filename.match(/\d{9,13}/g) || [];
+    return Array.from(new Set(matches));
+};
+
+// Encontrar cliente por RUC en nombre de archivo o entrada manual
+const findMatchingClient = (filename: string, manualRuc: string, clients: Client[]): Client | undefined => {
+    const activeClients = clients.filter(c => !c.isDeleted && c.isActive);
+
+    // 1. Probar RUC ingresado manualmente por el usuario
+    if (manualRuc && manualRuc.trim().length >= 3) {
+        const cleanReq = manualRuc.trim().toLowerCase();
+        const matched = activeClients.find(c => {
+            return c.ruc.toLowerCase().includes(cleanReq) || c.name.toLowerCase().includes(cleanReq);
+        });
+        if (matched) return matched;
+    }
+
+    // 2. Extraer números de 9-13 dígitos del nombre del archivo (ej: 0701893687 -> RUC 0701893687001)
+    const numbersInFile = extractPossibleRucOrCedula(filename);
+    for (const num of numbersInFile) {
+        const matched = activeClients.find(c => {
+            const rucClean = c.ruc.trim();
+            return rucClean === num || rucClean.startsWith(num) || num.startsWith(rucClean.slice(0, 10));
+        });
+        if (matched) return matched;
+    }
+
+    // 3. Probar por coincidencia de apellido de cliente en el nombre del archivo
+    const lowerFileName = filename.toLowerCase();
+    return activeClients.find(c => {
+        const words = c.name.toLowerCase().split(/\s+/).filter(w => w.length >= 4);
+        return words.some(w => lowerFileName.includes(w));
+    });
+};
+
+// Generar sugerencias de contraseñas EXCLUSIVAMENTE basadas en el nombre del CLIENTE real
+const generatePasswordCandidates = (client?: Client, storedPasswords?: (string | undefined)[]): string[] => {
     const candidates = new Set<string>();
 
     (storedPasswords || []).forEach(p => {
         if (p && p.trim()) candidates.add(p.trim());
     });
 
-    const textToExtract = `${clientName || ''} ${fileName || ''}`.replace(/[\.\-_]/g, ' ');
-    const words = textToExtract.split(/\s+/).filter(w => w.length >= 3 && !/^\d+$/.test(w) && !['p12', 'pfx', 'firma', 'firmas', 'cert', 'sri', 'cedula', 'ruc'].includes(w.toLowerCase()));
+    if (client && client.sriPassword) candidates.add(client.sriPassword.trim());
+    if (client && client.electronicSignaturePassword) candidates.add(client.electronicSignaturePassword.trim());
 
+    if (!client) return Array.from(candidates);
+
+    // Extraer palabras del nombre real del cliente (evitando números y palabras genéricas)
+    const words = client.name.split(/\s+/).filter(w => w.length >= 3 && !/^\d+$/.test(w));
     const years = ['2026', '2025', '2027', '2024'];
 
     words.forEach(w => {
@@ -77,8 +120,6 @@ const generatePasswordCandidates = (clientName?: string, fileName?: string, stor
     return Array.from(candidates);
 };
 
-import { Modal } from '../ui/Modal';
-
 export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOpen, onClose }) => {
     const { clients, updateClient, addClient } = useAppStore();
     const { toast } = useToast();
@@ -92,7 +133,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const tryUnlockItem = (item: P12ItemQueue, passwordToTest: string): P12ItemQueue => {
         try {
             const meta = extractP12Metadata(item.base64Content, passwordToTest);
-            const matched = meta.ruc ? clients.find(c => !c.isDeleted && c.ruc.trim() === meta.ruc?.trim()) : undefined;
+            const matched = meta.ruc ? clients.find(c => !c.isDeleted && c.ruc.trim() === meta.ruc?.trim()) : item.possibleClientHint;
 
             return {
                 ...item,
@@ -118,6 +159,33 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         }
     };
 
+    // Evaluar y probar candidatos de clave para un elemento de la cola
+    const processQueueItemMatching = (item: P12ItemQueue, manualRucOverride?: string): P12ItemQueue => {
+        const rucToUse = manualRucOverride !== undefined ? manualRucOverride : item.manualRucInput;
+        const matchedClient = findMatchingClient(item.fileName, rucToUse, clients);
+        const candidates = generatePasswordCandidates(matchedClient);
+
+        let updatedItem: P12ItemQueue = {
+            ...item,
+            manualRucInput: rucToUse,
+            possibleClientHint: matchedClient,
+            candidateSuggestions: candidates.slice(0, 8)
+        };
+
+        // Probar candidatos de forma finita (si encuentra coincidencia con Arce2026, desbloquea e interrumpe)
+        for (const candPassword of candidates) {
+            const res = tryUnlockItem(updatedItem, candPassword);
+            if (res.status === 'unlocked') {
+                return {
+                    ...res,
+                    unlockedViaPattern: candPassword
+                };
+            }
+        }
+
+        return updatedItem;
+    };
+
     // Procesar la selección masiva de archivos
     const handleFilesSelected = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
@@ -139,42 +207,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     base64Content: b64,
                     fileName: file.name,
                     passwordInput: '',
+                    manualRucInput: '',
                     status: 'pending'
                 };
 
-                // Buscar posible cliente coincidente por nombre en el archivo o RUC
-                const lowerFileName = file.name.toLowerCase();
-                const possibleClient = clients.find(c => {
-                    const cleanName = c.name.toLowerCase().replace(/\s+/g, '');
-                    const cleanRuc = c.ruc;
-                    return lowerFileName.includes(cleanRuc) || lowerFileName.includes(cleanName.split(' ')[0]);
-                });
-
-                // Generar candidatos inteligentes (Primer nombre/apellido + 2026/2025/2027 + claves de la BD)
-                const candidatePasswords = generatePasswordCandidates(
-                    possibleClient?.name,
-                    file.name,
-                    [possibleClient?.electronicSignaturePassword, possibleClient?.sriPassword]
-                );
-
-                item.possibleClientHint = possibleClient;
-                item.candidateSuggestions = candidatePasswords.slice(0, 8);
-
-                // Probar candidatos automáticos de forma finita (sin bucles infinitos)
-                let autoUnlocked = false;
-                for (const candPassword of candidatePasswords) {
-                    const res = tryUnlockItem(item, candPassword);
-                    if (res.status === 'unlocked') {
-                        item = {
-                            ...res,
-                            unlockedViaPattern: candPassword
-                        };
-                        autoUnlocked = true;
-                        break; // Si funciona con el primer nombre/apellido + 2026, no intentar más
-                    }
-                }
-
-                newQueueItems.push(item);
+                const processed = processQueueItemMatching(item);
+                newQueueItems.push(processed);
             } catch (err) {
                 console.error("Error reading p12 file:", err);
             }
@@ -183,6 +221,13 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         setQueue(prev => [...prev, ...newQueueItems]);
         setIsProcessing(false);
         toast.success(`Cargados ${newQueueItems.length} archivos .p12 a la cola.`);
+    };
+
+    const handleManualRucChange = (itemId: string, rucValue: string) => {
+        setQueue(prev => prev.map(item => {
+            if (item.id !== itemId) return item;
+            return processQueueItemMatching(item, rucValue);
+        }));
     };
 
     const handleTestPassword = (itemId: string, passwordValue: string) => {
@@ -220,7 +265,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             const expDate = notAfter ? notAfter.toISOString().split('T')[0] : '';
             const issueDate = notBefore ? notBefore.toISOString().split('T')[0] : '';
 
-            const existingClient = clients.find(c => !c.isDeleted && c.ruc.trim() === ruc?.trim());
+            const existingClient = clients.find(c => !c.isDeleted && c.ruc.trim() === ruc?.trim()) || item.possibleClientHint;
 
             if (existingClient) {
                 await updateClient(existingClient.id, {
@@ -283,12 +328,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                                <Sparkles size={11} /> Auto-Probador de Patrón (Nombre + 2026)
+                                <Sparkles size={11} /> Auto-Detección por RUC (0701893687 ➔ Arce2026)
                             </span>
                         </div>
-                        <h3 className="text-base font-black text-white">Prueba Automática de Claves (Arce2026, Ruth2026)</h3>
+                        <h3 className="text-base font-black text-white">Detección por RUC del Archivo + Sugerencias Reales</h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Prueba automáticamente las contraseñas basadas en el primer nombre/apellido + <strong>2026/2025</strong>. Si no abre a la primera, detiene la prueba y te ofrece la pista del cliente.
+                            Lee los 10 o 13 dígitos de RUC contenidos en el nombre del archivo (ej: <code>0701893687</code>), identifica al cliente <strong>(ELADIO ARCE)</strong> y sugiere su patrón de clave verdadero (<strong>Arce2026</strong>).
                         </p>
                     </div>
 
@@ -338,7 +383,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                         </div>
 
                         {/* Lista Interactiva de Firmas */}
-                        <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1 custom-scrollbar">
+                        <div className="space-y-3.5 max-h-[440px] overflow-y-auto pr-1 custom-scrollbar">
                             {queue.map((item, idx) => {
                                 const isUnlocked = item.status === 'unlocked';
                                 const isError = item.status === 'error';
@@ -346,11 +391,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                 return (
                                     <div
                                         key={item.id}
-                                        className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col justify-between gap-3 ${
+                                        className={`p-4.5 rounded-3xl border transition-all duration-300 flex flex-col justify-between gap-3.5 ${
                                             isUnlocked
-                                                ? 'bg-emerald-950/20 border-emerald-500/30'
+                                                ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg'
                                                 : isError
-                                                ? 'bg-amber-950/20 border-amber-500/30'
+                                                ? 'bg-slate-900/80 border-white/10 hover:border-amber-500/30'
                                                 : 'bg-slate-900/60 border-white/10'
                                         }`}
                                     >
@@ -365,11 +410,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                     {isUnlocked ? <Unlock size={18} /> : <Lock size={18} />}
                                                 </div>
 
-                                                <div className="min-w-0 flex-1">
+                                                <div className="min-w-0 flex-1 space-y-1">
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-xs font-bold text-white font-mono truncate">{item.fileName}</p>
                                                         {isUnlocked && (
-                                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase flex items-center gap-1">
+                                                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 text-[9px] font-black uppercase flex items-center gap-1 shrink-0">
                                                                 <Check size={10} /> Desbloqueada {item.unlockedViaPattern ? `(${item.unlockedViaPattern})` : ''}
                                                             </span>
                                                         )}
@@ -377,7 +422,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                                                     {/* Detalle si ya fue unlocked */}
                                                     {isUnlocked && item.metadata && (
-                                                        <div className="mt-1 space-y-0.5 text-[11px]">
+                                                        <div className="space-y-0.5 text-[11px]">
                                                             <p className="font-bold text-emerald-300 uppercase truncate">
                                                                 {item.metadata.commonName || 'Titular Extraído'}
                                                             </p>
@@ -386,12 +431,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                             </p>
 
                                                             {item.matchedClient ? (
-                                                                <div className="flex items-center gap-1 text-[10px] text-teal-400 font-bold mt-1">
+                                                                <div className="flex items-center gap-1 text-[10px] text-teal-400 font-bold mt-0.5">
                                                                     <UserCheck size={12} />
-                                                                    <span>Vinculado a Cliente: {item.matchedClient.name}</span>
+                                                                    <span>Vinculado a Cliente: {item.matchedClient.name} ({item.matchedClient.ruc})</span>
                                                                 </div>
                                                             ) : (
-                                                                <div className="flex items-center gap-1 text-[10px] text-amber-400 font-bold mt-1">
+                                                                <div className="flex items-center gap-1 text-[10px] text-amber-400 font-bold mt-0.5">
                                                                     <UserPlus size={12} />
                                                                     <span>Cliente Nuevo (Se creará en el sistema)</span>
                                                                 </div>
@@ -399,13 +444,25 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                         </div>
                                                     )}
 
-                                                    {/* Pista de Cliente Detectado si no abre a la primera */}
-                                                    {!isUnlocked && item.possibleClientHint && (
-                                                        <div className="mt-1 text-[10px] text-amber-300 font-medium flex items-center gap-1.5 bg-amber-500/10 p-1.5 rounded-lg border border-amber-500/20">
-                                                            <Lightbulb size={12} className="text-amber-400 shrink-0" />
-                                                            <span>
-                                                                Pista de coincidencia: <strong>{item.possibleClientHint.name}</strong> (RUC: {item.possibleClientHint.ruc})
-                                                            </span>
+                                                    {/* Buscador / Asignador Rápido de RUC o Cliente si no ha desbloqueado */}
+                                                    {!isUnlocked && (
+                                                        <div className="flex items-center gap-2 pt-1">
+                                                            <div className="relative flex-1 max-w-md">
+                                                                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                                <input
+                                                                    type="text"
+                                                                    value={item.manualRucInput}
+                                                                    onChange={(e) => handleManualRucChange(item.id, e.target.value)}
+                                                                    placeholder="Pista RUC / Nombre del Cliente (ej: 0701893687 o Arce)..."
+                                                                    className="w-full pl-8 pr-3 py-1.5 bg-black/40 border border-white/10 rounded-xl text-[11px] text-slate-200 placeholder-slate-500 focus:ring-1 focus:ring-teal-500/40 outline-none font-mono"
+                                                                />
+                                                            </div>
+
+                                                            {item.possibleClientHint && (
+                                                                <span className="px-2 py-1 rounded-lg bg-teal-500/15 border border-teal-500/30 text-teal-300 text-[10px] font-bold truncate max-w-[220px]">
+                                                                    👤 {item.possibleClientHint.name}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -424,7 +481,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                         if (e.key === 'Enter') handleTestPassword(item.id, item.passwordInput);
                                                     }}
                                                     placeholder="Ingresa la clave..."
-                                                    className="w-40 sm:w-48 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 outline-none font-mono"
+                                                    className="w-36 sm:w-44 px-3 py-2 bg-black/40 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 outline-none font-mono"
                                                 />
 
                                                 <button
@@ -445,17 +502,17 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                             </div>
                                         </div>
 
-                                        {/* PILDORAS DE SUGERENCIAS HINT SI NO DESBLOQUEÓ */}
+                                        {/* PILDORAS DE SUGERENCIAS DE CLAVE SI HAY CLIENTE VINCULADO */}
                                         {!isUnlocked && item.candidateSuggestions && item.candidateSuggestions.length > 0 && (
                                             <div className="pt-2 border-t border-white/5 flex items-center gap-2 flex-wrap">
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                                    <Sparkles size={10} className="text-amber-400" /> Sugerencias rápidas:
+                                                <span className="text-[9px] font-bold text-amber-300 uppercase tracking-widest flex items-center gap-1">
+                                                    <Sparkles size={10} className="text-amber-400" /> Sugerencias de cliente ({item.possibleClientHint?.name.split(' ')[0]}):
                                                 </span>
                                                 {item.candidateSuggestions.map((sug, sIdx) => (
                                                     <button
                                                         key={sIdx}
                                                         onClick={() => handleTestPassword(item.id, sug)}
-                                                        className="px-2.5 py-1 bg-white/5 hover:bg-teal-500/20 hover:text-teal-300 text-slate-300 rounded-lg text-[10px] font-mono font-bold border border-white/10 transition-all active:scale-95"
+                                                        className="px-2.5 py-1 bg-white/5 hover:bg-teal-500/20 hover:text-teal-300 text-slate-200 rounded-lg text-[10px] font-mono font-bold border border-white/10 transition-all active:scale-95"
                                                     >
                                                         {sug}
                                                     </button>
@@ -477,7 +534,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                 Listas para guardar: {unlockedCount} de {queue.length} firmas
                             </span>
                         ) : (
-                            <span>Prueba sugerencias o ingresa la clave manual</span>
+                            <span>Ingresa el RUC/Nombre para sugerir claves de clientes reales</span>
                         )}
                     </div>
 
