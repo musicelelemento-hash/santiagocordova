@@ -761,11 +761,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                     </div>
                                                                     <div className="grid grid-cols-2 gap-2 pt-0.5 font-mono text-[11px]">
                                                                         <div className="p-2.5 rounded-xl bg-black/50 border border-emerald-500/40">
-                                                                            <span className="text-[9px] text-emerald-400/90 block uppercase font-sans font-bold">📄 Archivo Subido (Nuevo):</span>
+                                                                            <span className="text-[9px] text-emerald-400/90 block uppercase font-sans font-bold">📄 Fecha Caducidad Subida (Nueva):</span>
                                                                             <strong className="text-emerald-300 font-bold text-xs">{expComp.newStr}</strong>
                                                                         </div>
                                                                         <div className="p-2.5 rounded-xl bg-black/30 border border-white/10 opacity-75">
-                                                                            <span className="text-[9px] text-slate-400 block uppercase font-sans font-bold">📁 Sistema Actual:</span>
+                                                                            <span className="text-[9px] text-slate-400 block uppercase font-sans font-bold">📁 Fecha Caducidad Sistema:</span>
                                                                             <strong className="text-slate-300 font-bold text-xs">{expComp.existingStr}</strong>
                                                                         </div>
                                                                     </div>
@@ -786,16 +786,16 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                     </div>
                                                                     <div className="grid grid-cols-2 gap-2 pt-0.5 font-mono text-[11px]">
                                                                         <div className="p-2.5 rounded-xl bg-black/50 border border-amber-500/50">
-                                                                            <span className="text-[9px] text-amber-400/90 block uppercase font-sans font-bold">📄 Archivo Subido (Viejo):</span>
+                                                                            <span className="text-[9px] text-amber-400/90 block uppercase font-sans font-bold">📄 Fecha Caducidad Subida (Vieja):</span>
                                                                             <strong className="text-amber-300 font-bold text-xs">{expComp.newStr}</strong>
                                                                         </div>
                                                                         <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/50">
-                                                                            <span className="text-[9px] text-emerald-400 block uppercase font-sans font-bold">📁 Ya en Sistema (Vigente):</span>
+                                                                            <span className="text-[9px] text-emerald-400 block uppercase font-sans font-bold">📁 Fecha Caducidad Sistema (Vigente):</span>
                                                                             <strong className="text-emerald-300 font-bold text-xs">{expComp.existingStr}</strong>
                                                                         </div>
                                                                     </div>
                                                                     <p className="text-[10px] text-amber-300/90 font-sans leading-tight">
-                                                                        🔒 Tu cliente ya tiene su firma renovada de {expComp.existingStr} activa. Este archivo viejo no sobreescribirá su perfil.
+                                                                        🔒 Tu cliente ya tiene su firma renovada con fecha de caducidad {expComp.existingStr} activa. Este archivo viejo no sobreescribirá su perfil.
                                                                     </p>
                                                                 </div>
                                                             )}
@@ -804,7 +804,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                 <div className="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 text-xs space-y-1">
                                                                     <div className="flex items-center gap-1.5 font-bold uppercase text-[10px] text-cyan-300">
                                                                         <CopyCheck size={14} className="text-cyan-400" />
-                                                                        <span>ℹ️ FIRMA IDÉNTICA YA REGISTRADA (Caducidad: <strong>{expComp.existingStr}</strong>) · Omitida</span>
+                                                                        <span>ℹ️ FIRMA IDÉNTICA YA REGISTRADA (Fecha de Caducidad: <strong>{expComp.existingStr}</strong>) · Omitida</span>
                                                                     </div>
                                                                 </div>
                                                             )}
