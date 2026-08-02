@@ -232,7 +232,6 @@ const evaluateExpirationComparison = (newExpDate?: Date, existingClient?: Client
     }
 };
 
-// Generar candidatos usando TitleCase + Años (Chango2026, Lorena2025) Y TitleCase + 4 primeros dígitos de Cédula/RUC (Chango1805)
 const generatePasswordCandidates = (client?: Client, fileName?: string, rucOrCedula?: string, storedPasswords?: (string | undefined)[]): string[] => {
     const candidates = new Set<string>();
 
@@ -251,21 +250,25 @@ const generatePasswordCandidates = (client?: Client, fileName?: string, rucOrCed
     
     const allTokens = Array.from(new Set([...tokensClient, ...tokensCert]));
 
-    const years = ['2026', '2025', '2027', '2024'];
     const cleanRuc = (rucOrCedula || (client ? client.ruc : '') || '').replace(/\D/g, '');
     const first4Ruc = cleanRuc.length >= 4 ? cleanRuc.slice(0, 4) : '';
 
-    allTokens.forEach(clean => {
-        const titleCase = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
-        
-        years.forEach(yr => {
-            candidates.add(`${titleCase}${yr}`);
-        });
+    const formattedTokens = allTokens.map(clean => clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase());
 
-        if (first4Ruc) {
-            candidates.add(`${titleCase}${first4Ruc}`);
-        }
-    });
+    // 1. Probar [Nombre/Apellido] + 2026 para todos
+    formattedTokens.forEach(t => candidates.add(`${t}2026`));
+
+    // 2. Probar [Nombre/Apellido] + 2025 para todos (ej: Lorena2025, Liliana2025)
+    formattedTokens.forEach(t => candidates.add(`${t}2025`));
+
+    // 3. Probar [Nombre/Apellido] + 4 primeros dígitos de Cédula (ej: Liliana0704, Lorena0704)
+    if (first4Ruc) {
+        formattedTokens.forEach(t => candidates.add(`${t}${first4Ruc}`));
+    }
+
+    // 4. Probar [Nombre/Apellido] + 2027 y 2024
+    formattedTokens.forEach(t => candidates.add(`${t}2027`));
+    formattedTokens.forEach(t => candidates.add(`${t}2024`));
 
     return Array.from(candidates);
 };
