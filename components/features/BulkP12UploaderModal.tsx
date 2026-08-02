@@ -249,19 +249,16 @@ const generatePasswordCandidates = (client?: Client, fileName?: string, rucOrCed
 
     const years = ['2026', '2025', '2027', '2024'];
 
-    // Extraer primeros 4 dígitos de la Cédula/RUC (ej: 1805 en 1805242094001)
     const cleanRuc = (rucOrCedula || (client ? client.ruc : '') || '').replace(/\D/g, '');
     const first4Ruc = cleanRuc.length >= 4 ? cleanRuc.slice(0, 4) : '';
 
     allTokens.forEach(clean => {
         const titleCase = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
         
-        // Patrón 1: Nombre + Año (Chango2026, Byron2026)
         years.forEach(yr => {
             candidates.add(`${titleCase}${yr}`);
         });
 
-        // Patrón 2: Nombre + 4 primeros dígitos de Cédula (Chango1805, Byron1805, Patricio1805)
         if (first4Ruc) {
             candidates.add(`${titleCase}${first4Ruc}`);
         }
@@ -324,7 +321,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         const matchedClient = clientOverride || findMatchingClient(item.fileName, rucToUse, clients, item.metadata?.ruc);
         const extractedName = parseNameFromFileName(item.fileName);
         
-        // Extraer RUC de metadatos o nombre de archivo para probar los 4 dígitos (Chango1805)
         const possibleNumbers = extractPossibleRucOrCedula(item.fileName);
         const rucForPattern = item.metadata?.ruc || rucToUse || (possibleNumbers[0] || '');
 
@@ -341,7 +337,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         for (const candPassword of candidates) {
             const res = tryUnlockItem(updatedItem, candPassword);
             if (res.status === 'unlocked') {
-                // Re-verificar coincidencia por RUC descifrado oficial del certificado
                 const finalMatched = res.metadata?.ruc 
                     ? clients.find(c => c.ruc.replace(/\D/g, '').includes(res.metadata!.ruc!.replace(/\D/g, '').slice(0, 10))) 
                     : matchedClient;
@@ -365,6 +360,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         const newQueueItems: P12ItemQueue[] = [];
         const seenSignaturesInBatch = new Set<string>();
+        let discardedDuplicatesCount = 0;
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
@@ -387,15 +383,19 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                 const processed = processQueueItemMatching(item);
 
+                const isDuplicateInDB = processed.expirationComparison?.status === 'duplicate';
                 const signatureSignatureHash = `${processed.metadata?.ruc || ''}_${processed.metadata?.notAfter?.getTime() || ''}_${cleanFileName(processed.fileName)}`;
-                if (seenSignaturesInBatch.has(signatureSignatureHash) && processed.status === 'unlocked') {
-                    processed.isBatchDuplicate = true;
-                    processed.saveMode = 'omit';
-                } else if (processed.status === 'unlocked' && signatureSignatureHash) {
-                    seenSignaturesInBatch.add(signatureSignatureHash);
-                }
+                const isDuplicateInBatch = seenSignaturesInBatch.has(signatureSignatureHash) && processed.status === 'unlocked';
 
-                newQueueItems.push(processed);
+                if (isDuplicateInDB || isDuplicateInBatch) {
+                    // AUTO-DESCARTAR FIRMAS QUE YA EXISTEN CON LA MISMA CADUCIDAD
+                    discardedDuplicatesCount++;
+                } else {
+                    if (processed.status === 'unlocked' && signatureSignatureHash) {
+                        seenSignaturesInBatch.add(signatureSignatureHash);
+                    }
+                    newQueueItems.push(processed);
+                }
             } catch (err) {
                 console.error("Error reading p12 file:", err);
             }
@@ -403,7 +403,16 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         setQueue(prev => [...prev, ...newQueueItems]);
         setIsProcessing(false);
-        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12 con soporte para patrones de Cédula (Chango1805).`);
+
+        if (newQueueItems.length > 0) {
+            if (discardedDuplicatesCount > 0) {
+                toast.success(`⚡ ${newQueueItems.length} firmas cargadas. Se descartaron automáticamente ${discardedDuplicatesCount} firmas duplicadas.`);
+            } else {
+                toast.success(`⚡ Cargadas ${newQueueItems.length} firmas a la cola.`);
+            }
+        } else if (discardedDuplicatesCount > 0) {
+            toast.info(`ℹ️ Las ${discardedDuplicatesCount} firmas seleccionadas ya existen en el sistema con la misma caducidad. Se descartaron automáticamente.`);
+        }
     };
 
     const handleSelectClientForQueueItem = (itemId: string, selectedClient?: Client) => {
@@ -581,13 +590,13 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                         <div className="space-y-2 max-w-md">
                             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 text-[10px] font-black uppercase tracking-[0.25em] shadow-lg">
-                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER Y PROBADOR DE PATRÓN
+                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER Y DESCARTE DE DUPLICADOS
                             </div>
                             <h3 className="text-xl font-black text-white uppercase tracking-tight font-display">
-                                Probando Patrones de Clave y Cédula
+                                Descartando Firmas Duplicadas
                             </h3>
                             <p className="text-xs text-slate-300 font-mono leading-relaxed">
-                                Evaluando coincidencia por RUC oficial, probando Chango2026 y Chango1805 (4 primeros dígitos de cédula)...
+                                Comprobando fechas de caducidad y filtrando automáticamente archivos que ya existen en el sistema...
                             </p>
                         </div>
 
@@ -622,12 +631,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                                <Sparkles size={11} /> Motor de Prueba: Años (Chango2026) + Cédula (Chango1805)
+                                <Sparkles size={11} /> Auto-Descarte de Duplicados por Caducidad
                             </span>
                         </div>
-                        <h3 className="text-base font-black text-white">Subidor con Reconocimiento Automático por RUC y Cédula</h3>
+                        <h3 className="text-base font-black text-white">Filtro de Descarte de Firmas Ya Existentes</h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Descifra certificados con patrones de Año (<strong>Chango2026</strong>) y 4 dígitos de Cédula (<strong>Chango1805</strong>). Vincula automáticamente al cliente activo correspondiente.
+                            El escáner omite y descarta automáticamente cualquier archivo <code>.p12</code> que ya posea la misma fecha de expiración en el sistema.
                         </p>
                     </div>
 
@@ -719,26 +728,15 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                 <Check size={10} /> Desbloqueada {item.unlockedViaPattern ? `(${item.unlockedViaPattern})` : ''}
                                                             </span>
                                                         )}
-                                                        {item.isBatchDuplicate && (
-                                                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[9px] font-bold uppercase border border-amber-500/30">
-                                                                ⚠️ Duplicado en mismo lote (Omitido)
-                                                            </span>
-                                                        )}
                                                     </div>
 
                                                     {/* EVALUACIÓN INTELIGENTE DE RENOVACIÓN / DUPLICADOS / ANTIGÜEDAD */}
-                                                    {isUnlocked && expComp && !item.isBatchDuplicate && (
+                                                    {isUnlocked && expComp && (
                                                         <div className="pt-1">
                                                             {expComp.status === 'renewal' && (
                                                                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wide shadow-sm">
                                                                     <ArrowUpRight size={13} className="text-emerald-400 animate-bounce" />
                                                                     <span>🎉 Renovación Detectada (Nueva: <strong>{expComp.newStr}</strong> vs Actual: {expComp.existingStr})</span>
-                                                                </div>
-                                                            )}
-                                                            {expComp.status === 'duplicate' && (
-                                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-[10px] font-bold uppercase tracking-wide">
-                                                                    <CopyCheck size={13} className="text-cyan-400" />
-                                                                    <span>ℹ️ Firma idéntica ya en sistema / respaldos ({expComp.existingStr}) · Omitida por defecto</span>
                                                                 </div>
                                                             )}
                                                             {expComp.status === 'older' && (
