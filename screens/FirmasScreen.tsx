@@ -13,6 +13,7 @@ import { Modal } from '../components/ui/Modal';
 import { BulkP12UploaderModal } from '../components/features/BulkP12UploaderModal';
 import { v4 as uuidv4 } from 'uuid';
 import { type Screen } from '../types';
+import { downloadStoredFile } from '../services/fileService';
 
 interface FirmasScreenProps {
     navigate: (screen: any, options?: any) => void;
@@ -31,6 +32,7 @@ interface BackupSignatureItem {
     expirationDate?: string;
     category?: string;
     savedAt?: string;
+    fileContent?: string;
 }
 
 export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
@@ -466,6 +468,15 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                             )}
                                                         </td>
                                                         <td className="py-4 px-5 text-right space-x-2">
+                                                            {client.signatureFile && (
+                                                                <button
+                                                                    onClick={() => downloadStoredFile(client.signatureFile)}
+                                                                    className="px-3 py-1.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-[10px] font-bold uppercase transition-all border border-teal-500/40 inline-flex items-center gap-1 shadow-sm"
+                                                                    title="Descargar archivo Firma Electrónica (.p12)"
+                                                                >
+                                                                    <UploadCloud size={12} className="rotate-180" /> Descargar .p12
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 onClick={() => {
                                                                     const pObj = client.phones?.[0];
@@ -478,7 +489,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                                 <PhoneCall size={12} /> WhatsApp
                                                             </button>
                                                             <button
-                                                                onClick={() => navigate('client-detail', { clientId: client.id, initialTab: 'vault' })}
+                                                                onClick={() => navigate('clients', { clientIdToView: client.id, initialTab: 'vault' })}
                                                                 className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] font-bold uppercase transition-all inline-flex items-center gap-1"
                                                             >
                                                                 <ExternalLink size={12} /> Bóveda
@@ -540,8 +551,17 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                             </div>
 
                                             <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                                {client.signatureFile && (
+                                                    <button
+                                                        onClick={() => downloadStoredFile(client.signatureFile)}
+                                                        className="py-2.5 px-3 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-xs font-bold uppercase transition-all text-center flex items-center justify-center gap-1.5 border border-teal-500/40 shadow-sm"
+                                                        title="Descargar Firma Electrónica (.p12)"
+                                                    >
+                                                        <UploadCloud size={14} className="rotate-180" /> Descargar .p12
+                                                    </button>
+                                                )}
                                                 <button
-                                                    onClick={() => navigate('client-detail', { clientId: client.id, initialTab: 'vault' })}
+                                                    onClick={() => navigate('clients', { clientIdToView: client.id, initialTab: 'vault' })}
                                                     className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold uppercase transition-all text-center"
                                                 >
                                                     Ir a Bóveda
@@ -571,7 +591,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                     <p className="text-[10px] font-mono text-slate-400">{client.ruc}</p>
                                 </div>
                                 <button
-                                    onClick={() => navigate('client-detail', { clientId: client.id, initialTab: 'vault' })}
+                                    onClick={() => navigate('clients', { clientIdToView: client.id, initialTab: 'vault' })}
                                     className="px-3 py-1.5 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-[10px] font-bold uppercase transition-all"
                                 >
                                     Cargar Firma
@@ -666,6 +686,15 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                         {formatExpiry(item.expirationDate)}
                                                     </td>
                                                     <td className="py-4 px-5 text-right space-x-2">
+                                                        {(item.fileContent || (item as any).signatureFile) && (
+                                                            <button
+                                                                onClick={() => downloadStoredFile((item as any).signatureFile || { name: item.fileName || `${item.titular}_firma.p12`, content: item.fileContent, type: 'p12' })}
+                                                                className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-[10px] font-bold uppercase transition-all border border-purple-500/40 inline-flex items-center gap-1 shadow-sm"
+                                                                title="Descargar archivo Firma Electrónica (.p12)"
+                                                            >
+                                                                <UploadCloud size={12} className="rotate-180" /> Descargar .p12
+                                                            </button>
+                                                        )}
                                                         <button
                                                             onClick={() => handleConvertBackupToActiveClient(item)}
                                                             className="px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 text-[10px] font-bold uppercase transition-all border border-teal-500/30 inline-flex items-center gap-1"

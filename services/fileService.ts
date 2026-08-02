@@ -52,28 +52,36 @@ export async function downloadStoredFile(file: StoredFile | null | undefined): P
     let downloadUrl = fileToDownload.content;
     let isBlobCreated = false;
 
-    // Direct data URI conversion to Blob URL for maximum mobile/Safari compatibility
-    if (fileToDownload.content.startsWith('data:')) {
-      const parts = fileToDownload.content.split(',');
+    let base64Str = fileToDownload.content;
+    let mimeType = (fileToDownload.type === 'p12' || fileToDownload.name?.endsWith('.p12') || fileToDownload.name?.endsWith('.pfx'))
+      ? 'application/x-pkcs12'
+      : 'application/pdf';
+
+    if (base64Str.startsWith('data:')) {
+      const parts = base64Str.split(',');
       if (parts.length === 2) {
         const mimeMatch = parts[0].match(/:(.*?);/);
-        const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf';
-        const base64Data = parts[1];
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: mimeType });
-        downloadUrl = URL.createObjectURL(blob);
-        isBlobCreated = true;
+        if (mimeMatch) mimeType = mimeMatch[1];
+        base64Str = parts[1];
       }
+    }
+
+    if (!base64Str.startsWith('http://') && !base64Str.startsWith('https://') && !base64Str.startsWith('blob:')) {
+      const cleanB64 = base64Str.replace(/\s/g, '');
+      const byteCharacters = atob(cleanB64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: mimeType });
+      downloadUrl = URL.createObjectURL(blob);
+      isBlobCreated = true;
     }
 
     const link = document.createElement('a');
     link.href = downloadUrl;
-    link.download = fileToDownload.name || 'documento.pdf';
+    link.download = fileToDownload.name || (mimeType === 'application/x-pkcs12' ? 'firma.p12' : 'documento.pdf');
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();

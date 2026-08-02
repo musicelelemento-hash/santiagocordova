@@ -511,6 +511,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                         password: item.passwordInput,
                         provider: issuerName,
                         expirationDate: expDate,
+                        fileContent: item.base64Content,
                         note: 'Respaldo de firma previa (caducidad menor a la activa)',
                         savedAt: new Date().toISOString()
                     });
@@ -525,6 +526,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     password: item.passwordInput,
                     provider: issuerName,
                     expirationDate: expDate,
+                    fileContent: item.base64Content,
                     category: 'Venta Esporádica de Firma',
                     savedAt: new Date().toISOString()
                 });

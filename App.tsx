@@ -468,7 +468,7 @@ const App: React.FC = () => {
     }
   };
 
-  const navItems = [
+  const navItems = ([
     { screen: 'home', icon: LucideIcons.Home, label: 'Dashboard' },
     { screen: 'clients', icon: LucideIcons.Users, label: 'Directorio', groupLabel: 'Clientes', isSubItem: true },
     { screen: 'declaraciones', icon: LucideIcons.LayoutGrid, label: 'Declaraciones', isSubItem: true },
@@ -481,9 +481,9 @@ const App: React.FC = () => {
     { screen: 'services', icon: LucideIcons.Globe, label: 'Servicios' },
     { screen: 'settings', icon: LucideIcons.Settings, label: 'Ajustes' },
     { screen: 'audit_log', icon: LucideIcons.History, label: 'Auditoría' },
-    { screen: 'migracion_zifact' as any, icon: LucideIcons.ArrowRightLeft, label: 'Migración Zifact', onClick: () => navigate('migracion_zifact') },
-    { screen: 'landing' as any, icon: LucideIcons.Globe, label: 'Sitio Público' },
-  ];
+    { screen: 'migracion_zifact', icon: LucideIcons.ArrowRightLeft, label: 'Migración Zifact', onClick: () => navigate('migracion_zifact') },
+    { screen: 'landing', icon: LucideIcons.Globe, label: 'Sitio Público' },
+  ] as any[]);
 
   if (appState === 'services') return (
     <ServicesPage

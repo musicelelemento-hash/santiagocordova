@@ -3,11 +3,12 @@ import { Client, ServiceFeesConfig, TaxRegime, DeclarationStatus } from '../../t
 import * as LucideIcons from 'lucide-react';
 import { getClientDebtSummary, getClientUndeclaredSummary } from '../../services/complianceEngine';
 import { getClientServiceFee } from '../../services/clientService';
+import { getWhatsAppUrl } from '../../services/sri';
 
 interface ClientsDashboardProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
-    onView: (client: Client) => void;
+    onView: (client: Client, tab?: string) => void;
     onExportCSV?: () => void;
 }
 
@@ -272,6 +273,26 @@ export const ClientsDashboard: React.FC<ClientsDashboardProps> = ({ clients, ser
                                 }`}>
                                     {isOk ? '✓' : isOverdue ? '⚠' : '$'}
                                 </span>
+
+                                {/* Bóveda & WhatsApp Quick Actions */}
+                                <div className="flex items-center gap-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                    <button
+                                        onClick={() => onView(client, 'vault')}
+                                        className="p-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 transition-all active:scale-95"
+                                        title="Abrir Bóveda de Claves y Firma"
+                                    >
+                                        <LucideIcons.Lock size={13} />
+                                    </button>
+                                    {client.phones && client.phones.length > 0 && client.phones[0] && (
+                                        <button
+                                            onClick={() => window.open(getWhatsAppUrl(client.phones![0]), '_blank')}
+                                            className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all active:scale-95"
+                                            title="Abrir chat de WhatsApp"
+                                        >
+                                            <LucideIcons.MessageCircle size={13} />
+                                        </button>
+                                    )}
+                                </div>
 
                                 <LucideIcons.ChevronRight size={12} className="text-slate-300 dark:text-white/20 group-hover:text-primary transition-colors flex-shrink-0" />
                             </div>

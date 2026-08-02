@@ -569,10 +569,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         toast.success(isPriority ? 'Prioridad de declaración fijada' : 'Prioridad quitada');
     };
 
-    const handleOpenClientDetails = (client: Client) => {
+    const handleOpenClientDetails = (client: Client, tab?: 'profile' | 'history' | 'vault' | 'settings') => {
         setSelectedClient(client);
+        const targetTab = tab || initialTab || 'profile';
+        (window as any).__TEMP_INITIAL_TAB__ = targetTab;
         setIsClientDetailsOpen(true);
-        navigate('clients', { clientIdToView: client.id });
+        navigate('clients', { clientIdToView: client.id, initialTab: targetTab });
     };
 
     const handleCloseClientDetails = () => {

@@ -1,7 +1,7 @@
 
 import React, { memo } from 'react';
 import { Client, DeclarationStatus, ServiceFeesConfig, TaxRegime, Declaration, InternalStatus } from '../../types';
-import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, safeFormat } from '../../services/sri';
+import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, safeFormat, getWhatsAppUrl } from '../../services/sri';
 import { getClientServiceFee } from '../../services/clientService';
 import { isPast, differenceInCalendarDays, differenceInHours } from 'date-fns';
 import * as LucideIcons from 'lucide-react';
@@ -228,11 +228,20 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            {client.phones && client.phones[0] && (
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); onView(client, 'vault'); }}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-500/20 transition-colors text-[10px] font-semibold uppercase tracking-wider"
+                                title="Abrir Bóveda de Claves y Firma"
+                            >
+                                <LucideIcons.Lock size={12} />
+                                <span>Bóveda</span>
+                            </button>
+                            {client.phones && client.phones.length > 0 && client.phones[0] && (
                                 <button 
-                                    onClick={(e) => { e.stopPropagation(); window.open(`https://wa.me/${client.phones![0].replace(/\D/g,'')}`, '_blank'); }}
+                                    onClick={(e) => { e.stopPropagation(); window.open(getWhatsAppUrl(client.phones![0]), '_blank'); }}
                                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors text-[10px] font-semibold uppercase tracking-wider"
+                                    title="Abrir chat de WhatsApp"
                                 >
                                     <LucideIcons.MessageCircle size={12} />
                                     <span>WhatsApp</span>

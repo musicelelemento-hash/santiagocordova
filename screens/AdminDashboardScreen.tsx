@@ -1711,7 +1711,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                                             <div className="flex items-center gap-2 mt-0.5">
                                                                 <p className="text-[10px] text-slate-400 font-mono">{c.ruc}</p>
                                                                 <span className="text-[9px] font-bold text-slate-400 bg-slate-100 dark:bg-white/5 px-1.5 py-0.5 rounded-md uppercase">
-                                                                    {c.regime === 'Régimen General' ? 'General' : c.regime === 'Rimpe Emprendedor' ? 'Emprendedor' : 'Popular'}
+                                                                    {c.regime === TaxRegime.General ? 'General' : c.regime === TaxRegime.RimpeEmprendedor ? 'Emprendedor' : 'Popular'}
                                                                 </span>
                                                             </div>
                                                         </div>

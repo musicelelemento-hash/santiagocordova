@@ -3,7 +3,7 @@ import React, { memo } from 'react';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Client, ServiceFeesConfig, DeclarationStatus, TaxRegime } from '../../types';
-import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, getNextPeriod, safeFormat, requiresIva } from '../../services/sri';
+import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, getNextPeriod, safeFormat, requiresIva, getWhatsAppUrl } from '../../services/sri';
 import { getClientServiceFee } from '../../services/clientService';
 import { TaxFrequency, getClientDebtSummary } from '../../services/complianceEngine';
 import { isPast, differenceInHours } from 'date-fns';
@@ -12,7 +12,7 @@ import * as LucideIcons from 'lucide-react';
 interface VirtualClientTableProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
-    onView: (client: Client) => void;
+    onView: (client: Client, tab?: string) => void;
     onQuickAction: (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate' | 'restore' | 'purge') => void;
     onUploadReceipt: (client: Client, period?: string) => void;
     frequency?: TaxFrequency | 'all';
@@ -222,10 +222,10 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const msg = encodeURIComponent(`Estimado/a ${client.tradeName || client.name}, le recordamos cordialmente que tiene un saldo pendiente de $${debtSummary.totalDebt.toFixed(2)} correspondiente a sus honorarios contables. Agradecemos su pronto pago.`);
-                                const phone = client.phones && client.phones.length > 0 ? client.phones[0].replace(/\D/g, '') : '';
+                                const msg = `Estimado/a *${client.tradeName || client.name}*, le recordamos cordialmente que tiene un saldo pendiente de *$${debtSummary.totalDebt.toFixed(2)}* correspondiente a sus honorarios contables. Agradecemos su pronto pago.`;
+                                const phone = client.phones && client.phones.length > 0 ? client.phones[0] : '';
                                 if (phone) {
-                                    window.open(`https://wa.me/593${phone.startsWith('0') ? phone.slice(1) : phone}?text=${msg}`, '_blank');
+                                    window.open(getWhatsAppUrl(phone, msg), '_blank');
                                 } else {
                                     alert('El cliente no tiene teléfono registrado.');
                                 }
@@ -239,10 +239,10 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const msg = encodeURIComponent(`Aviso Urgente: Estimado/a ${client.tradeName || client.name}, sus servicios contables y declaraciones al SRI se encuentran suspendidos debido a un saldo pendiente de $${debtSummary.totalDebt.toFixed(2)}. Por favor regularizar su pago de inmediato.`);
-                                const phone = client.phones && client.phones.length > 0 ? client.phones[0].replace(/\D/g, '') : '';
+                                const msg = `Aviso Urgente: Estimado/a *${client.tradeName || client.name}*, sus servicios contables y declaraciones al SRI se encuentran suspendidos debido a un saldo pendiente de *$${debtSummary.totalDebt.toFixed(2)}*. Por favor regularizar su pago de inmediato.`;
+                                const phone = client.phones && client.phones.length > 0 ? client.phones[0] : '';
                                 if (phone) {
-                                    window.open(`https://wa.me/593${phone.startsWith('0') ? phone.slice(1) : phone}?text=${msg}`, '_blank');
+                                    window.open(getWhatsAppUrl(phone, msg), '_blank');
                                 } else {
                                     alert('El cliente no tiene teléfono registrado.');
                                 }
@@ -255,22 +255,38 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                         </button>
                     </div>
                 ) : (
-                    <>
+                    <div className="flex items-center gap-2 w-full">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onView(client, 'vault'); }}
+                            className="p-2.5 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/20 shadow-sm active:scale-95"
+                            title="Abrir Bóveda de Claves y Firma"
+                        >
+                            <LucideIcons.Lock size={14} />
+                        </button>
+                        {client.phones && client.phones.length > 0 && client.phones[0] && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); window.open(getWhatsAppUrl(client.phones![0]), '_blank'); }}
+                                className="p-2.5 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-sm active:scale-95"
+                                title="Abrir WhatsApp"
+                            >
+                                <LucideIcons.MessageCircle size={14} />
+                            </button>
+                        )}
                         <button
                             onClick={(e) => { e.stopPropagation(); onView(client); }}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all bg-surface-low text-on-surface hover:bg-surface-lowest border-0 shadow-sm"
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all bg-surface-low text-on-surface hover:bg-surface-lowest border-0 shadow-sm"
                         >
-                            DETALLES
-                            <LucideIcons.ArrowRight size={14} />
+                            VER
+                            <LucideIcons.ArrowRight size={13} />
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); onUploadReceipt(client, period); }}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all shadow-md ${isCampaignDone ? 'bg-surface-low text-on-surface-variant' : 'bg-primary text-white shadow-primary/20 hover:shadow-primary/40'}`}
+                            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl font-premium font-bold text-[10px] uppercase tracking-wider transition-all shadow-md ${isCampaignDone ? 'bg-surface-low text-on-surface-variant' : 'bg-primary text-white shadow-primary/20 hover:shadow-primary/40'}`}
                         >
-                            {isCampaignDone ? <LucideIcons.Check size={14} strokeWidth={3} /> : <LucideIcons.Upload size={14} />}
+                            {isCampaignDone ? <LucideIcons.Check size={13} strokeWidth={3} /> : <LucideIcons.Upload size={13} />}
                             {isCampaignDone ? 'LISTO' : 'CARGAR'}
                         </button>
-                    </>
+                    </div>
                 )}
             </div>
         </div>
