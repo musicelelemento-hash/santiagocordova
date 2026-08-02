@@ -106,6 +106,8 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
         return { withSignature, withoutSignature, getDaysLeft, expired, expiringSoon, ok };
     }, [clients, searchTerm]);
 
+    const [backupFilterMode, setBackupFilterMode] = useState<'todos' | 'externos' | 'historicos'>('todos');
+
     const filteredBackupSignatures = useMemo(() => {
         // 1. Desduplicar el arreglo por RUC + Caducidad (o Titular + Nombre de archivo)
         const uniqueMap = new Map<string, BackupSignatureItem>();
@@ -121,23 +123,32 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
 
         const uniqueList = Array.from(uniqueMap.values());
 
-        // 2. Filtrar únicamente los que NO son clientes activos ya registrados en el directorio principal
-        const externalOnly = uniqueList.filter(b => {
-            if (!b.ruc) return true;
-            const existsInActive = clients.some(c => !c.isDeleted && c.isActive && c.ruc.trim() === b.ruc.trim());
-            return !existsInActive;
+        // Identificar si pertenece a un cliente activo registrado
+        const categorized = uniqueList.map(b => {
+            const isClientActive = Boolean(b.ruc && clients.some(c => !c.isDeleted && c.isActive && c.ruc.trim() === b.ruc.trim()));
+            return {
+                ...b,
+                isClientActive
+            };
         });
+
+        let baseList = categorized;
+        if (backupFilterMode === 'externos') {
+            baseList = categorized.filter(b => !b.isClientActive);
+        } else if (backupFilterMode === 'historicos') {
+            baseList = categorized.filter(b => b.isClientActive);
+        }
 
         // 3. Aplicar filtro de búsqueda
         const q = searchTerm.toLowerCase().trim();
-        if (!q) return externalOnly;
-        return externalOnly.filter(b => 
+        if (!q) return baseList;
+        return baseList.filter(b => 
             b.titular.toLowerCase().includes(q) ||
             b.ruc.includes(q) ||
             (b.category && b.category.toLowerCase().includes(q)) ||
             (b.provider && b.provider.toLowerCase().includes(q))
         );
-    }, [backupSignatures, clients, searchTerm]);
+    }, [backupSignatures, clients, searchTerm, backupFilterMode]);
 
     const togglePasswordVisibility = (id: string) => {
         setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
@@ -302,7 +313,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             <Archive size={14} />
                             <span>📦 Respaldos & Ventas Externas</span>
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${tab === 'respaldos-externos' ? 'bg-white/20 text-white' : 'bg-purple-500/15 text-purple-300'}`}>
-                                {backupSignatures.length}
+                                {filteredBackupSignatures.length}
                             </span>
                         </button>
                     </div>
@@ -586,6 +597,33 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             <p className="text-xs text-slate-300 leading-relaxed">
                                 Aquí se respaldan las firmas de clientes que no llevan contabilidad mensual contigo (ej: solo venta de sistema Ecuafact o firma ocasional). Puedes convertirlos a cliente activo en 1 clic.
                             </p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 bg-black/40 p-1.5 rounded-2xl border border-white/10 shrink-0">
+                            <button
+                                onClick={() => setBackupFilterMode('todos')}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase transition-all ${
+                                    backupFilterMode === 'todos' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                                }`}
+                            >
+                                Todos
+                            </button>
+                            <button
+                                onClick={() => setBackupFilterMode('externos')}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase transition-all ${
+                                    backupFilterMode === 'externos' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                                }`}
+                            >
+                                Solo Externos
+                            </button>
+                            <button
+                                onClick={() => setBackupFilterMode('historicos')}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase transition-all ${
+                                    backupFilterMode === 'historicos' ? 'bg-purple-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                                }`}
+                            >
+                                Históricos Activos
+                            </button>
                         </div>
                     </div>
 

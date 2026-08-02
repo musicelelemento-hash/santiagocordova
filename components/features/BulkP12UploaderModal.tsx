@@ -361,7 +361,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     ...res,
                     matchedClient: finalMatched,
                     expirationComparison: expCompFinal,
-                    saveMode: expCompFinal.status === 'duplicate' ? 'omit' : (expCompFinal.status === 'older' ? 'backup_only' : item.saveMode),
+                    saveMode: (expCompFinal.status === 'duplicate' || expCompFinal.status === 'older') ? 'omit' : item.saveMode,
                     unlockedViaPattern: candPassword
                 };
             }
