@@ -59,6 +59,8 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     const [idCardFront, setIdCardFront] = useState<StoredFile | null>(null);
     const [idCardBack, setIdCardBack] = useState<StoredFile | null>(null);
     const [idCardSelfie, setIdCardSelfie] = useState<StoredFile | null>(null);
+    const [rucPdf, setRucPdf] = useState<StoredFile | null>(null);
+    const [ecuafactSignedRequest, setEcuafactSignedRequest] = useState<StoredFile | null>(null);
 
     // Generating State
     const [isGeneratingDocx, setIsGeneratingDocx] = useState(false);
@@ -83,6 +85,38 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         }
         return initialClient || null;
     }, [selectedClientId, clients, initialClient]);
+
+    // Populate state from targetClient when selected
+    useEffect(() => {
+        if (targetClient) {
+            setIdCardFront(targetClient.idCardFront || null);
+            setIdCardBack(targetClient.idCardBack || null);
+            setIdCardSelfie(targetClient.idCardSelfie || null);
+            setRucPdf(targetClient.rucPdf || null);
+            setEcuafactSignedRequest(targetClient.ecuafactSignedRequest || null);
+            
+            if (targetClient.facturadorConfig) {
+                setUsername(targetClient.facturadorConfig.username || targetClient.ruc);
+                setPassword(targetClient.facturadorConfig.password || targetClient.sriPassword);
+                setProgramName(targetClient.facturadorConfig.programName || programName);
+                if (targetClient.facturadorConfig.documentCount !== undefined) {
+                    setDocumentCount(targetClient.facturadorConfig.documentCount);
+                }
+                if (targetClient.facturadorConfig.price !== undefined) {
+                    setPrice(targetClient.facturadorConfig.price);
+                }
+            } else {
+                setUsername(targetClient.ruc || '');
+                setPassword(targetClient.sriPassword || '');
+            }
+        } else {
+            setIdCardFront(null);
+            setIdCardBack(null);
+            setIdCardSelfie(null);
+            setRucPdf(null);
+            setEcuafactSignedRequest(null);
+        }
+    }, [selectedClientId, targetClient]);
 
     // Filtered Client List
     const filteredClients = useMemo(() => {
@@ -191,9 +225,12 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         const updatedClient = {
             ...targetClient,
             facturadorConfig: newFacturadorConfig,
-            ...(idCardFront ? { idCardFront } : {}),
-            ...(idCardBack ? { idCardBack } : {}),
-            ...(idCardSelfie ? { idCardSelfie } : {}),
+            idCardFront: idCardFront || undefined,
+            idCardBack: idCardBack || undefined,
+            idCardSelfie: idCardSelfie || undefined,
+            rucPdf: rucPdf || undefined,
+            ecuafactSignedRequest: ecuafactSignedRequest || undefined,
+            facturadorActivationStatus: targetClient.facturadorActivationStatus || 'recursos_listos'
         };
 
         updateClient(targetClient.id, updatedClient);
@@ -704,18 +741,22 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                         </div>
                     )}
 
-                    {/* ── REQUISITOS OPCIONALES DE IDENTIDAD ── */}
+                    {/* ── REQUISITOS OPCIONALES DE IDENTIDAD Y TRAMITACIÓN ── */}
                     <div className="p-4 bg-slate-900/40 rounded-2xl border border-white/5 space-y-3">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
                             <Camera size={14} className="text-[#00A896]" />
-                            Archivos de Identidad para Bóveda (Opcional)
+                            Requisitos y Recursos para el Trámite
                         </h4>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                             {([
                                 { id: 'front',  label: 'Cédula Anverso', icon: '🪪', state: idCardFront,  setter: setIdCardFront,  inputId: 'sales-id-front',  formType: 'CEDULA_ANVERSO' },
                                 { id: 'back',   label: 'Cédula Reverso', icon: '🪪', state: idCardBack,   setter: setIdCardBack,   inputId: 'sales-id-back',   formType: 'CEDULA_REVERSO' },
                                 { id: 'selfie', label: 'Foto Selfie',     icon: '📸', state: idCardSelfie, setter: setIdCardSelfie, inputId: 'sales-id-selfie', formType: 'CEDULA_SELFIE'  },
+                                { id: 'ruc',    label: 'RUC Actual (PDF)', icon: '📄', state: rucPdf,      setter: setRucPdf,      inputId: 'sales-ruc-pdf',    formType: 'RUC_PDF' },
+                                ...(activeCategory === 'ecuafact' ? [
+                                    { id: 'signed', label: 'Solicitud Firmada', icon: '✍️', state: ecuafactSignedRequest, setter: setEcuafactSignedRequest, inputId: 'sales-signed-req', formType: 'ECUAFACT_SIGNED_REQUEST' }
+                                ] : [])
                             ] as const).map(slot => (
                                 <div key={slot.id} className="flex flex-col gap-1.5">
                                     <input

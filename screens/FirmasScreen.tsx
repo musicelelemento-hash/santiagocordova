@@ -2,7 +2,8 @@ import React, { useMemo, useState, useEffect } from 'react';
 import {
     KeyRound, ShieldCheck, ShieldOff, PhoneCall, AlertTriangle,
     CheckCircle2, ArrowRight, Search, FileText, Check, Copy, ExternalLink,
-    List, LayoutGrid, UploadCloud, Archive, Eye, EyeOff, UserPlus, Trash2, Laptop, Shield
+    List, LayoutGrid, UploadCloud, Archive, Eye, EyeOff, UserPlus, Trash2, Laptop, Shield,
+    ShoppingBag, Lock, Camera, Globe, RefreshCw, Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -19,7 +20,7 @@ interface FirmasScreenProps {
     navigate: (screen: any, options?: any) => void;
 }
 
-type FirmasTab = 'vigentes' | 'sin-firma' | 'respaldos-externos';
+type FirmasTab = 'vigentes' | 'sin-firma' | 'respaldos-externos' | 'facturadores';
 type ViewMode = 'lineal' | 'tarjetas';
 
 interface BackupSignatureItem {
@@ -36,7 +37,7 @@ interface BackupSignatureItem {
 }
 
 export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
-    const { clients, addClient } = useAppStore();
+    const { clients, addClient, updateClient } = useAppStore();
     const { toast } = useToast();
     const [tab, setTab] = useState<FirmasTab>('vigentes');
     const [viewMode, setViewMode] = useState<ViewMode>('lineal');
@@ -148,6 +149,18 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
             (b.provider && b.provider.toLowerCase().includes(q))
         );
     }, [backupSignatures, clients, searchTerm]);
+
+    const facturadorClients = useMemo(() => {
+        const q = searchTerm.toLowerCase().trim();
+        return clients.filter(c => {
+            if (c.isDeleted || !c.isActive || !c.facturadorConfig) return false;
+            if (!q) return true;
+            return c.name.toLowerCase().includes(q) || 
+                   c.ruc.includes(q) || 
+                   (c.tradeName && c.tradeName.toLowerCase().includes(q)) ||
+                   c.facturadorConfig?.programName?.toLowerCase().includes(q);
+        });
+    }, [clients, searchTerm]);
 
     const togglePasswordVisibility = (id: string) => {
         setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
@@ -315,10 +328,24 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                 {filteredBackupSignatures.length}
                             </span>
                         </button>
+                        <button
+                            onClick={() => setTab('facturadores')}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                                tab === 'facturadores'
+                                    ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/25'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                        >
+                            <ShoppingBag size={14} />
+                            <span>Facturadores y Planes</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${tab === 'facturadores' ? 'bg-white/20 text-white' : 'bg-[#00A896]/15 text-[#00A896]'}`}>
+                                {clients.filter(c => !c.isDeleted && c.isActive && c.facturadorConfig).length}
+                            </span>
+                        </button>
                     </div>
 
                     {/* SELECTOR DE MODO DE VISTA */}
-                    {tab !== 'respaldos-externos' && (
+                    {(tab !== 'respaldos-externos' && tab !== 'facturadores') && (
                         <div className="flex items-center gap-1 bg-slate-900/60 backdrop-blur-2xl p-1 rounded-2xl border border-white/10">
                             <button
                                 onClick={() => setViewMode('lineal')}
@@ -716,6 +743,215 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── TAB 4: REGISTRO DE PLANES Y FACTURADORES ── */}
+            {tab === 'facturadores' && (
+                <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-6 md:p-8 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                                Registro de Trámites y Activaciones de Facturadores
+                            </h3>
+                            <p className="text-[11px] text-slate-400 font-medium">
+                                Descarga los recursos recopilados y súbelos a la plataforma para tramitar y activar sus planes.
+                            </p>
+                        </div>
+                        <span className="px-3 py-1 rounded-full text-[10px] font-mono bg-[#00A896]/15 text-[#00A896] font-bold border border-[#00A896]/30">
+                            Total: {facturadorClients.length} Planes
+                        </span>
+                    </div>
+
+                    {facturadorClients.length === 0 ? (
+                        <div className="p-8 text-center border border-dashed border-white/10 rounded-3xl text-slate-400">
+                            No se encontraron clientes con planes de facturador registrados que coincidan con la búsqueda.
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto rounded-3xl border border-white/5 bg-slate-950/40">
+                            <table className="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr className="border-b border-white/10 bg-slate-900/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                        <th className="py-4 px-5">Cliente</th>
+                                        <th className="py-4 px-5">Plan Vendido</th>
+                                        <th className="py-4 px-5">Recursos / Archivos</th>
+                                        <th className="py-4 px-5">Estado de Trámite</th>
+                                        <th className="py-4 px-5">Credenciales Facturador</th>
+                                        <th className="py-4 px-5 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5">
+                                    {facturadorClients.map((client) => {
+                                        const config = client.facturadorConfig!;
+                                        const pwdVisible = visiblePasswords[client.id] || false;
+                                        const isCopied = copiedId === client.id;
+                                        const providerUrl = config.url || (config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' : 'https://app.ecuafact.com');
+
+                                        return (
+                                            <tr key={client.id} className="hover:bg-white/[0.01] transition-colors">
+                                                <td className="py-4 px-5">
+                                                    <p className="font-bold text-white uppercase">{client.tradeName || client.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-mono">{client.ruc}</p>
+                                                </td>
+                                                <td className="py-4 px-5">
+                                                    <p className="font-bold text-teal-400">{config.programName}</p>
+                                                    <p className="text-[10px] text-slate-400 font-mono">
+                                                        {config.documentStatus || 'Plan Registrado'} {config.price ? `— $${config.price}` : ''}
+                                                    </p>
+                                                </td>
+                                                <td className="py-4 px-5">
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {client.idCardFront ? (
+                                                            <button
+                                                                onClick={() => downloadStoredFile(client.idCardFront)}
+                                                                className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1"
+                                                                title="Descargar Cédula Frontal"
+                                                            >
+                                                                <Download size={10} /> 🪪 C1
+                                                            </button>
+                                                        ) : (
+                                                            <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-white/5" title="Falta Cédula Frontal">⚠️ C1</span>
+                                                        )}
+
+                                                        {client.idCardBack ? (
+                                                            <button
+                                                                onClick={() => downloadStoredFile(client.idCardBack)}
+                                                                className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1"
+                                                                title="Descargar Cédula Reverso"
+                                                            >
+                                                                <Download size={10} /> 🪪 C2
+                                                            </button>
+                                                        ) : (
+                                                            <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-white/5" title="Falta Cédula Reverso">⚠️ C2</span>
+                                                        )}
+
+                                                        {client.idCardSelfie ? (
+                                                            <button
+                                                                onClick={() => downloadStoredFile(client.idCardSelfie)}
+                                                                className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1"
+                                                                title="Descargar Foto Selfie"
+                                                            >
+                                                                <Download size={10} /> 📸 Selfie
+                                                            </button>
+                                                        ) : (
+                                                            <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-white/5" title="Falta Selfie">⚠️ Selfie</span>
+                                                        )}
+
+                                                        {client.rucPdf ? (
+                                                            <button
+                                                                onClick={() => downloadStoredFile(client.rucPdf)}
+                                                                className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1"
+                                                                title="Descargar RUC Actualizado"
+                                                            >
+                                                                <Download size={10} /> 📄 RUC
+                                                            </button>
+                                                        ) : (
+                                                            <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-white/5" title="Falta RUC Actualizado">⚠️ RUC</span>
+                                                        )}
+
+                                                        {config.programName?.toLowerCase().includes('ecuafact') && (
+                                                            client.ecuafactSignedRequest ? (
+                                                                <button
+                                                                    onClick={() => downloadStoredFile(client.ecuafactSignedRequest)}
+                                                                    className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1"
+                                                                    title="Descargar Solicitud de Terceros Firmada"
+                                                                >
+                                                                    <Download size={10} /> ✍️ Solicitud
+                                                                </button>
+                                                            ) : (
+                                                                <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-white/5" title="Falta Solicitud Firmada">⚠️ Solicitud</span>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 px-5">
+                                                    <select
+                                                        value={client.facturadorActivationStatus || 'recursos_listos'}
+                                                        onChange={(e) => {
+                                                            const newStatus = e.target.value as any;
+                                                            updateClient(client.id, { facturadorActivationStatus: newStatus });
+                                                            toast.success(`Trámite de ${client.name} marcado como: ${
+                                                                newStatus === 'recursos_listos' ? 'Recursos Listos' :
+                                                                newStatus === 'subido_plataforma' ? 'Subido a Plataforma' : 'Activado y Listo'
+                                                            }`);
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-xl border font-bold outline-none cursor-pointer bg-slate-950 ${
+                                                            (client.facturadorActivationStatus === 'activado') ? 'border-emerald-500/30 text-emerald-400' :
+                                                            (client.facturadorActivationStatus === 'subido_plataforma') ? 'border-amber-500/30 text-amber-400' :
+                                                            'border-rose-500/30 text-rose-400'
+                                                        }`}
+                                                    >
+                                                        <option value="recursos_listos">🔴 Recursos Listos</option>
+                                                        <option value="subido_plataforma">🟡 Subido a Plataforma</option>
+                                                        <option value="activado">🟢 Activado y Listo</option>
+                                                    </select>
+                                                </td>
+                                                <td className="py-4 px-5">
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-1 text-[11px] text-slate-300 font-mono">
+                                                            <span className="text-slate-500">U:</span> {config.username || client.ruc}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-slate-500 font-mono text-[11px]">C:</span>
+                                                            <div className="inline-flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
+                                                                <span className="font-bold text-slate-300 min-w-[60px] text-[10px] font-mono">
+                                                                    {pwdVisible ? (config.password || client.sriPassword) : '••••••••'}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => togglePasswordVisibility(client.id)}
+                                                                    className="p-0.5 hover:text-white text-slate-400 transition-colors"
+                                                                    title="Ver / Ocultar"
+                                                                >
+                                                                    {pwdVisible ? <EyeOff size={10} /> : <Eye size={10} />}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleCopyPassword(client.id, config.password || client.sriPassword)}
+                                                                    className="p-0.5 hover:text-teal-400 text-slate-400 transition-colors"
+                                                                    title="Copiar clave"
+                                                                >
+                                                                    {isCopied ? <Check size={10} className="text-teal-400" /> : <Copy size={10} />}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-4 px-5 text-right space-x-1.5 whitespace-nowrap">
+                                                    <button
+                                                        onClick={() => {
+                                                            const message = `Estimado(a) *${client.name}*, le saludamos de SantiagoCórdova.com. Le informamos que su facturador electrónico *${config.programName}* ha sido activado con éxito.\n\n*Plataforma:* ${providerUrl}\n*Usuario:* ${config.username || client.ruc}\n*Clave:* ${config.password || client.sriPassword}\n\nYa puede emitir sus facturas electrónicas normalmente.`;
+                                                            const pObj = client.phones?.[0];
+                                                            const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
+                                                            setWhatsAppPrompt({ clientName: client.name, phone, message });
+                                                        }}
+                                                        className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-emerald-500/20"
+                                                        title="Enviar credenciales de facturación por WhatsApp"
+                                                    >
+                                                        <PhoneCall size={11} /> WhatsApp
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => window.open(providerUrl, '_blank')}
+                                                        className="px-2.5 py-1.5 rounded-lg bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] font-bold uppercase transition-all inline-flex items-center gap-1 border border-[#00A896]/20"
+                                                        title="Visitar plataforma del Facturador"
+                                                    >
+                                                        <Globe size={11} /> Abrir
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => navigate('clients', { clientIdToView: client.id, initialTab: 'vault' })}
+                                                        className="px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 font-bold uppercase transition-all inline-flex items-center"
+                                                        title="Ver detalles del cliente"
+                                                    >
+                                                        <ExternalLink size={11} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     )}
                 </div>

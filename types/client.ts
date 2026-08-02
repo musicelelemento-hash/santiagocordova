@@ -191,6 +191,8 @@ export interface Client {
     facturadorConfig?: FacturadorConfig;
     isCourtesy?: boolean;
     category?: string;
+    ecuafactSignedRequest?: StoredFile;
+    facturadorActivationStatus?: 'recursos_listos' | 'subido_plataforma' | 'activado';
 }
 
 export type ClientFilter = {
