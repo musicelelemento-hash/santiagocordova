@@ -124,7 +124,6 @@ const extractValidPasswordNameTokens = (fullName: string): string[] => {
 
 // Coincidencia estricta por RUC exacto/subcadena O por 1er Apellido AND Nombre de pila
 const findMatchingClient = (filename: string, manualRuc: string, clients: Client[], metaRuc?: string): Client | undefined => {
-    // 1. Coincidencia por RUC de Metadatos del certificado o RUC manual
     const rucTarget = (metaRuc || manualRuc || '').replace(/\D/g, '');
     if (rucTarget.length >= 9) {
         const matchedByRuc = clients.find(c => {
@@ -134,7 +133,6 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         if (matchedByRuc) return matchedByRuc;
     }
 
-    // 2. Coincidencia por RUC/Cédula en el nombre del archivo (ej: 1805242094 en cert-CHANGO... o 18479753_identity_0702062738.p12)
     const numbersInFile = extractPossibleRucOrCedula(filename);
     for (const num of numbersInFile) {
         const cleanNum = num.replace(/\D/g, '');
@@ -147,7 +145,6 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         }
     }
 
-    // 3. Nombre exacto de archivo .p12 ya registrado previamente
     const targetClean = cleanFileName(filename);
     if (targetClean && targetClean.length >= 4) {
         const matchedByFile = clients.find(c => {
@@ -158,7 +155,6 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         if (matchedByFile) return matchedByFile;
     }
 
-    // 4. Coincidencia por NOMBRE EXTRAÍDO DEL CERTIFICADO (1er Apellido AND 1er u 2do Nombre)
     const extractedName = parseNameFromFileName(filename);
     if (extractedName) {
         const certTokens = extractedName.split(/\s+/).filter(w => w.length >= 3);
@@ -190,45 +186,72 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
     return undefined;
 };
 
-// Evaluador inteligente de fechas de caducidad y firmas duplicadas
+// Normalizador estricto de fecha YYYY-MM-DD para evitar desfases de zonas horarias (UTC vs Local Time -05:00)
+const normalizeDateKey = (dateInput?: Date | string): string => {
+    if (!dateInput) return '';
+    try {
+        let dateObj: Date;
+        if (typeof dateInput === 'string') {
+            dateObj = new Date(dateInput.includes('T') ? dateInput : `${dateInput}T12:00:00Z`);
+        } else {
+            dateObj = dateInput;
+        }
+        if (isNaN(dateObj.getTime())) return '';
+
+        const y = dateObj.getUTCFullYear();
+        const m = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(dateObj.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    } catch {
+        return '';
+    }
+};
+
+const formatNormalizedDateStr = (dateInput?: Date | string): string => {
+    if (!dateInput) return '—';
+    const key = normalizeDateKey(dateInput);
+    if (!key) return '—';
+    const [y, m, d] = key.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d, 12, 0, 0);
+    return format(dateObj, "d MMM yyyy", { locale: es });
+};
+
+// Evaluador preciso de fecha de expiracion sin falsos desbordes de 1 dia por hora
 const evaluateExpirationComparison = (newExpDate?: Date, existingClient?: Client, fileName?: string) => {
     const backupList: any[] = JSON.parse(localStorage.getItem('sri_backup_signatures') || '[]');
     const inBackup = backupList.find(b => (b.ruc && existingClient && b.ruc.trim() === existingClient.ruc.trim()) || (fileName && cleanFileName(b.fileName) === cleanFileName(fileName)));
 
-    if (!newExpDate || (!existingClient?.signatureExpirationDate && !inBackup)) {
+    const refDateStr = existingClient?.signatureExpirationDate || inBackup?.expirationDate;
+
+    if (!newExpDate || !refDateStr) {
         return {
             status: 'new_client' as const,
-            newStr: newExpDate ? format(newExpDate, "d MMM yyyy", { locale: es }) : '—',
+            newStr: formatNormalizedDateStr(newExpDate),
             existingStr: 'Sin firma previa'
         };
     }
 
-    const refDateStr = existingClient?.signatureExpirationDate || inBackup?.expirationDate;
-    if (!refDateStr) {
-        return {
-            status: 'new_client' as const,
-            newStr: format(newExpDate, "d MMM yyyy", { locale: es }),
-            existingStr: 'Sin fecha registrada'
-        };
+    const newKey = normalizeDateKey(newExpDate);
+    const existingKey = normalizeDateKey(refDateStr);
+
+    const newStr = formatNormalizedDateStr(newExpDate);
+    const existingStr = formatNormalizedDateStr(refDateStr);
+
+    if (newKey === existingKey) {
+        return { status: 'duplicate' as const, newStr, existingStr };
     }
 
-    const newExpTime = new Date(newExpDate).setHours(0, 0, 0, 0);
-    const existingExp = new Date(refDateStr);
-    const existingExpTime = existingExp.setHours(0, 0, 0, 0);
+    const newTime = new Date(`${newKey}T12:00:00Z`).getTime();
+    const existingTime = new Date(`${existingKey}T12:00:00Z`).getTime();
 
-    const newStr = format(newExpDate, "d MMM yyyy", { locale: es });
-    const existingStr = format(existingExp, "d MMM yyyy", { locale: es });
-
-    if (newExpTime > existingExpTime) {
+    if (newTime > existingTime) {
         return { status: 'renewal' as const, newStr, existingStr };
-    } else if (newExpTime === existingExpTime) {
-        return { status: 'duplicate' as const, newStr, existingStr };
     } else {
         return { status: 'older' as const, newStr, existingStr };
     }
 };
 
-// Generar candidatos usando TitleCase + Años (Chango2026) Y TitleCase + 4 primeros dígitos de Cédula/RUC (Chango1805)
+// Generar candidatos usando TitleCase + Años (Chango2026, Lorena2025) Y TitleCase + 4 primeros dígitos de Cédula/RUC (Chango1805)
 const generatePasswordCandidates = (client?: Client, fileName?: string, rucOrCedula?: string, storedPasswords?: (string | undefined)[]): string[] => {
     const candidates = new Set<string>();
 
@@ -248,7 +271,6 @@ const generatePasswordCandidates = (client?: Client, fileName?: string, rucOrCed
     const allTokens = Array.from(new Set([...tokensClient, ...tokensCert]));
 
     const years = ['2026', '2025', '2027', '2024'];
-
     const cleanRuc = (rucOrCedula || (client ? client.ruc : '') || '').replace(/\D/g, '');
     const first4Ruc = cleanRuc.length >= 4 ? cleanRuc.slice(0, 4) : '';
 
@@ -331,7 +353,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             manualRucInput: rucToUse,
             possibleClientHint: matchedClient,
             extractedNameFromCert: extractedName,
-            candidateSuggestions: candidates.slice(0, 10)
+            candidateSuggestions: candidates.slice(0, 12)
         };
 
         for (const candPassword of candidates) {
@@ -388,7 +410,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                 const isDuplicateInBatch = seenSignaturesInBatch.has(signatureSignatureHash) && processed.status === 'unlocked';
 
                 if (isDuplicateInDB || isDuplicateInBatch) {
-                    // AUTO-DESCARTAR FIRMAS QUE YA EXISTEN CON LA MISMA CADUCIDAD
                     discardedDuplicatesCount++;
                 } else {
                     if (processed.status === 'unlocked' && signatureSignatureHash) {
@@ -590,13 +611,13 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                         <div className="space-y-2 max-w-md">
                             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 text-[10px] font-black uppercase tracking-[0.25em] shadow-lg">
-                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER Y DESCARTE DE DUPLICADOS
+                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER Y DESCARTE DE DUPLICADOS EXACTOS
                             </div>
                             <h3 className="text-xl font-black text-white uppercase tracking-tight font-display">
-                                Descartando Firmas Duplicadas
+                                Verificando Fechas de Caducidad Normalizadas
                             </h3>
                             <p className="text-xs text-slate-300 font-mono leading-relaxed">
-                                Comprobando fechas de caducidad y filtrando automáticamente archivos que ya existen en el sistema...
+                                Normalizando fechas de expiración UTC/Local para descartar firmas duplicadas sin desfases de huso horario...
                             </p>
                         </div>
 
@@ -631,12 +652,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                                <Sparkles size={11} /> Auto-Descarte de Duplicados por Caducidad
+                                <Sparkles size={11} /> Auto-Descarte por Fecha de Caducidad Normalizada
                             </span>
                         </div>
-                        <h3 className="text-base font-black text-white">Filtro de Descarte de Firmas Ya Existentes</h3>
+                        <h3 className="text-base font-black text-white">Filtro de Descarte con Precisión de Fecha</h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            El escáner omite y descarta automáticamente cualquier archivo <code>.p12</code> que ya posea la misma fecha de expiración en el sistema.
+                            Descarta firmas con la misma fecha de caducidad (evitando desfases por huso horario) y conserva únicamente renovaciones nuevas.
                         </p>
                     </div>
 
@@ -737,6 +758,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wide shadow-sm">
                                                                     <ArrowUpRight size={13} className="text-emerald-400 animate-bounce" />
                                                                     <span>🎉 Renovación Detectada (Nueva: <strong>{expComp.newStr}</strong> vs Actual: {expComp.existingStr})</span>
+                                                                </div>
+                                                            )}
+                                                            {expComp.status === 'duplicate' && (
+                                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-[10px] font-bold uppercase tracking-wide">
+                                                                    <CopyCheck size={13} className="text-cyan-400" />
+                                                                    <span>ℹ️ Firma idéntica ya en sistema / respaldos (Caducidad: {expComp.existingStr}) · Omitida</span>
                                                                 </div>
                                                             )}
                                                             {expComp.status === 'older' && (
