@@ -247,14 +247,6 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     onDelete={() => handleDeleteField('rucCertificate')}
                 />
                 <VaultCard 
-                    icon={LucideIcons.FileText} 
-                    label="Otros RUC PDF" 
-                    file={editedClient.rucPdf} 
-                    onUpload={(f) => handleUploadField('rucPdf', f)} 
-                    onDownload={() => editedClient.rucPdf && onDownloadFile?.(editedClient.rucPdf)} 
-                    onDelete={() => handleDeleteField('rucPdf')}
-                />
-                <VaultCard 
                     icon={LucideIcons.FileKey} 
                     label="Firma Electrónica" 
                     file={editedClient.signatureFile} 
@@ -396,22 +388,22 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                         </div>
                         <div>
                             <h3 className="text-base font-black text-white uppercase tracking-wide">
-                                Respaldo para Tramitar Firma Electrónica
+                                Recursos para Trámites (Firma / Facturadores)
                             </h3>
                             <p className="text-slate-400 text-xs mt-0.5">
-                                Requisitos obligatorios (Fotos/PDFs) para la emisión o renovación de la firma digital.
+                                Cédulas, Selfie, RUC y solicitudes firmadas recopiladas para activar planes y emitir firmas.
                             </p>
                         </div>
                     </div>
                     <span className="px-3 py-1 bg-indigo-500/10 text-indigo-300 text-[10px] font-black uppercase tracking-wider rounded-lg border border-indigo-500/20 self-start sm:self-auto">
-                        Tramitación Digital
+                        Expediente de Recursos
                     </span>
                 </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                     <VaultCard 
                         icon={LucideIcons.CreditCard} 
-                        label="Cédula (Frontal / Anverso)" 
+                        label="Cédula (Frontal)" 
                         file={editedClient.idCardFront} 
                         onUpload={(f) => handleUploadField('idCardFront', f)} 
                         onDownload={() => editedClient.idCardFront && onDownloadFile?.(editedClient.idCardFront)} 
@@ -419,7 +411,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     />
                     <VaultCard 
                         icon={LucideIcons.CreditCard} 
-                        label="Cédula (Posterior / Reverso)" 
+                        label="Cédula (Reverso)" 
                         file={editedClient.idCardBack} 
                         onUpload={(f) => handleUploadField('idCardBack', f)} 
                         onDownload={() => editedClient.idCardBack && onDownloadFile?.(editedClient.idCardBack)} 
@@ -427,11 +419,27 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     />
                     <VaultCard 
                         icon={LucideIcons.UserCheck} 
-                        label="Selfie sosteniendo Cédula" 
+                        label="Selfie con Cédula" 
                         file={editedClient.idCardSelfie} 
                         onUpload={(f) => handleUploadField('idCardSelfie', f)} 
                         onDownload={() => editedClient.idCardSelfie && onDownloadFile?.(editedClient.idCardSelfie)} 
                         onDelete={() => handleDeleteField('idCardSelfie')}
+                    />
+                    <VaultCard 
+                        icon={LucideIcons.FileText} 
+                        label="RUC PDF Actual" 
+                        file={editedClient.rucPdf} 
+                        onUpload={(f) => handleUploadField('rucPdf', f)} 
+                        onDownload={() => editedClient.rucPdf && onDownloadFile?.(editedClient.rucPdf)} 
+                        onDelete={() => handleDeleteField('rucPdf')}
+                    />
+                    <VaultCard 
+                        icon={LucideIcons.FileCheck} 
+                        label="Solicitud Ecuafact" 
+                        file={editedClient.ecuafactSignedRequest} 
+                        onUpload={(f) => handleUploadField('ecuafactSignedRequest', f)} 
+                        onDownload={() => editedClient.ecuafactSignedRequest && onDownloadFile?.(editedClient.ecuafactSignedRequest)} 
+                        onDelete={() => handleDeleteField('ecuafactSignedRequest')}
                     />
                 </div>
             </div>

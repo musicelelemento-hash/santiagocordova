@@ -1,5 +1,5 @@
 
-export type Screen = 'home' | 'clients' | 'declaraciones' | 'tasks' | 'reports' | 'settings' | 'cobranza' | 'calendar' | 'web_orders' | 'scanner' | 'audit_log' | 'sri_facturacion' | 'migracion_zifact' | 'services' | 'firmas';
+export type Screen = 'home' | 'clients' | 'declaraciones' | 'tasks' | 'reports' | 'settings' | 'cobranza' | 'calendar' | 'web_orders' | 'scanner' | 'audit_log' | 'sri_facturacion' | 'migracion_zifact' | 'services' | 'firmas' | 'facturadores';
 export type Theme = 'light' | 'dark';
 
 export interface AuditLog {

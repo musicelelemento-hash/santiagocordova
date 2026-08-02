@@ -139,7 +139,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             services: '/dashboard/convertidor',
             web_orders: '/dashboard/pedidos',
             scanner: '/dashboard/clientes',
-            migracion_zifact: '/dashboard/convertidor'
+            migracion_zifact: '/dashboard/convertidor',
+            facturadores: '/dashboard/facturadores'
         };
         navigate(routeMap[screen] || '/dashboard/clientes');
     };

@@ -16,6 +16,7 @@ import { MusicPage } from './screens/MusicPage';
 import { AuditLogScreen } from './screens/AuditLogScreen';
 import { FacturacionSriScreen } from './screens/FacturacionSriScreen';
 import { FirmasScreen } from './screens/FirmasScreen';
+import { FacturadoresScreen } from './screens/FacturadoresScreen';
 import { AdaptadorConvert } from './components/features/AdaptadorConvert';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
@@ -357,11 +358,17 @@ const App: React.FC = () => {
       setPreviousScreen(null);
     }
 
-    // Guardamos tab temporal en window para usarlo en el renderScreen (solución ligera para no alterar más AppState ahora)
+    // Guardamos tab temporal en window para usarlo en el renderScreen
     if (options.initialTab) {
         (window as any).__TEMP_INITIAL_TAB__ = options.initialTab;
     } else {
         delete (window as any).__TEMP_INITIAL_TAB__;
+    }
+
+    if (options.searchTerm) {
+        (window as any).__TEMP_FACTURADORES_SEARCH__ = options.searchTerm;
+    } else {
+        delete (window as any).__TEMP_FACTURADORES_SEARCH__;
     }
 
     setActiveScreen(screen);
@@ -463,6 +470,11 @@ const App: React.FC = () => {
         />
       );
       case 'firmas': return <FirmasScreen navigate={navigate} />;
+      case 'facturadores': {
+        const term = (window as any).__TEMP_FACTURADORES_SEARCH__ || '';
+        delete (window as any).__TEMP_FACTURADORES_SEARCH__;
+        return <FacturadoresScreen navigate={navigate} initialSearchTerm={term} />;
+      }
       case 'migracion_zifact': return <AdaptadorConvert />;
       default: return <AdminDashboardScreen navigate={navigate} />;
     }
@@ -473,6 +485,7 @@ const App: React.FC = () => {
     { screen: 'clients', icon: LucideIcons.Users, label: 'Directorio', groupLabel: 'Clientes', isSubItem: true },
     { screen: 'declaraciones', icon: LucideIcons.LayoutGrid, label: 'Declaraciones', isSubItem: true },
     { screen: 'firmas', icon: LucideIcons.KeyRound, label: 'Firmas' },
+    { screen: 'facturadores', icon: LucideIcons.ShoppingBag, label: 'Facturadores y Planes' },
     { screen: 'cobranza', icon: LucideIcons.BarChart, label: 'Cobranza' },
     { screen: 'sri_facturacion', icon: LucideIcons.FileText, label: 'Facturador' },
     { screen: 'tasks', icon: LucideIcons.CheckCircle, label: 'Tareas' },
