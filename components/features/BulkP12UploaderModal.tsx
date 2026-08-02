@@ -122,16 +122,32 @@ const extractValidPasswordNameTokens = (fullName: string): string[] => {
     return validTokens;
 };
 
-// Coincidencia estricta (incluye clientes en Papelera para rescatar nombres y exige coincidencia de 1er Apellido AND al menos 1 Nombre)
-const findMatchingClient = (filename: string, manualRuc: string, clients: Client[]): Client | undefined => {
-    // 1. RUC / Nombre manual
-    if (manualRuc && manualRuc.trim().length >= 3) {
-        const cleanReq = manualRuc.trim().toLowerCase();
-        const matched = clients.find(c => c.ruc.toLowerCase().includes(cleanReq) || c.name.toLowerCase().includes(cleanReq));
-        if (matched) return matched;
+// Coincidencia estricta por RUC exacto/subcadena O por 1er Apellido AND Nombre de pila
+const findMatchingClient = (filename: string, manualRuc: string, clients: Client[], metaRuc?: string): Client | undefined => {
+    // 1. Coincidencia por RUC de Metadatos del certificado o RUC manual
+    const rucTarget = (metaRuc || manualRuc || '').replace(/\D/g, '');
+    if (rucTarget.length >= 9) {
+        const matchedByRuc = clients.find(c => {
+            const cRucClean = c.ruc.replace(/\D/g, '');
+            return cRucClean.includes(rucTarget.slice(0, 10)) || rucTarget.includes(cRucClean.slice(0, 10));
+        });
+        if (matchedByRuc) return matchedByRuc;
     }
 
-    // 2. Nombre exacto de archivo .p12 ya registrado en la Bóveda de cualquier cliente (activo o papelera)
+    // 2. Coincidencia por RUC/Cédula en el nombre del archivo (ej: 1805242094 en cert-CHANGO... o 18479753_identity_0702062738.p12)
+    const numbersInFile = extractPossibleRucOrCedula(filename);
+    for (const num of numbersInFile) {
+        const cleanNum = num.replace(/\D/g, '');
+        if (cleanNum.length >= 9) {
+            const matched = clients.find(c => {
+                const rucClean = c.ruc.replace(/\D/g, '');
+                return rucClean.includes(cleanNum.slice(0, 10)) || cleanNum.includes(rucClean.slice(0, 10));
+            });
+            if (matched) return matched;
+        }
+    }
+
+    // 3. Nombre exacto de archivo .p12 ya registrado previamente
     const targetClean = cleanFileName(filename);
     if (targetClean && targetClean.length >= 4) {
         const matchedByFile = clients.find(c => {
@@ -142,17 +158,7 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
         if (matchedByFile) return matchedByFile;
     }
 
-    // 3. Extraer RUC/Cédula de 10-13 dígitos del nombre del archivo
-    const numbersInFile = extractPossibleRucOrCedula(filename);
-    for (const num of numbersInFile) {
-        const matched = clients.find(c => {
-            const rucClean = c.ruc.trim();
-            return rucClean === num || rucClean.startsWith(num) || num.startsWith(rucClean.slice(0, 10));
-        });
-        if (matched) return matched;
-    }
-
-    // 4. Probar por NOMBRE EXTRAÍDO DEL CERTIFICADO
+    // 4. Coincidencia por NOMBRE EXTRAÍDO DEL CERTIFICADO (1er Apellido AND 1er u 2do Nombre)
     const extractedName = parseNameFromFileName(filename);
     if (extractedName) {
         const certTokens = extractedName.split(/\s+/).filter(w => w.length >= 3);
@@ -184,11 +190,10 @@ const findMatchingClient = (filename: string, manualRuc: string, clients: Client
     return undefined;
 };
 
-// Evaluador inteligente de fechas de caducidad y firmas duplicadas en Clientes Activos y Bóveda de Respaldos
+// Evaluador inteligente de fechas de caducidad y firmas duplicadas
 const evaluateExpirationComparison = (newExpDate?: Date, existingClient?: Client, fileName?: string) => {
-    // 1. Revisar si la firma existe en la Bóveda de Respaldos Externos localStorage
     const backupList: any[] = JSON.parse(localStorage.getItem('sri_backup_signatures') || '[]');
-    const inBackup = backupList.find(b => (b.ruc && b.ruc.trim() === existingClient?.ruc.trim()) || (fileName && cleanFileName(b.fileName) === cleanFileName(fileName)));
+    const inBackup = backupList.find(b => (b.ruc && existingClient && b.ruc.trim() === existingClient.ruc.trim()) || (fileName && cleanFileName(b.fileName) === cleanFileName(fileName)));
 
     if (!newExpDate || (!existingClient?.signatureExpirationDate && !inBackup)) {
         return {
@@ -223,8 +228,8 @@ const evaluateExpirationComparison = (newExpDate?: Date, existingClient?: Client
     }
 };
 
-// Generar candidatos EXCLUSIVAMENTE en formato TitleCase (Primera Mayúscula + Año) y EXCLUYENDO el segundo apellido
-const generatePasswordCandidates = (client?: Client, fileName?: string, storedPasswords?: (string | undefined)[]): string[] => {
+// Generar candidatos usando TitleCase + Años (Chango2026) Y TitleCase + 4 primeros dígitos de Cédula/RUC (Chango1805)
+const generatePasswordCandidates = (client?: Client, fileName?: string, rucOrCedula?: string, storedPasswords?: (string | undefined)[]): string[] => {
     const candidates = new Set<string>();
 
     (storedPasswords || []).forEach(p => {
@@ -244,11 +249,22 @@ const generatePasswordCandidates = (client?: Client, fileName?: string, storedPa
 
     const years = ['2026', '2025', '2027', '2024'];
 
+    // Extraer primeros 4 dígitos de la Cédula/RUC (ej: 1805 en 1805242094001)
+    const cleanRuc = (rucOrCedula || (client ? client.ruc : '') || '').replace(/\D/g, '');
+    const first4Ruc = cleanRuc.length >= 4 ? cleanRuc.slice(0, 4) : '';
+
     allTokens.forEach(clean => {
         const titleCase = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+        
+        // Patrón 1: Nombre + Año (Chango2026, Byron2026)
         years.forEach(yr => {
             candidates.add(`${titleCase}${yr}`);
         });
+
+        // Patrón 2: Nombre + 4 primeros dígitos de Cédula (Chango1805, Byron1805, Patricio1805)
+        if (first4Ruc) {
+            candidates.add(`${titleCase}${first4Ruc}`);
+        }
     });
 
     return Array.from(candidates);
@@ -305,9 +321,14 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
     const processQueueItemMatching = (item: P12ItemQueue, manualRucOverride?: string, clientOverride?: Client): P12ItemQueue => {
         const rucToUse = manualRucOverride !== undefined ? manualRucOverride : item.manualRucInput;
-        const matchedClient = clientOverride || findMatchingClient(item.fileName, rucToUse, clients);
+        const matchedClient = clientOverride || findMatchingClient(item.fileName, rucToUse, clients, item.metadata?.ruc);
         const extractedName = parseNameFromFileName(item.fileName);
-        const candidates = generatePasswordCandidates(matchedClient, item.fileName);
+        
+        // Extraer RUC de metadatos o nombre de archivo para probar los 4 dígitos (Chango1805)
+        const possibleNumbers = extractPossibleRucOrCedula(item.fileName);
+        const rucForPattern = item.metadata?.ruc || rucToUse || (possibleNumbers[0] || '');
+
+        const candidates = generatePasswordCandidates(matchedClient, item.fileName, rucForPattern);
 
         let updatedItem: P12ItemQueue = {
             ...item,
@@ -320,8 +341,14 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         for (const candPassword of candidates) {
             const res = tryUnlockItem(updatedItem, candPassword);
             if (res.status === 'unlocked') {
+                // Re-verificar coincidencia por RUC descifrado oficial del certificado
+                const finalMatched = res.metadata?.ruc 
+                    ? clients.find(c => c.ruc.replace(/\D/g, '').includes(res.metadata!.ruc!.replace(/\D/g, '').slice(0, 10))) 
+                    : matchedClient;
+
                 return {
                     ...res,
+                    matchedClient: finalMatched || res.matchedClient,
                     unlockedViaPattern: candPassword
                 };
             }
@@ -376,7 +403,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         setQueue(prev => [...prev, ...newQueueItems]);
         setIsProcessing(false);
-        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12 con filtro anti-duplicados.`);
+        toast.success(`⚡ Procesados ${newQueueItems.length} archivos .p12 con soporte para patrones de Cédula (Chango1805).`);
     };
 
     const handleSelectClientForQueueItem = (itemId: string, selectedClient?: Client) => {
@@ -515,7 +542,6 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             }
         }
 
-        // Limpiar duplicados antes de guardar en localStorage
         const uniqueBackupMap = new Map<string, any>();
         backupList.forEach((b: any) => {
             const rucClean = b.ruc ? b.ruc.trim() : '';
@@ -555,13 +581,13 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                         <div className="space-y-2 max-w-md">
                             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 text-[10px] font-black uppercase tracking-[0.25em] shadow-lg">
-                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER Y DETECTOR DE DUPLICADOS EN BÓVEDA
+                                <Sparkles size={13} className="animate-spin text-teal-400" /> ESCÁNER Y PROBADOR DE PATRÓN
                             </div>
                             <h3 className="text-xl font-black text-white uppercase tracking-tight font-display">
-                                Verificando Existencia en Sistema y Respaldos
+                                Probando Patrones de Clave y Cédula
                             </h3>
                             <p className="text-xs text-slate-300 font-mono leading-relaxed">
-                                Comprobando si el certificado ya existe en clientes activos o en la Bóveda de Respaldos Externos...
+                                Evaluando coincidencia por RUC oficial, probando Chango2026 y Chango1805 (4 primeros dígitos de cédula)...
                             </p>
                         </div>
 
@@ -596,12 +622,12 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     <div className="space-y-1">
                         <div className="flex items-center gap-2">
                             <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500/20 text-teal-300 border border-teal-500/30 flex items-center gap-1">
-                                <Sparkles size={11} /> Detector de Duplicados en BD & Bóveda de Respaldos
+                                <Sparkles size={11} /> Motor de Prueba: Años (Chango2026) + Cédula (Chango1805)
                             </span>
                         </div>
-                        <h3 className="text-base font-black text-white">Subidor Inteligente con Verificación de Archivos Previos</h3>
+                        <h3 className="text-base font-black text-white">Subidor con Reconocimiento Automático por RUC y Cédula</h3>
                         <p className="text-xs text-slate-300 leading-relaxed">
-                            Si un certificado ya fue subido anteriormente (en clientes o en la Bóveda de Respaldos), lo detecta al instante y lo marca como <strong>Omitido por Defecto</strong> para no duplicar datos.
+                            Descifra certificados con patrones de Año (<strong>Chango2026</strong>) y 4 dígitos de Cédula (<strong>Chango1805</strong>). Vincula automáticamente al cliente activo correspondiente.
                         </p>
                     </div>
 
@@ -739,7 +765,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                                                     <div className="flex items-center gap-1">
                                                                         <UserCheck size={12} />
                                                                         <span>
-                                                                            Cliente: {item.matchedClient.name} ({item.matchedClient.ruc})
+                                                                            Cliente Activo: {item.matchedClient.name} ({item.matchedClient.ruc})
                                                                             {item.matchedClient.isDeleted && <span className="text-amber-400 ml-1">(Papelera)</span>}
                                                                         </span>
                                                                     </div>
