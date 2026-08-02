@@ -1,30 +1,62 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
     KeyRound, ShieldCheck, ShieldOff, PhoneCall, AlertTriangle,
     CheckCircle2, ArrowRight, Search, FileText, Check, Copy, ExternalLink,
-    List, LayoutGrid, UploadCloud
+    List, LayoutGrid, UploadCloud, Archive, Eye, EyeOff, UserPlus, Trash2, Laptop, Shield
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useAppStore } from '../store/useAppStore';
-import { Screen, TaxRegime } from '../types';
+import { Client, TaxRegime } from '../types';
+import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { BulkP12UploaderModal } from '../components/features/BulkP12UploaderModal';
+import { v4 as uuidv4 } from 'uuid';
+import { type Screen } from '../types';
 
 interface FirmasScreenProps {
-    navigate: (screen: Screen, options?: any) => void;
+    navigate: (screen: any, options?: any) => void;
 }
 
-type FirmasTab = 'vigentes' | 'sin-firma';
+type FirmasTab = 'vigentes' | 'sin-firma' | 'respaldos-externos';
 type ViewMode = 'lineal' | 'tarjetas';
 
+interface BackupSignatureItem {
+    id: string;
+    titular: string;
+    ruc: string;
+    fileName: string;
+    password?: string;
+    provider?: string;
+    expirationDate?: string;
+    category?: string;
+    savedAt?: string;
+}
+
 export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
-    const { clients } = useAppStore();
+    const { clients, addClient } = useAppStore();
+    const { toast } = useToast();
     const [tab, setTab] = useState<FirmasTab>('vigentes');
     const [viewMode, setViewMode] = useState<ViewMode>('lineal');
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [isBulkModalOpen, setIsBulkModalOpen] = useState<boolean>(false);
     const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string } | null>(null);
+    const [visiblePasswords, setVisiblePasswords] = useState<{ [id: string]: boolean }>({});
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [backupSignatures, setBackupSignatures] = useState<BackupSignatureItem[]>([]);
+
+    // Cargar Bóveda de Respaldos de Clientes Esporádicos / Externos
+    useEffect(() => {
+        const loadBackups = () => {
+            try {
+                const stored = JSON.parse(localStorage.getItem('sri_backup_signatures') || '[]');
+                setBackupSignatures(stored);
+            } catch (err) {
+                console.error("Error loading backup signatures:", err);
+            }
+        };
+        loadBackups();
+    }, [isBulkModalOpen]);
 
     const signatureData = useMemo(() => {
         const q = searchTerm.toLowerCase().trim();
@@ -74,6 +106,74 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
         return { withSignature, withoutSignature, getDaysLeft, expired, expiringSoon, ok };
     }, [clients, searchTerm]);
 
+    const filteredBackupSignatures = useMemo(() => {
+        const q = searchTerm.toLowerCase().trim();
+        if (!q) return backupSignatures;
+        return backupSignatures.filter(b => 
+            b.titular.toLowerCase().includes(q) ||
+            b.ruc.includes(q) ||
+            (b.category && b.category.toLowerCase().includes(q)) ||
+            (b.provider && b.provider.toLowerCase().includes(q))
+        );
+    }, [backupSignatures, searchTerm]);
+
+    const togglePasswordVisibility = (id: string) => {
+        setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const handleCopyPassword = (id: string, passwordText?: string) => {
+        if (!passwordText) return;
+        navigator.clipboard.writeText(passwordText);
+        setCopiedId(id);
+        toast.success("Contraseña copiada al portapapeles");
+        setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const handleDeleteBackupItem = (id: string) => {
+        const updated = backupSignatures.filter(b => b.id !== id);
+        setBackupSignatures(updated);
+        localStorage.setItem('sri_backup_signatures', JSON.stringify(updated));
+        toast.success("Firma de respaldo eliminada");
+    };
+
+    const handleConvertBackupToActiveClient = async (item: BackupSignatureItem) => {
+        const existing = clients.find(c => !c.isDeleted && c.ruc.trim() === item.ruc.trim());
+        if (existing) {
+            toast.error(`El cliente ${item.titular} ya existe en tu directorio activo.`);
+            return;
+        }
+
+        const newClient: Client = {
+            id: uuidv4(),
+            name: item.titular,
+            ruc: item.ruc,
+            sriPassword: '',
+            email: '',
+            phones: [],
+            declarations: [],
+            notes: `Convertido desde Bóveda de Respaldos (${item.category || 'Venta Esporádica'}).\nEmisor: ${item.provider || 'N/A'}`,
+            isActive: true,
+            regime: TaxRegime.General,
+            address: '',
+            electronicSignaturePassword: item.password,
+            signatureExpirationDate: item.expirationDate,
+            signatureProvider: item.provider,
+            taxProfile: {
+                ivaFrequency: 'Mensual',
+                requiresAnnualRenta: true,
+                requiresAnexosGastos: false,
+                hasActiveDevolucionIva: false,
+                hasActiveElderlyDevolucionIva: false,
+                requiresIce: false,
+                requiresAnexoPvp: false
+            }
+        };
+
+        await addClient(newClient);
+        handleDeleteBackupItem(item.id);
+        toast.success(`🎉 ${item.titular} agregado exitosamente al Directorio Activo de Clientes.`);
+    };
+
     const formatExpiry = (date?: string) => {
         if (!date) return '—';
         const d = new Date(date);
@@ -96,13 +196,13 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                         <div>
                             <div className="flex items-center gap-2 mb-1.5">
                                 <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse shadow-[0_0_10px_rgba(45,212,191,0.8)]" />
-                                <span className="text-[10px] font-black text-teal-400 uppercase tracking-[0.3em]">Auditoría de Certificados</span>
+                                <span className="text-[10px] font-black text-teal-400 uppercase tracking-[0.3em]">Auditoría de Certificados Digitales</span>
                             </div>
                             <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-display">
                                 Verificación de Firmas Electrónicas (.p12)
                             </h1>
                             <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
-                                Monitoreo y control de firmas digitales emitidas por entidades certificadoras (ArgosData, FirmaSegura, Uanataca, Security Data).
+                                Control de vigencia, renovaciones automáticas y Bóveda General de Clientes Esporádicos y Ventas Externas.
                             </p>
                         </div>
                     </div>
@@ -117,13 +217,9 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             <span className="text-2xl font-black text-amber-400 font-mono">{signatureData.expiringSoon.length}</span>
                             <span className="text-[9px] font-bold text-amber-300 uppercase tracking-widest mt-0.5">Por Vencer (≤30d)</span>
                         </div>
-                        <div className="flex flex-col items-center px-5 py-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 backdrop-blur-md">
-                            <span className="text-2xl font-black text-rose-400 font-mono">{signatureData.expired.length}</span>
-                            <span className="text-[9px] font-bold text-rose-300 uppercase tracking-widest mt-0.5">Caducadas</span>
-                        </div>
-                        <div className="flex flex-col items-center px-5 py-3.5 rounded-2xl bg-slate-400/10 border border-slate-400/20 backdrop-blur-md">
-                            <span className="text-2xl font-black text-slate-300 font-mono">{signatureData.withoutSignature.length}</span>
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Sin Firma</span>
+                        <div className="flex flex-col items-center px-5 py-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 backdrop-blur-md">
+                            <span className="text-2xl font-black text-purple-300 font-mono">{backupSignatures.length}</span>
+                            <span className="text-[9px] font-bold text-purple-300 uppercase tracking-widest mt-0.5">Bóveda Respaldos</span>
                         </div>
 
                         {/* Botón de Subida Masiva */}
@@ -152,7 +248,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             }`}
                         >
                             <ShieldCheck size={14} />
-                            <span>Por Caducidad</span>
+                            <span>Clientes Activos</span>
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${tab === 'vigentes' ? 'bg-white/20 text-white' : 'bg-teal-500/15 text-teal-400'}`}>
                                 {signatureData.withSignature.length}
                             </span>
@@ -173,35 +269,51 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                 </span>
                             )}
                         </button>
+                        <button
+                            onClick={() => setTab('respaldos-externos')}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                                tab === 'respaldos-externos'
+                                    ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                        >
+                            <Archive size={14} />
+                            <span>📦 Respaldos & Ventas Externas</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${tab === 'respaldos-externos' ? 'bg-white/20 text-white' : 'bg-purple-500/15 text-purple-300'}`}>
+                                {backupSignatures.length}
+                            </span>
+                        </button>
                     </div>
 
-                    {/* SELECTOR DE MODO DE VISTA (LINEAL MINIMALISTA VS TARJETAS) */}
-                    <div className="flex items-center gap-1 bg-slate-900/60 backdrop-blur-2xl p-1 rounded-2xl border border-white/10">
-                        <button
-                            onClick={() => setViewMode('lineal')}
-                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
-                                viewMode === 'lineal'
-                                    ? 'bg-primary text-white shadow-md shadow-primary/20'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
-                            title="Vista Lineal Minimalista (Tabla Limpia)"
-                        >
-                            <List size={14} />
-                            <span>Lineal</span>
-                        </button>
-                        <button
-                            onClick={() => setViewMode('tarjetas')}
-                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
-                                viewMode === 'tarjetas'
-                                    ? 'bg-primary text-white shadow-md shadow-primary/20'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                            }`}
-                            title="Vista Tarjetas (Cuadros Ejecutivos)"
-                        >
-                            <LayoutGrid size={14} />
-                            <span>Tarjetas</span>
-                        </button>
-                    </div>
+                    {/* SELECTOR DE MODO DE VISTA */}
+                    {tab !== 'respaldos-externos' && (
+                        <div className="flex items-center gap-1 bg-slate-900/60 backdrop-blur-2xl p-1 rounded-2xl border border-white/10">
+                            <button
+                                onClick={() => setViewMode('lineal')}
+                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+                                    viewMode === 'lineal'
+                                        ? 'bg-primary text-white shadow-md shadow-primary/20'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                }`}
+                                title="Vista Lineal Minimalista (Tabla Limpia)"
+                            >
+                                <List size={14} />
+                                <span>Lineal</span>
+                            </button>
+                            <button
+                                onClick={() => setViewMode('tarjetas')}
+                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+                                    viewMode === 'tarjetas'
+                                        ? 'bg-primary text-white shadow-md shadow-primary/20'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                }`}
+                                title="Vista Tarjetas (Cuadros Ejecutivos)"
+                            >
+                                <LayoutGrid size={14} />
+                                <span>Tarjetas</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Buscador de Clientes / RUC / Entidad */}
@@ -211,13 +323,13 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar por Nombre, RUC o Entidad..."
+                        placeholder="Buscar por Nombre, RUC o Categoría..."
                         className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-white/10 rounded-2xl text-xs text-white placeholder-slate-400 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 transition-all outline-none"
                     />
                 </div>
             </div>
 
-            {/* ── TAB: VIGENTES / POR CADUCIDAD ── */}
+            {/* ── TAB 1: CLIENTES ACTIVOS VIGENTES / POR CADUCIDAD ── */}
             {tab === 'vigentes' && (
                 <div className="space-y-6">
                     {(signatureData.expired.length > 0 || signatureData.expiringSoon.length > 0) && (
@@ -239,92 +351,108 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             <p className="text-sm font-bold text-slate-400">No se encontraron firmas para esta búsqueda.</p>
                         </div>
                     ) : (
-                        /* VISTA CONDICIONAL: LINEAL MINIMALISTA VS TARJETAS */
                         viewMode === 'lineal' ? (
-                            /* ── VISTA LINEAL MINIMALISTA (TABLA ULTRA LIMPIA) ── */
+                            /* VISTA LINEAL MINIMALISTA (TABLA ULTRA LIMPIA) */
                             <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse">
                                         <thead>
                                             <tr className="border-b border-white/10 bg-white/[0.02] text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                                                 <th className="py-4 px-5 text-center w-12">#</th>
-                                                <th className="py-4 px-5">Titular / Contribuyente</th>
-                                                <th className="py-4 px-5">Estado de Firma (.p12)</th>
-                                                <th className="py-4 px-5">Entidad Certificadora (Emisor)</th>
+                                                <th className="py-4 px-5">Titular / RUC</th>
+                                                <th className="py-4 px-5">Emisor de Certificado</th>
+                                                <th className="py-4 px-5">Contraseña .p12</th>
                                                 <th className="py-4 px-5">Caducidad</th>
-                                                <th className="py-4 px-5 text-right">Acciones Directas</th>
+                                                <th className="py-4 px-5 text-center">Estado</th>
+                                                <th className="py-4 px-5 text-right">Acciones</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-white/5 text-xs">
-                                            {signatureData.withSignature.map((c, idx) => {
-                                                const daysLeft = signatureData.getDaysLeft(c.signatureExpirationDate);
+                                        <tbody className="divide-y divide-white/5 text-xs font-mono">
+                                            {signatureData.withSignature.map((client, idx) => {
+                                                const daysLeft = signatureData.getDaysLeft(client.signatureExpirationDate);
                                                 const isExpired = daysLeft !== null && daysLeft < 0;
-                                                const isWarn = daysLeft !== null && daysLeft >= 0 && daysLeft <= 30;
-
-                                                const statusColor = isExpired ? 'text-rose-400' : isWarn ? 'text-amber-400' : 'text-teal-400';
-                                                const dotClass = isExpired ? 'bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : isWarn ? 'bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)]';
+                                                const isExpiringSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 30;
+                                                const pwdVisible = visiblePasswords[client.id];
+                                                const isCopied = copiedId === client.id;
 
                                                 return (
-                                                    <tr key={c.id} className="hover:bg-white/[0.03] transition-colors group">
-                                                        <td className="py-4 px-5 text-center text-[10px] font-mono text-slate-500 font-bold">
-                                                            {idx + 1}
+                                                    <tr key={client.id} className="hover:bg-white/[0.02] transition-colors group">
+                                                        <td className="py-4 px-5 text-center font-bold text-slate-500">{idx + 1}</td>
+                                                        <td className="py-4 px-5">
+                                                            <button
+                                                                onClick={() => navigate('client-detail', { clientId: client.id, initialTab: 'vault' })}
+                                                                className="font-black text-white hover:text-teal-400 transition-colors uppercase tracking-tight text-left block"
+                                                            >
+                                                                {client.name}
+                                                            </button>
+                                                            <span className="text-[10px] text-slate-400 font-bold block">{client.ruc}</span>
+                                                        </td>
+                                                        <td className="py-4 px-5 text-slate-300">
+                                                            <span className="truncate max-w-[200px] block" title={client.signatureProvider || 'SRI Standard'}>
+                                                                {client.signatureProvider || 'SRI / Entidad Certificadora'}
+                                                            </span>
                                                         </td>
                                                         <td className="py-4 px-5">
-                                                            <div>
-                                                                <p className="font-bold text-white uppercase tracking-wide group-hover:text-teal-300 transition-colors">
-                                                                    {c.name}
-                                                                </p>
-                                                                <div className="flex items-center gap-2 mt-0.5 font-mono text-[11px] text-slate-400">
-                                                                    <span>RUC: {c.ruc}</span>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-4 px-5">
-                                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                                                                isExpired ? 'bg-rose-500/15 border-rose-500/30 text-rose-300' :
-                                                                isWarn ? 'bg-amber-400/15 border-amber-400/30 text-amber-300' :
-                                                                'bg-teal-500/15 border-teal-500/30 text-teal-300'
-                                                            }`}>
-                                                                <span className={`w-2 h-2 rounded-full ${dotClass}`} />
-                                                                {isExpired ? 'Caducada' : isWarn ? 'Por Vencer' : 'Válida / Activa'}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-4 px-5 font-mono text-xs font-bold text-amber-300 truncate max-w-[220px]">
-                                                            {c.signatureProvider || 'AUTORIDAD DE CERTIFICACION SUBCA-1 FIRMASEGURA S.A.S.'}
-                                                        </td>
-                                                        <td className="py-4 px-5 font-mono text-xs">
-                                                            <span className={`font-bold ${statusColor}`}>
-                                                                {formatExpiry(c.signatureExpirationDate)}
-                                                            </span>
-                                                            <span className="text-[10px] text-slate-500 block">
-                                                                {isExpired ? `(Hace ${Math.abs(daysLeft!)}d)` : isWarn ? `(${daysLeft}d restantes)` : `(${daysLeft ?? '—'}d)`}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-4 px-5 text-right">
-                                                            <div className="flex items-center justify-end gap-2">
-                                                                {c.phones?.length ? (
+                                                            {client.electronicSignaturePassword ? (
+                                                                <div className="inline-flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-xl border border-white/10">
+                                                                    <span className="font-bold text-teal-300 min-w-[70px]">
+                                                                        {pwdVisible ? client.electronicSignaturePassword : '••••••••'}
+                                                                    </span>
                                                                     <button
-                                                                        onClick={() => {
-                                                                            const expiryStr = formatExpiry(c.signatureExpirationDate);
-                                                                            const msg = `Hola ${c.name.split(' ')[0]}, le informamos que su firma electrónica ${isExpired ? 'ha caducado' : `vence el ${expiryStr}`}. Contáctenos para gestionar la renovación.`;
-                                                                            setWhatsAppPrompt({ clientName: c.name, phone: c.phones![0].replace(/\D/g, ''), message: msg });
-                                                                        }}
-                                                                        className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 transition-all text-[10px] font-bold uppercase active:scale-95 flex items-center gap-1.5"
-                                                                        title="WhatsApp Notificación"
+                                                                        onClick={() => togglePasswordVisibility(client.id)}
+                                                                        className="p-1 hover:text-white text-slate-400 transition-colors"
+                                                                        title="Ver / Ocultar"
                                                                     >
-                                                                        <PhoneCall size={13} />
-                                                                        <span className="hidden lg:inline">WhatsApp</span>
+                                                                        {pwdVisible ? <EyeOff size={12} /> : <Eye size={12} />}
                                                                     </button>
-                                                                ) : null}
-                                                                <button
-                                                                    onClick={() => navigate('clients', { clientIdToView: c.id, initialTab: 'vault' })}
-                                                                    className="p-2 rounded-xl bg-white/10 hover:bg-teal-600 text-white border border-white/15 transition-all text-[10px] font-bold uppercase active:scale-95 flex items-center gap-1.5"
-                                                                    title="Ir a Bóveda del Cliente"
-                                                                >
-                                                                    <ArrowRight size={13} />
-                                                                    <span className="hidden lg:inline">Bóveda</span>
-                                                                </button>
-                                                            </div>
+                                                                    <button
+                                                                        onClick={() => handleCopyPassword(client.id, client.electronicSignaturePassword)}
+                                                                        className="p-1 hover:text-teal-400 text-slate-400 transition-colors"
+                                                                        title="Copiar clave"
+                                                                    >
+                                                                        {isCopied ? <Check size={12} className="text-teal-400" /> : <Copy size={12} />}
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-slate-500 italic text-[11px]">Sin clave</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-4 px-5 font-bold text-slate-200">
+                                                            {formatExpiry(client.signatureExpirationDate)}
+                                                        </td>
+                                                        <td className="py-4 px-5 text-center">
+                                                            {isExpired ? (
+                                                                <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                                                    Caducada ({Math.abs(daysLeft!)}d)
+                                                                </span>
+                                                            ) : isExpiringSoon ? (
+                                                                <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                                                    Vence en {daysLeft}d
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                                                                    Válida / Activa
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="py-4 px-5 text-right space-x-2">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const pObj = client.phones?.[0];
+                                                                    const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
+                                                                    const msg = `Estimado(a) *${client.name}*, le saludamos de SantiagoCórdova.com. Le recordamos que su Firma Electrónica (.p12) vence el *${formatExpiry(client.signatureExpirationDate)}*. Por favor comuníquese para renovar su certificado a tiempo.`;
+                                                                    setWhatsAppPrompt({ clientName: client.name, phone, message: msg });
+                                                                }}
+                                                                className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-[10px] font-bold uppercase transition-all border border-emerald-500/30 inline-flex items-center gap-1"
+                                                            >
+                                                                <PhoneCall size={12} /> WhatsApp
+                                                            </button>
+                                                            <button
+                                                                onClick={() => navigate('client-detail', { clientId: client.id, initialTab: 'vault' })}
+                                                                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] font-bold uppercase transition-all inline-flex items-center gap-1"
+                                                            >
+                                                                <ExternalLink size={12} /> Bóveda
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 );
@@ -334,115 +462,60 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                 </div>
                             </div>
                         ) : (
-                            /* ── VISTA TARJETAS (CUADROS EJECUTIVOS) ── */
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {signatureData.withSignature.map((c) => {
-                                    const daysLeft = signatureData.getDaysLeft(c.signatureExpirationDate);
+                            /* VISTA TARJETAS (FORMATO CERTIFICADO OFICIAL) */
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                {signatureData.withSignature.map((client) => {
+                                    const daysLeft = signatureData.getDaysLeft(client.signatureExpirationDate);
                                     const isExpired = daysLeft !== null && daysLeft < 0;
-                                    const isWarn = daysLeft !== null && daysLeft >= 0 && daysLeft <= 30;
-
-                                    const statusColor = isExpired ? 'text-rose-400' : isWarn ? 'text-amber-400' : 'text-teal-400';
-                                    const dotClass = isExpired ? 'bg-rose-500 shadow-[0_0_10px_rgba(239,68,68,0.8)]' : isWarn ? 'bg-amber-400 animate-pulse shadow-[0_0_10px_rgba(251,191,36,0.8)]' : 'bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.8)]';
-                                    const borderClass = isExpired
-                                        ? 'border-rose-500/30 bg-rose-950/20 hover:border-rose-500/50'
-                                        : isWarn
-                                        ? 'border-amber-400/30 bg-amber-950/20 hover:border-amber-400/50'
-                                        : 'border-slate-800 bg-slate-900/60 hover:border-teal-500/40';
-
-                                    const statusText = isExpired
-                                        ? `Caducada hace ${Math.abs(daysLeft!)} días`
-                                        : isWarn
-                                        ? `Vence en ${daysLeft} días`
-                                        : daysLeft === null
-                                        ? 'Válida / Fecha desconocida'
-                                        : `Válida / Activa (quedan ${daysLeft} días)`;
+                                    const isExpiringSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 30;
 
                                     return (
                                         <div
-                                            key={c.id}
-                                            className={`p-6 rounded-[2.5rem] border transition-all duration-300 backdrop-blur-xl shadow-xl flex flex-col justify-between gap-6 relative overflow-hidden group ${borderClass}`}
+                                            key={client.id}
+                                            className={`p-6 rounded-[2rem] border transition-all duration-300 flex flex-col justify-between gap-4 bg-slate-900/60 backdrop-blur-2xl ${
+                                                isExpired
+                                                    ? 'border-rose-500/40 shadow-[0_0_25px_rgba(244,63,94,0.15)]'
+                                                    : isExpiringSoon
+                                                    ? 'border-amber-400/40 shadow-[0_0_25px_rgba(251,191,36,0.15)]'
+                                                    : 'border-white/10 hover:border-teal-500/40'
+                                            }`}
                                         >
-                                            {/* HEADER SUPERIOR: ESTADO DE VERIFICACIÓN (.p12) */}
-                                            <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-3 rounded-2xl bg-white/5 border border-white/10 ${statusColor}`}>
-                                                        <ShieldCheck size={22} />
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Verificación .p12</span>
+                                                    {isExpired ? (
+                                                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">Caducada</span>
+                                                    ) : isExpiringSoon ? (
+                                                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-400/20 text-amber-300 border border-amber-400/30">Vence en {daysLeft}d</span>
+                                                    ) : (
+                                                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-teal-500/20 text-teal-300 border border-teal-500/30">Válida / Activa</span>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <h3 className="text-base font-black text-white uppercase tracking-tight font-display line-clamp-1">{client.name}</h3>
+                                                    <p className="text-xs font-mono font-bold text-slate-400">{client.ruc}</p>
+                                                </div>
+
+                                                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1.5 text-xs font-mono">
+                                                    <div className="flex justify-between text-slate-400">
+                                                        <span>Caducidad:</span>
+                                                        <strong className="text-white">{formatExpiry(client.signatureExpirationDate)}</strong>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Verificación de Firma Electrónica (.p12)</p>
-                                                        <h3 className="text-base font-black text-white uppercase tracking-tight mt-0.5 font-display truncate max-w-[220px] sm:max-w-[280px]">
-                                                            {c.name}
-                                                        </h3>
+                                                    <div className="flex justify-between text-slate-400">
+                                                        <span>Emisor:</span>
+                                                        <strong className="text-teal-300 truncate max-w-[140px]">{client.signatureProvider || 'SRI Standard'}</strong>
                                                     </div>
                                                 </div>
-
-                                                {/* BADGE VISUAL DE ESTADO ESTILO VERIFICACIÓN */}
-                                                <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border flex items-center gap-1.5 shrink-0 ${
-                                                    isExpired ? 'bg-rose-500/20 border-rose-500/40 text-rose-300' :
-                                                    isWarn ? 'bg-amber-400/20 border-amber-400/40 text-amber-300' :
-                                                    'bg-teal-500/20 border-teal-500/40 text-teal-300'
-                                                }`}>
-                                                    <span className={`w-2 h-2 rounded-full ${dotClass}`} />
-                                                    {isExpired ? 'Caducada' : isWarn ? 'Por Vencer' : 'Válida / Activa'}
-                                                </span>
                                             </div>
 
-                                            {/* CERTIFICADO EMITIDO POR */}
-                                            <div className="p-3.5 bg-black/40 rounded-2xl border border-white/10 space-y-1">
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Certificado emitido por</span>
-                                                <p className="text-xs font-mono font-bold text-amber-300 truncate">
-                                                    {c.signatureProvider || 'AUTORIDAD DE CERTIFICACION SUBCA-1 FIRMASEGURA S.A.S.'}
-                                                </p>
-                                            </div>
-
-                                            {/* BLOQUE DE TITULAR, CÉDULA/RUC Y CADUCIDAD */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                                                <div className="p-3 bg-white/5 rounded-2xl border border-white/10 space-y-1">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Titular</span>
-                                                    <span className="font-bold text-white uppercase truncate block">{c.name}</span>
-                                                </div>
-                                                <div className="p-3 bg-white/5 rounded-2xl border border-white/10 space-y-1">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Cédula / RUC</span>
-                                                    <span className="font-mono font-black text-slate-200 block">{c.ruc}</span>
-                                                </div>
-                                                <div className="p-3 bg-white/5 rounded-2xl border border-white/10 space-y-1">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Caducidad</span>
-                                                    <span className={`font-mono font-black block ${statusColor}`}>
-                                                        {formatExpiry(c.signatureExpirationDate)}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {/* ACCIONES Y DETALLE DE DÍAS */}
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-white/10">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`text-[10px] font-mono font-bold ${statusColor}`}>
-                                                        {statusText}
-                                                    </span>
-                                                </div>
-
-                                                <div className="flex items-center gap-2 shrink-0">
-                                                    {c.phones?.length ? (
-                                                        <button
-                                                            onClick={() => {
-                                                                const expiryStr = formatExpiry(c.signatureExpirationDate);
-                                                                const msg = `Hola ${c.name.split(' ')[0]}, le informamos que su firma electrónica ${isExpired ? 'ha caducado' : `vence el ${expiryStr}`}. Contáctenos para gestionar la renovación y mantener su facturación activa.`;
-                                                                setWhatsAppPrompt({ clientName: c.name, phone: c.phones![0].replace(/\D/g, ''), message: msg });
-                                                            }}
-                                                            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500 hover:text-white border border-emerald-500/30 transition-all text-[10px] font-black uppercase active:scale-95 shadow-sm"
-                                                        >
-                                                            <PhoneCall size={14} />
-                                                            <span>WhatsApp</span>
-                                                        </button>
-                                                    ) : null}
-                                                    <button
-                                                        onClick={() => navigate('clients', { clientIdToView: c.id, initialTab: 'vault' })}
-                                                        className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-teal-600 text-white border border-white/15 transition-all text-[10px] font-black uppercase active:scale-95 shadow-sm"
-                                                    >
-                                                        <ArrowRight size={14} />
-                                                        <span>Ir a Bóveda</span>
-                                                    </button>
-                                                </div>
+                                            <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                                <button
+                                                    onClick={() => navigate('client-detail', { clientId: client.id, initialTab: 'vault' })}
+                                                    className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold uppercase transition-all text-center"
+                                                >
+                                                    Ir a Bóveda
+                                                </button>
                                             </div>
                                         </div>
                                     );
@@ -453,122 +526,180 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                 </div>
             )}
 
-            {/* ── TAB: SIN FIRMA ── */}
+            {/* ── TAB 2: CLIENTES SIN FIRMA REGISTRADA ── */}
             {tab === 'sin-firma' && (
-                <div className="space-y-6">
-                    {signatureData.withoutSignature.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-                            <div className="p-6 rounded-3xl bg-teal-500/10 border border-teal-500/20">
-                                <CheckCircle2 size={32} className="text-teal-400" />
+                <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-6 md:p-8 space-y-6">
+                    <p className="text-xs text-slate-300">
+                        Mostrando {signatureData.withoutSignature.length} clientes activos sin archivo de Firma Electrónica (.p12) registrado en su bóveda.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {signatureData.withoutSignature.map((client) => (
+                            <div key={client.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/20 transition-all flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-xs font-bold text-white uppercase tracking-tight">{client.name}</p>
+                                    <p className="text-[10px] font-mono text-slate-400">{client.ruc}</p>
+                                </div>
+                                <button
+                                    onClick={() => navigate('client-detail', { clientId: client.id, initialTab: 'vault' })}
+                                    className="px-3 py-1.5 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-[10px] font-bold uppercase transition-all"
+                                >
+                                    Cargar Firma
+                                </button>
                             </div>
-                            <p className="text-sm font-bold text-teal-400">¡Todos los clientes activos de la búsqueda tienen firma cargada!</p>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* ── TAB 3: BÓVEDA DE RESPALDOS & CLIENTES EXTERNOS ── */}
+            {tab === 'respaldos-externos' && (
+                <div className="space-y-6">
+                    <div className="p-5 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                Bóveda General de Clientes Esporádicos y Ventas Externas
+                            </span>
+                            <h3 className="text-base font-black text-white mt-1">Firmas de Sistemas, Facturadores y Ventas Ocasionales</h3>
+                            <p className="text-xs text-slate-300 leading-relaxed">
+                                Aquí se respaldan las firmas de clientes que no llevan contabilidad mensual contigo (ej: solo venta de sistema Ecuafact o firma ocasional). Puedes convertirlos a cliente activo en 1 clic.
+                            </p>
+                        </div>
+                    </div>
+
+                    {filteredBackupSignatures.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center bg-slate-900/40 rounded-[2.5rem] border border-white/10">
+                            <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/[0.06]">
+                                <Archive size={36} className="text-slate-500" />
+                            </div>
+                            <p className="text-sm font-bold text-slate-300">No hay firmas guardadas en la Bóveda de Respaldos Externos.</p>
+                            <p className="text-xs text-slate-400 max-w-sm">Al usar el Subidor Masivo, puedes seleccionar "Bóveda de Respaldos" para guardar firmas de clientes ocasionales.</p>
                         </div>
                     ) : (
-                        <>
-                            <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-rose-500/[0.08] border border-rose-500/20">
-                                <div className="flex items-center gap-3">
-                                    <ShieldOff size={18} className="text-rose-400 shrink-0" />
-                                    <div>
-                                        <p className="text-xs text-rose-300 font-black">{signatureData.withoutSignature.length} clientes sin firma electrónica cargada</p>
-                                        <p className="text-[10px] text-rose-400/80 mt-0.5">Régimen General y Emprendedor requieren firma digital para emitir comprobantes en el SRI.</p>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-white/10 bg-white/[0.02] text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                            <th className="py-4 px-5 text-center w-12">#</th>
+                                            <th className="py-4 px-5">Titular / RUC</th>
+                                            <th className="py-4 px-5">Categoría de Servicio</th>
+                                            <th className="py-4 px-5">Contraseña .p12</th>
+                                            <th className="py-4 px-5">Caducidad</th>
+                                            <th className="py-4 px-5 text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5 text-xs font-mono">
+                                        {filteredBackupSignatures.map((item, idx) => {
+                                            const pwdVisible = visiblePasswords[item.id];
+                                            const isCopied = copiedId === item.id;
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {signatureData.withoutSignature.map((c) => (
-                                    <div key={c.id} className="group p-5 rounded-3xl border border-white/10 bg-slate-900/60 hover:border-rose-400/30 transition-all duration-300 flex flex-col justify-between gap-4">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400">
-                                                    <ShieldOff size={20} />
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-sm font-black text-white uppercase truncate max-w-[200px]">{c.name}</h4>
-                                                    <p className="text-[10px] font-mono text-slate-400 mt-0.5">{c.ruc}</p>
-                                                </div>
-                                            </div>
-                                            <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full uppercase border ${
-                                                c.regime === TaxRegime.General ? 'bg-blue-500/10 text-blue-300 border-blue-500/20'
-                                                : c.regime === TaxRegime.RimpeEmprendedor ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
-                                                : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
-                                            }`}>
-                                                {c.regime === TaxRegime.General ? 'Régimen General' : c.regime === TaxRegime.RimpeEmprendedor ? 'Emprendedor' : 'Negocio Popular'}
-                                            </span>
-                                        </div>
-
-                                        <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/5">
-                                            {c.phones?.length ? (
-                                                <button
-                                                    onClick={() => {
-                                                        const msg = `Hola ${c.name.split(' ')[0]}, le recordamos que para emitir facturas electrónicas necesita una firma digital (.p12) vigente. Podemos ayudarle a obtenerla. ¿Le interesa que lo gestionemos?`;
-                                                        setWhatsAppPrompt({ clientName: c.name, phone: c.phones![0].replace(/\D/g, ''), message: msg });
-                                                    }}
-                                                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/20 transition-all text-[10px] font-black uppercase active:scale-95"
-                                                >
-                                                    <PhoneCall size={12} />
-                                                    <span>Propuesta WhatsApp</span>
-                                                </button>
-                                            ) : null}
-                                            <button
-                                                onClick={() => navigate('clients', { clientIdToView: c.id, initialTab: 'vault' })}
-                                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white border border-rose-500/30 transition-all text-[10px] font-black uppercase active:scale-95 shadow-sm shadow-rose-500/20"
-                                            >
-                                                <ArrowRight size={12} />
-                                                <span>+ Cargar .p12</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
+                                            return (
+                                                <tr key={item.id} className="hover:bg-white/[0.02] transition-colors">
+                                                    <td className="py-4 px-5 text-center font-bold text-slate-500">{idx + 1}</td>
+                                                    <td className="py-4 px-5">
+                                                        <span className="font-black text-white uppercase tracking-tight block text-sm">{item.titular}</span>
+                                                        <span className="text-[10px] text-slate-400 font-bold block">{item.ruc || 'Sin RUC registrado'}</span>
+                                                        <span className="text-[9px] text-slate-500 block font-sans">{item.fileName}</span>
+                                                    </td>
+                                                    <td className="py-4 px-5">
+                                                        <span className="px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 inline-flex items-center gap-1">
+                                                            <Shield size={12} /> {item.category || 'Venta Esporádica'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-5">
+                                                        {item.password ? (
+                                                            <div className="inline-flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-xl border border-white/10">
+                                                                <span className="font-bold text-purple-300 min-w-[70px]">
+                                                                    {pwdVisible ? item.password : '••••••••'}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => togglePasswordVisibility(item.id)}
+                                                                    className="p-1 hover:text-white text-slate-400 transition-colors"
+                                                                    title="Ver / Ocultar"
+                                                                >
+                                                                    {pwdVisible ? <EyeOff size={12} /> : <Eye size={12} />}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleCopyPassword(item.id, item.password)}
+                                                                    className="p-1 hover:text-purple-400 text-slate-400 transition-colors"
+                                                                    title="Copiar clave"
+                                                                >
+                                                                    {isCopied ? <Check size={12} className="text-purple-400" /> : <Copy size={12} />}
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-slate-500 italic text-[11px]">Sin clave</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-4 px-5 font-bold text-slate-200">
+                                                        {formatExpiry(item.expirationDate)}
+                                                    </td>
+                                                    <td className="py-4 px-5 text-right space-x-2">
+                                                        <button
+                                                            onClick={() => handleConvertBackupToActiveClient(item)}
+                                                            className="px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 text-[10px] font-bold uppercase transition-all border border-teal-500/30 inline-flex items-center gap-1"
+                                                            title="Convertir a Cliente Contable Activo"
+                                                        >
+                                                            <UserPlus size={12} /> Convertir a Cliente
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteBackupItem(item.id)}
+                                                            className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-all"
+                                                            title="Eliminar de Bóveda de Respaldos"
+                                                        >
+                                                            <Trash2 size={13} />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
                             </div>
-                        </>
+                        </div>
                     )}
                 </div>
             )}
 
-            {/* WhatsApp Modal */}
-            <Modal isOpen={!!whatsAppPrompt} onClose={() => setWhatsAppPrompt(null)} title="📲 Notificar por WhatsApp" size="2xl">
-                {whatsAppPrompt && (
-                    <div className="space-y-5 p-4">
-                        <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold mb-1">Destinatario</p>
-                            <p className="text-sm font-bold text-white">{whatsAppPrompt.clientName} · {whatsAppPrompt.phone}</p>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block ml-1">Mensaje</label>
-                            <textarea
-                                value={whatsAppPrompt.message}
-                                onChange={e => setWhatsAppPrompt({ ...whatsAppPrompt, message: e.target.value })}
-                                className="w-full h-36 px-4 py-3 bg-white/5 rounded-2xl border border-white/10 outline-none focus:ring-2 focus:ring-teal-500/20 text-white text-sm leading-relaxed resize-none"
-                            />
-                        </div>
-                        <div className="flex justify-end gap-3 pt-2">
-                            <button
-                                onClick={() => setWhatsAppPrompt(null)}
-                                className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold transition-all"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                onClick={() => {
-                                    const encoded = encodeURIComponent(whatsAppPrompt.message);
-                                    window.open(`https://wa.me/593${whatsAppPrompt.phone.replace(/^0/, '')}?text=${encoded}`, '_blank');
-                                    setWhatsAppPrompt(null);
-                                }}
-                                className="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/20"
-                            >
-                                Abrir WhatsApp Web
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </Modal>
-
-            {/* Modal de Subidor Masivo de Firmas .p12 */}
+            {/* ── MODAL SUBIDOR MASIVO ── */}
             <BulkP12UploaderModal
                 isOpen={isBulkModalOpen}
                 onClose={() => setIsBulkModalOpen(false)}
             />
+
+            {/* ── MODAL WHATSAPP NOTIFICACIÓN ── */}
+            {whatsAppPrompt && (
+                <Modal isOpen={true} onClose={() => setWhatsAppPrompt(null)} title="💬 Enviar Recordatorio por WhatsApp" size="md">
+                    <div className="space-y-4 p-4 text-white">
+                        <p className="text-xs text-slate-300">
+                            Enviarás un mensaje directo al cliente <strong>{whatsAppPrompt.clientName}</strong> sobre la caducidad de su firma electrónica:
+                        </p>
+
+                        <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 text-xs font-mono text-emerald-300 whitespace-pre-wrap">
+                            {whatsAppPrompt.message}
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button
+                                onClick={() => setWhatsAppPrompt(null)}
+                                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold"
+                            >
+                                Cancelar
+                            </button>
+                            <a
+                                href={`https://wa.me/${whatsAppPrompt.phone ? whatsAppPrompt.phone.replace(/\D/g, '') : ''}?text=${encodeURIComponent(whatsAppPrompt.message)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={() => setWhatsAppPrompt(null)}
+                                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
+                            >
+                                <PhoneCall size={14} /> Abrir WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </div>
     );
 };
