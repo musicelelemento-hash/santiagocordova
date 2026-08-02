@@ -107,15 +107,37 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
     }, [clients, searchTerm]);
 
     const filteredBackupSignatures = useMemo(() => {
+        // 1. Desduplicar el arreglo por RUC + Caducidad (o Titular + Nombre de archivo)
+        const uniqueMap = new Map<string, BackupSignatureItem>();
+        
+        backupSignatures.forEach(item => {
+            const rucClean = item.ruc ? item.ruc.trim() : '';
+            const key = rucClean ? `${rucClean}_${item.expirationDate || ''}` : `${item.titular.toLowerCase().trim()}_${item.fileName}`;
+            
+            if (!uniqueMap.has(key) || (!uniqueMap.get(key)?.password && item.password)) {
+                uniqueMap.set(key, item);
+            }
+        });
+
+        const uniqueList = Array.from(uniqueMap.values());
+
+        // 2. Filtrar únicamente los que NO son clientes activos ya registrados en el directorio principal
+        const externalOnly = uniqueList.filter(b => {
+            if (!b.ruc) return true;
+            const existsInActive = clients.some(c => !c.isDeleted && c.isActive && c.ruc.trim() === b.ruc.trim());
+            return !existsInActive;
+        });
+
+        // 3. Aplicar filtro de búsqueda
         const q = searchTerm.toLowerCase().trim();
-        if (!q) return backupSignatures;
-        return backupSignatures.filter(b => 
+        if (!q) return externalOnly;
+        return externalOnly.filter(b => 
             b.titular.toLowerCase().includes(q) ||
             b.ruc.includes(q) ||
             (b.category && b.category.toLowerCase().includes(q)) ||
             (b.provider && b.provider.toLowerCase().includes(q))
         );
-    }, [backupSignatures, searchTerm]);
+    }, [backupSignatures, clients, searchTerm]);
 
     const togglePasswordVisibility = (id: string) => {
         setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));

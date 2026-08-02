@@ -515,9 +515,17 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
             }
         }
 
-        if (backupCount > 0) {
-            localStorage.setItem('sri_backup_signatures', JSON.stringify(backupList));
-        }
+        // Limpiar duplicados antes de guardar en localStorage
+        const uniqueBackupMap = new Map<string, any>();
+        backupList.forEach((b: any) => {
+            const rucClean = b.ruc ? b.ruc.trim() : '';
+            const key = rucClean ? `${rucClean}_${b.expirationDate || ''}` : `${(b.titular || '').toLowerCase().trim()}_${b.fileName}`;
+            if (!uniqueBackupMap.has(key) || (!uniqueBackupMap.get(key)?.password && b.password)) {
+                uniqueBackupMap.set(key, b);
+            }
+        });
+
+        localStorage.setItem('sri_backup_signatures', JSON.stringify(Array.from(uniqueBackupMap.values())));
 
         setIsSaving(false);
         toast.success(`🎉 Proceso completado: ${updatedCount} actualizadas, ${createdCount} creados y ${backupCount} en respaldos.`);
