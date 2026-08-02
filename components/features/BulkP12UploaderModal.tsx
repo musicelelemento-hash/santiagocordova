@@ -359,13 +359,25 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
         for (const candPassword of candidates) {
             const res = tryUnlockItem(updatedItem, candPassword);
             if (res.status === 'unlocked') {
-                const finalMatched = res.metadata?.ruc 
-                    ? clients.find(c => c.ruc.replace(/\D/g, '').includes(res.metadata!.ruc!.replace(/\D/g, '').slice(0, 10))) 
-                    : matchedClient;
+                let finalMatched = matchedClient;
+                if (res.metadata?.ruc) {
+                    const rucClean = res.metadata.ruc.replace(/\D/g, '');
+                    if (rucClean.length >= 9) {
+                        const matchedByMeta = clients.find(c => {
+                            const cRucClean = c.ruc.replace(/\D/g, '');
+                            return cRucClean.includes(rucClean.slice(0, 10)) || rucClean.includes(cRucClean.slice(0, 10));
+                        });
+                        if (matchedByMeta) finalMatched = matchedByMeta;
+                    }
+                }
+
+                const expCompFinal = evaluateExpirationComparison(res.metadata?.notAfter, finalMatched, item.fileName);
 
                 return {
                     ...res,
-                    matchedClient: finalMatched || res.matchedClient,
+                    matchedClient: finalMatched,
+                    expirationComparison: expCompFinal,
+                    saveMode: expCompFinal.status === 'duplicate' ? 'omit' : (expCompFinal.status === 'older' ? 'backup_only' : item.saveMode),
                     unlockedViaPattern: candPassword
                 };
             }
