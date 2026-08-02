@@ -94,32 +94,13 @@ const parseNameFromFileName = (filename: string): string => {
     return '';
 };
 
-// Extraer estrictamente: 1er Apellido (index 0), 1er Nombre (index 2) y 2do Nombre (index 3). Excluir siempre el 2do Apellido (index 1).
 const extractValidPasswordNameTokens = (fullName: string): string[] => {
     if (!fullName) return [];
     
     const cleanName = fullName.replace(/[\.\-_]+/g, ' ').trim();
     const parts = cleanName.split(/\s+/).filter(w => w.length >= 2 && !/^\d+$/.test(w) && !['cert', 'p12', 'pfx', 'identity', 'keystore', 'sri', 'firma'].includes(w.toLowerCase()));
     
-    if (parts.length === 0) return [];
-    
-    const validTokens: string[] = [];
-
-    if (parts.length === 1) {
-        validTokens.push(parts[0]);
-    } else if (parts.length === 2) {
-        validTokens.push(parts[0]);
-        validTokens.push(parts[1]);
-    } else if (parts.length >= 3) {
-        validTokens.push(parts[0]); // 1er Apellido
-        // OMITE parts[1] (2do Apellido)
-        validTokens.push(parts[2]); // 1er Nombre
-        if (parts[3]) {
-            validTokens.push(parts[3]); // 2do Nombre
-        }
-    }
-
-    return validTokens;
+    return Array.from(new Set(parts));
 };
 
 // Coincidencia estricta por RUC exacto/subcadena O por 1er Apellido AND Nombre de pila
