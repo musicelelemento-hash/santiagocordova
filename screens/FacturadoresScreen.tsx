@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react';
 import {
     ShoppingBag, PhoneCall, AlertTriangle, CheckCircle2, ArrowRight,
     Search, FileText, Check, Copy, ExternalLink, Download, Eye, EyeOff,
-    Globe, RefreshCw, UploadCloud, UserCheck, ShieldCheck, Laptop, Lock, Info
+    Globe, RefreshCw, UploadCloud, UserCheck, ShieldCheck, Laptop, Lock, Info,
+    FolderDown, ClipboardCopy
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -58,10 +59,52 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    const formatExpiry = (date?: string) => {
-        if (!date) return '—';
-        const d = new Date(date);
-        return isNaN(d.getTime()) ? date : format(d, "d MMM yyyy", { locale: es });
+    const handleDownloadAllResources = async (client: Client) => {
+        const isEcuafact = client.facturadorConfig?.programName?.toLowerCase().includes('ecuafact');
+        const filesToDownload = [
+            { file: client.idCardFront, suffix: 'Cedula_Frente' },
+            { file: client.idCardBack, suffix: 'Cedula_Reverso' },
+            { file: client.idCardSelfie, suffix: 'Selfie_Cedula' },
+            { file: client.rucPdf, suffix: 'RUC_PDF' },
+            ...(isEcuafact ? [{ file: client.ecuafactSignedRequest, suffix: 'Solicitud_Firmada' }] : [])
+        ].filter(item => item.file && item.file.content);
+
+        if (filesToDownload.length === 0) {
+            toast.error("No hay archivos subidos en el expediente de este cliente.");
+            return;
+        }
+
+        toast.info(`Iniciando descarga de ${filesToDownload.length} archivos para ${client.name}...`);
+        for (let i = 0; i < filesToDownload.length; i++) {
+            const item = filesToDownload[i];
+            const ext = item.file!.type === 'pdf' || item.file!.name?.endsWith('.pdf') ? 'pdf' : 'jpg';
+            const fileWithCustomName = {
+                ...item.file!,
+                name: `${client.ruc}_${item.suffix}.${ext}`
+            };
+            await downloadStoredFile(fileWithCustomName);
+            await new Promise(r => setTimeout(r, 500));
+        }
+        toast.success(`🎉 Expediente completo descargado (${filesToDownload.length} archivos).`);
+    };
+
+    const handleCopyClientSummary = (client: Client) => {
+        const pObj = client.phones?.[0];
+        const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
+        const summary = `📌 EXPEDIENTE PARA TRÁMITE DE FACTURADOR
+RUC: ${client.ruc}
+Cliente: ${client.name}
+Actividad: ${client.tradeName || client.economicActivity || 'General'}
+Teléfono: ${phone || '—'}
+Email: ${client.email || '—'}
+Dirección: ${client.address || 'Pasaje, El Oro'}
+Plan: ${client.facturadorConfig?.programName || '—'}
+Usuario: ${client.facturadorConfig?.username || client.ruc}
+Clave SRI: ${client.sriPassword}
+Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}`;
+
+        navigator.clipboard.writeText(summary);
+        toast.success(`Expediente de ${client.name} copiado al portapapeles.`);
     };
 
     // KPI Counters
@@ -179,7 +222,7 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
                             Registro de Trámites y Activaciones de Facturadores
                         </h3>
                         <p className="text-[11px] text-slate-400 font-medium">
-                            Descarga los recursos recopilados y súbelos a la plataforma para tramitar y activar sus planes.
+                            Descarga los recursos recopilados en 1-clic o copia los datos del expediente para activar los planes.
                         </p>
                     </div>
                 </div>
@@ -195,7 +238,7 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
                                 <tr className="border-b border-white/10 bg-slate-900/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
                                     <th className="py-4 px-5">Cliente</th>
                                     <th className="py-4 px-5">Plan Vendido</th>
-                                    <th className="py-4 px-5">Recursos / Archivos</th>
+                                    <th className="py-4 px-5">Expediente de Recursos</th>
                                     <th className="py-4 px-5">Estado de Trámite</th>
                                     <th className="py-4 px-5">Credenciales Facturador</th>
                                     <th className="py-4 px-5 text-right">Acciones</th>
@@ -207,6 +250,15 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
                                     const pwdVisible = visiblePasswords[client.id] || false;
                                     const isCopied = copiedId === client.id;
                                     const providerUrl = config.url || (config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' : 'https://app.ecuafact.com');
+
+                                    // Contar archivos presentes vs totales
+                                    const isEcuafact = config.programName?.toLowerCase().includes('ecuafact');
+                                    const totalRequired = isEcuafact ? 5 : 4;
+                                    const presentCount = [
+                                        client.idCardFront, client.idCardBack, client.idCardSelfie, client.rucPdf,
+                                        ...(isEcuafact ? [client.ecuafactSignedRequest] : [])
+                                    ].filter(Boolean).length;
+                                    const isComplete = presentCount === totalRequired;
 
                                     return (
                                         <tr key={client.id} className="hover:bg-white/[0.01] transition-colors">
@@ -220,67 +272,84 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
                                                     {config.documentStatus || 'Plan Registrado'} {config.price ? `— $${config.price}` : ''}
                                                 </p>
                                             </td>
-                                            <td className="py-4 px-5">
+                                            <td className="py-4 px-5 space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                                                        isComplete ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                                                    }`}>
+                                                        {presentCount}/{totalRequired} Recursos
+                                                    </span>
+                                                    {presentCount > 0 && (
+                                                        <button
+                                                            onClick={() => handleDownloadAllResources(client)}
+                                                            className="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold border border-indigo-500/40 flex items-center gap-1 text-[10px] uppercase transition-all shadow-sm"
+                                                            title="Descargar todos los archivos del expediente en 1 clic"
+                                                        >
+                                                            <FolderDown size={12} /> Paquete Trámite
+                                                        </button>
+                                                    )}
+                                                </div>
+
                                                 <div className="flex flex-wrap gap-1.5">
                                                     {client.idCardFront ? (
                                                         <button
                                                             onClick={() => downloadStoredFile(client.idCardFront)}
-                                                            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1"
+                                                            className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px]"
                                                             title="Descargar Cédula Frontal"
                                                         >
-                                                            <Download size={10} /> 🪪 Frente
+                                                            <Download size={9} /> 🪪 Frente
                                                         </button>
                                                     ) : (
-                                                        <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-white/5" title="Falta Cédula Frontal">⚠️ Frente</span>
+                                                        <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Frontal">⚠️ Frente</span>
                                                     )}
 
                                                     {client.idCardBack ? (
                                                         <button
                                                             onClick={() => downloadStoredFile(client.idCardBack)}
-                                                            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1"
+                                                            className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px]"
                                                             title="Descargar Cédula Reverso"
                                                         >
-                                                            <Download size={10} /> 🪪 Reverso
+                                                            <Download size={9} /> 🪪 Reverso
                                                         </button>
                                                     ) : (
-                                                        <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-white/5" title="Falta Cédula Reverso">⚠️ Reverso</span>
+                                                        <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Reverso">⚠️ Reverso</span>
                                                     )}
 
                                                     {client.idCardSelfie ? (
                                                         <button
                                                             onClick={() => downloadStoredFile(client.idCardSelfie)}
-                                                            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1"
+                                                            className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px]"
                                                             title="Descargar Foto Selfie"
                                                         >
-                                                            <Download size={10} /> 📸 Selfie
+                                                            <Download size={9} /> 📸 Selfie
                                                         </button>
                                                     ) : (
-                                                        <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-white/5" title="Falta Selfie">⚠️ Selfie</span>
+                                                        <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-500 border border-white/5 text-[9px]" title="Falta Selfie">⚠️ Selfie</span>
                                                     )}
 
                                                     {client.rucPdf ? (
                                                         <button
                                                             onClick={() => downloadStoredFile(client.rucPdf)}
-                                                            className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1"
+                                                            className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px]"
                                                             title="Descargar RUC Actualizado"
                                                         >
-                                                            <Download size={10} /> 📄 RUC
+                                                            <Download size={9} /> 📄 RUC
                                                         </button>
                                                     ) : (
-                                                        <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-white/5" title="Falta RUC Actualizado">⚠️ RUC</span>
+                                                        <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-500 border border-white/5 text-[9px]" title="Falta RUC Actualizado">⚠️ RUC</span>
                                                     )}
 
-                                                    {config.programName?.toLowerCase().includes('ecuafact') && (
+                                                    {isEcuafact && (
                                                         client.ecuafactSignedRequest ? (
                                                             <button
                                                                 onClick={() => downloadStoredFile(client.ecuafactSignedRequest)}
-                                                                className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1"
+                                                                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px]"
                                                                 title="Descargar Solicitud de Terceros Firmada"
                                                             >
-                                                                <Download size={10} /> ✍️ Solicitud
+                                                                <Download size={9} /> ✍️ Solicitud
                                                             </button>
                                                         ) : (
-                                                            <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-500 border border-white/5" title="Falta Solicitud Firmada">⚠️ Solicitud</span>
+                                                            <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-500 border border-white/5 text-[9px]" title="Falta Solicitud Firmada">⚠️ Solicitud</span>
                                                         )
                                                     )}
                                                 </div>
@@ -337,6 +406,14 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
                                                 </div>
                                             </td>
                                             <td className="py-4 px-5 text-right space-x-1.5 whitespace-nowrap">
+                                                <button
+                                                    onClick={() => handleCopyClientSummary(client)}
+                                                    className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-white/10"
+                                                    title="Copiar texto con datos de cliente para registro en plataforma"
+                                                >
+                                                    <ClipboardCopy size={11} /> Ficha
+                                                </button>
+
                                                 <button
                                                     onClick={() => {
                                                         const message = `Estimado(a) *${client.name}*, le saludamos de SantiagoCórdova.com. Le informamos que su facturador electrónico *${config.programName}* ha sido activado con éxito.\n\n*Plataforma:* ${providerUrl}\n*Usuario:* ${config.username || client.ruc}\n*Clave:* ${config.password || client.sriPassword}\n\nYa puede emitir sus facturas electrónicas normalmente.`;
