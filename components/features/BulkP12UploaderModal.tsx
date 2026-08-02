@@ -749,23 +749,63 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                                                     {/* EVALUACIÓN INTELIGENTE DE RENOVACIÓN / DUPLICADOS / ANTIGÜEDAD */}
                                                     {isUnlocked && expComp && (
-                                                        <div className="pt-1">
+                                                        <div className="pt-2">
                                                             {expComp.status === 'renewal' && (
-                                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-black uppercase tracking-wide shadow-sm">
-                                                                    <ArrowUpRight size={13} className="text-emerald-400 animate-bounce" />
-                                                                    <span>🎉 Renovación Detectada (Nueva: <strong>{expComp.newStr}</strong> vs Actual: {expComp.existingStr})</span>
+                                                                <div className="p-3.5 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs space-y-2 shadow-lg">
+                                                                    <div className="flex items-center justify-between gap-2 font-black uppercase text-[10px] text-emerald-400">
+                                                                        <span className="flex items-center gap-1.5">
+                                                                            <ArrowUpRight size={15} className="text-emerald-400 animate-bounce" />
+                                                                            🎉 ¡RENOVACIÓN DE FIRMA DETECTADA!
+                                                                        </span>
+                                                                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 text-[9px] border border-emerald-400/40">Más Reciente</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-2 pt-0.5 font-mono text-[11px]">
+                                                                        <div className="p-2.5 rounded-xl bg-black/50 border border-emerald-500/40">
+                                                                            <span className="text-[9px] text-emerald-400/90 block uppercase font-sans font-bold">📄 Archivo Subido (Nuevo):</span>
+                                                                            <strong className="text-emerald-300 font-bold text-xs">{expComp.newStr}</strong>
+                                                                        </div>
+                                                                        <div className="p-2.5 rounded-xl bg-black/30 border border-white/10 opacity-75">
+                                                                            <span className="text-[9px] text-slate-400 block uppercase font-sans font-bold">📁 Sistema Actual:</span>
+                                                                            <strong className="text-slate-300 font-bold text-xs">{expComp.existingStr}</strong>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-emerald-300/90 font-sans leading-tight">
+                                                                        ✨ Esta firma extenderá la fecha de vencimiento y actualizará el perfil del cliente automáticamente.
+                                                                    </p>
                                                                 </div>
                                                             )}
-                                                            {expComp.status === 'duplicate' && (
-                                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-[10px] font-bold uppercase tracking-wide">
-                                                                    <CopyCheck size={13} className="text-cyan-400" />
-                                                                    <span>ℹ️ Firma idéntica ya en sistema / respaldos (Caducidad: {expComp.existingStr}) · Omitida</span>
-                                                                </div>
-                                                            )}
+
                                                             {expComp.status === 'older' && (
-                                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold uppercase tracking-wide">
-                                                                    <AlertCircle size={13} className="text-amber-400" />
-                                                                    <span>⚠️ Firma anterior ({expComp.newStr}). La del sistema es más reciente ({expComp.existingStr}).</span>
+                                                                <div className="p-3.5 rounded-2xl bg-amber-950/50 border border-amber-500/40 text-amber-200 text-xs space-y-2 shadow-lg">
+                                                                    <div className="flex items-center justify-between gap-2 font-black uppercase text-[10px] text-amber-400">
+                                                                        <span className="flex items-center gap-1.5">
+                                                                            <AlertCircle size={15} className="text-amber-400" />
+                                                                            ⚠️ ARCHIVO DE FIRMA ANTIGUO (CADUCADO / HISTÓRICO)
+                                                                        </span>
+                                                                        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/30 text-amber-200 text-[9px] border border-amber-400/40">Omitida por Seguridad</span>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-2 pt-0.5 font-mono text-[11px]">
+                                                                        <div className="p-2.5 rounded-xl bg-black/50 border border-amber-500/50">
+                                                                            <span className="text-[9px] text-amber-400/90 block uppercase font-sans font-bold">📄 Archivo Subido (Viejo):</span>
+                                                                            <strong className="text-amber-300 font-bold text-xs">{expComp.newStr}</strong>
+                                                                        </div>
+                                                                        <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/50">
+                                                                            <span className="text-[9px] text-emerald-400 block uppercase font-sans font-bold">📁 Ya en Sistema (Vigente):</span>
+                                                                            <strong className="text-emerald-300 font-bold text-xs">{expComp.existingStr}</strong>
+                                                                        </div>
+                                                                    </div>
+                                                                    <p className="text-[10px] text-amber-300/90 font-sans leading-tight">
+                                                                        🔒 Tu cliente ya tiene su firma renovada de {expComp.existingStr} activa. Este archivo viejo no sobreescribirá su perfil.
+                                                                    </p>
+                                                                </div>
+                                                            )}
+
+                                                            {expComp.status === 'duplicate' && (
+                                                                <div className="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 text-xs space-y-1">
+                                                                    <div className="flex items-center gap-1.5 font-bold uppercase text-[10px] text-cyan-300">
+                                                                        <CopyCheck size={14} className="text-cyan-400" />
+                                                                        <span>ℹ️ FIRMA IDÉNTICA YA REGISTRADA (Caducidad: <strong>{expComp.existingStr}</strong>) · Omitida</span>
+                                                                    </div>
                                                                 </div>
                                                             )}
                                                         </div>
