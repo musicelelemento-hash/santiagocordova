@@ -7,9 +7,20 @@ interface FacturadorCardProps {
     isEditing: boolean;
     onChange: (config: FacturadorConfig) => void;
     onOpenSalesModal?: () => void;
+    activationStatus?: 'recursos_listos' | 'subido_plataforma' | 'activado';
+    onStatusChange?: (status: 'recursos_listos' | 'subido_plataforma' | 'activado') => void;
+    onNavigateToFacturadores?: () => void;
 }
 
-export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isEditing, onChange, onOpenSalesModal }) => {
+export const FacturadorCard: React.FC<FacturadorCardProps> = ({ 
+    config = {}, 
+    isEditing, 
+    onChange, 
+    onOpenSalesModal,
+    activationStatus,
+    onStatusChange,
+    onNavigateToFacturadores
+}) => {
     const [passwordVisible, setPasswordVisible] = React.useState(false);
     const [localEditing, setLocalEditing] = React.useState(false);
     const canEdit = isEditing || localEditing;
@@ -47,6 +58,28 @@ export const FacturadorCard: React.FC<FacturadorCardProps> = ({ config = {}, isE
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                    {onStatusChange && (
+                        <select
+                            value={activationStatus || 'recursos_listos'}
+                            onChange={(e) => onStatusChange(e.target.value as any)}
+                            className="px-3 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-wider outline-none cursor-pointer bg-slate-900 dark:bg-slate-950 text-white border-white/10"
+                        >
+                            <option value="recursos_listos">🔴 Recursos Listos</option>
+                            <option value="subido_plataforma">🟡 Subido a Plataforma</option>
+                            <option value="activado">🟢 Activado y Listo</option>
+                        </select>
+                    )}
+                    {onNavigateToFacturadores && (
+                        <button
+                            type="button"
+                            onClick={onNavigateToFacturadores}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-teal-500/15 hover:bg-teal-500/25 text-teal-600 dark:text-teal-300 border border-teal-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95"
+                            title="Ir al Tablero General de Facturadores y Planes"
+                        >
+                            <LucideIcons.ShoppingBag size={12} />
+                            <span>Tablero Facturadores</span>
+                        </button>
+                    )}
                     {onOpenSalesModal && (
                         <button
                             type="button"

@@ -17,6 +17,11 @@ import { AuditLogScreen } from './screens/AuditLogScreen';
 import { FacturacionSriScreen } from './screens/FacturacionSriScreen';
 import { FirmasScreen } from './screens/FirmasScreen';
 import { FacturadoresScreen } from './screens/FacturadoresScreen';
+import { CotizacionesScreen } from './screens/CotizacionesScreen';
+import { LicenciasScreen } from './screens/LicenciasScreen';
+import { RefinanciacionScreen } from './screens/RefinanciacionScreen';
+import { CajaChicaScreen } from './screens/CajaChicaScreen';
+import { CrmPipelineScreen } from './screens/CrmPipelineScreen';
 import { AdaptadorConvert } from './components/features/AdaptadorConvert';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
@@ -475,6 +480,11 @@ const App: React.FC = () => {
         delete (window as any).__TEMP_FACTURADORES_SEARCH__;
         return <FacturadoresScreen navigate={navigate} initialSearchTerm={term} />;
       }
+      case 'cotizaciones': return <CotizacionesScreen navigate={navigate} />;
+      case 'licencias': return <LicenciasScreen navigate={navigate} />;
+      case 'refinanciacion': return <RefinanciacionScreen navigate={navigate} />;
+      case 'caja_chica': return <CajaChicaScreen navigate={navigate} />;
+      case 'crm_pipeline': return <CrmPipelineScreen navigate={navigate} />;
       case 'migracion_zifact': return <AdaptadorConvert />;
       default: return <AdminDashboardScreen navigate={navigate} />;
     }
@@ -482,10 +492,15 @@ const App: React.FC = () => {
 
   const navItems = ([
     { screen: 'home', icon: LucideIcons.Home, label: 'Dashboard' },
-    { screen: 'clients', icon: LucideIcons.Users, label: 'Directorio', groupLabel: 'Clientes', isSubItem: true },
+    { screen: 'clients', icon: LucideIcons.Users, label: 'Directorio', count: clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length, groupLabel: 'Clientes', isSubItem: true },
     { screen: 'declaraciones', icon: LucideIcons.LayoutGrid, label: 'Declaraciones', isSubItem: true },
+    { screen: 'crm_pipeline', icon: LucideIcons.Kanban, label: 'CRM Embudo' },
     { screen: 'firmas', icon: LucideIcons.KeyRound, label: 'Firmas' },
     { screen: 'facturadores', icon: LucideIcons.ShoppingBag, label: 'Facturadores y Planes' },
+    { screen: 'cotizaciones', icon: LucideIcons.FileSpreadsheet, label: 'Cotizaciones' },
+    { screen: 'licencias', icon: LucideIcons.Key, label: 'Licencias SaaS' },
+    { screen: 'refinanciacion', icon: LucideIcons.Coins, label: 'Refinanciación' },
+    { screen: 'caja_chica', icon: LucideIcons.Wallet, label: 'Caja Chica TPV' },
     { screen: 'cobranza', icon: LucideIcons.BarChart, label: 'Cobranza' },
     { screen: 'sri_facturacion', icon: LucideIcons.FileText, label: 'Facturador' },
     { screen: 'tasks', icon: LucideIcons.CheckCircle, label: 'Tareas' },

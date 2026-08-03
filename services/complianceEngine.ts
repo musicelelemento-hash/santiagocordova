@@ -46,14 +46,14 @@ export interface ComplianceSummary {
 // HELPERS
 // ─────────────────────────────────────────────────────────
 
-const isDeclared = (decl: Declaration | undefined): boolean => {
+export const isDeclared = (decl: Declaration | undefined): boolean => {
     if (!decl) return false;
     return !!decl.proof_file ||
         decl.status === DeclarationStatus.Enviada ||
         decl.status === DeclarationStatus.Pagada;
 };
 
-const isPaid = (decl: Declaration | undefined, client?: Client): boolean => {
+export const isPaid = (decl: Declaration | undefined, client?: Client): boolean => {
     if (client && isCourtesyClient(client)) return true;
     if (!decl) return false;
     return decl.status === DeclarationStatus.Pagada || !!decl.is_paid;

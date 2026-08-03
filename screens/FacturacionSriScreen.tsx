@@ -14,6 +14,10 @@ import { formatPeriodForDisplay } from '../services/sri';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
 import { SalesComboModal } from '../components/features/SalesComboModal';
+import { SriPosTerminalModal } from '../components/features/SriPosTerminalModal';
+import { SriAccountingBatchModal } from '../components/features/SriAccountingBatchModal';
+import { DevolucionIvaModal } from '../components/features/DevolucionIvaModal';
+import { Store, HeartHandshake } from 'lucide-react';
 // @ts-ignore
 import html2pdf from 'html2pdf.js';
 interface InvoiceItem {
@@ -134,6 +138,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [isFacturacionOpen, setIsFacturacionOpen] = useState(true);
   const [isHerramientasOpen, setIsHerramientasOpen] = useState(true);
   const [isActionsDropdownOpen, setIsActionsDropdownOpen] = useState(false);
+  const [isPosModalOpen, setIsPosModalOpen] = useState(false);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [isDevolucionModalOpen, setIsDevolucionModalOpen] = useState(false);
 
   // Sync initial client selection to auto-open Factura tab
   useEffect(() => {
@@ -2387,11 +2394,35 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           <div className="flex flex-wrap gap-2 relative z-10 shrink-0">
             <button
               type="button"
+              onClick={() => setIsDevolucionModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-md active:scale-95"
+            >
+              <HeartHandshake size={14} />
+              <span>👴 Devolución IVA</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsBatchModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-sky-600 hover:from-indigo-600 hover:to-sky-700 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-md active:scale-95"
+            >
+              <Zap size={14} />
+              <span>🚀 Facturación Masiva</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsPosModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-600 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-md active:scale-95"
+            >
+              <Store size={14} />
+              <span>⚡ Caja TPV POS</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setIsSalesModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-md active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-md active:scale-95"
             >
               <ShoppingBag size={14} />
-              <span>💳 Registrar Venta de Plan / Combo</span>
+              <span>💳 Registrar Venta de Plan</span>
             </button>
             <button
               type="button"
@@ -5129,6 +5160,24 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             }
           ]);
         }}
+      />
+
+      {/* MODAL FUSIÓN TPV POS (BOTICA, GIMNASIO, RESTAURANTE, MINIMARKET) */}
+      <SriPosTerminalModal
+        isOpen={isPosModalOpen}
+        onClose={() => setIsPosModalOpen(false)}
+      />
+
+      {/* MODAL FACTURACIÓN MASIVA DE HONORARIOS Y DIAGNÓSTICO SRI MÓDULO 11 */}
+      <SriAccountingBatchModal
+        isOpen={isBatchModalOpen}
+        onClose={() => setIsBatchModalOpen(false)}
+      />
+
+      {/* MODAL DEVOLUCIÓN IVA TERCERA EDAD Y DISCAPACIDAD */}
+      <DevolucionIvaModal
+        isOpen={isDevolucionModalOpen}
+        onClose={() => setIsDevolucionModalOpen(false)}
       />
 
       </div>

@@ -1,14 +1,15 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import {
     ShoppingBag, PhoneCall, AlertTriangle, CheckCircle2, ArrowRight,
     Search, FileText, Check, Copy, ExternalLink, Download, Eye, EyeOff,
     Globe, RefreshCw, UploadCloud, UserCheck, ShieldCheck, Laptop, Lock, Info,
-    FolderDown, ClipboardCopy
+    FolderDown, ClipboardCopy, Key, Shield, Plus, FileCode, Upload
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { v4 as uuidv4 } from 'uuid';
 import { useAppStore } from '../store/useAppStore';
-import { Client } from '../types';
+import { Client, StoredFile } from '../types';
 import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { downloadStoredFile } from '../services/fileService';
@@ -26,7 +27,10 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string } | null>(null);
     const [visiblePasswords, setVisiblePasswords] = useState<{ [id: string]: boolean }>({});
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const [filterStatus, setFilterStatus] = useState<'todos' | 'recursos_listos' | 'subido_plataforma' | 'activado'>('todos');
+    const [filterStatus, setFilterStatus] = useState<'todos' | 'recursos_listos' | 'subido_plataforma' | 'activado' | 'sin_firma'>('todos');
+    const [selectedVaultClient, setSelectedVaultClient] = useState<Client | null>(null);
+    const directVaultUploadInputRef = useRef<HTMLInputElement>(null);
+    const [vaultUploadTarget, setVaultUploadTarget] = useState<'idCardFront' | 'idCardBack' | 'idCardSelfie' | 'rucPdf' | 'signatureFile' | 'ecuafactSignedRequest' | 'vault'>('vault');
 
     const facturadorClients = useMemo(() => {
         const q = searchTerm.toLowerCase().trim();
@@ -34,7 +38,9 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
             if (c.isDeleted || !c.isActive || !c.facturadorConfig) return false;
             
             // Filter by status
-            if (filterStatus !== 'todos') {
+            if (filterStatus === 'sin_firma') {
+                if (c.signatureFile) return false;
+            } else if (filterStatus !== 'todos') {
                 const status = c.facturadorActivationStatus || 'recursos_listos';
                 if (status !== filterStatus) return false;
             }
@@ -66,6 +72,7 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
             { file: client.idCardBack, suffix: 'Cedula_Reverso' },
             { file: client.idCardSelfie, suffix: 'Selfie_Cedula' },
             { file: client.rucPdf, suffix: 'RUC_PDF' },
+            { file: client.signatureFile, suffix: 'Firma_Electronica' },
             ...(isEcuafact ? [{ file: client.ecuafactSignedRequest, suffix: 'Solicitud_Firmada' }] : [])
         ].filter(item => item.file && item.file.content);
 
@@ -77,7 +84,9 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
         toast.info(`Iniciando descarga de ${filesToDownload.length} archivos para ${client.name}...`);
         for (let i = 0; i < filesToDownload.length; i++) {
             const item = filesToDownload[i];
-            const ext = item.file!.type === 'pdf' || item.file!.name?.endsWith('.pdf') ? 'pdf' : 'jpg';
+            const isP12 = item.file!.name?.endsWith('.p12') || item.file!.type === 'p12';
+            const isPdf = item.file!.type === 'pdf' || item.file!.name?.endsWith('.pdf');
+            const ext = isP12 ? 'p12' : isPdf ? 'pdf' : 'jpg';
             const fileWithCustomName = {
                 ...item.file!,
                 name: `${client.ruc}_${item.suffix}.${ext}`
@@ -91,20 +100,65 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const handleCopyClientSummary = (client: Client) => {
         const pObj = client.phones?.[0];
         const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
-        const summary = `📌 EXPEDIENTE PARA TRÁMITE DE FACTURADOR
+        const sigStatus = client.signatureFile ? '✅ Firma Subida en Bóveda' : '⚠️ Falta Firma Electrónica .p12';
+        
+        const summary = `📌 EXPEDIENTE PARA TRÁMITE DE FACTURADOR Y BÓVEDA
 RUC: ${client.ruc}
 Cliente: ${client.name}
 Actividad: ${client.tradeName || client.economicActivity || 'General'}
 Teléfono: ${phone || '—'}
 Email: ${client.email || '—'}
 Dirección: ${client.address || 'Pasaje, El Oro'}
+
+--- PLAN DE FACTURACIÓN ---
 Plan: ${client.facturadorConfig?.programName || '—'}
-Usuario: ${client.facturadorConfig?.username || client.ruc}
+Usuario Facturador: ${client.facturadorConfig?.username || client.ruc}
 Clave SRI: ${client.sriPassword}
-Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}`;
+Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}
+
+--- FIRMA ELECTRÓNICA Y BÓVEDA ---
+Estado Firma .p12: ${sigStatus}
+Clave Firma .p12: ${client.electronicSignaturePassword || '—'}
+Proveedor Firma: ${client.signatureProvider || '—'}
+Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
         navigator.clipboard.writeText(summary);
-        toast.success(`Expediente de ${client.name} copiado al portapapeles.`);
+        toast.success(`Expediente completo de ${client.name} copiado al portapapeles.`);
+    };
+
+    const handleUploadFileToVault = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !selectedVaultClient) return;
+
+        toast.info(`Cargando ${file.name} a la Bóveda del Cliente...`);
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const content = e.target?.result as string;
+            const storedFile: StoredFile = {
+                id: uuidv4(),
+                name: file.name,
+                size: file.size,
+                type: file.name.endsWith('.p12') ? 'p12' : file.type.includes('pdf') ? 'pdf' : 'image',
+                content,
+                uploadedAt: new Date().toISOString()
+            };
+
+            const updates: Partial<Client> = {};
+            if (vaultUploadTarget === 'idCardFront') updates.idCardFront = storedFile;
+            else if (vaultUploadTarget === 'idCardBack') updates.idCardBack = storedFile;
+            else if (vaultUploadTarget === 'idCardSelfie') updates.idCardSelfie = storedFile;
+            else if (vaultUploadTarget === 'rucPdf') updates.rucPdf = storedFile;
+            else if (vaultUploadTarget === 'signatureFile') updates.signatureFile = storedFile;
+            else if (vaultUploadTarget === 'ecuafactSignedRequest') updates.ecuafactSignedRequest = storedFile;
+            else {
+                updates.vault = [...(selectedVaultClient.vault || []), storedFile];
+            }
+
+            updateClient(selectedVaultClient.id, updates);
+            toast.success(`✅ ${file.name} guardado en la Bóveda del Cliente.`);
+            setSelectedVaultClient(prev => prev ? { ...prev, ...updates } : null);
+        };
+        reader.readAsDataURL(file);
     };
 
     // KPI Counters
@@ -188,6 +242,17 @@ Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}`;
                             <span className="text-xl font-black font-mono text-emerald-400">{kpis.activado}</span>
                             <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Activados</span>
                         </button>
+                        <button
+                            onClick={() => setFilterStatus('sin_firma')}
+                            className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
+                                filterStatus === 'sin_firma'
+                                    ? 'bg-purple-500/15 border-purple-500/30 text-white'
+                                    : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
+                            }`}
+                        >
+                            <span className="text-xl font-black font-mono text-purple-400">{kpis.total - kpis.conFirma}</span>
+                            <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Sin Firma .p12</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -222,7 +287,7 @@ Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}`;
                             Registro de Trámites y Activaciones de Facturadores
                         </h3>
                         <p className="text-[11px] text-slate-400 font-medium">
-                            Descarga los recursos recopilados en 1-clic o copia los datos del expediente para activar los planes.
+                            Descarga los recursos recopilados en 1-clic o inspecciona/sube directamente a la Bóveda del Cliente.
                         </p>
                     </div>
                 </div>
@@ -238,7 +303,7 @@ Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}`;
                                 <tr className="border-b border-white/10 bg-slate-900/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
                                     <th className="py-4 px-5">Cliente</th>
                                     <th className="py-4 px-5">Plan Vendido</th>
-                                    <th className="py-4 px-5">Expediente de Recursos</th>
+                                    <th className="py-4 px-5">Expediente & Firma en Bóveda</th>
                                     <th className="py-4 px-5">Estado de Trámite</th>
                                     <th className="py-4 px-5">Credenciales Facturador</th>
                                     <th className="py-4 px-5 text-right">Acciones</th>
@@ -253,12 +318,13 @@ Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}`;
 
                                     // Contar archivos presentes vs totales
                                     const isEcuafact = config.programName?.toLowerCase().includes('ecuafact');
-                                    const totalRequired = isEcuafact ? 5 : 4;
+                                    const totalRequired = isEcuafact ? 6 : 5;
                                     const presentCount = [
-                                        client.idCardFront, client.idCardBack, client.idCardSelfie, client.rucPdf,
+                                        client.idCardFront, client.idCardBack, client.idCardSelfie, client.rucPdf, client.signatureFile,
                                         ...(isEcuafact ? [client.ecuafactSignedRequest] : [])
                                     ].filter(Boolean).length;
                                     const isComplete = presentCount === totalRequired;
+                                    const totalVaultFiles = (client.vault?.length || 0) + presentCount;
 
                                     return (
                                         <tr key={client.id} className="hover:bg-white/[0.01] transition-colors">
@@ -291,6 +357,19 @@ Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}`;
                                                 </div>
 
                                                 <div className="flex flex-wrap gap-1.5">
+                                                    {/* Firma Electrónica .p12 */}
+                                                    {client.signatureFile ? (
+                                                        <button
+                                                            onClick={() => downloadStoredFile(client.signatureFile)}
+                                                            className="px-2 py-0.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 font-bold border border-teal-500/30 flex items-center gap-1 text-[9px]"
+                                                            title={`Descargar Firma .p12 (${client.signatureProvider || 'SRI'}) - Vence: ${client.signatureExpirationDate || 'Sin fecha'}`}
+                                                        >
+                                                            <Download size={9} /> 🔑 Firma .p12
+                                                        </button>
+                                                    ) : (
+                                                        <span className="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[9px]" title="Falta Firma Electrónica .p12 en Bóveda">⚠️ Sin Firma .p12</span>
+                                                    )}
+
                                                     {client.idCardFront ? (
                                                         <button
                                                             onClick={() => downloadStoredFile(client.idCardFront)}
@@ -407,6 +486,14 @@ Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}`;
                                             </td>
                                             <td className="py-4 px-5 text-right space-x-1.5 whitespace-nowrap">
                                                 <button
+                                                    onClick={() => setSelectedVaultClient(client)}
+                                                    className="px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-indigo-500/30"
+                                                    title="Inspeccionar o subir archivos a la Bóveda del Cliente"
+                                                >
+                                                    <Lock size={11} /> Bóveda ({totalVaultFiles})
+                                                </button>
+
+                                                <button
                                                     onClick={() => handleCopyClientSummary(client)}
                                                     className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-white/10"
                                                     title="Copiar texto con datos de cliente para registro en plataforma"
@@ -434,14 +521,6 @@ Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}`;
                                                 >
                                                     <Globe size={11} /> Abrir
                                                 </button>
-
-                                                <button
-                                                    onClick={() => navigate('clients', { clientIdToView: client.id, initialTab: 'vault' })}
-                                                    className="px-2 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 font-bold uppercase transition-all inline-flex items-center border border-white/10"
-                                                    title="Ver Bóveda del Cliente"
-                                                >
-                                                    <ExternalLink size={11} />
-                                                </button>
                                             </td>
                                         </tr>
                                     );
@@ -451,6 +530,147 @@ Clave Facturador: ${client.facturadorConfig?.password || client.sriPassword}`;
                     </div>
                 )}
             </div>
+
+            {/* ── MODAL BÓVEDA DEL CLIENTE DIRECTA ── */}
+            {selectedVaultClient && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setSelectedVaultClient(null)}
+                    title={`🔐 Bóveda de Recursos — ${selectedVaultClient.name}`}
+                    size="lg"
+                >
+                    <div className="space-y-6 p-4 text-white">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                            <div>
+                                <h3 className="text-base font-black text-white">{selectedVaultClient.name}</h3>
+                                <p className="text-xs text-slate-400 font-mono">RUC: {selectedVaultClient.ruc} • {selectedVaultClient.regime || 'Régimen General'}</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setSelectedVaultClient(null);
+                                    navigate('clients', { clientIdToView: selectedVaultClient.id, initialTab: 'vault' });
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0"
+                            >
+                                <ExternalLink size={14} /> Abrir Ficha Completa
+                            </button>
+                        </div>
+
+                        {/* Credenciales Básicas de la Bóveda */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clave SRI</span>
+                                <div className="flex items-center justify-between font-mono text-xs text-teal-300">
+                                    <span>{selectedVaultClient.sriPassword || '—'}</span>
+                                    <button onClick={() => handleCopyPassword('sri', selectedVaultClient.sriPassword)} className="p-1 hover:text-white text-slate-400">
+                                        <Copy size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clave Firma .p12</span>
+                                <div className="flex items-center justify-between font-mono text-xs text-amber-300">
+                                    <span>{selectedVaultClient.electronicSignaturePassword || '—'}</span>
+                                    <button onClick={() => handleCopyPassword('p12', selectedVaultClient.electronicSignaturePassword)} className="p-1 hover:text-white text-slate-400">
+                                        <Copy size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clave Facturador</span>
+                                <div className="flex items-center justify-between font-mono text-xs text-emerald-300">
+                                    <span>{selectedVaultClient.facturadorConfig?.password || selectedVaultClient.sriPassword || '—'}</span>
+                                    <button onClick={() => handleCopyPassword('fact', selectedVaultClient.facturadorConfig?.password || selectedVaultClient.sriPassword)} className="p-1 hover:text-white text-slate-400">
+                                        <Copy size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Cargador Directo a Bóveda */}
+                        <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-black uppercase text-indigo-300 tracking-wider flex items-center gap-2">
+                                    <Upload size={14} /> Subir Recursos a la Bóveda del Cliente
+                                </h4>
+                            </div>
+                            
+                            <input
+                                ref={directVaultUploadInputRef}
+                                type="file"
+                                onChange={handleUploadFileToVault}
+                                className="hidden"
+                            />
+
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { id: 'signatureFile', label: '🔑 Firma Electrónica .p12' },
+                                    { id: 'idCardFront', label: '🪪 Cédula Frente' },
+                                    { id: 'idCardBack', label: '🪪 Cédula Reverso' },
+                                    { id: 'idCardSelfie', label: '📸 Selfie' },
+                                    { id: 'rucPdf', label: '📄 RUC PDF' },
+                                    { id: 'ecuafactSignedRequest', label: '✍️ Solicitud Ecuafact' },
+                                    { id: 'vault', label: '📂 Archivo General Bóveda' }
+                                ].map((target) => (
+                                    <button
+                                        key={target.id}
+                                        onClick={() => {
+                                            setVaultUploadTarget(target.id as any);
+                                            setTimeout(() => directVaultUploadInputRef.current?.click(), 50);
+                                        }}
+                                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-[10px] font-bold text-slate-200 hover:text-white transition-all flex items-center gap-1.5"
+                                    >
+                                        <Plus size={12} className="text-indigo-400" />
+                                        <span>{target.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Lista de Documentos en la Bóveda */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-300">
+                                Documentos Disponibles en Bóveda
+                            </h4>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto no-scrollbar pr-1">
+                                {[
+                                    { file: selectedVaultClient.signatureFile, name: 'Firma Electrónica .p12', type: 'p12' },
+                                    { file: selectedVaultClient.idCardFront, name: 'Cédula Frente', type: 'image' },
+                                    { file: selectedVaultClient.idCardBack, name: 'Cédula Reverso', type: 'image' },
+                                    { file: selectedVaultClient.idCardSelfie, name: 'Foto Selfie', type: 'image' },
+                                    { file: selectedVaultClient.rucPdf, name: 'Certificado RUC PDF', type: 'pdf' },
+                                    { file: selectedVaultClient.ecuafactSignedRequest, name: 'Solicitud Ecuafact Firmada', type: 'pdf' },
+                                    ...(selectedVaultClient.vault || []).map(f => ({ file: f, name: f.name, type: f.type }))
+                                ].filter(item => item.file && item.file.content).map((item, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-white/5 text-xs">
+                                        <div className="flex items-center gap-2.5 truncate">
+                                            <FileCode size={16} className="text-teal-400 shrink-0" />
+                                            <span className="font-bold text-slate-200 truncate">{item.name}</span>
+                                        </div>
+                                        <button
+                                            onClick={() => downloadStoredFile(item.file!)}
+                                            className="p-1.5 bg-white/5 hover:bg-white/10 text-teal-300 rounded-lg transition-all shrink-0"
+                                            title="Descargar Archivo"
+                                        >
+                                            <Download size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                            <button
+                                onClick={() => setSelectedVaultClient(null)}
+                                className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold"
+                            >
+                                Cerrar Bóveda
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
 
             {/* ── MODAL WHATSAPP NOTIFICACIÓN ── */}
             {whatsAppPrompt && (

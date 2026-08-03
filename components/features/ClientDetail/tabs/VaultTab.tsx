@@ -368,6 +368,16 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     config={editedClient.facturadorConfig || {}}
                     isEditing={isEditing}
                     onChange={(cfg) => setEditedClient(prev => ({ ...prev, facturadorConfig: cfg }))}
+                    activationStatus={editedClient.facturadorActivationStatus || 'recursos_listos'}
+                    onStatusChange={(status) => {
+                        setEditedClient(prev => ({ ...prev, facturadorActivationStatus: status }));
+                        if (onUpdateClientDirect) {
+                            onUpdateClientDirect({ facturadorActivationStatus: status }, true);
+                        }
+                    }}
+                    onNavigateToFacturadores={() => {
+                        window.dispatchEvent(new CustomEvent('app-navigate', { detail: { screen: 'facturadores', searchTerm: editedClient.ruc } }));
+                    }}
                     onOpenSalesModal={() => setIsSalesModalOpen(true)}
                 />
             </div>

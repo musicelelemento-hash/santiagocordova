@@ -1,8 +1,8 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, ReminderConfig, BusinessProfile, FinancialItem } from '../types';
 import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, safeFormat } from '../services/sri';
 import { getClientServiceFee, isCourtesyClient } from '../services/clientService';
-import { isPeriodBeforeClientStart } from '../services/complianceEngine';
+import { isPeriodBeforeClientStart, isDeclared, isPaid, getActivePeriodsForClient, getClientDebtSummary } from '../services/complianceEngine';
 import { differenceInCalendarDays, isSameMonth, parseISO, isValid, subMonths } from 'date-fns';
 import {
     AlertTriangle, CheckCircle, MessageSquare, DollarSign,
@@ -409,6 +409,30 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     // Referencia para impresión
     const receiptRef = useRef<HTMLDivElement>(null);
 
+    const [sriHistory, setSriHistory] = useState<any[]>([]);
+
+    useEffect(() => {
+        const loadHistory = async () => {
+            try {
+                const stored = (await db.getLocal('sc_sri_comprobantes_history')) || JSON.parse(localStorage.getItem('sc_sri_comprobantes_history') || '[]');
+                setSriHistory(Array.isArray(stored) ? stored : []);
+            } catch (err) {
+                console.error('Error al cargar historial SRI en cobranzas:', err);
+            }
+        };
+        loadHistory();
+    }, []);
+
+    const findSriInvoice = (clientRuc: string, period?: string) => {
+        if (!sriHistory || sriHistory.length === 0) return null;
+        const cleanRuc = clientRuc.replace(/\D/g, '');
+        return sriHistory.find(h => 
+            h.estado === 'Autorizado' && 
+            h.tipo === 'factura' && 
+            (h.rucReceptor?.replace(/\D/g, '') === cleanRuc)
+        ) || null;
+    };
+
     const financialData = useMemo(() => {
         const receivable: FinancialItem[] = [];
         const projected: FinancialItem[] = [];
@@ -419,59 +443,57 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         clients.forEach(client => {
             if (client.isDeleted || client.isActive === false || isCourtesyClient(client)) return;
             const fee = getClientServiceFee(client, serviceFees);
-            if (fee <= 0) return; // Courtesy/Trueque/Zero fee clients do not have pending collections
+            if (fee <= 0) return; // Courtesy / Zero fee clients do not generate debt
 
             let type: FinancialItem['type'] = 'mensual';
             if (client.taxProfile?.ivaFrequency === 'Semestral') type = 'semestral';
             else if (client.regime === TaxRegime.RimpeNegocioPopular) type = 'renta';
             else if (client.taxProfile?.hasActiveDevolucionIva) type = 'dev';
 
+            const activePeriods = getActivePeriodsForClient(client, now);
             const processedPeriods = new Set<string>();
-            const paidPeriods = new Set<string>();
-            client.declarations.forEach(decl => {
-                if (decl.status === DeclarationStatus.Pagada && decl.paidAt) {
-                    paidPeriods.add(decl.period);
-                }
-            });
 
-            client.declarations.forEach(decl => {
-                processedPeriods.add(decl.period);
-                
+            // 1. Process explicit declarations in client.declarations
+            (client.declarations || []).forEach(decl => {
                 if (isPeriodBeforeClientStart(client, decl.period)) return;
+                processedPeriods.add(decl.period);
 
-                if (decl.status === DeclarationStatus.Pagada && decl.paidAt) {
-                    const paidDate = parseISO(decl.paidAt);
+                const amount = decl.amount || fee;
+                const paid = isPaid(decl, client);
+
+                if (paid) {
+                    const paidDate = decl.paidAt ? parseISO(decl.paidAt) : now;
                     if (isValid(paidDate) && isSameMonth(paidDate, selectedMonth)) {
                         collected.push({
                             clientId: client.id, clientName: client.name, ruc: client.ruc,
-                            period: decl.period, amount: decl.amount || fee, status: DeclarationStatus.Pagada,
+                            period: decl.period, amount, status: DeclarationStatus.Pagada,
                             type, dateReference: paidDate, phones: client.phones || []
                         });
                     }
-                } else if ((decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pendiente) && !paidPeriods.has(decl.period)) {
+                } else if (isDeclared(decl) || decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pendiente) {
+                    // DEUDA VERDADERA DE MATRIZ: Declarado / Enviado y no pagado
                     const dueDate = getDueDateForPeriod(client, decl.period) || now;
                     receivable.push({
                         clientId: client.id, clientName: client.name, ruc: client.ruc,
-                        period: decl.period, amount: decl.amount || fee, status: decl.status,
+                        period: decl.period, amount, status: decl.status || DeclarationStatus.Enviada,
                         type, dateReference: dueDate, daysDiff: differenceInCalendarDays(now, dueDate),
                         phones: client.phones || []
                     });
                 }
             });
 
-            const pNow = getPeriod(client, now);
-            const pPrev = getPeriod(client, subMonths(now, 1));
-            [pNow, pPrev].forEach(p => {
-                if (!processedPeriods.has(p) && !isPeriodBeforeClientStart(client, p)) {
-                    const dueDate = getDueDateForPeriod(client, p) || now;
-                    const diff = differenceInCalendarDays(now, dueDate);
-                    const item: FinancialItem = {
-                        clientId: client.id, clientName: client.name, ruc: client.ruc,
-                        period: p, amount: fee, status: DeclarationStatus.Pendiente,
-                        type, dateReference: dueDate, daysDiff: diff, phones: client.phones || [], isVirtual: true
-                    };
-                    if (diff > 0) receivable.push(item);
-                    else projected.push(item);
+            // 2. Process active periods that were declared in Matriz
+            activePeriods.forEach(period => {
+                if (processedPeriods.has(period) || isPeriodBeforeClientStart(client, period)) return;
+                const dueDate = getDueDateForPeriod(client, period) || now;
+                const diff = differenceInCalendarDays(now, dueDate);
+                const item: FinancialItem = {
+                    clientId: client.id, clientName: client.name, ruc: client.ruc,
+                    period, amount: fee, status: DeclarationStatus.Pendiente,
+                    type, dateReference: dueDate, daysDiff: diff, phones: client.phones || [], isVirtual: true
+                };
+                if (diff <= 0) {
+                    projected.push(item);
                 }
             });
         });
@@ -819,34 +841,52 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                             {item.status === 'Pagada' ? 'EJECUTADO' : item.daysDiff && item.daysDiff > 0 ? `ATRASADO ${item.daysDiff}D` : 'PENDIENTE'}
                                                         </span>
                                                     </div>
-                                                    {navigate && (
-                                                        <div className="flex gap-1.5">
-                                                            <button
+                                                    {(() => {
+                                                        const sriDoc = findSriInvoice(item.ruc, item.period);
+                                                        return sriDoc ? (
+                                                            <div
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    handleEmitFastInvoice(item);
+                                                                    if (navigate) navigate('sri_facturacion');
                                                                 }}
-                                                                className="p-1.5 bg-amber-500/10 hover:bg-amber-500/20 dark:bg-amber-500/15 dark:hover:bg-amber-500/25 text-amber-500 rounded-lg transition-colors border border-amber-500/20"
-                                                                title="Emisión rápida directa al SRI"
+                                                                className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold font-mono flex items-center gap-1 cursor-pointer hover:bg-emerald-500/25 transition-all"
+                                                                title={`Factura SRI Autorizada #${sriDoc.secuencial} — Clave: ${sriDoc.claveAcceso}`}
                                                             >
-                                                                <LucideIcons.Zap size={12} />
-                                                            </button>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation(); // Evitar seleccionar la fila de cobros
-                                                                    navigate('sri_facturacion', {
-                                                                        clientId: item.clientId,
-                                                                        amount: item.amount,
-                                                                        description: `Honorarios Profesionales - Período ${item.period}`
-                                                                    });
-                                                                }}
-                                                                className="p-1.5 bg-slate-100 hover:bg-primary/20 dark:bg-slate-800 dark:hover:bg-primary/30 text-slate-450 hover:text-primary rounded-lg transition-colors border border-slate-200 dark:border-slate-700"
-                                                                title="Emitir Factura Electrónica para este cobro"
-                                                            >
-                                                                <LucideIcons.FileText size={12} />
-                                                            </button>
-                                                        </div>
-                                                    )}
+                                                                <LucideIcons.CheckCircle size={10} />
+                                                                <span>SRI #{sriDoc.secuencial}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleEmitFastInvoice(item);
+                                                                    }}
+                                                                    className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-lg transition-colors border border-amber-500/20 flex items-center gap-1"
+                                                                    title="Emisión rápida de Factura SRI con firma .p12"
+                                                                >
+                                                                    <LucideIcons.Zap size={11} />
+                                                                    <span>Facturar SRI</span>
+                                                                </button>
+                                                                {navigate && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            navigate('sri_facturacion', {
+                                                                                clientId: item.clientId,
+                                                                                amount: item.amount,
+                                                                                description: `Honorarios Profesionales - Período ${item.period}`
+                                                                            });
+                                                                        }}
+                                                                        className="p-1.5 bg-slate-800 hover:bg-primary/20 text-slate-300 hover:text-primary rounded-lg transition-colors border border-white/10"
+                                                                        title="Abrir en Módulo de Facturación SRI"
+                                                                    >
+                                                                        <LucideIcons.ExternalLink size={11} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </div>
                                             {isSelected && (

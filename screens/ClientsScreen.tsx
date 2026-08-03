@@ -5,7 +5,8 @@ import { Client, DeclarationStatus, Declaration, TaxRegime, Screen, ClientFilter
 import {
     AlertCircle, AlertTriangle, ArrowUpDown, Briefcase, Check, CheckCircle2, Clock, DollarSign, FileText,
     Filter, LayoutGrid, LayoutList, MessageCircle, Plus, PlusCircle, Search,
-    Shield, ShieldCheck, Sparkles, Store, Trash2, UploadCloud, Users, X, Zap
+    Shield, ShieldCheck, Sparkles, Store, Trash2, UploadCloud, Users, X, Zap,
+    Download, Copy, FileSpreadsheet, Building2
 } from 'lucide-react';
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, getIdentifierSortKey, fetchSRIPublicData, safeFormat } from '../services/sri';
 import { Modal } from '../components/ui/Modal';
@@ -91,6 +92,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [billingPromptData, setBillingPromptData] = useState<{ client: Client; amount: number; description: string; } | null>(null);
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
     const sortMenuRef = useRef<HTMLDivElement>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
     const [sortOption, setSortOption] = useState<'9th_digit' | 'name' | 'status' | 'pending_obligations' | 'pending_payments'>(() => (sessionStorage.getItem('clients_sort') as any) || '9th_digit');
     const [filterOption, setFilterOption] = useState<'active' | 'inactive' | 'all'>('active');
     const [isComboModalOpen, setIsComboModalOpen] = useState(false);
@@ -183,8 +185,18 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 setIsSortMenuOpen(false);
             }
         };
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+        };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
     }, []);
 
     useEffect(() => {
@@ -569,6 +581,17 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         toast.success(isPriority ? 'Prioridad de declaración fijada' : 'Prioridad quitada');
     };
 
+    const handleCopyRucs = () => {
+        const targetList = filteredClients;
+        if (targetList.length === 0) {
+            toast.error("No hay expedientes en la lista actual");
+            return;
+        }
+        const rucs = targetList.map(c => c.ruc).filter(Boolean).join("\n");
+        navigator.clipboard.writeText(rucs);
+        toast.success(`📋 ${targetList.length} RUCs copiados al portapapeles`);
+    };
+
     const handleOpenClientDetails = (client: Client, tab?: 'profile' | 'history' | 'vault' | 'settings') => {
         setSelectedClient(client);
         const targetTab = tab || initialTab || 'profile';
@@ -654,29 +677,35 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     };
 
     const handleExportCSV = () => {
-        const headers = ["RUC", "Nombre", "WhatsApp", "Email", "Régimen", "Frecuencia IVA", "Estado", "Al día desde"];
-        const rows = sortedClients.map(c => [
-            c.ruc,
-            c.name,
-            c.phones?.join('; ') || '',
-            c.email || '',
-            c.regime,
-            c.taxProfile?.ivaFrequency || 'Mensual',
-            c.isActive ? 'Activo' : 'Inactivo',
-            c.clientStartPeriod || ''
+        const targetList = filteredClients;
+        if (targetList.length === 0) {
+            toast.error("No hay expedientes para exportar");
+            return;
+        }
+
+        const headers = ["RUC", "Razón Social / Nombre", "Nombre Comercial", "Régimen", "Frecuencia IVA", "Email", "Teléfono", "Fecha Registro", "Estado"];
+        const rows = targetList.map(c => [
+            `"${c.ruc}"`,
+            `"${(c.name || '').replace(/"/g, '""')}"`,
+            `"${(c.tradeName || '').replace(/"/g, '""')}"`,
+            `"${c.regime || 'General'}"`,
+            `"${c.taxProfile?.ivaFrequency || 'Mensual'}"`,
+            `"${c.email || ''}"`,
+            `"${c.phone || c.phones?.join('; ') || ''}"`,
+            `"${c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''}"`,
+            `"${(c.isActive ?? true) ? 'Activo' : 'Inactivo'}"`
         ]);
-        
-        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-            + [headers.join(','), ...rows.map(e => e.map(val => `"${val.replace(/"/g, '""')}"`).join(','))].join('\n');
-            
-        const encodedUri = encodeURI(csvContent);
+
+        const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `Clientes_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Directorio_Clientes_${new Date().toISOString().slice(0, 10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        toast.success("Exportación CSV descargada");
+        toast.success(`📊 Exportados ${targetList.length} expedientes a CSV`);
     };
 
     const handleUploadReceipt = (client: Client, period?: string, type?: TaxObligationType) => {
@@ -1064,14 +1093,36 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleExportCSV}
+                        title="Exportar directorio visible a CSV"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface hover:text-emerald-500 font-bold text-[11px] uppercase tracking-wider border border-outline-variant hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all shadow-sm font-premium"
+                    >
+                        <FileSpreadsheet size={16} className="text-emerald-500" />
+                        <span>CSV Excel</span>
+                    </motion.button>
+
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCopyRucs}
+                        title="Copiar todos los RUCs filtrados al portapapeles"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface hover:text-sky-500 font-bold text-[11px] uppercase tracking-wider border border-outline-variant hover:border-sky-500/30 hover:bg-sky-500/5 transition-all shadow-sm font-premium"
+                    >
+                        <Copy size={16} className="text-sky-500" />
+                        <span>Copiar RUCs</span>
+                    </motion.button>
+
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleBulkUpload}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-5 rounded-[1.5rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.2em] border border-outline-variant hover:bg-surface-medium transition-all duration-500 shadow-sm font-premium"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.15em] border border-outline-variant hover:bg-surface-medium transition-all shadow-sm font-premium"
                     >
-                        <UploadCloud size={18} />
+                        <UploadCloud size={16} />
                         SUBIR PDFs / RUCs
                     </motion.button>
                     
@@ -1079,10 +1130,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         whileHover={{ scale: 1.02, y: -2 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setIsModalOpen(true)}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-3 px-10 py-5 rounded-[1.5rem] bg-primary text-white shadow-tactical font-bold text-[11px] uppercase tracking-[0.2em] transition-all duration-500 font-premium relative overflow-hidden group"
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-[1.2rem] bg-primary text-white shadow-tactical font-bold text-[11px] uppercase tracking-[0.15em] transition-all font-premium relative overflow-hidden group"
                     >
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                        <PlusCircle size={18} strokeWidth={2.5} />
+                        <PlusCircle size={16} strokeWidth={2.5} />
                         NUEVO CLIENTE
                     </motion.button>
                 </div>
@@ -1118,8 +1169,36 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             {/* TACTICAL COMMAND BAR - Barra Unificada Sin Redundancia v5.0 */}
             <div className="bg-surface p-4 sm:p-5 rounded-[2rem] border border-outline-variant/30 flex flex-col xl:flex-row gap-5 items-center justify-between mb-8 mx-1 sm:mx-0 shadow-sm relative z-20">
-                {/* FILTROS UNIFICADOS DE CLIENTES */}
+                {/* BUSCADOR INTEGRADO Y FILTROS UNIFICADOS DE CLIENTES */}
                 <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 w-full xl:w-auto overflow-x-auto no-scrollbar">
+                    {/* Buscador Rápido de Directorio con Atajo Ctrl+K */}
+                    <div className="relative flex items-center min-w-[260px] sm:min-w-[320px]">
+                        <Search size={16} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+                        <input
+                            ref={searchInputRef}
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Buscar por RUC, nombre, cédula... (Ctrl+K)"
+                            className="w-full pl-10 pr-20 py-2.5 bg-surface-medium border border-outline-variant/30 rounded-2xl text-xs font-bold text-on-surface placeholder:text-slate-400 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                        />
+                        <div className="absolute right-2.5 flex items-center gap-1">
+                            {searchTerm ? (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg transition-all text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                                    title="Limpiar Búsqueda"
+                                >
+                                    <X size={12} />
+                                </button>
+                            ) : (
+                                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono font-semibold text-slate-400 bg-surface-low border border-outline-variant/40 rounded-md">
+                                    ⌘K
+                                </kbd>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 shrink-0">
                         {[
                             { id: 'all', label: 'Todos', icon: Users },
@@ -1128,7 +1207,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             { id: 'mensual', label: 'IVA Mensual' },
                             { id: 'semestral', label: 'IVA Semestral' },
                             { id: 'renta', label: 'Renta' },
-                            { id: 'rimpe_np', label: '🏪 RIMPE NP' },
+                            { id: 'rimpe_emp', label: '🏢 RIMPE Emp.', icon: Building2 },
+                            { id: 'rimpe_np', label: '🏪 RIMPE NP', icon: Store },
+                            { id: 'general', label: '🏛️ Rég. General', icon: Briefcase },
                             { id: 'trash', label: 'Papelera', icon: Trash2, badge: trashCount, badgeStyle: 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300' },
                         ].map((tab) => {
                             const isSelected = activeGroupTab === tab.id || 

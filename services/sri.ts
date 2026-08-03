@@ -527,3 +527,83 @@ export const downloadStoredFile = async (fileObj: any, defaultName: string = 'co
         return false;
     }
 };
+
+export interface SriClaveValidationResult {
+    isValid: boolean;
+    clave: string;
+    fechaEmision?: string;
+    tipoComprobante?: string;
+    tipoComprobanteNombre?: string;
+    rucEmisor?: string;
+    ambiente?: 'Pruebas' | 'Producción';
+    serie?: string;
+    secuencial?: string;
+    codigoNumerico?: string;
+    digitoVerificadorCalculado?: string;
+    digitoVerificadorReal?: string;
+    errorReason?: string;
+}
+
+export const validateSriClaveAcceso = (clave: string): SriClaveValidationResult => {
+    const clean = (clave || '').replace(/\D/g, '');
+    if (clean.length !== 49) {
+        return {
+            isValid: false,
+            clave: clean,
+            errorReason: `Longitud incorrecta: posee ${clean.length} dígitos. La Clave de Acceso SRI debe contener exactamente 49 dígitos.`
+        };
+    }
+
+    const clave48 = clean.substring(0, 48);
+    const digitoReal = clean.substring(48, 49);
+
+    let peso = 2;
+    let suma = 0;
+    for (let i = clave48.length - 1; i >= 0; i--) {
+        suma += parseInt(clave48[i], 10) * peso;
+        peso++;
+        if (peso > 7) peso = 2;
+    }
+    const residuo = suma % 11;
+    let digitoCalculado = 11 - residuo;
+    if (digitoCalculado === 11) digitoCalculado = 0;
+    if (digitoCalculado === 10) digitoCalculado = 1;
+
+    const isValid = String(digitoCalculado) === digitoReal;
+
+    const day = clean.substring(0, 2);
+    const month = clean.substring(2, 4);
+    const year = clean.substring(4, 8);
+    const tipo = clean.substring(8, 10);
+    const ruc = clean.substring(10, 23);
+    const amb = clean.substring(23, 24);
+    const estab = clean.substring(24, 27);
+    const pto = clean.substring(27, 30);
+    const sec = clean.substring(30, 39);
+    const codNum = clean.substring(39, 47);
+
+    const tiposMap: Record<string, string> = {
+        '01': 'Factura Electrónica',
+        '04': 'Nota de Crédito',
+        '05': 'Nota de Débito',
+        '06': 'Guía de Remisión',
+        '07': 'Comprobante de Retención'
+    };
+
+    return {
+        isValid,
+        clave: clean,
+        fechaEmision: `${day}/${month}/${year}`,
+        tipoComprobante: tipo,
+        tipoComprobanteNombre: tiposMap[tipo] || `Comprobante Tipo ${tipo}`,
+        rucEmisor: ruc,
+        ambiente: amb === '1' ? 'Pruebas' : 'Producción',
+        serie: `${estab}-${pto}`,
+        secuencial: sec,
+        codigoNumerico: codNum,
+        digitoVerificadorCalculado: String(digitoCalculado),
+        digitoVerificadorReal: digitoReal,
+        errorReason: isValid ? undefined : `El dígito verificador (${digitoReal}) no coincide con el calculado (${digitoCalculado}) por Módulo 11.`
+    };
+};
+
