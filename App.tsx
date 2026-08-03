@@ -1,27 +1,29 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import * as LucideIcons from 'lucide-react';
 import { AdminDashboardScreen } from './screens/AdminDashboardScreen';
 import { ClientsScreen } from './screens/ClientsScreen';
-import { ReportsScreen } from './screens/ReportsScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
-import { CobranzaScreen } from './screens/CobranzaScreen';
-import { CalendarScreen } from './screens/CalendarScreen';
-import { WebOrdersScreen } from './screens/WebOrdersScreen';
-import { TasksScreen } from './screens/TasksScreen';
-import { LandingPage } from './screens/LandingPage';
-import { LoginScreen } from './screens/LoginScreen';
-import { ServicesPage } from './screens/ServicesPage';
-import { ClientPortalScreen } from './screens/ClientPortalScreen';
-import { MusicPage } from './screens/MusicPage';
-import { AuditLogScreen } from './screens/AuditLogScreen';
-import { FacturacionSriScreen } from './screens/FacturacionSriScreen';
-import { FirmasScreen } from './screens/FirmasScreen';
-import { FacturadoresScreen } from './screens/FacturadoresScreen';
-import { CotizacionesScreen } from './screens/CotizacionesScreen';
-import { LicenciasScreen } from './screens/LicenciasScreen';
-import { RefinanciacionScreen } from './screens/RefinanciacionScreen';
-import { CajaChicaScreen } from './screens/CajaChicaScreen';
-import { CrmPipelineScreen } from './screens/CrmPipelineScreen';
+
+// Lazy loaded heavy modules for maximum speed & lightweight initial load
+const ReportsScreen = lazy(() => import('./screens/ReportsScreen').then(m => ({ default: m.ReportsScreen })));
+const SettingsScreen = lazy(() => import('./screens/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
+const CobranzaScreen = lazy(() => import('./screens/CobranzaScreen').then(m => ({ default: m.CobranzaScreen })));
+const CalendarScreen = lazy(() => import('./screens/CalendarScreen').then(m => ({ default: m.CalendarScreen })));
+const WebOrdersScreen = lazy(() => import('./screens/WebOrdersScreen').then(m => ({ default: m.WebOrdersScreen })));
+const TasksScreen = lazy(() => import('./screens/TasksScreen').then(m => ({ default: m.TasksScreen })));
+const LandingPage = lazy(() => import('./screens/LandingPage').then(m => ({ default: m.LandingPage })));
+const LoginScreen = lazy(() => import('./screens/LoginScreen').then(m => ({ default: m.LoginScreen })));
+const ServicesPage = lazy(() => import('./screens/ServicesPage').then(m => ({ default: m.ServicesPage })));
+const ClientPortalScreen = lazy(() => import('./screens/ClientPortalScreen').then(m => ({ default: m.ClientPortalScreen })));
+const MusicPage = lazy(() => import('./screens/MusicPage').then(m => ({ default: m.MusicPage })));
+const AuditLogScreen = lazy(() => import('./screens/AuditLogScreen').then(m => ({ default: m.AuditLogScreen })));
+const FacturacionSriScreen = lazy(() => import('./screens/FacturacionSriScreen').then(m => ({ default: m.FacturacionSriScreen })));
+const FirmasScreen = lazy(() => import('./screens/FirmasScreen').then(m => ({ default: m.FirmasScreen })));
+const FacturadoresScreen = lazy(() => import('./screens/FacturadoresScreen').then(m => ({ default: m.FacturadoresScreen })));
+const CotizacionesScreen = lazy(() => import('./screens/CotizacionesScreen').then(m => ({ default: m.CotizacionesScreen })));
+const LicenciasScreen = lazy(() => import('./screens/LicenciasScreen').then(m => ({ default: m.LicenciasScreen })));
+const RefinanciacionScreen = lazy(() => import('./screens/RefinanciacionScreen').then(m => ({ default: m.RefinanciacionScreen })));
+const CajaChicaScreen = lazy(() => import('./screens/CajaChicaScreen').then(m => ({ default: m.CajaChicaScreen })));
+const CrmPipelineScreen = lazy(() => import('./screens/CrmPipelineScreen').then(m => ({ default: m.CrmPipelineScreen })));
 import { AdaptadorConvert } from './components/features/AdaptadorConvert';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
@@ -777,7 +779,16 @@ const App: React.FC = () => {
           <main className="flex-grow px-4 pt-24 pb-32 sm:pt-6 sm:p-6 sm:px-10 sm:pb-32 overflow-y-auto w-full relative no-scrollbar">
             <ErrorBoundary>
               <div key={activeScreen} className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700">
-                {renderScreen()}
+                <Suspense fallback={
+                  <div className="flex items-center justify-center min-h-[400px]">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-10 h-10 border-4 border-[#00A896]/20 border-t-[#00A896] rounded-full animate-spin" />
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando Módulo...</span>
+                    </div>
+                  </div>
+                }>
+                  {renderScreen()}
+                </Suspense>
               </div>
             </ErrorBoundary>
             {!clientToView && (

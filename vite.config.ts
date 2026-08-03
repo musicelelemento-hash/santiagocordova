@@ -30,12 +30,21 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 1500,
       rollupOptions: {
         output: {
           entryFileNames: `assets/[name].${Date.now()}.js`,
           chunkFileNames: `assets/[name].${Date.now()}.js`,
           assetFileNames: `assets/[name].${Date.now()}.[ext]`,
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('lucide-react')) return 'vendor-icons';
+              if (id.includes('@supabase')) return 'vendor-supabase';
+              if (id.includes('pdfjs-dist') || id.includes('html2pdf') || id.includes('jspdf')) return 'vendor-[#00A896]-pdf';
+              if (id.includes('react') || id.includes('react-dom')) return 'vendor-core';
+              return 'vendor-libs';
+            }
+          }
         },
       },
     }
