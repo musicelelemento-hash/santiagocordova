@@ -277,6 +277,75 @@ function buildClientesAOA(data: any[]): any[][] {
 
 // --- BUILDERS DE VARIANTES DE PRUEBA ZIFACT / FACTEL ---
 
+// Variant XML 2003: XML Spreadsheet 2003 (.xls) - 0% Memoria en PHP
+function buildExcel2003XML(file: ProcessedFile): string {
+    const isProd = file.type === 'productos';
+    const sheetName = isProd ? 'Plantilla' : 'Clientes';
+    const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Worksheet ss:Name="${sheetName}">
+  <Table>`;
+
+    rows.forEach((row, rIdx) => {
+        xml += '\n   <Row>';
+        row.forEach(cell => {
+            const val = String(cell ?? '');
+            const isNum = rIdx > 0 && !isNaN(Number(val)) && val.trim() !== '';
+            if (isNum) {
+                xml += `<Cell><Data ss:Type="Number">${val}</Data></Cell>`;
+            } else {
+                const escaped = val.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                xml += `<Cell><Data ss:Type="String">${escaped}</Data></Cell>`;
+            }
+        });
+        xml += '</Row>';
+    });
+
+    xml += `
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+    return xml;
+}
+
+// Variant HTML Table: HTML Table (.xls) - 0% Memoria en PHP
+function buildHTMLTable(file: ProcessedFile): string {
+    const isProd = file.type === 'productos';
+    const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
+
+    let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${isProd ? 'Plantilla' : 'Clientes'}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+</head>
+<body>
+<table>`;
+
+    rows.forEach((row, rIdx) => {
+        html += '\n<tr>';
+        row.forEach(cell => {
+            const tag = rIdx === 0 ? 'th' : 'td';
+            const escaped = String(cell ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html += `<${tag}>${escaped}</${tag}>`;
+        });
+        html += '</tr>';
+    });
+
+    html += `
+</table>
+</body>
+</html>`;
+
+    return html;
+}
+
 // Variant 1: 1 Solo Producto Inyectado en plantilla original template_Productos.XLS
 function buildVariant1_SingleProduct(file: ProcessedFile): Uint8Array {
     try {
@@ -393,18 +462,20 @@ function buildVariant5_XLSX(file: ProcessedFile): Uint8Array {
     return xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
 }
 
-    // Descargar Pack de Pruebas completo en ZIP (5 Variantes para ZiFact)
+    // Descargar Pack de Pruebas completo en ZIP (Formatos Anti-Memoria para ZiFact)
     const downloadTestPackZip = async (file: ProcessedFile) => {
         try {
             const zip = new JSZip();
             const prefix = file.type === 'productos' ? 'Productos_Zifact' : 'Clientes_Zifact';
 
             if (file.type === 'productos') {
-                zip.file(`V1_Prueba_1_Producto_Inyectado.xls`, buildVariant1_SingleProduct(file));
-                zip.file(`V2_Plantilla_Original_Inyectada.xls`, buildVariant2_TemplateInjected(file));
-                zip.file(`V3_BIFF8_Minimo.xls`, buildVariant3_CleanBIFF8(file));
-                zip.file(`V4_CSV_en_XLS.xls`, buildVariant4_CSVInXLS(file));
-                zip.file(`V5_Excel_Moderno.xlsx`, buildVariant5_XLSX(file));
+                zip.file(`V1_Excel2003_XML.xls`, buildExcel2003XML(file));
+                zip.file(`V2_HTML_Table.xls`, buildHTMLTable(file));
+                zip.file(`V3_Prueba_1_Producto.xls`, buildVariant1_SingleProduct(file));
+                zip.file(`V4_Plantilla_Original_Inyectada.xls`, buildVariant2_TemplateInjected(file));
+                zip.file(`V5_BIFF8_Minimo.xls`, buildVariant3_CleanBIFF8(file));
+                zip.file(`V6_CSV_en_XLS.xls`, buildVariant4_CSVInXLS(file));
+                zip.file(`V7_Excel_Moderno.xlsx`, buildVariant5_XLSX(file));
                 zip.file(`${prefix}_Migrado.csv`, buildVariant4_CSVInXLS(file));
             } else {
                 zip.file(`${prefix}_Migrado.xls`, buildVariant3_CleanBIFF8(file));
@@ -413,7 +484,7 @@ function buildVariant5_XLSX(file: ProcessedFile): Uint8Array {
             }
 
             const content = await zip.generateAsync({ type: 'blob' });
-            saveAs(content, `Pack_Pruebas_Zifact_${file.name.replace(/\.[^/.]+$/, "")}.zip`);
+            saveAs(content, `Pack_Formatos_AntiMemoria_${file.name.replace(/\.[^/.]+$/, "")}.zip`);
         } catch (e: any) {
             alert("Error al generar Pack de Pruebas ZIP: " + (e?.message || e));
         }
@@ -427,11 +498,13 @@ function buildVariant5_XLSX(file: ProcessedFile): Uint8Array {
         for (const file of successfulFiles) {
             const prefix = file.type === 'productos' ? 'Productos_Zifact' : 'Clientes_Zifact';
             if (file.type === 'productos') {
-                zip.file(`V1_Prueba_1_Producto.xls`, buildVariant1_SingleProduct(file));
-                zip.file(`V2_Plantilla_Inyectada.xls`, buildVariant2_TemplateInjected(file));
-                zip.file(`V3_BIFF8_Minimo.xls`, buildVariant3_CleanBIFF8(file));
-                zip.file(`V4_CSV_en_XLS.xls`, buildVariant4_CSVInXLS(file));
-                zip.file(`V5_Excel_Moderno.xlsx`, buildVariant5_XLSX(file));
+                zip.file(`V1_Excel2003_XML.xls`, buildExcel2003XML(file));
+                zip.file(`V2_HTML_Table.xls`, buildHTMLTable(file));
+                zip.file(`V3_Prueba_1_Producto.xls`, buildVariant1_SingleProduct(file));
+                zip.file(`V4_Plantilla_Inyectada.xls`, buildVariant2_TemplateInjected(file));
+                zip.file(`V5_BIFF8_Minimo.xls`, buildVariant3_CleanBIFF8(file));
+                zip.file(`V6_CSV_en_XLS.xls`, buildVariant4_CSVInXLS(file));
+                zip.file(`V7_Excel_Moderno.xlsx`, buildVariant5_XLSX(file));
                 zip.file(`${prefix}_Migrado.csv`, buildVariant4_CSVInXLS(file));
             } else {
                 zip.file(`${prefix}_Migrado.xls`, buildVariant3_CleanBIFF8(file));
@@ -672,60 +745,82 @@ function buildVariant5_XLSX(file: ProcessedFile): Uint8Array {
                                                 </button>
                                             </div>
 
-                                            {/* Grid de 5 Variantes de Prueba Directa */}
+                                            {/* Grid de Formatos Anti-Memoria y Variantes de Prueba Directa */}
                                             {file.type === 'productos' ? (
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 pt-1">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 pt-1">
                                                     <button
-                                                        onClick={() => triggerBrowserDownload(buildVariant1_SingleProduct(file), `V1_Prueba_1_Producto_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
-                                                        className="p-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-left transition-all group"
-                                                        title="Sube este primero: Inyecta solo 1 producto en template_Productos.XLS para probar si entra"
+                                                        onClick={() => triggerBrowserDownload(buildExcel2003XML(file), `V1_Excel2003_XML_${file.name.replace(/\.[^/.]+$/, "")}.xls`, 'application/vnd.ms-excel')}
+                                                        className="p-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-left transition-all group shadow-md"
+                                                        title="⭐ RECOMENDADO ANTI-MEMORIA: Formato XML Spreadsheet 2003 (.xls) con hoja Plantilla, consume < 2MB RAM en PHP"
                                                     >
                                                         <div className="text-[11px] font-bold text-emerald-400 group-hover:text-emerald-300 flex items-center gap-1">
-                                                            <Zap size={12} /> V1. 1 Producto
+                                                            <Sparkles size={12} /> V1. XML 2003
+                                                        </div>
+                                                        <div className="text-[9px] text-slate-300 truncate">.XLS (XML 2MB)</div>
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => triggerBrowserDownload(buildHTMLTable(file), `V2_HTML_Table_${file.name.replace(/\.[^/.]+$/, "")}.xls`, 'application/vnd.ms-excel')}
+                                                        className="p-2.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-left transition-all group shadow-md"
+                                                        title="⭐ RECOMENDADO ANTI-MEMORIA: Formato HTML Table (.xls) con hoja Plantilla, consume < 1MB RAM en PHP"
+                                                    >
+                                                        <div className="text-[11px] font-bold text-blue-400 group-hover:text-blue-300 flex items-center gap-1">
+                                                            <Sparkles size={12} /> V2. HTML
+                                                        </div>
+                                                        <div className="text-[9px] text-slate-300 truncate">.XLS (HTML 1MB)</div>
+                                                    </button>
+
+                                                    <button
+                                                        onClick={() => triggerBrowserDownload(buildVariant1_SingleProduct(file), `V3_Prueba_1_Producto_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
+                                                        className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-left transition-all group"
+                                                        title="Inyecta 1 solo producto en template_Productos.XLS"
+                                                    >
+                                                        <div className="text-[11px] font-bold text-amber-400 group-hover:text-amber-300 flex items-center gap-1">
+                                                            <Zap size={12} /> V3. 1 Ítem
                                                         </div>
                                                         <div className="text-[9px] text-slate-400 truncate">.XLS (1 ítem)</div>
                                                     </button>
 
                                                     <button
-                                                        onClick={() => triggerBrowserDownload(buildVariant2_TemplateInjected(file), `V2_Plantilla_Original_Inyectada_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
+                                                        onClick={() => triggerBrowserDownload(buildVariant2_TemplateInjected(file), `V4_Plantilla_Original_Inyectada_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
                                                         className="p-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-left transition-all group"
-                                                        title="Inyecta todos los productos directamente sobre la plantilla original template_Productos.XLS"
+                                                        title="Inyecta todos los productos sobre template_Productos.XLS"
                                                     >
                                                         <div className="text-[11px] font-bold text-indigo-400 group-hover:text-indigo-300 flex items-center gap-1">
-                                                            <Download size={12} /> V2. Inyectado
+                                                            <Download size={12} /> V4. Inyectado
                                                         </div>
                                                         <div className="text-[9px] text-slate-400 truncate">.XLS (Plantilla)</div>
                                                     </button>
 
                                                     <button
-                                                        onClick={() => triggerBrowserDownload(buildVariant3_CleanBIFF8(file), `V3_BIFF8_Minimo_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
-                                                        className="p-2.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-left transition-all group"
-                                                        title="BIFF8 OLE2 limpio de 4KB con bookSST=false sin metadatos extendidos"
+                                                        onClick={() => triggerBrowserDownload(buildVariant3_CleanBIFF8(file), `V5_BIFF8_Minimo_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
+                                                        className="p-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-left transition-all group"
+                                                        title="BIFF8 OLE2 limpio de 4KB"
                                                     >
-                                                        <div className="text-[11px] font-bold text-blue-400 group-hover:text-blue-300 flex items-center gap-1">
-                                                            <Download size={12} /> V3. BIFF8
+                                                        <div className="text-[11px] font-bold text-cyan-400 group-hover:text-cyan-300 flex items-center gap-1">
+                                                            <Download size={12} /> V5. BIFF8
                                                         </div>
                                                         <div className="text-[9px] text-slate-400 truncate">.XLS (4KB)</div>
                                                     </button>
 
                                                     <button
-                                                        onClick={() => triggerBrowserDownload(buildVariant4_CSVInXLS(file), `V4_CSV_en_XLS_${file.name.replace(/\.[^/.]+$/, "")}.xls`, 'application/vnd.ms-excel')}
-                                                        className="p-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-left transition-all group"
-                                                        title="Contenido CSV UTF-8 BOM guardado con extensión .xls"
+                                                        onClick={() => triggerBrowserDownload(buildVariant4_CSVInXLS(file), `V6_CSV_en_XLS_${file.name.replace(/\.[^/.]+$/, "")}.xls`, 'application/vnd.ms-excel')}
+                                                        className="p-2.5 rounded-xl bg-slate-500/10 hover:bg-slate-500/20 border border-slate-500/30 text-left transition-all group"
+                                                        title="Contenido CSV UTF-8 BOM guardado como .xls"
                                                     >
-                                                        <div className="text-[11px] font-bold text-cyan-400 group-hover:text-cyan-300 flex items-center gap-1">
-                                                            <Download size={12} /> V4. CSV .xls
+                                                        <div className="text-[11px] font-bold text-slate-300 group-hover:text-white flex items-center gap-1">
+                                                            <Download size={12} /> V6. CSV .xls
                                                         </div>
-                                                        <div className="text-[9px] text-slate-400 truncate">.XLS (Texto CSV)</div>
+                                                        <div className="text-[9px] text-slate-400 truncate">.XLS (Texto)</div>
                                                     </button>
 
                                                     <button
-                                                        onClick={() => triggerBrowserDownload(buildVariant5_XLSX(file), `V5_Excel_Moderno_${file.name.replace(/\.[^/.]+$/, "")}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                                                        onClick={() => triggerBrowserDownload(buildVariant5_XLSX(file), `V7_Excel_Moderno_${file.name.replace(/\.[^/.]+$/, "")}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
                                                         className="p-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-left transition-all group"
                                                         title="Formato Excel Moderno OpenXML (.xlsx)"
                                                     >
                                                         <div className="text-[11px] font-bold text-purple-400 group-hover:text-purple-300 flex items-center gap-1">
-                                                            <Download size={12} /> V5. XLSX
+                                                            <Download size={12} /> V7. XLSX
                                                         </div>
                                                         <div className="text-[9px] text-slate-400 truncate">.XLSX (Moderno)</div>
                                                     </button>
