@@ -186,6 +186,22 @@ export const AdaptadorConvert: React.FC = () => {
                             'Estado (A/I)': 'A'
                         };
                     });
+
+                    // Deduplicación e intensificación de unicidad en Código Principal para evitar choques en ZiFact
+                    const seenCodes = new Set<string>();
+                    mappedData.forEach((item: any, idx: number) => {
+                        let code = String(item['Codigo Principal'] || '').trim();
+                        if (!code || seenCodes.has(code)) {
+                            let counter = idx + 1;
+                            code = `P${String(counter).padStart(3, '0')}`;
+                            while (seenCodes.has(code)) {
+                                counter++;
+                                code = `P${String(counter).padStart(3, '0')}`;
+                            }
+                        }
+                        seenCodes.add(code);
+                        item['Codigo Principal'] = code;
+                    });
                 }
 
                 newProcessedFiles.push({
@@ -264,31 +280,53 @@ function buildClientesAOA(data: any[]): any[][] {
 
 function buildZifactWorkbook(file: ProcessedFile) {
     const isProd = file.type === 'productos';
-    const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
     const sheetName = isProd ? 'Plantilla' : 'Clientes';
 
-    let workbook: xlsx.WorkBook;
     if (isProd) {
         try {
             const bytes = base64ToUint8Array(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64);
-            workbook = xlsx.read(bytes, { type: 'array' });
+            const workbook = xlsx.read(bytes, { type: 'array', cellStyles: true, cellDates: true });
+            const sheet = workbook.Sheets['Plantilla'];
+
+            if (sheet) {
+                // Eliminar celdas viejas a partir de la fila 2 (manteniendo A1..H1 intactas)
+                Object.keys(sheet).forEach(key => {
+                    if (!key.startsWith('!')) {
+                        const rowNum = parseInt(key.replace(/[^\d]/g, ''), 10);
+                        if (rowNum >= 2) {
+                            delete sheet[key];
+                        }
+                    }
+                });
+
+                // Inyectar productos en lugar respetando la plantilla original de ZiFact
+                file.data.forEach((p: any, idx: number) => {
+                    const r = idx + 2;
+                    sheet[`A${r}`] = { v: String(p['Nombre'] || 'Producto General'), t: 's' };
+                    sheet[`B${r}`] = { v: String(p['Codigo Principal'] || (idx + 1)), t: 's' };
+                    sheet[`C${r}`] = { v: String(p['Codigo Auxiliar'] || ''), t: 's' };
+                    sheet[`D${r}`] = { v: typeof p['Precio Unitario'] === 'number' ? p['Precio Unitario'] : parseFloat(p['Precio Unitario'] || '0') || 0, t: 'n' };
+                    sheet[`E${r}`] = { v: typeof p['Codigo IVA'] === 'number' ? p['Codigo IVA'] : parseInt(p['Codigo IVA'] || '4', 10) || 4, t: 'n' };
+                    sheet[`F${r}`] = { v: typeof p['Codigo ICE'] === 'number' ? p['Codigo ICE'] : parseInt(p['Codigo ICE'] || '0', 10) || 0, t: 'n' };
+                    sheet[`G${r}`] = { v: typeof p['Codigo IRBPNR'] === 'number' ? p['Codigo IRBPNR'] : parseInt(p['Codigo IRBPNR'] || '0', 10) || 0, t: 'n' };
+                    sheet[`H${r}`] = { v: String(p['Estado (A/I)'] || 'A'), t: 's' };
+                });
+
+                sheet['!ref'] = `A1:H${file.data.length + 1}`;
+                return { workbook, sheetName };
+            }
         } catch (e) {
             console.warn("Fallback a nuevo libro:", e);
-            workbook = xlsx.utils.book_new();
         }
-    } else {
-        workbook = xlsx.utils.book_new();
     }
 
+    const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
+    const workbook = xlsx.utils.book_new();
     const worksheet = xlsx.utils.aoa_to_sheet(rows);
     const lastCol = isProd ? 'H' : 'F';
-    // Clampar dimensión !ref exacta a A1:H{count} para evitar consumo excesivo de RAM en PHP ZiFact (512MB limit)
     worksheet['!ref'] = `A1:${lastCol}${rows.length}`;
-
     workbook.Sheets[sheetName] = worksheet;
-    if (!workbook.SheetNames.includes(sheetName)) {
-        workbook.SheetNames.push(sheetName);
-    }
+    workbook.SheetNames = [sheetName];
 
     return { workbook, sheetName };
 }
