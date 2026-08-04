@@ -17,7 +17,8 @@ import {
     ShieldCheck, 
     X,
     Layers,
-    CheckCircle2
+    CheckCircle2,
+    Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
