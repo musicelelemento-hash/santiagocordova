@@ -21,8 +21,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Base64 binario idéntico a la plantilla oficial template_Productos (3).xls de Zifact
-const OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64 = "0M8R4KGxGuEAAAAAAAAAAAAAAAAAAAAAOwADAP7/CQAGAAAAAAAAAAAAAAABAAAABgAAAAAAAAAAEAAAAAAAAAEAAAD+////AAAAAAcAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8BAAAAAgAAAAMAAAD+////BQAAAAYAAAAHAAAACAAAAAkAAAAKAAAACwAAAAwAAAANAAAADgAAAA8AAAAQAAAAEQAAABIAAAATAAAAFAAAABUAAAAWAAAAFwAAABgAAAAZAAAAGgAAABsAAAAcAAAAHQAAAB4AAAD+////IAAAACEAAAAiAAAA/v////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7/AAAGAQIAAAAAAAAAAAAAAAAAAAAAAAEAAADghZ/y+U9oEKuRCAArJ7PZMAAAAMgAAAAIAAAAAQAAAEgAAAACAAAAUAAAAAMAAABsAAAABAAAAIgAAAAIAAAAmAAAAAwAAACoAAAADQAAALQAAAATAAAAwAAAAAIAAADkBAAAHgAAABQAAABQbGFudGlsbGEgUHJvZHVjdG9zAB4AAAAUAAAAUGxhbnRpbGxhIFByb2R1Y3RvcwAeAAAACAAAAEZhY3RlbAAAHgAAAAgAAABGYWN0ZWwAAEAAAACA/JPj+hjdAUAAAACA/JPj+hjdAQMAAAAAAAAAAAAAAAAAAAAJCBAAAAYFALsNzAfRAAEABgQAAEIAAgCwBD0AEgAAAAAAvCVyFTgAAAAAAAEAWAIiAAIAAAAxAB4A3AAAAAgAkAEAAAAAAAAHAUMAYQBsAGkAYgByAGkA4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAABACAAAMAAAAAAAAAAAAkEkwIEAACAAP+SAOIAOAAAAAAA////AP8AAAAA/wAAAAD/AP//AAD/AP8AAP//AIAAAAAAgAAAAACAAICAAACAAIAAAICAAMDAwACAgIAAmZn/AJkzZgD//8wAzP//AGYAZgD/gIAAAGbMAMzM/wAAAIAA/wD/AP//AAAA//8AgACAAIAAAAAAgIAAAAD/AADM/wDM//8AzP/MAP//mQCZzP8A/5nMAMyZ/wD/zJkAM2b/ADPMzACZzAAA/8wAAP+ZAAD/ZgAAZmaZAJaWlgAAM2YAM5lmAAAzAAAzMwAAmTMAAJkzZgAzM5kAMzMzAIUAGgA0BAAAAAAJAVAAbABhAG4AdABpAGwAbABhAMEBCADBAQAAZ+YBAK4BBAABAAEEFwAIAAEAAAAAAAAA/AAoAQwAAAAMAAAABgABTgBvAG0AYgByAGUAEAABQwBvAGQAaQBnAG8AIABQAHIAaQBuAGMAaQBwAGEAbAAPAAFDAG8AZABpAGcAbwAgAEEAdQB4AGkAbABpAGEAcgAPAAFQAHIAZQBjAGkAbwAgAFUAbgBpAHQAYQByAGkAbwAKAAFDAG8AZABpAGcAbwAgAEkAVgBBAAoAAUMAbwBkAGkAZwBv ACAASQBDAEUADQABQwBvAGQAaQBnAG8AIABJAFIAQgBQAE4AUgAMAAFFAHMAdABhAGQAbwAgACgAQQAvAEkAKQAQAAFQAHIAbwBkAHUAYwB0AG8AIABlAGoAZQBtAHAAbABvAAYAAVAAUgBEADAAMAAxAAYAAUEAVQBYADAAMAAxAAEAAUEACgAAAAkIEAAABhAAuw3MB9EAAQAGBAAAKgACAAAAKwACAAAAggACAAEAgAAIAAAAAAAAAAAAgQACAMEEFAADAAAAARUAAwAAAAGDAAIAAACEAAIAAAAmAAgAZmZmZmZm5j8nAAgAZmZmZmZm5j8oAAgAAAAAAAAA6D8pAAgAAAAAAAAA6D+hACIAAQBkAAEAAQABAAIAWAJYAjMzMzMzM9M/MzMzMzMz0z8BAFUAAgAIAH0ADAAAAAAA/hMPAAAAAAB9AAwAAQABAP4TDwAAAAAAfQAMAAIAAgC1Eg8AAAAAAH0ADAADAAMAtRIPAAAAAAB9AAwABAAEANoMDwAAAAAAfQAMAAUABQDaDA8AAAAAAH0ADAAGAAYAbBAPAAAAAAB9AAwABwAHAEgPDwAAAAAAAAIOAAAAAAADAAAAAQAJAAAA/QAKAAAAAAAPAAAAAAD9AAoAAAABAA8AAQAAAP0ACgAAAAIADwACAAAA/QAKAAAAAwAPAAMAAAD9AAoAAAAEAA8ABAAAAP0ACgAAAAUADwAFAAAA/QAKAAAABgAPAAYAAAD9AAoAAAAHAA8ABwAAAP0ACgABAAAADwAIAAAA/QAKAAEAAQAPAAkAAAD9AAoAAQACAA8ACgAAAAMCDgABAAMADwAAAAAAAAAkQAMCDgABAAQADwAAAAAAAAAQQAMCDgABAAUADwAAAAAAAAAAAAMCDgABAAYADwAAAAAAAAAAAP0ACgABAAcADwALAAAAPgISALYGAAAAAEAAAAAAAGQAAAAAAIsIEACLCAAAAAAAAAAAAABkAAAAHQAPAAMAAAAAAAABAAAAAAAAAGcIFwBnCAAAAAAAAAAAAAACAAH//////38AAAoAAAD+/wAABgECAAAAAAAAAAAAAAAAAAAAAAABAAAAAtXN1ZwuGxCTlwgAKyz5rjAAAAC8AAAACAAAAAEAAABIAAAAFwAAAFAAAAALAAAAWAAAABAAAABgAAAAEwAAAGgAAAAWAAAAcAAAAA0AAAB4AAAADAAAAI4AAAACAAAA5AQAAAMAAAAAAAwACwAAAAAAAAALAAAAAAAAAAsAAAAAAAAACwAAAAAAAAAeEAAAAQAAAAoAAABXb3Jrc2hlZXQADBAAAAIAAAAeAAAAEwAAAEZldWlsbGVzIGRlIGNhbGN1bAADAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSAG8AbwB0 ACAARQBuAHQAcgB5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFgAFAP//////////AQAAAAAJAgAAAAAAwAAAAAAAAEYAAAAAgPyT4/oY3QGA/JPj+hjdAQEAAADACAAAAAAAAAUAUwB1AG0AbQBhAHIAeQBJAG4AZgBvAHIAbQBhAHQAaQBvAG4AAAAAAAAAAAAAAAAAAAAoAAIAAgAAAAMAAAD/////AAkCAAAAAADAAAAAAAAARgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPgAAAAAAAAAVwBvAHIAawBiAG8AbwBrAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABIAAgD///////////////8ACQIAAAAAAMAAAAAAAABGAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAwAYAAAAAAAAFAEQAbwBjAHUAbQBlAG4AdABTAHUAbQBtAGEAcgB5AEkAbgBmAG8AcgBtAGEAdABpAG8AbgAAAAAAAAAAAAAAOAACAP///////////////wAJAgAAAAAAwAAAAAAAAEYAAAAAAAAAAAAAAAAAAAAAAAAAAB8AAADsAAAAAAAAAP7///8CAAAAAwAAAAQAAAAFAAAA/v////7////9////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
+// Base64 binario idéntico al archivo oficial template_Productos.XLS de Zifact
+const OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64 = "0M8R4KGxGuEAAAAAAAAAAAAAAAAAAAAAOwADAP7/CQAGAAAAAAAAAAAAAAABAAAABgAAAAAAAAAAEAAAAAAAAAEAAAD+////AAAAAAcAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8BAAAAAgAAAAMAAAD+////BQAAAAYAAAAHAAAACAAAAAkAAAAKAAAACwAAAAwAAAANAAAADgAAAA8AAAAQAAAAEQAAABIAAAATAAAAFAAAABUAAAAWAAAAFwAAABgAAAAZAAAAGgAAABsAAAAcAAAAHQAAAB4AAAD+////IAAAACEAAAAiAAAA/v////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////7/AAAGAQIAAAAAAAAAAAAAAAAAAAAAAAEAAADghZ/y+U9oEKuRCAArJ7PZMAAAAMgAAAAIAAAAAQAAAEgAAAACAAAAUAAAAAMAAABsAAAABAAAAIgAAAAIAAAAmAAAAAwAAACoAAAADQAAALQAAAATAAAAwAAAAAIAAADkBAAAHgAAABQAAABQbGFudGlsbGEgUHJvZHVjdG9zAB4AAAAUAAAAUGxhbnRpbGxhIFByb2R1Y3RvcwAeAAAACAAAAEZhY3RlbAAAHgAAAAgAAABGYWN0ZWwAAEAAAAAAemygICTdAUAAAAAAemygICTdAQMAAAAAAAAAAAAAAAAAAAAJCBAAAAYFALsNzAfRAAEABgQAAEIAAgCwBD0AEgAAAAAAvCVyFTgAAAAAAAEAWAIiAAIAAAAxAB4A3AAAAAgAkAEAAAAAAAAHAUMAYQBsAGkAYgByAGkA4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAD1/yAAAMAAAAAAAAAAAAkE4AAUAAAAAAABACAAAMAAAAAAAAAAAAkEkwIEAACAAP+SAOIAOAAAAAAA////AP8AAAAA/wAAAAD/AP//AAD/AP8AAP//AIAAAAAAgAAAAACAAICAAACAAIAAAICAAMDAwACAgIAAmZn/AJkzZgD//8wAzP//AGYAZgD/gIAAAGbMAMzM/wAAAIAA/wD/AP//AAAA//8AgACAAIAAAAAAgIAAAAD/AADM/wDM//8AzP/MAP//mQCZzP8A/5nMAMyZ/wD/zJkAM2b/ADPMzACZzAAA/8wAAP+ZAAD/ZgAAZmaZAJaWlgAAM2YAM5lmAAAzAAAzMwAAmTMAAJkzZgAzM5kAMzMzAIUAGgA0BAAAAAAJAVAAbABhAG4AdABpAGwAbABhAMEBCADBAQAAZ+YBAK4BBAABAAEEFwAIAAEAAAAAAAAA/AAoAQwAAAAMAAAABgABTgBvAG0AYgByAGUAEAABQwBvAGQAaQBnAG8AIABQAHIAaQBuAGMAaQBwAGEAbAAPAAFDAG8AZABpAGcAbwAgAEEAdQB4AGkAbABpAGEAcgAPAAFQAHIAZQBjAGkAbwAgAFUAbgBpAHQAYQByAGkAbwAKAAFDAG8AZABpAGcAbwAgAEkAVgBBAAoAAUMAbwBkAGkAZwBv ACAASQBDAEUADQABQwBvAGQAaQBnAG8AIABJAFIAQgBQAE4AUgAMAAFFAHMAdABhAGQAbwAgACgAQQAvAEkAKQAQAAFQAHIAbwBkAHUAYwB0AG8AIABlAGoAZQBtAHAAbABvAAYAAVAAUgBEADAAMAAxAAYAAUEAVQBYADAAMAAxAAEAAUEACgAAAAkIEAAABhAAuw3MB9EAAQAGBAAAKgACAAAAKwACAAAAggACAAEAgAAIAAAAAAAAAAAAgQACAMEEFAADAAAAARUAAwAAAAGDAAIAAACEAAIAAAAmAAgAZmZmZmZm5j8nAAgAZmZmZmZm5j8oAAgAAAAAAAAA6D8pAAgAAAAAAAAA6D+hACIAAQBkAAEAAQABAAIAWAJYAjMzMzMzM9M/MzMzMzMz0z8BAFUAAgAIAH0ADAAAAAAA/hMPAAAAAAB9AAwAAQABAP4TDwAAAAAAfQAMAAIAAgC1Eg8AAAAAAH0ADAADAAMAtRIPAAAAAAB9AAwABAAEANoMDwAAAAAAfQAMAAUABQDaDA8AAAAAAH0ADAAGAAYAbBAPAAAAAAB9AAwABwAHAEgPDwAAAAAAAAIOAAAAAAADAAAAAQAJAAAA/QAKAAAAAAAPAAAAAAD9AAoAAAABAA8AAQAAAP0ACgAAAAIADwACAAAA/QAKAAAAAwAPAAMAAAD9AAoAAAAEAA8ABAAAAP0ACgAAAAUADwAFAAAA/QAKAAAABgAPAAYAAAD9AAoAAAAHAA8ABwAAAP0ACgABAAAADwAIAAAA/QAKAAEAAQAPAAkAAAD9AAoAAQACAA8ACgAAAAMCDgABAAMADwAAAAAAAAAkQAMCDgABAAQADwAAAAAAAAAQQAMCDgABAAUADwAAAAAAAAAAAAMCDgABAAYADwAAAAAAAAAAAP0ACgABAAcADwALAAAAPgISALYGAAAAAEAAAAAAAGQAAAAAAIsIEACLCAAAAAAAAAAAAABkAAAAHQAPAAMAAAAAAAABAAAAAAAAAGcIFwBnCAAAAAAAAAAAAAACAAH//////38AAAoAAAD+/wAABgECAAAAAAAAAAAAAAAAAAAAAAABAAAAAtXN1ZwuGxCTlwgAKyz5rjAAAAC8AAAACAAAAAEAAABIAAAAFwAAAFAAAAALAAAAWAAAABAAAABgAAAAEwAAAGgAAAAWAAAAcAAAAA0AAAB4AAAADAAAAI4AAAACAAAA5AQAAAMAAAAAAAwACwAAAAAAAAALAAAAAAAAAAsAAAAAAAAACwAAAAAAAAAeEAAAAQAAAAoAAABXb3Jrc2hlZXQADBAAAAIAAAAeAAAAEwAAAEZldWlsbGVzIGRlIGNhbGN1bAADAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSAG8AbwB0 ACAARQBuAHQAcgB5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFgAFAP//////////AQAAAAAJAgAAAAAAwAAAAAAAAEYAAAAAAHpsoCAk3QEAemygICTdAQEAAADACAAAAAAAAAUAUwB1AG0AbQBhAHIAeQBJAG4AZgBvAHIAbQBhAHQAaQBvAG4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoAAIAAgAAAAMAAAD/////AAkCAAAAAADAAAAAAAAARgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPgAAAAAAAAAVwBvAHIAawBiAG8AbwBrAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABIAAgD///////////////8ACQIAAAAAAMAAAAAAAABGAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAwAYAAAAAAAAFAEQAbwBjAHUAbQBlAG4AdABTAHUAbQBtAGEAcgB5AEkAbgBmAG8AcgBtAGEAdABtAGEAdABpAG8AbgAAAAAAAAAAAAAAOAACAP///////////////wAJAgAAAAAAwAAAAAAAAEYAAAAAAAAAAAAAAAAAAAAAAAAAAB8AAADsAAAAAAAAAP7///8CAAAAAwAAAAQAAAAFAAAA/v////7////9////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
 
 function base64ToUint8Array(base64: string): Uint8Array {
     const binaryString = window.atob(base64);
@@ -262,24 +262,60 @@ function buildClientesAOA(data: any[]): any[][] {
     return rows;
 }
 
-function buildZifactWorksheet(file: ProcessedFile) {
+function buildZifactWorkbook(file: ProcessedFile) {
     const isProd = file.type === 'productos';
     const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
+    const sheetName = isProd ? 'Plantilla' : 'Clientes';
+
+    let workbook: xlsx.WorkBook;
+    if (isProd) {
+        try {
+            const bytes = base64ToUint8Array(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64);
+            workbook = xlsx.read(bytes, { type: 'array' });
+        } catch (e) {
+            console.warn("Fallback a nuevo libro:", e);
+            workbook = xlsx.utils.book_new();
+        }
+    } else {
+        workbook = xlsx.utils.book_new();
+    }
+
     const worksheet = xlsx.utils.aoa_to_sheet(rows);
     const lastCol = isProd ? 'H' : 'F';
-    // Clampar dimensión !ref exacta a A1:H{count} o A1:F{count} para evitar consumo excesivo de RAM en PHP ZiFact (512MB limit)
+    // Clampar dimensión !ref exacta a A1:H{count} para evitar consumo excesivo de RAM en PHP ZiFact (512MB limit)
     worksheet['!ref'] = `A1:${lastCol}${rows.length}`;
-    const sheetName = isProd ? 'Plantilla' : 'Clientes';
-    return { worksheet, sheetName };
+
+    workbook.Sheets[sheetName] = worksheet;
+    if (!workbook.SheetNames.includes(sheetName)) {
+        workbook.SheetNames.push(sheetName);
+    }
+
+    return { workbook, sheetName };
 }
 
-    // Descargar archivo en formato .XLS (biff8) con dimensión acotada
+    // Descargar archivo en formato CSV (0% Consumo de memoria en PHP ZiFact)
+    const downloadAsCSV = (file: ProcessedFile) => {
+        try {
+            const isProd = file.type === 'productos';
+            const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
+            const csvText = '\uFEFF' + rows.map(r => r.map(c => {
+                const s = String(c ?? '');
+                return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+            }).join(',')).join('\r\n');
+
+            const filename = isProd ? 'Productos_Zifact_Migrado.csv' : 'Clientes_Zifact_Migrado.csv';
+            const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+            saveAs(blob, filename);
+        } catch (err: any) {
+            console.error("Error al descargar CSV:", err);
+            alert("Error al generar CSV: " + (err?.message || err));
+        }
+    };
+
+    // Descargar archivo en formato .XLS (biff8 inyectado sobre plantilla oficial de ZiFact)
     const downloadAsXLS = (file: ProcessedFile) => {
         try {
-            const { worksheet, sheetName } = buildZifactWorksheet(file);
-            const workbook = xlsx.utils.book_new();
-            xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
-
+            const { workbook } = buildZifactWorkbook(file);
             const filename = file.type === 'productos' ? 'Productos_Zifact_Migrado.xls' : 'Clientes_Zifact_Migrado.xls';
             const outBuf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
             triggerBrowserDownload(outBuf, filename, 'application/vnd.ms-excel');
@@ -296,10 +332,7 @@ function buildZifactWorksheet(file: ProcessedFile) {
     // Descargar archivo en formato XLSX
     const downloadAsXLSX = (file: ProcessedFile) => {
         try {
-            const { worksheet, sheetName } = buildZifactWorksheet(file);
-            const workbook = xlsx.utils.book_new();
-            xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
-
+            const { workbook } = buildZifactWorkbook(file);
             const filename = file.type === 'productos' ? 'Productos_Zifact_Migrado.xlsx' : 'Clientes_Zifact_Migrado.xlsx';
             const outBuf = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
             triggerBrowserDownload(outBuf, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -314,15 +347,23 @@ function buildZifactWorksheet(file: ProcessedFile) {
 
         const zip = new JSZip();
         for (const file of successfulFiles) {
-            const { worksheet, sheetName } = buildZifactWorksheet(file);
-            const workbook = xlsx.utils.book_new();
-            xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
-
             const isProd = file.type === 'productos';
+            const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
             const prefix = isProd ? 'Productos_Zifact_Migrado' : 'Clientes_Zifact_Migrado';
 
+            // 1. Incluir CSV (Seguro 0% Memoria)
+            const csvText = '\uFEFF' + rows.map(r => r.map(c => {
+                const s = String(c ?? '');
+                return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+            }).join(',')).join('\r\n');
+            zip.file(`${prefix}.csv`, csvText);
+
+            // 2. Incluir XLS Inyectado sobre plantilla original ZiFact
+            const { workbook } = buildZifactWorkbook(file);
             const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
             zip.file(`${prefix}.xls`, bufXls);
+
+            // 3. Incluir XLSX
             const bufXlsx = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
             zip.file(`${prefix}.xlsx`, bufXlsx);
         }
@@ -540,18 +581,27 @@ function buildZifactWorksheet(file: ProcessedFile) {
                                         </div>
 
                                         {/* Action buttons */}
-                                        <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                                        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/5">
                                             <button
                                                 onClick={() => setPreviewFile(file)}
-                                                className="flex-1 py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-center gap-2 transition-all"
+                                                className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-center gap-2 transition-all"
+                                                title="Previsualizar filas extraídas"
                                             >
                                                 <Eye size={14} className="text-[#2B6AFF]" /> Previsualizar
                                             </button>
 
                                             <button
-                                                onClick={() => downloadAsXLS(file)}
+                                                onClick={() => downloadAsCSV(file)}
                                                 className="flex-1 py-2.5 px-3 rounded-xl bg-[#04B17B]/20 hover:bg-[#04B17B]/30 border border-[#04B17B]/40 text-xs font-bold text-[#04B17B] hover:text-emerald-300 flex items-center justify-center gap-2 transition-all shadow-md"
-                                                title="Recomendado: Inyección binaria sobre plantilla oficial Zifact"
+                                                title="RECOMENDADO ZIFACT: 0% Consumo de Memoria RAM en PHP"
+                                            >
+                                                <Download size={14} /> Descargar .CSV
+                                            </button>
+
+                                            <button
+                                                onClick={() => downloadAsXLS(file)}
+                                                className="flex-1 py-2.5 px-3 rounded-xl bg-[#6366F1]/20 hover:bg-[#6366F1]/30 border border-[#6366F1]/40 text-xs font-bold text-[#6366F1] hover:text-indigo-300 flex items-center justify-center gap-2 transition-all shadow-md"
+                                                title="Inyección directa sobre la plantilla original template_Productos.XLS de ZiFact"
                                             >
                                                 <Download size={14} /> Descargar .XLS
                                             </button>
@@ -559,7 +609,7 @@ function buildZifactWorksheet(file: ProcessedFile) {
                                             <button
                                                 onClick={() => downloadAsXLSX(file)}
                                                 className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition-all"
-                                                title="Formato .xlsx"
+                                                title="Formato Excel Moderno .xlsx"
                                             >
                                                 .XLSX
                                             </button>
