@@ -224,21 +224,65 @@ export const AdaptadorConvert: React.FC = () => {
         }
     });
 
-    // Descargar archivo en formato .XLS (biff8)
+function buildProductosAOA(data: any[]): any[][] {
+    const headers = ['Nombre', 'Codigo Principal', 'Codigo Auxiliar', 'Precio Unitario', 'Codigo IVA', 'Codigo ICE', 'Codigo IRBPNR', 'Estado (A/I)'];
+    const rows: any[][] = [headers];
+
+    data.forEach(item => {
+        rows.push([
+            String(item['Nombre'] || 'Producto General'),
+            String(item['Codigo Principal'] || '1'),
+            String(item['Codigo Auxiliar'] || ''),
+            typeof item['Precio Unitario'] === 'number' ? item['Precio Unitario'] : parseFloat(item['Precio Unitario'] || '0') || 0,
+            typeof item['Codigo IVA'] === 'number' ? item['Codigo IVA'] : parseInt(item['Codigo IVA'] || '4', 10) || 4,
+            typeof item['Codigo ICE'] === 'number' ? item['Codigo ICE'] : parseInt(item['Codigo ICE'] || '0', 10) || 0,
+            typeof item['Codigo IRBPNR'] === 'number' ? item['Codigo IRBPNR'] : parseInt(item['Codigo IRBPNR'] || '0', 10) || 0,
+            String(item['Estado (A/I)'] || 'A')
+        ]);
+    });
+
+    return rows;
+}
+
+function buildClientesAOA(data: any[]): any[][] {
+    const headers = ['Nombre', 'Tipo Identificacion', 'Identificacion', 'Direccion', 'Celular', 'Correo'];
+    const rows: any[][] = [headers];
+
+    data.forEach(item => {
+        rows.push([
+            String(item['Nombre'] || 'SIN NOMBRE'),
+            String(item['Tipo Identificacion'] || '04'),
+            String(item['Identificacion'] || '9999999999999'),
+            String(item['Direccion'] || 'SN'),
+            String(item['Celular'] || '0999999999'),
+            String(item['Correo'] || 'correo@ejemplo.com')
+        ]);
+    });
+
+    return rows;
+}
+
+function buildZifactWorksheet(file: ProcessedFile) {
+    const isProd = file.type === 'productos';
+    const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
+    const worksheet = xlsx.utils.aoa_to_sheet(rows);
+    const lastCol = isProd ? 'H' : 'F';
+    // Clampar dimensión !ref exacta a A1:H{count} o A1:F{count} para evitar consumo excesivo de RAM en PHP ZiFact (512MB limit)
+    worksheet['!ref'] = `A1:${lastCol}${rows.length}`;
+    const sheetName = isProd ? 'Plantilla' : 'Clientes';
+    return { worksheet, sheetName };
+}
+
+    // Descargar archivo en formato .XLS (biff8) con dimensión acotada
     const downloadAsXLS = (file: ProcessedFile) => {
         try {
-            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
+            const { worksheet, sheetName } = buildZifactWorksheet(file);
             const workbook = xlsx.utils.book_new();
+            xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
 
-            if (file.type === 'productos') {
-                xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
-                const outBuf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
-                triggerBrowserDownload(outBuf, 'Productos_Zifact_Migrado.xls', 'application/vnd.ms-excel');
-            } else {
-                xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
-                const outBuf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
-                triggerBrowserDownload(outBuf, 'Clientes_Zifact_Migrado.xls', 'application/vnd.ms-excel');
-            }
+            const filename = file.type === 'productos' ? 'Productos_Zifact_Migrado.xls' : 'Clientes_Zifact_Migrado.xls';
+            const outBuf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
+            triggerBrowserDownload(outBuf, filename, 'application/vnd.ms-excel');
         } catch (err: any) {
             console.error("Error al descargar XLS:", err);
             try {
@@ -252,18 +296,13 @@ export const AdaptadorConvert: React.FC = () => {
     // Descargar archivo en formato XLSX
     const downloadAsXLSX = (file: ProcessedFile) => {
         try {
-            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
+            const { worksheet, sheetName } = buildZifactWorksheet(file);
             const workbook = xlsx.utils.book_new();
+            xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
 
-            if (file.type === 'productos') {
-                xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
-                const outBuf = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
-                triggerBrowserDownload(outBuf, 'Productos_Zifact_Migrado.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            } else {
-                xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
-                const outBuf = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
-                triggerBrowserDownload(outBuf, 'Clientes_Zifact_Migrado.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            }
+            const filename = file.type === 'productos' ? 'Productos_Zifact_Migrado.xlsx' : 'Clientes_Zifact_Migrado.xlsx';
+            const outBuf = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
+            triggerBrowserDownload(outBuf, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         } catch (err: any) {
             console.error("Error al descargar XLSX:", err);
         }
@@ -275,22 +314,17 @@ export const AdaptadorConvert: React.FC = () => {
 
         const zip = new JSZip();
         for (const file of successfulFiles) {
-            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
+            const { worksheet, sheetName } = buildZifactWorksheet(file);
             const workbook = xlsx.utils.book_new();
+            xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
 
-            if (file.type === 'productos') {
-                xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
-                const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
-                zip.file(`Productos_Zifact_Migrado.xls`, bufXls);
-                const bufXlsx = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
-                zip.file(`Productos_Zifact_Migrado.xlsx`, bufXlsx);
-            } else {
-                xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
-                const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
-                zip.file(`Clientes_Zifact_Migrado.xls`, bufXls);
-                const bufXlsx = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
-                zip.file(`Clientes_Zifact_Migrado.xlsx`, bufXlsx);
-            }
+            const isProd = file.type === 'productos';
+            const prefix = isProd ? 'Productos_Zifact_Migrado' : 'Clientes_Zifact_Migrado';
+
+            const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
+            zip.file(`${prefix}.xls`, bufXls);
+            const bufXlsx = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
+            zip.file(`${prefix}.xlsx`, bufXlsx);
         }
         
         const content = await zip.generateAsync({ type: 'blob' });
