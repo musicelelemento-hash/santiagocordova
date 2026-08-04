@@ -224,28 +224,28 @@ export const AdaptadorConvert: React.FC = () => {
         }
     });
 
-    // Descargar archivo en formato .XLS
+    // Descargar archivo en formato .XLS (biff8)
     const downloadAsXLS = (file: ProcessedFile) => {
         try {
-            if (file.type === 'productos') {
-                const bytes = base64ToUint8Array(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64.trim());
-                const workbook = xlsx.read(bytes, { type: 'array' });
-                const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
-                workbook.Sheets['Plantilla'] = newWs;
+            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
+            const workbook = xlsx.utils.book_new();
 
+            if (file.type === 'productos') {
+                xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
                 const outBuf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
                 triggerBrowserDownload(outBuf, 'Productos_Zifact_Migrado.xls', 'application/vnd.ms-excel');
             } else {
-                const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
-                const workbook = xlsx.utils.book_new();
                 xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
-
                 const outBuf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
                 triggerBrowserDownload(outBuf, 'Clientes_Zifact_Migrado.xls', 'application/vnd.ms-excel');
             }
         } catch (err: any) {
             console.error("Error al descargar XLS:", err);
-            alert("No se pudo descargar el archivo XLS: " + (err?.message || err));
+            try {
+                downloadAsXLSX(file);
+            } catch(e) {
+                alert("No se pudo descargar el archivo XLS: " + (err?.message || err));
+            }
         }
     };
 
@@ -275,17 +275,19 @@ export const AdaptadorConvert: React.FC = () => {
 
         const zip = new JSZip();
         for (const file of successfulFiles) {
+            const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
+            const workbook = xlsx.utils.book_new();
+
             if (file.type === 'productos') {
-                const bytes = base64ToUint8Array(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64.trim());
-                const workbook = xlsx.read(bytes, { type: 'array' });
-                const newWs = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
-                workbook.Sheets['Plantilla'] = newWs;
+                xlsx.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
                 const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
                 zip.file(`Productos_Zifact_Migrado.xls`, bufXls);
+                const bufXlsx = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
+                zip.file(`Productos_Zifact_Migrado.xlsx`, bufXlsx);
             } else {
-                const worksheet = xlsx.utils.json_to_sheet(file.data, { raw: true } as any);
-                const workbook = xlsx.utils.book_new();
                 xlsx.utils.book_append_sheet(workbook, worksheet, 'Clientes');
+                const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
+                zip.file(`Clientes_Zifact_Migrado.xls`, bufXls);
                 const bufXlsx = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
                 zip.file(`Clientes_Zifact_Migrado.xlsx`, bufXlsx);
             }
