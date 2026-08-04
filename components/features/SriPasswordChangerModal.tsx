@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { 
     Key, Copy, Check, ExternalLink, RefreshCw, Zap, Search, 
-    ShieldCheck, Lock, ArrowRight, UserCheck, AlertTriangle, X, Sparkles
+    ShieldCheck, Lock, ArrowRight, UserCheck, AlertTriangle, X, Sparkles, Upload
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { Client } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { transformPasswordForSri, sendSRIPasswordChangeToExtension, openSRIPortal } from '../../services/extensionBridge';
+import { parseCredentialsCSV } from '../../services/csv';
 
 interface SriPasswordChangerModalProps {
     isOpen: boolean;
@@ -23,9 +24,40 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
     const [copiedPass, setCopiedPass] = useState<string | null>(null);
     const [processedMap, setProcessedMap] = useState<Record<string, boolean>>({});
 
+    const csvInputRef = React.useRef<HTMLInputElement>(null);
+
     const activeClients = useMemo(() => {
-        return clients.filter(c => !c.isDeleted && (c.isActive ?? true) && c.sriPassword);
+        return clients.filter(c => !c.isDeleted && (c.isActive ?? true));
     }, [clients]);
+
+    const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const content = evt.target?.result as string;
+            if (!content) return;
+            const creds = parseCredentialsCSV(content);
+            const credKeys = Object.keys(creds);
+            if (credKeys.length === 0) {
+                toast.error("No se encontraron claves de usuario/RUC válidas en el archivo CSV.");
+                return;
+            }
+
+            let updated = 0;
+            clients.forEach(c => {
+                const matchedPass = creds[c.ruc] || creds[c.ruc.slice(0, 10)];
+                if (matchedPass && c.sriPassword !== matchedPass) {
+                    updateClient(c.id, { sriPassword: matchedPass, sriPasswordUpdatedAt: new Date().toISOString() });
+                    updated++;
+                }
+            });
+
+            toast.success(`🎉 ¡${credKeys.length} claves leídas del CSV! Se vincularon/actualizaron ${updated} contraseñas a tus clientes.`);
+        };
+        reader.readAsText(file);
+        if (csvInputRef.current) csvInputRef.current.value = '';
+    };
 
     const filteredClients = useMemo(() => {
         const q = searchTerm.toLowerCase().trim();
@@ -121,7 +153,7 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
                 </div>
 
                 {/* Controls */}
-                <div className="p-4 bg-slate-950/60 border-b border-white/5 flex items-center justify-between gap-4">
+                <div className="p-4 bg-slate-950/60 border-b border-white/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                     <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={15} />
                         <input
@@ -131,6 +163,24 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-900 border border-white/10 text-xs font-bold text-white placeholder-slate-500 outline-none focus:border-amber-500"
                         />
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                        <input 
+                            type="file" 
+                            ref={csvInputRef} 
+                            onChange={handleCsvImport} 
+                            accept=".csv" 
+                            className="hidden" 
+                        />
+                        <button 
+                            onClick={() => csvInputRef.current?.click()} 
+                            className="px-4 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold transition-all flex items-center gap-2 shrink-0 shadow-lg shadow-amber-500/10"
+                            title="Importar archivo CSV exportado desde Google Chrome"
+                        >
+                            <Upload size={14} className="text-amber-400" />
+                            <span>📥 Importar CSV Contraseñas Chrome</span>
+                        </button>
                     </div>
                 </div>
 
@@ -174,8 +224,8 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
                                                 </td>
 
                                                 <td className="py-4 px-5 font-mono">
-                                                    <span className="px-2.5 py-1 rounded-xl bg-slate-900 border border-white/10 text-slate-300 font-bold">
-                                                        {oldPass}
+                                                    <span className={`px-2.5 py-1 rounded-xl border text-[11px] font-bold ${oldPass ? 'bg-slate-900 border-white/10 text-slate-300' : 'bg-slate-800/50 border-slate-700/50 text-slate-500 italic'}`}>
+                                                        {oldPass || 'Sin clave registrada'}
                                                     </span>
                                                 </td>
 

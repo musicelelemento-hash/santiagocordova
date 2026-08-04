@@ -236,29 +236,39 @@ export const parseCredentialsCSV = (fileContent: string): Record<string, string>
     const header = (lines[0].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [])
         .map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
 
-    const urlIndex = header.indexOf('url');
-    const usernameIndex = header.indexOf('username');
-    const passwordIndex = header.indexOf('password');
+    const urlIndex = header.findIndex(h => h.includes('url') || h.includes('sitio') || h.includes('website') || h.includes('link') || h.includes('name') || h.includes('nombre'));
+    const usernameIndex = header.findIndex(h => h.includes('username') || h.includes('usuario') || h.includes('login') || h.includes('ruc') || h.includes('cedula') || h.includes('user'));
+    const passwordIndex = header.findIndex(h => h.includes('password') || h.includes('contrase') || h.includes('clave') || h.includes('pass'));
 
-    if (urlIndex === -1 || usernameIndex === -1 || passwordIndex === -1) {
-        return credentials;
-    }
+    // Si no se encuentran índices por encabezado, intentar por columnas típicas de Chrome (col 1 = url/name, col 2 = user, col 3 = pass)
+    const effectiveUrlIdx = urlIndex > -1 ? urlIndex : 0;
+    const effectiveUserIdx = usernameIndex > -1 ? usernameIndex : 1;
+    const effectivePassIdx = passwordIndex > -1 ? passwordIndex : 2;
 
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
         const values = (line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [])
             .map(v => v.trim().replace(/^"|"$/g, ''));
 
-        const url = values[urlIndex] || '';
-        const username = values[usernameIndex] || '';
-        const password = values[passwordIndex] || '';
+        const url = values[effectiveUrlIdx] || '';
+        const username = values[effectiveUserIdx] || '';
+        const password = values[effectivePassIdx] || '';
 
-        // Check for SRI related URLs
-        if ((url.includes('sri.gob.ec') || url.includes('facturacion-internet')) && username && password) {
-            const ruc = username.trim();
-            // Validate if username looks like a RUC (13 digits) or CI (10 digits)
-            if (/^\d{10,13}$/.test(ruc)) {
-                credentials[ruc] = password;
+        if (!password || password.toLowerCase() === 'password' || password.toLowerCase() === 'contraseña') continue;
+
+        const cleanUser = username.trim();
+        const rucMatch = cleanUser.match(/\b\d{10,13}\b/);
+        const rucCandidate = rucMatch ? rucMatch[0] : (cleanUser.length >= 10 && cleanUser.length <= 13 && /^\d+$/.test(cleanUser) ? cleanUser : '');
+
+        const isSriUrl = url.toLowerCase().includes('sri') || url.toLowerCase().includes('ecuafact') || url.toLowerCase().includes('factur');
+
+        if (rucCandidate || isSriUrl) {
+            const targetRuc = rucCandidate || (cleanUser.match(/\d+/)?.[0] || '');
+            if (targetRuc.length === 13) {
+                credentials[targetRuc] = password;
+            } else if (targetRuc.length === 10) {
+                credentials[targetRuc] = password;
+                credentials[targetRuc + '001'] = password;
             }
         }
     }
