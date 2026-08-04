@@ -293,6 +293,25 @@ function buildZifactWorkbook(file: ProcessedFile) {
     return { workbook, sheetName };
 }
 
+    // Descargar archivo con extensión .XLS pero en formato CSV UTF-8 BOM (Supera validaciones estrictas de extensión .xls en ZiFact consumiendo 0% Memoria RAM)
+    const downloadAsXlsCsv = (file: ProcessedFile) => {
+        try {
+            const isProd = file.type === 'productos';
+            const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
+            const csvText = '\uFEFF' + rows.map(r => r.map(c => {
+                const s = String(c ?? '');
+                return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+            }).join(',')).join('\r\n');
+
+            const filename = isProd ? 'Productos_Zifact_Migrado_ModoSeguro.xls' : 'Clientes_Zifact_Migrado_ModoSeguro.xls';
+            const blob = new Blob([csvText], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+            saveAs(blob, filename);
+        } catch (err: any) {
+            console.error("Error al descargar XLS Modo Seguro:", err);
+            alert("Error al generar XLS Modo Seguro: " + (err?.message || err));
+        }
+    };
+
     // Descargar archivo en formato CSV (0% Consumo de memoria en PHP ZiFact)
     const downloadAsCSV = (file: ProcessedFile) => {
         try {
@@ -317,7 +336,7 @@ function buildZifactWorkbook(file: ProcessedFile) {
         try {
             const { workbook } = buildZifactWorkbook(file);
             const filename = file.type === 'productos' ? 'Productos_Zifact_Migrado.xls' : 'Clientes_Zifact_Migrado.xls';
-            const outBuf = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
+            const outBuf = xlsx.write(workbook, { bookType: 'biff8', type: 'array', bookSST: false });
             triggerBrowserDownload(outBuf, filename, 'application/vnd.ms-excel');
         } catch (err: any) {
             console.error("Error al descargar XLS:", err);
@@ -351,16 +370,17 @@ function buildZifactWorkbook(file: ProcessedFile) {
             const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
             const prefix = isProd ? 'Productos_Zifact_Migrado' : 'Clientes_Zifact_Migrado';
 
-            // 1. Incluir CSV (Seguro 0% Memoria)
+            // 1. Incluir XLS Modo Seguro (Extensión .xls con datos CSV UTF-8 BOM, 0% Memoria)
             const csvText = '\uFEFF' + rows.map(r => r.map(c => {
                 const s = String(c ?? '');
                 return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
             }).join(',')).join('\r\n');
+            zip.file(`${prefix}_ModoSeguro.xls`, csvText);
             zip.file(`${prefix}.csv`, csvText);
 
             // 2. Incluir XLS Inyectado sobre plantilla original ZiFact
             const { workbook } = buildZifactWorkbook(file);
-            const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
+            const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array', bookSST: false });
             zip.file(`${prefix}.xls`, bufXls);
 
             // 3. Incluir XLSX
@@ -591,19 +611,27 @@ function buildZifactWorkbook(file: ProcessedFile) {
                                             </button>
 
                                             <button
-                                                onClick={() => downloadAsCSV(file)}
+                                                onClick={() => downloadAsXlsCsv(file)}
                                                 className="flex-1 py-2.5 px-3 rounded-xl bg-[#04B17B]/20 hover:bg-[#04B17B]/30 border border-[#04B17B]/40 text-xs font-bold text-[#04B17B] hover:text-emerald-300 flex items-center justify-center gap-2 transition-all shadow-md"
-                                                title="RECOMENDADO ZIFACT: 0% Consumo de Memoria RAM en PHP"
+                                                title="RECOMENDADO ZIFACT: Extensión .XLS obligatoria + 0% Memoria RAM en PHP ZiFact"
                                             >
-                                                <Download size={14} /> Descargar .CSV
+                                                <Download size={14} /> Descargar .XLS (Modo Seguro 0% RAM)
                                             </button>
 
                                             <button
                                                 onClick={() => downloadAsXLS(file)}
-                                                className="flex-1 py-2.5 px-3 rounded-xl bg-[#6366F1]/20 hover:bg-[#6366F1]/30 border border-[#6366F1]/40 text-xs font-bold text-[#6366F1] hover:text-indigo-300 flex items-center justify-center gap-2 transition-all shadow-md"
+                                                className="py-2.5 px-3 rounded-xl bg-[#6366F1]/20 hover:bg-[#6366F1]/30 border border-[#6366F1]/40 text-xs font-bold text-[#6366F1] hover:text-indigo-300 flex items-center justify-center gap-1.5 transition-all shadow-md"
                                                 title="Inyección directa sobre la plantilla original template_Productos.XLS de ZiFact"
                                             >
-                                                <Download size={14} /> Descargar .XLS
+                                                .XLS Binario
+                                            </button>
+
+                                            <button
+                                                onClick={() => downloadAsCSV(file)}
+                                                className="py-2.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white flex items-center justify-center gap-1.5 transition-all"
+                                                title="Formato .csv"
+                                            >
+                                                .CSV
                                             </button>
 
                                             <button
