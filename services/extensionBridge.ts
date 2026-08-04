@@ -35,13 +35,7 @@ export const sendToSRIExtension = (client: Client) => {
 export const transformPasswordForSri = (oldPass: string): string => {
   if (!oldPass) return '';
   const trimmed = oldPass.trim();
-  if (trimmed.endsWith('*')) {
-    return trimmed.slice(0, -1) + '@';
-  } else if (trimmed.endsWith('@')) {
-    return trimmed;
-  } else {
-    return trimmed + '@';
-  }
+  return trimmed + '@';
 };
 
 export const sendSRIPasswordChangeToExtension = (ruc: string, oldPassword: string, newPassword: string) => {
