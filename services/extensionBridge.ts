@@ -31,6 +31,7 @@ export const sendToSRIExtension = (client: Client) => {
   // 3. Opcional: Guardamos en una clave temporal de localStorage que la extensión pueda leer
   // (Muchas extensiones usan este método para persistencia entre dominios si tienen permisos)
   localStorage.setItem('_sri_autofill_pending', JSON.stringify(payload.data));
+};
 
 export const transformPasswordForSri = (oldPass: string): string => {
   if (!oldPass) return '';
@@ -60,6 +61,20 @@ export const sendSRIPasswordChangeToExtension = (ruc: string, oldPassword: strin
   window.dispatchEvent(event);
   localStorage.setItem('_sri_change_password_pending', JSON.stringify(payload.data));
   console.log("🔑 Cambio de Clave SRI enviado a la extensión para RUC:", ruc);
+};
+
+export const sendFullClientsMatrixToExtension = (clients: Client[]) => {
+  if (!Array.isArray(clients) || clients.length === 0) return;
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_FULL_MATRIX_DATA',
+    data: clients
+  };
+  window.postMessage(payload, "*");
+  try {
+    localStorage.setItem('sc_clients_history', JSON.stringify(clients));
+  } catch (e) {}
+  console.log("⚡ Matriz completa de clientes enviada a la extensión:", clients.length);
 };
 
 export const openSRIPortal = (url?: string) => {

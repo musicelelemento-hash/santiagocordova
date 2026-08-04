@@ -7,6 +7,7 @@ import { mockClients, mockTasks, INITIAL_SERVICE_FEES } from '../constants';
 import { v4 as uuidv4 } from 'uuid';
 import { ClientSchema } from '../services/schemas/clientSchema';
 import { SupabaseService } from '../services/supabaseClientService';
+import { sendFullClientsMatrixToExtension } from '../services/extensionBridge';
 
 import { isPeriodBeforeClientStart } from '../services/complianceEngine';
 
@@ -323,6 +324,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // BACKUP: Solo guardamos la lista completa localmente como snapshot ocasional
     // o si el usuario explícitamente pide persistencia total.
     db.setLocal('clients', safeClients);
+    sendFullClientsMatrixToExtension(safeClients);
   },
 
   setTasks: (value) => {

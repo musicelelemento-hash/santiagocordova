@@ -139,6 +139,7 @@ export interface Client {
     name: string;
     tradeName?: string;
     sriPassword: string;
+    sriPasswordUpdatedAt?: string;
     phones?: string[];
     email?: string;
     address?: string;

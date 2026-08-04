@@ -55,7 +55,7 @@ export const SriPasswordChangerModal: React.FC<SriPasswordChangerModalProps> = (
             return;
         }
 
-        updateClient(client.id, { sriPassword: newPass });
+        updateClient(client.id, { sriPassword: newPass, sriPasswordUpdatedAt: new Date().toISOString() });
         setProcessedMap(prev => ({ ...prev, [client.id]: true }));
         toast.success(`🔑 Clave SRI de ${client.name} actualizada en el sistema a: ${newPass}`);
 

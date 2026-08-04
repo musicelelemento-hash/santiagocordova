@@ -178,6 +178,19 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                     3ra Edad
                                 </span>
                             )}
+                            {client.sriPassword ? (
+                                client.sriPassword.endsWith('@') ? (
+                                    <span title="🔑 Clave SRI Actualizada (con @)" className="shrink-0 flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-[0_0_8px_rgba(16,185,129,0.2)]">
+                                        <LucideIcons.Key size={10} className="text-emerald-500" />
+                                        <span>Clave @</span>
+                                    </span>
+                                ) : (
+                                    <span title="⚠️ Clave SRI Pendiente de cambio (*)" className="shrink-0 flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                                        <LucideIcons.Key size={10} className="text-amber-500 animate-pulse" />
+                                        <span>Clave *</span>
+                                    </span>
+                                )
+                            ) : null}
                             {client.signatureFile ? (() => {
                                 const expDate = client.signatureExpirationDate ? new Date(client.signatureExpirationDate) : null;
                                 let daysLeft = null;

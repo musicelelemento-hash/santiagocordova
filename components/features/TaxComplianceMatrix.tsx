@@ -1118,6 +1118,41 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                 </span>
                                                             );
                                                         })()}
+                                                        {/* ── Insignia Estado Clave SRI ── */}
+                                                        {(() => {
+                                                            if (!client.sriPassword) {
+                                                                return (
+                                                                    <span
+                                                                        title="Sin clave SRI registrada"
+                                                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shrink-0"
+                                                                    >
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                                                                        <span className="text-[8px] font-bold text-slate-400 uppercase hidden sm:inline">Sin Clave</span>
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            const isRotated = client.sriPassword.endsWith('@');
+                                                            if (isRotated) {
+                                                                return (
+                                                                    <span
+                                                                        title="🔑 Clave SRI Actualizada (con @)"
+                                                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.25)]"
+                                                                    >
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" style={{boxShadow:'0 0 6px rgba(16,185,129,0.8)'}} />
+                                                                        <span className="text-[8px] font-black uppercase tracking-wider hidden sm:inline">Clave @</span>
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            return (
+                                                                <span
+                                                                    title="⚠️ Clave SRI Pendiente de cambio (termina en * o sin @)"
+                                                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold shrink-0"
+                                                                >
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" style={{boxShadow:'0 0 6px rgba(251,191,36,0.8)'}} />
+                                                                    <span className="text-[8px] font-black uppercase tracking-wider hidden sm:inline">Clave *</span>
+                                                                </span>
+                                                            );
+                                                        })()}
                                                     </div>
 
                                                     <div className="flex items-center gap-1.5 mt-1 no-print">

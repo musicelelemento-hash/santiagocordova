@@ -138,6 +138,19 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                     </span>
                     <div className="w-1 h-1 rounded-full bg-on-surface-variant/20"></div>
                     <span className="text-[10px] font-bold text-primary/70 uppercase tracking-[0.2em] font-premium">{client.regime}</span>
+                    {client.sriPassword ? (
+                        client.sriPassword.endsWith('@') ? (
+                            <span title="🔑 Clave SRI Actualizada (con @)" className="flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30 uppercase tracking-wider shrink-0 shadow-sm">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" style={{boxShadow:'0 0 6px rgba(16,185,129,0.8)'}} />
+                                <span>Clave @</span>
+                            </span>
+                        ) : (
+                            <span title="⚠️ Clave SRI Pendiente de cambio (*)" className="flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold border border-amber-500/30 uppercase tracking-wider shrink-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" style={{boxShadow:'0 0 6px rgba(251,191,36,0.8)'}} />
+                                <span>Clave *</span>
+                            </span>
+                        )
+                    ) : null}
                 </div>
             </div>
 

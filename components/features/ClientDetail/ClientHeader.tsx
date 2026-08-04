@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Check, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent, FileX } from 'lucide-react';
+import { ArrowLeft, User, ShieldCheck, AlertTriangle, Clock, Copy, Check, Activity, Share2, ExternalLink, MessageCircle, Edit, Save, Smartphone, X, Trash2, FileText, CalendarDays, BadgePercent, FileX, Key } from 'lucide-react';
 import { Client, DeclarationStatus, TaxRegime } from '../../../types';
 import { safeFormat, getDaysUntilDue } from '../../../services/sri';
 
@@ -211,12 +211,19 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                             <RegimeBadge regime={client.regime} />
                             
                             {/* Doble Marca: SRI y Facturador Sincronizado */}
-                            {client.sriPassword?.endsWith('@') && (
-                                <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-300 uppercase tracking-wider border border-amber-500/30 flex items-center gap-1">
-                                    <Check size={12} className="text-amber-500" strokeWidth={3} />
-                                    <span>✓ Clave SRI Renovada (@)</span>
-                                </span>
-                            )}
+                            {client.sriPassword ? (
+                                client.sriPassword.endsWith('@') ? (
+                                    <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 uppercase tracking-wider border border-emerald-500/30 flex items-center gap-1 shadow-sm">
+                                        <Check size={12} className="text-emerald-500" strokeWidth={3} />
+                                        <span>✓ Clave SRI Renovada (@)</span>
+                                    </span>
+                                ) : (
+                                    <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-300 uppercase tracking-wider border border-amber-500/30 flex items-center gap-1">
+                                        <Key size={12} className="text-amber-500 animate-pulse" />
+                                        <span>🔑 Clave SRI Pendiente (*)</span>
+                                    </span>
+                                )
+                            ) : null}
 
                             {(client.sriPassword?.endsWith('@') && (client.facturadorConfig?.password?.endsWith('@') || client.facturadorConfig?.programName === 'ECUAFACT')) && (
                                 <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 uppercase tracking-wider border border-emerald-500/30 flex items-center gap-1 shadow-sm">
