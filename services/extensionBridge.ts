@@ -32,9 +32,42 @@ export const sendToSRIExtension = (client: Client) => {
   // (Muchas extensiones usan este método para persistencia entre dominios si tienen permisos)
   localStorage.setItem('_sri_autofill_pending', JSON.stringify(payload.data));
 
-  console.log("🚀 Datos enviados a la extensión para RUC:", client.ruc);
+export const transformPasswordForSri = (oldPass: string): string => {
+  if (!oldPass) return '';
+  const trimmed = oldPass.trim();
+  if (trimmed.endsWith('*')) {
+    return trimmed.slice(0, -1) + '@';
+  } else if (trimmed.endsWith('@')) {
+    return trimmed;
+  } else {
+    return trimmed + '@';
+  }
 };
 
-export const openSRIPortal = () => {
-  window.open('https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
+export const sendSRIPasswordChangeToExtension = (ruc: string, oldPassword: string, newPassword: string) => {
+  if (!ruc || !oldPassword) {
+    console.warn("Faltan credenciales para el cambio de clave SRI.");
+    return;
+  }
+
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_CHANGE_PASSWORD_DATA',
+    data: {
+      ruc,
+      oldPassword,
+      newPassword,
+      timestamp: new Date().getTime()
+    }
+  };
+
+  window.postMessage(payload, "*");
+  const event = new CustomEvent('sriChangePasswordReady', { detail: payload.data });
+  window.dispatchEvent(event);
+  localStorage.setItem('_sri_change_password_pending', JSON.stringify(payload.data));
+  console.log("🔑 Cambio de Clave SRI enviado a la extensión para RUC:", ruc);
+};
+
+export const openSRIPortal = (url?: string) => {
+  window.open(url || 'https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
 };

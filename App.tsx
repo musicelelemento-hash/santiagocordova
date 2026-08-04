@@ -31,6 +31,7 @@ import { MobileNavBar } from './components/layout/MobileNavBar';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { GlobalUploadModal } from './components/features/GlobalUploadModal';
 import { SalesComboModal } from './components/features/SalesComboModal';
+import { SriPasswordChangerModal } from './components/features/SriPasswordChangerModal';
 import { Client, Task, Screen, Theme, ClientFilter, PublicUser, TaxRegime } from './types';
 import { loadDataFromSheet, syncDataToSheet } from './services/sheetApi';
 import { CommandPalette } from './components/CommandPalette';
@@ -295,6 +296,54 @@ const App: React.FC = () => {
     window.addEventListener('open-sales-modal', handleOpenSales);
     return () => window.removeEventListener('open-sales-modal', handleOpenSales);
   }, []);
+
+  // Escuchar actualizaciones automáticas enviadas desde la Extensión de Chrome (SRI & Ecuafact)
+  useEffect(() => {
+    const handleExtensionSyncMessage = (event: MessageEvent) => {
+      if (event.data && event.data.source === 'SC_PRO_EXTENSION' && event.data.type === 'SRI_PASSWORD_UPDATED_SYNC') {
+        const { ruc, newPassword } = event.data.data || {};
+        if (!ruc || !newPassword) return;
+
+        const targetClient = clients.find(c => c.ruc === ruc);
+        if (targetClient) {
+          const updatedFacturador = {
+            ...targetClient.facturadorConfig,
+            programName: targetClient.facturadorConfig?.programName || 'ECUAFACT',
+            username: targetClient.ruc,
+            password: newPassword,
+            documentCount: targetClient.facturadorConfig?.documentCount ?? 60,
+            documentStatus: targetClient.facturadorConfig?.documentStatus || 'Prepago'
+          };
+
+          updateClient(targetClient.id, {
+            sriPassword: newPassword,
+            facturadorConfig: updatedFacturador
+          });
+
+          console.log(`🎉 [Extension Auto-Sync] Cliente ${targetClient.name} actualizado con nueva clave SRI/Ecuafact: ${newPassword}`);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleExtensionSyncMessage);
+    return () => window.removeEventListener('message', handleExtensionSyncMessage);
+  }, [clients, updateClient]);
+
+  // Transmitir Matriz Completa a la Extensión de Chrome y localStorage
+  useEffect(() => {
+    if (clients && clients.length > 0) {
+      try {
+        localStorage.setItem('sc_clients_history', JSON.stringify(clients));
+        window.postMessage({
+          source: 'SC_PRO_DASHBOARD',
+          type: 'SRI_FULL_MATRIX_DATA',
+          data: clients
+        }, "*");
+      } catch (e) {
+        console.warn("Error transmitiendo matriz:", e);
+      }
+    }
+  }, [clients]);
 
   const saveData = async () => {
     if (cloudStatus === 'loading') return;

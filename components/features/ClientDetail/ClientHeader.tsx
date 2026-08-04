@@ -209,6 +209,23 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                     <div className="space-y-2.5 w-full">
                         <div className="flex flex-wrap items-center justify-center gap-2">
                             <RegimeBadge regime={client.regime} />
+                            
+                            {/* Doble Marca: SRI y Facturador Sincronizado */}
+                            {client.sriPassword?.endsWith('@') && (
+                                <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-300 uppercase tracking-wider border border-amber-500/30 flex items-center gap-1">
+                                    <Check size={12} className="text-amber-500" strokeWidth={3} />
+                                    <span>✓ Clave SRI Renovada (@)</span>
+                                </span>
+                            )}
+
+                            {(client.sriPassword?.endsWith('@') && (client.facturadorConfig?.password?.endsWith('@') || client.facturadorConfig?.programName === 'ECUAFACT')) && (
+                                <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 uppercase tracking-wider border border-emerald-500/30 flex items-center gap-1 shadow-sm">
+                                    <Check size={12} className="text-emerald-500" strokeWidth={3} />
+                                    <Check size={12} className="-ml-2 text-emerald-500" strokeWidth={3} />
+                                    <span>✓✓ Facturador Sincronizado</span>
+                                </span>
+                            )}
+
                             {client.isCourtesy && (
                                 <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400 uppercase tracking-wider border border-sky-200/50 dark:border-sky-500/20">
                                     Cortesía
