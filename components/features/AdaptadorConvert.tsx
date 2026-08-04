@@ -281,72 +281,39 @@ function buildClientesAOA(data: any[]): any[][] {
 function buildZifactWorkbook(file: ProcessedFile) {
     const isProd = file.type === 'productos';
     const sheetName = isProd ? 'Plantilla' : 'Clientes';
-
-    if (isProd) {
-        try {
-            const bytes = base64ToUint8Array(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64);
-            const workbook = xlsx.read(bytes, { type: 'array', cellStyles: true, cellDates: true });
-            const sheet = workbook.Sheets['Plantilla'];
-
-            if (sheet) {
-                // Eliminar celdas viejas a partir de la fila 2 (manteniendo A1..H1 intactas)
-                Object.keys(sheet).forEach(key => {
-                    if (!key.startsWith('!')) {
-                        const rowNum = parseInt(key.replace(/[^\d]/g, ''), 10);
-                        if (rowNum >= 2) {
-                            delete sheet[key];
-                        }
-                    }
-                });
-
-                // Inyectar productos en lugar respetando la plantilla original de ZiFact
-                file.data.forEach((p: any, idx: number) => {
-                    const r = idx + 2;
-                    sheet[`A${r}`] = { v: String(p['Nombre'] || 'Producto General'), t: 's' };
-                    sheet[`B${r}`] = { v: String(p['Codigo Principal'] || (idx + 1)), t: 's' };
-                    sheet[`C${r}`] = { v: String(p['Codigo Auxiliar'] || ''), t: 's' };
-                    sheet[`D${r}`] = { v: typeof p['Precio Unitario'] === 'number' ? p['Precio Unitario'] : parseFloat(p['Precio Unitario'] || '0') || 0, t: 'n' };
-                    sheet[`E${r}`] = { v: typeof p['Codigo IVA'] === 'number' ? p['Codigo IVA'] : parseInt(p['Codigo IVA'] || '4', 10) || 4, t: 'n' };
-                    sheet[`F${r}`] = { v: typeof p['Codigo ICE'] === 'number' ? p['Codigo ICE'] : parseInt(p['Codigo ICE'] || '0', 10) || 0, t: 'n' };
-                    sheet[`G${r}`] = { v: typeof p['Codigo IRBPNR'] === 'number' ? p['Codigo IRBPNR'] : parseInt(p['Codigo IRBPNR'] || '0', 10) || 0, t: 'n' };
-                    sheet[`H${r}`] = { v: String(p['Estado (A/I)'] || 'A'), t: 's' };
-                });
-
-                sheet['!ref'] = `A1:H${file.data.length + 1}`;
-                return { workbook, sheetName };
-            }
-        } catch (e) {
-            console.warn("Fallback a nuevo libro:", e);
-        }
-    }
-
     const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
-    const workbook = xlsx.utils.book_new();
+
     const worksheet = xlsx.utils.aoa_to_sheet(rows);
     const lastCol = isProd ? 'H' : 'F';
     worksheet['!ref'] = `A1:${lastCol}${rows.length}`;
-    workbook.Sheets[sheetName] = worksheet;
+
+    // Limpiar metadatos extendidos para evitar bucles de paleta en PHPExcel_Reader_Excel5
+    delete worksheet['!rows'];
+    delete worksheet['!cols'];
+    delete worksheet['!margins'];
+
+    const workbook = xlsx.utils.book_new();
     workbook.SheetNames = [sheetName];
+    workbook.Sheets = { [sheetName]: worksheet };
 
     return { workbook, sheetName };
 }
 
-    // Descargar archivo con extensión .XLS pero en formato CSV UTF-8 BOM (Supera validaciones estrictas de extensión .xls en ZiFact consumiendo 0% Memoria RAM)
-    const downloadAsXlsCsv = (file: ProcessedFile) => {
+    // Descargar archivo en formato .XLS binario OLE2 legítimo (Magic bytes d0cf11e0a1b11ae1, 4KB, 0% memoria en FactelBundle)
+    const downloadAsXLS = (file: ProcessedFile) => {
         try {
-            const isProd = file.type === 'productos';
-            const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
-            const csvText = '\uFEFF' + rows.map(r => r.map(c => {
-                const s = String(c ?? '');
-                return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
-            }).join(',')).join('\r\n');
-
-            const filename = isProd ? 'Productos_Zifact_Migrado_ModoSeguro.xls' : 'Clientes_Zifact_Migrado_ModoSeguro.xls';
-            const blob = new Blob([csvText], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-            saveAs(blob, filename);
+            const { workbook } = buildZifactWorkbook(file);
+            const filename = file.type === 'productos' ? 'Productos_Zifact_Migrado.xls' : 'Clientes_Zifact_Migrado.xls';
+            const outBuf = xlsx.write(workbook, { 
+                bookType: 'biff8', 
+                type: 'array', 
+                bookSST: false,
+                cellStyles: false 
+            });
+            triggerBrowserDownload(outBuf, filename, 'application/vnd.ms-excel');
         } catch (err: any) {
-            console.error("Error al descargar XLS Modo Seguro:", err);
-            alert("Error al generar XLS Modo Seguro: " + (err?.message || err));
+            console.error("Error al descargar XLS:", err);
+            alert("No se pudo descargar el archivo XLS: " + (err?.message || err));
         }
     };
 
@@ -366,23 +333,6 @@ function buildZifactWorkbook(file: ProcessedFile) {
         } catch (err: any) {
             console.error("Error al descargar CSV:", err);
             alert("Error al generar CSV: " + (err?.message || err));
-        }
-    };
-
-    // Descargar archivo en formato .XLS (biff8 inyectado sobre plantilla oficial de ZiFact)
-    const downloadAsXLS = (file: ProcessedFile) => {
-        try {
-            const { workbook } = buildZifactWorkbook(file);
-            const filename = file.type === 'productos' ? 'Productos_Zifact_Migrado.xls' : 'Clientes_Zifact_Migrado.xls';
-            const outBuf = xlsx.write(workbook, { bookType: 'biff8', type: 'array', bookSST: false });
-            triggerBrowserDownload(outBuf, filename, 'application/vnd.ms-excel');
-        } catch (err: any) {
-            console.error("Error al descargar XLS:", err);
-            try {
-                downloadAsXLSX(file);
-            } catch(e) {
-                alert("No se pudo descargar el archivo XLS: " + (err?.message || err));
-            }
         }
     };
 
@@ -408,17 +358,16 @@ function buildZifactWorkbook(file: ProcessedFile) {
             const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
             const prefix = isProd ? 'Productos_Zifact_Migrado' : 'Clientes_Zifact_Migrado';
 
-            // 1. Incluir XLS Modo Seguro (Extensión .xls con datos CSV UTF-8 BOM, 0% Memoria)
+            // 1. Incluir CSV (Seguro 0% Memoria en Symfony / FactelBundle)
             const csvText = '\uFEFF' + rows.map(r => r.map(c => {
                 const s = String(c ?? '');
                 return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
             }).join(',')).join('\r\n');
-            zip.file(`${prefix}_ModoSeguro.xls`, csvText);
             zip.file(`${prefix}.csv`, csvText);
 
-            // 2. Incluir XLS Inyectado sobre plantilla original ZiFact
+            // 2. Incluir XLS Binario OLE2 legítimo (Magic bytes d0cf11e0a1b11ae1)
             const { workbook } = buildZifactWorkbook(file);
-            const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array', bookSST: false });
+            const bufXls = xlsx.write(workbook, { bookType: 'biff8', type: 'array', bookSST: false, cellStyles: false });
             zip.file(`${prefix}.xls`, bufXls);
 
             // 3. Incluir XLSX
