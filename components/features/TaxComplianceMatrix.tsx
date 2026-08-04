@@ -28,7 +28,7 @@ import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime, TaxObligationType } from '../../types';
-import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod, downloadStoredFile } from '../../services/sri';
+import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod, downloadStoredFile, isSriPasswordUpdated } from '../../services/sri';
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
@@ -1120,6 +1120,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         })()}
                                                         {/* ── Insignia Estado Clave SRI ── */}
                                                         {(() => {
+                                                            const statusInfo = isSriPasswordUpdated(client);
                                                             if (!client.sriPassword) {
                                                                 return (
                                                                     <span
@@ -1131,25 +1132,25 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                     </span>
                                                                 );
                                                             }
-                                                            const isRotated = client.sriPassword.endsWith('@');
-                                                            if (isRotated) {
+
+                                                            if (statusInfo.isUpdated) {
                                                                 return (
                                                                     <span
-                                                                        title="🔑 Clave SRI Actualizada (con @)"
+                                                                        title={statusInfo.tooltip}
                                                                         className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.25)]"
                                                                     >
                                                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" style={{boxShadow:'0 0 6px rgba(16,185,129,0.8)'}} />
-                                                                        <span className="text-[8px] font-black uppercase tracking-wider hidden sm:inline">Clave @</span>
+                                                                        <span className="text-[8px] font-black uppercase tracking-wider hidden sm:inline">{statusInfo.label}</span>
                                                                     </span>
                                                                 );
                                                             }
                                                             return (
                                                                 <span
-                                                                    title="⚠️ Clave SRI Pendiente de cambio (termina en * o sin @)"
+                                                                    title={statusInfo.tooltip}
                                                                     className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold shrink-0"
                                                                 >
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" style={{boxShadow:'0 0 6px rgba(251,191,36,0.8)'}} />
-                                                                    <span className="text-[8px] font-black uppercase tracking-wider hidden sm:inline">Clave *</span>
+                                                                    <span className="text-[8px] font-black uppercase tracking-wider hidden sm:inline">{statusInfo.label}</span>
                                                                 </span>
                                                             );
                                                         })()}

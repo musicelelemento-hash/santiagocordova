@@ -31,6 +31,46 @@ export const validateRuc = (ruc: string): ValidationResult => {
     return { isValid: true };
 };
 
+export interface SriPasswordStatusInfo {
+    isUpdated: boolean;
+    label: string;
+    tooltip: string;
+    dateStr?: string;
+}
+
+export const isSriPasswordUpdated = (client: Client): SriPasswordStatusInfo => {
+    if (!client || !client.sriPassword) {
+        return { isUpdated: false, label: 'Sin Clave', tooltip: 'Sin clave SRI registrada' };
+    }
+
+    const pass = client.sriPassword.trim();
+    if (pass.endsWith('@')) {
+        return { isUpdated: true, label: 'Clave @', tooltip: '🔑 Clave SRI Actualizada (termina en @)' };
+    }
+
+    if (client.sriPasswordUpdatedAt) {
+        const updateDate = new Date(client.sriPasswordUpdatedAt);
+        if (!isNaN(updateDate.getTime())) {
+            const now = new Date();
+            const isSameMonth = updateDate.getMonth() === now.getMonth() && updateDate.getFullYear() === now.getFullYear();
+            const daysDiff = (now.getTime() - updateDate.getTime()) / (1000 * 60 * 60 * 24);
+
+            if (isSameMonth || daysDiff <= 35) {
+                const monthName = updateDate.toLocaleDateString('es-EC', { month: 'short' });
+                const formattedDate = updateDate.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                return {
+                    isUpdated: true,
+                    label: `Clave ${monthName}`,
+                    tooltip: `🔑 Clave SRI Actualizada el ${formattedDate} (${monthName})`,
+                    dateStr: formattedDate
+                };
+            }
+        }
+    }
+
+    return { isUpdated: false, label: 'Clave *', tooltip: '⚠️ Clave SRI Pendiente de cambio' };
+};
+
 export const validateIdentifier = (identifier: string): ValidationResult => {
     if (!identifier || identifier.trim() === '') {
         return { isValid: false, message: 'El identificador es obligatorio.' };
