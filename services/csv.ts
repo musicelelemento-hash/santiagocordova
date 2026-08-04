@@ -227,30 +227,52 @@ export const parseBrowserPasswordsCSV = (
 };
 
 // New function to parse credentials for the key-value store (without creating clients)
+const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                current += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            result.push(current.trim().replace(/^"|"$/g, ''));
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    result.push(current.trim().replace(/^"|"$/g, ''));
+    return result;
+};
+
 export const parseCredentialsCSV = (fileContent: string): Record<string, string> => {
     const lines = fileContent.replace(/\r\n/g, '\n').split('\n').filter(line => line.trim() !== '');
     const credentials: Record<string, string> = {};
 
     if (lines.length < 2) return credentials;
 
-    const header = (lines[0].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [])
-        .map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+    const header = parseCSVLine(lines[0]).map(h => h.toLowerCase());
 
-    const urlIndex = header.findIndex(h => h.includes('url') || h.includes('sitio') || h.includes('website') || h.includes('link') || h.includes('name') || h.includes('nombre'));
+    const urlIndex = header.findIndex(h => h.includes('url') || h.includes('sitio') || h.includes('website') || h.includes('link'));
     const usernameIndex = header.findIndex(h => h.includes('username') || h.includes('usuario') || h.includes('login') || h.includes('ruc') || h.includes('cedula') || h.includes('user'));
     const passwordIndex = header.findIndex(h => h.includes('password') || h.includes('contrase') || h.includes('clave') || h.includes('pass'));
 
-    // Si no se encuentran índices por encabezado, intentar por columnas típicas de Chrome (col 1 = url/name, col 2 = user, col 3 = pass)
-    const effectiveUrlIdx = urlIndex > -1 ? urlIndex : 0;
-    const effectiveUserIdx = usernameIndex > -1 ? usernameIndex : 1;
-    const effectivePassIdx = passwordIndex > -1 ? passwordIndex : 2;
+    // Si no se encuentran por nombre de cabecera, usar las posiciones estándar de Chrome: name=0, url=1, username=2, password=3
+    const effectiveUrlIdx = urlIndex > -1 ? urlIndex : 1;
+    const effectiveUserIdx = usernameIndex > -1 ? usernameIndex : 2;
+    const effectivePassIdx = passwordIndex > -1 ? passwordIndex : 3;
 
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i];
-        const values = (line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [])
-            .map(v => v.trim().replace(/^"|"$/g, ''));
+        const values = parseCSVLine(line);
 
-        const url = values[effectiveUrlIdx] || '';
+        const url = values[effectiveUrlIdx] || values[0] || '';
         const username = values[effectiveUserIdx] || '';
         const password = values[effectivePassIdx] || '';
 
@@ -266,6 +288,7 @@ export const parseCredentialsCSV = (fileContent: string): Record<string, string>
             const targetRuc = rucCandidate || (cleanUser.match(/\d+/)?.[0] || '');
             if (targetRuc.length === 13) {
                 credentials[targetRuc] = password;
+                credentials[targetRuc.slice(0, 10)] = password;
             } else if (targetRuc.length === 10) {
                 credentials[targetRuc] = password;
                 credentials[targetRuc + '001'] = password;
