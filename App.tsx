@@ -54,7 +54,8 @@ const App: React.FC = () => {
     isLoaded: isStoreLoaded,
     loadFromDB,
     syncFromFirebase,
-    syncFromSheets
+    syncFromSheets,
+    updateClient
   } = useAppStore();
 
   const [appState, setAppState] = useState<AppState>(() => {
