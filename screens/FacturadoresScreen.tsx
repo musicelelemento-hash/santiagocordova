@@ -3,7 +3,7 @@ import {
     ShoppingBag, PhoneCall, AlertTriangle, CheckCircle2, ArrowRight,
     Search, FileText, Check, Copy, ExternalLink, Download, Eye, EyeOff,
     Globe, RefreshCw, UploadCloud, UserCheck, ShieldCheck, Laptop, Lock, Info,
-    FolderDown, ClipboardCopy, Key, Shield, Plus, FileCode, Upload
+    FolderDown, ClipboardCopy, Key, Shield, Plus, FileCode, Upload, User
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
