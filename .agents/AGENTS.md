@@ -1,48 +1,60 @@
-# Soluciones Contables Pro - Reglas de Desarrollo y Diseño Premium
+# Soluciones Contables Pro - Mapa Neuronal, Visión de Vara Alta y Reglas de Desarrollo
 
-Este documento define las reglas y directrices de diseño y comportamiento para el desarrollo de la plataforma Soluciones Contables Pro. El objetivo es mantener una estética visual de élite ("que se vea y se sienta bien") y asegurar un flujo de trabajo eficiente en tokens.
-
----
-
-## 1. Directrices de Estilo Visual y Estética Premium (Obsidian & Azure)
-
-Para que el software se sienta premium, moderno y profesional, se deben seguir estrictamente las siguientes reglas visuales basadas en [index.css](file:///c:/Users/Administrator/Documents/santiagocordova/index.css):
-
-### A. Paleta de Colores y Degradados
-* **Primario (Azure Vivid):** `#2B6AFF` (usado para acciones principales y estados activos).
-* **Secundario (Electric Violet):** `#6366F1` (detalles y acentos tecnológicos).
-* **Terciario (Kinetic Emerald):** `#04B17B` (estados de éxito, validaciones y pagos completados).
-* **Fondo / Dark Mode (Obsidian Navy):** `#020617` a `#0F172A` (degradado `.gradient-obsidian` para una presencia de comando limpia).
-* **Degradados Recomendados:**
-  * `--gradient-azure` para elementos activos/destacados.
-  * `--gradient-emerald` para estados completados o aprobados.
-  * `--gradient-obsidian` para fondos de contenedores oscuros principales.
-
-### B. Contenedores y Profundidad (Glassmorphism 2.0)
-* **Tarjetas Estándar:** Usar siempre la clase `.glass-card-premium` en lugar de bordes planos y fondos opacos simples.
-* **Efecto Hover:** Las tarjetas interactivas deben admitir transiciones suaves con la clase `.glass-card-premium:hover` (que desplaza la tarjeta hacia arriba `translate-y-[-4px]` y resalta el borde con un brillo primario).
-* **Efectos de Brillo:** Utilizar `.tactical-glow-primary` y `.tactical-glow-emerald` para destacar elementos críticos.
-* **Textura:** Emplear el fondo `.bg-noise-animated` con opacidad ultrabaja (4%) para dar textura de grano fino a la interfaz en fondos oscuros.
-
-### C. Tipografía Profesional
-* **Títulos y Encabezados:** Usar la fuente **Manrope** (`font-family: 'Manrope'`) con peso `font-weight: 700` o superior para una presencia editorial fuerte.
-* **Textos de Datos e Identificaciones (RUC, Cédula):** Usar siempre fuentes monoespaciadas, preferentemente **JetBrains Mono** (`font-mono`) con espaciado de letras aumentado (`tracking-wider`) para legibilidad contable.
-* **Cuerpo de Texto:** Usar la fuente **Inter** para comodidad de lectura prolongada.
+Este documento define la **Misión, Mapa de Arquitectura (Neuronas del Sistema), Estado de Módulos y Reglas Operativas** para la plataforma **Soluciones Contables Pro / SantiagoCordova.com**. Sirve como punto de entrada de contexto ultrarrápido para Agentes de IA y desarrolladores, optimizando el consumo de tokens y la velocidad de ejecución.
 
 ---
 
-## 2. Reglas de Interacción y UX (Micro-interacciones)
+## 🚀 1. Misión y Visión de Vara Alta
 
-* **Estados de Carga:** Usar micro-animaciones en botones de envío (p. ej., rotación de iconos de recarga `<RefreshCw className="animate-spin" />`).
-* **Copiar al Portapapeles:** Al copiar datos confidenciales o repetitivos (como RUC o contraseñas), el icono debe cambiar temporalmente a un check verde (`<Check size={...} className="text-emerald-500" />`) con un toast de confirmación inmediato.
-* **Modales:** Deben tener fondos difuminados (`backdrop-blur-md`) y transiciones de entrada escalables para que la apertura se sienta fluida.
+* **Misión**: Consolidar la plataforma SaaS definitiva de gestión contable, fiscal, cobranza y automatización tributaria en Ecuador, adaptada 100% a la normativa del SRI (RIMPE, Régimen General, IVA, Impuesto a la Renta, Anexos, Facturación Electrónica y Firmas .p12).
+* **Vara Alta (Estándar de Élite)**:
+  * **Aesthetic Superiority**: Estética militar/espacial de centro de comando ("Obsidian Navy, Azure Vivid, Kinetic Emerald") con Glassmorphism 2.0 y micro-interacciones de precisión.
+  * **Cero Carga Falsa**: Ninguna tarea repetitiva manual para el contador (autocompletado SRI, lectura de PDFs con IA Gemini, inyección vía extensión web).
+  * **Claridad Segmentada**: Distinción quirúrgica entre clientes de contabilidad completa (Matriz SRI activa) y clientes de solo compra de software/firmas (Solo Plan).
 
 ---
 
-## 3. Políticas de Desarrollo y Eficiencia de Tokens (No Token Wasting)
+## 🧠 2. Mapa Neuronal del Sistema (Contexto Ultrarrápido)
 
-Para asegurar un desarrollo eficiente y centrado en el usuario, el asistente de IA debe seguir estas reglas operativas:
+### A. Núcleo de Estado y Tipos (Core)
+* [types/client.ts](file:///c:/Programacion/Paginas%20Web/SantiagoCordova.com/santiagocordova-main/types/client.ts): Definición completa de `Client`, `Declaration`, `TaxProfile`, `FacturadorConfig`, `TaxRegime`, `clientType` (`completo` | `solo_plan`).
+* [store/useAppStore.ts](file:///c:/Programacion/Paginas%20Web/SantiagoCordova.com/santiagocordova-main/store/useAppStore.ts): Estado global en Zustand para clientes, configuraciones de tarifas, configuraciones del sistema, firma activa y bóveda.
+* [services/complianceEngine.ts](file:///c:/Programacion/Paginas%20Web/SantiagoCordova.com/santiagocordova-main/services/complianceEngine.ts): Motor de cálculo de cumplimiento tributario, vencimientos por 9no dígito RUC, resumen de deudas y atrasos (con desvío automático para clientes `solo_plan`).
+* [services/sri.ts](file:///c:/Programacion/Paginas%20Web/SantiagoCordova.com/santiagocordova-main/services/sri.ts): Validaciones de RUC/Cédula, fechas de vencimiento SRI, claves SRI y cálculo de períodos IVA/Renta.
 
-1. **Evitar Exploración Innecesaria:** No realizar búsquedas recursivas intensivas de archivos ni abrir el navegador/subagente a menos que sea estrictamente necesario para depurar un error visual complejo.
-2. **Preguntar en Caso de Alternativas:** Si existe más de una manera viable de implementar un cambio o enlace (como la elección de enlaces del SRI), se debe utilizar la herramienta `ask_question` para presentar las opciones de forma interactiva en lugar de adivinar o iterar repetidamente.
-3. **Consolidación de Ediciones:** Al modificar archivos, realizar cambios específicos y agrupados mediante `replace_file_content` o `multi_replace_file_content` en lugar de reescribir archivos enteros de gran tamaño.
+### B. Módulos Principales (Screens & Components)
+* 🛡️ **Matriz SRI (`TaxComplianceMatrix.tsx`)**: Cuadrícula de seguimiento mensual/semestral de IVA, Renta y Anexos.
+* ⚡ **Venta de Planes (`SalesComboModal.tsx`)**: Asignador de firmas .p12, combos EcuaFact/ZiFact, cobros y selector de modalidad (Solo Plan vs Completo).
+* 👥 **Directorio de Clientes (`ClientsScreen.tsx`, `ClientCard.tsx`, `ClientForm.tsx`, `ClientDetailView.tsx`)**: Ficha 360°, credenciales, alertas de firma y portal del cliente.
+* 🧾 **Facturación SRI (`FacturacionSriScreen.tsx`, `SriPosTerminalModal.tsx`)**: Emisión de facturas electrónicas, retenciones, notas de crédito y RIDE PDF.
+* 💰 **Cobranzas & Caja (`CobranzaScreen.tsx`, `CajaChicaScreen.tsx`)**: Control de honorarios pendientes, recibos y caja chica.
+* 🧩 **Extensiones SRI (`SriExtensionsStore.tsx`, `extenciones web/`)**: Catálogo de extensiones y scripts de inyección automática en el SRI.
+* 🔄 **Conversor SRI (`AdaptadorConvert.tsx`)**: Importación/exportación masiva Excel/CSV/XML.
+
+---
+
+## 📊 3. Estado de Módulos & Hoja de Ruta (Roadmap)
+
+| Módulo / Proyecto | Estado | Estado Actual / Próximo Paso |
+| :--- | :--- | :--- |
+| **Aislamiento Solo Plan / Matriz SRI** | 🟢 **100% Completado** | Clientes de solo plan exentos de la matriz y alertas. |
+| **Venta de Planes & Combos** | 🟢 **100% Completado** | Registro de .p12, credenciales y emisión comprobante SRI. |
+| **Matriz de Cumplimiento SRI** | 🟡 **95% (Casi Listo)** | Funcional. Pendiente: Exportador masivo de reportes en Excel/PDF para auditoría. |
+| **Extensiones Web SRI (Chrome/Edge)** | 🟡 **80% (En Proceso)** | Inyección funcional. Pendiente: Empaquetador `manifest.json` v3 listo para distribución e importador 1-click de facturas recibidas del SRI. |
+| **Automatización WhatsApp** | 🟡 **85%** | Mensajería por etapas lista. Pendiente: Envío programado masivo con 1-clic. |
+| **Generador de Anexos (ATS / RDEP)** | 🔴 **Pendiente (Fase 2)** | Generación automática de XMLs de Anexos a partir de comprobantes guardados. |
+
+---
+
+## 🎨 4. Directrices de Estilo Visual y Estética Premium (Obsidian & Azure)
+
+### A. Paleta de Colores
+* **Primario (Azure Vivid):** `#2B6AFF`
+* **Secundario (Electric Violet):** `#6366F1`
+* **Terciario (Kinetic Emerald):** `#04B17B`
+* **Fondo Dark (Obsidian Navy):** `#020617` a `#0F172A` (`.gradient-obsidian`)
+
+### B. UI / UX & Eficiencia de Tokens
+1. **Componentes Glassmorphism**: Usar `.glass-card-premium` y transiciones suaves.
+2. **Tipografía Contable**: Nombres en `Manrope`, RUC/Cédulas en `JetBrains Mono` (`font-mono`).
+3. **No Token Wasting**: No realizar lecturas de archivos innecesarias; consultar este mapa para ubicar archivos clave al instante.
