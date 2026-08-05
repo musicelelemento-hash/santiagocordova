@@ -194,6 +194,8 @@ export interface Client {
     category?: string;
     ecuafactSignedRequest?: StoredFile;
     facturadorActivationStatus?: 'recursos_listos' | 'subido_plataforma' | 'activado';
+    clientType?: 'completo' | 'solo_plan';
+    requiresDeclarations?: boolean;
 }
 
 export type ClientFilter = {

@@ -603,6 +603,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         };
 
         return clients.filter(c => {
+            if (c.requiresDeclarations === false || c.clientType === 'solo_plan') {
+                return false;
+            }
+
             if (selectedDigitFilter !== null) {
                 const digit = getNinthDigit(c.ruc);
                 if (digit !== selectedDigitFilter) return false;

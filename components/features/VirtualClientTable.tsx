@@ -125,6 +125,12 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
                             Inactivo
                         </span>
                     )}
+                    {(client.requiresDeclarations === false || client.clientType === 'solo_plan') && (
+                        <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full uppercase flex items-center gap-1">
+                            <LucideIcons.Zap size={10} />
+                            Solo Plan
+                        </span>
+                    )}
                     {true && (
                         <div className="flex items-center gap-1.5 text-[10px] font-bold bg-primary/5 text-primary px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm ring-1 ring-primary/10">
                             <LucideIcons.Crown size={10} className="fill-current" />

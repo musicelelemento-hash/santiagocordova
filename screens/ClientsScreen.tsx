@@ -259,6 +259,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     }, [clients, serviceFees]);
 
     const trashCount = useMemo(() => clients.filter(c => c.isDeleted).length, [clients]);
+    const soloPlanCount = useMemo(() => clients.filter(c => !c.isDeleted && (c.requiresDeclarations === false || c.clientType === 'solo_plan')).length, [clients]);
 
     useEffect(() => {
         if (initialClientData) {
@@ -355,6 +356,17 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 const isRentaDeclared = !needsRenta || !!rentaDecl?.proof_file || rentaDecl?.status === DeclarationStatus.Enviada;
 
                 return !debtSummary.hasPendingPayment && !undeclaredSummary.hasPendingObligation && isRentaPaid && isRentaDeclared;
+            }
+
+            const isSoloPlan = client.requiresDeclarations === false || client.clientType === 'solo_plan';
+
+            if (activeGroupTab === 'solo_plan') {
+                return isSoloPlan;
+            }
+
+            // Para pestañas tributarias/matriz, ignorar clientes de solo plan
+            if (isSoloPlan && ['mensual', 'semestral', 'rimpe_emp', 'rimpe_np', 'renta', 'vencidos', 'al-dia'].includes(activeGroupTab)) {
+                return false;
             }
 
             const cRegUpper = (client.regime || '').toUpperCase();
@@ -1210,6 +1222,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             { id: 'rimpe_emp', label: '🏢 RIMPE Emp.', icon: Building2 },
                             { id: 'rimpe_np', label: '🏪 RIMPE NP', icon: Store },
                             { id: 'general', label: '🏛️ Rég. General', icon: Briefcase },
+                            { id: 'solo_plan', label: 'Solo Plan / Firma', icon: Zap, badge: soloPlanCount, badgeStyle: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' },
                             { id: 'trash', label: 'Papelera', icon: Trash2, badge: trashCount, badgeStyle: 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-300' },
                         ].map((tab) => {
                             const isSelected = activeGroupTab === tab.id || 

@@ -210,6 +210,13 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
                         <div className="flex flex-wrap items-center justify-center gap-2">
                             <RegimeBadge regime={client.regime} />
                             
+                            {(client.requiresDeclarations === false || client.clientType === 'solo_plan') && (
+                                <span className="px-3 py-1 rounded-xl text-[10px] font-extrabold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 uppercase tracking-wider border border-emerald-500/40 flex items-center gap-1.5 shadow-sm">
+                                    <Activity size={13} className="text-emerald-500" />
+                                    <span>⚡ Solo Registro de Plan & Firma</span>
+                                </span>
+                            )}
+                            
                             {/* Doble Marca: SRI y Facturador Sincronizado */}
                             {(() => {
                                 const statusInfo = isSriPasswordUpdated(client);

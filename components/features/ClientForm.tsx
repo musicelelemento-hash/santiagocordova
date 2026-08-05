@@ -4,7 +4,7 @@ import { validateIdentifier, validateSriPassword, getPeriod } from '../../servic
 import { extractDataFromSriPdf, fileToBase64 } from '../../services/pdfExtraction';
 import {
     User, Mail, Phone, MapPin, FileText, Plus, X, Upload, Check, Loader, Lock, Briefcase, Camera, ScanText, Sparkles, Building2, Receipt, Palette,
-    ScanLine, CreditCard, Key, EyeOff, Eye, Calendar, DollarSign, Zap, Coins, ToggleRight, ToggleLeft, CheckCircle, AlertTriangle, Save, Users, CalendarCheck, Trash2
+    ScanLine, CreditCard, Key, EyeOff, Eye, Calendar, DollarSign, Zap, Coins, ToggleRight, ToggleLeft, CheckCircle, CheckCircle2, Shield, ShieldCheck, AlertTriangle, Save, Users, CalendarCheck, Trash2
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from '../../context/ToastContext';
@@ -73,6 +73,9 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         initialTaxProfile.ivaFrequency
     );
     const [requiresAnnualRenta, setRequiresAnnualRenta] = useState(initialTaxProfile.requiresAnnualRenta);
+    const [requiresDeclarations, setRequiresDeclarations] = useState<boolean>(
+        initialData?.requiresDeclarations ?? (initialData?.clientType === 'solo_plan' ? false : true)
+    );
     const [requiresAnexosGastos, setRequiresAnexosGastos] = useState(initialTaxProfile.requiresAnexosGastos);
     const [hasActiveDevolucionIva, setHasActiveDevolucionIva] = useState(initialTaxProfile.hasActiveDevolucionIva);
     const [requiresIce, setRequiresIce] = useState(initialData?.taxProfile?.requiresIce ?? false);
@@ -251,6 +254,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         const finalClient: Client = {
             id: clientData.id || uuidv4(),
             ...clientData as Client,
+            requiresDeclarations,
+            clientType: requiresDeclarations ? 'completo' : 'solo_plan',
             phones: (clientData.phones || []).filter(p => p.trim() !== ''),
             isActive: isActive,
             notes: notes.trim(),
@@ -542,6 +547,60 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                                         className="w-full pl-10 p-2.5 glass-card-premium rounded-xl text-xs font-medium font-mono"
                                     />
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Modalidad Tributaria / Exención de Matriz SRI (Pro Elite) */}
+                        <div className="relative bg-slate-900/40 dark:bg-slate-900/60 border border-white/10 rounded-2xl p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                                    <Shield size={16} className="text-[#00A896]" />
+                                    Modalidad de Registro Contable
+                                </label>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#00A896]/20 text-[#00A896]">
+                                    Control de Matriz
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setRequiresDeclarations(false)}
+                                    className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                                        !requiresDeclarations
+                                            ? 'bg-[#00A896]/20 border-[#00A896] text-white shadow-md'
+                                            : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs font-bold flex items-center gap-1.5 text-emerald-400">
+                                            <Zap size={13} /> Solo Plan / Firma
+                                        </span>
+                                        {!requiresDeclarations && <CheckCircle2 size={15} className="text-[#00A896]" />}
+                                    </div>
+                                    <p className="text-[10px] text-slate-300 leading-tight">
+                                        Exento de Matriz. Se guardan firmas y planes pero NO exige declaraciones.
+                                    </p>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setRequiresDeclarations(true)}
+                                    className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                                        requiresDeclarations
+                                            ? 'bg-blue-500/20 border-blue-500 text-white shadow-md'
+                                            : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs font-bold flex items-center gap-1.5 text-blue-400">
+                                            <ShieldCheck size={13} /> Cliente Completo
+                                        </span>
+                                        {requiresDeclarations && <CheckCircle2 size={15} className="text-blue-400" />}
+                                    </div>
+                                    <p className="text-[10px] text-slate-300 leading-tight">
+                                        Matriculado en Matriz SRI. Alertas periódicas de IVA / Renta.
+                                    </p>
+                                </button>
                             </div>
                         </div>
 

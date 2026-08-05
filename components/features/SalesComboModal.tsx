@@ -55,6 +55,9 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     const [password, setPassword] = useState('');
     const [providerName, setProviderName] = useState('Santiago Córdova');
 
+    // Registration Mode State (Pro Elite: Solo Plan vs Completo)
+    const [isOnlyPlanRegistration, setIsOnlyPlanRegistration] = useState<boolean>(true);
+
     // Identity Documents
     const [idCardFront, setIdCardFront] = useState<StoredFile | null>(null);
     const [idCardBack, setIdCardBack] = useState<StoredFile | null>(null);
@@ -89,6 +92,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     // Populate state from targetClient when selected
     useEffect(() => {
         if (targetClient) {
+            setIsOnlyPlanRegistration(targetClient.requiresDeclarations === false || targetClient.clientType === 'solo_plan');
             setIdCardFront(targetClient.idCardFront || null);
             setIdCardBack(targetClient.idCardBack || null);
             setIdCardSelfie(targetClient.idCardSelfie || null);
@@ -110,6 +114,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                 setPassword(targetClient.sriPassword || '');
             }
         } else {
+            setIsOnlyPlanRegistration(true);
             setIdCardFront(null);
             setIdCardBack(null);
             setIdCardSelfie(null);
@@ -145,6 +150,8 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             regime: newClientRegime,
             isActive: true,
             declarations: [],
+            clientType: isOnlyPlanRegistration ? 'solo_plan' : 'completo',
+            requiresDeclarations: !isOnlyPlanRegistration,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -222,9 +229,11 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             freeSupportAndCancellation: true
         };
 
-        const updatedClient = {
+        const updatedClient: Client = {
             ...targetClient,
             facturadorConfig: newFacturadorConfig,
+            clientType: isOnlyPlanRegistration ? 'solo_plan' : 'completo',
+            requiresDeclarations: !isOnlyPlanRegistration,
             idCardFront: idCardFront || undefined,
             idCardBack: idCardBack || undefined,
             idCardSelfie: idCardSelfie || undefined,
@@ -448,6 +457,72 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                 </select>
                             </div>
                         )}
+                    </div>
+
+                    {/* ── MODALIDAD DE REGISTRO EN GESTIÓN INTERNA (PRO ELITE) ── */}
+                    <div className="p-4 bg-slate-900/60 rounded-2xl border border-white/10 space-y-3">
+                        <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                            <span className="flex items-center gap-2">
+                                <FileCheck size={15} className="text-[#00A896]" />
+                                Modalidad de Registro en Gestión Interna
+                            </span>
+                            <span className="text-[10px] font-bold text-slate-400 bg-slate-950 px-2 py-0.5 rounded-md border border-white/10">
+                                Opción Pro Elite
+                            </span>
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsOnlyPlanRegistration(true)}
+                                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                                    isOnlyPlanRegistration
+                                        ? 'bg-[#00A896]/15 border-[#00A896] text-white shadow-lg shadow-[#00A896]/10 ring-1 ring-[#00A896]/40'
+                                        : 'bg-slate-950/60 border-white/10 text-slate-400 hover:border-white/20'
+                                }`}
+                            >
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-xs font-bold flex items-center gap-1.5 text-emerald-400">
+                                            <Zap size={14} /> Solo Registro de Plan & Firma
+                                        </span>
+                                        {isOnlyPlanRegistration ? (
+                                            <CheckCircle2 size={16} className="text-[#00A896]" />
+                                        ) : (
+                                            <div className="w-4 h-4 rounded-full border border-slate-600" />
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                                        Guarda la firma .p12, datos del plan, credenciales y cobro. <strong>NO aparecerá en la Matriz SRI</strong> ni pedirá declaraciones mensuales/semestrales.
+                                    </p>
+                                </div>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setIsOnlyPlanRegistration(false)}
+                                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                                    !isOnlyPlanRegistration
+                                        ? 'bg-blue-500/15 border-blue-500 text-white shadow-lg shadow-blue-500/10 ring-1 ring-blue-500/40'
+                                        : 'bg-slate-950/60 border-white/10 text-slate-400 hover:border-white/20'
+                                }`}
+                            >
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-xs font-bold flex items-center gap-1.5 text-blue-400">
+                                            <ShieldCheck size={14} /> Cliente Contable Completo
+                                        </span>
+                                        {!isOnlyPlanRegistration ? (
+                                            <CheckCircle2 size={16} className="text-blue-400" />
+                                        ) : (
+                                            <div className="w-4 h-4 rounded-full border border-slate-600" />
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                                        Matricula al cliente en la <strong>Matriz de Cumplimiento SRI</strong> para seguimiento tributario continuo y alertas de vencimientos.
+                                    </p>
+                                </div>
+                            </button>
+                        </div>
                     </div>
 
                     {/* ── CATEGORÍAS DE PLANES (Diseño Coherente con el Menú) ── */}

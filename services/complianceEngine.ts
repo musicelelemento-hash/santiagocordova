@@ -651,6 +651,9 @@ import { isPast } from 'date-fns';
 import { getClientServiceFee } from './clientService';
 
 export const getActivePeriodsForClient = (client: Client, date: Date = new Date()): string[] => {
+    if (client.requiresDeclarations === false || client.clientType === 'solo_plan') {
+        return [];
+    }
     const periods: string[] = [];
     const ivaFreq = client.taxProfile?.ivaFrequency || (client.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : (client.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual'));
     
@@ -732,6 +735,15 @@ export const getClientDebtSummary = (client: Client, fees: any, date: Date = new
 };
 
 export const getClientUndeclaredSummary = (client: Client, date: Date = new Date()): ClientUndeclaredSummary => {
+    if (client.requiresDeclarations === false || client.clientType === 'solo_plan') {
+        return {
+            undeclaredPeriodsCount: 0,
+            undeclaredPeriods: [],
+            hasPendingObligation: false,
+            overduePeriodsCount: 0,
+            overduePeriods: []
+        };
+    }
     const activePeriods = getActivePeriodsForClient(client, date);
     const undeclaredPeriods: string[] = [];
     const overduePeriods: string[] = [];
