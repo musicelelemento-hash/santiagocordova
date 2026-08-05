@@ -55,6 +55,15 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     const [password, setPassword] = useState('');
     const [providerName, setProviderName] = useState('Santiago Córdova');
 
+    // Buyer Type Selection State (Cliente Registrado vs Particular Ocasional)
+    const [buyerType, setBuyerType] = useState<'cliente_registrado' | 'particular'>('cliente_registrado');
+
+    // Particular / Walk-in Buyer Form State
+    const [particularName, setParticularName] = useState('');
+    const [particularRuc, setParticularRuc] = useState('');
+    const [particularPhone, setParticularPhone] = useState('');
+    const [particularEmail, setParticularEmail] = useState('');
+
     // Registration Mode State (Pro Elite: Solo Plan vs Completo)
     const [isOnlyPlanRegistration, setIsOnlyPlanRegistration] = useState<boolean>(true);
 
@@ -208,8 +217,41 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     };
 
     const handleSingleSaveAction = () => {
-        if (!targetClient) {
-            toast.error("Por favor seleccione un cliente.");
+        let clientToProcess = targetClient;
+
+        if (buyerType === 'particular') {
+            if (!particularName.trim() || !particularRuc.trim()) {
+                toast.error("Por favor ingrese el Nombre y RUC/Cédula del Comprador Particular.");
+                return;
+            }
+            const cleanRuc = particularRuc.trim();
+            const existing = clients.find(c => c.ruc === cleanRuc);
+            if (existing) {
+                clientToProcess = existing;
+            } else {
+                const createdParticular: Client = {
+                    id: uuidv4(),
+                    name: particularName.trim().toUpperCase(),
+                    ruc: cleanRuc,
+                    sriPassword: '12345678a',
+                    phones: particularPhone.trim() ? [particularPhone.trim()] : [],
+                    email: particularEmail.trim() || undefined,
+                    regime: TaxRegime.General,
+                    isActive: true,
+                    declarations: [],
+                    clientType: 'solo_plan',
+                    requiresDeclarations: false,
+                    category: 'particular',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                addClient(createdParticular);
+                clientToProcess = createdParticular;
+            }
+        }
+
+        if (!clientToProcess) {
+            toast.error("Por favor seleccione un cliente o ingrese los datos del comprador particular.");
             return;
         }
 
@@ -218,8 +260,8 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         const newFacturadorConfig: FacturadorConfig = {
             programName,
             url: webUrl,
-            username: username || targetClient.ruc,
-            password: password || targetClient.sriPassword,
+            username: username || clientToProcess.ruc,
+            password: password || clientToProcess.sriPassword,
             expirationDate: expDate,
             documentStatus: activeCategory === 'firma' ? `Firma ${expirationYears} Año(s)` : (documentCount ? `${documentCount} Docs / Anual` : 'Plan Ilimitado'),
             documentCount: typeof documentCount === 'number' ? documentCount : undefined,
@@ -230,19 +272,20 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         };
 
         const updatedClient: Client = {
-            ...targetClient,
+            ...clientToProcess,
             facturadorConfig: newFacturadorConfig,
-            clientType: isOnlyPlanRegistration ? 'solo_plan' : 'completo',
-            requiresDeclarations: !isOnlyPlanRegistration,
+            clientType: isOnlyPlanRegistration || buyerType === 'particular' ? 'solo_plan' : 'completo',
+            requiresDeclarations: !(isOnlyPlanRegistration || buyerType === 'particular'),
+            category: buyerType === 'particular' ? 'particular' : (clientToProcess.category || 'general'),
             idCardFront: idCardFront || undefined,
             idCardBack: idCardBack || undefined,
             idCardSelfie: idCardSelfie || undefined,
             rucPdf: rucPdf || undefined,
             ecuafactSignedRequest: ecuafactSignedRequest || undefined,
-            facturadorActivationStatus: targetClient.facturadorActivationStatus || 'recursos_listos'
+            facturadorActivationStatus: clientToProcess.facturadorActivationStatus || 'recursos_listos'
         };
 
-        updateClient(targetClient.id, updatedClient);
+        updateClient(clientToProcess.id, updatedClient);
 
         let description = `Venta de Plan ${programName}`;
         if (activeCategory === 'ecuafact') {
@@ -258,9 +301,9 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         onClose();
 
         if (shouldEmitSri && onEmitSriInvoice) {
-            onEmitSriInvoice(targetClient, description, finalPrice);
+            onEmitSriInvoice(updatedClient, description, finalPrice);
         } else {
-            toast.success(`Plan guardado en la Bóveda de ${targetClient.name}`);
+            toast.success(`Plan guardado en la Bóveda de ${clientToProcess.name}`);
         }
     };
 
@@ -329,125 +372,214 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                         <div className="flex items-center justify-between">
                             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                                 <User size={15} className="text-[#00A896]" />
-                                Cliente Receptor
+                                Tipo de Comprador / Receptor
                             </label>
 
-                            <div className="flex items-center gap-2">
-                                {(targetClient && !isChangingClient) && (
+                            {buyerType === 'cliente_registrado' && (
+                                <div className="flex items-center gap-2">
+                                    {(targetClient && !isChangingClient) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsChangingClient(true)}
+                                            className="text-xs font-semibold text-[#00A896] hover:underline flex items-center gap-1"
+                                        >
+                                            <RefreshCw size={12} /> Cambiar Cliente
+                                        </button>
+                                    )}
                                     <button
                                         type="button"
-                                        onClick={() => setIsChangingClient(true)}
-                                        className="text-xs font-semibold text-[#00A896] hover:underline flex items-center gap-1"
+                                        onClick={() => {
+                                            setShowQuickCreateClient(!showQuickCreateClient);
+                                            setIsChangingClient(true);
+                                        }}
+                                        className="text-xs font-semibold text-[#00A896] hover:text-[#00A896]/80 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00A896]/10 border border-[#00A896]/20 transition-all"
                                     >
-                                        <RefreshCw size={12} /> Cambiar Cliente
+                                        <UserPlus size={14} />
+                                        {showQuickCreateClient ? 'Cancelar Registro' : '+ Crear Cliente Contable'}
                                     </button>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowQuickCreateClient(!showQuickCreateClient);
-                                        setIsChangingClient(true);
-                                    }}
-                                    className="text-xs font-semibold text-[#00A896] hover:text-[#00A896]/80 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#00A896]/10 border border-[#00A896]/20 transition-all"
-                                >
-                                    <UserPlus size={14} />
-                                    {showQuickCreateClient ? 'Cancelar Registro' : '+ Crear Nuevo Cliente'}
-                                </button>
-                            </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Registered Client Badge if pre-selected */}
-                        {(targetClient && !isChangingClient && !showQuickCreateClient) ? (
-                            <div className="p-3 bg-[#00A896]/10 border border-[#00A896]/30 rounded-xl flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-full bg-[#00A896]/20 text-[#00A896] flex items-center justify-center font-bold">
-                                        <UserCheck size={18} />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-xs font-bold text-white">{targetClient.name}</h4>
-                                        <p className="text-[11px] text-slate-400 font-mono">RUC: {targetClient.ruc} • {targetClient.regime}</p>
-                                    </div>
+                        {/* Segmented Control: Cliente Contable vs Particular / Ocasional */}
+                        <div className="grid grid-cols-2 p-1 bg-slate-950 rounded-xl border border-white/10 gap-1">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setBuyerType('cliente_registrado');
+                                    setIsOnlyPlanRegistration(false);
+                                }}
+                                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                    buyerType === 'cliente_registrado'
+                                        ? 'bg-blue-600 text-white shadow-md'
+                                        : 'text-slate-400 hover:text-slate-200'
+                                }`}
+                            >
+                                <UserCheck size={14} /> Cliente Contable Registrado
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setBuyerType('particular');
+                                    setIsOnlyPlanRegistration(true);
+                                    setSelectedClientId('');
+                                }}
+                                className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                                    buyerType === 'particular'
+                                        ? 'bg-gradient-to-r from-[#00A896] to-emerald-600 text-white shadow-md'
+                                        : 'text-slate-400 hover:text-slate-200'
+                                }`}
+                            >
+                                <User size={14} /> Particular / Ocasional (Venta Directa)
+                            </button>
+                        </div>
+
+                        {/* Particular / Walk-in Form */}
+                        {buyerType === 'particular' ? (
+                            <div className="p-4 bg-slate-950 border border-[#00A896]/30 rounded-2xl space-y-3 animate-in fade-in duration-200">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-xs font-bold text-[#00A896] uppercase tracking-wider flex items-center gap-2">
+                                        <User size={14} /> Datos del Comprador Particular / Ocasional
+                                    </h4>
+                                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-md border border-emerald-500/20">
+                                        ⚡ Exento de Matriz Tributaria SRI
+                                    </span>
                                 </div>
-                                <span className="text-[10px] font-bold text-[#00A896] uppercase px-2.5 py-1 bg-[#00A896]/20 rounded-lg">
-                                    Perfil Seleccionado
-                                </span>
-                            </div>
-                        ) : showQuickCreateClient ? (
-                            /* Quick Client Form */
-                            <form onSubmit={handleQuickCreateClient} className="p-4 bg-slate-950 border border-[#00A896]/30 rounded-2xl space-y-3 animate-in fade-in duration-200">
-                                <h4 className="text-xs font-bold text-[#00A896] uppercase tracking-wider flex items-center gap-2">
-                                    <UserPlus size={14} /> Registrar Cliente al Vuelo
-                                </h4>
+                                <p className="text-[11px] text-slate-400">
+                                    Esta venta se registrará en el historial de Planes y Facturadores como venta directa pero <strong>NO exigirá declaraciones contables continuas</strong>.
+                                </p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <input
                                         type="text"
                                         placeholder="Nombre o Razón Social *"
-                                        value={newClientName}
-                                        onChange={(e) => setNewClientName(e.target.value)}
+                                        value={particularName}
+                                        onChange={(e) => setParticularName(e.target.value)}
                                         className="px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs font-bold text-white outline-none focus:border-[#00A896]"
                                         required
                                     />
                                     <input
                                         type="text"
                                         placeholder="RUC o Cédula *"
-                                        value={newClientRuc}
-                                        onChange={(e) => setNewClientRuc(e.target.value)}
+                                        value={particularRuc}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setParticularRuc(val);
+                                            if (val.length >= 10 && !username) setUsername(val);
+                                        }}
                                         className="px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs font-mono font-bold text-white outline-none focus:border-[#00A896]"
                                         required
                                     />
                                     <input
                                         type="text"
-                                        placeholder="Teléfono (Opcional)"
-                                        value={newClientPhone}
-                                        onChange={(e) => setNewClientPhone(e.target.value)}
+                                        placeholder="Teléfono / WhatsApp"
+                                        value={particularPhone}
+                                        onChange={(e) => setParticularPhone(e.target.value)}
                                         className="px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs font-bold text-white outline-none focus:border-[#00A896]"
                                     />
-                                    <select
-                                        value={newClientRegime}
-                                        onChange={(e) => setNewClientRegime(e.target.value as TaxRegime)}
-                                        className="px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs font-bold text-white outline-none focus:border-[#00A896]"
-                                    >
-                                        <option value={TaxRegime.General}>Régimen General</option>
-                                        <option value={TaxRegime.RimpeEmprendedor}>RIMPE Emprendedor</option>
-                                        <option value={TaxRegime.RimpeNegocioPopular}>RIMPE Negocio Popular</option>
-                                    </select>
-                                </div>
-                                <div className="flex justify-end gap-2 pt-1">
-                                    <button
-                                        type="submit"
-                                        className="px-4 py-2 bg-[#00A896] hover:bg-[#009282] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md"
-                                    >
-                                        Guardar y Seleccionar
-                                    </button>
-                                </div>
-                            </form>
-                        ) : (
-                            /* Live Search Bar + Selector */
-                            <div className="space-y-2">
-                                <div className="relative">
-                                    <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
-                                        type="text"
-                                        placeholder="Buscar cliente por Nombre o RUC..."
-                                        value={clientSearchQuery}
-                                        onChange={(e) => setClientSearchQuery(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs font-medium outline-none focus:border-[#00A896]"
+                                        type="email"
+                                        placeholder="Correo Electrónico (Opcional)"
+                                        value={particularEmail}
+                                        onChange={(e) => setParticularEmail(e.target.value)}
+                                        className="px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs font-bold text-white outline-none focus:border-[#00A896]"
                                     />
                                 </div>
+                            </div>
+                        ) : (
+                            /* Registered Client Dropdown & Info */
+                            <>
+                                {(targetClient && !isChangingClient && !showQuickCreateClient) ? (
+                                    <div className="p-3 bg-[#00A896]/10 border border-[#00A896]/30 rounded-xl flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-[#00A896]/20 text-[#00A896] flex items-center justify-center font-bold">
+                                                <UserCheck size={18} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-xs font-bold text-white">{targetClient.name}</h4>
+                                                <p className="text-[11px] text-slate-400 font-mono">RUC: {targetClient.ruc} • {targetClient.regime}</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-[#00A896] uppercase px-2.5 py-1 bg-[#00A896]/20 rounded-lg">
+                                            Perfil Seleccionado
+                                        </span>
+                                    </div>
+                                ) : showQuickCreateClient ? (
+                                    /* Quick Client Form */
+                                    <form onSubmit={handleQuickCreateClient} className="p-4 bg-slate-950 border border-[#00A896]/30 rounded-2xl space-y-3 animate-in fade-in duration-200">
+                                        <h4 className="text-xs font-bold text-[#00A896] uppercase tracking-wider flex items-center gap-2">
+                                            <UserPlus size={14} /> Registrar Cliente al Vuelo
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <input
+                                                type="text"
+                                                placeholder="Nombre o Razón Social *"
+                                                value={newClientName}
+                                                onChange={(e) => setNewClientName(e.target.value)}
+                                                className="px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs font-bold text-white outline-none focus:border-[#00A896]"
+                                                required
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="RUC o Cédula *"
+                                                value={newClientRuc}
+                                                onChange={(e) => setNewClientRuc(e.target.value)}
+                                                className="px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs font-mono font-bold text-white outline-none focus:border-[#00A896]"
+                                                required
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Teléfono (Opcional)"
+                                                value={newClientPhone}
+                                                onChange={(e) => setNewClientPhone(e.target.value)}
+                                                className="px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs font-bold text-white outline-none focus:border-[#00A896]"
+                                            />
+                                            <select
+                                                value={newClientRegime}
+                                                onChange={(e) => setNewClientRegime(e.target.value as TaxRegime)}
+                                                className="px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs font-bold text-white outline-none focus:border-[#00A896]"
+                                            >
+                                                <option value={TaxRegime.General}>Régimen General</option>
+                                                <option value={TaxRegime.RimpeEmprendedor}>RIMPE Emprendedor</option>
+                                                <option value={TaxRegime.RimpeNegocioPopular}>RIMPE Negocio Popular</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-1">
+                                            <button
+                                                type="submit"
+                                                className="px-4 py-2 bg-[#00A896] hover:bg-[#009282] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md"
+                                            >
+                                                Guardar y Seleccionar
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    /* Live Search Bar + Selector */
+                                    <div className="space-y-2">
+                                        <div className="relative">
+                                            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                placeholder="Buscar cliente por Nombre o RUC..."
+                                                value={clientSearchQuery}
+                                                onChange={(e) => setClientSearchQuery(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs font-medium outline-none focus:border-[#00A896]"
+                                            />
+                                        </div>
 
-                                <select
-                                    value={selectedClientId}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        setSelectedClientId(val);
-                                        const found = clients.find(c => c.id === val);
-                                        if (found) {
-                                            setUsername(found.ruc || '');
-                                            setIsChangingClient(false);
-                                        }
-                                    }}
-                                    className="w-full px-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs font-bold text-white focus:border-[#00A896] outline-none cursor-pointer"
-                                >
+                                        <select
+                                            value={selectedClientId}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                setSelectedClientId(val);
+                                                const found = clients.find(c => c.id === val);
+                                                if (found) {
+                                                    setUsername(found.ruc || '');
+                                                    setIsChangingClient(false);
+                                                }
+                                            }}
+                                            className="w-full px-4 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs font-bold text-white focus:border-[#00A896] outline-none cursor-pointer"
+                                        >
                                     <option value="">-- Seleccione un cliente para la venta --</option>
                                     {filteredClients.map(c => (
                                         <option key={c.id} value={c.id}>
@@ -457,7 +589,9 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                 </select>
                             </div>
                         )}
-                    </div>
+                    </>
+                )}
+            </div>
 
                     {/* ── MODALIDAD DE REGISTRO EN GESTIÓN INTERNA (PRO ELITE) ── */}
                     <div className="p-4 bg-slate-900/60 rounded-2xl border border-white/10 space-y-3">

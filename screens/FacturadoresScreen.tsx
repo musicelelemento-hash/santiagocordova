@@ -13,6 +13,7 @@ import { Client, StoredFile } from '../types';
 import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { downloadStoredFile } from '../services/fileService';
+import { SalesComboModal } from '../components/features/SalesComboModal';
 
 interface FacturadoresScreenProps {
     navigate: (screen: any, options?: any) => void;
@@ -27,8 +28,9 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string } | null>(null);
     const [visiblePasswords, setVisiblePasswords] = useState<{ [id: string]: boolean }>({});
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const [filterStatus, setFilterStatus] = useState<'todos' | 'recursos_listos' | 'subido_plataforma' | 'activado' | 'sin_firma'>('todos');
+    const [filterStatus, setFilterStatus] = useState<'todos' | 'recursos_listos' | 'subido_plataforma' | 'activado' | 'sin_firma' | 'particulares' | 'clientes'>('todos');
     const [selectedVaultClient, setSelectedVaultClient] = useState<Client | null>(null);
+    const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
     const directVaultUploadInputRef = useRef<HTMLInputElement>(null);
     const [vaultUploadTarget, setVaultUploadTarget] = useState<'idCardFront' | 'idCardBack' | 'idCardSelfie' | 'rucPdf' | 'signatureFile' | 'ecuafactSignedRequest' | 'vault'>('vault');
 
@@ -37,9 +39,13 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
         return clients.filter(c => {
             if (c.isDeleted || !c.isActive || !c.facturadorConfig) return false;
             
-            // Filter by status
+            // Filter by status or category
             if (filterStatus === 'sin_firma') {
                 if (c.signatureFile) return false;
+            } else if (filterStatus === 'particulares') {
+                if (c.category !== 'particular' && c.clientType !== 'solo_plan') return false;
+            } else if (filterStatus === 'clientes') {
+                if (c.clientType === 'solo_plan' || c.category === 'particular') return false;
             } else if (filterStatus !== 'todos') {
                 const status = c.facturadorActivationStatus || 'recursos_listos';
                 if (status !== filterStatus) return false;
@@ -196,70 +202,69 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                         </div>
                     </div>
 
-                    {/* KPI RESUMEN */}
-                    <div className="flex items-center gap-3 flex-wrap shrink-0">
+                    {/* KPI RESUMEN & ACCIÓN PRINCIPAL */}
+                    <div className="flex items-center gap-4 flex-wrap shrink-0">
                         <button
-                            onClick={() => setFilterStatus('todos')}
-                            className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-                                filterStatus === 'todos'
-                                    ? 'bg-[#00A896]/15 border-[#00A896]/30 text-white'
-                                    : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
-                            }`}
+                            onClick={() => setIsSalesModalOpen(true)}
+                            className="px-5 py-3.5 bg-gradient-to-r from-[#00A896] via-teal-500 to-emerald-500 hover:from-[#00A896]/90 hover:to-emerald-500/90 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#00A896]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2.5 shrink-0"
                         >
-                            <span className="text-xl font-black font-mono text-[#00A896]">{kpis.total}</span>
-                            <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Total Planes</span>
+                            <Plus size={18} strokeWidth={2.5} />
+                            <span>+ Vender / Registrar Nuevo Plan</span>
                         </button>
-                        <button
-                            onClick={() => setFilterStatus('recursos_listos')}
-                            className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-                                filterStatus === 'recursos_listos'
-                                    ? 'bg-rose-500/15 border-rose-500/30 text-white'
-                                    : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
-                            }`}
-                        >
-                            <span className="text-xl font-black font-mono text-rose-400">{kpis.recursos}</span>
-                            <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Recursos Listos</span>
-                        </button>
-                        <button
-                            onClick={() => setFilterStatus('subido_plataforma')}
-                            className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-                                filterStatus === 'subido_plataforma'
-                                    ? 'bg-amber-400/15 border-amber-400/30 text-white'
-                                    : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
-                            }`}
-                        >
-                            <span className="text-xl font-black font-mono text-amber-400">{kpis.subido}</span>
-                            <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">En Plataforma</span>
-                        </button>
-                        <button
-                            onClick={() => setFilterStatus('activado')}
-                            className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-                                filterStatus === 'activado'
-                                    ? 'bg-emerald-500/15 border-emerald-500/30 text-white'
-                                    : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
-                            }`}
-                        >
-                            <span className="text-xl font-black font-mono text-emerald-400">{kpis.activado}</span>
-                            <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Activados</span>
-                        </button>
-                        <button
-                            onClick={() => setFilterStatus('sin_firma')}
-                            className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-                                filterStatus === 'sin_firma'
-                                    ? 'bg-purple-500/15 border-purple-500/30 text-white'
-                                    : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
-                            }`}
-                        >
-                            <span className="text-xl font-black font-mono text-purple-400">{kpis.total - kpis.conFirma}</span>
-                            <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Sin Firma .p12</span>
-                        </button>
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                                onClick={() => setFilterStatus('todos')}
+                                className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
+                                    filterStatus === 'todos'
+                                        ? 'bg-[#00A896]/15 border-[#00A896]/30 text-white'
+                                        : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
+                                }`}
+                            >
+                                <span className="text-xl font-black font-mono text-[#00A896]">{kpis.total}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Total Planes</span>
+                            </button>
+                            <button
+                                onClick={() => setFilterStatus('recursos_listos')}
+                                className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
+                                    filterStatus === 'recursos_listos'
+                                        ? 'bg-rose-500/15 border-rose-500/30 text-white'
+                                        : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
+                                }`}
+                            >
+                                <span className="text-xl font-black font-mono text-rose-400">{kpis.recursos}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Recursos Listos</span>
+                            </button>
+                            <button
+                                onClick={() => setFilterStatus('activado')}
+                                className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
+                                    filterStatus === 'activado'
+                                        ? 'bg-emerald-500/15 border-emerald-500/30 text-white'
+                                        : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
+                                }`}
+                            >
+                                <span className="text-xl font-black font-mono text-emerald-400">{kpis.activado}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Activados</span>
+                            </button>
+                            <button
+                                onClick={() => setFilterStatus('sin_firma')}
+                                className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
+                                    filterStatus === 'sin_firma'
+                                        ? 'bg-purple-500/15 border-purple-500/30 text-white'
+                                        : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
+                                }`}
+                            >
+                                <span className="text-xl font-black font-mono text-purple-400">{kpis.total - kpis.conFirma}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Sin Firma .p12</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* ── BARRA DE BÚSQUEDA Y FILTRADO ── */}
-            <div className="flex flex-col md:flex-row items-center gap-4 justify-between">
-                <div className="relative w-full md:max-w-md">
+            {/* ── BARRA DE BÚSQUEDA Y FILTRADO DE CATEGORÍAS ── */}
+            <div className="flex flex-col lg:flex-row items-center gap-4 justify-between">
+                <div className="relative w-full lg:max-w-md">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input
                         type="text"
@@ -276,6 +281,39 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                             Limpiar
                         </button>
                     )}
+                </div>
+
+                <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1">
+                    <button
+                        onClick={() => setFilterStatus('todos')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
+                            filterStatus === 'todos'
+                                ? 'bg-white/10 border-white/20 text-white'
+                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:text-slate-200'
+                        }`}
+                    >
+                        Todos
+                    </button>
+                    <button
+                        onClick={() => setFilterStatus('clientes')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                            filterStatus === 'clientes'
+                                ? 'bg-blue-600/20 border-blue-500/40 text-blue-300'
+                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:text-slate-200'
+                        }`}
+                    >
+                        <UserCheck size={14} /> Clientes Contables
+                    </button>
+                    <button
+                        onClick={() => setFilterStatus('particulares')}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                            filterStatus === 'particulares'
+                                ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896]'
+                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:text-slate-200'
+                        }`}
+                    >
+                        <User size={14} /> Particulares / Ocasionales
+                    </button>
                 </div>
             </div>
 
@@ -703,6 +741,12 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                     </div>
                 </Modal>
             )}
+
+            {/* ── MODAL VENDER PLAN & FIRMA (CON SELECCIÓN PARTICULAR VS CLIENTE) ── */}
+            <SalesComboModal
+                isOpen={isSalesModalOpen}
+                onClose={() => setIsSalesModalOpen(false)}
+            />
         </div>
     );
 };
