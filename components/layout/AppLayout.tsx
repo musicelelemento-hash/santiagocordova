@@ -95,14 +95,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
     const searchResults = React.useMemo(() => {
         if (!globalQuery.trim()) return [];
-        const q = globalQuery.toLowerCase().trim();
-        return clients.filter(c => 
-            !c.isDeleted && c.isActive && (
-                c.name.toLowerCase().includes(q) || 
-                c.ruc.includes(q) || 
-                (c.tradeName && c.tradeName.toLowerCase().includes(q))
-            )
-        ).slice(0, 6);
+        const terms = globalQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        return clients.filter(c => {
+            if (c.isDeleted || !c.isActive) return false;
+            const fullText = `${c.name} ${c.ruc} ${c.tradeName || ''}`.toLowerCase();
+            return terms.every(t => fullText.includes(t));
+        }).slice(0, 8);
     }, [clients, globalQuery]);
 
     const handleSelectMatrixMatch = (client: Client) => {
@@ -140,7 +138,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             web_orders: '/dashboard/pedidos',
             scanner: '/dashboard/clientes',
             migracion_zifact: '/dashboard/convertidor',
-            facturadores: '/dashboard/facturadores'
+            facturadores: '/dashboard/facturadores',
+            cotizaciones: '/dashboard/cotizaciones',
+            licencias: '/dashboard/licencias',
+            refinanciacion: '/dashboard/refinanciacion',
+            caja_chica: '/dashboard/caja_chica',
+            crm_pipeline: '/dashboard/crm_pipeline'
         };
         navigate(routeMap[screen] || '/dashboard/clientes');
     };

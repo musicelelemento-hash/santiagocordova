@@ -45,27 +45,54 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }, [isOpen]);
 
     const results = useMemo(() => {
-        const query = searchTerm.toLowerCase();
-        
+        const terms = searchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        if (!terms.length) {
+            const navs = [
+                { id: 'nav-dash', type: 'nav', label: 'Ver Dashboard', screen: 'dashboard', icon: <LayoutDashboard size={18} /> },
+                { id: 'nav-clients', type: 'nav', label: 'Ver Clientes', screen: 'clients', icon: <Users size={18} /> },
+                { id: 'nav-services', type: 'nav', label: 'Ver Servicios', screen: 'services', icon: <Globe size={18} /> },
+                { id: 'nav-settings', type: 'nav', label: 'Configuración', screen: 'settings', icon: <Settings size={18} /> },
+            ];
+            const actions = [
+                { id: 'act-new', type: 'action', label: 'Nuevo Cliente', action: 'new_client', icon: <PlusCircle size={18} /> },
+                { id: 'act-sync', type: 'action', label: 'Sincronizar Datos', action: 'sync', icon: <RefreshCw size={18} /> },
+            ];
+            const cls = clients.filter(c => !c.isDeleted && c.isActive).slice(0, 6).map(c => ({
+                id: `client-${c.id}`,
+                type: 'client',
+                label: c.name,
+                subLabel: c.ruc,
+                client: c,
+                icon: <User size={18} />
+            }));
+            return [...navs, ...actions, ...cls];
+        }
+
         const navigationResults = [
             { id: 'nav-dash', type: 'nav', label: 'Ver Dashboard', screen: 'dashboard', icon: <LayoutDashboard size={18} /> },
             { id: 'nav-clients', type: 'nav', label: 'Ver Clientes', screen: 'clients', icon: <Users size={18} /> },
             { id: 'nav-services', type: 'nav', label: 'Ver Servicios', screen: 'services', icon: <Globe size={18} /> },
             { id: 'nav-settings', type: 'nav', label: 'Configuración', screen: 'settings', icon: <Settings size={18} /> },
-        ].filter(item => item.label.toLowerCase().includes(query));
+        ].filter(item => {
+            const labelLower = item.label.toLowerCase();
+            return terms.every(t => labelLower.includes(t));
+        });
 
         const actionResults = [
             { id: 'act-new', type: 'action', label: 'Nuevo Cliente', action: 'new_client', icon: <PlusCircle size={18} /> },
             { id: 'act-sync', type: 'action', label: 'Sincronizar Datos', action: 'sync', icon: <RefreshCw size={18} /> },
             { id: 'act-logout', type: 'action', label: 'Cerrar Sesión', action: 'logout', icon: <LogOut size={18} /> },
-        ].filter(item => item.label.toLowerCase().includes(query));
+        ].filter(item => {
+            const labelLower = item.label.toLowerCase();
+            return terms.every(t => labelLower.includes(t));
+        });
 
         const clientResults = clients
-            .filter(c => !c.isDeleted && c.isActive && (
-                c.name.toLowerCase().includes(query) || 
-                c.ruc.includes(query) ||
-                (c.tradeName?.toLowerCase().includes(query))
-            ))
+            .filter(c => {
+                if (c.isDeleted || !c.isActive) return false;
+                const fullText = `${c.name} ${c.ruc} ${c.tradeName || ''}`.toLowerCase();
+                return terms.every(t => fullText.includes(t));
+            })
             .slice(0, 10)
             .map(c => ({
                 id: `client-${c.id}`,

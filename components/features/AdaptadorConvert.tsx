@@ -35,6 +35,17 @@ function base64ToUint8Array(base64: string): Uint8Array {
     return bytes;
 }
 
+function downloadAsXLS(previewFile: any) {
+    if (!previewFile) return;
+    try {
+        const u8 = base64ToUint8Array(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64);
+        const blob = new Blob([u8], { type: 'application/vnd.ms-excel' });
+        saveAs(blob, `plantilla_zifact_${previewFile.name || 'convertido'}.xls`);
+    } catch(e) {
+        console.error("Error al descargar XLS", e);
+    }
+}
+
 function triggerBrowserDownload(buf: Uint8Array | ArrayBuffer | Blob | string, filename: string, mimeType: string = 'application/vnd.ms-excel') {
     let blob: Blob;
     if (buf instanceof Blob) {

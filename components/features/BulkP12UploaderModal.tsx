@@ -245,30 +245,68 @@ const generatePasswordCandidates = (client?: Client, fileName?: string, rucOrCed
     const nameFromCert = parseNameFromFileName(fileName || '');
     const clientName = client ? client.name : '';
     
+    // Extraer tokens también del propio nombre de archivo
+    const fileNameClean = (fileName || '').replace(/\.p12|\.pfx/gi, '');
+    const fileNameWords = fileNameClean.replace(/[\._\-\(\)\d]+/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+
     const tokensClient = extractValidPasswordNameTokens(clientName);
     const tokensCert = extractValidPasswordNameTokens(nameFromCert);
+    const tokensFile = extractValidPasswordNameTokens(fileNameWords.join(' '));
     
-    const allTokens = Array.from(new Set([...tokensClient, ...tokensCert]));
+    const allTokens = Array.from(new Set([...tokensClient, ...tokensCert, ...tokensFile]));
 
     const cleanRuc = (rucOrCedula || (client ? client.ruc : '') || '').replace(/\D/g, '');
     const first4Ruc = cleanRuc.length >= 4 ? cleanRuc.slice(0, 4) : '';
+    const last4Ruc = cleanRuc.length >= 4 ? cleanRuc.slice(-4) : '';
+    const cedula = cleanRuc.length >= 10 ? cleanRuc.slice(0, 10) : '';
 
     const formattedTokens = allTokens.map(clean => clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase());
 
-    // 1. Probar [Nombre/Apellido] + 2026 para todos
-    formattedTokens.forEach(t => candidates.add(`${t}2026`));
+    const years = ['2026', '2025', '2024', '2023', '2027'];
+    const specialSymbols = ['', '#@', '#', '@', '.', '*', '!', '$'];
 
-    // 2. Probar [Nombre/Apellido] + 2025 para todos (ej: Lorena2025, Liliana2025)
-    formattedTokens.forEach(t => candidates.add(`${t}2025`));
-
-    // 3. Probar [Nombre/Apellido] + 4 primeros dígitos de Cédula (ej: Liliana0704, Lorena0704)
-    if (first4Ruc) {
-        formattedTokens.forEach(t => candidates.add(`${t}${first4Ruc}`));
+    // 1. Cédula y RUC con y sin caracteres especiales
+    if (cleanRuc) {
+        candidates.add(cleanRuc);
+        if (cedula) candidates.add(cedula);
+        specialSymbols.forEach(sym => {
+            if (sym) {
+                candidates.add(`${cleanRuc}${sym}`);
+                if (cedula) candidates.add(`${cedula}${sym}`);
+            }
+        });
     }
 
-    // 4. Probar [Nombre/Apellido] + 2027 y 2024
-    formattedTokens.forEach(t => candidates.add(`${t}2027`));
-    formattedTokens.forEach(t => candidates.add(`${t}2024`));
+    // 2. Patrones Estándar SRI / Empresas Certificadoras
+    const sriPrefixes = ['Sri', 'Sri.', 'Firma', 'Clave', 'Ecuafact', 'Security', 'Anf', 'Consejo'];
+    sriPrefixes.forEach(pref => {
+        years.forEach(y => {
+            specialSymbols.forEach(sym => {
+                candidates.add(`${pref}${y}${sym}`);
+            });
+        });
+    });
+
+    // 3. Nombres / Apellidos + Años + Símbolos (ej: Malla2026, Pillco1972#@, Ortega2026#@, Jose2026)
+    formattedTokens.forEach(t => {
+        years.forEach(y => {
+            specialSymbols.forEach(sym => {
+                candidates.add(`${t}${y}${sym}`);
+            });
+        });
+
+        // Combinaciones con los 4 primeros/últimos dígitos de Cédula/RUC
+        if (first4Ruc) {
+            specialSymbols.forEach(sym => {
+                candidates.add(`${t}${first4Ruc}${sym}`);
+            });
+        }
+        if (last4Ruc) {
+            specialSymbols.forEach(sym => {
+                candidates.add(`${t}${last4Ruc}${sym}`);
+            });
+        }
+    });
 
     return Array.from(candidates);
 };
@@ -279,8 +317,25 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [queue, setQueue] = useState<P12ItemQueue[]>([]);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
+    const [queueFilterTab, setQueueFilterTab] = useState<'all' | 'unlocked' | 'locked' | 'omitted'>('all');
+
+    const filteredQueue = useMemo(() => {
+        if (queueFilterTab === 'unlocked') {
+            return queue.filter(q => q.status === 'unlocked' && q.saveMode !== 'omit');
+        }
+        if (queueFilterTab === 'locked') {
+            return queue.filter(q => q.status !== 'unlocked');
+        }
+        if (queueFilterTab === 'omitted') {
+            return queue.filter(q => q.saveMode === 'omit');
+        }
+        return queue;
+    }, [queue, queueFilterTab]);
+
+    const countAll = queue.length;
+    const countUnlocked = queue.filter(q => q.status === 'unlocked' && q.saveMode !== 'omit').length;
+    const countLocked = queue.filter(q => q.status !== 'unlocked').length;
+    const countOmitted = queue.filter(q => q.saveMode === 'omit').length;
 
     const activeClientsList = useMemo(() => {
         return clients
@@ -689,16 +744,63 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                             <p className="text-sm font-black text-white">Haz clic o arrastra tus archivos .p12 aquí</p>
                             <p className="text-xs text-slate-400 mt-1">Soporta firmas descargadas del SRI (cert-NOMBRE...) e identity_CEDULA.p12.</p>
                         </div>
-                    </div>
                 ) : (
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between px-2">
-                            <span className="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
-                                Cola de Procesamiento ({queue.length} archivos · {unlockedCount} marcadas para guardar)
-                            </span>
+                        {/* BARRA DE FILTROS DE PESTAÑAS */}
+                        <div className="flex items-center justify-between gap-2 flex-wrap bg-slate-900/90 p-2 rounded-2xl border border-white/10">
+                            <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar">
+                                <button
+                                    onClick={() => setQueueFilterTab('all')}
+                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                        queueFilterTab === 'all'
+                                            ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                >
+                                    <span>📋 Todas</span>
+                                    <span className="px-1.5 py-0.2 bg-white/20 rounded-full text-[9px]">{countAll}</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setQueueFilterTab('unlocked')}
+                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                        queueFilterTab === 'unlocked'
+                                            ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                >
+                                    <span>🔓 Listas</span>
+                                    <span className="px-1.5 py-0.2 bg-white/20 rounded-full text-[9px]">{countUnlocked}</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setQueueFilterTab('locked')}
+                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                        queueFilterTab === 'locked'
+                                            ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                >
+                                    <span>🔒 Clave Pendiente</span>
+                                    <span className="px-1.5 py-0.2 bg-white/20 rounded-full text-[9px]">{countLocked}</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setQueueFilterTab('omitted')}
+                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                        queueFilterTab === 'omitted'
+                                            ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                >
+                                    <span>⏭️ Omitidas / Descartadas</span>
+                                    <span className="px-1.5 py-0.2 bg-white/20 rounded-full text-[9px]">{countOmitted}</span>
+                                </button>
+                            </div>
+
                             <button
                                 onClick={() => setQueue([])}
-                                className="text-[10px] text-rose-400 hover:underline uppercase font-bold"
+                                className="text-[10px] text-rose-400 hover:underline uppercase font-bold px-2 py-1"
                             >
                                 Limpiar Cola
                             </button>
@@ -706,7 +808,13 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
                         {/* Lista Interactiva de Firmas */}
                         <div className="space-y-3.5 max-h-[440px] overflow-y-auto pr-1 custom-scrollbar">
-                            {queue.map((item, idx) => {
+                            {filteredQueue.length === 0 ? (
+                                <div className="p-8 text-center bg-slate-900/40 rounded-3xl border border-white/5 text-slate-400 text-xs font-mono">
+                                    No hay firmas en la pestaña "{queueFilterTab === 'omitted' ? 'Omitidas / Descartadas' : queueFilterTab === 'unlocked' ? 'Listas para guardar' : queueFilterTab === 'locked' ? 'Clave Pendiente' : 'Todas'}".
+                                </div>
+                            ) : (
+                                <>
+                                    {filteredQueue.map((item, idx) => {
                                 const isUnlocked = item.status === 'unlocked';
                                 const isError = item.status === 'error';
                                 const expComp = item.expirationComparison;
@@ -1014,9 +1122,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                     </div>
                                 );
                             })}
-                        </div>
+                        </>
+                    )}
                     </div>
-                )}
+                </div>
+            )}
 
                 {/* Footer Modal */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">

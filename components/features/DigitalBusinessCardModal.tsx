@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
     QrCode, Phone, Mail, MapPin, Globe, Share2, Download, 
-    Copy, Check, Sparkles, X, ShieldCheck, Briefcase, Award, ExternalLink
+    Copy, Check, Sparkles, X, ShieldCheck, Briefcase, Award, ExternalLink, DollarSign
 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 

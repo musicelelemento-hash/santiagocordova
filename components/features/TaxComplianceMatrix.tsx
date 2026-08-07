@@ -43,6 +43,49 @@ import { getClientServiceFee } from '../../services/clientService';
 
 type MatrixMode = 'IVA' | 'RENTA';
 
+export function formatDeclarationInvoiceDescription(period: string, obType: TaxObligationType = 'IVA'): { description: string; fiscalPeriod: string } {
+    const monthNames = [
+        'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+        'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+    ];
+    
+    let monthName = '';
+    let year = new Date().getFullYear().toString();
+
+    const yyyymmMatch = period.match(/(\d{4})-(\d{2})/);
+    if (yyyymmMatch) {
+        year = yyyymmMatch[1];
+        const mNum = parseInt(yyyymmMatch[2], 10);
+        if (mNum >= 1 && mNum <= 12) {
+            monthName = monthNames[mNum - 1];
+        }
+    } else if (period.includes('S1') || period.includes('1S') || period.endsWith('-06')) {
+        const yMatch = period.match(/\b(20\d{2})\b/);
+        if (yMatch) year = yMatch[1];
+        monthName = '1er SEMESTRE';
+    } else if (period.includes('S2') || period.includes('2S') || period.endsWith('-12')) {
+        const yMatch = period.match(/\b(20\d{2})\b/);
+        if (yMatch) year = yMatch[1];
+        monthName = '2do SEMESTRE';
+    } else {
+        const yMatch = period.match(/\b(20\d{2})\b/);
+        if (yMatch) year = yMatch[1];
+        for (const m of monthNames) {
+            if (period.toUpperCase().includes(m)) {
+                monthName = m;
+                break;
+            }
+        }
+        if (!monthName) monthName = period.toUpperCase();
+    }
+
+    const typeLabel = obType === 'RENTA' ? 'DECLARACION RENTA' : 'DECLARACION IVA';
+    const description = `${typeLabel} ${monthName} ${year}`.trim();
+    const fiscalPeriod = monthName || 'JULIO';
+
+    return { description, fiscalPeriod };
+}
+
 interface TaxComplianceMatrixProps {
     clients: Client[];
     onViewClient: (client: Client) => void;
@@ -50,7 +93,7 @@ interface TaxComplianceMatrixProps {
     onPreviewReceipt: (client: Client, declaration: Declaration) => void;
     onTogglePayment?: (client: Client, period: string, type: TaxObligationType, isPaid: boolean) => void;
     onTogglePriority?: (client: Client, period: string, type: TaxObligationType, isPriority: boolean) => void;
-    onNavigateToBilling?: (clientRuc: string) => void;
+    onNavigateToBilling?: (clientRuc: string, period?: string, description?: string) => void;
     theme?: 'light' | 'dark';
     initialMode?: MatrixMode;
 }
@@ -148,7 +191,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         loadHistory();
     }, []);
 
-    const findRealInvoice = (clientRuc: string, d?: Declaration) => {
+
+
+    const findRealInvoice = (clientRuc: string, d?: Declaration, periodKey?: string) => {
         if (!sriHistory || sriHistory.length === 0) return null;
         const cleanRuc = clientRuc.replace(/\D/g, '');
         
@@ -159,12 +204,63 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             if (found) return found;
         }
 
-        // 2. Match by client RUC in authorized invoices
-        const matches = sriHistory.filter(h => 
-            h.estado === 'Autorizado' && 
-            h.tipo === 'factura' && 
-            (h.rucReceptor?.replace(/\D/g, '') === cleanRuc)
-        );
+        const targetPeriodStr = (periodKey || d?.period || '').toUpperCase();
+        if (!targetPeriodStr) return null;
+
+        const monthNames = [
+            'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+            'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+        ];
+
+        let targetMonthName = '';
+        let targetYear = '';
+
+        const yyyymmMatch = targetPeriodStr.match(/(\d{4})-(\d{2})/);
+        if (yyyymmMatch) {
+            targetYear = yyyymmMatch[1];
+            const mNum = parseInt(yyyymmMatch[2], 10);
+            if (mNum >= 1 && mNum <= 12) {
+                targetMonthName = monthNames[mNum - 1];
+            }
+        } else {
+            const yearMatch = targetPeriodStr.match(/\b(20\d{2})\b/);
+            if (yearMatch) targetYear = yearMatch[1];
+
+            for (const m of monthNames) {
+                if (targetPeriodStr.includes(m)) {
+                    targetMonthName = m;
+                    break;
+                }
+            }
+        }
+
+        // 2. Match by client RUC AND specific month/year period in authorized invoices
+        const matches = sriHistory.filter(h => {
+            if (h.estado !== 'Autorizado' || (h.tipo && h.tipo !== 'factura')) return false;
+            const rucMatch = (h.rucReceptor?.replace(/\D/g, '') === cleanRuc);
+            if (!rucMatch) return false;
+
+            const invPeriod = (h.periodo || '').toUpperCase();
+            if (invPeriod && (invPeriod === targetPeriodStr || (targetMonthName && invPeriod.includes(targetMonthName)))) {
+                return true;
+            }
+
+            const invDesc = (
+                (h.descripcion || '') + ' ' + 
+                (Array.isArray(h.detalles) ? h.detalles.map((det: any) => det.descripcion || '').join(' ') : '') + ' ' +
+                (h.periodoFiscal || '')
+            ).toUpperCase();
+
+            if (targetMonthName && targetYear) {
+                return invDesc.includes(targetMonthName) && invDesc.includes(targetYear);
+            } else if (targetMonthName) {
+                return invDesc.includes(targetMonthName);
+            } else if (targetPeriodStr) {
+                return invDesc.includes(targetPeriodStr);
+            }
+
+            return false;
+        });
 
         if (matches.length === 0) return null;
         matches.sort((a, b) => new Date(b.fechaEmision || 0).getTime() - new Date(a.fechaEmision || 0).getTime());
@@ -1293,7 +1389,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
                                                             const isSent = d?.status === DeclarationStatus.Enviada || isPaid || hasProof;
                                                             
-                                                            const realInvoice = findRealInvoice(client.ruc, d);
+                                                            const realInvoice = findRealInvoice(client.ruc, d, p);
                                                             const isTrulyInvoiced = !!realInvoice || !!(d as any)?.invoice_secuencial;
 
                                                             const isDone = hasProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
@@ -1421,7 +1517,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                          });
                                                          const isCellTrulyInvoiced = obligations.some(ob => {
                                                              const d = findDeclarationForOb(declarations, p, ob.type);
-                                                             const realInvoice = findRealInvoice(client.ruc, d);
+                                                             const realInvoice = findRealInvoice(client.ruc, d, p);
                                                              return !!realInvoice || !!(d as any)?.invoice_secuencial;
                                                          });
                                                          const obTypes = obligations.map(ob => ob.type);
@@ -1693,8 +1789,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         <button
                                             onClick={() => {
                                                 const ruc = activeCellModal.client.ruc;
+                                                const periodStr = activeCellModal.period;
+                                                const { description } = formatDeclarationInvoiceDescription(periodStr, activeCellModal.obType);
                                                 setActiveCellModal(null);
-                                                if (onNavigateToBilling) onNavigateToBilling(ruc);
+                                                if (onNavigateToBilling) onNavigateToBilling(ruc, periodStr, description);
                                                 else toast.info(`Selecciona Facturación SRI para emitir comprobante a ${ruc}`);
                                             }}
                                             className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20"

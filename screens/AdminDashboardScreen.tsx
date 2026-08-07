@@ -235,10 +235,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                 if (c.isDeleted || !c.isActive) continue;
             }
 
-            const searchMatch = !debouncedSearchTerm || 
-                c.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) || 
-                c.ruc.includes(debouncedSearchTerm) || 
-                (c.tradeName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
+            const searchTerms = debouncedSearchTerm ? debouncedSearchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean) : [];
+            const fullText = `${c.name} ${c.ruc} ${c.tradeName || ''}`.toLowerCase();
+            const searchMatch = !searchTerms.length || searchTerms.every(t => fullText.includes(t));
 
             if (!searchMatch) continue;
 

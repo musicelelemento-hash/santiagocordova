@@ -77,6 +77,45 @@ export const sendFullClientsMatrixToExtension = (clients: Client[]) => {
   console.log("⚡ Matriz completa de clientes enviada a la extensión:", clients.length);
 };
 
+export const sendBatchDeclarationToExtension = (clients: Client[], declarationType: 'mensual' | 'semestral' | 'renta' = 'mensual') => {
+  if (!Array.isArray(clients) || clients.length === 0) return;
+  
+  const payload = {
+    source: 'SC_PRO_DASHBOARD',
+    type: 'SRI_START_BATCH_DECLARATION',
+    data: {
+      declarationType,
+      clients: clients.map(c => ({
+        id: c.id,
+        ruc: c.ruc,
+        name: c.name,
+        sriPassword: c.sriPassword,
+        regime: c.regime,
+        ivaFrequency: c.taxProfile?.ivaFrequency || c.category || 'Mensual'
+      })),
+      timestamp: new Date().getTime()
+    }
+  };
+
+  window.postMessage(payload, "*");
+  localStorage.setItem('sc_batch_declaration_queue', JSON.stringify(payload.data));
+  console.log(`🚀 Lote de Declaraciones (${declarationType}) enviado a la extensión:`, clients.length, "clientes.");
+};
+
+export const listenForDeclarationCompleted = (onCompleted: (data: { ruc: string; success: boolean; pdfUrl?: string; timestamp: number }) => void) => {
+  const handler = (event: MessageEvent) => {
+    if (event.source !== window) return;
+    const data = event.data;
+    if (data && data.source === 'SC_PRO_EXTENSION' && data.type === 'SRI_DECLARATION_COMPLETED_SYNC') {
+      console.log("✅ Declaración completada recibida desde la extensión para RUC:", data.data?.ruc);
+      onCompleted(data.data);
+    }
+  };
+
+  window.addEventListener('message', handler);
+  return () => window.removeEventListener('message', handler);
+};
+
 export const openSRIPortal = (url?: string) => {
   window.open(url || 'https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT', '_blank');
 };

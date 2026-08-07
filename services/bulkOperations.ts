@@ -170,16 +170,17 @@ export const processBulkPdfs = async (
                 const existingDec = client.declarations.find(d => arePeriodsEqual(d.period, decPeriod));
                 
                 const isCortesia = isCourtesyClient(client);
+                const isAlreadyPaid = isCortesia || (existingDec ? !!existingDec.is_paid : false);
                 const newDec = {
                     period: decPeriod,
                     type,
-                    status: isCortesia ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                    status: isAlreadyPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
                     updatedAt: new Date().toISOString(),
                     declaredAt: (data as any).declarationDate || new Date().toISOString(),
                     amount: (data as any).amount || 0,
                     proof_file: storedFile,
-                    is_paid: isCortesia ? true : (existingDec ? existingDec.is_paid : false),
-                    paidAt: isCortesia ? new Date().toISOString() : (existingDec ? existingDec.paidAt : undefined)
+                    is_paid: isAlreadyPaid,
+                    paidAt: isAlreadyPaid ? (existingDec?.paidAt || new Date().toISOString()) : undefined
                 };
 
                 const newHistory = [...client.declarations.filter(d => !arePeriodsEqual(d.period, decPeriod)), newDec];

@@ -957,7 +957,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
                 // Determine payment status
                 const existingDecl = history.find(d => d.period === period);
-                const isPaid = !!existingDecl?.is_paid;
+                const isAlreadyPaid = existingDecl ? !!existingDecl.is_paid : false;
 
                 if (isDuplicate) {
                     results.push({
@@ -968,7 +968,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         period: formatPeriodForDisplay(period),
                         type: data.formType,
                         amount: data.amount,
-                        is_paid: isPaid,
+                        is_paid: isAlreadyPaid,
                         phones: targetClient.phones
                     });
                     continue;
@@ -993,10 +993,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 const entry: Declaration = {
                     period,
                     type: (data.formType === 'IVA' ? 'IVA' : (data.formType === 'RENTA' ? 'RENTA' : (period.includes('-') ? 'IVA' : 'RENTA'))),
-                    status: DeclarationStatus.Enviada,
+                    status: isAlreadyPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
                     updatedAt: nowIso,
                     declaredAt: nowIso,
-                    is_paid: false,
+                    is_paid: isAlreadyPaid,
                     amount: data.amount || 0,
                     transactionId: data.id || `PDF-${Date.now().toString().slice(-4)}`,
                     proof_file: proofFileObj
@@ -1537,6 +1537,17 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             }}
                             onTogglePayment={handleTogglePaymentFromMatrix}
                             onTogglePriority={handleTogglePriorityFromMatrix}
+                            onNavigateToBilling={(clientRuc, period, description) => {
+                                const client = clients.find(c => c.ruc === clientRuc);
+                                const fee = client ? getClientServiceFee(client, serviceFees) : 5;
+                                if (navigate) {
+                                    navigate('sri_facturacion', {
+                                        clientId: client?.id || clientRuc,
+                                        amount: fee,
+                                        description: description || `DECLARACION IVA ${period || ''}`
+                                    });
+                                }
+                            }}
                         />
                     </motion.div>
                 ) : isWorkspaceView ? (

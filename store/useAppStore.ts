@@ -92,26 +92,9 @@ const sanitizeSingleClient = (c: any): Client => {
       if (existing) {
         declMap.set(period, {
           ...existing,
-          status: DeclarationStatus.Pagada,
-          is_paid: true,
-          proof_file: existing.proof_file || {
-            ...defaultProof,
-            name: `Comprobante_${period}.pdf`
-          }
-        });
-      } else {
-        declMap.set(period, {
-          period: period,
-          type: 'IVA',
-          status: DeclarationStatus.Pagada,
-          is_paid: true,
-          updatedAt: new Date().toISOString(),
-          paidAt: new Date().toISOString(),
-          amount: c.fee_structure?.semestral || 25,
-          proof_file: {
-            ...defaultProof,
-            name: `Comprobante_${period}.pdf`
-          }
+          status: existing.status || (existing.proof_file ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente),
+          is_paid: typeof existing.is_paid === 'boolean' ? existing.is_paid : false,
+          proof_file: existing.proof_file
         });
       }
     }

@@ -541,12 +541,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const filteredClientsForSearch = useMemo(() => {
     if (!clientSearchQuery.trim()) return clients.filter(c => !c.isDeleted);
-    const query = clientSearchQuery.toLowerCase();
-    return clients.filter(c => !c.isDeleted && (
-      c.name.toLowerCase().includes(query) ||
-      c.ruc.includes(query) ||
-      (c.tradeName && c.tradeName.toLowerCase().includes(query))
-    ));
+    const terms = clientSearchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    return clients.filter(c => {
+      if (c.isDeleted) return false;
+      const fullText = `${c.name} ${c.ruc} ${c.tradeName || ''}`.toLowerCase();
+      return terms.every(t => fullText.includes(t));
+    });
   }, [clients, clientSearchQuery]);
 
   const selectClientAndInitialize = (clientId: string) => {
