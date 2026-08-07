@@ -744,6 +744,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                             <p className="text-sm font-black text-white">Haz clic o arrastra tus archivos .p12 aquí</p>
                             <p className="text-xs text-slate-400 mt-1">Soporta firmas descargadas del SRI (cert-NOMBRE...) e identity_CEDULA.p12.</p>
                         </div>
+                    </div>
                 ) : (
                     <div className="space-y-4">
                         {/* BARRA DE FILTROS DE PESTAÑAS */}
