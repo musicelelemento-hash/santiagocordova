@@ -463,13 +463,19 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                 const isDuplicateInBatch = seenSignaturesInBatch.has(signatureSignatureHash) && processed.status === 'unlocked';
 
                 if (isDuplicateInDB || isDuplicateInBatch) {
-                    discardedDuplicatesCount++;
-                } else {
-                    if (processed.status === 'unlocked' && signatureSignatureHash) {
-                        seenSignaturesInBatch.add(signatureSignatureHash);
+                    processed.saveMode = 'omit';
+                    if (!processed.errorMessage) {
+                        processed.errorMessage = isDuplicateInDB 
+                            ? '⚠️ FIRMA YA REGISTRADA: Esta fecha de caducidad coincide con la firma activa en el sistema.' 
+                            : '⚠️ DUPLICADA EN LOTE: Firma repetida dentro del mismo lote subido.';
                     }
-                    newQueueItems.push(processed);
+                    discardedDuplicatesCount++;
                 }
+
+                if (processed.status === 'unlocked' && signatureSignatureHash) {
+                    seenSignaturesInBatch.add(signatureSignatureHash);
+                }
+                newQueueItems.push(processed);
             } catch (err) {
                 console.error("Error reading p12 file:", err);
             }
@@ -480,7 +486,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         if (newQueueItems.length > 0) {
             if (discardedDuplicatesCount > 0) {
-                toast.success(`⚡ ${newQueueItems.length} firmas cargadas. Se descartaron automáticamente ${discardedDuplicatesCount} firmas duplicadas.`);
+                toast.success(`⚡ ${newQueueItems.length} firmas cargadas. Se marcaron ${discardedDuplicatesCount} firmas como Omitidas/Duplicadas.`);
             } else {
                 toast.success(`⚡ Cargadas ${newQueueItems.length} firmas a la cola.`);
             }
