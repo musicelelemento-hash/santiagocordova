@@ -319,7 +319,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const [queue, setQueue] = useState<P12ItemQueue[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [queueFilterTab, setQueueFilterTab] = useState<'all' | 'unlocked' | 'locked' | 'omitted'>('all');
+    const [queueFilterTab, setQueueFilterTab] = useState<'unlocked' | 'locked' | 'omitted' | 'all'>('unlocked');
 
     const filteredQueue = useMemo(() => {
         if (queueFilterTab === 'unlocked') {
@@ -755,21 +755,9 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {/* BARRA DE FILTROS DE PESTAÑAS */}
+                        {/* BARRA DE FILTROS DE PESTAÑAS (ORDEN DE FLUJO PRO) */}
                         <div className="flex items-center justify-between gap-2 flex-wrap bg-slate-900/90 p-2 rounded-2xl border border-white/10">
                             <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar">
-                                <button
-                                    onClick={() => setQueueFilterTab('all')}
-                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                                        queueFilterTab === 'all'
-                                            ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
-                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
-                                    }`}
-                                >
-                                    <span>📋 Todas</span>
-                                    <span className="px-1.5 py-0.2 bg-white/20 rounded-full text-[9px]">{countAll}</span>
-                                </button>
-
                                 <button
                                     onClick={() => setQueueFilterTab('unlocked')}
                                     className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
@@ -778,7 +766,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                             : 'text-slate-400 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
-                                    <span>🔓 Listas</span>
+                                    <span>🟢 1. Listas (Nuevas & Renovaciones)</span>
                                     <span className="px-1.5 py-0.2 bg-white/20 rounded-full text-[9px]">{countUnlocked}</span>
                                 </button>
 
@@ -790,7 +778,7 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                             : 'text-slate-400 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
-                                    <span>🔒 Clave Pendiente</span>
+                                    <span>🔒 2. Clave Pendiente</span>
                                     <span className="px-1.5 py-0.2 bg-white/20 rounded-full text-[9px]">{countLocked}</span>
                                 </button>
 
@@ -802,8 +790,20 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
                                             : 'text-slate-400 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
-                                    <span>⏭️ Omitidas / Descartadas</span>
+                                    <span>⏭️ 3. Repetidas / Ya Registradas</span>
                                     <span className="px-1.5 py-0.2 bg-white/20 rounded-full text-[9px]">{countOmitted}</span>
+                                </button>
+
+                                <button
+                                    onClick={() => setQueueFilterTab('all')}
+                                    className={`px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                                        queueFilterTab === 'all'
+                                            ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20'
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                >
+                                    <span>📋 4. Ver Lote Completo</span>
+                                    <span className="px-1.5 py-0.2 bg-white/20 rounded-full text-[9px]">{countAll}</span>
                                 </button>
                             </div>
 

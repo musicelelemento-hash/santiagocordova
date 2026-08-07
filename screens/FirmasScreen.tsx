@@ -813,7 +813,52 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                         </div>
                     </div>
                 </Modal>
-            )}
+            {/* ── DOCK FLOTANTE PRO (NAVEGACIÓN RÁPIDA & BÚSQUEDA FLOTANTE) ── */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 backdrop-blur-2xl border border-white/15 rounded-3xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.7)] flex items-center gap-3 text-white transition-all duration-300 hover:scale-[1.02]">
+                {/* Buscador Rápido Flotante */}
+                <div className="relative flex items-center">
+                    <Search size={14} className="absolute left-3 text-slate-400" />
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Buscar por cliente o RUC..."
+                        className="pl-8 pr-3 py-1.5 bg-black/50 border border-white/10 rounded-2xl text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-400 w-44 sm:w-56 font-mono"
+                    />
+                </div>
+
+                <div className="h-6 w-px bg-white/10 hidden sm:block" />
+
+                {/* Botón Subida Masiva Rápida */}
+                <button
+                    onClick={() => setIsBulkModalOpen(true)}
+                    className="px-4 py-2 rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-teal-500/25 flex items-center gap-1.5 shrink-0 transition-all active:scale-95"
+                >
+                    <UploadCloud size={14} />
+                    <span className="hidden md:inline">Subida Masiva (.p12)</span>
+                    <span className="md:hidden">Subir</span>
+                </button>
+
+                <div className="h-6 w-px bg-white/10" />
+
+                {/* Botones de Navegación Rápida Arriba / Abajo */}
+                <div className="flex items-center gap-1">
+                    <button
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 transition-all active:scale-90"
+                        title="Ir arriba de la página"
+                    >
+                        <ArrowRight size={14} className="-rotate-90" />
+                    </button>
+                    <button
+                        onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 transition-all active:scale-90"
+                        title="Ir al final de la página"
+                    >
+                        <ArrowRight size={14} className="rotate-90" />
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };
