@@ -813,6 +813,8 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                         </div>
                     </div>
                 </Modal>
+            )}
+
             {/* ── DOCK FLOTANTE PRO (NAVEGACIÓN RÁPIDA & BÚSQUEDA FLOTANTE) ── */}
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 backdrop-blur-2xl border border-white/15 rounded-3xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.7)] flex items-center gap-3 text-white transition-all duration-300 hover:scale-[1.02]">
                 {/* Buscador Rápido Flotante */}
