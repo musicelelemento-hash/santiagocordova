@@ -1023,7 +1023,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     period: formatPeriodForDisplay(period),
                     type: data.formType,
                     amount: data.amount,
-                    is_paid: isPaid,
+                    is_paid: isAlreadyPaid,
                     phones: targetClient.phones,
                     proof_file: proofFileObj
                 });

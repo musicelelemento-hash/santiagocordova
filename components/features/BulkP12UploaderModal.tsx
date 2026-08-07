@@ -317,6 +317,8 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [queue, setQueue] = useState<P12ItemQueue[]>([]);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [queueFilterTab, setQueueFilterTab] = useState<'all' | 'unlocked' | 'locked' | 'omitted'>('all');
 
     const filteredQueue = useMemo(() => {
