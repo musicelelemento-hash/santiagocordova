@@ -140,7 +140,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
         const reader = new FileReader();
         reader.onload = async (e) => {
             const content = e.target?.result as string;
-            const storedFile: StoredFile = {
+            const storedFile: any = {
                 id: uuidv4(),
                 name: file.name,
                 size: file.size,
@@ -254,7 +254,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                         : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
                                 }`}
                             >
-                                <span className="text-xl font-black font-mono text-purple-400">{kpis.total - kpis.conFirma}</span>
+                                <span className="text-xl font-black font-mono text-purple-400">{kpis.total - kpis.subido}</span>
                                 <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Sin Firma .p12</span>
                             </button>
                         </div>

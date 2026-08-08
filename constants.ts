@@ -48,8 +48,63 @@ export const INITIAL_SERVICE_FEES = {
 export const mockClients: Client[] = [
     {
         id: uuidv4(),
+        ruc: '0702608118001',
+        name: 'UYAGUARI TENECOTA SARA ALICIA',
+        sriPassword: 'Uyaguari0702@',
+        regime: TaxRegime.General,
+        taxProfile: {
+            ivaFrequency: 'Mensual',
+            requiresAnnualRenta: true,
+            requiresAnexosGastos: false,
+            hasActiveDevolucionIva: false,
+            hasActiveElderlyDevolucionIva: false,
+            requiresIce: false,
+            requiresAnexoPvp: false
+        },
+        declarations: [
+            {
+                period: '2026-06',
+                status: DeclarationStatus.Pagada,
+                updatedAt: new Date().toISOString(),
+                paidAt: new Date().toISOString(),
+                amount: 5
+            }
+        ],
+        isActive: true,
+        fee_structure: { monthly: 5, annual: 10, semestral: 10 }
+    },
+    {
+        id: uuidv4(),
+        ruc: '0706482023001',
+        name: 'CHAVEZ CORDOVA GUIDO ERMEL',
+        sriPassword: 'Guido2026*',
+        regime: TaxRegime.General,
+        taxProfile: {
+            ivaFrequency: 'Mensual',
+            requiresAnnualRenta: true,
+            requiresAnexosGastos: false,
+            hasActiveDevolucionIva: false,
+            hasActiveElderlyDevolucionIva: false,
+            requiresIce: true,
+            requiresAnexoPvp: true
+        },
+        declarations: [
+            {
+                period: '2026-06',
+                status: DeclarationStatus.Pagada,
+                updatedAt: new Date().toISOString(),
+                paidAt: new Date().toISOString(),
+                amount: 25
+            }
+        ],
+        isActive: true,
+        fee_structure: { monthly: 25, annual: 10, iceMonthly: 10, iceAnexo: 5, anexoPvp: 10 },
+        clientStartPeriod: '2026-05'
+    },
+    {
+        id: uuidv4(),
         ruc: '0702706813001',
-        name: 'Aleida',
+        name: 'ALEIDA',
         sriPassword: 'Aleida2021*',
         regime: TaxRegime.General,
         taxProfile: {
@@ -63,7 +118,7 @@ export const mockClients: Client[] = [
         },
         declarations: [
             {
-                period: '2024-05',
+                period: '2026-06',
                 status: DeclarationStatus.Pagada,
                 updatedAt: new Date().toISOString(),
                 paidAt: new Date().toISOString(),
@@ -75,9 +130,9 @@ export const mockClients: Client[] = [
     },
     {
         id: uuidv4(),
-        ruc: '0706482023001', // Validated RUC for CHAVEZ CORDOVA GUIDO ERMEL
-        name: 'CHAVEZ CORDOVA GUIDO ERMEL',
-        sriPassword: 'Guido2026*',
+        ruc: '0703554071001',
+        name: 'PINEDA LAMILLA SANDRO HENRY',
+        sriPassword: 'Pineda2026*',
         regime: TaxRegime.General,
         taxProfile: {
             ivaFrequency: 'Mensual',
@@ -85,19 +140,155 @@ export const mockClients: Client[] = [
             requiresAnexosGastos: false,
             hasActiveDevolucionIva: false,
             hasActiveElderlyDevolucionIva: false,
-            requiresIce: true,
-            requiresAnexoPvp: true
+            requiresIce: false,
+            requiresAnexoPvp: false
         },
-        declarations: [],
+        declarations: [
+            {
+                period: '2026-06',
+                status: DeclarationStatus.Pagada,
+                updatedAt: new Date().toISOString(),
+                paidAt: new Date().toISOString(),
+                amount: 5
+            }
+        ],
         isActive: true,
-        fee_structure: { 
-            monthly: 25, 
-            annual: 10, 
-            iceMonthly: 10, 
-            iceAnexo: 5, 
-            anexoPvp: 10 
+        fee_structure: { monthly: 5, annual: 10, semestral: 10 }
+    },
+    {
+        id: uuidv4(),
+        ruc: '0703257220001',
+        name: 'MACHUCA ORDOÑEZ CARLOTA ISABEL',
+        sriPassword: 'Machuca2026@',
+        regime: TaxRegime.General,
+        taxProfile: {
+            ivaFrequency: 'Mensual',
+            requiresAnnualRenta: true,
+            requiresAnexosGastos: false,
+            hasActiveDevolucionIva: false,
+            hasActiveElderlyDevolucionIva: false,
+            requiresIce: false,
+            requiresAnexoPvp: false
         },
-        clientStartPeriod: '2026-05' // Starts fresh with the May 2026 campaign (no past backlog)
+        declarations: [
+            {
+                period: '2026-06',
+                status: DeclarationStatus.Pagada,
+                updatedAt: new Date().toISOString(),
+                paidAt: new Date().toISOString(),
+                amount: 5
+            }
+        ],
+        isActive: true,
+        fee_structure: { monthly: 5, annual: 10, semestral: 10 }
+    },
+    {
+        id: uuidv4(),
+        ruc: '2000022224001',
+        name: 'MALDONADO MALDONADO FAUSTO ELEUTERIO',
+        sriPassword: 'Maldonado2026@',
+        regime: TaxRegime.General,
+        taxProfile: {
+            ivaFrequency: 'Mensual',
+            requiresAnnualRenta: true,
+            requiresAnexosGastos: false,
+            hasActiveDevolucionIva: false,
+            hasActiveElderlyDevolucionIva: false,
+            requiresIce: false,
+            requiresAnexoPvp: false
+        },
+        declarations: [
+            {
+                period: '2026-06',
+                status: DeclarationStatus.Pagada,
+                updatedAt: new Date().toISOString(),
+                paidAt: new Date().toISOString(),
+                amount: 5
+            }
+        ],
+        isActive: true,
+        fee_structure: { monthly: 5, annual: 10, semestral: 10 }
+    },
+    {
+        id: uuidv4(),
+        ruc: '2026062921293',
+        name: 'MERCHAN HERAS JACINTO EULOGIO',
+        sriPassword: 'Merchan2026@',
+        regime: TaxRegime.General,
+        taxProfile: {
+            ivaFrequency: 'Mensual',
+            requiresAnnualRenta: true,
+            requiresAnexosGastos: false,
+            hasActiveDevolucionIva: false,
+            hasActiveElderlyDevolucionIva: false,
+            requiresIce: false,
+            requiresAnexoPvp: false
+        },
+        declarations: [
+            {
+                period: '2026-06',
+                status: DeclarationStatus.Pagada,
+                updatedAt: new Date().toISOString(),
+                paidAt: new Date().toISOString(),
+                amount: 5
+            }
+        ],
+        isActive: true,
+        fee_structure: { monthly: 5, annual: 10, semestral: 10 }
+    },
+    {
+        id: uuidv4(),
+        ruc: '0701694226001',
+        name: 'PEREZ LOPEZ FELIX MANUEL',
+        sriPassword: 'Perez2026@',
+        regime: TaxRegime.General,
+        taxProfile: {
+            ivaFrequency: 'Mensual',
+            requiresAnnualRenta: true,
+            requiresAnexosGastos: false,
+            hasActiveDevolucionIva: false,
+            hasActiveElderlyDevolucionIva: false,
+            requiresIce: false,
+            requiresAnexoPvp: false
+        },
+        declarations: [
+            {
+                period: '2026-06',
+                status: DeclarationStatus.Pagada,
+                updatedAt: new Date().toISOString(),
+                paidAt: new Date().toISOString(),
+                amount: 5
+            }
+        ],
+        isActive: true,
+        fee_structure: { monthly: 5, annual: 10, semestral: 10 }
+    },
+    {
+        id: uuidv4(),
+        ruc: '0702677527001',
+        name: 'ZARUMA JIMENEZ FRANKLIN ROLANDO',
+        sriPassword: 'Zaruma2026@',
+        regime: TaxRegime.General,
+        taxProfile: {
+            ivaFrequency: 'Mensual',
+            requiresAnnualRenta: true,
+            requiresAnexosGastos: false,
+            hasActiveDevolucionIva: false,
+            hasActiveElderlyDevolucionIva: false,
+            requiresIce: false,
+            requiresAnexoPvp: false
+        },
+        declarations: [
+            {
+                period: '2026-06',
+                status: DeclarationStatus.Pagada,
+                updatedAt: new Date().toISOString(),
+                paidAt: new Date().toISOString(),
+                amount: 5
+            }
+        ],
+        isActive: true,
+        fee_structure: { monthly: 5, annual: 10, semestral: 10 }
     }
 ];
 

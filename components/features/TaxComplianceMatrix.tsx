@@ -40,6 +40,7 @@ import { getNinthDigit } from '../../services/sri';
 import { db } from '../../services/db';
 import { useAppStore } from '../../store/useAppStore';
 import { getClientServiceFee } from '../../services/clientService';
+import { sendBatchDeclarationToExtension, listenForDeclarationCompleted, sendToSRIExtension, sendFullClientsMatrixToExtension } from '../../services/extensionBridge';
 
 type MatrixMode = 'IVA' | 'RENTA';
 
@@ -139,6 +140,22 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
     // Floating Command Dock Scroll & Opacity Tracking
     const [scrollY, setScrollY] = useState(0);
+
+    // ELITE RPA: Escuchar sincronización de declaraciones en bucle
+    React.useEffect(() => {
+        const cleanup = listenForDeclarationCompleted((data: any) => {
+            if (data && data.ruc) {
+                toast.success(`Declaración del RUC ${data.ruc} subida automáticamente y sesión cerrada.`);
+                
+                // Buscar cliente
+                const client = clients.find(c => c.ruc.replace(/\D/g, '') === data.ruc.replace(/\D/g, ''));
+                if (client) {
+                    onUploadReceipt(client, data.period && data.period !== 'AUTO' ? data.period : format(subMonths(new Date(), 1), 'yyyy-MM'), matrixMode);
+                }
+            }
+        });
+        return cleanup;
+    }, [clients, matrixMode, onUploadReceipt, toast]);
 
     React.useEffect(() => {
         const handleScroll = () => {
@@ -391,8 +408,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             console.error("Error setting active SRI credentials:", err);
         }
 
+        sendToSRIExtension(client);
+
         toast.success(
-            `🔑 Credenciales de ${client.name} cargadas. RUC: ${client.ruc} ${client.sriPassword ? '· Clave lista para autocompletar' : ''}`
+            `🔑 Credenciales de ${client.name} enviadas a la extensión SRI. RUC: ${client.ruc} ${client.sriPassword ? '· Clave lista para autocompletar' : ''}`
         );
 
         window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");
@@ -852,6 +871,18 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </button>
                         )}
                     </div>
+                    {/* Botón ELITE RPA: Iniciar Bucle Automático */}
+                    <button
+                        onClick={() => {
+                            sendBatchDeclarationToExtension(filteredClients, matrixMode === 'IVA' ? (frequency === 'Mensual' ? 'mensual' : 'semestral') : 'renta');
+                            toast.info(`Iniciando Bucle Automático 🚀 Se han enviado ${filteredClients.length} clientes a la extensión para declaración en bucle.`);
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/30"
+                        title="Iniciar automatización en cadena para los clientes listados"
+                    >
+                        <LucideIcons.Play size={14} fill="currentColor" />
+                        <span>Iniciar Bucle RPA</span>
+                    </button>
                     {/* Control de Ordenamiento: Dígito vs Semáforo de Colores vs Alfabético */}
                     <div className="flex flex-wrap items-center gap-1 bg-slate-100/80 dark:bg-slate-950/40 p-1 rounded-2xl border border-slate-200/30 dark:border-white/5">
                         <button

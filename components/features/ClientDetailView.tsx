@@ -17,6 +17,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { useAppStore } from '../../store/useAppStore';
 import { useToast } from '../../context/ToastContext';
+import { sendToSRIExtension } from '../../services/extensionBridge';
 import { v4 as uuidv4 } from 'uuid';
 
 // Modular Sub-components
@@ -756,8 +757,10 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             console.error("Error setting active SRI credentials:", err);
         }
 
+        sendToSRIExtension(client);
+
         toast.success(
-            `🔑 Credenciales de ${client.name} cargadas. RUC: ${client.ruc} ${client.sriPassword ? '· Clave lista para autocompletar' : ''}`
+            `🔑 Credenciales de ${client.name} enviadas a la extensión SRI. RUC: ${client.ruc} ${client.sriPassword ? '· Clave lista para autocompletar' : ''}`
         );
 
         window.open("https://srienlinea.sri.gob.ec/sri-en-linea/inicio/NAT", "_blank");

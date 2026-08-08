@@ -703,7 +703,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             `"${c.regime || 'General'}"`,
             `"${c.taxProfile?.ivaFrequency || 'Mensual'}"`,
             `"${c.email || ''}"`,
-            `"${c.phone || c.phones?.join('; ') || ''}"`,
+            `"${c.phones?.[0] || c.phones?.join('; ') || ''}"`,
             `"${c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''}"`,
             `"${(c.isActive ?? true) ? 'Activo' : 'Inactivo'}"`
         ]);

@@ -169,6 +169,7 @@ export const CrmPipelineScreen: React.FC<CrmPipelineScreenProps> = ({ navigate }
             phones: [lead.telefono],
             address: 'Pasaje, El Oro',
             regime: 'RIMPE Emprendedor' as any,
+            sriPassword: '',
             isActive: true,
             declarations: []
         };

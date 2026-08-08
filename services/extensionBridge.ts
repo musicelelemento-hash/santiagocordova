@@ -16,7 +16,10 @@ export const sendToSRIExtension = (client: Client) => {
     type: 'SRI_AUTOFILL_DATA',
     data: {
       ruc: client.ruc,
+      name: client.name || (client as any).razonSocial || 'Cliente SRI',
       password: client.sriPassword,
+      pdfStatus: (client as any).pdfDeclarationStatus || client.pdfStatus || (client.hasPdf ? 'CON_PDF' : 'SIN_PDF'),
+      declarationsHistory: client.declarations || [],
       timestamp: new Date().getTime()
     }
   };

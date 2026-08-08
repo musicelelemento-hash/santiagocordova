@@ -32,7 +32,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { GlobalUploadModal } from './components/features/GlobalUploadModal';
 import { SalesComboModal } from './components/features/SalesComboModal';
 import { SriPasswordChangerModal } from './components/features/SriPasswordChangerModal';
-import { Client, Task, Screen, Theme, ClientFilter, PublicUser, TaxRegime } from './types';
+import { Client, Task, Screen, Theme, ClientFilter, PublicUser, TaxRegime, Declaration, DeclarationStatus } from './types';
 import { loadDataFromSheet, syncDataToSheet } from './services/sheetApi';
 import { CommandPalette } from './components/CommandPalette';
 import { Modal } from './components/ui/Modal';
@@ -322,6 +322,39 @@ const App: React.FC = () => {
           });
 
           console.log(`🎉 [Extension Auto-Sync] Cliente ${targetClient.name} actualizado con nueva clave SRI/Ecuafact: ${newPassword}`);
+        }
+      }
+
+      if (event.data && event.data.source === 'SC_PRO_EXTENSION' && event.data.type === 'SRI_DECLARATION_COMPLETED_SYNC') {
+        const { ruc, period, pdf, metrics } = event.data.data || {};
+        if (!ruc) return;
+
+        const cleanRuc = ruc.replace(/\D/g, '');
+        const targetClient = clients.find(c => c.ruc.replace(/\D/g, '') === cleanRuc);
+        if (targetClient) {
+          const targetPeriod = (period && period !== 'AUTO') ? period : '2026-07';
+          const existingHistory = Array.isArray(targetClient.declarations) ? targetClient.declarations : [];
+          
+          const newDecl: Declaration = {
+            period: targetPeriod,
+            type: 'IVA',
+            status: DeclarationStatus.Enviada,
+            is_paid: false, // Queda PENDIENTE el pago por petición explícita del usuario
+            declaredAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            proof_file: pdf ? {
+              name: `Declaracion_IVA_${targetPeriod}.pdf`,
+              size: 102400,
+              type: 'pdf',
+              content: pdf,
+              lastModified: Date.now()
+            } : undefined
+          };
+
+          const updatedHistory = [newDecl, ...existingHistory.filter(d => d.period !== targetPeriod)];
+          updateClient(targetClient.id, { declarations: updatedHistory });
+
+          console.log(`🏆 [Extension Auto-Sync] Declaración de ${targetClient.name} (${targetPeriod}) registrada automáticamente como ENVIADA (PENDIENTE DE PAGO).`);
         }
       }
     };

@@ -812,6 +812,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           ...(systemSettings ? { systemSettings: { ...get().systemSettings, ...systemSettings } } : {}),
           isLoaded: true
         });
+        sendFullClientsMatrixToExtension(localData);
         console.log(`⚡ Fase 1 (Local): ${localData.length} clientes en ${(performance.now() - t0).toFixed(0)}ms`);
         selfHealChavez(localData);
       }
@@ -857,6 +858,7 @@ export const useAppStore = create<AppState>((set, get) => ({
                 ...(cloudTasks && cloudTasks.length > 0 ? { tasks: cloudTasks } : {})
               });
               db.setLocal('clients', cloudClients);
+              sendFullClientsMatrixToExtension(cloudClients);
               if (cloudTasks && cloudTasks.length > 0) db.setLocal('tasks', cloudTasks);
               console.log(`☁️ Fase 2 (Nube): ${cloudClients.length} clientes, ${cloudTasks?.length || 0} tareas sincronizadas en ${(performance.now() - t1).toFixed(0)}ms`);
             } else {
