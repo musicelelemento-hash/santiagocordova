@@ -169,18 +169,21 @@ export const processBulkPdfs = async (
 
                 const existingDec = client.declarations.find(d => arePeriodsEqual(d.period, decPeriod));
                 
-                const isCortesia = isCourtesyClient(client);
-                const isAlreadyPaid = isCortesia || (existingDec ? !!existingDec.is_paid : false);
+                // Al cargar el PDF en masa, el estado es ENVIADA (Declarada).
+                // No se auto-marca como Pagada/Cobrada ni Notificada.
+                const wasAlreadyPaid = existingDec ? !!existingDec.is_paid : false;
                 const newDec = {
                     period: decPeriod,
                     type,
-                    status: isAlreadyPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                    status: wasAlreadyPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
                     updatedAt: new Date().toISOString(),
                     declaredAt: (data as any).declarationDate || new Date().toISOString(),
                     amount: (data as any).amount || 0,
                     proof_file: storedFile,
-                    is_paid: isAlreadyPaid,
-                    paidAt: isAlreadyPaid ? (existingDec?.paidAt || new Date().toISOString()) : undefined
+                    is_paid: wasAlreadyPaid,
+                    paidAt: wasAlreadyPaid ? existingDec?.paidAt : undefined,
+                    isNotifiedWhatsApp: existingDec ? !!existingDec.isNotifiedWhatsApp : false,
+                    notifiedWhatsAppAt: existingDec?.notifiedWhatsAppAt
                 };
 
                 const newHistory = [...client.declarations.filter(d => !arePeriodsEqual(d.period, decPeriod)), newDec];
