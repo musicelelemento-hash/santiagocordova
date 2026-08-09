@@ -206,8 +206,8 @@ export const extractDataFromDeclarationPdf = async (file: File): Promise<{
     const months = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
     const monthIndex = months.findIndex(m => cleanText.includes(m));
 
-    const fiscalYearMatch = cleanText.match(/EJERCICIO FISCAL\s*[:]?\s*(202[3-6])/) || cleanText.match(/AÑO\s*[:]?\s*(202[3-6])/);
-    const yearMatch = fiscalYearMatch || cleanText.match(/\b(202[3-6])\b/);
+    const fiscalYearMatch = cleanText.match(/EJERCICIO FISCAL\s*[:]?\s*(20[1-3][0-9])/) || cleanText.match(/AÑO\s*[:]?\s*(20[1-3][0-9])/);
+    const yearMatch = fiscalYearMatch || cleanText.match(/\b(20[1-3][0-9])\b/);
     const detectedYear = yearMatch ? yearMatch[1] : new Date().getFullYear().toString();
 
     // Detección Semestral Explícita (1er / 2do Semestre SRI)
@@ -254,7 +254,7 @@ export const extractDataFromDeclarationPdf = async (file: File): Promise<{
     }
 
     // Extracción de Valor a Pagar
-    const amountMatch = cleanText.match(/TOTAL A PAGAR\s*[:]?\s*([\d\.,]+)/) || cleanText.match(/TOTAL IMPUESTO A PAGAR\s*[:]?\s*([\d\.,]+)/);
+    const amountMatch = cleanText.match(/TOTAL A PAGAR\s*[:]?\s*[\$]?\s*([\d\.,]+)/) || cleanText.match(/TOTAL IMPUESTO A PAGAR\s*[:]?\s*[\$]?\s*([\d\.,]+)/);
     let amount = 0;
     if (amountMatch) {
       amount = parseFloat(amountMatch[1].replace(',', '.'));

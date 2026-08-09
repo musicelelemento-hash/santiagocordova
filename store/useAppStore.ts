@@ -222,7 +222,7 @@ interface AppState {
   hydrateFromCloud: (data: any) => Promise<void>;
   exportData: () => Promise<Record<string, any>>;
   importData: (jsonData: any) => Promise<void>;
-  updateClient: (id: string, updates: Partial<Client>) => void;
+  updateClient: (id: string, updates: Partial<Client>) => Promise<void>;
   addClient: (client: Client) => void;
   removeClient: (id: string, permanent?: boolean) => void;
   restoreClient: (id: string) => void;
@@ -345,12 +345,13 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     // CLOUD SYNC
     get().setCloudStatus('saving');
-    db.updateRecord('sc_pro_clients', id, updatedClient)
-      .then(() => get().setCloudStatus('saved'))
-      .catch(err => {
-        console.error("Cloud sync failed for client:", id, err);
-        get().setCloudStatus('error');
-      });
+    try {
+      await db.updateRecord('sc_pro_clients', id, updatedClient);
+      get().setCloudStatus('saved');
+    } catch (err) {
+      console.error("Cloud sync failed for client:", id, err);
+      get().setCloudStatus('error');
+    }
 
     get().addAuditLog({
       type: 'client',

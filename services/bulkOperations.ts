@@ -190,7 +190,7 @@ export const processBulkPdfs = async (
                 }
             }
 
-            store.updateClient(client.id, updates);
+            await store.updateClient(client.id, updates);
 
             results.push({
                 fileName: file.name,
