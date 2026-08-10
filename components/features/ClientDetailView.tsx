@@ -11,7 +11,7 @@ import {
     X, Edit, BrainCircuit, Check, DollarSign, RotateCcw, Eye, EyeOff, Copy,
     ShieldCheck, FileText, Zap, UserCheck, UserX, UserCheck2, HandCoins,
     MoreHorizontal, Printer, Clipboard, CheckCircle, CheckCircle2, Send, Loader, ArrowDownToLine,
-    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History as HistoryIcon, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, ChevronDown, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, ScanLine, FilePlus, Power, FileCheck, Coins, BadgePercent, Play, Settings, FileDown, TrendingUp,
+    Sparkles, AlertTriangle, Info, Clock, Briefcase, Key, MapPin, CreditCard, LayoutDashboard, User, History as HistoryIcon, Crown, Save, Activity, MessageCircle, Plus, Store, FileClock, Trash2, ToggleLeft, ToggleRight, Hammer, Building, Phone, Mail, Calendar as CalendarIcon, ChevronRight, ChevronDown, Lock, Share2, UploadCloud, FileKey, ExternalLink, Globe, ArrowRight, Download, ScanLine, FilePlus, Power, FileCheck, Coins, BadgePercent, Play, Settings, FileDown, TrendingUp, BarChart3,
     Search, Filter, Trash, LogOut, Menu, ArrowLeft, RefreshCcw, Smartphone, Hash, Landmark, AlertCircle
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
@@ -43,6 +43,7 @@ import { ProfileTab } from './ClientDetail/tabs/ProfileTab';
 import { HistoryTab } from './ClientDetail/tabs/HistoryTab';
 import { VaultTab } from './ClientDetail/tabs/VaultTab';
 import { SettingsTab } from './ClientDetail/tabs/SettingsTab';
+import { MetricsTab } from './ClientDetail/tabs/MetricsTab';
 import { IvaFrequencyChangeModal } from './ClientDetail/IvaFrequencyChangeModal';
 import { ClientEditDrawer } from './ClientDetail/ClientEditDrawer';
 
@@ -98,7 +99,7 @@ interface ClientDetailViewProps {
     onBack: () => void;
     serviceFees: ServiceFeesConfig;
     sriCredentials?: Record<string, string>;
-    initialTab?: 'profile' | 'history' | 'vault' | 'settings';
+    initialTab?: 'profile' | 'metrics' | 'history' | 'vault' | 'settings';
 }
 
 export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client, onSave, onBack, serviceFees, sriCredentials, initialTab }) => {
@@ -115,7 +116,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     const [editedClient, setEditedClient] = useState(client);
     const [isEditing, setIsEditing] = useState(false);
     const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'vault' | 'settings'>(initialTab || 'profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'metrics' | 'history' | 'vault' | 'settings'>(initialTab || 'profile');
     const [vaultViewMode, setVaultViewMode] = useState<'gallery' | 'list' | 'table'>('gallery');
 
     const leftColRef = React.useRef<HTMLDivElement>(null);
@@ -910,11 +911,11 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed relative to modal) */}
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
                 <div className="flex items-center gap-1 p-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-[40px] border border-slate-200 dark:border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] pointer-events-auto ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
-                    {(['profile', 'history', 'vault', 'settings'] as const).map((tab) => (
+                    {(['profile', 'metrics', 'history', 'vault', 'settings'] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`group relative flex items-center gap-3 px-6 py-4 rounded-[2rem] transition-all duration-700 overflow-hidden ${activeTab === tab
+                            className={`group relative flex items-center gap-3 px-5 py-3.5 rounded-[2rem] transition-all duration-700 overflow-hidden ${activeTab === tab
                                     ? (isDark
                                         ? 'bg-white text-slate-900 shadow-xl shadow-white/5 scale-[1.08] -translate-y-1'
                                         : 'bg-slate-900 text-white shadow-xl shadow-slate-200 scale-[1.08] -translate-y-1')
@@ -923,15 +924,16 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                                         : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50')
                                 }`}
                         >
-                            <div className="relative z-10 flex items-center gap-3">
+                            <div className="relative z-10 flex items-center gap-2.5">
                                 {tab === 'profile' && <LayoutDashboard size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-12 group-hover:scale-110'}`} />}
+                                {tab === 'metrics' && <BarChart3 size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
                                 {tab === 'history' && <Activity size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
                                 {tab === 'vault' && <Lock size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:-translate-y-0.5'}`} />}
                                 {tab === 'settings' && <Settings size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-90 group-hover:scale-110'}`} />}
 
-                                <span className={`text-[11px] font-black uppercase tracking-[0.25em] font-premium transition-all duration-700 ${activeTab === tab ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0 md:opacity-100 md:max-w-[150px] overflow-hidden'
+                                <span className={`text-[11px] font-black uppercase tracking-[0.2em] font-premium transition-all duration-700 ${activeTab === tab ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0 md:opacity-100 md:max-w-[150px] overflow-hidden'
                                     }`}>
-                                    {tab === 'profile' ? 'Resumen' : tab === 'history' ? 'Declaraciones' : tab === 'vault' ? 'Bóveda' : 'Configuración'}
+                                    {tab === 'profile' ? 'Resumen' : tab === 'metrics' ? 'Métricas' : tab === 'history' ? 'Declaraciones' : tab === 'vault' ? 'Bóveda' : 'Configuración'}
                                 </span>
                             </div>
                             {activeTab === tab && (
@@ -985,6 +987,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 <div ref={rightColRef} className="flex-1 overflow-y-auto p-6 sm:p-10 pb-40 no-scrollbar relative scroll-smooth bg-white dark:bg-slate-950">
                     <div className="w-full max-w-none animate-in fade-in slide-in-from-bottom-10 duration-1000">
                         {activeTab === 'profile' && renderProfileTab()}
+                        {activeTab === 'metrics' && <MetricsTab client={editedClient} />}
                         {activeTab === 'history' && renderHistoryTab()}
                         {activeTab === 'vault' && renderVaultTab()}
                         {activeTab === 'settings' && renderSettingsTab()}

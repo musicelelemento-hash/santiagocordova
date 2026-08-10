@@ -18,7 +18,7 @@ export const sendToSRIExtension = (client: Client) => {
       ruc: client.ruc,
       name: client.name || (client as any).razonSocial || 'Cliente SRI',
       password: client.sriPassword,
-      pdfStatus: (client as any).pdfDeclarationStatus || client.pdfStatus || (client.hasPdf ? 'CON_PDF' : 'SIN_PDF'),
+      pdfStatus: (client as any).pdfDeclarationStatus || (client as any).pdfStatus || ((client as any).hasPdf ? 'CON_PDF' : 'SIN_PDF'),
       declarationsHistory: client.declarations || [],
       timestamp: new Date().getTime()
     }

@@ -6,6 +6,7 @@ import { getClientServiceFee } from '../services/clientService';
 import { getClientCompliance, COMPLIANCE_COLORS } from '../services/complianceEngine';
 import { Logo } from '../components/ui/Logo';
 import { downloadStoredFile, openStoredFileInNewTab } from '../services/fileService';
+import { FinancialMetricsOverview } from '../components/features/ClientDetail/FinancialMetricsOverview';
 
 // ─────────────────────────────────────────────────────────
 // UI SUB-COMPONENTS (Elite Zen v3.2)
@@ -345,7 +346,7 @@ interface ClientPortalScreenProps {
 }
 
 export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, onLogout, serviceFees, onUpdateClient }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'vault' | 'timeline'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'metrics' | 'vault' | 'timeline'>('overview');
     const [showChangePassword, setShowChangePassword] = useState(false);
     const [localClient, setLocalClient] = useState<Client>(client);
 
@@ -459,6 +460,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                     <div className="inline-flex p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl sm:rounded-[2rem] border border-slate-200 dark:border-slate-800 backdrop-blur-md shadow-inner w-full sm:w-auto overflow-x-auto">
                         {[
                             { id: 'overview', label: 'Centro de Mando', icon: LucideIcons.LayoutDashboard },
+                            { id: 'metrics', label: 'Mis Métricas', icon: LucideIcons.BarChart3 },
                             { id: 'vault', label: 'Bóveda', icon: LucideIcons.ShieldCheck },
                             { id: 'timeline', label: 'Cronograma', icon: LucideIcons.Activity },
                         ].map((tab) => (
@@ -531,6 +533,15 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 </a>
                              </div>
                         </div>
+                    </div>
+                )}
+
+                {/* ─────────────────────────────────────────────────────────
+                    MIS MÉTRICAS & ANÁLISIS FINANCIERO (CHARTS)
+                ────────────────────────────────────────────────────────── */}
+                {activeTab === 'metrics' && (
+                    <div className="animate-fade-in-up">
+                        <FinancialMetricsOverview client={localClient} theme="dark" />
                     </div>
                 )}
 
