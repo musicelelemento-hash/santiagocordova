@@ -163,7 +163,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   // Emisor Defaults (Ecuador Company Details)
   const [emisorRuc, setEmisorRuc] = useState(() => localStorage.getItem('sc_emisor_ruc') || '0705787745001');
   const [emisorRazonSocial, setEmisorRazonSocial] = useState(() => localStorage.getItem('sc_emisor_razon') || 'CORDOVA RAMIREZ ROBERTO SANTIGO');
-  const [emisorNombreComercial, setEmisorNombreComercial] = useState(() => localStorage.getItem('sc_emisor_comercial') || 'SOLUCIONES CONTABLES PRO');
+  const [emisorNombreComercial, setEmisorNombreComercial] = useState(() => localStorage.getItem('sc_emisor_comercial') || 'SOLUCIONES TRIBUTARIAS');
   const [emisorDirMatriz, setEmisorDirMatriz] = useState(() => localStorage.getItem('sc_emisor_dir') || 'Colon y Sucre / Pasaje - El Oro');
   const [emisorEstab, setEmisorEstab] = useState(() => localStorage.getItem('sc_emisor_estab') || '001');
   const [emisorPtoEmi, setEmisorPtoEmi] = useState(() => localStorage.getItem('sc_emisor_pto') || '001');
@@ -423,7 +423,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       {
         id: '1',
         codigoPrincipal: '001',
-        descripcion: 'Asesoría Tributaria Mensual Profesional',
+        descripcion: 'Servicios Tributarios F. 104 Declaracion Iva Mensual',
         cantidad: 1,
         precioUnitario: 120.00,
         ivaRate: initialIva,
@@ -653,8 +653,18 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     } else {
       // Consolidado
       const totalAmount = checkedObs.reduce((sum, ob) => sum + ob.amount, 0);
-      const periodsStr = checkedObs.map(ob => `${ob.type} ${formatPeriodForDisplay(ob.period).replace('IVA ', '')}`).join(', ');
-      const desc = `Servicios Contables Profesionales - Períodos: ${periodsStr}`;
+      const monthNames = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+      
+      const periodsStr = checkedObs.map(ob => {
+        if (ob.type === 'IVA') {
+          const [y, m] = ob.period.split('-');
+          const mText = monthNames[parseInt(m) - 1] || m;
+          return `Servicios Tributarios F. 104 Declaracion Iva Mensual ${mText} ${y}`;
+        }
+        return `${ob.type} ${formatPeriodForDisplay(ob.period).replace('IVA ', '')}`;
+      }).join(', ');
+      
+      const desc = periodsStr;
       const tax = Number((totalAmount * currentIvaRate).toFixed(2));
       setInvoiceItems([
         {
@@ -1058,7 +1068,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       {
         id: '1',
         codigoPrincipal: '001',
-        descripcion: 'Asesoría Tributaria Mensual Profesional',
+        descripcion: 'Servicios Tributarios F. 104 Declaracion Iva Mensual',
         cantidad: 1,
         precioUnitario: 120.00,
         ivaRate: initialIva,
@@ -2075,7 +2085,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
     const logoHtml = emisorLogo 
       ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 
-      : "<div class='emisor-title'>" + (emisor.nombreComercial || 'SOLUCIONES CONTABLES PRO') + "</div>";
+      : "<div class='emisor-title'>" + (emisor.nombreComercial || 'SOLUCIONES TRIBUTARIAS') + "</div>";
 
     const cssStyles = `
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Manrope:wght@700;800;900&display=swap');
@@ -2387,7 +2397,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               {emisorRazonSocial || 'Emisor No Configurado'}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
-              RUC Emisor: <span className="font-mono">{emisorRuc || '0705787745001'}</span> — {emisorNombreComercial || 'SOLUCIONES CONTABLES PRO'}
+              RUC Emisor: <span className="font-mono">{emisorRuc || '0705787745001'}</span> — {emisorNombreComercial || 'SOLUCIONES TRIBUTARIAS'}
             </p>
           </div>
           
@@ -3732,7 +3742,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         {
                           id: '1',
                           codigoPrincipal: '001',
-                          descripcion: 'Asesoría Tributaria Mensual Profesional',
+                          descripcion: 'Servicios Tributarios F. 104 Declaracion Iva Mensual',
                           cantidad: 1,
                           precioUnitario: 120.00,
                           ivaRate: emisorRegimen === '3' ? 0.00 : 0.15,
