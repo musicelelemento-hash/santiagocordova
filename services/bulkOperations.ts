@@ -169,27 +169,46 @@ export const processBulkPdfs = async (
 
                 const existingDec = client.declarations.find(d => arePeriodsEqual(d.period, decPeriod));
                 
-                // Al cargar el PDF en masa, el estado es ENVIADA (Declarada).
-                // No se auto-marca como Pagada/Cobrada ni Notificada.
-                const wasAlreadyPaid = existingDec ? !!existingDec.is_paid : false;
-                const newDec = {
-                    period: decPeriod,
-                    type,
-                    status: wasAlreadyPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
-                    updatedAt: new Date().toISOString(),
-                    declaredAt: (data as any).declarationDate || new Date().toISOString(),
-                    amount: (data as any).amount || 0,
-                    proof_file: storedFile,
-                    is_paid: wasAlreadyPaid,
-                    paidAt: wasAlreadyPaid ? existingDec?.paidAt : undefined,
-                    isNotifiedWhatsApp: existingDec ? !!existingDec.isNotifiedWhatsApp : false,
-                    notifiedWhatsAppAt: existingDec?.notifiedWhatsAppAt
-                };
-
-                const newHistory = [...client.declarations.filter(d => !arePeriodsEqual(d.period, decPeriod)), newDec];
-                updates.declarations = newHistory;
+                let shouldReplace = true;
+                
+                // SMART OVERWRITE LOGIC
+                // Los PDFs originales del SRI tienen nombres de solo nmeros (ej. "873083870866.pdf").
+                // Los PDFs generados por el bot se llaman "Declaracion_IVA_0707018438001_2026-07.pdf".
                 if (existingDec && existingDec.proof_file) {
-                    status = 'duplicate';
+                    const existingName = existingDec.proof_file.name || '';
+                    const isExistingOriginal = /^\d+\.pdf$/i.test(existingName);
+                    
+                    if (isExistingOriginal) {
+                        shouldReplace = false;
+                        status = 'duplicate';
+                    }
+                }
+
+                if (shouldReplace) {
+                    const wasAlreadyPaid = existingDec ? !!existingDec.is_paid : false;
+                    const newDec = {
+                        period: decPeriod,
+                        type,
+                        status: wasAlreadyPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        updatedAt: new Date().toISOString(),
+                        declaredAt: (data as any).declarationDate || new Date().toISOString(),
+                        amount: (data as any).amount || 0,
+                        proof_file: storedFile,
+                        is_paid: wasAlreadyPaid,
+                        paidAt: wasAlreadyPaid ? existingDec?.paidAt : undefined,
+                        isNotifiedWhatsApp: existingDec ? !!existingDec.isNotifiedWhatsApp : false,
+                        notifiedWhatsAppAt: existingDec?.notifiedWhatsAppAt
+                    };
+
+                    const newHistory = [...client.declarations.filter(d => !arePeriodsEqual(d.period, decPeriod)), newDec];
+                    updates.declarations = newHistory;
+                    
+                    if (existingDec && existingDec.proof_file) {
+                        status = 'success'; // Replaced a non-original successfully
+                    }
+                } else {
+                    // No hacemos cambios en las declaraciones si ya existe un original
+                    updates.declarations = client.declarations;
                 }
             }
 
