@@ -32,10 +32,12 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const proofInputRef = useRef<HTMLInputElement>(null);
 
-    const handleDeleteClient = () => {
-        updateClient(client!.id, { isDeleted: true });
+    const handleDeleteClient = async () => {
         toast.success(`Cliente ${client!.name} enviado a la papelera.`);
-        onClose();
+        await updateClient(client!.id, { isDeleted: true });
+        setTimeout(() => {
+            onClose();
+        }, 150);
     };
 
 
