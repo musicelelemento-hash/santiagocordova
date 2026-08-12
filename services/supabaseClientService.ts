@@ -47,6 +47,8 @@ export const SupabaseService = {
                 is_paid: !!dec.is_paid,
                 paid_at: dec.paidAt || null,
                 proof_file: dec.proof_file || null,
+                is_notified_whatsapp: !!dec.isNotifiedWhatsApp,
+                notified_whatsapp_at: dec.notifiedWhatsAppAt || null,
                 created_at: dec.declaredAt || new Date().toISOString(),
                 updated_at: dec.updatedAt || new Date().toISOString()
             };
@@ -406,7 +408,11 @@ export const SupabaseService = {
       iessPassword: db.iess_password,
       signatureExpirationDate: db.signature_expiration,
       advanceCredits: db.advance_credits,
-      declarations: db.sri_declaraciones || [],
+      declarations: (db.sri_declaraciones || []).map((d: any) => ({
+        ...d,
+        isNotifiedWhatsApp: d.is_notified_whatsapp,
+        notifiedWhatsAppAt: d.notified_whatsapp_at
+      })),
       vault: db.vault || [],
       structuredNotes: db.structured_notes || [],
       signatureFile: db.signature_file,
