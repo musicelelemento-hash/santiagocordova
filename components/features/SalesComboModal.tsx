@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     X, CheckCircle2, ShieldCheck, Zap, Key, FileText,
     ShoppingBag, Calendar, Lock, Camera, Upload, Search, UserPlus,
-    Printer, Download, UserCheck, RefreshCw, Check, Info, ArrowRight, User, FileCheck
+    Printer, Download, UserCheck, RefreshCw, Check, Info, ArrowRight, User, FileCheck, Loader
 } from 'lucide-react';
+import { extractDataFromSriPdf } from '../../services/pdfExtraction';
 import { Client, FacturadorConfig, StoredFile, TaxRegime } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { useToast } from '../../context/ToastContext';
@@ -63,6 +64,33 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     const [particularRuc, setParticularRuc] = useState('');
     const [particularPhone, setParticularPhone] = useState('');
     const [particularEmail, setParticularEmail] = useState('');
+    
+    // Particular PDF Extraction
+    const [isAnalyzingParticular, setIsAnalyzingParticular] = useState(false);
+    const particularRucInputRef = useRef<HTMLInputElement>(null);
+
+    const handleParticularRucUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (file.type !== 'application/pdf') {
+            toast.error("Por favor suba un archivo PDF válido del RUC.");
+            return;
+        }
+        setIsAnalyzingParticular(true);
+        try {
+            const extracted = await extractDataFromSriPdf(file);
+            setParticularName(extracted.apellidos_nombres);
+            setParticularRuc(extracted.ruc);
+            if (!username) setUsername(extracted.ruc);
+            toast.success("Datos extraídos correctamente.");
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al leer el PDF del RUC.");
+        } finally {
+            setIsAnalyzingParticular(false);
+            if (particularRucInputRef.current) particularRucInputRef.current.value = '';
+        }
+    };
 
     // Registration Mode State (Pro Elite: Solo Plan vs Completo)
     const [isOnlyPlanRegistration, setIsOnlyPlanRegistration] = useState<boolean>(true);
@@ -449,6 +477,29 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                 <p className="text-[11px] text-slate-400">
                                     Esta venta se registrará en el historial de Planes y Facturadores como venta directa pero <strong>NO exigirá declaraciones contables continuas</strong>.
                                 </p>
+
+                                {/* Extracción rápida por PDF */}
+                                <div 
+                                    onClick={() => !isAnalyzingParticular && particularRucInputRef.current?.click()}
+                                    className={`
+                                        p-3 rounded-xl border border-dashed text-center cursor-pointer transition-all flex items-center justify-center gap-2
+                                        ${isAnalyzingParticular ? 'border-[#00A896] bg-[#00A896]/10' : 'border-white/20 bg-slate-900/50 hover:border-[#00A896]/50'}
+                                    `}
+                                >
+                                    <input type="file" ref={particularRucInputRef} onChange={handleParticularRucUpload} accept=".pdf" className="hidden" />
+                                    {isAnalyzingParticular ? (
+                                        <>
+                                            <Loader className="w-4 h-4 text-[#00A896] animate-spin" />
+                                            <span className="text-xs font-bold text-[#00A896]">Extrayendo...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-4 h-4 text-slate-400" />
+                                            <span className="text-xs font-bold text-slate-300">Subir RUC en PDF para extraer datos</span>
+                                        </>
+                                    )}
+                                </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <input
                                         type="text"
@@ -484,6 +535,22 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                         onChange={(e) => setParticularEmail(e.target.value)}
                                         className="px-3.5 py-2.5 bg-slate-900 border border-white/10 rounded-xl text-xs font-bold text-white outline-none focus:border-[#00A896]"
                                     />
+                                </div>
+                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/10">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => particularName && particularRuc ? downloadEcuafactDocx(particularName, particularRuc) : toast.error("Extrae o ingresa los datos primero")} 
+                                        className="text-xs font-bold text-[#00A896] hover:bg-[#00A896]/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                                    >
+                                        <Download size={14} /> DOCX Autorización
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => particularName && particularRuc ? printEcuafactAuthorization(particularName, particularRuc) : toast.error("Extrae o ingresa los datos primero")} 
+                                        className="text-xs font-bold text-[#00A896] hover:bg-[#00A896]/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5"
+                                    >
+                                        <Printer size={14} /> Imprimir Autorización
+                                    </button>
                                 </div>
                             </div>
                         ) : (
