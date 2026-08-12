@@ -43,6 +43,43 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
 
     const [selectedPeriod, setSelectedPeriod] = useState<string>(availablePeriods[0] || '2026-07');
 
+    // NUEVO: Calcular Ventas YTD (Year-to-Date) del año en curso
+    const currentYear = new Date().getFullYear().toString();
+    const ytdSales = useMemo(() => {
+        let total = 0;
+        if (client.declarations) {
+            client.declarations.forEach(d => {
+                if (d.period && d.period.startsWith(currentYear)) {
+                    const meta = (d.proof_file?.metadata as any) || {};
+                    const v15 = meta.ventas15 ?? meta.base15 ?? (d.amount ? d.amount * 4 : 0);
+                    const v0 = meta.ventas0 ?? meta.base0 ?? 0;
+                    total += v15 + v0;
+                }
+            });
+        }
+        return total;
+    }, [client.declarations, currentYear]);
+
+    // Tabla SRI Régimen General 2024
+    const taxBrackets = [
+        { limit: 11902, tax: 0, msg: "Fracción Básica Desgravada" },
+        { limit: 15159, tax: 5, msg: "Tramo 5%" },
+        { limit: 19682, tax: 10, msg: "Tramo 10%" },
+        { limit: 25215, tax: 12, msg: "Tramo 12%" },
+        { limit: 33738, tax: 15, msg: "Tramo 15%" },
+        { limit: 44721, tax: 20, msg: "Tramo 20%" },
+        { limit: 59537, tax: 25, msg: "Tramo 25%" },
+        { limit: 79388, tax: 30, msg: "Tramo 30%" },
+        { limit: 105580, tax: 35, msg: "Tramo 35%" },
+        { limit: Infinity, tax: 37, msg: "Tramo Máximo 37%" }
+    ];
+
+    const currentBracket = useMemo(() => {
+        return taxBrackets.find(b => ytdSales <= b.limit) || taxBrackets[taxBrackets.length - 1];
+    }, [ytdSales]);
+
+    const isGeneralRegime = client.regime === 'General' || !client.regime?.toLowerCase().includes('rimpe');
+
     // 2. Mapear datos mensuales históricos para la gráfica comparativa (últimos 6 meses)
     const historyData = useMemo(() => {
         const last6 = availablePeriods.slice(0, 6).reverse();
@@ -235,6 +272,55 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                     </button>
                 </div>
             </div>
+
+            {/* TERMÓMETRO DE LÍMITE DE RENTA (INTELIGENCIA FINANCIERA) */}
+            {isGeneralRegime && (
+                <div className={`p-6 sm:p-8 rounded-[2.5rem] border backdrop-blur-xl shadow-xl relative overflow-hidden ${
+                    isDark ? 'bg-slate-900/60 border-white/10' : 'bg-white border-slate-200'
+                }`}>
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
+                        <div>
+                            <h3 className={`text-base font-extrabold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                <Sparkles size={18} className="text-amber-400" />
+                                Termómetro de Renta (YTD ${currentYear})
+                            </h3>
+                            <p className="text-xs text-slate-400 mt-1 max-w-md">
+                                Monitoreo inteligente de sus ventas acumuladas frente a la tabla del Impuesto a la Renta.
+                            </p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Facturado</p>
+                            <p className={`text-3xl font-black font-display tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                ${(ytdSales || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex justify-between text-xs font-bold">
+                            <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Progreso hacia: {currentBracket.msg}</span>
+                            <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                {currentBracket.limit === Infinity ? 'Tope Máximo' : `Tope: ${currentBracket.limit.toLocaleString()}`}
+                            </span>
+                        </div>
+                        <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+                            <div 
+                                className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                                    currentBracket.tax === 0 ? 'bg-emerald-500' : 
+                                    currentBracket.tax <= 12 ? 'bg-amber-500' : 'bg-rose-500'
+                                }`}
+                                style={{ width: `${currentBracket.limit === Infinity ? 100 : Math.min(100, (ytdSales / currentBracket.limit) * 100)}%` }}
+                            />
+                        </div>
+                        <p className="text-xs text-slate-500 font-medium">
+                            {currentBracket.limit === Infinity 
+                                ? "Has superado el último tramo de la tabla de impuestos."
+                                : `Te faltan ${(currentBracket.limit - ytdSales).toLocaleString('en-US', { minimumFractionDigits: 2 })} para pasar a la siguiente categoría de impuestos (${taxBrackets[taxBrackets.indexOf(currentBracket) + 1]?.msg || 'N/A'}).`
+                            }
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* GRÁFICO COMPARATIVO DE EVOLUCIÓN MENSUAL */}
             <div className={`p-6 sm:p-8 rounded-[2.5rem] border backdrop-blur-xl shadow-xl relative overflow-hidden ${
