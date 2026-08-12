@@ -1,4 +1,6 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useDropzone } from 'react-dropzone';
 import {
     ShoppingBag, PhoneCall, AlertTriangle, CheckCircle2, ArrowRight,
     Search, FileText, Check, Copy, ExternalLink, Download, Eye, EyeOff,
@@ -15,6 +17,7 @@ import { Modal } from '../components/ui/Modal';
 import { downloadStoredFile } from '../services/fileService';
 import { SalesComboModal } from '../components/features/SalesComboModal';
 import { QuickPlanRegistrationModal } from '../components/features/QuickPlanRegistrationModal';
+import { SupabaseService } from '../services/supabaseClientService';
 
 interface FacturadoresScreenProps {
     navigate: (screen: any, options?: any) => void;
@@ -22,7 +25,7 @@ interface FacturadoresScreenProps {
 }
 
 export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate, initialSearchTerm = '' }) => {
-    const { clients, updateClient } = useAppStore();
+    const { clients: storeClients, updateClient } = useAppStore();
     const { toast } = useToast();
     
     const [searchTerm, setSearchTerm] = useState<string>(initialSearchTerm);
@@ -36,30 +39,51 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const directVaultUploadInputRef = useRef<HTMLInputElement>(null);
     const [vaultUploadTarget, setVaultUploadTarget] = useState<'idCardFront' | 'idCardBack' | 'idCardSelfie' | 'rucPdf' | 'signatureFile' | 'ecuafactSignedRequest' | 'vault'>('vault');
 
-    const facturadorClients = useMemo(() => {
-        const q = searchTerm.toLowerCase().trim();
-        return clients.filter(c => {
-            if (c.isDeleted || !c.isActive || !c.facturadorConfig) return false;
-            
-            // Filter by status or category
-            if (filterStatus === 'sin_firma') {
-                if (c.signatureFile) return false;
-            } else if (filterStatus === 'particulares') {
-                if (c.category !== 'particular' && c.clientType !== 'solo_plan') return false;
-            } else if (filterStatus === 'clientes') {
-                if (c.clientType === 'solo_plan' || c.category === 'particular') return false;
-            } else if (filterStatus !== 'todos') {
-                const status = c.facturadorActivationStatus || 'recursos_listos';
-                if (status !== filterStatus) return false;
-            }
+    const [facturadorClients, setFacturadorClients] = useState<Client[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
+    const [page, setPage] = useState(1);
+    const [isLoading, setIsLoading] = useState(false);
+    const [expiringAlerts, setExpiringAlerts] = useState<Client[]>([]);
 
-            if (!q) return true;
-            return c.name.toLowerCase().includes(q) || 
-                   c.ruc.includes(q) || 
-                   (c.tradeName && c.tradeName.toLowerCase().includes(q)) ||
-                   c.facturadorConfig?.programName?.toLowerCase().includes(q);
+    const parentRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchFacturadores = async () => {
+            setIsLoading(true);
+            try {
+                const { clients: data, count } = await SupabaseService.getFacturadoresPaginated(page, 100, searchTerm, filterStatus);
+                if (isMounted) {
+                    setFacturadorClients(data);
+                    setTotalCount(count);
+                }
+            } catch (err) {
+                console.error("Error fetching facturadores paginated:", err);
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
+        };
+
+        const debounce = setTimeout(() => fetchFacturadores(), 300);
+        return () => { isMounted = false; clearTimeout(debounce); };
+    }, [page, searchTerm, filterStatus]);
+
+    useEffect(() => {
+        const expiring = facturadorClients.filter(c => {
+            if (!c.signatureExpirationDate) return false;
+            const expDate = new Date(c.signatureExpirationDate);
+            const diffDays = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 3600 * 24));
+            return diffDays <= 15 && diffDays >= 0;
         });
-    }, [clients, searchTerm, filterStatus]);
+        setExpiringAlerts(expiring);
+    }, [facturadorClients]);
+
+    const rowVirtualizer = useVirtualizer({
+        count: facturadorClients.length,
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 120, // estimated row height
+        overscan: 5,
+    });
 
     const togglePasswordVisibility = (id: string) => {
         setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
@@ -134,49 +158,67 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
         toast.success(`Expediente completo de ${client.name} copiado al portapapeles.`);
     };
 
-    const handleUploadFileToVault = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
+    const onDrop = useCallback(async (acceptedFiles: File[]) => {
+        const file = acceptedFiles[0];
         if (!file || !selectedVaultClient) return;
 
-        toast.info(`Cargando ${file.name} a la Bóveda del Cliente...`);
+        toast.info(`Subiendo ${file.name} a la Nube...`);
         const reader = new FileReader();
         reader.onload = async (e) => {
             const content = e.target?.result as string;
-            const storedFile: any = {
-                id: uuidv4(),
-                name: file.name,
-                size: file.size,
-                type: file.name.endsWith('.p12') ? 'p12' : file.type.includes('pdf') ? 'pdf' : 'image',
-                content,
-                uploadedAt: new Date().toISOString()
-            };
+            
+            try {
+                const extension = file.name.split('.').pop();
+                const path = `${selectedVaultClient.id}/${vaultUploadTarget}_${Date.now()}.${extension}`;
+                const { url, path: storagePath } = await SupabaseService.uploadFileToStorage('clients-vault', path, content);
 
-            const updates: Partial<Client> = {};
-            if (vaultUploadTarget === 'idCardFront') updates.idCardFront = storedFile;
-            else if (vaultUploadTarget === 'idCardBack') updates.idCardBack = storedFile;
-            else if (vaultUploadTarget === 'idCardSelfie') updates.idCardSelfie = storedFile;
-            else if (vaultUploadTarget === 'rucPdf') updates.rucPdf = storedFile;
-            else if (vaultUploadTarget === 'signatureFile') updates.signatureFile = storedFile;
-            else if (vaultUploadTarget === 'ecuafactSignedRequest') updates.ecuafactSignedRequest = storedFile;
-            else {
-                updates.vault = [...(selectedVaultClient.vault || []), storedFile];
+                const storedFile: any = {
+                    id: uuidv4(),
+                    name: file.name,
+                    size: file.size,
+                    type: file.name.endsWith('.p12') ? 'p12' : file.type.includes('pdf') ? 'pdf' : 'image',
+                    url: url,
+                    bucketPath: storagePath,
+                    uploadedAt: new Date().toISOString()
+                };
+
+                const updates: Partial<Client> = {};
+                if (vaultUploadTarget === 'idCardFront') updates.idCardFront = storedFile;
+                else if (vaultUploadTarget === 'idCardBack') updates.idCardBack = storedFile;
+                else if (vaultUploadTarget === 'idCardSelfie') updates.idCardSelfie = storedFile;
+                else if (vaultUploadTarget === 'rucPdf') updates.rucPdf = storedFile;
+                else if (vaultUploadTarget === 'signatureFile') updates.signatureFile = storedFile;
+                else if (vaultUploadTarget === 'ecuafactSignedRequest') updates.ecuafactSignedRequest = storedFile;
+                else {
+                    updates.vault = [...(selectedVaultClient.vault || []), storedFile];
+                }
+
+                updateClient(selectedVaultClient.id, updates);
+                toast.success(`✅ ${file.name} guardado en la nube (Storage).`);
+                setSelectedVaultClient(prev => prev ? { ...prev, ...updates } : null);
+            } catch (err) {
+                toast.error("Error subiendo el archivo a la nube.");
             }
-
-            updateClient(selectedVaultClient.id, updates);
-            toast.success(`✅ ${file.name} guardado en la Bóveda del Cliente.`);
-            setSelectedVaultClient(prev => prev ? { ...prev, ...updates } : null);
         };
         reader.readAsDataURL(file);
+    }, [selectedVaultClient, vaultUploadTarget, updateClient, toast]);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, maxFiles: 1 });
+
+    const handleUploadFileToVault = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        onDrop([file]);
     };
 
     // KPI Counters
     const kpis = useMemo(() => {
-        const activeFacturadores = clients.filter(c => !c.isDeleted && c.isActive && c.facturadorConfig);
+        const activeFacturadores = storeClients.filter(c => !c.isDeleted && c.isActive && (c.billingPlan || c.facturadorConfig));
         const recursos = activeFacturadores.filter(c => !c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos').length;
         const subido = activeFacturadores.filter(c => c.facturadorActivationStatus === 'subido_plataforma').length;
         const activado = activeFacturadores.filter(c => c.facturadorActivationStatus === 'activado').length;
         return { total: activeFacturadores.length, recursos, subido, activado };
-    }, [clients]);
+    }, [storeClients]);
 
     return (
         <div className="space-y-8 animate-fade-in pb-24">
@@ -273,6 +315,32 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                 </div>
             </div>
 
+            {/* ── ALERTAS DE VENCIMIENTO ── */}
+            {expiringAlerts.length > 0 && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 md:p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                        <AlertTriangle className="text-amber-500" size={24} />
+                        <h3 className="text-amber-500 font-bold">Firmas Electrónicas por Vencer (Próximos 15 días)</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {expiringAlerts.map(client => {
+                            const expDate = new Date(client.signatureExpirationDate!);
+                            const diffDays = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 3600 * 24));
+                            return (
+                                <div key={client.id} className="bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col gap-2">
+                                    <div className="font-bold text-white">{client.name}</div>
+                                    <div className="text-xs text-slate-400">RUC: {client.ruc}</div>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <span className="text-xs font-mono text-amber-400">{format(expDate, "dd/MM/yyyy")}</span>
+                                        <span className="text-[10px] uppercase font-bold bg-amber-500/20 text-amber-400 px-2 py-1 rounded">Vence en {diffDays} días</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             {/* ── BARRA DE BÚSQUEDA Y FILTRADO DE CATEGORÍAS ── */}
             <div className="flex flex-col lg:flex-row items-center gap-4 justify-between">
                 <div className="relative w-full lg:max-w-md">
@@ -359,8 +427,13 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {facturadorClients.map((client) => {
-                                    const config = client.facturadorConfig!;
+                                {rowVirtualizer.getVirtualItems().length > 0 && (
+                                    <tr style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }} />
+                                )}
+                                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                    const client = facturadorClients[virtualRow.index];
+                                    const config = client.billingPlan || client.facturadorConfig;
+                                    if (!config) return null;
                                     const pwdVisible = visiblePasswords[client.id] || false;
                                     const isCopied = copiedId === client.id;
                                     const providerUrl = config.url || (config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' : 'https://app.ecuafact.com');
@@ -574,6 +647,9 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                         </tr>
                                     );
                                 })}
+                                {rowVirtualizer.getVirtualItems().length > 0 && (
+                                    <tr style={{ height: `${rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end)}px` }} />
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -644,35 +720,44 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 </h4>
                             </div>
                             
-                            <input
-                                ref={directVaultUploadInputRef}
-                                type="file"
-                                onChange={handleUploadFileToVault}
-                                className="hidden"
-                            />
-
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2 mb-3">
                                 {[
-                                    { id: 'signatureFile', label: '🔑 Firma Electrónica .p12' },
-                                    { id: 'idCardFront', label: '🪪 Cédula Frente' },
-                                    { id: 'idCardBack', label: '🪪 Cédula Reverso' },
+                                    { id: 'signatureFile', label: '🔑 Firma .p12' },
+                                    { id: 'idCardFront', label: '🪪 Frente' },
+                                    { id: 'idCardBack', label: '🪪 Reverso' },
                                     { id: 'idCardSelfie', label: '📸 Selfie' },
                                     { id: 'rucPdf', label: '📄 RUC PDF' },
-                                    { id: 'ecuafactSignedRequest', label: '✍️ Solicitud Ecuafact' },
-                                    { id: 'vault', label: '📂 Archivo General Bóveda' }
+                                    { id: 'ecuafactSignedRequest', label: '✍️ Solicitud' },
+                                    { id: 'vault', label: '📂 General' }
                                 ].map((target) => (
                                     <button
                                         key={target.id}
-                                        onClick={() => {
-                                            setVaultUploadTarget(target.id as any);
-                                            setTimeout(() => directVaultUploadInputRef.current?.click(), 50);
-                                        }}
-                                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-white/10 text-[10px] font-bold text-slate-200 hover:text-white transition-all flex items-center gap-1.5"
+                                        onClick={() => setVaultUploadTarget(target.id as any)}
+                                        className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all flex items-center gap-1.5 ${
+                                            vaultUploadTarget === target.id
+                                                ? 'bg-indigo-600 border-indigo-500 text-white'
+                                                : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                                        }`}
                                     >
-                                        <Plus size={12} className="text-indigo-400" />
                                         <span>{target.label}</span>
                                     </button>
                                 ))}
+                            </div>
+
+                            <div 
+                                {...getRootProps()} 
+                                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                                    isDragActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700 hover:border-indigo-400/50 bg-slate-900/50'
+                                }`}
+                            >
+                                <input {...getInputProps()} />
+                                <UploadCloud className="mx-auto text-slate-400 mb-2" size={32} />
+                                <p className="text-sm text-slate-300 font-bold">
+                                    {isDragActive ? "¡Suelta el archivo aquí!" : "Arrastra un archivo aquí, o haz clic para seleccionar"}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    El archivo se guardará como: <span className="font-bold text-indigo-300 uppercase">{vaultUploadTarget}</span>
+                                </p>
                             </div>
                         </div>
 

@@ -1,7 +1,6 @@
 
-import React, { memo } from 'react';
-import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import React, { memo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Client, ServiceFeesConfig, DeclarationStatus, TaxRegime } from '../../types';
 import { getDueDateForPeriod, getPeriod, formatPeriodForDisplay, getNextPeriod, safeFormat, requiresIva, getWhatsAppUrl, isSriPasswordUpdated } from '../../services/sri';
 import { getClientServiceFee } from '../../services/clientService';
@@ -20,8 +19,20 @@ interface VirtualClientTableProps {
     isCobrosView?: boolean;
 }
 
-const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualClientTableProps>) => {
-    const { clients, serviceFees, onView, onQuickAction, onUploadReceipt, frequency, isTrashView, isCobrosView } = data;
+interface TableRowProps {
+    index: number;
+    style?: React.CSSProperties;
+    clients: Client[];
+    serviceFees: ServiceFeesConfig;
+    onView: (client: Client, tab?: string) => void;
+    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate' | 'restore' | 'purge') => void;
+    onUploadReceipt: (client: Client, period?: string) => void;
+    frequency?: TaxFrequency | 'all';
+    isTrashView?: boolean;
+    isCobrosView?: boolean;
+}
+
+const TableRow = memo(({ index, style, clients, serviceFees, onView, onQuickAction, onUploadReceipt, frequency, isTrashView, isCobrosView }: TableRowProps) => {
     const client = clients[index];
     
     const fee = getClientServiceFee(client, serviceFees);
@@ -315,6 +326,15 @@ const TableRow = memo(({ data, index, style }: ListChildComponentProps<VirtualCl
 });
 
 export const VirtualClientTable: React.FC<VirtualClientTableProps> = (props) => {
+    const parentRef = useRef<HTMLDivElement>(null);
+
+    const rowVirtualizer = useVirtualizer({
+        count: props.clients.length,
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 96,
+        overscan: 5,
+    });
+
     return (
         <div className="bg-surface-lowest rounded-[2.5rem] shadow-architect border-0 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 425px)', minHeight: '550px' }}>
             <div className="flex bg-surface-low text-[10px] font-bold uppercase text-on-surface-variant/60 py-5 px-6 active:select-none tracking-[0.2em]">
@@ -325,21 +345,40 @@ export const VirtualClientTable: React.FC<VirtualClientTableProps> = (props) => 
                 <div className="w-48 shrink-0 px-6">{props.isCobrosView ? 'Total Adeudado' : 'Honorarios'}</div>
                 <div className="w-64 shrink-0 px-6">{props.isCobrosView ? 'Gestión de Cobro' : 'Gestión'}</div>
             </div>
-            <div className="flex-1">
-                <AutoSizer>
-                    {({ height, width }) => (
-                        <List
-                            height={height}
-                            itemCount={props.clients.length}
-                            itemSize={96} // Taller for high-end padding
-                            width={width}
-                            itemData={props}
-                            className="no-scrollbar"
+            <div ref={parentRef} className="flex-1 overflow-auto no-scrollbar">
+                <div
+                    style={{
+                        height: `${rowVirtualizer.getTotalSize()}px`,
+                        width: '100%',
+                        position: 'relative',
+                    }}
+                >
+                    {rowVirtualizer.getVirtualItems().map((virtualRow) => (
+                        <div
+                            key={virtualRow.key}
+                            style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: `${virtualRow.size}px`,
+                                transform: `translateY(${virtualRow.start}px)`,
+                            }}
                         >
-                            {TableRow}
-                        </List>
-                    )}
-                </AutoSizer>
+                            <TableRow
+                                index={virtualRow.index}
+                                clients={props.clients}
+                                serviceFees={props.serviceFees}
+                                onView={props.onView}
+                                onQuickAction={props.onQuickAction}
+                                onUploadReceipt={props.onUploadReceipt}
+                                frequency={props.frequency}
+                                isTrashView={props.isTrashView}
+                                isCobrosView={props.isCobrosView}
+                            />
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

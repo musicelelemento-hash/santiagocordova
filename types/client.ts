@@ -50,8 +50,9 @@ export interface StoredFile {
     type: string; // 'p12' | 'pdf' | 'other'
     size: number;
     lastModified: number;
-    content?: string | null; // Base64 content
+    content?: string | null; // Base64 content (legacy)
     url?: string;     // URL for direct cloud storage
+    bucketPath?: string; // Supabase Storage path
     metadata?: {
         amount?: number;
         period?: string;
@@ -120,7 +121,9 @@ export interface TaxProfile {
     requiresAnexoPvp: boolean;
 }
 
-export interface FacturadorConfig {
+export interface BillingPlan {
+    id?: string;
+    client_id?: string;
     programName?: string;
     url?: string;
     username?: string;
@@ -132,6 +135,8 @@ export interface FacturadorConfig {
     soldByMe?: boolean;
     providerName?: string;
     freeSupportAndCancellation?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface Client {
@@ -190,7 +195,8 @@ export interface Client {
     updatedAt?: string;
     clientStartPeriod?: string; // Primer período a declarar (ej: '2026-05'). Si no está, se usa el límite global del sistema.
     advanceCredits?: number;
-    facturadorConfig?: FacturadorConfig;
+    billingPlan?: BillingPlan; // Replacing facturadorConfig
+    facturadorConfig?: BillingPlan; // Legacy support for UI components until fully migrated
     isCourtesy?: boolean;
     category?: string;
     ecuafactSignedRequest?: StoredFile;

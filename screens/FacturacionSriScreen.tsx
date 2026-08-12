@@ -13,7 +13,10 @@ import { getClientServiceFee } from '../services/clientService';
 import { formatPeriodForDisplay } from '../services/sri';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
+import { ClientSearchDropdown } from '../components/features/ClientSearchDropdown';
 import { SalesComboModal } from '../components/features/SalesComboModal';
+import { VentaOcasionalForm } from '../components/features/VentaOcasionalForm';
+import { useToast } from '../context/ToastContext';
 import { SriPosTerminalModal } from '../components/features/SriPosTerminalModal';
 import { SriAccountingBatchModal } from '../components/features/SriAccountingBatchModal';
 import { DevolucionIvaModal } from '../components/features/DevolucionIvaModal';
@@ -3992,8 +3995,24 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 </div>
               )}
 
+              {/* Módulo Ecuafact / Venta Ocasional Auto-Registro */}
+              {!selectedClient && (
+                <VentaOcasionalForm
+                  buyerName={buyerName}
+                  buyerRuc={buyerRuc}
+                  onBuyerDataExtracted={(name, ruc, email, phone, address) => {
+                    setBuyerName(name);
+                    setBuyerRuc(ruc);
+                    setBuyerIdType('04'); // Usually RUC
+                    if (email) setBuyerEmail(email);
+                    if (phone) setBuyerPhone(phone);
+                    if (address) setBuyerAddress(address);
+                  }}
+                />
+              )}
+
               {/* Formulario de Campos Manuales del Receptor */}
-              <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/5">
+              <div className="space-y-4 pt-6 mt-6 border-t border-slate-200 dark:border-white/5">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Detalles de Identificación y Contacto</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">

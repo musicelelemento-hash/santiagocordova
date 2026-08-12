@@ -13,7 +13,7 @@ export const SupabaseService = {
   async getClients(): Promise<Client[]> {
     const { data, error } = await supabase
       .from('clients')
-            .select('*, sri_declaraciones(*)')
+      .select('*, sri_declaraciones(*), billing_plans(*)')
       .eq('is_deleted', false);
 
     if (error) throw error;
@@ -59,6 +59,32 @@ export const SupabaseService = {
         if (decError) {
             console.error(`[Supabase Error] FAILED upserting sri_declaraciones para ${client.ruc}:`, decError);
         }
+    }
+
+    // Upsert Billing Plan
+    if (client.billingPlan || client.facturadorConfig) {
+      const plan = client.billingPlan || client.facturadorConfig;
+      const { error: planError } = await supabase
+        .from('billing_plans')
+        .upsert({
+          client_id: client.id,
+          program_name: plan?.programName,
+          url: plan?.url,
+          username: plan?.username,
+          password: plan?.password,
+          expiration_date: plan?.expirationDate,
+          document_status: plan?.documentStatus,
+          document_count: plan?.documentCount,
+          price: plan?.price,
+          sold_by_me: plan?.soldByMe,
+          provider_name: plan?.providerName,
+          free_support_and_cancellation: plan?.freeSupportAndCancellation,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'client_id' });
+      
+      if (planError) {
+        console.error(`[Supabase Error] FAILED upserting billing_plans for ${client.ruc}:`, planError);
+      }
     }
   },
 
@@ -146,6 +172,68 @@ export const SupabaseService = {
       throw error;
     }
     return data?.content || null;
+  },
+
+  // --- Storage ---
+  async uploadFileToStorage(bucket: string, path: string, fileDataUrl: string): Promise<{url: string, path: string}> {
+    try {
+      // Convert data URL to Blob
+      const response = await fetch(fileDataUrl);
+      const blob = await response.blob();
+      
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(path, blob, { upsert: true });
+
+      if (error) throw error;
+      
+      const { data: publicUrlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(path);
+
+      return {
+        url: publicUrlData.publicUrl,
+        path: data.path
+      };
+    } catch (err) {
+      console.error(`[Supabase Storage] Failed to upload ${path} to ${bucket}:`, err);
+      throw err;
+    }
+  },
+
+  // --- Paginated Fetch for Facturadores ---
+  async getFacturadoresPaginated(page: number, limit: number, search: string, filterCategory: string): Promise<{clients: Client[], count: number}> {
+    let query = supabase
+      .from('clients')
+      .select('*, billing_plans(*)', { count: 'exact' })
+      .eq('is_deleted', false);
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,trade_name.ilike.%${search}%,ruc.ilike.%${search}%`);
+    }
+
+    if (filterCategory === 'Particulares') {
+      // Logic for particulares (e.g. they only have billing plan but maybe no declarations)
+      query = query.eq('clientType', 'solo_plan'); 
+    }
+
+    // Pagination
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+    
+    query = query.range(from, to).order('name', { ascending: true });
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error("[Supabase Error] getFacturadoresPaginated:", error);
+      throw error;
+    }
+
+    return {
+      clients: (data || []).map(d => this.mapClientFromDb(d)),
+      count: count || 0
+    };
   },
 
   // --- Real-time Sync ---
@@ -338,7 +426,21 @@ export const SupabaseService = {
       rentaRefundConfirmationStartedAt: db.renta_refund_confirmation_started_at,
       rentaRefundConfirmationDeadline: db.renta_refund_confirmation_deadline,
       createdAt: db.created_at,
-      updatedAt: db.updated_at
+      updatedAt: db.updated_at,
+      // Handle joined billing_plans (can be array or single depending on DB relationship, assume array from supabase left join)
+      billingPlan: db.billing_plans && db.billing_plans.length > 0 ? {
+        programName: db.billing_plans[0].program_name,
+        url: db.billing_plans[0].url,
+        username: db.billing_plans[0].username,
+        password: db.billing_plans[0].password,
+        expirationDate: db.billing_plans[0].expiration_date,
+        documentStatus: db.billing_plans[0].document_status,
+        documentCount: db.billing_plans[0].document_count,
+        price: db.billing_plans[0].price,
+        soldByMe: db.billing_plans[0].sold_by_me,
+        providerName: db.billing_plans[0].provider_name,
+        freeSupportAndCancellation: db.billing_plans[0].free_support_and_cancellation,
+      } : (db.facturador_config ? db.facturador_config : undefined)
     };
   },
 

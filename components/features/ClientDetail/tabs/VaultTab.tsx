@@ -1,13 +1,15 @@
-import React from 'react';
-import { Client, TaxRegime, Declaration, StoredFile } from '../../../../types';
+import React, { useCallback, useState } from 'react';
+import { Client, TaxRegime, Declaration, StoredFile, ClientNote } from '../../../../types';
 import { getPeriod, formatPeriodForDisplay } from '../../../../services/sri';
 import * as LucideIcons from 'lucide-react';
 import { VaultCard } from '../VaultCard';
 import { ClientNotes } from '../ClientNotes';
-import { ClientNote } from '../../../../types';
 import { FacturadorCard } from '../FacturadorCard';
 import { SalesComboModal } from '../../SalesComboModal';
 import { extractP12Metadata } from '../../../../utils/p12Reader';
+import { useDropzone } from 'react-dropzone';
+import { SupabaseService } from '../../../../services/supabaseClientService';
+import { useToast } from '../../../../context/ToastContext';
 
 interface VaultTabProps {
     client: Client;
@@ -40,10 +42,10 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     onUpdateClientDirect,
     onOpenAnulacionSRI
 }) => {
-    const [isSalesModalOpen, setIsSalesModalOpen] = React.useState(false);
     const [isVaultEditing, setIsVaultEditing] = React.useState(false);
     const [isSavingVault, setIsSavingVault] = React.useState(false);
     const [vaultSaved, setVaultSaved] = React.useState(false);
+    const { toast } = useToast();
 
     // Estado para metadatos de firma .p12 decodificada en tiempo real
     const [p12Meta, setP12Meta] = React.useState<any>(null);
@@ -102,6 +104,63 @@ export const VaultTab: React.FC<VaultTabProps> = ({
         }
     }, [editedClient.signatureFile?.content, editedClient.electronicSignaturePassword, editedClient.signatureExpirationDate, editedClient.signatureProvider, editedClient.signatureIssueDate, setEditedClient]);
 
+    const onDrop = useCallback(async (acceptedFiles: File[]) => {
+        const file = acceptedFiles[0];
+        if (!file || !onUpdateClientDirect) return;
+
+        toast.info(`Subiendo ${file.name} a la bóveda...`, { id: 'vault-upload' });
+
+        try {
+            const fileDataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+
+            const fileExt = file.name.split('.').pop() || '';
+            const path = `${client.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+            const uploadResult = await SupabaseService.uploadFileToStorage('clients-vault', path, fileDataUrl);
+
+            const isP12 = file.name.toLowerCase().endsWith('.p12') || file.name.toLowerCase().endsWith('.pfx');
+            
+            const newStoredFile: StoredFile = {
+                name: file.name,
+                type: isP12 ? 'p12' : (file.type.startsWith('image/') ? 'image' : 'pdf'),
+                size: file.size,
+                lastModified: file.lastModified,
+                url: uploadResult.url,
+                bucketPath: uploadResult.path
+            };
+
+            const updatedDeclarations = [...(editedClient.declarations || [])];
+            
+            // Add as a new empty declaration with proof file for the vault repository
+            updatedDeclarations.push({
+                period: formatPeriodForDisplay(new Date().toISOString().substring(0, 7)),
+                type: 'ANEXO',
+                status: 'Pendiente' as any, // DeclarationStatus
+                updatedAt: new Date().toISOString(),
+                proof_file: newStoredFile
+            });
+            
+            setEditedClient({ ...editedClient, declarations: updatedDeclarations });
+            await onUpdateClientDirect({ declarations: updatedDeclarations }, false);
+            toast.success('Archivo subido al repositorio exitosamente', { id: 'vault-upload' });
+            
+        } catch (error) {
+            console.error("Upload error:", error);
+            toast.error("Error al subir archivo", { id: 'vault-upload' });
+        }
+    }, [client.id, editedClient, onUpdateClientDirect, setEditedClient]);
+
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        noClick: true,
+        noKeyboard: true
+    });
+
     const handleSaveVault = async () => {
         if (!onUpdateClientDirect) return;
         setIsSavingVault(true);
@@ -150,7 +209,18 @@ export const VaultTab: React.FC<VaultTabProps> = ({
         }
     };
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <div {...getRootProps()} className="relative space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700 h-full">
+            <input {...getInputProps()} />
+            {isDragActive && (
+                <div className="absolute inset-0 z-50 bg-brand-navy/90 backdrop-blur-sm rounded-[3rem] border-4 border-dashed border-emerald-500 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-200">
+                    <div className="w-32 h-32 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                        <LucideIcons.UploadCloud size={64} className="text-emerald-400" />
+                    </div>
+                    <h2 className="text-3xl font-black text-white tracking-widest uppercase font-premium">Suelta para Subir</h2>
+                    <p className="text-emerald-400 font-medium text-lg mt-2">El archivo se guardará en el repositorio seguro</p>
+                </div>
+            )}
+
             {/* Encabezado Premium Bóveda */}
             <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-[2rem] p-6 sm:p-8 relative overflow-hidden shadow-xl border border-slate-700/50">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-teal/20 blur-[80px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
