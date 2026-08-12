@@ -29,7 +29,15 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
     const [isAnalyzingPdf, setIsAnalyzingPdf] = useState(false);
     const [uploadingTarget, setUploadingTarget] = useState<{ type: string; period?: string } | null>(null);
     const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string } | null>(null);
+    const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
     const proofInputRef = useRef<HTMLInputElement>(null);
+
+    const handleDeleteClient = () => {
+        updateClient(client!.id, { isDeleted: true });
+        toast.success(`Cliente ${client!.name} enviado a la papelera.`);
+        onClose();
+    };
+
 
     useEffect(() => {
         if (client) {
@@ -327,6 +335,44 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
                             />
                         </>
                     )}
+
+                    {/* DANGER ZONE */}
+                    <div className="mt-8 pt-6 border-t border-red-500/10 dark:border-red-500/20">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-red-400 mb-4 flex items-center gap-2">
+                            <LucideIcons.AlertTriangle size={14} /> Zona de Peligro
+                        </h3>
+                        {!isConfirmingDelete ? (
+                            <button
+                                onClick={() => setIsConfirmingDelete(true)}
+                                className="w-full py-4 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all active:scale-95 border border-red-100 dark:border-red-500/10 flex items-center justify-center gap-2"
+                            >
+                                <LucideIcons.Trash2 size={16} />
+                                Eliminar Cliente
+                            </button>
+                        ) : (
+                            <div className="p-4 bg-red-50 dark:bg-red-500/10 rounded-2xl border border-red-200 dark:border-red-500/20 space-y-4 animate-in fade-in zoom-in duration-200">
+                                <p className="text-sm font-bold text-red-900 dark:text-red-200 text-center">
+                                    ¿Estás completamente seguro? <br/>
+                                    <span className="text-xs font-medium text-red-700 dark:text-red-300">Esta acción no se puede deshacer.</span>
+                                </p>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setIsConfirmingDelete(false)}
+                                        className="flex-1 py-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors border border-slate-200 dark:border-white/10"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteClient}
+                                        className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors shadow-lg shadow-red-600/30 flex items-center justify-center gap-2"
+                                    >
+                                        <LucideIcons.Trash2 size={14} />
+                                        Sí, Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
             {isAnalyzingPdf && (
