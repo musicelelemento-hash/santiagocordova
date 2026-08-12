@@ -748,12 +748,27 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 return isActive && hasRenta;
             }
 
+            if (searchTerm.trim() && matrixMode === 'IVA') {
+                return isActive && (clientFreq === 'Mensual' || clientFreq === 'Semestral');
+            }
+
             return isActive && clientFreq === frequency;
         }).sort((a, b) => {
             const priorityA = hasPriorityDeclaration(a);
             const priorityB = hasPriorityDeclaration(b);
             if (priorityA !== priorityB) {
                 return priorityA ? -1 : 1;
+            }
+
+            // Group by Frequency when searching
+            if (searchTerm.trim() && matrixMode === 'IVA') {
+                const getFreqWeight = (c: Client) => {
+                    const freq = c.taxProfile?.ivaFrequency || (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual');
+                    return freq === 'Mensual' ? 1 : freq === 'Semestral' ? 2 : 3;
+                };
+                const fwA = getFreqWeight(a);
+                const fwB = getFreqWeight(b);
+                if (fwA !== fwB) return fwA - fwB;
             }
 
             // Custom Period Sorting
@@ -1112,10 +1127,36 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         {filteredClients.map((client, index) => {
                             const currentDigit = parseInt(client.ruc[8], 10);
                             const prevDigit = index > 0 ? parseInt(filteredClients[index - 1].ruc[8], 10) : null;
-                            const showDivider = sortOption === '9th_digit' && !isWorkspaceMode && (currentDigit !== prevDigit);
+                            const showDivider = sortOption === '9th_digit' && !isWorkspaceMode && (currentDigit !== prevDigit) && (!searchTerm.trim() || matrixMode !== 'IVA');
+
+                            const getFreq = (c: Client) => c.taxProfile?.ivaFrequency || (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual');
+                            const currentFreq = getFreq(client);
+                            const prevFreq = index > 0 ? getFreq(filteredClients[index - 1]) : null;
+                            const isSearchMode = searchTerm.trim().length > 0 && matrixMode === 'IVA';
+                            const showFreqDivider = isSearchMode && (currentFreq !== prevFreq);
 
                             return (
                                 <React.Fragment key={client.id}>
+                                    {showFreqDivider && (
+                                        <tr className="bg-primary/5 border-t border-b border-primary/20">
+                                            <td colSpan={periods.length + 1} className="px-6 py-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-1.5 rounded-lg bg-primary text-white shadow-lg shadow-primary/30 animate-pulse">
+                                                            {currentFreq === 'Semestral' ? <LucideIcons.CalendarRange size={14} /> : <LucideIcons.Calendar size={14} />}
+                                                        </div>
+                                                        <span className="text-[11px] font-black text-primary uppercase tracking-[0.2em] font-premium">
+                                                            Clientes {currentFreq}es
+                                                        </span>
+                                                        <span className="text-primary/30 mx-1">|</span>
+                                                        <span className="text-[10px] text-primary/70 font-semibold tracking-wider">
+                                                            Resultados de Búsqueda
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
                                     {showDivider && (
                                         <tr className="bg-slate-100/30 dark:bg-[#020617]/50 border-t border-b border-slate-200/30 dark:border-white/10">
                                             <td colSpan={periods.length + 1} className="px-6 py-2.5">
