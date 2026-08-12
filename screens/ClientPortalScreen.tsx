@@ -64,7 +64,7 @@ const BankCardPremium = ({ clientName }: { clientName: string }) => {
                 <div className="relative z-10 flex flex-col h-full justify-between min-h-[220px]">
                     <div className="flex justify-between items-start">
                         <div>
-                            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 bg-white/5 rounded-full border border-white/10 backdrop-blur-md">
+                            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl/5 rounded-full border border-white/10 backdrop-blur-md">
                                 <LucideIcons.CreditCard size={12} className="text-teal-400" />
                                 <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-300">Canal de Pago Directo</span>
                             </div>
@@ -80,7 +80,7 @@ const BankCardPremium = ({ clientName }: { clientName: string }) => {
                                 <span className="font-mono text-2xl tracking-[0.2em] text-white/90 drop-shadow-lg">2200XXXXXX</span>
                                 <button
                                     onClick={handleCopy}
-                                    className="p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-white border border-white/10"
+                                    className="p-2 rounded-xl bg-white/5 hover:bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl/10 transition-all text-white border border-white/10"
                                 >
                                     {copied ? <LucideIcons.Check size={14} className="text-teal-400" /> : <LucideIcons.Copy size={14} />}
                                 </button>
@@ -110,10 +110,10 @@ const TimelineItem = ({ ob }: { ob: any }) => {
         <div className="relative flex gap-6 pb-10 last:pb-0 group">
             <div className="absolute top-10 left-[1.125rem] bottom-0 w-[2px] bg-slate-100 group-last:hidden"></div>
             <div className={`relative z-10 w-9 h-9 rounded-full border-4 border-white shadow-md flex items-center justify-center transition-all group-hover:scale-110 ${isDeclared ? 'bg-emerald-500 text-white' : config.dot}`}>
-                {isDeclared ? <LucideIcons.Check size={14} strokeWidth={3} /> : <div className="w-2 h-2 rounded-full bg-white/50"></div>}
+                {isDeclared ? <LucideIcons.Check size={14} strokeWidth={3} /> : <div className="w-2 h-2 rounded-full bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl/50"></div>}
             </div>
             <div className="flex-1 pt-1">
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:shadow-slate-100 group-hover:border-slate-200">
+                <div className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-6 rounded-3xl border border-slate-100 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none transition-all hover:shadow-xl hover:shadow-slate-100 group-hover:border-slate-200">
                     <div className="flex justify-between items-start mb-3">
                         <div>
                             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mb-1 block">{formatPeriodForDisplay(ob.period)}</span>
@@ -157,7 +157,7 @@ const CredentialCard = ({ label, icon: Icon, value, hint }: { label: string; ico
     };
 
     return (
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5 group hover:border-teal-200 hover:shadow-lg transition-all">
+        <div className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-6 rounded-3xl border border-slate-100 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none flex items-center gap-5 group hover:border-teal-200 hover:shadow-lg transition-all">
             <div className="w-12 h-12 bg-slate-50 group-hover:bg-teal-50 text-slate-400 group-hover:text-teal-600 rounded-2xl flex items-center justify-center transition-colors flex-shrink-0">
                 <Icon size={22} />
             </div>
@@ -242,7 +242,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in-up">
-            <div className="bg-white rounded-[3rem] p-10 w-full max-w-md shadow-2xl shadow-slate-900/20 border border-slate-100 relative overflow-hidden">
+            <div className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl rounded-[3rem] p-10 w-full max-w-md shadow-2xl shadow-slate-900/20 border border-slate-100 dark:border-white/5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-48 h-48 bg-teal-500/5 rounded-full blur-[60px] -mr-16 -mt-16 pointer-events-none" />
                 <div className="text-center mb-8">
                     <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -399,10 +399,10 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
     return (
         <div className="min-h-screen bg-[#FDFDFD] font-body text-slate-900 selection:bg-teal-500/10 selection:text-teal-600">
             {/* 💎 Elite Top Navigation */}
-            <nav className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50 px-4 sm:px-8 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800">
+            <nav className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl/80 dark:bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50 px-4 sm:px-8 py-4 sm:py-5 border-b border-slate-100 dark:border-white/5 dark:border-slate-800">
                 <div className="max-w-6xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-3 sm:gap-5">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl flex items-center justify-center shadow-xl transform transition-transform hover:rotate-6">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-900 dark:bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl text-white dark:text-slate-900 rounded-2xl flex items-center justify-center shadow-xl transform transition-transform hover:rotate-6">
                             <Logo className="w-6 h-6 sm:w-7 sm:h-7" />
                         </div>
                         <div className="border-l border-slate-200 dark:border-slate-800 pl-3 sm:pl-5">
@@ -468,7 +468,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
                                 className={`flex-1 sm:flex-none flex items-center justify-center gap-2 sm:gap-3 px-4 sm:px-10 py-3 sm:py-4 rounded-xl sm:rounded-3xl text-[10px] font-bold uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${activeTab === tab.id
-                                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg border border-slate-200 dark:border-slate-700 ring-1 ring-brand-teal/20 scale-105'
+                                    ? 'bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg border border-slate-200 dark:border-slate-700 ring-1 ring-brand-teal/20 scale-105'
                                     : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
                                     }`}
                             >
@@ -484,17 +484,17 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                 ────────────────────────────────────────────────────────── */}
                 {activeTab === 'overview' && (
                     <div className="space-y-16 animate-fade-in-up">
-                        <section className="relative overflow-hidden p-12 bg-white rounded-[4rem] border border-slate-100 shadow-premium group">
+                        <section className="relative overflow-hidden p-12 bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl rounded-[4rem] border border-slate-100 dark:border-white/5 shadow-premium group">
                              <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/5 rounded-full blur-[100px] -mr-32 -mt-32 transition-transform duration-1000 group-hover:scale-110"></div>
                              <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px] -ml-20 -mb-20"></div>
 
                              <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-12">
                                 <div className="space-y-8">
-                                    <div className="inline-flex items-center gap-2 px-5 py-2 bg-slate-50 text-slate-500 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] border border-slate-100/60 transition-colors hover:border-teal-200">
+                                    <div className="inline-flex items-center gap-2 px-5 py-2 bg-slate-50 text-slate-500 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] border border-slate-100 dark:border-white/5/60 transition-colors hover:border-teal-200">
                                         <div className={`w-2 h-2 rounded-full ${healthConfig.dot}`}></div>
                                         {localClient.regime}
                                     </div>
-                                    <h2 className="text-5xl sm:text-7xl font-display font-medium text-slate-900 tracking-tighter leading-[1.05] mb-2">
+                                    <h2 className="text-5xl tracking-tighter sm:text-7xl font-display font-medium text-slate-900 tracking-tighter leading-[1.05] mb-2">
                                         Estatus<br /><span className="text-slate-400">Garantizado.</span>
                                     </h2>
                                     <p className="text-slate-500 font-medium max-w-md text-lg leading-relaxed antialiased">
@@ -502,7 +502,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     </p>
                                 </div>
 
-                                <div className="flex flex-col items-center gap-8 bg-slate-50/50 p-10 rounded-[3.5rem] border border-slate-100 backdrop-blur-sm">
+                                <div className="flex flex-col items-center gap-8 bg-slate-50/50 p-10 rounded-[3.5rem] border border-slate-100 dark:border-white/5 backdrop-blur-sm">
                                     <HealthGauge score={compliance.score} color={compliance.overallColor} />
                                     <div className="text-center">
                                         <p className={`text-xs font-bold uppercase tracking-[0.3em] mb-1 ${healthConfig.text}`}>{healthConfig.label}</p>
@@ -515,11 +515,11 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                              <BankCardPremium clientName={localClient.name} />
 
-                             <div className="bg-white p-12 rounded-[4rem] border border-slate-100 shadow-premium flex flex-col items-center justify-center text-center group">
+                             <div className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-12 rounded-[4rem] border border-slate-100 dark:border-white/5 shadow-premium flex flex-col items-center justify-center text-center group">
                                 <div className="w-20 h-20 bg-teal-50 text-teal-600 rounded-3xl flex items-center justify-center mb-8 transition-transform group-hover:scale-110 shadow-lg shadow-teal-100/20">
                                     <LucideIcons.MessageSquareQuote size={32} />
                                 </div>
-                                <h4 className="text-3xl font-display font-medium text-slate-900 mb-3 tracking-tight">Comunicación Directa</h4>
+                                <h4 className="text-3xl tracking-tighter font-display font-medium text-slate-900 mb-3 tracking-tight">Comunicación Directa</h4>
                                 <p className="text-slate-500 text-base mb-10 leading-relaxed max-w-xs">
                                     Su asesor personal está a un clic de distancia para cualquier consulta técnica.
                                 </p>
@@ -552,15 +552,15 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                     <div className="space-y-14 animate-fade-in-up">
 
                         {/* ── SECCIÓN: Facturación Electrónica & Licencia ───────── */}
-                        <section className="bg-white p-8 sm:p-10 rounded-[3rem] border border-slate-100 shadow-premium relative overflow-hidden">
-                            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-6 border-b border-slate-100 gap-4">
+                        <section className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-8 sm:p-10 rounded-[3rem] border border-slate-100 dark:border-white/5 shadow-premium relative overflow-hidden">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-6 border-b border-slate-100 dark:border-white/5 gap-4">
                                 <div className="flex items-center gap-4">
                                     <div className="w-14 h-14 bg-teal-50 text-brand-teal rounded-2xl flex items-center justify-center shadow-lg shadow-teal-100/40 flex-shrink-0">
                                         <LucideIcons.Receipt size={28} />
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Sistema de Emisión</p>
-                                        <h3 className="text-2xl sm:text-3xl font-display font-medium text-slate-900 tracking-tight">Facturación Electrónica</h3>
+                                        <h3 className="text-2xl sm:text-3xl tracking-tighter font-display font-medium text-slate-900 tracking-tight">Facturación Electrónica</h3>
                                     </div>
                                 </div>
 
@@ -579,7 +579,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
 
                             {/* Badge especial de Proveedor Santiago Córdova */}
                             {(localClient.facturadorConfig?.soldByMe || (localClient.facturadorConfig?.providerName && localClient.facturadorConfig.providerName.toLowerCase().includes('santiago'))) && (
-                                <div className="mb-8 p-5 bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-teal-500/5 border border-teal-500/25 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                                <div className="mb-8 p-5 bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-teal-500/5 border border-teal-500/25 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-brand-teal text-white rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md">
                                             <LucideIcons.ShieldCheck size={22} />
@@ -601,7 +601,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                 {/* Programa */}
-                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 dark:border-white/5">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Programa / Sistema</p>
                                     <p className="text-sm font-bold text-slate-800">
                                         {localClient.facturadorConfig?.programName || 'No configurado'}
@@ -612,7 +612,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 </div>
 
                                 {/* Plan / Documentos */}
-                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 dark:border-white/5">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Plan de Comprobantes</p>
                                     <p className="text-sm font-bold text-slate-800">
                                         {localClient.facturadorConfig?.documentStatus || 'Modalidad no definida'}
@@ -625,7 +625,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 </div>
 
                                 {/* Vencimiento */}
-                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 dark:border-white/5">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Vencimiento Licencia</p>
                                     <p className="text-sm font-bold text-slate-800">
                                         {localClient.facturadorConfig?.expirationDate
@@ -638,7 +638,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 </div>
 
                                 {/* Credencial Facturador */}
-                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 flex flex-col justify-between">
+                                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100 dark:border-white/5 flex flex-col justify-between">
                                     <div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Acceso Facturador</p>
                                         <p className="text-xs font-mono font-bold text-slate-700 truncate">
@@ -668,7 +668,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                             <div className="flex items-center justify-between mb-8 px-2">
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Accesos Digitales</p>
-                                    <h3 className="text-3xl font-display font-medium text-slate-900 tracking-tight">Credenciales Guardadas</h3>
+                                    <h3 className="text-3xl tracking-tighter font-display font-medium text-slate-900 tracking-tight">Credenciales Guardadas</h3>
                                 </div>
                                 <button
                                     onClick={() => setShowChangePassword(true)}
@@ -698,7 +698,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                     value={localClient.iessPassword}
                                     hint="No registrada"
                                 />
-                                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-5">
+                                <div className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-6 rounded-3xl border border-slate-100 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none flex items-center gap-5">
                                     <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center flex-shrink-0">
                                         <LucideIcons.Fingerprint size={22} />
                                     </div>
@@ -737,12 +737,12 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                         <section>
                             <div className="mb-8 px-2">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Identidad Digital Certificada</p>
-                                <h3 className="text-3xl font-display font-medium text-slate-900 tracking-tight">Verificación de Cédula & Biometría</h3>
+                                <h3 className="text-3xl tracking-tighter font-display font-medium text-slate-900 tracking-tight">Verificación de Cédula & Biometría</h3>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {/* Cédula Frente */}
-                                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between group hover:border-teal-300 transition-all">
+                                <div className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none flex flex-col justify-between group hover:border-teal-300 transition-all">
                                     <div>
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center">
@@ -771,7 +771,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 </div>
 
                                 {/* Cédula Reverso */}
-                                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between group hover:border-teal-300 transition-all">
+                                <div className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none flex flex-col justify-between group hover:border-teal-300 transition-all">
                                     <div>
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
@@ -800,7 +800,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 </div>
 
                                 {/* Selfie Sosteniendo Cédula */}
-                                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col justify-between group hover:border-teal-300 transition-all">
+                                <div className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-slate-100 dark:border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none flex flex-col justify-between group hover:border-teal-300 transition-all">
                                     <div>
                                         <div className="flex items-center justify-between mb-4">
                                             <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center">
@@ -834,15 +834,15 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                         <section>
                             <div className="mb-8 px-2">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Documentos Certificados</p>
-                                <h3 className="text-3xl font-display font-medium text-slate-900 tracking-tight">Expediente Digital</h3>
+                                <h3 className="text-3xl tracking-tighter font-display font-medium text-slate-900 tracking-tight">Expediente Digital</h3>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {/* Firma electrónica .p12 */}
                                 <div
                                     onClick={() => hasSignatureFile && handleDownloadFile(localClient.signatureFile!)}
-                                    className={`bg-white p-8 rounded-[3rem] border transition-all group ${hasSignatureFile
-                                        ? 'border-slate-100 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1'
+                                    className={`bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-8 rounded-[3rem] border transition-all group ${hasSignatureFile
+                                        ? 'border-slate-100 dark:border-white/5 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1 active:scale-[0.98]'
                                         : 'border-dashed border-slate-200 opacity-50'}`}
                                 >
                                     <div className="w-14 h-14 bg-violet-50 text-violet-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -865,8 +865,8 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 {/* Certificado RUC */}
                                 <div
                                     onClick={() => hasRucFile && handleRucPreview()}
-                                    className={`bg-white p-8 rounded-[3rem] border transition-all group ${hasRucFile
-                                        ? 'border-slate-100 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1'
+                                    className={`bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-8 rounded-[3rem] border transition-all group ${hasRucFile
+                                        ? 'border-slate-100 dark:border-white/5 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1 active:scale-[0.98]'
                                         : 'border-dashed border-slate-200 opacity-50'}`}
                                 >
                                     <div className="w-14 h-14 bg-sky-50 text-sky-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -890,7 +890,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 {hasRentaRefundProof && (
                                     <div
                                         onClick={() => handleOpenInNewTab({ proof_file: localClient.rentaRefundProof })}
-                                        className="bg-white p-8 rounded-[3rem] border border-slate-100 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1 transition-all group"
+                                        className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-8 rounded-[3rem] border border-slate-100 dark:border-white/5 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1 active:scale-[0.98] transition-all group"
                                     >
                                         <div className="w-14 h-14 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                             <LucideIcons.BadgeDollarSign size={26} />
@@ -914,7 +914,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                                 handleDownloadFile(file);
                                             }
                                         }}
-                                        className="bg-white p-8 rounded-[3rem] border border-slate-100 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1 transition-all group"
+                                        className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-8 rounded-[3rem] border border-slate-100 dark:border-white/5 cursor-pointer hover:border-teal-300 hover:shadow-xl hover:shadow-teal-100/30 hover:-translate-y-1 active:scale-[0.98] transition-all group"
                                     >
                                         <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                             <LucideIcons.File size={26} />
@@ -930,7 +930,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
 
                             {!hasSignatureFile && !hasRucFile && vaultFiles.length === 0 && !hasRentaRefundProof && (
                                 <div className="py-24 text-center bg-slate-50/60 rounded-[4rem] border-2 border-dashed border-slate-200 mt-4">
-                                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-slate-200/50">
+                                    <div className="w-20 h-20 bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-slate-200/50">
                                         <LucideIcons.FolderOpen size={32} className="text-slate-200" />
                                     </div>
                                     <h4 className="text-2xl font-display font-medium text-slate-700 mb-2">Sin documentos aún</h4>
@@ -943,7 +943,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                         <section>
                             <div className="mb-8 px-2">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">Historial Tributario</p>
-                                <h3 className="text-3xl font-display font-medium text-slate-900 tracking-tight">Declaraciones</h3>
+                                <h3 className="text-3xl tracking-tighter font-display font-medium text-slate-900 tracking-tight">Declaraciones</h3>
                             </div>
 
                             {localClient.declarations && localClient.declarations.length > 0 ? (
@@ -952,12 +952,12 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                         const isPaid = decl.status === 'Pagada' || !!decl.is_paid;
                                         const hasPdf = !!decl.proof_file?.content;
                                         return (
-                                            <div key={idx} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-premium transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-200/50 group">
+                                            <div key={idx} className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-8 rounded-[3rem] border border-slate-100 dark:border-white/5 shadow-premium transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-200/50 group">
                                                 <div className="flex justify-between items-start mb-8">
                                                     <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-teal-50 group-hover:text-teal-600 transition-colors">
                                                         <LucideIcons.FileCheck size={28} />
                                                     </div>
-                                                    <div className={`px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border ${isPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                                    <div className={`px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-widest border ${isPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100 dark:border-white/5'}`}>
                                                         {decl.status}
                                                     </div>
                                                 </div>
@@ -979,7 +979,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                                     <button
                                                         onClick={() => decl.proof_file && handleDownloadFile(decl.proof_file)}
                                                         disabled={!hasPdf}
-                                                        className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all ${hasPdf ? 'bg-slate-50 text-slate-400 hover:bg-white hover:text-slate-900 hover:border-slate-200 border-transparent' : 'bg-slate-50 text-slate-200 border-transparent cursor-not-allowed'}`}
+                                                        className={`w-12 h-12 rounded-2xl flex items-center justify-center border transition-all ${hasPdf ? 'bg-slate-50 text-slate-400 hover:bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl hover:text-slate-900 hover:border-slate-200 border-transparent' : 'bg-slate-50 text-slate-200 border-transparent cursor-not-allowed'}`}
                                                     >
                                                         <LucideIcons.Download size={16} />
                                                     </button>
@@ -990,7 +990,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 </div>
                             ) : (
                                 <div className="py-20 text-center bg-slate-50/60 rounded-[4rem] border-2 border-dashed border-slate-200">
-                                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-slate-200/50">
+                                    <div className="w-20 h-20 bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-slate-200/50">
                                         <LucideIcons.CloudOff size={32} className="text-slate-200" />
                                     </div>
                                     <h4 className="text-2xl font-display font-medium text-slate-900 mb-2">Sin declaraciones</h4>
@@ -1006,10 +1006,10 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                 ────────────────────────────────────────────────────────── */}
                 {activeTab === 'timeline' && (
                     <div className="max-w-3xl mx-auto animate-fade-in-up">
-                        <section className="bg-white rounded-[4rem] p-16 border border-slate-100 shadow-premium">
+                        <section className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl rounded-[4rem] p-16 border border-slate-100 dark:border-white/5 shadow-premium">
                             <header className="text-center mb-16">
                                 <span className="inline-block px-4 py-1.5 bg-teal-50 text-teal-600 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] mb-4 border border-teal-100">Planificación 2024</span>
-                                <h3 className="text-5xl font-display font-medium text-slate-900 tracking-tight">Timeline Fiscal</h3>
+                                <h3 className="text-5xl tracking-tighter font-display font-medium text-slate-900 tracking-tight">Timeline Fiscal</h3>
                                 <p className="text-slate-400 text-sm mt-5 font-medium leading-relaxed max-w-sm mx-auto">
                                     Próximos hitos obligatorios según el calendario regulatorio para su terminación de RUC (<span className="text-slate-900 font-bold">{localClient.ruc[8]}</span>).
                                 </p>
@@ -1032,8 +1032,8 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 )}
                             </div>
 
-                            <footer className="mt-16 p-8 bg-slate-50/80 rounded-[2.5rem] border border-slate-100 flex items-start gap-5">
-                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-teal-600 shadow-sm">
+                            <footer className="mt-16 p-8 bg-slate-50/80 rounded-[2.5rem] border border-slate-100 dark:border-white/5 flex items-start gap-5">
+                                <div className="w-10 h-10 bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl rounded-xl flex items-center justify-center text-teal-600 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none">
                                     <LucideIcons.ShieldAlert size={20} />
                                 </div>
                                 <p className="text-xs text-slate-500 font-medium leading-relaxed antialiased">
