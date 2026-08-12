@@ -14,6 +14,7 @@ import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { downloadStoredFile } from '../services/fileService';
 import { SalesComboModal } from '../components/features/SalesComboModal';
+import { QuickPlanRegistrationModal } from '../components/features/QuickPlanRegistrationModal';
 
 interface FacturadoresScreenProps {
     navigate: (screen: any, options?: any) => void;
@@ -31,6 +32,7 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const [filterStatus, setFilterStatus] = useState<'todos' | 'recursos_listos' | 'subido_plataforma' | 'activado' | 'sin_firma' | 'particulares' | 'clientes'>('todos');
     const [selectedVaultClient, setSelectedVaultClient] = useState<Client | null>(null);
     const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
+    const [isQuickPlanModalOpen, setIsQuickPlanModalOpen] = useState(false);
     const directVaultUploadInputRef = useRef<HTMLInputElement>(null);
     const [vaultUploadTarget, setVaultUploadTarget] = useState<'idCardFront' | 'idCardBack' | 'idCardSelfie' | 'rucPdf' | 'signatureFile' | 'ecuafactSignedRequest' | 'vault'>('vault');
 
@@ -204,13 +206,22 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                     {/* KPI RESUMEN & ACCIÓN PRINCIPAL */}
                     <div className="flex items-center gap-4 flex-wrap shrink-0">
-                        <button
-                            onClick={() => setIsSalesModalOpen(true)}
-                            className="px-5 py-3.5 bg-gradient-to-r from-[#00A896] via-teal-500 to-emerald-500 hover:from-[#00A896]/90 hover:to-emerald-500/90 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#00A896]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2.5 shrink-0"
-                        >
-                            <Plus size={18} strokeWidth={2.5} />
-                            <span>+ Vender / Registrar Nuevo Plan</span>
-                        </button>
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={() => setIsSalesModalOpen(true)}
+                                className="px-5 py-2.5 bg-gradient-to-r from-[#00A896] via-teal-500 to-emerald-500 hover:from-[#00A896]/90 hover:to-emerald-500/90 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#00A896]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 shrink-0"
+                            >
+                                <Plus size={16} strokeWidth={2.5} />
+                                <span>Registro Completo</span>
+                            </button>
+                            <button
+                                onClick={() => setIsQuickPlanModalOpen(true)}
+                                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-teal-400 border border-teal-500/30 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 shrink-0"
+                            >
+                                <FileText size={16} strokeWidth={2.5} />
+                                <span>Registro Expreso (Autorización)</span>
+                            </button>
+                        </div>
 
                         <div className="flex items-center gap-2 flex-wrap">
                             <button
@@ -746,6 +757,16 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
             <SalesComboModal
                 isOpen={isSalesModalOpen}
                 onClose={() => setIsSalesModalOpen(false)}
+            />
+
+            <QuickPlanRegistrationModal
+                isOpen={isQuickPlanModalOpen}
+                onClose={() => setIsQuickPlanModalOpen(false)}
+                onSuccess={(client) => {
+                    updateClient(client.id, client);
+                    setIsQuickPlanModalOpen(false);
+                    toast.success("Expediente Express completado.");
+                }}
             />
         </div>
     );
