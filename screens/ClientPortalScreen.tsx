@@ -950,7 +950,7 @@ export const ClientPortalScreen: React.FC<ClientPortalScreenProps> = ({ client, 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {[...localClient.declarations].reverse().map((decl, idx) => {
                                         const isPaid = decl.status === 'Pagada' || !!decl.is_paid;
-                                        const hasPdf = !!decl.proof_file?.content;
+                                        const hasPdf = !!decl.proof_file?.content || !!decl.proof_file?.url;
                                         return (
                                             <div key={idx} className="bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl p-8 rounded-[3rem] border border-slate-100 dark:border-white/5 shadow-premium transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-slate-200/50 group">
                                                 <div className="flex justify-between items-start mb-8">

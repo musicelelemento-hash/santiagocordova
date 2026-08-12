@@ -254,7 +254,7 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
                                     .sort((a, b) => b.period.localeCompare(a.period))
                                     .slice(0, 6) // Últimos 6
                                     .map(d => {
-                                        const hasPdf = !!d.proof_file;
+                                        const hasPdf = !!d.proof_file && (!!d.proof_file.content || !!d.proof_file.url);
                                         const isPaid = d.is_paid;
                                         return (
                                             <div key={d.period} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${isPaid && hasPdf ? 'bg-emerald-50/50 border-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400' : 'bg-slate-50 border-slate-100 text-slate-600 dark:bg-white/5 dark:border-white/10 dark:text-slate-400'}`} title={`Estado: ${d.status}`}>

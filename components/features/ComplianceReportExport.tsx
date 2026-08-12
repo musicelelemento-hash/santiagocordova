@@ -107,7 +107,7 @@ export const ComplianceReportExport: React.FC<ComplianceReportExportProps> = ({
                                     </td>
                                     {periods.map(p => {
                                         const dec = client.declarations?.find(d => d.period === p);
-                                        const hasPdf = !!dec?.proof_file;
+                                        const hasPdf = !!dec?.proof_file && (!!dec.proof_file.content || !!dec.proof_file.url);
                                         const isDone = (dec?.status === DeclarationStatus.Pagada || dec?.status === DeclarationStatus.Enviada);
                                         
                                         return (
