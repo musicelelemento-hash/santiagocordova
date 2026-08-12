@@ -38,8 +38,8 @@ export async function syncToSheets(clients: any[]) {
         const prevYear = (currentYear - 1).toString();
         
         const rows = clients.map(c => {
-            // BUG FIX: was reading c.declarations (old field) - correct field is declaration_history
-            const rentaDecl = (c.declaration_history || []).find((d: any) => d.type === 'RENTA' && d.period === prevYear);
+            // BUG FIX: was reading c.declarations (old field) - correct field is sri_declaraciones
+            const rentaDecl = (c.sri_declaraciones || []).find((d: any) => d.type === 'RENTA' && d.period === prevYear);
             const rentaStatus = rentaDecl ? rentaDecl.status : 'Pendiente';
             
             return [

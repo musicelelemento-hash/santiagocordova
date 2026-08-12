@@ -13,7 +13,7 @@ export const SupabaseService = {
   async getClients(): Promise<Client[]> {
     const { data, error } = await supabase
       .from('clients')
-      .select('*')
+            .select('*, sri_declaraciones(*)')
       .eq('is_deleted', false);
 
     if (error) throw error;
@@ -34,6 +34,31 @@ export const SupabaseService = {
     if (error) {
       console.error(`[Supabase Error] FAILED upsert for client ${client.ruc}:`, error);
       throw error;
+    }
+
+    // NUEVO: Sincronizar array 'declarations' hacia la nueva tabla relacional sri_declaraciones
+    if (client.declarations && client.declarations.length > 0) {
+        const recordsToUpsert = client.declarations.map(dec => {
+            return {
+                client_id: client.id,
+                type: dec.type || (dec.period?.length === 7 ? 'IVA' : 'RENTA'),
+                period: dec.period || 'UNK',
+                status: dec.status || 'Pendiente',
+                is_paid: !!dec.is_paid,
+                paid_at: dec.paidAt || null,
+                proof_file: dec.proof_file || null,
+                created_at: dec.declaredAt || new Date().toISOString(),
+                updated_at: dec.updatedAt || new Date().toISOString()
+            };
+        });
+
+        const { error: decError } = await supabase
+            .from('sri_declaraciones')
+            .upsert(recordsToUpsert, { onConflict: 'client_id,type,period' });
+        
+        if (decError) {
+            console.error(`[Supabase Error] FAILED upserting sri_declaraciones para ${client.ruc}:`, decError);
+        }
     }
   },
 
@@ -198,7 +223,7 @@ export const SupabaseService = {
       iess_password: client.iessPassword,
       signature_expiration: client.signatureExpirationDate,
       advance_credits: client.advanceCredits,
-      declaration_history: client.declarations,
+      sri_declaraciones: client.declarations,
       vault: client.vault,
       structured_notes: client.structuredNotes,
       signature_file: client.signatureFile,
@@ -293,7 +318,7 @@ export const SupabaseService = {
       iessPassword: db.iess_password,
       signatureExpirationDate: db.signature_expiration,
       advanceCredits: db.advance_credits,
-      declarations: db.declaration_history || [],
+      declarations: db.sri_declaraciones || [],
       vault: db.vault || [],
       structuredNotes: db.structured_notes || [],
       signatureFile: db.signature_file,

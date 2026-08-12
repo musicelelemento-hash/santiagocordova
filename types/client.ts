@@ -50,7 +50,8 @@ export interface StoredFile {
     type: string; // 'p12' | 'pdf' | 'other'
     size: number;
     lastModified: number;
-    content?: string; // Base64 content
+    content?: string | null; // Base64 content
+    url?: string;     // URL for direct cloud storage
     metadata?: {
         amount?: number;
         period?: string;

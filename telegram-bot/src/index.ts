@@ -465,7 +465,7 @@ async function tryDirectCommand(text: string, chatId: string, ctx: any): Promise
             return true;
         } else if (clients.length > 1) {
             await showClientSelection(
-                chatId, clients, 'field_query', { field: 'declaration_history' },
+                chatId, clients, 'field_query', { field: 'sri_declaraciones' },
                 ctx, `Ã°Å¸â€Â EncontrÃƒÂ© <b>${clients.length}</b> clientes. Ã‚Â¿De cuÃƒÂ¡l deseas el comprobante?`
             );
             return true;
@@ -664,7 +664,7 @@ export async function startPaymentFlowForClient(chatId: string, client: any, ctx
     const isEmprendedor = regime === 'Rimpe Emprendedor';
     const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
 
-    const history = client.declaration_history || [];
+    const history = client.sri_declaraciones || [];
     const unpaid = history.filter((d: any) => !d.is_paid && d.status !== 'Pendiente');
     
     let pendingMsg = "";
@@ -729,7 +729,7 @@ export async function startInvoiceFlowForClient(chatId: string, client: any, ctx
     // 🔥 Wake-up en caso de entrada directa (botón desde perfil del cliente)
     wakeUpFacturadorApi().catch(() => {});
 
-    const history = client.declaration_history || [];
+    const history = client.sri_declaraciones || [];
     const unpaid = history.filter((d: any) => !d.is_paid && d.status !== 'Pendiente');
     
     pendingDialogs.set(chatId, {
@@ -782,7 +782,7 @@ export async function startDeclarationFlowForClient(chatId: string, client: any,
     const isEmprendedor = regime === 'Rimpe Emprendedor';
     const ivaFrequency = client.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
 
-    const history = client.declaration_history || [];
+    const history = client.sri_declaraciones || [];
     const pendingDec = history.filter((d: any) => d.status === 'Pendiente');
 
     pendingDialogs.set(chatId, {
@@ -1788,7 +1788,7 @@ bot.on('callback_query:data', async (ctx) => {
                 type: 'field_query',
                 chatId,
                 step: 'ask_client_name',
-                data: { field: 'declaration_history' }
+                data: { field: 'sri_declaraciones' }
             });
             await ctx.reply("Ã°Å¸â€œâ€ž Ã‚Â¿De quÃƒÂ© cliente deseas ver/descargar comprobantes de declaraciones? (Escribe el nombre o RUC). Baku.");
         } else if (cmd === 'create_invoice') {
@@ -1829,7 +1829,7 @@ bot.on('callback_query:data', async (ctx) => {
 
     if (dialog.type === 'field_query') {
         const field = dialog.data.field!;
-        if (field === 'declaration_history') {
+        if (field === 'sri_declaraciones') {
             const result = await getClientDeclarationProofsList(ruc);
             pendingDialogs.delete(chatId);
             await ctx.reply(convertMarkdownToTelegramHtml(result), { parse_mode: 'HTML' });

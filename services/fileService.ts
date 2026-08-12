@@ -43,40 +43,50 @@ export async function downloadStoredFile(file: StoredFile | null | undefined): P
     fileToDownload = (await resolveStoredFile(file)) || file;
   }
 
-  if (!fileToDownload.content || fileToDownload.content.startsWith('__SPLIT__:')) {
+  if (!fileToDownload.content && !fileToDownload.url) {
     notify.error("No se pudo recuperar el archivo desde la nube.");
     return false;
   }
 
   try {
-    let downloadUrl = fileToDownload.content;
+    let downloadUrl = '';
     let isBlobCreated = false;
 
-    let base64Str = fileToDownload.content;
     let mimeType = (fileToDownload.type === 'p12' || fileToDownload.name?.endsWith('.p12') || fileToDownload.name?.endsWith('.pfx'))
       ? 'application/x-pkcs12'
       : 'application/pdf';
 
-    if (base64Str.startsWith('data:')) {
-      const parts = base64Str.split(',');
-      if (parts.length === 2) {
-        const mimeMatch = parts[0].match(/:(.*?);/);
-        if (mimeMatch) mimeType = mimeMatch[1];
-        base64Str = parts[1];
-      }
-    }
-
-    if (!base64Str.startsWith('http://') && !base64Str.startsWith('https://') && !base64Str.startsWith('blob:')) {
-      const cleanB64 = base64Str.replace(/\s/g, '');
-      const byteCharacters = atob(cleanB64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: mimeType });
+    if (fileToDownload.url) {
+      // Fetch URL to create local blob for forced cross-origin download
+      const response = await fetch(fileToDownload.url);
+      const blob = await response.blob();
       downloadUrl = URL.createObjectURL(blob);
       isBlobCreated = true;
+    } else {
+      let base64Str = fileToDownload.content || '';
+      if (base64Str.startsWith('data:')) {
+        const parts = base64Str.split(',');
+        if (parts.length === 2) {
+          const mimeMatch = parts[0].match(/:(.*?);/);
+          if (mimeMatch) mimeType = mimeMatch[1];
+          base64Str = parts[1];
+        }
+      }
+
+      if (!base64Str.startsWith('http://') && !base64Str.startsWith('https://') && !base64Str.startsWith('blob:')) {
+        const cleanB64 = base64Str.replace(/\s/g, '');
+        const byteCharacters = atob(cleanB64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: mimeType });
+        downloadUrl = URL.createObjectURL(blob);
+        isBlobCreated = true;
+      } else {
+        downloadUrl = base64Str;
+      }
     }
 
     const link = document.createElement('a');
@@ -116,27 +126,32 @@ export async function openStoredFileInNewTab(file: StoredFile | null | undefined
     fileToOpen = (await resolveStoredFile(file)) || file;
   }
 
-  if (!fileToOpen.content || fileToOpen.content.startsWith('__SPLIT__:')) {
+  if (!fileToOpen.content && !fileToOpen.url) {
     notify.error("No se pudo recuperar el archivo desde la nube.");
     return false;
   }
 
   try {
-    let openUrl = fileToOpen.content;
-    if (fileToOpen.content.startsWith('data:')) {
-      const parts = fileToOpen.content.split(',');
-      if (parts.length === 2) {
-        const mimeMatch = parts[0].match(/:(.*?);/);
-        const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf';
-        const base64Data = parts[1];
-        const byteCharacters = atob(base64Data);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
+    let openUrl = '';
+    if (fileToOpen.url) {
+      openUrl = fileToOpen.url;
+    } else {
+      openUrl = fileToOpen.content || '';
+      if (openUrl.startsWith('data:')) {
+        const parts = openUrl.split(',');
+        if (parts.length === 2) {
+          const mimeMatch = parts[0].match(/:(.*?);/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf';
+          const base64Data = parts[1];
+          const byteCharacters = atob(base64Data);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: mimeType });
+          openUrl = URL.createObjectURL(blob);
         }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: mimeType });
-        openUrl = URL.createObjectURL(blob);
       }
     }
 

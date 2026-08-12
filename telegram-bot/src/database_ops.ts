@@ -134,7 +134,7 @@ export function getClientObligations(client: any): ClientObligationsInfo {
 export async function searchClient(query: string) {
     console.log(`🔍 Searching client with query: ${query}`);
     try {
-        // Query '*' to avoid column 'declarations' does not exist error (actual DB column is declaration_history)
+        // Query '*' to avoid column 'declarations' does not exist error (actual DB column is sri_declaraciones)
         const clients = await findClients(query, '*');
 
         if (!clients || clients.length === 0) {
@@ -205,7 +205,7 @@ export async function searchClient(query: string) {
             const ivaFee = feeKey ? (c.fee_structure?.[feeKey] ?? (obligations.ivaFrequency === 'Semestral' ? 10 : 5)) : 0;
             const rentaFee = c.fee_structure?.annual ?? 10;
             
-            const allDeclarations = c.declaration_history || [];
+            const allDeclarations = c.sri_declaraciones || [];
             
             const pendingDeclarations = allDeclarations.filter((d: any) => d.status === 'Pendiente');
             const declaredDeclarations = allDeclarations.filter((d: any) => d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file);
@@ -273,7 +273,7 @@ export async function getDebtorClientsRaw(): Promise<any[]> {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('*, sri_declaraciones(*)')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -287,8 +287,8 @@ export async function getDebtorClientsRaw(): Promise<any[]> {
             const isEmprendedor = regime === 'Rimpe Emprendedor';
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             
-            const unpaidIva = c.declaration_history?.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
-            const unpaidRenta = c.declaration_history?.filter((d: any) => d.type === 'RENTA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
+            const unpaidIva = c.sri_declaraciones?.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
+            const unpaidRenta = c.sri_declaraciones?.filter((d: any) => d.type === 'RENTA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
             
             const feeKey = ivaFreq === 'Mensual' ? 'monthly' 
                            : ivaFreq === 'Semestral' ? 'semestral' 
@@ -322,7 +322,7 @@ export async function getDebtorClients() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('*, sri_declaraciones(*)')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -342,10 +342,10 @@ export async function getDebtorClients() {
             const isEmprendedor = regime === 'Rimpe Emprendedor';
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             
-            const pendingDeclarations = c.declaration_history?.filter((d: any) => d.status === 'Pendiente') || [];
+            const pendingDeclarations = c.sri_declaraciones?.filter((d: any) => d.status === 'Pendiente') || [];
             
-            const unpaidIva = c.declaration_history?.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
-            const unpaidRenta = c.declaration_history?.filter((d: any) => d.type === 'RENTA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
+            const unpaidIva = c.sri_declaraciones?.filter((d: any) => d.type === 'IVA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
+            const unpaidRenta = c.sri_declaraciones?.filter((d: any) => d.type === 'RENTA' && !d.is_paid && (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)) || [];
             
             const feeKey = ivaFreq === 'Mensual' ? 'monthly' 
                            : ivaFreq === 'Semestral' ? 'semestral' 
@@ -409,7 +409,7 @@ export async function getUpcomingDeadlines() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('*, sri_declaraciones(*)')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -484,8 +484,8 @@ export async function getUpcomingDeadlines() {
             const ivaFreq = c.tax_profile?.ivaFrequency || (isEmprendedor ? 'Semestral' : (isPopular ? 'Ninguno' : 'Mensual'));
             const typeLabel = isPopular ? 'Popular' : (ivaFreq === 'Semestral' ? 'Semst.' : 'Mens.');
             
-            // BUG FIX: Sort declaration_history descending to get the ACTUAL latest record
-            const latestDecl = (c.declaration_history || [])
+            // BUG FIX: Sort sri_declaraciones descending to get the ACTUAL latest record
+            const latestDecl = (c.sri_declaraciones || [])
                 .filter((d: any) => d.status !== 'Pendiente')
                 .sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
             const isDone = latestDecl?.status === 'Enviada' || latestDecl?.status === 'Pagada' || !!latestDecl?.proof_file;
@@ -556,7 +556,7 @@ export async function getFinancialSummary() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('*, sri_declaraciones(*)')
             .eq('is_deleted', false);  // BUG FIX: exclude deleted clients from financial summary
 
         if (error) throw error;
@@ -570,7 +570,7 @@ export async function getFinancialSummary() {
         let declarationsDoneThisMonth = 0;
 
         clients.forEach(c => {
-            const declarations = c.declaration_history || [];
+            const declarations = c.sri_declaraciones || [];
             
             // 1. Calculate Revenue (Actually Paid this month)
             const paidThisMonth = declarations.filter((d: any) => 
@@ -629,7 +629,7 @@ export async function getDatabaseSummary() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('*, sri_declaraciones(*)')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -649,7 +649,7 @@ export async function getDatabaseSummary() {
             const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
             const needsIva = c.regime !== 'Rimpe Negocio Popular' && ivaFreq !== 'Ninguno';
             
-            const declarations = c.declaration_history || [];
+            const declarations = c.sri_declaraciones || [];
             const lastIva = declarations.filter((d: any) => d.type === 'IVA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
             
             const isIvaDeclared = !needsIva || (lastIva?.status === 'Enviada' || lastIva?.status === 'Pagada' || !!lastIva?.proof_file);
@@ -686,7 +686,7 @@ export async function getDatabaseSummary() {
 
         const pendingRentaCount = clients.filter(c => {
             const needsRenta = c.tax_profile?.requiresAnnualRenta ?? (c.regime === 'Rimpe Negocio Popular' || c.regime === 'Rimpe Emprendedor');
-            const lastRenta = (c.declaration_history || []).filter((d: any) => d.type === 'RENTA')[0];
+            const lastRenta = (c.sri_declaraciones || []).filter((d: any) => d.type === 'RENTA')[0];
             return needsRenta && !lastRenta?.is_paid;
         }).length;
 
@@ -695,7 +695,7 @@ export async function getDatabaseSummary() {
         // Identificar frentes de acción inmediatos
         const urgentlyPending = clients.filter(c => {
             const ivaFreq = c.tax_profile?.ivaFrequency || 'Mensual';
-            const lastIva = (c.declaration_history || []).filter((d: any) => d.type === 'IVA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
+            const lastIva = (c.sri_declaraciones || []).filter((d: any) => d.type === 'IVA').sort((a: any, b: any) => b.period.localeCompare(a.period))[0];
             return (ivaFreq !== 'Ninguno' && (!lastIva || (lastIva.status !== 'Enviada' && lastIva.status !== 'Pagada' && !lastIva.proof_file)));
         }).slice(0, 5).map(c => c.name.split(' ')[0]).join(', ');
 
@@ -781,7 +781,7 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
         if (type === 'RENTA') {
             // Find current period renta
             const periodToMark = period || new Date().getFullYear().toString();
-            let history = [...(client.declaration_history || [])];
+            let history = [...(client.sri_declaraciones || [])];
             let found = false;
             
             for (let d of history) {
@@ -796,14 +796,14 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
             }
             if (!found) return `No se encontró una declaración de RENTA para el periodo ${periodToMark}.`;
             
-            const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
+            const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history.map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
             if (updErr) throw updErr;
             await logAuditAction('Cobro Registrado (Bot)', `Renta ${periodToMark} - RUC: ${client.ruc}`, 'finance', 'info');
             return `✅ Cobro de **Renta Anual (${periodToMark})** para ${client.name} marcado como pagado en Supabase. Baku.`;
         }
 
         if (type === 'IVA' || type === 'HONORARIOS') {
-            let history = [...(client.declaration_history || [])];
+            let history = [...(client.sri_declaraciones || [])];
             
             if (period === 'todos') {
                 const unpaid = history.filter(d => d.type === type && !d.is_paid && d.status !== 'Pendiente');
@@ -816,7 +816,7 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
                     d.status = 'Pagada';
                 });
                 
-                const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
+                const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history.map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
                 if (updErr) throw updErr;
                 await logAuditAction('Cobro Múltiple Registrado (Bot)', `${type} TODOS (${unpaid.length} meses) - RUC: ${client.ruc}`, 'finance', 'info');
                 return `✅ Se han marcado como pagados **TODOS** los ${unpaid.length} meses pendientes de **${type}** para ${client.name} en Supabase. Baku.`;
@@ -843,7 +843,7 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
             history[targetIdx].paid_at = history[targetIdx].paidAt;
             history[targetIdx].status = 'Pagada';
             
-            const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
+            const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history.map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
             if (updErr) throw updErr;
             await logAuditAction('Cobro Registrado (Bot)', `${type} ${history[targetIdx].period} - RUC: ${client.ruc}`, 'finance', 'info');
             return `✅ Cobro de **${type}** (${history[targetIdx].period}) para ${client.name} actualizado en Supabase. Baku.`;
@@ -862,12 +862,12 @@ export async function markPaymentAsPaid(identifier: string, type: 'IVA' | 'RENTA
 export async function markPaymentAsUnpaid(ruc: string, type: 'IVA' | 'RENTA' | 'HONORARIOS', period?: string): Promise<string> {
     console.log(`⏪ Reverting ${type} ${period || ''} to unpaid in Supabase for ${ruc}`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('*').eq('ruc', ruc);
+        const { data: clients, error } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('ruc', ruc);
         if (error) throw error;
         if (!clients || clients.length === 0) return `No se encontró al cliente RUC ${ruc}.`;
 
         const client = clients[0];
-        let history = [...(client.declaration_history || [])];
+        let history = [...(client.sri_declaraciones || [])];
         let found = false;
         
         for (let d of history) {
@@ -890,7 +890,7 @@ export async function markPaymentAsUnpaid(ruc: string, type: 'IVA' | 'RENTA' | '
         
         if (!found) return `No se encontraron pagos de ${type} para revertir en el periodo especificado.`;
         
-        const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
+        const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history.map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
         if (updErr) throw updErr;
 
         await logAuditAction('Reversión de Cobro (Bot)', `${type} ${period || 'antiguo'} - RUC: ${ruc}`, 'finance', 'warning');
@@ -906,7 +906,7 @@ export async function markPaymentAsUnpaid(ruc: string, type: 'IVA' | 'RENTA' | '
 export async function getCredentialStatus() {
     console.log(`🔍 Scanning SRI credentials in Supabase...`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('*').eq('is_deleted', false);
+        const { data: clients, error } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('is_deleted', false);
         if (error) throw error;
         if (!clients || clients.length === 0) return "No hay clientes registrados.";
 
@@ -960,7 +960,7 @@ export async function getCredentialStatus() {
 export async function detectTaxInconsistencies() {
     console.log(`🛡️ Running Escudo Fiscal analysis in Supabase...`);
     try {
-        const { data: clients, error } = await supabase.from('clients').select('*').eq('is_deleted', false);
+        const { data: clients, error } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('is_deleted', false);
         if (error) throw error;
         if (!clients || clients.length === 0) return "La base de datos está vacía.";
         
@@ -986,7 +986,7 @@ export async function detectTaxInconsistencies() {
             if (c.ruc && c.ruc.length !== 13) problems.push("❌ RUC inválido (no tiene 13 dígitos)");
 
             // 5. Critical Pending (SRI)
-            const pendingDecs = c.declaration_history?.filter((d: any) => d.status === 'Pendiente').length || 0;
+            const pendingDecs = c.sri_declaraciones?.filter((d: any) => d.status === 'Pendiente').length || 0;
             if (pendingDecs > 6) problems.push(`🔥 ${pendingDecs} declaraciones pendientes`);
 
             if (problems.length > 0) {
@@ -1074,7 +1074,7 @@ export async function getClientsStatusReport() {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('*, sri_declaraciones(*)')
             .eq('is_deleted', false);
 
         if (error) throw error;
@@ -1102,7 +1102,7 @@ export async function getClientsStatusReport() {
             }
 
             // Classify by declaration status (latest IVA period)
-            const declarations = c.declaration_history || [];
+            const declarations = c.sri_declaraciones || [];
             const needsIva = regime !== 'Rimpe Negocio Popular' && ivaFreq !== 'Ninguno';
             
             // Get latest IVA declaration
@@ -1427,11 +1427,11 @@ export async function markPaymentsList(
         }
 
         const client = matches[0];
-        let history = [...(client.declaration_history || [])];
+        let history = [...(client.sri_declaraciones || [])];
         const nowStr = new Date().toISOString();
         const updatedPeriods: string[] = [];
 
-        // For monthly/semiannual fees, the type is usually stored as 'IVA' or 'RENTA' in declaration_history.
+        // For monthly/semiannual fees, the type is usually stored as 'IVA' or 'RENTA' in sri_declaraciones.
         // If type is 'HONORARIOS', we default to 'IVA' in the records as monthly fees are bound to IVA periods.
         const dbType = type === 'HONORARIOS' ? 'IVA' : type;
 
@@ -1467,7 +1467,7 @@ export async function markPaymentsList(
         // Sort history by period for sanity
         history.sort((a: any, b: any) => a.period.localeCompare(b.period));
 
-        const { error: updErr } = await supabase.from('clients').update({ declaration_history: history }).eq('id', client.id);
+        const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history.map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
         if (updErr) throw updErr;
 
         await logAuditAction('Cobro Registrado (Bot)', `${type} [${updatedPeriods.join(', ')}] - RUC: ${client.ruc}`, 'finance', 'info');
@@ -1494,7 +1494,7 @@ export async function markDeclaration(
         }
 
         const client = matches[0];
-        let history = [...(client.declaration_history || [])];
+        let history = [...(client.sri_declaraciones || [])];
         const nowStr = new Date().toISOString();
         
         const proof_file = method === 'pdf' ? {
@@ -1531,7 +1531,7 @@ export async function markDeclaration(
         // Sort history by period for sanity
         history.sort((a: any, b: any) => a.period.localeCompare(b.period));
 
-        const { error: updErr } = await supabase.from('clients').update({ declaration_history: history, updated_at: new Date().toISOString() }).eq('id', client.id);
+        const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history, updated_at: new Date().toISOString().map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
         if (updErr) throw updErr;
 
         await logAuditAction('Declaración Registrada (Bot)', `${type} ${period} (${method}) - RUC: ${client.ruc}`, 'sri', 'info');
@@ -1580,7 +1580,7 @@ export async function saveDeclarationPdf(
     try {
         const { data: rawClients, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('*, sri_declaraciones(*)')
             .eq('ruc', ruc)
             .eq('is_deleted', false);
             
@@ -1590,7 +1590,7 @@ export async function saveDeclarationPdf(
         }
         
         const client = rawClients[0];
-        let history = [...(client.declaration_history || [])];
+        let history = [...(client.sri_declaraciones || [])];
         const nowStr = new Date().toISOString();
         
         const contentUri = `data:application/pdf;base64,${base64Content}`;
@@ -1631,13 +1631,7 @@ export async function saveDeclarationPdf(
         
         history.sort((a: any, b: any) => a.period.localeCompare(b.period));
         
-        const { error: updErr } = await supabase
-            .from('clients')
-            .update({ 
-                declaration_history: history, 
-                updated_at: nowStr 
-            })
-            .eq('id', client.id);
+        const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history.map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
             
         if (updErr) throw updErr;
         
@@ -1651,12 +1645,12 @@ export async function saveDeclarationPdf(
 
 export async function getClientDeclarationProofsList(ruc: string): Promise<string> {
     try {
-        const { data: rawClients, error } = await supabase.from('clients').select('*').eq('ruc', ruc).eq('is_deleted', false);
+        const { data: rawClients, error } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('ruc', ruc).eq('is_deleted', false);
         if (error) throw error;
         if (!rawClients || rawClients.length === 0) return `❌ No se encontró cliente RUC ${ruc}.`;
         
         const client = rawClients[0];
-        const declarations = (client.declaration_history || []).filter((d: any) => d.proof_file && d.proof_file.content);
+        const declarations = (client.sri_declaraciones || []).filter((d: any) => d.proof_file && (d.proof_file.content || d.proof_file.url));
         
         if (declarations.length === 0) {
             return `📋 *${client.name}* no tiene comprobantes de declaración guardados en su historial de Supabase.`;
@@ -1679,17 +1673,17 @@ export async function downloadClientProofFile(
     type?: 'IVA' | 'RENTA'
 ): Promise<{ fileName: string; contentBase64: string; error?: string } | null> {
     try {
-        const { data: rawClients, error } = await supabase.from('clients').select('*').eq('ruc', ruc).eq('is_deleted', false);
+        const { data: rawClients, error } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('ruc', ruc).eq('is_deleted', false);
         if (error) throw error;
         if (!rawClients || rawClients.length === 0) return { fileName: '', contentBase64: '', error: 'Cliente no encontrado' };
         
         const client = rawClients[0];
-        const declarations = client.declaration_history || [];
+        const declarations = client.sri_declaraciones || [];
         const entry = declarations.find((d: any) => 
             arePeriodsEqual(d.period, period) && 
             (!type || d.type === type) && 
             d.proof_file && 
-            d.proof_file.content
+            (d.proof_file.content || d.proof_file.url)
         );
         
         if (!entry) {
@@ -1697,7 +1691,17 @@ export async function downloadClientProofFile(
         }
         
         let base64 = entry.proof_file.content;
-        if (base64.includes(';base64,')) {
+        
+        if (base64 && base64.startsWith('__SPLIT__:STORAGE:')) {
+            const url = base64.replace('__SPLIT__:STORAGE:', '');
+            const res = await fetch(url);
+            const arrayBuffer = await res.arrayBuffer();
+            base64 = Buffer.from(arrayBuffer).toString('base64');
+        } else if (!base64 && entry.proof_file.url) {
+            const res = await fetch(entry.proof_file.url);
+            const arrayBuffer = await res.arrayBuffer();
+            base64 = Buffer.from(arrayBuffer).toString('base64');
+        } else if (base64 && base64.includes(';base64,')) {
             base64 = base64.split(';base64,')[1];
         }
         
@@ -1797,7 +1801,7 @@ export async function getMonthlyCollectionReport(): Promise<string> {
     try {
         const { data: clients, error } = await supabase
             .from('clients')
-            .select('name, ruc, regime, declaration_history, fee_structure, is_courtesy')
+            .select('name, ruc, regime, sri_declaraciones(*), fee_structure, is_courtesy')
             .eq('is_deleted', false)
             .eq('is_active', true);
         if (error) throw error;
@@ -1823,7 +1827,7 @@ export async function getMonthlyCollectionReport(): Promise<string> {
                          : obligations.ivaFrequency === 'Semestral' ? (c.fee_structure?.semestral ?? 10)
                          : 0;
 
-            const history = c.declaration_history || [];
+            const history = c.sri_declaraciones || [];
             const relevantDecls = history.filter((d: any) =>
                 (d.period === currentMonthPeriod || d.period === lastMonthPeriod) &&
                 (d.status === 'Enviada' || d.status === 'Pagada' || !!d.proof_file)
@@ -1901,10 +1905,10 @@ export function convertMarkdownToTelegramHtml(markdown: string): string {
 
 export async function getDeclarationYears(ruc: string, type?: 'IVA' | 'RENTA'): Promise<string[]> {
     try {
-        const { data: rawClients } = await supabase.from('clients').select('declaration_history').eq('ruc', ruc).eq('is_deleted', false);
+        const { data: rawClients } = await supabase.from('clients').select('sri_declaraciones(*)').eq('ruc', ruc).eq('is_deleted', false);
         if (!rawClients || rawClients.length === 0) return [];
-        const declarations = (rawClients[0].declaration_history || [])
-            .filter((d: any) => d.proof_file && d.proof_file.content && (!type || d.type === type));
+        const declarations = (rawClients[0].sri_declaraciones || [])
+            .filter((d: any) => d.proof_file && (d.proof_file.content || d.proof_file.url) && (!type || d.type === type));
         
         const years = new Set<string>();
         declarations.forEach((d: any) => {
@@ -1922,10 +1926,10 @@ export async function getDeclarationYears(ruc: string, type?: 'IVA' | 'RENTA'): 
 
 export async function getDeclarationProofsByYear(ruc: string, type: 'IVA' | 'RENTA', year: string): Promise<Array<{ period: string; fileName: string; type: string }>> {
     try {
-        const { data: rawClients } = await supabase.from('clients').select('declaration_history').eq('ruc', ruc).eq('is_deleted', false);
+        const { data: rawClients } = await supabase.from('clients').select('sri_declaraciones(*)').eq('ruc', ruc).eq('is_deleted', false);
         if (!rawClients || rawClients.length === 0) return [];
-        const declarations = (rawClients[0].declaration_history || [])
-            .filter((d: any) => d.proof_file && d.proof_file.content && d.type === type && d.period && d.period.includes(year));
+        const declarations = (rawClients[0].sri_declaraciones || [])
+            .filter((d: any) => d.proof_file && (d.proof_file.content || d.proof_file.url) && d.type === type && d.period && d.period.includes(year));
         
         return declarations.map((d: any) => ({
             period: d.period,
@@ -1940,7 +1944,7 @@ export async function getDeclarationProofsByYear(ruc: string, type: 'IVA' | 'REN
 
 export async function saveClientSignatureP12(ruc: string, base64Content: string, fileName: string, password?: string): Promise<string> {
     try {
-        const { data: rawClients } = await supabase.from('clients').select('*').eq('ruc', ruc).eq('is_deleted', false);
+        const { data: rawClients } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('ruc', ruc).eq('is_deleted', false);
         if (!rawClients || rawClients.length === 0) return `❌ No se encontró el cliente con RUC ${ruc}.`;
         
         const client = rawClients[0];
@@ -1992,13 +1996,13 @@ export async function processAndSaveDeclarationPdf(buffer: Buffer, originalFileN
         }
 
         const ruc = validated.ruc;
-        const { data: rawClients } = await supabase.from('clients').select('*').eq('ruc', ruc).eq('is_deleted', false);
+        const { data: rawClients } = await supabase.from('clients').select('*, sri_declaraciones(*)').eq('ruc', ruc).eq('is_deleted', false);
         if (!rawClients || rawClients.length === 0) {
             return `❌ Se identificó el RUC **${ruc}** (${validated.type} - ${validated.period}), pero ese cliente no está registrado en la base de datos.`;
         }
 
         const client = rawClients[0];
-        const history: any[] = client.declaration_history || [];
+        const history: any[] = client.sri_declaraciones || [];
         
         const type = validated.type as 'IVA' | 'RENTA';
         const period = validated.period;
@@ -2024,10 +2028,7 @@ export async function processAndSaveDeclarationPdf(buffer: Buffer, originalFileN
             history.push(newEntry);
         }
 
-        const { error } = await supabase.from('clients').update({
-            declaration_history: history,
-            updated_at: new Date().toISOString()
-        }).eq('id', client.id);
+        const { error } = await supabase.from('sri_declaraciones').upsert(history.map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
 
         if (error) throw error;
 

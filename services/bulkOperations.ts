@@ -1,3 +1,4 @@
+import { supabase } from './supabase';
 import { arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -118,14 +119,34 @@ export const processBulkPdfs = async (
                 clientName = newClient.name;
             }
 
-            // 3. Procesar Documento
-            const fileBase64 = await fileToBase64(file);
+            // 3. Procesar Documento (NUEVO: Peso Reducido via Supabase Storage)
+            let pdfContentStr = "";
+            try {
+                const uniqueId = Math.random().toString(36).substring(2, 9);
+                const filePath = `${data.ruc || 'UNKNOWN'}/${(data as any).period || 'GENERAL'}/${uniqueId}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('sri_proofs')
+                    .upload(filePath, file, { upsert: true });
+                
+                if (uploadError) throw uploadError;
+                
+                const { data: { publicUrl } } = supabase.storage
+                    .from('sri_proofs')
+                    .getPublicUrl(filePath);
+                
+                pdfContentStr = `__SPLIT__:STORAGE:${publicUrl}`;
+            } catch (storageErr) {
+                console.error("Error uploading to storage, falling back to base64:", storageErr);
+                pdfContentStr = await fileToBase64(file); // Fallback
+            }
+
             const storedFile: StoredFile = {
                 name: file.name,
                 type: 'pdf',
                 size: file.size,
                 lastModified: file.lastModified,
-                content: fileBase64,
+                content: pdfContentStr,
                 metadata: {
                     uploadedAt: new Date().toISOString(),
                     period: (data as any).period || 'S/P',
