@@ -79,7 +79,7 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     }, [facturadorClients]);
 
     const rowVirtualizer = useVirtualizer({
-        count: facturadorClients.length,
+        count: displayClients.length,
         getScrollElement: () => parentRef.current,
         estimateSize: () => 120, // estimated row height
         overscan: 5,
@@ -211,128 +211,206 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
         onDrop([file]);
     };
 
-    // KPI Counters
-    const kpis = useMemo(() => {
-        const activeFacturadores = storeClients.filter(c => !c.isDeleted && c.isActive && (c.billingPlan || c.facturadorConfig));
-        const recursos = activeFacturadores.filter(c => !c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos').length;
-        const subido = activeFacturadores.filter(c => c.facturadorActivationStatus === 'subido_plataforma').length;
-        const activado = activeFacturadores.filter(c => c.facturadorActivationStatus === 'activado').length;
-        return { total: activeFacturadores.length, recursos, subido, activado };
+    // KPI Counters from local store for ultra-fast instant UI responsiveness
+    const allFacturadorClients = useMemo(() => {
+        return storeClients.filter(c => !c.isDeleted && c.isActive && (c.billingPlan || c.facturadorConfig || c.clientType === 'solo_plan' || c.requiresDeclarations === false));
     }, [storeClients]);
+
+    const kpis = useMemo(() => {
+        const total = allFacturadorClients.length;
+        const particulares = allFacturadorClients.filter(c => c.clientType === 'solo_plan' || c.requiresDeclarations === false).length;
+        const contables = allFacturadorClients.filter(c => c.clientType !== 'solo_plan' && c.requiresDeclarations !== false).length;
+        const recursos = allFacturadorClients.filter(c => !c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos').length;
+        const activado = allFacturadorClients.filter(c => c.facturadorActivationStatus === 'activado').length;
+        const sinFirma = allFacturadorClients.filter(c => !c.signatureFile).length;
+        return { total, particulares, contables, recursos, activado, sinFirma };
+    }, [allFacturadorClients]);
+
+    // Combinar búsqueda y filtros locales de alta velocidad respaldados con Supabase
+    const displayClients = useMemo(() => {
+        let list = allFacturadorClients;
+
+        if (searchTerm.trim()) {
+            const q = searchTerm.toLowerCase().trim();
+            list = list.filter(c => 
+                c.name.toLowerCase().includes(q) || 
+                (c.tradeName && c.tradeName.toLowerCase().includes(q)) || 
+                c.ruc.includes(q) ||
+                c.billingPlan?.programName?.toLowerCase().includes(q) ||
+                c.facturadorConfig?.programName?.toLowerCase().includes(q)
+            );
+        }
+
+        if (filterStatus === 'particulares') {
+            list = list.filter(c => c.clientType === 'solo_plan' || c.requiresDeclarations === false);
+        } else if (filterStatus === 'clientes') {
+            list = list.filter(c => c.clientType !== 'solo_plan' && c.requiresDeclarations !== false);
+        } else if (filterStatus === 'recursos_listos') {
+            list = list.filter(c => !c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos');
+        } else if (filterStatus === 'subido_plataforma') {
+            list = list.filter(c => c.facturadorActivationStatus === 'subido_plataforma');
+        } else if (filterStatus === 'activado') {
+            list = list.filter(c => c.facturadorActivationStatus === 'activado');
+        } else if (filterStatus === 'sin_firma') {
+            list = list.filter(c => !c.signatureFile);
+        }
+
+        return list;
+    }, [allFacturadorClients, searchTerm, filterStatus]);
 
     return (
         <div className="space-y-8 animate-fade-in pb-24">
-            {/* ── HEADER DE FACTURADORES ── */}
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/[0.06] bg-[hsl(222,47%,4%)] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] p-8 md:p-10">
-                <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-to-bl from-[#00A896]/10 via-cyan-500/5 to-transparent blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-gradient-to-tr from-purple-500/10 to-transparent blur-3xl pointer-events-none" />
+            {/* ── HEADER DE FACTURADORES (STITCH LUXURY) ── */}
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/[0.08] bg-[#051424]/90 backdrop-blur-2xl shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] p-8 md:p-10">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-teal-500/15 via-indigo-500/5 to-transparent blur-3xl pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#10b981]/10 to-transparent blur-3xl pointer-events-none" />
 
                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
-                        <div className="p-4.5 rounded-3xl bg-gradient-to-br from-[#00A896] to-teal-600 shadow-xl shadow-[#00A896]/30 text-white shrink-0">
-                            <ShoppingBag size={32} strokeWidth={2.2} />
+                        <div className="p-4.5 rounded-3xl bg-gradient-to-br from-[#10b981] to-teal-700 shadow-xl shadow-[#10b981]/30 text-white shrink-0">
+                            <ShoppingBag size={34} strokeWidth={2.2} />
                         </div>
                         <div>
                             <div className="flex items-center gap-2 mb-1.5">
-                                <div className="w-2 h-2 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_10px_rgba(0,168,150,0.8)]" />
-                                <span className="text-[10px] font-black text-[#00A896] uppercase tracking-[0.3em]">Registro de Emisión Digital</span>
+                                <div className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                                <span className="text-[10px] font-black text-[#10b981] uppercase tracking-[0.3em] font-mono">Control de Emisión & Planes SRI</span>
                             </div>
                             <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-display">
-                                Facturadores y Planes de Clientes
+                                Facturación Electrónica & Planes
                             </h1>
-                            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
-                                Control de planes de facturación contratados, recopilación de recursos y estado de activación en plataformas.
+                            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium max-w-2xl">
+                                Gestión de software de emisión (Ecuafact, Zifact, etc.), expedientes de firma .p12 y separación estricta de clientes particulares vs contables.
                             </p>
                         </div>
                     </div>
 
-                    {/* KPI RESUMEN & ACCIÓN PRINCIPAL */}
-                    <div className="flex items-center gap-4 flex-wrap shrink-0">
-                        <div className="flex flex-col gap-2">
-                            <button
-                                onClick={() => setIsSalesModalOpen(true)}
-                                className="px-5 py-2.5 bg-gradient-to-r from-[#00A896] via-teal-500 to-emerald-500 hover:from-[#00A896]/90 hover:to-emerald-500/90 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#00A896]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 shrink-0"
-                            >
-                                <Plus size={16} strokeWidth={2.5} />
-                                <span>Registro Completo</span>
-                            </button>
-                            <button
-                                onClick={() => setIsQuickPlanModalOpen(true)}
-                                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-teal-400 border border-teal-500/30 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 shrink-0"
-                            >
-                                <FileText size={16} strokeWidth={2.5} />
-                                <span>Registro Expreso (Autorización)</span>
-                            </button>
-                        </div>
+                    {/* ACCIONES DE REGISTRO RÁPIDO */}
+                    <div className="flex items-center gap-3 flex-wrap shrink-0">
+                        <button
+                            onClick={() => setIsSalesModalOpen(true)}
+                            className="px-5 py-3 bg-gradient-to-r from-[#10b981] via-teal-500 to-emerald-600 hover:from-[#10b981]/90 hover:to-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#10b981]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                            <Plus size={16} strokeWidth={2.5} />
+                            <span>Vender Plan / Combo</span>
+                        </button>
+                        <button
+                            onClick={() => setIsQuickPlanModalOpen(true)}
+                            className="px-5 py-3 bg-slate-900/90 hover:bg-slate-800 text-teal-300 border border-teal-500/30 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+                        >
+                            <FileText size={16} strokeWidth={2.5} />
+                            <span>Autorización Ecuafact (DOCX)</span>
+                        </button>
+                    </div>
+                </div>
 
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <button
-                                onClick={() => setFilterStatus('todos')}
-                                className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-                                    filterStatus === 'todos'
-                                        ? 'bg-[#00A896]/15 border-[#00A896]/30 text-white'
-                                        : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
-                                }`}
-                            >
-                                <span className="text-xl font-black font-mono text-[#00A896]">{kpis.total}</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Total Planes</span>
-                            </button>
-                            <button
-                                onClick={() => setFilterStatus('recursos_listos')}
-                                className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-                                    filterStatus === 'recursos_listos'
-                                        ? 'bg-rose-500/15 border-rose-500/30 text-white'
-                                        : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
-                                }`}
-                            >
-                                <span className="text-xl font-black font-mono text-rose-400">{kpis.recursos}</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Recursos Listos</span>
-                            </button>
-                            <button
-                                onClick={() => setFilterStatus('activado')}
-                                className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-                                    filterStatus === 'activado'
-                                        ? 'bg-emerald-500/15 border-emerald-500/30 text-white'
-                                        : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
-                                }`}
-                            >
-                                <span className="text-xl font-black font-mono text-emerald-400">{kpis.activado}</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Activados</span>
-                            </button>
-                            <button
-                                onClick={() => setFilterStatus('sin_firma')}
-                                className={`flex flex-col items-center px-4 py-3 rounded-2xl border backdrop-blur-md transition-all ${
-                                    filterStatus === 'sin_firma'
-                                        ? 'bg-purple-500/15 border-purple-500/30 text-white'
-                                        : 'bg-white/5 border-white/5 text-slate-400 hover:border-white/10'
-                                }`}
-                            >
-                                <span className="text-xl font-black font-mono text-purple-400">{kpis.total - kpis.subido}</span>
-                                <span className="text-[8px] font-bold uppercase tracking-wider mt-0.5">Sin Firma .p12</span>
-                            </button>
+                {/* ── 4 TARJETAS EJECUTIVAS KPI (STITCH SUITE) ── */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-white/10">
+                    {/* Card 1: Total Planes */}
+                    <div 
+                        onClick={() => setFilterStatus('todos')}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                            filterStatus === 'todos' 
+                                ? 'bg-teal-500/15 border-teal-500/40 text-teal-300 shadow-lg shadow-teal-500/10 scale-[1.02]' 
+                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:border-teal-500/30'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-[10px] font-black uppercase tracking-wider font-mono text-slate-400">Total Planes</span>
+                            <ShoppingBag size={16} className="text-teal-400" />
+                        </div>
+                        <div className="text-3xl font-black text-white font-mono mt-2">{kpis.total}</div>
+                        <div className="text-[10px] font-semibold text-teal-400/80 mt-1 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+                            <span>Emisión Digital</span>
+                        </div>
+                    </div>
+
+                    {/* Card 2: Particulares (Solo Plan) */}
+                    <div 
+                        onClick={() => setFilterStatus('particulares')}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                            filterStatus === 'particulares' 
+                                ? 'bg-sky-500/15 border-sky-500/40 text-sky-300 shadow-lg shadow-sky-500/10 scale-[1.02]' 
+                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:border-sky-500/30'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-[10px] font-black uppercase tracking-wider font-mono text-sky-400">Solo Plan (Sin IVA)</span>
+                            <User size={16} className="text-sky-400" />
+                        </div>
+                        <div className="text-3xl font-black text-sky-400 font-mono mt-2">{kpis.particulares}</div>
+                        <div className="text-[10px] font-semibold text-slate-400 mt-1 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                            <span>Aislados de la Matriz IVA</span>
+                        </div>
+                    </div>
+
+                    {/* Card 3: Clientes Contables */}
+                    <div 
+                        onClick={() => setFilterStatus('clientes')}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                            filterStatus === 'clientes' 
+                                ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300 shadow-lg shadow-indigo-500/10 scale-[1.02]' 
+                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:border-indigo-500/30'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-[10px] font-black uppercase tracking-wider font-mono text-indigo-400">Clientes Contables</span>
+                            <UserCheck size={16} className="text-indigo-400" />
+                        </div>
+                        <div className="text-3xl font-black text-indigo-300 font-mono mt-2">{kpis.contables}</div>
+                        <div className="text-[10px] font-semibold text-slate-400 mt-1 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                            <span>Servicio Integral + Facturador</span>
+                        </div>
+                    </div>
+
+                    {/* Card 4: Estado Activados */}
+                    <div 
+                        onClick={() => setFilterStatus('activado')}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                            filterStatus === 'activado' 
+                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-lg shadow-emerald-500/10 scale-[1.02]' 
+                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:border-emerald-500/30'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-[10px] font-black uppercase tracking-wider font-mono text-emerald-400">Activados & Listos</span>
+                            <CheckCircle2 size={16} className="text-emerald-400" />
+                        </div>
+                        <div className="text-3xl font-black text-emerald-400 font-mono mt-2">{kpis.activado}</div>
+                        <div className="text-[10px] font-semibold text-emerald-400/80 mt-1 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            <span>{kpis.total > 0 ? Math.round((kpis.activado / kpis.total) * 100) : 100}% Operativos</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* ── ALERTAS DE VENCIMIENTO ── */}
+            {/* ── ALERTAS DE VENCIMIENTO DE FIRMA ── */}
             {expiringAlerts.length > 0 && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 md:p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                        <AlertTriangle className="text-amber-500" size={24} />
-                        <h3 className="text-amber-500 font-bold">Firmas Electrónicas por Vencer (Próximos 15 días)</h3>
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-6 backdrop-blur-xl">
+                    <div className="flex items-center gap-3 mb-3">
+                        <AlertTriangle className="text-amber-400" size={22} />
+                        <h3 className="text-amber-400 font-black text-sm uppercase tracking-wider font-mono">
+                            Firmas Electrónicas por Vencer (Próximos 15 días)
+                        </h3>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {expiringAlerts.map(client => {
                             const expDate = new Date(client.signatureExpirationDate!);
                             const diffDays = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 3600 * 24));
                             return (
-                                <div key={client.id} className="bg-slate-900/50 border border-white/5 rounded-xl p-4 flex flex-col gap-2">
-                                    <div className="font-bold text-white">{client.name}</div>
-                                    <div className="text-xs text-slate-400">RUC: {client.ruc}</div>
-                                    <div className="flex items-center justify-between mt-2">
-                                        <span className="text-xs font-mono text-amber-400">{format(expDate, "dd/MM/yyyy")}</span>
-                                        <span className="text-[10px] uppercase font-bold bg-amber-500/20 text-amber-400 px-2 py-1 rounded">Vence en {diffDays} días</span>
+                                <div key={client.id} className="bg-slate-950/60 border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between">
+                                    <div>
+                                        <div className="font-bold text-white uppercase text-xs truncate">{client.tradeName || client.name}</div>
+                                        <div className="text-[11px] font-mono text-slate-400 mt-0.5">RUC: {client.ruc}</div>
+                                    </div>
+                                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
+                                        <span className="text-xs font-mono font-bold text-amber-400">{format(expDate, "dd/MM/yyyy")}</span>
+                                        <span className="text-[9px] uppercase font-black bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">
+                                            Vence en {diffDays} días
+                                        </span>
                                     </div>
                                 </div>
                             );
@@ -341,58 +419,49 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                 </div>
             )}
 
-            {/* ── BARRA DE BÚSQUEDA Y FILTRADO DE CATEGORÍAS ── */}
-            <div className="flex flex-col lg:flex-row items-center gap-4 justify-between">
+            {/* ── BARRA DE BÚSQUEDA Y FILTRADO SEGMENTADO ── */}
+            <div className="flex flex-col lg:flex-row items-center gap-4 justify-between bg-slate-900/60 p-4 rounded-3xl border border-white/10 backdrop-blur-xl">
                 <div className="relative w-full lg:max-w-md">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input
                         type="text"
-                        placeholder="Buscar por cliente, RUC o plan..."
+                        placeholder="Buscar por cliente, RUC o software..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-slate-900/60 backdrop-blur-2xl rounded-2xl border border-white/10 text-xs font-bold text-white placeholder-slate-500 outline-none focus:border-[#00A896]/50 focus:ring-1 focus:ring-[#00A896]/30 transition-all"
+                        className="w-full pl-11 pr-10 py-2.5 bg-slate-950/80 rounded-2xl border border-white/10 text-xs font-bold text-white placeholder-slate-500 outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all"
                     />
                     {searchTerm && (
                         <button
                             onClick={() => setSearchTerm('')}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs font-bold"
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs font-bold p-1"
                         >
-                            Limpiar
+                            ✕
                         </button>
                     )}
                 </div>
 
-                <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1">
-                    <button
-                        onClick={() => setFilterStatus('todos')}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border ${
-                            filterStatus === 'todos'
-                                ? 'bg-white/10 border-white/20 text-white'
-                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:text-slate-200'
-                        }`}
-                    >
-                        Todos
-                    </button>
-                    <button
-                        onClick={() => setFilterStatus('clientes')}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
-                            filterStatus === 'clientes'
-                                ? 'bg-blue-600/20 border-blue-500/40 text-blue-300'
-                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:text-slate-200'
-                        }`}
-                    >
-                        <UserCheck size={14} /> Clientes Contables
-                    </button>
-                    <button
-                        onClick={() => setFilterStatus('particulares')}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
-                            filterStatus === 'particulares'
-                                ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896]'
-                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:text-slate-200'
-                        }`}
-                    >
-                        <User size={14} /> Particulares / Ocasionales
-                    </button>
+                <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1">
+                    {[
+                        { id: 'todos', label: `Todos (${kpis.total})` },
+                        { id: 'particulares', label: `Solo Plan / Sin IVA (${kpis.particulares})`, icon: User },
+                        { id: 'clientes', label: `Clientes Contables (${kpis.contables})`, icon: UserCheck },
+                        { id: 'recursos_listos', label: `Por Subir (${kpis.recursos})` },
+                        { id: 'activado', label: `Activados (${kpis.activado})` },
+                        { id: 'sin_firma', label: `Sin Firma (${kpis.sinFirma})` }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setFilterStatus(tab.id as any)}
+                            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 whitespace-nowrap ${
+                                filterStatus === tab.id
+                                    ? 'bg-[#10b981] text-white border-[#10b981] shadow-md shadow-[#10b981]/20 scale-[1.02]'
+                                    : 'bg-slate-950/60 border-white/5 text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            {tab.icon && <tab.icon size={13} />}
+                            <span>{tab.label}</span>
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -409,9 +478,12 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                     </div>
                 </div>
 
-                {facturadorClients.length === 0 ? (
-                    <div className="p-8 text-center border border-dashed border-white/10 rounded-3xl text-slate-400">
-                        No se encontraron clientes con planes de facturador registrados que coincidan con los filtros.
+                {displayClients.length === 0 ? (
+                    <div className="p-12 text-center border border-dashed border-white/10 rounded-3xl text-slate-400 space-y-2">
+                        <div className="text-sm font-bold text-slate-300">No se encontraron registros de planes</div>
+                        <p className="text-xs text-slate-500 max-w-md mx-auto">
+                            No hay clientes con planes de facturación que coincidan con los filtros activos. Usa el botón "Vender Plan / Combo" para registrar uno nuevo.
+                        </p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto rounded-3xl border border-white/5 bg-slate-950/40">
@@ -431,9 +503,14 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                     <tr style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }} />
                                 )}
                                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                                    const client = facturadorClients[virtualRow.index];
-                                    const config = client.billingPlan || client.facturadorConfig;
-                                    if (!config) return null;
+                                    const client = displayClients[virtualRow.index];
+                                    if (!client) return null;
+                                    const config = client.billingPlan || client.facturadorConfig || {
+                                        programName: 'Plan Particular',
+                                        documentStatus: 'Registrado',
+                                        username: client.ruc,
+                                        password: client.sriPassword
+                                    };
                                     const pwdVisible = visiblePasswords[client.id] || false;
                                     const isCopied = copiedId === client.id;
                                     const providerUrl = config.url || (config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' : 'https://app.ecuafact.com');

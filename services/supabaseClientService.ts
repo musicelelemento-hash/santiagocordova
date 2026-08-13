@@ -235,11 +235,6 @@ export const SupabaseService = {
       query = query.or(`name.ilike.%${search}%,trade_name.ilike.%${search}%,ruc.ilike.%${search}%`);
     }
 
-    if (filterCategory === 'Particulares') {
-      // Logic for particulares (e.g. they only have billing plan but maybe no declarations)
-      query = query.eq('clientType', 'solo_plan'); 
-    }
-
     // Pagination
     const from = (page - 1) * limit;
     const to = from + limit - 1;
@@ -253,9 +248,26 @@ export const SupabaseService = {
       throw error;
     }
 
+    let mappedClients = (data || []).map(d => this.mapClientFromDb(d));
+
+    // Client-side category filtering for robust resilience
+    if (filterCategory === 'particulares' || filterCategory === 'Particulares') {
+      mappedClients = mappedClients.filter(c => c.clientType === 'solo_plan' || c.requiresDeclarations === false);
+    } else if (filterCategory === 'clientes' || filterCategory === 'Clientes') {
+      mappedClients = mappedClients.filter(c => c.clientType !== 'solo_plan' && c.requiresDeclarations !== false && (c.billingPlan || c.facturadorConfig));
+    } else if (filterCategory === 'recursos_listos') {
+      mappedClients = mappedClients.filter(c => (c.billingPlan || c.facturadorConfig) && (!c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos'));
+    } else if (filterCategory === 'subido_plataforma') {
+      mappedClients = mappedClients.filter(c => c.facturadorActivationStatus === 'subido_plataforma');
+    } else if (filterCategory === 'activado') {
+      mappedClients = mappedClients.filter(c => c.facturadorActivationStatus === 'activado');
+    } else if (filterCategory === 'sin_firma') {
+      mappedClients = mappedClients.filter(c => (c.billingPlan || c.facturadorConfig) && !c.signatureFile);
+    }
+
     return {
-      clients: (data || []).map(d => this.mapClientFromDb(d)),
-      count: count || 0
+      clients: mappedClients,
+      count: count || mappedClients.length
     };
   },
 
@@ -299,12 +311,18 @@ export const SupabaseService = {
       sriPassword: db.sri_password,
       dueDate: db.due_date,
       status: db.status as TaskStatus,
-      cost: db.cost,
-      advancePayment: db.advance_payment
+      cost: Number(db.cost || 0),
+      advancePayment: Number(db.advance_payment || 0)
     };
   },
 
   mapClientToDb(client: Client): any {
+    const isSoloPlan = client.clientType === 'solo_plan' || client.requiresDeclarations === false;
+    const clientType = isSoloPlan ? 'solo_plan' : (client.clientType || 'completo');
+    const requiresDeclarations = isSoloPlan ? false : (typeof client.requiresDeclarations === 'boolean' ? client.requiresDeclarations : true);
+
+    const facturadorConfigObj = client.facturadorConfig || client.billingPlan;
+
     return {
       id: client.id,
       ruc: client.ruc,
@@ -321,9 +339,22 @@ export const SupabaseService = {
       economic_activity: client.economicActivity,
       is_active: client.isActive,
       is_deleted: client.isDeleted,
+      client_type: clientType,
+      requires_declarations: requiresDeclarations,
+      facturador_config: facturadorConfigObj,
+      facturador_activation_status: client.facturadorActivationStatus || 'recursos_listos',
+      signature_provider: client.signatureProvider,
+      id_card_front: client.idCardFront,
+      id_card_back: client.idCardBack,
+      id_card_selfie: client.idCardSelfie,
+      ecuafact_signed_request: client.ecuafactSignedRequest,
       tax_profile: {
         ...(client.taxProfile || {}),
-        clientStartPeriod: client.clientStartPeriod
+        clientStartPeriod: client.clientStartPeriod,
+        clientType: clientType,
+        requiresDeclarations: requiresDeclarations,
+        facturadorConfig: facturadorConfigObj,
+        facturadorActivationStatus: client.facturadorActivationStatus
       },
       fee_structure: client.fee_structure,
       custom_service_fee: client.customServiceFee,
@@ -375,16 +406,24 @@ export const SupabaseService = {
 
     // Normalizar y blindar el taxProfile
     const rawTaxProfile = db.tax_profile || {};
+    const isSoloPlan = db.client_type === 'solo_plan' || 
+                       rawTaxProfile.clientType === 'solo_plan' || 
+                       db.requires_declarations === false || 
+                       rawTaxProfile.requiresDeclarations === false;
+    
+    const clientType: 'completo' | 'solo_plan' = isSoloPlan ? 'solo_plan' : (db.client_type || rawTaxProfile.clientType || 'completo');
+    const requiresDeclarations = isSoloPlan ? false : (typeof db.requires_declarations === 'boolean' ? db.requires_declarations : (rawTaxProfile.requiresDeclarations ?? true));
+
     const taxProfile = {
-      ivaFrequency: rawTaxProfile.ivaFrequency || (
+      ivaFrequency: isSoloPlan ? 'Ninguno' : (rawTaxProfile.ivaFrequency || (
         normalizedRegime === TaxRegime.RimpeEmprendedor ? 'Semestral' :
         (normalizedRegime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual')
-      ),
-      requiresAnnualRenta: rawTaxProfile.requiresAnnualRenta ?? (
+      )),
+      requiresAnnualRenta: isSoloPlan ? false : (rawTaxProfile.requiresAnnualRenta ?? (
         normalizedRegime === TaxRegime.RimpeEmprendedor ||
         normalizedRegime === TaxRegime.RimpeNegocioPopular ||
         normalizedRegime === TaxRegime.General
-      ),
+      )),
       requiresAnexosGastos: !!rawTaxProfile.requiresAnexosGastos,
       hasActiveDevolucionIva: !!rawTaxProfile.hasActiveDevolucionIva,
       hasActiveElderlyDevolucionIva: !!rawTaxProfile.hasActiveElderlyDevolucionIva,
@@ -393,13 +432,15 @@ export const SupabaseService = {
       clientStartPeriod: rawTaxProfile.clientStartPeriod || db.client_start_period
     };
 
-    // Forzar consistencia estricta según el régimen
-    if (normalizedRegime === TaxRegime.RimpeNegocioPopular) {
-      taxProfile.ivaFrequency = 'Ninguno';
-      taxProfile.requiresAnnualRenta = true;
-    } else if (normalizedRegime === TaxRegime.RimpeEmprendedor) {
-      taxProfile.ivaFrequency = 'Semestral';
-      taxProfile.requiresAnnualRenta = true;
+    // Forzar consistencia estricta según el régimen (solo si no es solo_plan)
+    if (!isSoloPlan) {
+      if (normalizedRegime === TaxRegime.RimpeNegocioPopular) {
+        taxProfile.ivaFrequency = 'Ninguno';
+        taxProfile.requiresAnnualRenta = true;
+      } else if (normalizedRegime === TaxRegime.RimpeEmprendedor) {
+        taxProfile.ivaFrequency = 'Semestral';
+        taxProfile.requiresAnnualRenta = true;
+      }
     }
 
     // Unificar y desduplicar declaraciones del join relacional y del JSON history
@@ -423,6 +464,20 @@ export const SupabaseService = {
 
     const unifiedDeclarations = Array.from(declMap.values());
 
+    const facturadorConfig = db.facturador_config || rawTaxProfile.facturadorConfig || (db.billing_plans && db.billing_plans.length > 0 ? {
+      programName: db.billing_plans[0].program_name,
+      url: db.billing_plans[0].url,
+      username: db.billing_plans[0].username,
+      password: db.billing_plans[0].password,
+      expirationDate: db.billing_plans[0].expiration_date,
+      documentStatus: db.billing_plans[0].document_status,
+      documentCount: db.billing_plans[0].document_count,
+      price: db.billing_plans[0].price,
+      soldByMe: db.billing_plans[0].sold_by_me,
+      providerName: db.billing_plans[0].provider_name,
+      freeSupportAndCancellation: db.billing_plans[0].free_support_and_cancellation,
+    } : undefined);
+
     return {
       id: db.id,
       ruc: db.ruc,
@@ -434,8 +489,16 @@ export const SupabaseService = {
       address: db.address,
       notes: db.notes,
       regime: normalizedRegime,
-      // isVip logic removed, all treated as VIP
-
+      clientType,
+      requiresDeclarations,
+      facturadorConfig,
+      billingPlan: facturadorConfig,
+      facturadorActivationStatus: db.facturador_activation_status || rawTaxProfile.facturadorActivationStatus || 'recursos_listos',
+      signatureProvider: db.signature_provider,
+      idCardFront: db.id_card_front,
+      idCardBack: db.id_card_back,
+      idCardSelfie: db.id_card_selfie,
+      ecuafactSignedRequest: db.ecuafact_signed_request,
       rentaCategory: db.renta_category as RentaCategory,
       economicActivity: db.economic_activity,
       isActive: db.is_active,
@@ -471,21 +534,7 @@ export const SupabaseService = {
       rentaRefundConfirmationStartedAt: db.renta_refund_confirmation_started_at,
       rentaRefundConfirmationDeadline: db.renta_refund_confirmation_deadline,
       createdAt: db.created_at,
-      updatedAt: db.updated_at,
-      // Handle joined billing_plans (can be array or single depending on DB relationship, assume array from supabase left join)
-      billingPlan: db.billing_plans && db.billing_plans.length > 0 ? {
-        programName: db.billing_plans[0].program_name,
-        url: db.billing_plans[0].url,
-        username: db.billing_plans[0].username,
-        password: db.billing_plans[0].password,
-        expirationDate: db.billing_plans[0].expiration_date,
-        documentStatus: db.billing_plans[0].document_status,
-        documentCount: db.billing_plans[0].document_count,
-        price: db.billing_plans[0].price,
-        soldByMe: db.billing_plans[0].sold_by_me,
-        providerName: db.billing_plans[0].provider_name,
-        freeSupportAndCancellation: db.billing_plans[0].free_support_and_cancellation,
-      } : (db.facturador_config ? db.facturador_config : undefined)
+      updatedAt: db.updated_at
     };
   },
 

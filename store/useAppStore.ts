@@ -48,17 +48,26 @@ const sanitizeSingleClient = (c: any): Client => {
     clientStartPeriod: rawTaxProfile.clientStartPeriod || c.clientStartPeriod
   };
 
-  // Forzar consistencia estricta e inviolable según el régimen o cliente específico
-  if ((c.name && c.name.toUpperCase().includes('CHALCO')) || (c.tradeName && c.tradeName.toUpperCase().includes('CHALCO'))) {
-    taxProfile.ivaFrequency = 'Semestral';
-  }
+  const isSoloPlan = c.clientType === 'solo_plan' || c.requiresDeclarations === false || (rawTaxProfile && rawTaxProfile.requiresDeclarations === false);
+  const clientType = isSoloPlan ? 'solo_plan' : (c.clientType || 'completo');
+  const requiresDeclarations = isSoloPlan ? false : (typeof c.requiresDeclarations === 'boolean' ? c.requiresDeclarations : true);
 
-  if (normalizedRegime === TaxRegime.RimpeNegocioPopular) {
+  if (isSoloPlan) {
     taxProfile.ivaFrequency = 'Ninguno';
-    taxProfile.requiresAnnualRenta = true;
-  } else if (normalizedRegime === TaxRegime.RimpeEmprendedor) {
-    taxProfile.ivaFrequency = 'Semestral';
-    taxProfile.requiresAnnualRenta = true;
+    taxProfile.requiresAnnualRenta = false;
+  } else {
+    // Forzar consistencia estricta e inviolable según el régimen o cliente específico
+    if ((c.name && c.name.toUpperCase().includes('CHALCO')) || (c.tradeName && c.tradeName.toUpperCase().includes('CHALCO'))) {
+      taxProfile.ivaFrequency = 'Semestral';
+    }
+
+    if (normalizedRegime === TaxRegime.RimpeNegocioPopular) {
+      taxProfile.ivaFrequency = 'Ninguno';
+      taxProfile.requiresAnnualRenta = true;
+    } else if (normalizedRegime === TaxRegime.RimpeEmprendedor) {
+      taxProfile.ivaFrequency = 'Semestral';
+      taxProfile.requiresAnnualRenta = true;
+    }
   }
 
   let initialDecls: Declaration[] = Array.isArray(c.declarations) ? c.declarations.map((d: any) => ({
@@ -66,22 +75,14 @@ const sanitizeSingleClient = (c: any): Client => {
     is_paid: typeof d.is_paid === 'boolean' ? d.is_paid : d.status === DeclarationStatus.Pagada
   })) : [];
 
-  // Rellenar comprobantes y pagos de semestres pasados (2025-S1, 2025-S2, 2024-S1, 2024-S2) para clientes semestrales
-  if (taxProfile.ivaFrequency === 'Semestral' || normalizedRegime === TaxRegime.RimpeEmprendedor) {
+  // Rellenar comprobantes y pagos de semestres pasados únicamente para clientes contables semestrales
+  if (!isSoloPlan && (taxProfile.ivaFrequency === 'Semestral' || normalizedRegime === TaxRegime.RimpeEmprendedor)) {
     const pastSemestralPeriods = ['2025-S2', '2025-S1', '2024-S2', '2024-S1'];
     const declMap = new Map<string, Declaration>();
     
     for (const d of initialDecls) {
       if (d && d.period) declMap.set(d.period, d);
     }
-
-    const defaultProof = {
-      name: 'Comprobante_Semestral_SRI.pdf',
-      type: 'application/pdf',
-      size: 2048,
-      lastModified: Date.now(),
-      content: 'data:application/pdf;base64,JVBERi0xLjQ...'
-    };
 
     const tempClient = { ...c, clientStartPeriod: c.clientStartPeriod || rawTaxProfile.clientStartPeriod };
 
@@ -102,6 +103,8 @@ const sanitizeSingleClient = (c: any): Client => {
     initialDecls = Array.from(declMap.values());
   }
 
+  const facturadorConfigObj = c.facturadorConfig || c.billingPlan || (c.billing_plans && c.billing_plans.length > 0 ? c.billing_plans[0] : undefined);
+
   const client = {
     id: c.id || uuidv4(),
     ruc: c.ruc || '',
@@ -116,6 +119,17 @@ const sanitizeSingleClient = (c: any): Client => {
     clientStartPeriod: c.clientStartPeriod || rawTaxProfile.clientStartPeriod,
     declarations: initialDecls,
     isActive: typeof c.isActive === 'boolean' ? c.isActive : true,
+    clientType: clientType as 'completo' | 'solo_plan',
+    requiresDeclarations,
+    // Planes y Facturadores
+    billingPlan: facturadorConfigObj,
+    facturadorConfig: facturadorConfigObj,
+    facturadorActivationStatus: c.facturadorActivationStatus || 'recursos_listos',
+    signatureProvider: c.signatureProvider || '',
+    idCardFront: c.idCardFront || undefined,
+    idCardBack: c.idCardBack || undefined,
+    idCardSelfie: c.idCardSelfie || undefined,
+    ecuafactSignedRequest: c.ecuafactSignedRequest || undefined,
     // Bóveda de Datos
     isArtisan: !!c.isArtisan,
     establishmentCount: c.establishmentCount || 1,
@@ -123,7 +137,7 @@ const sanitizeSingleClient = (c: any): Client => {
     electronicSignaturePassword: c.electronicSignaturePassword || '',
     signatureFile: c.signatureFile || undefined,
     rucPdf: c.rucPdf || undefined,
-    rucCertificate: c.rucCertificate || undefined, // Support both naming variants if needed
+    rucCertificate: c.rucCertificate || undefined,
     sharedAccessKey: c.sharedAccessKey || '',
     notes: c.notes || '',
     // Fee Structure Preservation
