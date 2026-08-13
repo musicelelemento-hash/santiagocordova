@@ -966,7 +966,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                         <span className="text-[11px] font-bold text-[#10b981] uppercase tracking-[0.25em] font-mono">AUTOMATIZACIÓN SRI & CONSULTORÍA FISCAL</span>
                                     </div>
                                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#f59e0b]/30 bg-[#f59e0b]/10 backdrop-blur-md text-[10px] font-bold text-[#f59e0b] uppercase tracking-widest font-mono">
-                                        <Zap size={12} className="fill-[#f59e0b]" /> Nueva Luz 3.0 Integrada
+                                        <Zap size={12} className="fill-[#f59e0b]" /> Tecnología de Punta SRI
                                     </div>
                                 </div>
                             </Reveal>
@@ -992,7 +992,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <Reveal delay={160}>
                                 <p className={`text-lg md:text-xl font-light tracking-wide leading-relaxed transition-colors max-w-2xl
                                     ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-                                    Liderazgo contable y tributario de precisión en Ecuador. Automatización con la <span className="font-semibold text-[#10b981] border-b border-[#10b981]/50">Extensión Nueva Luz 3.0</span> y blindaje fiscal absoluto ante el SRI.
+                                    Liderazgo contable y tributario de precisión en Ecuador. Automatización con <span className="font-semibold text-[#10b981] border-b border-[#10b981]/50">Tecnología de Punta SRI</span> y blindaje fiscal absoluto ante el SRI.
                                 </p>
                             </Reveal>
 
@@ -1062,7 +1062,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                 <span className="text-xs font-bold font-mono tracking-wider text-[#10b981] uppercase">SRI Turbo Telemetry</span>
                                             </div>
                                             <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20 font-bold">
-                                                V3.0 ONLINE
+                                                V2026 ONLINE
                                             </span>
                                         </div>
 
@@ -1091,13 +1091,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                                             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
                                                 <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-slate-400 font-sans">Estado Extensión Nueva Luz 3.0:</span>
+                                                    <span className="text-slate-400 font-sans">Estado Motor SRI de Vanguardia:</span>
                                                     <span className="text-[#10b981] font-bold">ACTIVO</span>
                                                 </div>
                                                 <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                                                     <div className="h-full bg-gradient-to-r from-[#10b981] to-[#4edea3] w-[95%] rounded-full animate-pulse" />
                                                 </div>
-                                                <div className="text-[9px] text-slate-500 font-sans">Conexión directa con SRI Ecuador, Keycloak & SafeStorage.</div>
+                                                <div className="text-[9px] text-slate-500 font-sans">Conexión directa con SRI Ecuador, validación instantánea & SafeStorage.</div>
                                             </div>
                                         </div>
 
@@ -1462,7 +1462,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             </div>
                             <div className="hidden md:block text-right">
                                 <span className={`text-6xl font-editorial block leading-none ${theme === 'dark' ? 'text-white/10' : 'text-slate-300/30'}`}>2026</span>
-                                <span className="text-[10px] font-bold text-[#10b981] tracking-[0.3em] uppercase font-mono">Ecosistema Nueva Luz 3.0</span>
+                                <span className="text-[10px] font-bold text-[#10b981] tracking-[0.3em] uppercase font-mono">Tecnología de Punta SRI</span>
                             </div>
                         </div>
                     </Reveal>
@@ -1479,7 +1479,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                         </div>
                                         <h3 className={`text-3xl md:text-5xl font-editorial font-extrabold tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>GESTIÓN INTEGRAL SRI</h3>
                                         <p className={`text-lg leading-relaxed max-w-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-                                            Analizamos cada variable de su estructura financiera para maximizar deducciones legales y eliminar pagos en exceso con la extensión automatizada Nueva Luz 3.0.
+                                            Analizamos cada variable de su estructura financiera para maximizar deducciones legales y eliminar pagos en exceso con nuestra tecnología de automatización de punta.
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-4 text-[#10b981] font-bold text-xs uppercase tracking-widest font-mono group/link cursor-pointer pt-6" onClick={onNavigateToServices}>
