@@ -235,21 +235,21 @@ const SpotlightCard = ({ children, className = "", theme = 'dark' }: { children:
     );
 };
 
-// ─── AUTHORITY TICKER ────────────────────────────────────────────────────────
+// ─── AUTHORITY TICKER (Luminous Equity Design) ──────────────────────────────
 const AuthorityTicker = ({ theme = 'dark' }: { theme?: 'light' | 'dark' }) => {
     const items = ["SRI ECUADOR", "SUPERCIAS", "MINISTERIO DE TRABAJO", "MIGRACIÓN ZIFACT", "ANULACIÓN DE FACTURAS GRATIS", "IESS", "BANCO CENTRAL", "RIMPE 2026", "RÉGIMEN GENERAL", "IVA • RENTA • RETENCIONES"];
     return (
         <div className={`py-16 border-y relative overflow-hidden transition-colors duration-500
-            ${theme === 'dark' ? 'bg-[#020617] border-white/5' : 'bg-slate-100/60 border-slate-200/80'}`}>
+            ${theme === 'dark' ? 'bg-[#0b1326] border-white/10' : 'bg-slate-100/60 border-slate-200/80'}`}>
             <div className="max-w-7xl mx-auto px-6 mb-10 flex items-center gap-6">
                 <div className={`h-[1px] flex-1 bg-gradient-to-r ${theme === 'dark' ? 'from-transparent to-white/10' : 'from-transparent to-slate-200'}`} />
-                <span className={`text-[10px] font-bold uppercase tracking-[0.5em] whitespace-nowrap ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Regulaciones y Entidades que Dominamos</span>
+                <span className={`text-[10px] font-bold uppercase tracking-[0.4em] font-mono whitespace-nowrap ${theme === 'dark' ? 'text-[#10b981]' : 'text-slate-500'}`}>Regulaciones y Entidades que Dominamos</span>
                 <div className={`h-[1px] flex-1 bg-gradient-to-l ${theme === 'dark' ? 'from-transparent to-white/10' : 'from-transparent to-slate-200'}`} />
             </div>
             <div className="flex mask-fade-edges whitespace-nowrap animate-marquee">
                 {[...items, ...items].map((name, i) => (
-                    <div key={i} className={`mx-12 flex items-center gap-5 group transition-opacity duration-700 ${theme === 'dark' ? 'opacity-20 hover:opacity-100' : 'opacity-40 hover:opacity-100'}`}>
-                        <div className="w-1.5 h-1.5 bg-[#00A896] rounded-full shadow-[0_0_8px_#00A896]" />
+                    <div key={i} className={`mx-12 flex items-center gap-5 group transition-opacity duration-700 ${theme === 'dark' ? 'opacity-30 hover:opacity-100' : 'opacity-40 hover:opacity-100'}`}>
+                        <div className="w-1.5 h-1.5 bg-[#10b981] rounded-full shadow-[0_0_10px_#10b981]" />
                         <span className={`text-2xl md:text-4xl font-editorial tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{name}</span>
                     </div>
                 ))}
@@ -258,46 +258,47 @@ const AuthorityTicker = ({ theme = 'dark' }: { theme?: 'light' | 'dark' }) => {
     );
 };
 
-// ─── TESTIMONIAL CARD ────────────────────────────────────────────────────────
+// ─── TESTIMONIAL CARD (Luminous Equity Design) ──────────────────────────────
 const TestimonialCard = ({ quote, name, role, stars = 5, theme = 'dark', delay = 0 }: { quote: string; name: string; role: string; stars?: number; theme?: 'light' | 'dark'; delay?: number }) => (
     <Reveal delay={delay}>
-        <div className={`relative border rounded-3xl p-8 transition-all duration-500 interactive-card h-full flex flex-col
+        <div className={`relative border rounded-3xl p-8 transition-all duration-500 interactive-card h-full flex flex-col group/testi
             ${theme === 'dark' 
-                ? 'bg-white/5 border-white/10 glass-premium-2 hover:border-[#00A896]/30' 
-                : 'bg-white border-slate-200 shadow-md hover:border-[#00A896]/40 hover:shadow-lg'
+                ? 'bg-[#0b1326]/80 border-white/10 glass-premium-2 hover:border-[#10b981]/50 shadow-2xl' 
+                : 'bg-white border-slate-200 shadow-md hover:border-[#10b981]/40 hover:shadow-lg'
             }`}>
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#10b981]/40 to-transparent opacity-0 group-hover/testi:opacity-100 transition-opacity" />
             <div className="flex gap-1 mb-6">
                 {Array.from({ length: stars }).map((_, i) => (
-                    <Star key={i} size={14} className="text-[#d4af37] fill-[#d4af37]" />
+                    <Star key={i} size={14} className="text-[#f59e0b] fill-[#f59e0b]" />
                 ))}
             </div>
             <p className={`text-base leading-relaxed font-light flex-1 mb-8 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>"{quote}"</p>
-            <div className={`flex items-center gap-4 pt-6 border-t ${theme === 'dark' ? 'border-white/5' : 'border-slate-100'}`}>
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00A896] to-teal-900 flex items-center justify-center text-white font-bold text-sm">
+            <div className={`flex items-center gap-4 pt-6 border-t ${theme === 'dark' ? 'border-white/10' : 'border-slate-100'}`}>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#10b981] to-[#04B17B] flex items-center justify-center text-slate-950 font-bold text-sm font-mono shadow-md shadow-[#10b981]/20">
                     {name.charAt(0)}
                 </div>
-                <div>
+                <div className="text-left">
                     <div className={`font-semibold text-sm ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{name}</div>
-                    <div className="text-[#00A896] text-xs font-medium">{role}</div>
+                    <div className="text-[#10b981] text-xs font-medium font-mono">{role}</div>
                 </div>
             </div>
         </div>
     </Reveal>
 );
 
-// ─── PROCESS STEP ────────────────────────────────────────────────────────────
+// ─── PROCESS STEP (Luminous Equity Design) ──────────────────────────────────
 const ProcessStep = ({ number, title, description, icon: Icon, theme = 'dark', delay = 0 }: { number: string; title: string; description: string; icon: React.ElementType; theme?: 'light' | 'dark'; delay?: number }) => (
     <Reveal delay={delay}>
         <div className="relative group">
             <div className="flex gap-6 md:gap-8">
                 <div className="flex-shrink-0">
-                    <div className={`relative w-14 h-14 rounded-2xl border flex items-center justify-center group-hover:border-[#00A896] transition-all duration-500 group-hover:shadow-[0_0_30px_rgba(0,168,150,0.3)]
+                    <div className={`relative w-14 h-14 rounded-2xl border flex items-center justify-center group-hover:border-[#10b981] transition-all duration-500 group-hover:shadow-[0_0_30px_rgba(16,185,129,0.3)]
                         ${theme === 'dark'
-                            ? 'bg-gradient-to-br from-[#00A896]/20 to-transparent border-[#00A896]/30'
-                            : 'bg-gradient-to-br from-[#00A896]/10 to-[#00A896]/5 border-[#00A896]/20'
+                            ? 'bg-gradient-to-br from-[#10b981]/20 to-transparent border-[#10b981]/30'
+                            : 'bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 border-[#10b981]/20'
                         }`}>
-                        <Icon size={22} className="text-[#00A896]" />
-                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[#00A896] text-[#020617] text-[9px] font-black flex items-center justify-center">{number}</span>
+                        <Icon size={22} className="text-[#10b981]" />
+                        <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[#10b981] text-slate-950 text-[9px] font-bold font-mono flex items-center justify-center shadow-md">{number}</span>
                     </div>
                 </div>
                 <div className="pt-1">
