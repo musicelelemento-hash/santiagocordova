@@ -928,13 +928,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
 
             {/* ════════════════════════════════════════════════════════════════
-                HERO SECTION
+                HERO SECTION (Luminous Equity Design)
             ════════════════════════════════════════════════════════════════ */}
-            <header id="top" className={`relative min-h-screen flex items-center justify-center overflow-hidden transition-colors duration-500 pt-32 pb-24 md:pt-48 md:pb-32 ${theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+            <header id="top" className={`relative min-h-screen flex items-center justify-center overflow-hidden transition-colors duration-500 pt-32 pb-24 md:pt-40 md:pb-32 ${theme === 'dark' ? 'bg-[#0b1326]' : 'bg-slate-50'}`}>
                 <AuroraBackground />
                 <motion.div style={{ y: heroY }} className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-1/4 -left-20 w-[600px] h-[600px] bg-[#2B6AFF]/8 rounded-full blur-[160px]" />
-                    <div className="absolute bottom-1/3 -right-20 w-[700px] h-[700px] bg-[#04B17B]/6 rounded-full blur-[180px]" />
+                    <div className="absolute top-1/4 -left-20 w-[600px] h-[600px] bg-[#10b981]/10 rounded-full blur-[160px]" />
+                    <div className="absolute bottom-1/3 -right-20 w-[700px] h-[700px] bg-[#6366f1]/10 rounded-full blur-[180px]" />
                 </motion.div>
 
                 {/* Animated grid dots */}
@@ -946,102 +946,186 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         style={{
                             top: `${15 + i * 13}%`, left: `${10 + i * 15}%`,
                             width: i % 2 === 0 ? '2px' : '1px', height: i % 2 === 0 ? '2px' : '1px',
-                            background: i % 3 === 0 ? '#2B6AFF' : 'white',
+                            background: i % 3 === 0 ? '#10b981' : '#6366f1',
                             borderRadius: '50%',
                             animation: `float ${6 + i}s ease-in-out ${i * 0.5}s infinite alternate`,
-                            opacity: 0.3
+                            opacity: 0.4
                         }} />
                 ))}
 
-                <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
-                    {/* Status badge */}
-                    <Reveal delay={0}>
-                        <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full border border-[#2B6AFF]/30 bg-[#2B6AFF]/5 backdrop-blur-md mb-10 group cursor-default">
-                            <div className="w-2 h-2 rounded-full bg-[#04B17B] animate-pulse shadow-[0_0_10px_#04B17B]" />
-                            <span className="text-[11px] font-bold text-[#2B6AFF] uppercase tracking-[0.35em]">Disponible • Pasaje, El Oro · Ecuador</span>
-                        </div>
-                    </Reveal>
-
-                    {/* Main headline */}
-                    <Reveal delay={80}>
-                        <h1 className="text-[3.2rem] sm:text-[5rem] md:text-[8rem] lg:text-[10rem] font-editorial tracking-tighter leading-[0.82] mb-8">
-                            <span className={`text-transparent bg-clip-text drop-shadow-2xl block
-                                ${theme === 'dark' 
-                                    ? 'bg-gradient-to-b from-white via-white to-white/30' 
-                                    : 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-600'
-                                }`}>
-                                SANTIAGO
-                            </span>
-                            <span className="relative inline-block mt-3 md:mt-5">
-                                <span className="absolute -inset-4 blur-[120px] bg-[#2B6AFF]/40 animate-pulse pointer-events-none" />
-                                <span className="relative liquid-gold-text">CÓRDOVA</span>
-                            </span>
-                        </h1>
-                    </Reveal>
-
-                    {/* Sub-tagline */}
-                    <Reveal delay={160}>
-                        <p className={`text-lg md:text-2xl max-w-2xl mx-auto mb-4 font-light tracking-wide leading-relaxed text-balance transition-colors
-                            ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                            Soluciones tributarias de precisión para líderes y empresas que exigen{' '}
-                            <span className={`font-semibold border-b border-[#2B6AFF] ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>rendimiento absoluto</span>{' '}
-                            y blindaje fiscal total.
-                        </p>
-                    </Reveal>
-
-                    {/* Trust badges row */}
-                    <Reveal delay={220}>
-                        <div className="flex flex-wrap justify-center gap-3 mb-12 mt-8">
-                            <TrustBadge theme={theme} icon={Award} label="Años de experiencia" value="10+" />
-                            <TrustBadge theme={theme} icon={Users} label="Clientes satisfechos" value="500+" />
-                            <TrustBadge theme={theme} icon={Shield} label="Cumplimiento SRI" value="100%" />
-                            <TrustBadge theme={theme} icon={MapPin} label="Ubicación" value="El Oro, Ecuador" />
-                        </div>
-                    </Reveal>
-
-                    {/* CTA Buttons */}
-                    <Reveal delay={280}>
-                        <div className="flex flex-col sm:flex-row gap-5 justify-center items-center">
-                            <MagneticButton onClick={onNavigateToServices}>
-                                <div id="hero-ver-servicios" className={`group relative w-64 h-14 rounded-full font-bold text-xs uppercase tracking-widest overflow-hidden transition-all duration-300 active:scale-95 shadow-lg shadow-blue-500/25 border border-white/10
-                                    ${theme === 'dark'
-                                        ? 'bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] text-white tactical-glow-primary hover:from-[#1A53D9] hover:to-[#5558DD]'
-                                        : 'bg-slate-900 text-white hover:bg-slate-800 shadow-xl'
-                                    }`}>
-                                    <div className="absolute inset-0 flex items-center justify-center gap-2 group-hover:-translate-y-full transition-transform duration-400">
-                                        <Sparkles size={16} />
-                                        <span>Ver Servicios</span>
+                <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center text-left">
+                        
+                        {/* Left Column: Headline & Value Prop */}
+                        <div className="lg:col-span-7 space-y-8">
+                            {/* Badges row */}
+                            <Reveal delay={0}>
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[#10b981]/30 bg-[#10b981]/10 backdrop-blur-md group cursor-default">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-[#10b981] animate-pulse shadow-[0_0_12px_#10b981]" />
+                                        <span className="text-[11px] font-bold text-[#10b981] uppercase tracking-[0.25em] font-mono">AUTOMATIZACIÓN SRI & CONSULTORÍA FISCAL</span>
                                     </div>
-                                    <div className="absolute inset-0 flex items-center justify-center gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-400 bg-white text-[#020617] font-extrabold">
-                                        <ArrowRight size={16} />
-                                        <span>Comenzar Ahora</span>
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#f59e0b]/30 bg-[#f59e0b]/10 backdrop-blur-md text-[10px] font-bold text-[#f59e0b] uppercase tracking-widest font-mono">
+                                        <Zap size={12} className="fill-[#f59e0b]" /> Nueva Luz 3.0 Integrada
                                     </div>
                                 </div>
-                            </MagneticButton>
-                            <MagneticButton href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20me%20interesa%20agendar%20una%20consulta%20gratuita.`} target="_blank" rel="noopener noreferrer">
-                                <div id="hero-whatsapp-consulta" className={`flex items-center gap-3 transition-all duration-300 group px-7 py-4 rounded-full border active:scale-95
-                                    ${theme === 'dark' 
-                                        ? 'text-slate-300 hover:text-white border-white/10 hover:bg-white/5 hover:border-[#2B6AFF]/40' 
-                                        : 'text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-                                    }`}>
-                                    <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#2B6AFF]/20 group-hover:border-[#2B6AFF] transition-all">
-                                        <MessageCircle size={18} className="text-[#2B6AFF]" />
-                                    </div>
-                                    <span className="text-xs font-semibold uppercase tracking-widest font-mono">Consulta Gratuita</span>
+                            </Reveal>
+
+                            {/* Main headline */}
+                            <Reveal delay={80}>
+                                <h1 className="text-[2.8rem] sm:text-[4.2rem] md:text-[5rem] lg:text-[5.4rem] font-editorial tracking-tighter leading-[0.95]">
+                                    <span className={`text-transparent bg-clip-text drop-shadow-2xl block
+                                        ${theme === 'dark' 
+                                            ? 'bg-gradient-to-b from-white via-slate-100 to-slate-400' 
+                                            : 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-700'
+                                        }`}>
+                                        SANTIAGO
+                                    </span>
+                                    <span className="relative inline-block mt-1">
+                                        <span className="absolute -inset-4 blur-[120px] bg-[#10b981]/30 animate-pulse pointer-events-none" />
+                                        <span className="relative liquid-gold-text">CÓRDOVA</span>
+                                    </span>
+                                </h1>
+                            </Reveal>
+
+                            {/* Sub-tagline */}
+                            <Reveal delay={160}>
+                                <p className={`text-lg md:text-xl font-light tracking-wide leading-relaxed transition-colors max-w-2xl
+                                    ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                    Liderazgo contable y tributario de precisión en Ecuador. Automatización con la <span className="font-semibold text-[#10b981] border-b border-[#10b981]/50">Extensión Nueva Luz 3.0</span> y blindaje fiscal absoluto ante el SRI.
+                                </p>
+                            </Reveal>
+
+                            {/* Trust badges row */}
+                            <Reveal delay={220}>
+                                <div className="flex flex-wrap gap-3">
+                                    <TrustBadge theme={theme} icon={Award} label="Años de experiencia" value="10+" />
+                                    <TrustBadge theme={theme} icon={Users} label="Clientes satisfechos" value="500+" />
+                                    <TrustBadge theme={theme} icon={Shield} label="Cumplimiento SRI" value="100%" />
+                                    <TrustBadge theme={theme} icon={MapPin} label="Ubicación" value="Pasaje, El Oro" />
                                 </div>
-                            </MagneticButton>
+                            </Reveal>
+
+                            {/* CTA Buttons */}
+                            <Reveal delay={280}>
+                                <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center pt-2">
+                                    <MagneticButton onClick={onNavigateToServices}>
+                                        <div id="hero-ver-servicios" className={`group relative h-14 px-8 rounded-2xl font-bold text-xs uppercase tracking-widest overflow-hidden transition-all duration-300 active:scale-95 shadow-xl flex items-center justify-center border
+                                            ${theme === 'dark'
+                                                ? 'bg-gradient-to-r from-[#10b981] to-[#04B17B] text-slate-950 border-[#10b981]/30 shadow-[#10b981]/20 hover:shadow-[#10b981]/40'
+                                                : 'bg-slate-900 text-white hover:bg-slate-800 shadow-xl'
+                                            }`}>
+                                            <div className="relative z-10 flex items-center gap-3 font-extrabold">
+                                                <Sparkles size={16} />
+                                                <span>Empezar Declaración</span>
+                                                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                            </div>
+                                        </div>
+                                    </MagneticButton>
+
+                                    <MagneticButton href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20me%20interesa%20agendar%20una%20consulta%20gratuita.`} target="_blank" rel="noopener noreferrer">
+                                        <div id="hero-whatsapp-consulta" className={`flex items-center justify-center gap-3 transition-all duration-300 group px-7 py-4 rounded-2xl border active:scale-95 h-14
+                                            ${theme === 'dark' 
+                                                ? 'text-slate-300 hover:text-white border-white/10 hover:bg-white/5 hover:border-[#10b981]/40' 
+                                                : 'text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                                            }`}>
+                                            <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-[#10b981]/20 group-hover:border-[#10b981] transition-all">
+                                                <MessageCircle size={16} className="text-[#10b981]" />
+                                            </div>
+                                            <span className="text-xs font-semibold uppercase tracking-widest font-mono">Consulta Gratuita</span>
+                                        </div>
+                                    </MagneticButton>
+                                </div>
+                            </Reveal>
                         </div>
-                    </Reveal>
+
+                        {/* Right Column: Live Telemetry / SRI Interactive Card */}
+                        <div className="lg:col-span-5">
+                            <Reveal delay={150}>
+                                <div className="relative group">
+                                    {/* Holographic Glow behind card */}
+                                    <div className="absolute -inset-1 bg-gradient-to-r from-[#10b981] via-[#6366f1] to-[#f59e0b] rounded-[2.5rem] blur-2xl opacity-25 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
+
+                                    {/* Glass telemetry card */}
+                                    <div className={`relative border rounded-[2.5rem] p-8 overflow-hidden backdrop-blur-2xl transition-all duration-500
+                                        ${theme === 'dark' 
+                                            ? 'bg-[#051424]/90 border-white/15 text-white shadow-2xl' 
+                                            : 'bg-white/95 border-slate-200 text-slate-800 shadow-2xl'
+                                        }`}>
+                                        {/* Silk Glow Top Trace */}
+                                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#10b981] to-transparent" />
+
+                                        {/* Card Header */}
+                                        <div className="flex items-center justify-between pb-6 border-b border-white/10">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-3 h-3 rounded-full bg-[#10b981] animate-ping" />
+                                                <span className="text-xs font-bold font-mono tracking-wider text-[#10b981] uppercase">SRI Turbo Telemetry</span>
+                                            </div>
+                                            <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20 font-bold">
+                                                V3.0 ONLINE
+                                            </span>
+                                        </div>
+
+                                        {/* Telemetry metrics list */}
+                                        <div className="py-6 space-y-6 font-mono text-left">
+                                            <div>
+                                                <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Declaraciones Procesadas</div>
+                                                <div className="text-3xl font-bold text-white tracking-tight flex items-center justify-between">
+                                                    <span>12,548+</span>
+                                                    <span className="text-xs text-[#10b981] font-semibold flex items-center gap-1">
+                                                        <TrendingUp size={14} /> +18.4%
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                                                <div>
+                                                    <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Precisión Contable</div>
+                                                    <div className="text-2xl font-bold text-[#10b981]">99.9%</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Ahorro Generado</div>
+                                                    <div className="text-2xl font-bold text-[#f59e0b]">$1.2M+</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-slate-400 font-sans">Estado Extensión Nueva Luz 3.0:</span>
+                                                    <span className="text-[#10b981] font-bold">ACTIVO</span>
+                                                </div>
+                                                <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-gradient-to-r from-[#10b981] to-[#4edea3] w-[95%] rounded-full animate-pulse" />
+                                                </div>
+                                                <div className="text-[9px] text-slate-500 font-sans">Conexión directa con SRI Ecuador, Keycloak & SafeStorage.</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Card Footer action */}
+                                        <div className="pt-2">
+                                            <button 
+                                                onClick={onNavigateToServices}
+                                                className="w-full py-3.5 px-4 rounded-xl bg-white/10 hover:bg-[#10b981] hover:text-slate-950 text-white font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 border border-white/10"
+                                            >
+                                                <span>Ver Calculadoras SRI</span>
+                                                <ArrowUpRight size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Reveal>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Hero bottom marquee */}
-                <div className={`absolute bottom-0 w-full py-5 border-t bg-opacity-60 backdrop-blur-sm overflow-hidden pointer-events-none transition-colors
-                    ${theme === 'dark' ? 'border-white/5 bg-[#020617]' : 'border-slate-200 bg-white'}`}>
+                <div className={`absolute bottom-0 w-full py-4 border-t bg-opacity-60 backdrop-blur-sm overflow-hidden pointer-events-none transition-colors
+                    ${theme === 'dark' ? 'border-white/5 bg-[#0b1326]' : 'border-slate-200 bg-white'}`}>
                     <div className="flex whitespace-nowrap animate-marquee">
                         {[...Array(8)].map((_, i) => (
-                            <span key={i} className={`mx-8 text-3xl font-editorial uppercase tracking-tighter transition-colors
-                                ${theme === 'dark' ? 'text-white/5' : 'text-slate-800/5'}`}>
-                                Contabilidad · Tributación · Asesoría · SRI · RIMPE ·
+                            <span key={i} className={`mx-8 text-2xl font-editorial uppercase tracking-tighter transition-colors
+                                ${theme === 'dark' ? 'text-white/10' : 'text-slate-800/10'}`}>
+                                Declaraciones SRI · Firma Electrónica .P12 · RIMPE 2026 · Asesoría Fiscal Elite ·
                             </span>
                         ))}
                     </div>
@@ -1359,96 +1443,104 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
 
             {/* ══════════════════════════════════════════════════════════════
-                BENTO GRID – SERVICIOS
+                BENTO GRID – SERVICIOS (Luminous Equity Design)
             ══════════════════════════════════════════════════════════════ */}
-            <section id="servicios" className={`py-36 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+            <section id="servicios" className={`py-36 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0e1511]' : 'bg-slate-50'}`}>
                 <div className="absolute inset-0 tactical-grid opacity-10 pointer-events-none" />
                 <div className="max-w-7xl mx-auto px-6 relative z-10">
                     <Reveal>
                         <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
                             <div className="max-w-2xl text-left">
-                                <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em] mb-5">— Suite de Servicios</div>
+                                <div className="text-[10px] font-bold text-[#10b981] uppercase tracking-[0.4em] mb-5 font-mono">— Suite de Servicios Elite</div>
                                 <h2 className={`text-4xl md:text-7xl font-editorial tracking-tighter mb-6 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
                                     SOLUCIONES DE <br />
                                     <span className="text-shimmer-elite">ALTO IMPACTO</span>
                                 </h2>
-                                <p className={`text-lg font-light ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                    Cada servicio está diseñado para la <span className={`${theme === 'dark' ? 'text-white' : 'text-slate-905'} font-medium`}>máxima eficiencia operativa</span> y blindaje fiscal.
+                                <p className={`text-lg font-light ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                    Cada servicio está diseñado para la <span className={`${theme === 'dark' ? 'text-white' : 'text-slate-900'} font-medium`}>máxima eficiencia operativa</span>, automatización SRI y blindaje fiscal.
                                 </p>
                             </div>
                             <div className="hidden md:block text-right">
-                                <span className={`text-6xl font-editorial block leading-none ${theme === 'dark' ? 'text-white/8' : 'text-slate-300/30'}`}>2026</span>
-                                <span className="text-[10px] font-bold text-[#00A896] tracking-[0.3em] uppercase">Ecosistema Fiscal</span>
+                                <span className={`text-6xl font-editorial block leading-none ${theme === 'dark' ? 'text-white/10' : 'text-slate-300/30'}`}>2026</span>
+                                <span className="text-[10px] font-bold text-[#10b981] tracking-[0.3em] uppercase font-mono">Ecosistema Nueva Luz 3.0</span>
                             </div>
                         </div>
                     </Reveal>
 
                     <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {/* Feature card large */}
+                        {/* Feature card large: Gestión Integral SRI */}
                         <StaggerItem className="md:col-span-2 md:row-span-2">
-                            <SpotlightCard theme={theme} className="interactive-card h-full">
-                                <div className="flex flex-col h-full justify-between p-10 min-h-[440px] text-left">
+                            <SpotlightCard theme={theme} className="interactive-card h-full relative group/bento border-[#10b981]/20">
+                                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#10b981] to-transparent" />
+                                <div className="flex flex-col h-full justify-between p-10 min-h-[440px] text-left relative z-10">
                                     <div>
-                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#2B6AFF] to-[#6366F1] flex items-center justify-center mb-8 shadow-lg shadow-[#2B6AFF]/20">
-                                            <BarChart3 className="text-white" size={28} />
+                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#10b981] to-[#04B17B] flex items-center justify-center mb-8 shadow-lg shadow-[#10b981]/20 text-slate-950">
+                                            <BarChart3 size={28} />
                                         </div>
                                         <h3 className={`text-3xl md:text-5xl font-editorial font-extrabold tracking-tight mb-4 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>GESTIÓN INTEGRAL SRI</h3>
-                                        <p className={`text-lg leading-relaxed max-w-xl ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                            Analizamos cada variable de su estructura financiera para maximizar deducciones legales y eliminar pagos en exceso con precisión quirúrgica. Todo en piloto automático.
+                                        <p className={`text-lg leading-relaxed max-w-xl ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                            Analizamos cada variable de su estructura financiera para maximizar deducciones legales y eliminar pagos en exceso con la extensión automatizada Nueva Luz 3.0.
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-4 text-[#2B6AFF] font-bold text-xs uppercase tracking-widest group/link cursor-pointer" onClick={onNavigateToServices}>
-                                        <span>Ver Detalles</span>
+                                    <div className="flex items-center gap-4 text-[#10b981] font-bold text-xs uppercase tracking-widest font-mono group/link cursor-pointer pt-6" onClick={onNavigateToServices}>
+                                        <span>Explorar Automatización SRI</span>
                                         <ArrowUpRight size={16} className="group-hover/link:translate-x-1 group-hover/link:-translate-y-1 transition-transform" />
                                     </div>
                                 </div>
                             </SpotlightCard>
                         </StaggerItem>
 
+                        {/* Feature card: Facturación & Extensión */}
                         <StaggerItem className="md:col-span-1 md:row-span-2">
-                            <SpotlightCard theme={theme} className="interactive-card h-full">
+                            <SpotlightCard theme={theme} className="interactive-card h-full relative border-white/10">
+                                <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#6366f1] to-transparent" />
                                 <div className="flex flex-col h-full p-10 min-h-[440px] text-left">
-                                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-8">
-                                        <Zap className="text-[#6366F1]" size={28} />
+                                    <div className="w-14 h-14 rounded-2xl bg-[#6366f1]/10 border border-[#6366f1]/30 flex items-center justify-center mb-8 text-[#6366f1]">
+                                        <Zap size={28} />
                                     </div>
-                                    <h3 className={`text-3xl font-editorial font-extrabold tracking-tight mb-4 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Facturación Electrónica</h3>
-                                    <p className={`leading-relaxed mb-auto ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                        Declaraciones automatizadas, reportes en tiempo real y conectividad directa con el SRI. Olvídese de las multas.
+                                    <h3 className={`text-3xl font-editorial font-extrabold tracking-tight mb-4 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Facturación & SRI Express</h3>
+                                    <p className={`leading-relaxed mb-auto ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                        Declaraciones automatizadas de IVA y Retenciones en segundos, llenado inteligente con 0 errores y reportes contables inmediatos.
                                     </p>
-                                    <div className="mt-8 pt-6 border-t border-white/5 flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                                        <span>Disponibilidad</span>
-                                        <span className="text-[#04B17B] font-mono">Inmediata</span>
+                                    <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">
+                                        <span>Estado Motor</span>
+                                        <span className="text-[#10b981] font-mono flex items-center gap-1">
+                                            <div className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" /> Activo 24/7
+                                        </span>
                                     </div>
                                 </div>
                             </SpotlightCard>
                         </StaggerItem>
 
+                        {/* Feature card: Apertura RUC */}
                         <StaggerItem className="md:col-span-1 md:row-span-1">
-                            <SpotlightCard theme={theme} className="interactive-card h-full">
-                                <div className="flex flex-col h-full p-10 text-left justify-center">
-                                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
-                                        <ShieldCheck className="text-[#04B17B]" size={24} />
+                            <SpotlightCard theme={theme} className="interactive-card h-full relative">
+                                <div className="flex flex-col h-full p-8 text-left justify-center">
+                                    <div className="w-12 h-12 rounded-xl bg-[#10b981]/10 border border-[#10b981]/30 flex items-center justify-center mb-6 text-[#10b981]">
+                                        <ShieldCheck size={24} />
                                     </div>
                                     <h3 className={`text-2xl font-editorial font-extrabold tracking-tight mb-2 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Apertura de RUC</h3>
-                                    <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                        Asesoramiento inicial y alta en el régimen correcto.
+                                    <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                        Alta optimizada en RIMPE o Régimen General con asesoría fiscal personalizada.
                                     </p>
                                 </div>
                             </SpotlightCard>
                         </StaggerItem>
 
+                        {/* Feature card: Firma Electrónica */}
                         <StaggerItem className="md:col-span-1 md:row-span-1">
-                            <SpotlightCard theme={theme} className="interactive-card h-full">
-                                <div className="flex flex-col h-full p-10 text-left justify-center">
-                                    <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-6">
-                                        <FileKey className="text-purple-400" size={24} />
+                            <SpotlightCard theme={theme} className="interactive-card h-full relative">
+                                <div className="flex flex-col h-full p-8 text-left justify-center">
+                                    <div className="w-12 h-12 rounded-xl bg-[#f59e0b]/10 border border-[#f59e0b]/30 flex items-center justify-center mb-6 text-[#f59e0b]">
+                                        <FileKey size={24} />
                                     </div>
                                     <h3 className={`text-2xl font-editorial font-extrabold tracking-tight mb-2 uppercase ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>Firma Electrónica</h3>
-                                    <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                        Token .P12 en 30 minutos.
+                                    <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                        Archivo .P12 / Token listo en 30 minutos para facturación.
                                     </p>
-                                    <div className="mt-4 pt-4 border-t border-white/5 flex items-center gap-2">
-                                        <span className={`text-xl font-mono font-bold text-[#04B17B]`}>$35</span>
+                                    <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between font-mono">
+                                        <span className="text-xs text-slate-400 font-sans">Emisión Express</span>
+                                        <span className="text-xl font-bold text-[#f59e0b]">$35</span>
                                     </div>
                                 </div>
                             </SpotlightCard>
