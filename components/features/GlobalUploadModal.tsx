@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Modal } from '../ui/Modal';
 import { UploadCloud, FileText, CheckCircle2, AlertCircle, Loader2, X, Search, User, Calendar, DollarSign, ExternalLink, Plus, Eye, Download } from 'lucide-react';
 import { extractDataFromDeclarationPdf, fileToBase64 } from '../../services/pdfExtraction';
+import { UnifiedStorageService } from '../../services/unifiedStorageService';
 import { useAppStore } from '../../store/useAppStore';
 import { Client, DeclarationStatus, StoredFile, TaxObligationType, TaxRegime } from '../../types';
 import { useToast } from '../../context/ToastContext';
@@ -80,20 +81,17 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
                 }
 
                 const client = updatedClients[clientIndex];
-                const base64 = await fileToBase64(file);
-                const storedFile: StoredFile = {
-                    name: file.name,
-                    type: 'pdf',
-                    size: file.size,
-                    lastModified: Date.now(),
-                    content: base64,
-                    metadata: {
+                const storedFile: StoredFile = await UnifiedStorageService.uploadFile(
+                    file,
+                    file.name,
+                    'declaraciones',
+                    {
                         amount: data.amount,
                         period: data.period,
                         formType: data.formType,
                         sriId: data.id
                     }
-                };
+                );
 
                 // Update Client Data
                 const history = [...(client.declarations || [])];

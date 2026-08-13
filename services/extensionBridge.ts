@@ -80,7 +80,11 @@ export const sendFullClientsMatrixToExtension = (clients: Client[]) => {
   console.log("⚡ Matriz completa de clientes enviada a la extensión:", clients.length);
 };
 
-export const sendBatchDeclarationToExtension = (clients: Client[], declarationType: 'mensual' | 'semestral' | 'renta' = 'mensual') => {
+export const sendBatchDeclarationToExtension = (
+  clients: Client[], 
+  declarationType: 'mensual' | 'semestral' | 'renta' = 'mensual',
+  mode: 'declare' | 'recover_pdf_only' = 'declare'
+) => {
   if (!Array.isArray(clients) || clients.length === 0) return;
   
   const payload = {
@@ -88,6 +92,7 @@ export const sendBatchDeclarationToExtension = (clients: Client[], declarationTy
     type: 'SRI_START_BATCH_DECLARATION',
     data: {
       declarationType,
+      mode,
       clients: clients.map(c => ({
         id: c.id,
         ruc: c.ruc,
@@ -102,7 +107,7 @@ export const sendBatchDeclarationToExtension = (clients: Client[], declarationTy
 
   window.postMessage(payload, "*");
   localStorage.setItem('sc_batch_declaration_queue', JSON.stringify(payload.data));
-  console.log(`🚀 Lote de Declaraciones (${declarationType}) enviado a la extensión:`, clients.length, "clientes.");
+  console.log(`🚀 Lote (${declarationType}, modo: ${mode}) enviado a la extensión:`, clients.length, "clientes.");
 };
 
 export const listenForDeclarationCompleted = (onCompleted: (data: { ruc: string; success: boolean; pdfUrl?: string; timestamp: number }) => void) => {

@@ -188,6 +188,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     
     // SRI Authorized Invoices History
     const [sriHistory, setSriHistory] = useState<any[]>([]);
+    const [modalTab, setModalTab] = useState<'declaracion' | 'factura' | 'respaldos'>('declaracion');
     const [activeCellModal, setActiveCellModal] = useState<{
         client: Client;
         period: string;
@@ -845,6 +846,213 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         });
     }, [clients, frequency, matrixMode, isWorkspaceMode, periods, sortPeriod, sortDirection, selectedDigitFilter, sortOption, searchTerm]);
 
+    // ── SUPER DOCK DE COMPROBANTES MASIVOS & SELECCIÓN ──
+    const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+    const isAllSelected = filteredClients.length > 0 && selectedClientIds.length === filteredClients.length;
+
+    const handleToggleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedClientIds([]);
+        } else {
+            setSelectedClientIds(filteredClients.map(c => c.id));
+        }
+    };
+
+    const handleToggleSelectClient = (clientId: string) => {
+        setSelectedClientIds(prev =>
+            prev.includes(clientId) ? prev.filter(id => id !== clientId) : [...prev, clientId]
+        );
+    };
+
+    const handleBulkPrint = () => {
+        const selectedClientsList = clients.filter(c => selectedClientIds.includes(c.id));
+        if (selectedClientsList.length === 0) {
+            toast.info("Seleccione al menos un cliente para imprimir.");
+            return;
+        }
+
+        const proofList: { clientName: string; ruc: string; period: string; url?: string; hasPdf: boolean }[] = [];
+        const activePeriod = periods[0] || '';
+        const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
+
+        selectedClientsList.forEach(client => {
+            const decls = client.declarations || [];
+            const d = findDeclarationForOb(decls, activePeriod, mainObType);
+            if (d?.proof_file) {
+                proofList.push({
+                    clientName: client.tradeName || client.name,
+                    ruc: client.ruc,
+                    period: d.period || activePeriod,
+                    url: d.proof_file.url || undefined,
+                    hasPdf: true
+                });
+            }
+        });
+
+        if (proofList.length === 0) {
+            toast.warning("Ninguno de los clientes seleccionados posee un archivo PDF de comprobante en el periodo seleccionado.");
+            return;
+        }
+
+        const printWin = window.open('', '_blank');
+        if (!printWin) {
+            toast.error("Por favor, permita las ventanas emergentes en su navegador.");
+            return;
+        }
+
+        printWin.document.write(`
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <title>Lote_Impresion_Comprobantes_SRI</title>
+                <meta charset="utf-8" />
+                <style>
+                    body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: white; margin: 0; padding: 24px; }
+                    .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 16px 24px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 24px; }
+                    .title { font-size: 18px; font-weight: 900; }
+                    .subtitle { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+                    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px; }
+                    .card { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
+                    .client-name { font-size: 14px; font-weight: 800; color: #38bdf8; }
+                    .meta { font-size: 11px; color: #94a3b8; margin-top: 4px; font-family: monospace; }
+                    .btn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; text-decoration: none; display: inline-block; text-align: center; }
+                    .btn-green { background: #10b981; }
+                    iframe { width: 100%; height: 320px; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; margin: 12px 0; background: #fff; }
+                    @media print { .no-print { display: none !important; } }
+                </style>
+            </head>
+            <body>
+                <div class="header no-print">
+                    <div>
+                        <div class="title">🖨️ Lote de Impresión - Comprobantes SRI</div>
+                        <div class="subtitle">${proofList.length} Comprobantes Listos de Supabase Storage</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="window.print()" class="btn btn-green">🖨️ Imprimir Todo</button>
+                        <button onclick="window.close()" class="btn" style="background:#475569;">Cerrar</button>
+                    </div>
+                </div>
+                <div class="grid">
+                    ${proofList.map(item => `
+                        <div class="card">
+                            <div>
+                                <div class="client-name">${item.clientName}</div>
+                                <div class="meta">RUC: ${item.ruc} | Periodo: ${item.period}</div>
+                                ${item.url ? `<iframe src="${item.url}"></iframe>` : '<div style="padding:15px; background:#0f172a; border-radius:8px; font-size:11px; text-align:center;">Comprobante registrado sin URL directa de Storage</div>'}
+                            </div>
+                            ${item.url ? `<a href="${item.url}" target="_blank" class="btn">Abrir PDF Original</a>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </body>
+            </html>
+        `);
+
+        toast.success(`Abriendo lote de ${proofList.length} comprobantes para impresión.`);
+    };
+
+    const handleBulkDownload = async () => {
+        const selectedClientsList = clients.filter(c => selectedClientIds.includes(c.id));
+        if (selectedClientsList.length === 0) {
+            toast.info("Seleccione al menos un cliente.");
+            return;
+        }
+
+        const activePeriod = periods[0] || '';
+        const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
+        let count = 0;
+
+        for (const client of selectedClientsList) {
+            const decls = client.declarations || [];
+            const d = findDeclarationForOb(decls, activePeriod, mainObType);
+            if (d?.proof_file) {
+                const fileName = `Declaracion_${mainObType}_${client.ruc}_${d.period || activePeriod}.pdf`;
+                const ok = await downloadStoredFile(d.proof_file, fileName);
+                if (ok) count++;
+            }
+        }
+
+        if (count > 0) {
+            toast.success(`📥 ${count} comprobantes descargados correctamente.`);
+        } else {
+            toast.warning("No se encontraron archivos PDF de comprobantes en los clientes seleccionados para este periodo.");
+        }
+    };
+
+    const handleBulkMarkNotified = async () => {
+        const selectedClientsList = clients.filter(c => selectedClientIds.includes(c.id));
+        if (selectedClientsList.length === 0) {
+            toast.info("Seleccione al menos un cliente.");
+            return;
+        }
+
+        const activePeriod = periods[0] || '';
+        const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
+        const nowIso = new Date().toISOString();
+
+        for (const client of selectedClientsList) {
+            const decls = client.declarations || [];
+            const existingDecl = findDeclarationForOb(decls, activePeriod, mainObType);
+
+            let updatedDecls: Declaration[];
+            if (existingDecl) {
+                updatedDecls = decls.map(d => {
+                    if (arePeriodsEqual(d.period, activePeriod) && (d.type === mainObType || !d.type)) {
+                        return {
+                            ...d,
+                            isNotifiedWhatsApp: true,
+                            notifiedWhatsAppAt: nowIso,
+                            notificationCount: (d.notificationCount || 0) + 1,
+                            updatedAt: nowIso
+                        };
+                    }
+                    return d;
+                });
+            } else {
+                updatedDecls = [
+                    ...decls,
+                    {
+                        period: activePeriod,
+                        type: mainObType as TaxObligationType,
+                        status: DeclarationStatus.Enviada,
+                        isNotifiedWhatsApp: true,
+                        notifiedWhatsAppAt: nowIso,
+                        notificationCount: 1,
+                        updatedAt: nowIso
+                    }
+                ];
+            }
+            await useAppStore.getState().updateClient(client.id, { declarations: updatedDecls });
+        }
+
+        toast.success(`✅ ${selectedClientsList.length} clientes marcados como NOTIFICADOS.`);
+    };
+
+    const handleBulkWhatsAppNotify = () => {
+        const selectedClientsList = clients.filter(c => selectedClientIds.includes(c.id));
+        if (selectedClientsList.length === 0) {
+            toast.info("Seleccione al menos un cliente.");
+            return;
+        }
+
+        const activePeriod = periods[0] || '';
+        const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
+
+        let count = 0;
+        selectedClientsList.forEach(client => {
+            const decls = client.declarations || [];
+            const d = findDeclarationForOb(decls, activePeriod, mainObType);
+            if (d?.proof_file) {
+                handleSendWhatsAppNotification(client, activePeriod, mainObType, d);
+                count++;
+            }
+        });
+
+        if (count === 0) {
+            toast.warning("Ninguno de los clientes seleccionados tiene comprobante PDF listo para notificar.");
+        }
+    };
+
     return (
         <div className="space-y-6 animate-fade-in">
             {/* Header / Controls */}
@@ -886,18 +1094,34 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </button>
                         )}
                     </div>
-                    {/* Botón ELITE RPA: Iniciar Bucle Automático */}
-                    <button
-                        onClick={() => {
-                            sendBatchDeclarationToExtension(filteredClients, matrixMode === 'IVA' ? (frequency === 'Mensual' ? 'mensual' : 'semestral') : 'renta');
-                            toast.info(`Iniciando Bucle Automático 🚀 Se han enviado ${filteredClients.length} clientes a la extensión para declaración en bucle.`);
-                        }}
-                        className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/30"
-                        title="Iniciar automatización en cadena para los clientes listados"
-                    >
-                        <LucideIcons.Play size={14} fill="currentColor" />
-                        <span>Iniciar Bucle RPA</span>
-                    </button>
+                    {/* Botones Bucle RPA: Llenar vs Recuperar PDFs */}
+                    <div className="flex items-center gap-1.5">
+                        <button
+                            onClick={() => {
+                                const type = matrixMode === 'IVA' ? (frequency === 'Mensual' ? 'mensual' : 'semestral') : 'renta';
+                                sendBatchDeclarationToExtension(filteredClients, type, 'declare');
+                                toast.info(`Iniciando Bucle Automático 🚀 Se han enviado ${filteredClients.length} clientes a la extensión para declaración en bucle.`);
+                            }}
+                            className="px-3.5 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-indigo-500/30 cursor-pointer"
+                            title="Iniciar automatización completa (Auditar, Llenar formulario y Declarar)"
+                        >
+                            <LucideIcons.Play size={13} fill="currentColor" />
+                            <span>Declarar & Llenar</span>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                const type = matrixMode === 'IVA' ? (frequency === 'Mensual' ? 'mensual' : 'semestral') : 'renta';
+                                sendBatchDeclarationToExtension(filteredClients, type, 'recover_pdf_only');
+                                toast.info(`Iniciando Búsqueda de Comprobantes 🔍 Se han enviado ${filteredClients.length} clientes a la extensión para buscar únicamente PDFs faltantes.`);
+                            }}
+                            className="px-3.5 py-2 bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg shadow-sky-500/30 cursor-pointer"
+                            title="Desacoplado: Ir directo a buscar y descargar PDFs de comprobantes emitidos sin llenar formularios"
+                        >
+                            <LucideIcons.Search size={13} />
+                            <span>🔍 Solo Buscar PDFs Faltantes</span>
+                        </button>
+                    </div>
                     {/* Control de Ordenamiento: Dígito vs Semáforo de Colores vs Alfabético */}
                     <div className="flex flex-wrap items-center gap-1 bg-slate-100/80 dark:bg-slate-950/40 p-1 rounded-2xl border border-slate-200/30 dark:border-white/5">
                         <button
@@ -1097,12 +1321,102 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 })()}
             </div>
 
+            {/* 🚀 SUPER DOCK BAR DE ACCIONES MASIVAS DE COMPROBANTES */}
+            <div className="bg-gradient-to-r from-slate-900/95 via-indigo-950/90 to-slate-900/95 backdrop-blur-2xl p-4 rounded-[2rem] border border-indigo-500/30 shadow-2xl flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleToggleSelectAll}
+                        className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-wider transition-all border border-white/10 cursor-pointer"
+                    >
+                        <input
+                            type="checkbox"
+                            checked={isAllSelected}
+                            onChange={handleToggleSelectAll}
+                            className="rounded accent-primary cursor-pointer w-3.5 h-3.5"
+                        />
+                        <span>{isAllSelected ? 'Desmarcar Todos' : 'Seleccionar Todos'} ({filteredClients.length})</span>
+                    </button>
+                    {selectedClientIds.length > 0 && (
+                        <span className="px-3.5 py-1.5 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 text-[10px] font-extrabold uppercase tracking-widest animate-pulse">
+                            🎯 {selectedClientIds.length} Seleccionados
+                        </span>
+                    )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        onClick={handleBulkPrint}
+                        disabled={selectedClientIds.length === 0}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg ${
+                            selectedClientIds.length > 0
+                                ? 'bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white shadow-sky-500/25 scale-[1.02] cursor-pointer'
+                                : 'bg-slate-800/50 text-slate-500 cursor-not-allowed border border-white/5'
+                        }`}
+                        title="Abrir lote de impresión con los PDFs de comprobante originales guardados en Supabase Storage"
+                    >
+                        <LucideIcons.Printer size={13} />
+                        <span>🖨️ Imprimir Seleccionados</span>
+                    </button>
+
+                    <button
+                        onClick={handleBulkDownload}
+                        disabled={selectedClientIds.length === 0}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg ${
+                            selectedClientIds.length > 0
+                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-emerald-500/25 scale-[1.02] cursor-pointer'
+                                : 'bg-slate-800/50 text-slate-500 cursor-not-allowed border border-white/5'
+                        }`}
+                        title="Descargar comprobantes PDF reales en lote"
+                    >
+                        <LucideIcons.Download size={13} />
+                        <span>📥 Descargar PDFs</span>
+                    </button>
+
+                    <button
+                        onClick={handleBulkWhatsAppNotify}
+                        disabled={selectedClientIds.length === 0}
+                        className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg ${
+                            selectedClientIds.length > 0
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-green-500/25 scale-[1.02] cursor-pointer'
+                                : 'bg-slate-800/50 text-slate-500 cursor-not-allowed border border-white/5'
+                        }`}
+                        title="Enviar notificación por WhatsApp con enlace al comprobante de Supabase"
+                    >
+                        <LucideIcons.Send size={13} />
+                        <span>💬 Notificar WhatsApp</span>
+                    </button>
+
+                    <button
+                        onClick={handleBulkMarkNotified}
+                        disabled={selectedClientIds.length === 0}
+                        className={`px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                            selectedClientIds.length > 0
+                                ? 'bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 cursor-pointer'
+                                : 'bg-slate-800/50 text-slate-500 cursor-not-allowed border border-white/5'
+                        }`}
+                        title="Marcar como Notificados en la plataforma"
+                    >
+                        <LucideIcons.CheckCheck size={13} />
+                        <span>Marcar Notificados</span>
+                    </button>
+                </div>
+            </div>
+
             {/* Matrix Table */}
             <div className="glass-card-premium rounded-[2rem] shadow-tactical overflow-hidden overflow-x-auto custom-scrollbar border border-slate-200/50 dark:border-white/10">
                 <table className="w-full min-w-[800px] text-left border-collapse">
                     <thead>
                         <tr className="bg-slate-50/50 dark:bg-white/5 border-b border-slate-200/30 dark:border-white/5">
-                            <th className="px-6 py-4 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] sticky left-0 bg-slate-50 dark:bg-slate-900 z-20 w-64 border-r border-slate-200/30 dark:border-white/10">Cliente</th>
+                            <th className="px-3 py-4 sticky left-0 bg-slate-50 dark:bg-slate-900 z-30 w-10 text-center border-r border-slate-200/30 dark:border-white/10">
+                                <input
+                                    type="checkbox"
+                                    checked={isAllSelected}
+                                    onChange={handleToggleSelectAll}
+                                    className="rounded accent-primary cursor-pointer w-3.5 h-3.5"
+                                    title="Seleccionar Todos"
+                                />
+                            </th>
+                            <th className="px-6 py-4 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] sticky left-10 bg-slate-50 dark:bg-slate-900 z-20 w-64 border-r border-slate-200/30 dark:border-white/10">Cliente</th>
                             {periods.map(p => (
                                 <th 
                                     key={p} 
@@ -1139,7 +1453,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 <React.Fragment key={client.id}>
                                     {showFreqDivider && (
                                         <tr className="bg-primary/5 border-t border-b border-primary/20">
-                                            <td colSpan={periods.length + 1} className="px-6 py-3">
+                                            <td colSpan={periods.length + 2} className="px-6 py-3">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
                                                         <div className="p-1.5 rounded-lg bg-primary text-white shadow-lg shadow-primary/30 animate-pulse">
@@ -1159,7 +1473,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     )}
                                     {showDivider && (
                                         <tr className="bg-slate-100/30 dark:bg-[#020617]/50 border-t border-b border-slate-200/30 dark:border-white/10">
-                                            <td colSpan={periods.length + 1} className="px-6 py-2.5">
+                                            <td colSpan={periods.length + 2} className="px-6 py-2.5">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(43,106,255,0.6)]"></div>
@@ -1184,7 +1498,18 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         : 'hover:bg-slate-50/50 dark:bg-white/[0.02] dark:hover:bg-slate-950/20'
 }`}>
                                         <td 
-                                            className="px-6 py-4 sticky left-0 bg-white/95 dark:bg-[#020617]/95 backdrop-blur-md z-10 border-r border-slate-200/30 dark:border-white/10 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-950/80 transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.03)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.4)]"
+                                            className="px-3 py-4 sticky left-0 bg-white/95 dark:bg-[#020617]/95 backdrop-blur-md z-20 border-r border-slate-200/30 dark:border-white/10 text-center"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedClientIds.includes(client.id)}
+                                                onChange={() => handleToggleSelectClient(client.id)}
+                                                className="rounded accent-primary cursor-pointer w-3.5 h-3.5"
+                                            />
+                                        </td>
+                                        <td 
+                                            className="px-6 py-4 sticky left-10 bg-white/95 dark:bg-[#020617]/95 backdrop-blur-md z-10 border-r border-slate-200/30 dark:border-white/10 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-950/80 transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.03)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.4)]"
                                             onClick={() => onViewClient(client)}
                                         >
                                             <div className="flex items-center gap-3 cursor-pointer group/name relative">
@@ -1747,209 +2072,304 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </button>
                         </div>
 
-                        {/* Content Cards */}
-                        <div className="space-y-4">
-                            {/* 1. Comprobante de Declaración (PDF Subido) */}
-                            <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <LucideIcons.FileText size={16} className="text-emerald-400" />
-                                        <span className="text-xs font-black uppercase tracking-wider text-slate-200">
-                                            Comprobante de Declaración PDF
-                                        </span>
+                        {/* 📑 PESTAÑAS DE CLASIFICACIÓN DE COMPROBANTES */}
+                        <div className="flex items-center gap-1.5 p-1 bg-white/5 rounded-2xl border border-white/10">
+                            <button
+                                onClick={() => setModalTab('declaracion')}
+                                className={`flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                    modalTab === 'declaracion'
+                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 scale-[1.02]'
+                                        : 'text-slate-400 hover:text-white'
+                                }`}
+                            >
+                                <LucideIcons.FileText size={14} />
+                                <span>📄 Declaración SRI</span>
+                            </button>
+                            <button
+                                onClick={() => setModalTab('factura')}
+                                className={`flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                    modalTab === 'factura'
+                                        ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25 scale-[1.02]'
+                                        : 'text-slate-400 hover:text-white'
+                                }`}
+                            >
+                                <LucideIcons.Receipt size={14} />
+                                <span>🧾 Factura RIDE</span>
+                            </button>
+                            <button
+                                onClick={() => setModalTab('respaldos')}
+                                className={`flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                    modalTab === 'respaldos'
+                                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 scale-[1.02]'
+                                        : 'text-slate-400 hover:text-white'
+                                }`}
+                            >
+                                <LucideIcons.FolderCheck size={14} />
+                                <span>📑 Retenciones & Respaldos</span>
+                            </button>
+                        </div>
+
+                        {/* Content Body segun Pestaña Seleccionada */}
+                        <div className="space-y-4 min-h-[220px]">
+                            {/* PESTAÑA 1: DECLARACIÓN SRI */}
+                            {modalTab === 'declaracion' && (
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    {/* Comprobante PDF */}
+                                    <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <LucideIcons.FileText size={16} className="text-emerald-400" />
+                                                <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                                    Comprobante de Declaración PDF
+                                                </span>
+                                            </div>
+                                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                                {activeCellModal.declaration.proof_file?.url ? '✅ En Supabase Storage' : 'Registrado Local'}
+                                            </span>
+                                        </div>
+
+                                        <div className="text-xs font-mono text-slate-400 truncate">
+                                            Archivo: <span className="text-slate-200">{activeCellModal.declaration.proof_file?.name || `declaracion_${activeCellModal.period}.pdf`}</span>
+                                        </div>
+
+                                        {activeCellModal.declaration.proof_file?.url && (
+                                            <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-950/60 max-h-48">
+                                                <iframe src={activeCellModal.declaration.proof_file.url} className="w-full h-44 border-none" title="Vista Previa SRI" />
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center gap-2 pt-1">
+                                            {activeCellModal.declaration.proof_file && (
+                                                <button
+                                                    onClick={async () => {
+                                                        const ok = await downloadStoredFile(
+                                                            activeCellModal.declaration.proof_file,
+                                                            `comprobante_${activeCellModal.client.name}_${activeCellModal.period}.pdf`
+                                                        );
+                                                        if (ok) {
+                                                            toast.success("Comprobante descargado correctamente");
+                                                        } else {
+                                                            toast.error("El archivo del comprobante no se pudo decodificar");
+                                                        }
+                                                    }}
+                                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+                                                >
+                                                    <LucideIcons.Download size={14} />
+                                                    Descargar PDF
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => {
+                                                    const decl = activeCellModal.declaration;
+                                                    const clientObj = activeCellModal.client;
+                                                    setActiveCellModal(null);
+                                                    onPreviewReceipt(clientObj, decl);
+                                                }}
+                                                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+                                            >
+                                                <LucideIcons.Eye size={14} />
+                                                Ver Previa Completa
+                                            </button>
+                                        </div>
                                     </div>
-                                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
-                                        Registrado
-                                    </span>
-                                </div>
 
-                                <div className="text-xs font-mono text-slate-400 truncate">
-                                    Archivo: <span className="text-slate-200">{activeCellModal.declaration.proof_file?.name || `declaracion_${activeCellModal.period}.pdf`}</span>
-                                </div>
+                                    {/* Notificación WhatsApp al Cliente */}
+                                    <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
+                                        {(() => {
+                                            const currentCount = activeCellModal.declaration.notificationCount || 0;
+                                            const isPaid = activeCellModal.declaration.status === DeclarationStatus.Pagada || !!activeCellModal.declaration.is_paid || activeCellModal.client.isCourtesy;
+                                            const isNotified = !!activeCellModal.declaration.isNotifiedWhatsApp;
 
-                                <div className="flex items-center gap-2 pt-1">
-                                    {activeCellModal.declaration.proof_file && (
-                                        <button
-                                            onClick={async () => {
-                                                const ok = await downloadStoredFile(
-                                                    activeCellModal.declaration.proof_file,
-                                                    `comprobante_${activeCellModal.client.name}_${activeCellModal.period}.pdf`
-                                                );
-                                                if (ok) {
-                                                    toast.success("Comprobante descargado correctamente");
+                                            let stageLabel = "Etapa 1: Notificación Inicial";
+                                            let buttonLabel = `Enviar Comprobante WhatsApp (${getTimeBasedGreeting()})`;
+                                            let stageColor = "text-emerald-400";
+                                            let IconComponent = LucideIcons.Send;
+
+                                            if (isNotified && !isPaid) {
+                                                if (currentCount <= 1) {
+                                                    stageLabel = "Etapa 2: Primer Recordatorio de Pago";
+                                                    buttonLabel = `Enviar Recordatorio de Cobro (${getTimeBasedGreeting()})`;
+                                                    stageColor = "text-amber-400";
+                                                    IconComponent = LucideIcons.BellRing;
                                                 } else {
-                                                    toast.error("El archivo del comprobante no se pudo decodificar");
+                                                    stageLabel = `Etapa ${currentCount + 1}: Seguimiento de Pago`;
+                                                    buttonLabel = `Enviar Mensaje de Seguimiento de Pago`;
+                                                    stageColor = "text-rose-400";
+                                                    IconComponent = LucideIcons.AlertCircle;
                                                 }
-                                            }}
-                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20"
-                                        >
-                                            <LucideIcons.Download size={14} />
-                                            Descargar PDF
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => {
-                                            const decl = activeCellModal.declaration;
-                                            const clientObj = activeCellModal.client;
-                                            setActiveCellModal(null);
-                                            onPreviewReceipt(clientObj, decl);
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all"
-                                    >
-                                        <LucideIcons.Eye size={14} />
-                                        Ver Previa
-                                    </button>
-                                </div>
-                            </div>
+                                            }
 
-                            {/* 2. Estado de Factura SRI de Verdad */}
-                            <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <LucideIcons.Receipt size={16} className={activeCellModal.realInvoice ? "text-sky-400" : "text-amber-400"} />
-                                        <span className="text-xs font-black uppercase tracking-wider text-slate-200">
-                                            Factura Electrónica SRI
-                                        </span>
+                                            return (
+                                                <>
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <IconComponent size={16} className={stageColor} />
+                                                            <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                                                Notificación WhatsApp ({stageLabel})
+                                                            </span>
+                                                        </div>
+                                                        {isNotified ? (
+                                                            <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                                                <LucideIcons.CheckCheck size={12} />
+                                                                NOTIFICADO ({currentCount}x)
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                                                <LucideIcons.Bookmark size={12} />
+                                                                PENDIENTE DE NOTIFICAR
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                                                        <button
+                                                            onClick={() => handleSendWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
+                                                            className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+                                                        >
+                                                            <IconComponent size={14} />
+                                                            {buttonLabel}
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => handleToggleWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
+                                                            className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
+                                                                activeCellModal.declaration.isNotifiedWhatsApp
+                                                                    ? 'bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border-slate-700 hover:border-rose-500/40'
+                                                                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
+                                                            }`}
+                                                            title="Cambiar marca de notificación sin enviar mensaje por WhatsApp"
+                                                        >
+                                                            <LucideIcons.Tag size={14} />
+                                                            <span>{activeCellModal.declaration.isNotifiedWhatsApp ? 'Marcar Pendiente' : 'Marcar Notificado'}</span>
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
                                     </div>
-                                    {activeCellModal.realInvoice ? (
-                                        <span className="px-2 py-0.5 bg-sky-500/20 text-sky-300 border border-sky-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
-                                            ✅ FACTURA REAL REGISTRADA
-                                        </span>
-                                    ) : (
-                                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
-                                            ⚠️ SIN FACTURA EN REGISTRO
-                                        </span>
-                                    )}
                                 </div>
+                            )}
 
-                                {activeCellModal.realInvoice ? (
-                                    <div className="space-y-2 bg-slate-950/60 p-3.5 rounded-xl border border-sky-500/20 font-mono text-xs">
-                                        <div className="flex justify-between text-slate-300 font-bold">
-                                            <span>Factura Autorizada SRI:</span>
-                                            <span className="text-sky-400">001-001-{activeCellModal.realInvoice.secuencial}</span>
+                            {/* PESTAÑA 2: FACTURA ELECTRÓNICA / RIDE */}
+                            {modalTab === 'factura' && (
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <LucideIcons.Receipt size={16} className={activeCellModal.realInvoice ? "text-sky-400" : "text-amber-400"} />
+                                                <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                                    Factura Electrónica de Honorarios SRI
+                                                </span>
+                                            </div>
+                                            {activeCellModal.realInvoice ? (
+                                                <span className="px-2 py-0.5 bg-sky-500/20 text-sky-300 border border-sky-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                                    ✅ FACTURA REGISTRADA
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                                    ⚠️ SIN FACTURA EN REGISTRO
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="flex justify-between text-slate-400 text-[10px]">
-                                            <span>Fecha Autorización:</span>
-                                            <span className="text-slate-200">{activeCellModal.realInvoice.fechaEmision}</span>
-                                        </div>
-                                        <div className="flex justify-between text-slate-400 text-[10px]">
-                                            <span>Monto Total:</span>
-                                            <span className="text-emerald-400 font-bold">${Number(activeCellModal.realInvoice.total || 0).toFixed(2)}</span>
-                                        </div>
-                                        <div className="text-[9px] text-slate-400 truncate border-t border-white/5 pt-1.5 mt-1">
-                                            Clave: <span className="text-slate-300">{activeCellModal.realInvoice.claveAcceso}</span>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className="text-xs text-slate-400 leading-relaxed bg-amber-500/5 p-3.5 rounded-xl border border-amber-500/20">
-                                        No consta factura electrónica autorizada emitida a este RUC ({activeCellModal.client.ruc}) para esta declaración en el registro local.
-                                    </p>
-                                )}
 
-                                <div className="flex items-center gap-2 pt-1">
-                                    {activeCellModal.realInvoice ? (
-                                        <button
-                                            onClick={() => {
-                                                printRideFromInvoice(activeCellModal.realInvoice, activeCellModal.client);
-                                            }}
-                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-primary/20"
-                                        >
-                                            <LucideIcons.FileText size={14} />
-                                            Ver RIDE Factura (A4)
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => {
-                                                const ruc = activeCellModal.client.ruc;
-                                                const periodStr = activeCellModal.period;
-                                                const { description } = formatDeclarationInvoiceDescription(periodStr, activeCellModal.obType);
-                                                setActiveCellModal(null);
-                                                if (onNavigateToBilling) onNavigateToBilling(ruc, periodStr, description);
-                                                else toast.info(`Selecciona Facturación SRI para emitir comprobante a ${ruc}`);
-                                            }}
-                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20"
-                                        >
-                                            <LucideIcons.Zap size={14} />
-                                            Emitir Factura SRI Ahora
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* 3. Notificación WhatsApp al Cliente */}
-                            <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
-                                {(() => {
-                                    const currentCount = activeCellModal.declaration.notificationCount || 0;
-                                    const isPaid = activeCellModal.declaration.status === DeclarationStatus.Pagada || !!activeCellModal.declaration.is_paid || activeCellModal.client.isCourtesy;
-                                    const isNotified = !!activeCellModal.declaration.isNotifiedWhatsApp;
-
-                                    let stageLabel = "Etapa 1: Notificación Inicial";
-                                    let buttonLabel = `Enviar Comprobante WhatsApp (${getTimeBasedGreeting()})`;
-                                    let stageColor = "text-emerald-400";
-                                    let IconComponent = LucideIcons.Send;
-
-                                    if (isNotified && !isPaid) {
-                                        if (currentCount <= 1) {
-                                            stageLabel = "Etapa 2: Primer Recordatorio de Pago";
-                                            buttonLabel = `Enviar Recordatorio de Cobro (${getTimeBasedGreeting()})`;
-                                            stageColor = "text-amber-400";
-                                            IconComponent = LucideIcons.BellRing;
-                                        } else {
-                                            stageLabel = `Etapa ${currentCount + 1}: Seguimiento de Pago`;
-                                            buttonLabel = `Enviar Mensaje de Seguimiento de Pago`;
-                                            stageColor = "text-rose-400";
-                                            IconComponent = LucideIcons.AlertCircle;
-                                        }
-                                    }
-
-                                    return (
-                                        <>
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <IconComponent size={16} className={stageColor} />
-                                                    <span className="text-xs font-black uppercase tracking-wider text-slate-200">
-                                                        Notificación WhatsApp ({stageLabel})
-                                                    </span>
+                                        {activeCellModal.realInvoice ? (
+                                            <div className="space-y-2 bg-slate-950/60 p-3.5 rounded-xl border border-sky-500/20 font-mono text-xs">
+                                                <div className="flex justify-between text-slate-300 font-bold">
+                                                    <span>Factura Autorizada SRI:</span>
+                                                    <span className="text-sky-400">001-001-{activeCellModal.realInvoice.secuencial}</span>
                                                 </div>
-                                                {isNotified ? (
-                                                    <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
-                                                        <LucideIcons.CheckCheck size={12} />
-                                                        NOTIFICADO ({currentCount}x)
-                                                    </span>
-                                                ) : (
-                                                    <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
-                                                        <LucideIcons.Bookmark size={12} />
-                                                        PENDIENTE DE NOTIFICAR
-                                                    </span>
-                                                )}
+                                                <div className="flex justify-between text-slate-400 text-[10px]">
+                                                    <span>Fecha Autorización:</span>
+                                                    <span className="text-slate-200">{activeCellModal.realInvoice.fechaEmision}</span>
+                                                </div>
+                                                <div className="flex justify-between text-slate-400 text-[10px]">
+                                                    <span>Monto Total:</span>
+                                                    <span className="text-emerald-400 font-bold">${Number(activeCellModal.realInvoice.total || 0).toFixed(2)}</span>
+                                                </div>
+                                                <div className="text-[9px] text-slate-400 truncate border-t border-white/5 pt-1.5 mt-1">
+                                                    Clave: <span className="text-slate-300">{activeCellModal.realInvoice.claveAcceso}</span>
+                                                </div>
                                             </div>
+                                        ) : (
+                                            <p className="text-xs text-slate-400 leading-relaxed bg-amber-500/5 p-3.5 rounded-xl border border-amber-500/20">
+                                                No consta factura electrónica autorizada emitida a este RUC ({activeCellModal.client.ruc}) para esta declaración en el registro local.
+                                            </p>
+                                        )}
 
-                                            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                                        <div className="flex items-center gap-2 pt-1">
+                                            {activeCellModal.realInvoice ? (
                                                 <button
-                                                    onClick={() => handleSendWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
-                                                    className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20"
+                                                    onClick={() => {
+                                                        printRideFromInvoice(activeCellModal.realInvoice, activeCellModal.client);
+                                                    }}
+                                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-primary/20 cursor-pointer"
                                                 >
-                                                    <IconComponent size={14} />
-                                                    {buttonLabel}
+                                                    <LucideIcons.FileText size={14} />
+                                                    Ver RIDE Factura (A4)
                                                 </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => {
+                                                        const ruc = activeCellModal.client.ruc;
+                                                        const periodStr = activeCellModal.period;
+                                                        const { description } = formatDeclarationInvoiceDescription(periodStr, activeCellModal.obType);
+                                                        setActiveCellModal(null);
+                                                        if (onNavigateToBilling) onNavigateToBilling(ruc, periodStr, description);
+                                                        else toast.info(`Selecciona Facturación SRI para emitir comprobante a ${ruc}`);
+                                                    }}
+                                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+                                                >
+                                                    <LucideIcons.Zap size={14} />
+                                                    Emitir Factura SRI Ahora
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
-                                                <button
-                                                    onClick={() => handleToggleWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
-                                                    className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border ${
-                                                        activeCellModal.declaration.isNotifiedWhatsApp
-                                                            ? 'bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border-slate-700 hover:border-rose-500/40'
-                                                            : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
-                                                    }`}
-                                                    title="Cambiar marca de notificación sin enviar mensaje por WhatsApp"
-                                                >
-                                                    <LucideIcons.Tag size={14} />
-                                                    <span>{activeCellModal.declaration.isNotifiedWhatsApp ? 'Marcar Pendiente' : 'Marcar Notificado'}</span>
-                                                </button>
+                            {/* PESTAÑA 3: RETENCIONES & RESPALDOS DE BÓVEDA */}
+                            {modalTab === 'respaldos' && (
+                                <div className="space-y-4 animate-in fade-in duration-200">
+                                    <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <LucideIcons.FolderCheck size={16} className="text-indigo-400" />
+                                                <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                                    Métricas Extraídas & Retenciones
+                                                </span>
                                             </div>
-                                        </>
-                                    );
-                                })()}
-                            </div>
+                                            <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                                Métricas SRI
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                                            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase">Ventas 15%:</div>
+                                                <div className="text-emerald-400 font-extrabold">${(activeCellModal.declaration.proof_file?.metadata?.ventas15 || 0).toFixed(2)}</div>
+                                            </div>
+                                            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase">Ventas 0%:</div>
+                                                <div className="text-slate-200 font-extrabold">${(activeCellModal.declaration.proof_file?.metadata?.ventas0 || 0).toFixed(2)}</div>
+                                            </div>
+                                            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase">Compras 15%:</div>
+                                                <div className="text-sky-400 font-extrabold">${(activeCellModal.declaration.proof_file?.metadata?.compras15 || 0).toFixed(2)}</div>
+                                            </div>
+                                            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase">Retenciones IVA:</div>
+                                                <div className="text-indigo-400 font-extrabold">${(activeCellModal.declaration.proof_file?.metadata?.retIva || 0).toFixed(2)}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-semibold text-slate-400">
+                                            <span>Documentos en Bóveda del Cliente:</span>
+                                            <span className="text-indigo-400 font-bold">{(activeCellModal.client.vaultFiles || []).length} archivos</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Footer */}

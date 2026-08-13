@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Modal } from '../ui/Modal';
 import { Upload, FileText, Check, Loader, User, CreditCard, Download, Camera } from 'lucide-react';
 import { extractDataFromSriPdf, fileToBase64 } from '../../services/pdfExtraction';
+import { UnifiedStorageService } from '../../services/unifiedStorageService';
 import { generateAutorizacionEcuafact } from '../../services/docxModifier';
 import { v4 as uuidv4 } from 'uuid';
 import { Client, TaxRegime, StoredFile } from '../../types';
@@ -41,7 +42,7 @@ export const QuickPlanRegistrationModal: React.FC<QuickPlanRegistrationModalProp
         setIsAnalyzing(true);
         try {
             const extracted = await extractDataFromSriPdf(file);
-            const b64 = await fileToBase64(file);
+            const uploadedFile = await UnifiedStorageService.uploadFile(file, file.name, 'rucs');
             
             setExtractedData({
                 nombre: extracted.apellidos_nombres,
@@ -49,13 +50,7 @@ export const QuickPlanRegistrationModal: React.FC<QuickPlanRegistrationModalProp
                 regimen: extracted.regimen || TaxRegime.General
             });
 
-            setRucPdfFile({
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                lastModified: file.lastModified,
-                content: b64
-            });
+            setRucPdfFile(uploadedFile);
 
             toast.success("Datos del RUC extraídos correctamente.");
         } catch (error) {

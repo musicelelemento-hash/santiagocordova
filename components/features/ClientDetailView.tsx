@@ -3,6 +3,7 @@ import { Client, DeclarationStatus, Declaration, TaxRegime, ServiceFeesConfig, S
 import { validateIdentifier, getDaysUntilDue, getPeriod, validateSriPassword, formatPeriodForDisplay, getDueDateForPeriod, getNextPeriod, safeFormat, getWhatsAppUrl, requiresIva, generateDeclarationWhatsAppMessage } from '../../services/sri';
 import { summarizeTextWithGemini, analyzeClientPhoto } from '../../services/geminiService';
 import { extractDataFromSriPdf, extractDataFromDeclarationPdf, fileToBase64 } from '../../services/pdfExtraction';
+import { UnifiedStorageService } from '../../services/unifiedStorageService';
 import { getClientServiceFee, isCourtesyClient } from '../../services/clientService';
 import { db } from '../../services/db';
 import { downloadStoredFile } from '../../services/fileService';
@@ -351,20 +352,17 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 }
             }
 
-            const base64 = await fileToBase64(file);
-            const storedFile: StoredFile = {
-                name: file.name,
-                type: file.type.includes('pdf') ? 'pdf' : 'other',
-                size: file.size,
-                lastModified: Date.now(),
-                content: base64,
-                metadata: extractedData ? {
+            const storedFile: StoredFile = await UnifiedStorageService.uploadFile(
+                file,
+                file.name,
+                'declaraciones',
+                extractedData ? {
                     amount: extractedData.amount,
                     period: extractedData.period,
                     formType: extractedData.formType,
                     sriId: extractedData.id
                 } : undefined
-            };
+            );
 
             let updatedClient = { ...editedClient };
 
@@ -501,21 +499,18 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 setMismatchData({ ruc: extracted.ruc, name: extracted.apellidos_nombres });
                 return;
             }
-            const b64 = await fileToBase64(file);
+            let uploadedRucCert: StoredFile | undefined = undefined;
+            if (extracted.isCertificate) {
+                uploadedRucCert = await UnifiedStorageService.uploadFile(file, file.name, 'rucs');
+            }
             setEditedClient(prev => {
                 const updatedData: Partial<Client> = {
                     name: extracted.apellidos_nombres || prev.name,
                     address: extracted.direccion || prev.address,
                     regime: extracted.regimen || prev.regime
                 };
-                if (extracted.isCertificate) {
-                    updatedData.rucCertificate = {
-                        name: file.name,
-                        type: file.type,
-                        size: file.size,
-                        lastModified: file.lastModified,
-                        content: b64
-                    };
+                if (uploadedRucCert) {
+                    updatedData.rucCertificate = uploadedRucCert;
                 }
                 const updatedClientFull = { ...prev, ...updatedData };
                 onSave(updatedClientFull);

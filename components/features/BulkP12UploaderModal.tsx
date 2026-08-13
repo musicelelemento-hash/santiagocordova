@@ -9,6 +9,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { extractP12Metadata } from '../../utils/p12Reader';
 import { useToast } from '../../context/ToastContext';
 import { Client, StoredFile, TaxRegime } from '../../types';
+import { UnifiedStorageService } from '../../services/unifiedStorageService';
 import { v4 as uuidv4 } from 'uuid';
 import { Modal } from '../ui/Modal';
 
@@ -540,13 +541,11 @@ export const BulkP12UploaderModal: React.FC<BulkP12UploaderModalProps> = ({ isOp
 
         for (const item of unlockedItems) {
             const { ruc, commonName, issuerName, notBefore, notAfter } = item.metadata!;
-            const signatureFileObj: StoredFile = {
-                name: item.fileName,
-                type: 'p12',
-                size: item.file.size,
-                lastModified: item.file.lastModified,
-                content: item.base64Content
-            };
+            const signatureFileObj: StoredFile = await UnifiedStorageService.uploadFile(
+                item.file,
+                item.fileName,
+                'firmas'
+            );
 
             const expDate = notAfter ? notAfter.toISOString().split('T')[0] : '';
             const issueDate = notBefore ? notBefore.toISOString().split('T')[0] : '';

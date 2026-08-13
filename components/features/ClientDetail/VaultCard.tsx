@@ -1,7 +1,7 @@
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
 import { StoredFile } from '../../../types/client';
-import { fileToBase64 } from '../../../services/pdfExtraction';
+import { UnifiedStorageService } from '../../../services/unifiedStorageService';
 
 
 interface VaultCardProps {
@@ -94,10 +94,9 @@ export const VaultCard: React.FC<VaultCardProps> = ({ icon: Icon, label, file, o
                                 onChange={async (e) => {
                                     const f = e.target.files?.[0];
                                     if (f && onUpload) {
-                                        const content = await fileToBase64(f);
-                                        const isP12 = f.name.toLowerCase().endsWith('.p12') || f.name.toLowerCase().endsWith('.pfx');
-                                        const fileType = isP12 ? 'p12' : f.type.startsWith('image/') ? 'image' : 'pdf';
-                                        onUpload({ name: f.name, type: fileType, size: f.size, lastModified: f.lastModified, content });
+                                        const category = f.name.toLowerCase().endsWith('.p12') || f.name.toLowerCase().endsWith('.pfx') ? 'firmas' : 'comprobantes';
+                                        const uploadedFile = await UnifiedStorageService.uploadFile(f, f.name, category);
+                                        onUpload(uploadedFile);
                                     }
                                 }} 
                             />

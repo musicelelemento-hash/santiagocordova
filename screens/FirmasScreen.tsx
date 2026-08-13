@@ -3,7 +3,7 @@ import {
     KeyRound, ShieldCheck, ShieldOff, PhoneCall, AlertTriangle,
     CheckCircle2, ArrowRight, Search, FileText, Check, Copy, ExternalLink,
     List, LayoutGrid, UploadCloud, Archive, Eye, EyeOff, UserPlus, Trash2, Laptop, Shield,
-    ShoppingBag, Lock, Camera, Globe, RefreshCw, Download
+    ShoppingBag, Lock, Camera, Globe, RefreshCw, Download, Cloud, CloudCheck, Filter
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -47,6 +47,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
     const [visiblePasswords, setVisiblePasswords] = useState<{ [id: string]: boolean }>({});
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [backupSignatures, setBackupSignatures] = useState<BackupSignatureItem[]>([]);
+    const [selectedProvider, setSelectedProvider] = useState<string>('all');
 
     // Cargar Bóveda de Respaldos de Clientes Esporádicos / Externos
     useEffect(() => {
@@ -73,6 +74,10 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
         const q = searchTerm.toLowerCase().trim();
         const active = clients.filter(c => {
             if (c.isDeleted || !c.isActive) return false;
+            if (selectedProvider !== 'all') {
+                const prov = c.signatureProvider?.toLowerCase() || '';
+                if (!prov.includes(selectedProvider.toLowerCase())) return false;
+            }
             if (!q) return true;
             const matchName = c.name.toLowerCase().includes(q) || (c.tradeName && c.tradeName.toLowerCase().includes(q));
             const matchRuc = c.ruc.includes(q);
@@ -115,7 +120,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
         });
 
         return { withSignature, withoutSignature, getDaysLeft, expired, expiringSoon, ok };
-    }, [clients, searchTerm]);
+    }, [clients, searchTerm, selectedProvider]);
 
     const filteredBackupSignatures = useMemo(() => {
         // 1. Desduplicar el arreglo por RUC + Caducidad (o Titular + Nombre de archivo)
@@ -266,6 +271,13 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             <span className="text-2xl font-black text-purple-300 font-mono">{backupSignatures.length}</span>
                             <span className="text-[9px] font-bold text-purple-300 uppercase tracking-widest mt-0.5">Bóveda Respaldos</span>
                         </div>
+                        <div className="flex flex-col items-center px-5 py-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 backdrop-blur-md">
+                            <div className="flex items-center gap-1.5 text-cyan-400 font-mono font-black text-xl">
+                                <Cloud size={18} />
+                                <span>R2 Cloud</span>
+                            </div>
+                            <span className="text-[9px] font-bold text-cyan-300 uppercase tracking-widest mt-0.5">Cloudflare Synced</span>
+                        </div>
 
                         {/* Botón de Subida Masiva */}
                         <button
@@ -375,16 +387,35 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                     )}
                 </div>
 
-                {/* Buscador de Clientes / RUC / Entidad */}
-                <div className="relative min-w-[260px] sm:w-80">
-                    <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar por Nombre, RUC o Categoría..."
-                        className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-white/10 rounded-2xl text-xs text-white placeholder-slate-400 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 transition-all outline-none"
-                    />
+                <div className="flex items-center gap-3">
+                    {/* Filtro por Emisor / Proveedor */}
+                    <div className="relative">
+                        <select
+                            value={selectedProvider}
+                            onChange={(e) => setSelectedProvider(e.target.value)}
+                            className="appearance-none pl-9 pr-8 py-2.5 bg-slate-900/60 border border-white/10 rounded-2xl text-xs text-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 transition-all outline-none cursor-pointer"
+                        >
+                            <option value="all" className="bg-slate-900 text-white">Todos los Emisores</option>
+                            <option value="Security Data" className="bg-slate-900 text-white">Security Data</option>
+                            <option value="ANF" className="bg-slate-900 text-white">ANF AC</option>
+                            <option value="Banco Central" className="bg-slate-900 text-white">Banco Central (BCE)</option>
+                            <option value="UANATACA" className="bg-slate-900 text-white">UANATACA</option>
+                            <option value="Consejo de la Judicatura" className="bg-slate-900 text-white">Consejo Judicatura</option>
+                        </select>
+                        <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    {/* Buscador de Clientes / RUC / Entidad */}
+                    <div className="relative min-w-[240px] sm:w-72">
+                        <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Buscar por Nombre, RUC o Categoría..."
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-white/10 rounded-2xl text-xs text-white placeholder-slate-400 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 transition-all outline-none"
+                        />
+                    </div>
                 </div>
             </div>
 

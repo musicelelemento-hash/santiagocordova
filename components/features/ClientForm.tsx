@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Client, TaxRegime, DeclarationStatus, StoredFile } from '../../types';
 import { validateIdentifier, validateSriPassword, getPeriod } from '../../services/sri';
 import { extractDataFromSriPdf, fileToBase64 } from '../../services/pdfExtraction';
+import { UnifiedStorageService } from '../../services/unifiedStorageService';
 import {
     User, Mail, Phone, MapPin, FileText, Plus, X, Upload, Check, Loader, Lock, Briefcase, Camera, ScanText, Sparkles, Building2, Receipt, Palette,
     ScanLine, CreditCard, Key, EyeOff, Eye, Calendar, DollarSign, Zap, Coins, ToggleRight, ToggleLeft, CheckCircle, CheckCircle2, Shield, ShieldCheck, AlertTriangle, Save, Users, CalendarCheck, Trash2
@@ -148,14 +149,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
 
             let certFile: StoredFile | undefined = undefined;
             if (extracted.isCertificate) {
-                const b64 = await fileToBase64(file);
-                certFile = {
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    lastModified: file.lastModified,
-                    content: b64
-                };
+                certFile = await UnifiedStorageService.uploadFile(file, file.name, 'rucs');
             }
 
             // Everyone is VIP now

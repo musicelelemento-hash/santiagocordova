@@ -7,6 +7,7 @@ import { getClientServiceFee } from '../../services/clientService';
 import { TaxObligationCard } from './ClientDetail/TaxObligationCard';
 import { useToast } from '../../context/ToastContext';
 import { fileToBase64 } from '../../services/pdfExtraction';
+import { UnifiedStorageService } from '../../services/unifiedStorageService';
 import { Modal } from '../ui/Modal';
 
 interface ClientWorkspaceModalProps {
@@ -118,14 +119,7 @@ export const ClientWorkspaceModal: React.FC<ClientWorkspaceModalProps> = ({
 
         setIsAnalyzingPdf(true);
         try {
-            const base64 = await fileToBase64(file);
-            const storedFile = {
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                lastModified: Date.now(),
-                content: base64
-            };
+            const storedFile = await UnifiedStorageService.uploadFile(file, file.name, 'declaraciones');
 
             const updatedHistory = [...(client.declarations || [])];
             const targetPeriod = uploadingTarget.period!;

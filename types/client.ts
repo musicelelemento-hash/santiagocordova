@@ -84,6 +84,8 @@ export interface Declaration {
     isNotifiedWhatsApp?: boolean;
     notifiedWhatsAppAt?: string;
     notificationCount?: number;
+    isPrinted?: boolean;
+    printedAt?: string;
 }
 
 export interface ClientFeeStructure {

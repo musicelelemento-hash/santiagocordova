@@ -15,6 +15,7 @@ import { ClientNotes } from '../ClientNotes';
 import { FacturadorCard } from '../FacturadorCard';
 import { useToast } from '../../../../context/ToastContext';
 import { fileToBase64 } from '../../../../services/pdfExtraction';
+import { UnifiedStorageService } from '../../../../services/unifiedStorageService';
 import { downloadStoredFile } from '../../../../services/fileService';
 
 interface ProfileTabProps {
@@ -453,16 +454,10 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                                     onChange={async (e) => {
                                                         const f = e.target.files?.[0];
                                                         if (f) {
-                                                            const content = await fileToBase64(f);
+                                                            const uploaded = await UnifiedStorageService.uploadFile(f, f.name, 'firmas');
                                                             setEditedClient(prev => ({
                                                                 ...prev,
-                                                                signatureFile: {
-                                                                    name: f.name,
-                                                                    type: 'pdf',
-                                                                    size: f.size,
-                                                                    lastModified: f.lastModified,
-                                                                    content
-                                                                }
+                                                                signatureFile: uploaded
                                                             }));
                                                         }
                                                     }}
