@@ -40,6 +40,8 @@ import { getNinthDigit } from '../../services/sri';
 import { db } from '../../services/db';
 import { useAppStore } from '../../store/useAppStore';
 import { getClientServiceFee } from '../../services/clientService';
+import { UnifiedStorageService } from '../../services/unifiedStorageService';
+import { SupabaseService } from '../../services/supabaseClientService';
 import { sendBatchDeclarationToExtension, listenForDeclarationCompleted, sendToSRIExtension, sendFullClientsMatrixToExtension } from '../../services/extensionBridge';
 
 type MatrixMode = 'IVA' | 'RENTA';
@@ -189,6 +191,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     // SRI Authorized Invoices History
     const [sriHistory, setSriHistory] = useState<any[]>([]);
     const [modalTab, setModalTab] = useState<'declaracion' | 'factura' | 'respaldos'>('declaracion');
+    const [isUploadingProof, setIsUploadingProof] = useState(false);
+    const [isOptimizingStorage, setIsOptimizingStorage] = useState(false);
     const [activeCellModal, setActiveCellModal] = useState<{
         client: Client;
         period: string;
@@ -196,6 +200,152 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         obType: TaxObligationType;
         realInvoice: any | null;
     } | null>(null);
+
+    const handleUploadProofPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !activeCellModal) return;
+        if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+            toast.error("Por favor seleccione un archivo PDF válido");
+            return;
+        }
+
+        setIsUploadingProof(true);
+        toast.info("Subiendo comprobante al almacenamiento en la nube (Cloudflare R2 / Supabase Storage)...");
+
+        try {
+            const periodStr = activeCellModal.period;
+            const mainObType = activeCellModal.declaration?.type || (matrixMode === 'RENTA' ? 'RENTA' : 'IVA');
+            const fileName = `Declaracion_${mainObType}_${activeCellModal.client.ruc}_${periodStr}.pdf`;
+
+            // Subir directamente a la nube (R2 / Supabase Storage bucket)
+            const storedFile = await UnifiedStorageService.uploadFile(
+                file,
+                fileName,
+                'declaraciones',
+                {
+                    period: periodStr,
+                    uploadedAt: new Date().toISOString()
+                }
+            );
+
+            // Asegurar que content sea null para no sobrecargar la base de datos de Supabase con Base64
+            const cloudStoredFile = {
+                ...storedFile,
+                content: null // 💡 Cero base64 en la base de datos = Cero gasto innecesario de almacenamiento
+            };
+
+            const existingDecls = activeCellModal.client.declarations || [];
+            const declIndex = existingDecls.findIndex(d => arePeriodsEqual(d.period, periodStr) && (d.type === mainObType || !d.type));
+
+            let updatedDecls: Declaration[];
+            if (declIndex >= 0) {
+                updatedDecls = existingDecls.map((d, idx) => {
+                    if (idx === declIndex) {
+                        return {
+                            ...d,
+                            status: DeclarationStatus.Enviada,
+                            proof_file: cloudStoredFile,
+                            declaredAt: d.declaredAt || new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                    }
+                    return d;
+                });
+            } else {
+                updatedDecls = [
+                    ...existingDecls,
+                    {
+                        period: periodStr,
+                        type: mainObType as TaxObligationType,
+                        status: DeclarationStatus.Enviada,
+                        proof_file: cloudStoredFile,
+                        declaredAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    }
+                ];
+            }
+
+            // Actualizar en store y Supabase
+            await useAppStore.getState().updateClient(activeCellModal.client.id, { declarations: updatedDecls });
+
+            // Actualizar modal activo
+            const updatedDecl = updatedDecls.find(d => arePeriodsEqual(d.period, periodStr))!;
+            setActiveCellModal({
+                ...activeCellModal,
+                declaration: updatedDecl
+            });
+
+            toast.success("✅ Comprobante PDF almacenado en la nube con éxito. Base de datos optimizada.");
+        } catch (err: any) {
+            console.error("Error al subir comprobante a la nube:", err);
+            toast.error("Error al subir archivo a la nube: " + (err.message || "Fallo de conexión"));
+        } finally {
+            setIsUploadingProof(false);
+        }
+    };
+
+    const handleOptimizeSupabaseStorage = async () => {
+        setIsOptimizingStorage(true);
+        toast.info("Escaneando declaraciones con base64 para migrar a Cloud Storage y reducir gastos de Supabase...");
+
+        let migratedCount = 0;
+        let bytesSaved = 0;
+
+        try {
+            for (const client of clients) {
+                let clientModified = false;
+                const updatedDeclarations = (client.declarations || []).map((d) => {
+                    if (d.proof_file && d.proof_file.content && !d.proof_file.url) {
+                        clientModified = true;
+                        migratedCount++;
+                        bytesSaved += d.proof_file.size || d.proof_file.content.length;
+                        return d;
+                    }
+                    return d;
+                });
+
+                if (clientModified) {
+                    for (let i = 0; i < updatedDeclarations.length; i++) {
+                        const decl = updatedDeclarations[i];
+                        if (decl.proof_file && decl.proof_file.content && !decl.proof_file.url) {
+                            try {
+                                const fileName = decl.proof_file.name || `Declaracion_${decl.type || 'IVA'}_${client.ruc}_${decl.period}.pdf`;
+                                const cloudFile = await UnifiedStorageService.uploadFile(
+                                    decl.proof_file.content,
+                                    fileName,
+                                    'declaraciones',
+                                    decl.proof_file.metadata
+                                );
+                                updatedDeclarations[i] = {
+                                    ...decl,
+                                    proof_file: {
+                                        ...cloudFile,
+                                        content: null // 💡 Eliminar base64 de la BD
+                                    }
+                                };
+                            } catch (uploadErr) {
+                                console.warn("Fallo al migrar declaración a la nube:", decl.period, uploadErr);
+                            }
+                        }
+                    }
+
+                    await useAppStore.getState().updateClient(client.id, { declarations: updatedDeclarations });
+                }
+            }
+
+            const mbSaved = (bytesSaved / (1024 * 1024)).toFixed(2);
+            if (migratedCount > 0) {
+                toast.success(`🎉 ¡Optimización completada! ${migratedCount} comprobantes migrados a Cloud Storage. ${mbSaved} MB liberados de Supabase.`);
+            } else {
+                toast.info("✨ Todas tus declaraciones ya se encuentran 100% optimizadas en la nube. Cero gasto extra en Supabase.");
+            }
+        } catch (err: any) {
+            console.error("Error en optimización de almacenamiento:", err);
+            toast.error("Error durante la optimización: " + err.message);
+        } finally {
+            setIsOptimizingStorage(false);
+        }
+    };
 
     React.useEffect(() => {
         const loadHistory = async () => {
@@ -1233,6 +1383,25 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         </select>
                     )}
 
+                    {/* Cloud Storage Optimizer (Supabase Cost Saver) */}
+                    <button
+                        onClick={handleOptimizeSupabaseStorage}
+                        disabled={isOptimizingStorage}
+                        className={`px-3.5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-2 border shadow-sm ${
+                            isOptimizingStorage
+                                ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/50 cursor-wait animate-pulse'
+                                : 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border-indigo-500/30 hover:border-indigo-500/50 hover:text-white'
+                        }`}
+                        title="Migrar PDFs locales a Cloud Storage y liberar espacio en base de datos Supabase"
+                    >
+                        {isOptimizingStorage ? (
+                            <LucideIcons.RefreshCw size={12} className="animate-spin text-indigo-400" />
+                        ) : (
+                            <LucideIcons.CloudLightning size={12} className="text-indigo-400" />
+                        )}
+                        <span>{isOptimizingStorage ? 'Optimizando Nube...' : 'Optimizar Nube'}</span>
+                    </button>
+
                     {/* Workspace desk switcher */}
                     <button
                         onClick={() => setIsWorkspaceMode(!isWorkspaceMode)}
@@ -2123,22 +2292,108 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     Comprobante de Declaración PDF
                                                 </span>
                                             </div>
-                                            <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
-                                                {activeCellModal.declaration.proof_file?.url ? '✅ En Supabase Storage' : 'Registrado Local'}
+                                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${
+                                                activeCellModal.declaration.proof_file?.url 
+                                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20' 
+                                                    : activeCellModal.declaration.proof_file?.content 
+                                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' 
+                                                    : 'bg-slate-800 text-slate-400 border border-white/10'
+                                            }`}>
+                                                {activeCellModal.declaration.proof_file?.url ? (
+                                                    <>
+                                                        <LucideIcons.Cloud size={11} className="text-emerald-400" />
+                                                        <span>Almacenado en la Nube</span>
+                                                    </>
+                                                ) : activeCellModal.declaration.proof_file?.content ? (
+                                                    <>
+                                                        <LucideIcons.AlertTriangle size={11} className="text-amber-400" />
+                                                        <span>Local Base64</span>
+                                                    </>
+                                                ) : (
+                                                    <span>Sin Comprobante</span>
+                                                )}
                                             </span>
                                         </div>
 
-                                        <div className="text-xs font-mono text-slate-400 truncate">
-                                            Archivo: <span className="text-slate-200">{activeCellModal.declaration.proof_file?.name || `declaracion_${activeCellModal.period}.pdf`}</span>
+                                        <div className="text-xs font-mono text-slate-400 flex items-center justify-between">
+                                            <span className="truncate max-w-[280px]">
+                                                Archivo: <span className="text-slate-200 font-semibold">{activeCellModal.declaration.proof_file?.name || `declaracion_${activeCellModal.period}.pdf`}</span>
+                                            </span>
+                                            {activeCellModal.declaration.proof_file?.size && (
+                                                <span className="text-[10px] text-slate-500 font-mono">
+                                                    {(activeCellModal.declaration.proof_file.size / 1024).toFixed(1)} KB
+                                                </span>
+                                            )}
                                         </div>
 
-                                        {activeCellModal.declaration.proof_file?.url && (
-                                            <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-950/60 max-h-48">
+                                        {activeCellModal.declaration.proof_file?.url ? (
+                                            <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-950/60 max-h-48 relative group">
                                                 <iframe src={activeCellModal.declaration.proof_file.url} className="w-full h-44 border-none" title="Vista Previa SRI" />
+                                                <a 
+                                                    href={activeCellModal.declaration.proof_file.url} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="absolute top-2 right-2 p-1.5 bg-slate-900/80 hover:bg-slate-900 border border-white/20 rounded-lg text-slate-300 hover:text-white transition-all shadow-md"
+                                                    title="Abrir en pestaña nueva"
+                                                >
+                                                    <LucideIcons.ExternalLink size={12} />
+                                                </a>
                                             </div>
-                                        )}
+                                        ) : activeCellModal.declaration.proof_file?.content ? (
+                                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-center justify-between">
+                                                <span className="text-[11px]">Este PDF está guardado en base64 local. Puedes migrarlo a la nube para reducir el gasto de Supabase.</span>
+                                                <button
+                                                    onClick={async () => {
+                                                        const fakeEvent = {
+                                                            target: {
+                                                                files: [
+                                                                    new File(
+                                                                        [new Blob([activeCellModal.declaration.proof_file!.content!], { type: 'application/pdf' })],
+                                                                        activeCellModal.declaration.proof_file?.name || `declaracion_${activeCellModal.period}.pdf`,
+                                                                        { type: 'application/pdf' }
+                                                                    )
+                                                                ]
+                                                            }
+                                                        } as any;
+                                                        await handleUploadProofPdf(fakeEvent);
+                                                    }}
+                                                    disabled={isUploadingProof}
+                                                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                                                >
+                                                    <LucideIcons.CloudUpload size={12} />
+                                                    Migrar
+                                                </button>
+                                            </div>
+                                        ) : null}
 
-                                        <div className="flex items-center gap-2 pt-1">
+                                        {/* Acciones del Comprobante */}
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                                            {/* Input para subir o reemplazar PDF directamente a la nube */}
+                                            <label className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer transition-all border ${
+                                                isUploadingProof 
+                                                    ? 'bg-slate-800 text-slate-500 border-white/5 cursor-wait' 
+                                                    : 'bg-indigo-600/20 hover:bg-indigo-600/30 border-indigo-500/40 text-indigo-300 hover:text-white shadow-sm'
+                                            }`}>
+                                                {isUploadingProof ? (
+                                                    <>
+                                                        <LucideIcons.RefreshCw size={14} className="animate-spin text-indigo-400" />
+                                                        <span>Subiendo a la Nube...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <LucideIcons.UploadCloud size={14} />
+                                                        <span>{activeCellModal.declaration.proof_file ? 'Reemplazar en Nube' : 'Subir PDF a la Nube'}</span>
+                                                    </>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept=".pdf"
+                                                    disabled={isUploadingProof}
+                                                    onChange={handleUploadProofPdf}
+                                                    className="hidden"
+                                                />
+                                            </label>
+
                                             {activeCellModal.declaration.proof_file && (
                                                 <button
                                                     onClick={async () => {
@@ -2149,7 +2404,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         if (ok) {
                                                             toast.success("Comprobante descargado correctamente");
                                                         } else {
-                                                            toast.error("El archivo del comprobante no se pudo decodificar");
+                                                            toast.error("El archivo del comprobante no se pudo descargar");
                                                         }
                                                     }}
                                                     className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
@@ -2158,6 +2413,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     Descargar PDF
                                                 </button>
                                             )}
+
                                             <button
                                                 onClick={() => {
                                                     const decl = activeCellModal.declaration;
@@ -2165,10 +2421,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     setActiveCellModal(null);
                                                     onPreviewReceipt(clientObj, decl);
                                                 }}
-                                                className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+                                                className="py-2.5 px-4 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
                                             >
                                                 <LucideIcons.Eye size={14} />
-                                                Ver Previa Completa
+                                                Ver Detalle
                                             </button>
                                         </div>
                                     </div>

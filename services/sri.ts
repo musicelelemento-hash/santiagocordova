@@ -515,10 +515,31 @@ export const downloadStoredFile = async (fileObj: any, defaultName: string = 'co
 
         // Caso 1: Es una URL HTTP, HTTPS o Blob directamente
         if (content.startsWith('http://') || content.startsWith('https://') || content.startsWith('blob:')) {
+            try {
+                // Descargar el blob real para forzar la descarga nativa del navegador con su nombre correcto
+                const res = await fetch(content);
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const blobUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                    return true;
+                }
+            } catch (fetchErr) {
+                console.warn("Descarga directa vía fetch falló, abriendo en ventana:", fetchErr);
+            }
+
+            // Fallback: Abrir en pestaña nueva si el fetch directo fue bloqueado
             const a = document.createElement('a');
             a.href = content;
             a.download = fileName;
             a.target = '_blank';
+            a.rel = 'noopener noreferrer';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
