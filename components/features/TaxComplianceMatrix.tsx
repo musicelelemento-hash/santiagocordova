@@ -1203,8 +1203,141 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         }
     };
 
+    const totalFiltered = filteredClients.length;
+    const activePeriodForKpi = periods[0] || '';
+    const mainObTypeForKpi = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
+
+    const compliantClientsCount = useMemo(() => {
+        return filteredClients.filter(c => isClientUpToDate(c)).length;
+    }, [filteredClients, periods]);
+
+    const complianceRate = totalFiltered > 0 ? Math.round((compliantClientsCount / totalFiltered) * 100) : 100;
+
+    const pendingDeclarationsCount = useMemo(() => {
+        return filteredClients.filter(c => !isClientCompletedForPeriod(c, activePeriodForKpi)).length;
+    }, [filteredClients, activePeriodForKpi]);
+
+    const cloudStoredPdfsCount = useMemo(() => {
+        let count = 0;
+        filteredClients.forEach(c => {
+            (c.declarations || []).forEach(d => {
+                if (d.proof_file && (d.proof_file.url || d.proof_file.name)) count++;
+            });
+        });
+        return count;
+    }, [filteredClients]);
+
     return (
         <div className="space-y-6 animate-fade-in">
+            {/* Executive Stitch Glassmorphic KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Card 1: Total Clientes */}
+                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 relative overflow-hidden group hover:border-indigo-500/40 transition-all shadow-lg">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all" />
+                    <div className="flex justify-between items-start relative z-10">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Total Clientes</span>
+                        <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                            <LucideIcons.Users size={16} />
+                        </div>
+                    </div>
+                    <div className="mt-3 relative z-10 flex items-baseline gap-2">
+                        <span className="text-2xl font-black text-white font-mono">{totalFiltered}</span>
+                        <span className="text-[10px] font-bold text-slate-400">
+                            {matrixMode === 'RENTA' ? 'Renta Activa' : frequency}
+                        </span>
+                    </div>
+                    <div className="mt-2 text-[10px] font-medium text-slate-400/80 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span>Portafolio fiscal en seguimiento</span>
+                    </div>
+                </div>
+
+                {/* Card 2: % Al Día */}
+                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 relative overflow-hidden group hover:border-emerald-500/40 transition-all shadow-lg">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all" />
+                    <div className="flex justify-between items-start relative z-10">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 font-mono">% Cumplimiento SRI</span>
+                        <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                            <LucideIcons.ShieldCheck size={16} />
+                        </div>
+                    </div>
+                    <div className="mt-3 relative z-10 flex items-baseline gap-2">
+                        <span className="text-2xl font-black text-emerald-400 font-mono">{complianceRate}%</span>
+                        <span className="text-[10px] font-bold text-slate-400">({compliantClientsCount} al día)</span>
+                    </div>
+                    <div className="mt-2 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div 
+                            className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500" 
+                            style={{ width: `${complianceRate}%` }} 
+                        />
+                    </div>
+                </div>
+
+                {/* Card 3: Pendientes del Periodo */}
+                <div className={`bg-slate-900/40 backdrop-blur-xl border rounded-2xl p-4 relative overflow-hidden group transition-all shadow-lg ${
+                    pendingDeclarationsCount > 0 
+                        ? 'border-amber-500/30 hover:border-amber-500/60 bg-amber-500/5' 
+                        : 'border-white/10 hover:border-emerald-500/40'
+                }`}>
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all" />
+                    <div className="flex justify-between items-start relative z-10">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 font-mono">Pendientes {activePeriodForKpi}</span>
+                        <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                            <LucideIcons.Clock size={16} />
+                        </div>
+                    </div>
+                    <div className="mt-3 relative z-10 flex items-baseline gap-2">
+                        <span className="text-2xl font-black text-amber-400 font-mono">{pendingDeclarationsCount}</span>
+                        <span className="text-[10px] font-bold text-slate-400">por declarar</span>
+                    </div>
+                    <div className="mt-2 text-[10px] font-semibold text-amber-400/90 flex items-center gap-1.5">
+                        {pendingDeclarationsCount > 0 ? (
+                            <>
+                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                                <span>Requiere acción en SRI</span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                <span>Periodo completamente al día</span>
+                            </>
+                        )}
+                    </div>
+                </div>
+
+                {/* Card 4: Cloud Storage Sync (R2 / Supabase) */}
+                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 relative overflow-hidden group hover:border-sky-500/40 transition-all shadow-lg flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/20 transition-all" />
+                    <div>
+                        <div className="flex justify-between items-start relative z-10">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-sky-400 font-mono">Bóveda Nube R2</span>
+                            <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                                <LucideIcons.UploadCloud size={16} />
+                            </div>
+                        </div>
+                        <div className="mt-3 relative z-10 flex items-baseline gap-2">
+                            <span className="text-2xl font-black text-sky-400 font-mono">{cloudStoredPdfsCount}</span>
+                            <span className="text-[10px] font-bold text-slate-400">PDFs Respaldados</span>
+                        </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between">
+                        <span className="text-[9px] font-mono text-emerald-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            $0 Egress Cloudflare
+                        </span>
+                        <button
+                            onClick={handleOptimizeSupabaseStorage}
+                            disabled={isOptimizingStorage}
+                            className="text-[9px] font-black uppercase tracking-wider text-sky-300 hover:text-white bg-sky-500/20 hover:bg-sky-500/30 px-2 py-0.5 rounded-lg border border-sky-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                            title="Optimizar almacenamiento y migrar Base64 restante a la nube"
+                        >
+                            <LucideIcons.Sparkles size={10} />
+                            <span>{isOptimizingStorage ? '...' : 'Optimizar'}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Header / Controls */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white/95 dark:bg-slate-900/40 backdrop-blur-xl p-5 rounded-[2rem] border border-slate-200/50 dark:border-white/5 shadow-xl relative overflow-hidden">
                 <div className="flex items-center gap-4">
