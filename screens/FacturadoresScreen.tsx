@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { useDropzone } from 'react-dropzone';
 import {
     ShoppingBag, PhoneCall, AlertTriangle, CheckCircle2, ArrowRight,
@@ -43,7 +42,6 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
-    const parentRef = useRef<HTMLDivElement>(null);
 
     // KPI Counters from local store for ultra-fast instant UI responsiveness
     const allFacturadorClients = useMemo(() => {
@@ -121,13 +119,6 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
         const debounce = setTimeout(() => fetchFacturadores(), 300);
         return () => { isMounted = false; clearTimeout(debounce); };
     }, [page, searchTerm, filterStatus]);
-
-    const rowVirtualizer = useVirtualizer({
-        count: displayClients.length,
-        getScrollElement: () => parentRef.current,
-        estimateSize: () => 120, // estimated row height
-        overscan: 5,
-    });
 
     const togglePasswordVisibility = (id: string) => {
         setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
@@ -496,11 +487,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {rowVirtualizer.getVirtualItems().length > 0 && (
-                                    <tr style={{ height: `${rowVirtualizer.getVirtualItems()[0].start}px` }} />
-                                )}
-                                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                                    const client = displayClients[virtualRow.index];
+                                {displayClients.map((client) => {
                                     if (!client) return null;
                                     const config = client.billingPlan || client.facturadorConfig || {
                                         programName: 'Plan Particular',
@@ -721,9 +708,6 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                         </tr>
                                     );
                                 })}
-                                {rowVirtualizer.getVirtualItems().length > 0 && (
-                                    <tr style={{ height: `${rowVirtualizer.getTotalSize() - (rowVirtualizer.getVirtualItems()[rowVirtualizer.getVirtualItems().length - 1].end)}px` }} />
-                                )}
                             </tbody>
                         </table>
                     </div>
