@@ -58,17 +58,46 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     // Category Tabs
     const [activeCategory, setActiveCategory] = useState<MainCategory>('ecuafact');
 
+    const getTodayIso = () => new Date().toISOString().split('T')[0];
+    const getYesterdayIso = () => {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        return d.toISOString().split('T')[0];
+    };
+
     // Selected Combo / Pricing State
     const [programName, setProgramName] = useState('ECUAFACT 60 Docs + Firma Electrónica');
     const [documentCount, setDocumentCount] = useState<number | ''>(60);
     const [price, setPrice] = useState<number | ''>(55.00);
     const [expirationYears, setExpirationYears] = useState<number>(1);
+    const [saleDate, setSaleDate] = useState<string>(getTodayIso());
+    const [customExpirationDate, setCustomExpirationDate] = useState<string>(() => {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() + 1);
+        return d.toISOString().split('T')[0];
+    });
     const [includesSignature, setIncludesSignature] = useState<boolean>(true);
     const [shouldEmitSri, setShouldEmitSri] = useState<boolean>(true);
     const [webUrl, setWebUrl] = useState('https://app.ecuafact.com');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [providerName, setProviderName] = useState('Santiago Córdova');
+
+    // Auto-recalculate expiration date when saleDate or expirationYears changes
+    useEffect(() => {
+        if (saleDate) {
+            const parts = saleDate.split('-').map(Number);
+            if (parts.length === 3) {
+                const [y, m, day] = parts;
+                const d = new Date(y, m - 1, day);
+                d.setFullYear(d.getFullYear() + (expirationYears || 1));
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                setCustomExpirationDate(`${yyyy}-${mm}-${dd}`);
+            }
+        }
+    }, [saleDate, expirationYears]);
 
     // Identity Documents
     const [idCardFront, setIdCardFront] = useState<StoredFile | null>(null);
@@ -328,7 +357,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             return;
         }
 
-        const expDate = calculateExpirationDate();
+        const expDate = customExpirationDate || calculateExpirationDate();
 
         const newFacturadorConfig: FacturadorConfig = {
             programName,
@@ -336,6 +365,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             username: username || clientToProcess.ruc,
             password: password || clientToProcess.sriPassword,
             expirationDate: expDate,
+            startDate: saleDate,
             documentStatus: activeCategory === 'firma' ? `Firma ${expirationYears} Año(s)` : (documentCount ? `${documentCount} Docs / Anual` : 'Plan Ilimitado'),
             documentCount: typeof documentCount === 'number' ? documentCount : undefined,
             price: typeof price === 'number' ? price : undefined,
@@ -350,6 +380,8 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             ...clientToProcess,
             facturadorConfig: newFacturadorConfig,
             billingPlan: newFacturadorConfig,
+            signatureExpirationDate: expDate,
+            signatureIssueDate: saleDate,
             clientType: isSoloPlan ? 'solo_plan' : 'completo',
             requiresDeclarations: !isSoloPlan,
             idCardFront: idCardFront || clientToProcess.idCardFront,
@@ -920,7 +952,69 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                         )}
                     </div>
 
-                    {/* ── 3. AUTORIZACIÓN ESPECIAL ECUAFACT (DOCX/PRINT) ── */}
+                    {/* ── 3. CONTROL DE FECHAS: EMISIÓN & VENCIMIENTO ── */}
+                    <div className="p-4 bg-slate-900/60 rounded-3xl border border-white/10 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2 font-mono">
+                                <Calendar size={15} className="text-[#10b981]" />
+                                Fechas de Emisión & Caducidad
+                            </label>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                                Control de Vigencia Exacta
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {/* Fecha de Venta / Emisión */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha de Venta / Emisión</span>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSaleDate(getTodayIso())}
+                                            className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${
+                                                saleDate === getTodayIso() ? 'bg-[#10b981] text-slate-950 font-black' : 'bg-slate-800 text-slate-400 hover:text-white'
+                                            }`}
+                                        >
+                                            Hoy
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSaleDate(getYesterdayIso())}
+                                            className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all cursor-pointer ${
+                                                saleDate === getYesterdayIso() ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-400 hover:text-white'
+                                            }`}
+                                        >
+                                            Ayer
+                                        </button>
+                                    </div>
+                                </div>
+                                <input
+                                    type="date"
+                                    value={saleDate}
+                                    onChange={(e) => setSaleDate(e.target.value)}
+                                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs font-mono font-bold text-white outline-none focus:border-[#10b981]"
+                                />
+                            </div>
+
+                            {/* Fecha de Caducidad Exacta */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha de Caducidad / Vencimiento</span>
+                                    <span className="text-[9px] font-mono text-[#10b981] font-bold">{expirationYears} Año(s) de Vigencia</span>
+                                </div>
+                                <input
+                                    type="date"
+                                    value={customExpirationDate}
+                                    onChange={(e) => setCustomExpirationDate(e.target.value)}
+                                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-[#10b981]/30 rounded-xl text-xs font-mono font-bold text-emerald-400 outline-none focus:border-[#10b981]"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── 4. AUTORIZACIÓN ESPECIAL ECUAFACT (DOCX/PRINT) ── */}
                     {activeCategory === 'ecuafact' && (
                         <div className="p-4 bg-slate-900/80 border border-[#10b981]/30 rounded-3xl space-y-3 animate-in fade-in duration-300">
                             <div className="flex items-center justify-between">
