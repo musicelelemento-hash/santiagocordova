@@ -1291,36 +1291,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
 
             {/* ══════════════════════════════════════════════════════════════
-                CALENDARIO TRIBUTARIO INTERACTIVO POR RUC
+                CALENDARIO TRIBUTARIO INTERACTIVO POR RUC (Luminous Equity)
             ══════════════════════════════════════════════════════════════ */}
-            <section id="calendario-ruc" className={`py-24 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-100'}`}>
-                <div className="absolute inset-0 bg-dot-matrix opacity-10 pointer-events-none" />
-                <div className="max-w-4xl mx-auto px-6 relative z-10">
+            <section id="calendario-ruc" className={`py-28 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0b1326]' : 'bg-slate-100'}`}>
+                <div className="absolute inset-0 tactical-grid opacity-15 pointer-events-none" />
+                <div className="max-w-5xl mx-auto px-6 relative z-10">
                     <Reveal>
-                        <div className="text-center mb-12">
-                            <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em] mb-5">— Obligaciones al Día</div>
-                            <h2 className={`text-4xl md:text-6xl font-editorial tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
+                        <div className="text-center mb-16">
+                            <div className="text-[10px] font-bold text-[#10b981] uppercase tracking-[0.4em] mb-5 font-mono">— Obligaciones al Día</div>
+                            <h2 className={`text-4xl md:text-7xl font-editorial tracking-tighter ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
                                 CALENDARIO SRI <br />
                                 <span className="text-shimmer-elite">PERSONALIZADO</span>
                             </h2>
-                            <p className={`text-lg font-light max-w-xl mx-auto ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                Selecciona el noveno dígito de tu RUC o Cédula y obtén tus fechas límites mensuales exactas.
+                            <p className={`text-lg font-light max-w-xl mx-auto ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                Ingresa tu Cédula/RUC o selecciona el noveno dígito para obtener tu fecha límite mensual exacta y evitar multas.
                             </p>
                         </div>
                     </Reveal>
 
                     <Reveal delay={100}>
-                        <SpotlightCard theme={theme} className="glass-premium-2 shadow-2xl relative">
+                        <SpotlightCard theme={theme} className="glass-premium-2 shadow-2xl relative border-[#10b981]/30">
+                            {/* Silk Glow Trace */}
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#10b981] to-transparent animate-scan pointer-events-none" />
+
                             <div className="p-8 md:p-12">
                                 <div className="space-y-8">
                                     {/* Selector de dígitos y Validador de RUC */}
                                     <div className="space-y-6 text-center">
                                         {/* Campo de búsqueda/validación de RUC interactivo */}
                                         <div className="max-w-md mx-auto space-y-2">
-                                            <label htmlFor="calendar-ruc-input" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Valida tu Cédula o RUC para el SRI</label>
+                                            <label htmlFor="calendar-ruc-input" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center font-mono">Valida tu Cédula o RUC en tiempo real</label>
                                             <div className="relative">
                                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                                     <Search size={16} className={`${rucValidationMsg.type === 'success' ? 'text-emerald-400' : rucValidationMsg.type === 'error' ? 'text-red-400' : 'text-slate-400'}`} />
+                                                     <Search size={16} className={`${rucValidationMsg.type === 'success' ? 'text-[#10b981]' : rucValidationMsg.type === 'error' ? 'text-rose-400' : 'text-slate-500'}`} />
                                                 </div>
                                                 <input 
                                                     id="calendar-ruc-input"
@@ -1329,10 +1332,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                     value={calcRucInput}
                                                     onChange={e => setCalcRucInput(e.target.value.replace(/\D/g, ''))}
                                                     placeholder="Escribe tu Cédula o RUC (ej. 0702706813001)"
-                                                    className={`w-full pl-11 pr-10 py-3 bg-white/5 border rounded-2xl text-xs font-semibold outline-none transition-all placeholder-slate-500 font-mono tracking-wider
-                                                        ${rucValidationMsg.type === 'success' ? 'border-emerald-500/50 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10' :
-                                                          rucValidationMsg.type === 'error' ? 'border-red-500/50 focus:border-red-500 focus:ring-4 focus:ring-red-500/10' :
-                                                          'border-white/10 focus:border-[#00A896] focus:ring-4 focus:ring-[#00A896]/10'
+                                                    className={`w-full pl-11 pr-10 py-3.5 bg-[#051424] border rounded-2xl text-xs font-semibold outline-none transition-all placeholder-slate-500 font-mono tracking-wider text-white
+                                                        ${rucValidationMsg.type === 'success' ? 'border-[#10b981]/60 focus:border-[#10b981] focus:ring-4 focus:ring-[#10b981]/10' :
+                                                          rucValidationMsg.type === 'error' ? 'border-rose-500/50 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10' :
+                                                          'border-white/10 focus:border-[#10b981] focus:ring-4 focus:ring-[#10b981]/10'
                                                         }`}
                                                 />
                                                 {calcRucInput && (
@@ -1349,30 +1352,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                 <motion.div 
                                                     initial={{ opacity: 0, y: -5 }} 
                                                     animate={{ opacity: 1, y: 0 }}
-                                                    className={`text-left p-4 rounded-2xl border text-[11px] leading-relaxed
-                                                        ${rucValidationMsg.type === 'success' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400 font-bold' : 'bg-red-500/5 border-red-500/20 text-red-400 font-semibold'}`}
+                                                    className={`text-left p-4 rounded-2xl border text-[11px] leading-relaxed font-mono
+                                                        ${rucValidationMsg.type === 'success' ? 'bg-[#10b981]/10 border-[#10b981]/30 text-[#10b981] font-bold' : 'bg-rose-500/10 border-rose-500/30 text-rose-400 font-semibold'}`}
                                                 >
                                                     <div className="font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                                        {rucValidationMsg.type === 'success' ? <Check size={12} className="stroke-[3]" /> : <AlertTriangle size={12} />}
+                                                        {rucValidationMsg.type === 'success' ? <Check size={14} className="stroke-[3]" /> : <AlertTriangle size={14} />}
                                                         {rucValidationMsg.text}
                                                     </div>
-                                                    {rucValidationMsg.details && <div className="mt-1.5 text-slate-400 font-light font-sans">{rucValidationMsg.details}</div>}
+                                                    {rucValidationMsg.details && <div className="mt-1.5 text-slate-300 font-light font-sans">{rucValidationMsg.details}</div>}
                                                  </motion.div>
                                             )}
                                         </div>
 
-                                        <div className="w-full h-[1.5px] bg-slate-200/5 dark:bg-white/5 my-4"></div>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center">O selecciona manualmente tu noveno dígito</p>
+                                        <div className="w-full h-[1px] bg-white/10 my-4"></div>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center font-mono">O selecciona manualmente tu noveno dígito</p>
 
                                         <div className="flex flex-wrap justify-center gap-2 md:gap-3">
                                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(digit => (
                                                 <button
                                                     key={digit}
                                                     onClick={() => setSelectedRucDigit(digit)}
-                                                    className={`w-12 h-12 rounded-xl flex items-center justify-center font-mono text-base font-bold transition-all hover:scale-105 active:scale-95
+                                                    className={`w-12 h-12 rounded-xl flex items-center justify-center font-mono text-lg font-bold transition-all hover:scale-105 active:scale-95
                                                         ${selectedRucDigit === digit
-                                                            ? 'bg-[#00A896] text-white shadow-lg shadow-teal-500/30'
-                                                            : `${theme === 'dark' ? 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 hover:text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`
+                                                            ? 'bg-[#10b981] text-slate-950 shadow-lg shadow-[#10b981]/30 font-extrabold'
+                                                            : `${theme === 'dark' ? 'bg-[#051424] text-slate-300 border border-white/10 hover:bg-white/10 hover:text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'}`
                                                         }`}
                                                 >
                                                     {digit}
@@ -1384,53 +1387,53 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     {/* Línea de tiempo y resultados */}
                                     <div className={`p-6 md:p-8 rounded-3xl border text-left transition-all duration-500
                                         ${rucValidationMsg.type === 'success' 
-                                            ? 'border-emerald-500/30 bg-emerald-500/[0.02] shadow-[0_0_30px_rgba(16,185,129,0.05)]' 
-                                            : theme === 'dark' ? 'bg-black/30 border-white/5' : 'bg-white border-slate-200/80 shadow-md'
+                                            ? 'border-[#10b981]/40 bg-[#10b981]/5 shadow-[0_0_30px_rgba(16,185,129,0.1)]' 
+                                            : theme === 'dark' ? 'bg-[#051424] border-white/10' : 'bg-white border-slate-200/80 shadow-md'
                                         }`}>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                                             <div>
-                                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-full text-[9px] font-bold uppercase tracking-widest mb-4">
-                                                    <AlertTriangle size={10} /> Fechas Límites Mensuales
+                                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#f59e0b]/15 border border-[#f59e0b]/30 text-[#f59e0b] rounded-full text-[9px] font-bold uppercase tracking-widest mb-4 font-mono">
+                                                    <AlertTriangle size={12} /> Fechas Límites Mensuales
                                                 </div>
-                                                <h4 className={`text-2xl font-editorial tracking-tight mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
-                                                    Vence el día <span className="text-[#00A896]">{deadline.day}</span> de cada mes
+                                                <h4 className={`text-2xl md:text-3xl font-editorial tracking-tight mb-3 ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>
+                                                    Vence el día <span className="text-[#10b981] font-mono font-bold">{deadline.day}</span> de cada mes
                                                 </h4>
-                                                <p className={`text-xs font-light leading-relaxed mb-4 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                                                    Si el día de vencimiento cae en fin de semana o feriado, la fecha límite se traslada al siguiente día hábil de acuerdo a la normativa del SRI.
+                                                <p className={`text-xs font-light leading-relaxed mb-6 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
+                                                    Si la fecha cae en fin de semana o feriado, el plazo se extiende automáticamente al siguiente día hábil oficial del SRI.
                                                 </p>
                                                 <div className="flex gap-2">
                                                     <a
                                                         id="calendar-agendar-recordatorios"
-                                                        href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20mi%20RUC%20termina%20en%20d%C3%ADgito%20${selectedRucDigit}%20y%20vence%20el%20${deadline.day}%20de%20cada%20mes.%20Quisiera%20asesoramiento%20tributario.`}
+                                                        href={`https://wa.me/${phoneNumber}?text=Hola%20Ing.%20Santiago%20C%C3%B3rdova,%20mi%20RUC%20termina%20en%20d%C3%ADgito%20${selectedRucDigit}%20y%20vence%20el%20${deadline.day}%20de%20cada%20mes.%20Quisiera%20asesoramiento%20tributario.`}
                                                         target="_blank"
                                                         rel="noreferrer"
-                                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00A896] hover:bg-teal-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105"
+                                                        className="inline-flex items-center gap-2 px-5 py-3 bg-[#10b981] hover:bg-[#04B17B] text-slate-950 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all hover:scale-105 font-mono shadow-lg shadow-[#10b981]/20"
                                                     >
-                                                        <CalendarClock size={12} /> Agendar Recordatorios
+                                                        <CalendarClock size={14} /> Agendar Recordatorios SRI
                                                     </a>
                                                 </div>
                                             </div>
 
                                             {/* Visual Timeline Animation */}
-                                            <div className="relative h-44 flex flex-col justify-between py-2 border-l-2 border-slate-700/30 pl-6">
-                                                <div className="absolute top-0 bottom-0 left-0 w-[2px] bg-gradient-to-b from-[#00A896] to-transparent pointer-events-none" />
+                                            <div className="relative h-48 flex flex-col justify-between py-2 border-l-2 border-slate-700/40 pl-6 font-mono">
+                                                <div className="absolute top-0 bottom-0 left-0 w-[2px] bg-gradient-to-b from-[#10b981] to-transparent pointer-events-none" />
                                                 
                                                 <div className="relative group">
-                                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-[#00A896] border-4 border-[#020617] transition-all" />
-                                                    <div className="text-[9px] font-bold text-[#00A896] uppercase tracking-wider">Inicio del Mes</div>
-                                                    <p className="text-[10px] text-slate-500 font-light mt-0.5">Emisión de comprobantes y recolección de facturas de compras.</p>
+                                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-[#10b981] border-4 border-[#0b1326] transition-all shadow-[0_0_8px_#10b981]" />
+                                                    <div className="text-[9px] font-bold text-[#10b981] uppercase tracking-wider">Inicio del Mes</div>
+                                                    <p className="text-[10px] text-slate-300 font-sans font-light mt-0.5">Emisión de comprobantes y consolidación de compras.</p>
                                                 </div>
                                                 
                                                 <div className="relative group">
-                                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-amber-500 border-4 border-[#020617] animate-pulse" />
-                                                    <div className="text-[9px] font-bold text-amber-500 uppercase tracking-wider">Día {deadline.day} del mes</div>
-                                                    <p className="text-[10px] text-slate-500 font-light mt-0.5">Fecha límite improrrogable para enviar declaración de IVA y Retenciones.</p>
+                                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-[#f59e0b] border-4 border-[#0b1326] animate-pulse shadow-[0_0_8px_#f59e0b]" />
+                                                    <div className="text-[9px] font-bold text-[#f59e0b] uppercase tracking-wider">Día {deadline.day} del mes</div>
+                                                    <p className="text-[10px] text-slate-300 font-sans font-light mt-0.5">Fecha límite improrrogable para enviar declaración SRI.</p>
                                                 </div>
                                                 
                                                 <div className="relative group">
-                                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-red-600 border-4 border-[#020617]" />
-                                                    <div className="text-[9px] font-bold text-red-600 uppercase tracking-wider">A partir del día {deadline.day + 1}</div>
-                                                    <p className="text-[10px] text-slate-500 font-light mt-0.5">Generación automática de multas por declaración tardía (SRI).</p>
+                                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-rose-500 border-4 border-[#0b1326]" />
+                                                    <div className="text-[9px] font-bold text-rose-400 uppercase tracking-wider">A partir del día {deadline.day + 1}</div>
+                                                    <p className="text-[10px] text-slate-400 font-sans font-light mt-0.5">Generación automática de multas por mora tributaria.</p>
                                                 </div>
                                             </div>
                                         </div>
