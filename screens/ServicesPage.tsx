@@ -414,41 +414,41 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                 </div>
             )}
 
-            {/* Hero Section */}
-            <div className="relative pt-40 pb-20 px-6 rounded-b-[4rem] overflow-hidden text-center bg-[#020617] border-b border-white/10 shadow-2xl">
+            {/* Hero Section (Luminous Equity Design) */}
+            <div className="relative pt-40 pb-20 px-6 rounded-b-[4rem] overflow-hidden text-center bg-[#0b1326] border-b border-white/10 shadow-2xl">
                 {/* Secondary Aurora Effects */}
                 <div className="absolute -inset-[10px] opacity-40 z-[0] pointer-events-none">
-                    <div className="aurora-blob bg-[#00A896]/20 top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full animate-float" />
-                    <div className="aurora-blob bg-[#028090]/25 bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full animate-float-delayed" />
+                    <div className="aurora-blob bg-[#10b981]/20 top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full animate-float" />
+                    <div className="aurora-blob bg-[#6366f1]/25 bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full animate-float-delayed" />
                 </div>
                 <div className="relative z-10 max-w-4xl mx-auto">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[#00A896] text-xs font-bold uppercase tracking-widest mb-6 backdrop-blur-md">
-                        <LucideIcons.Globe size={12} /> Ecosistema Digital 2026
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#10b981]/10 border border-[#10b981]/30 text-[#10b981] text-xs font-bold uppercase tracking-widest mb-6 backdrop-blur-md font-mono">
+                        <LucideIcons.Globe size={14} /> CATÁLOGO DE SOLUCIONES TRIBUTARIAS 2026
                     </div>
-                    <h1 className="text-5xl md:text-8xl font-editorial tracking-tight text-white mb-6 leading-none">
-                        PORTAFOLIO DE <br /> <span className="text-shimmer-elite">SERVICIOS.</span>
+                    <h1 className="text-4xl sm:text-6xl md:text-8xl font-editorial tracking-tight text-white mb-6 leading-none">
+                        SERVICIOS & <br /> <span className="text-shimmer-elite">FIRMA ELECTRÓNICA.</span>
                     </h1>
-                    <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mt-4 font-light tracking-wide leading-relaxed">
-                        Diseñado por el Ing. Santiago Córdova. Optimiza tu perfil tributario con nuestro simulador interactivo y contrata firmas electrónicas o declaraciones de forma ágil y segura.
+                    <p className="text-slate-300 text-base md:text-lg max-w-2xl mx-auto mt-4 font-light tracking-wide leading-relaxed">
+                        Liderazgo contable por el Ing. Santiago Córdova. Optimiza tu perfil tributario con nuestro simulador inteligente y contrata firmas electrónicas o declaraciones de forma ágil y segura.
                     </p>
                 </div>
             </div>
 
             {/* --- CALCULADORA TRIBUTARIA INTERACTIVA (Top Highlight) --- */}
             <div className="max-w-5xl mx-auto px-6 -mt-10 mb-16 relative z-30">
-                <SpotlightCard className="glass-premium-2 shadow-2xl relative" popular={true}>
-                    {/* Archive Scan Effect */}
-                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#00A896] to-transparent animate-scan pointer-events-none" />
+                <SpotlightCard className="glass-premium-2 shadow-2xl relative border-[#10b981]/30" popular={true}>
+                    {/* Silk Glow Top Trace */}
+                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#10b981] to-transparent animate-scan pointer-events-none" />
                     
                     <div className="p-8 md:p-12">
                         <div className="flex flex-col lg:flex-row gap-8 items-center justify-between">
                             {/* Left Info */}
                             <div className="max-w-md text-left">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] rounded-full text-[10px] font-bold uppercase tracking-widest mb-4">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#10b981]/15 border border-[#10b981]/30 text-[#10b981] rounded-full text-[10px] font-bold uppercase tracking-widest mb-4 font-mono">
                                     <LucideIcons.Activity size={12} /> Inteligencia Fiscal SRI
                                 </div>
                                 <h3 className="text-2xl md:text-3xl font-editorial text-white mb-3">Simula tu Perfil Tributario</h3>
-                                <p className="text-xs text-slate-400 leading-relaxed font-light">
+                                <p className="text-xs text-slate-300 leading-relaxed font-light">
                                     Introduce tu actividad contable e ingresos estimados anuales. Nuestro sistema te indicará en qué régimen tributario encajas y cuál es la estructura de precios idónea para tu caso.
                                 </p>
                             </div>
@@ -457,8 +457,8 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                             <div className="w-full lg:w-auto flex-1 max-w-lg space-y-6">
                                 {/* Activity Select */}
                                 <div className="space-y-2">
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left pl-2">Tipo de Actividad Económica</label>
-                                    <div className="grid grid-cols-3 gap-2 bg-black/40 p-1 rounded-2xl border border-white/5">
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider text-left pl-2 font-mono">Tipo de Actividad Económica</label>
+                                    <div className="grid grid-cols-3 gap-2 bg-[#051424] p-1.5 rounded-2xl border border-white/10">
                                         {[
                                             { id: 'comercial', label: 'Comercio / RIMPE', icon: LucideIcons.Store },
                                             { id: 'profesional', label: 'Serv. Profesional', icon: LucideIcons.User },
@@ -468,14 +468,14 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                                 key={opt.id}
                                                 type="button"
                                                 onClick={() => setCalcActividad(opt.id as any)}
-                                                className={`py-3 px-2 rounded-xl text-[10px] font-semibold uppercase tracking-wider flex flex-col items-center gap-1 transition-all ${
+                                                className={`py-3 px-2 rounded-xl text-[10px] font-bold uppercase tracking-wider flex flex-col items-center gap-1 transition-all ${
                                                     calcActividad === opt.id 
-                                                        ? 'bg-[#00A896] text-white shadow-lg' 
+                                                        ? 'bg-[#10b981] text-slate-950 shadow-lg font-extrabold' 
                                                         : 'text-slate-400 hover:text-white hover:bg-white/5'
                                                 }`}
                                             >
                                                 <opt.icon size={16} />
-                                                <span className="truncate w-full text-center">{opt.label}</span>
+                                                <span className="truncate w-full text-center font-sans">{opt.label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -484,9 +484,9 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                 {/* Income Slider (Only if not third age) */}
                                 {calcActividad !== 'discapacidad_3ra_edad' && (
                                     <div className="space-y-2">
-                                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">
+                                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 font-mono">
                                             <span>Ingresos Anuales Estimados</span>
-                                            <span className="text-emerald-400 font-mono text-xs">${calcIngresos.toLocaleString()}</span>
+                                            <span className="text-[#10b981] font-mono text-xs">${calcIngresos.toLocaleString()}</span>
                                         </div>
                                         <div className="relative py-2">
                                             <input
@@ -496,7 +496,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                                 step="5000"
                                                 value={calcIngresos}
                                                 onChange={e => setCalcIngresos(parseInt(e.target.value, 10))}
-                                                className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#00A896]"
+                                                className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#10b981]"
                                             />
                                             <div className="flex justify-between text-[9px] text-slate-500 font-mono mt-1 px-1">
                                                 <span>$1k</span>
@@ -513,20 +513,20 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                         {/* Recommendation Result Card */}
                         <div className="mt-8 pt-8 border-t border-white/10 flex flex-col md:flex-row gap-6 items-center justify-between">
                             <div className="text-left space-y-1">
-                                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-[0.2em]">Régimen Detectado</div>
-                                <div className="text-xl font-editorial text-[#00A896] tracking-wide">{recommendation.regimen}</div>
+                                <div className="text-[9px] font-bold text-[#10b981] uppercase tracking-[0.2em] font-mono">Régimen Detectado</div>
+                                <div className="text-xl font-editorial text-white tracking-wide">{recommendation.regimen}</div>
                                 <p className="text-xs text-slate-300 font-light leading-relaxed max-w-xl">{recommendation.description}</p>
                             </div>
                             
-                            <div className="flex items-center gap-4 bg-black/40 p-4 px-6 rounded-3xl border border-white/5 w-full md:w-auto justify-between md:justify-start">
+                            <div className="flex items-center gap-4 bg-[#051424] p-4 px-6 rounded-3xl border border-white/10 w-full md:w-auto justify-between md:justify-start">
                                 <div className="text-left">
-                                    <div className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Plan Sugerido</div>
+                                    <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest font-mono">Plan Sugerido</div>
                                     <div className="text-base font-semibold text-white truncate max-w-[150px]">{recommendation.planTitle}</div>
-                                    <div className="text-lg font-mono font-bold text-emerald-400">${recommendation.price}</div>
+                                    <div className="text-xl font-mono font-bold text-[#10b981]">${recommendation.price}</div>
                                 </div>
                                 <button
                                     onClick={() => handleAddToCart(recommendation.planObj)}
-                                    className="px-6 py-3.5 rounded-xl bg-[#00A896] hover:bg-teal-600 text-white font-bold text-xs uppercase tracking-widest transition-all scale-105 hover:scale-110 active:scale-95 shadow-lg shadow-teal-500/20"
+                                    className="px-6 py-3.5 rounded-xl bg-[#10b981] hover:bg-[#04B17B] text-slate-950 font-bold text-xs uppercase tracking-widest transition-all scale-105 hover:scale-110 active:scale-95 shadow-lg shadow-[#10b981]/20 font-mono"
                                 >
                                     Contratar Plan
                                 </button>
@@ -538,7 +538,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
 
             {/* --- STICKY CATEGORY NAV --- */}
             <div className="sticky top-[72px] z-40 py-4 mb-8 overflow-x-auto no-scrollbar px-6 flex justify-center">
-                <div className="inline-flex gap-2 p-1.5 bg-black/40 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-full">
+                <div className="inline-flex gap-2 p-1.5 bg-[#0b1326]/90 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-full">
                     <CategoryButton id="tax" label="Tributarios" icon={LucideIcons.Briefcase} />
                     <CategoryButton id="tech" label="Firma & Fact." icon={LucideIcons.Laptop} />
                     <CategoryButton id="special" label="Trámites" icon={LucideIcons.Activity} />
@@ -552,29 +552,29 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                         <SpotlightCard
                             key={index}
                             popular={plan.popular}
-                            className="flex flex-col justify-between"
+                            className="flex flex-col justify-between relative border-white/15"
                         >
                             <div className="p-8 pb-0">
                                 {plan.popular && (
-                                    <div className="absolute top-0 right-0 bg-[#00A896] text-white text-[9px] font-bold px-4 py-1.5 rounded-bl-2xl uppercase tracking-widest z-10">
-                                        Popular
+                                    <div className="absolute top-0 right-0 bg-gradient-to-r from-[#10b981] to-[#04B17B] text-slate-950 text-[9px] font-extrabold px-4 py-1.5 rounded-bl-2xl uppercase tracking-widest z-10 font-mono">
+                                        Más Popular
                                     </div>
                                 )}
 
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform hover:scale-110 ${plan.popular ? 'bg-[#00A896] text-white' : 'bg-white/5 text-[#00A896] border border-white/10'}`}>
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform hover:scale-110 ${plan.popular ? 'bg-[#10b981] text-slate-950 shadow-lg shadow-[#10b981]/20' : 'bg-white/5 text-[#10b981] border border-white/10'}`}>
                                     <plan.icon size={26} strokeWidth={1.5} />
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2 leading-tight uppercase tracking-wide">{plan.title}</h3>
-                                <p className="text-xs font-light text-slate-400 min-h-[3rem] leading-relaxed line-clamp-3">{plan.description}</p>
+                                <p className="text-xs font-light text-slate-300 min-h-[3rem] leading-relaxed line-clamp-3">{plan.description}</p>
                             </div>
 
                             <div className="p-8 pt-4">
-                                <div className="flex items-end gap-2 mb-6 border-t border-white/5 pt-4">
+                                <div className="flex items-end gap-2 mb-6 border-t border-white/10 pt-4">
                                     <span className="text-4xl font-mono font-bold text-white tracking-tighter">${plan.price}</span>
                                     {plan.originalPrice && (
                                         <div className="flex flex-col mb-1">
                                             <span className="text-[10px] font-medium text-slate-500 line-through">${plan.originalPrice}</span>
-                                            <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded uppercase">AHORRA ${plan.save}</span>
+                                            <span className="text-[9px] font-bold text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20 px-1.5 py-0.5 rounded uppercase font-mono">AHORRA ${plan.save}</span>
                                         </div>
                                     )}
                                 </div>
@@ -582,7 +582,7 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                 <div className="space-y-3.5 mb-8">
                                     {plan.features.map((feat: string, i: number) => (
                                         <div key={i} className="flex items-start gap-3 text-xs font-light text-slate-300">
-                                            <div className="min-w-[16px] mt-0.5 text-[#00A896]"><LucideIcons.CheckCircle size={15} /></div>
+                                            <div className="min-w-[16px] mt-0.5 text-[#10b981]"><LucideIcons.CheckCircle size={15} /></div>
                                             <span>{feat}</span>
                                         </div>
                                     ))}
@@ -591,8 +591,8 @@ export const ServicesPage: React.FC<ServicesPageProps> = ({ onAdminAccess, onSub
                                 <button
                                     onClick={() => handleAddToCart(plan)}
                                     className={`
-                                        w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg
-                                        ${plan.popular ? 'bg-[#00A896] text-white hover:bg-teal-600 shadow-teal-500/10' : 'bg-white/15 text-white hover:bg-white/20 shadow-black/10'}
+                                        w-full py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all transform active:scale-95 shadow-lg font-mono
+                                        ${plan.popular ? 'bg-[#10b981] text-slate-950 hover:bg-[#04B17B] shadow-[#10b981]/20' : 'bg-white/10 text-white hover:bg-white/20 border border-white/10'}
                                     `}
                                 >
                                     <LucideIcons.Zap size={14} fill="currentColor" /> Contratar Ahora
