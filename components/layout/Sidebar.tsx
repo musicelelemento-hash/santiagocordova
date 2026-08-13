@@ -104,13 +104,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         return (
             <React.Fragment key={screen}>
                 {groupLabel && !isCollapsed && (
-                    <div className="flex items-center gap-2 px-3 pt-3 pb-1">
-                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${
-                            isDark ? 'text-primary/70' : 'text-primary'
+                    <div className="flex items-center gap-2 px-3 pt-4 pb-1">
+                        <span className={`text-[9px] font-bold uppercase tracking-[0.2em] font-mono ${
+                            isDark ? 'text-[#10b981]' : 'text-primary'
                         }`}>
                             {groupLabel}
                         </span>
-                        <div className={`flex-1 h-px ${isDark ? 'bg-primary/10' : 'bg-primary/20'}`} />
+                        <div className={`flex-1 h-px ${isDark ? 'bg-[#10b981]/20' : 'bg-primary/20'}`} />
                     </div>
                 )}
                 <button
@@ -119,16 +119,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     className={`
                         group relative flex items-center rounded-xl transition-all duration-300
                         ${isCollapsed ? 'w-10 h-10 justify-center p-0' : 'px-4 py-2.5 gap-3'}
-                        ${isSubItem && !isCollapsed ? 'ml-3.5 w-[calc(100%-0.875rem)] border-l-2 border-primary/20 rounded-l-none pl-3' : ''}
+                        ${isSubItem && !isCollapsed ? 'ml-3.5 w-[calc(100%-0.875rem)] border-l-2 border-[#10b981]/30 rounded-l-none pl-3' : ''}
                         ${isActive
                             ? isFirmas
-                                ? 'bg-gradient-to-r from-teal-500/20 to-cyan-500/10 text-teal-300 border border-teal-500/30 shadow-[0_0_20px_rgba(20,184,166,0.12)]'
+                                ? 'bg-gradient-to-r from-teal-500/20 to-emerald-500/10 text-teal-300 border border-teal-500/30 shadow-[0_0_20px_rgba(20,184,166,0.2)]'
                                 : isDark
-                                    ? 'bg-gradient-to-r from-[#2B6AFF]/20 to-[#6366F1]/10 text-white border border-[#2B6AFF]/30 shadow-[0_0_20px_rgba(43,106,255,0.12)]'
+                                    ? 'bg-gradient-to-r from-[#10b981]/20 to-[#6366f1]/10 text-white border border-[#10b981]/40 shadow-[0_0_20px_rgba(16,185,129,0.15)] font-semibold'
                                     : 'bg-slate-900 text-white border border-slate-800 shadow-lg'
                             : isFirmas
                                 ? isDark
-                                    ? 'text-teal-500 hover:bg-teal-500/10 hover:text-teal-300 border border-transparent hover:border-teal-500/20'
+                                    ? 'text-teal-400 hover:bg-teal-500/10 hover:text-teal-200 border border-transparent hover:border-teal-500/20'
                                     : 'text-teal-600 hover:bg-teal-50 border border-transparent'
                                 : isDark
                                     ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200 border border-transparent'
@@ -139,7 +139,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {/* Icon */}
                     <Icon
                         size={18}
-                        className={`transition-all duration-300 flex-shrink-0 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`}
+                        className={`transition-all duration-300 flex-shrink-0 ${isActive ? 'scale-110 text-[#10b981]' : 'group-hover:scale-105'}`}
                         strokeWidth={isActive ? 2.5 : 2}
                     />
 
@@ -157,9 +157,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-slate-900 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
                         ) : (
                             <span className={`
-                                px-2 py-0.5 rounded-md text-[9px] font-black border transition-colors duration-300
+                                px-2 py-0.5 rounded-md text-[9px] font-mono font-bold border transition-colors duration-300
                                 ${isActive
-                                    ? isDark ? 'bg-white/20 text-white border-white/20' : 'bg-white text-slate-900 border-slate-200'
+                                    ? isDark ? 'bg-[#10b981]/20 text-[#10b981] border-[#10b981]/40' : 'bg-white text-slate-900 border-slate-200'
                                     : isDark ? 'bg-slate-800 text-slate-400 border-slate-700' : 'bg-slate-100 text-slate-500 border-slate-200'
                                 }
                             `}>
@@ -171,8 +171,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {/* Firmas neon dot */}
                     {isFirmas && !isCollapsed && (
                         <span
-                            className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0"
-                            style={{ boxShadow: '0 0 6px rgba(45,212,191,0.9)' }}
+                            className="w-1.5 h-1.5 rounded-full bg-[#10b981] shrink-0"
+                            style={{ boxShadow: '0 0 6px rgba(16,185,129,0.9)' }}
                         />
                     )}
 
@@ -181,15 +181,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         <div className={`
                             absolute left-0 w-[3px] h-5 rounded-r-full
                             ${isFirmas
-                                ? 'bg-gradient-to-b from-teal-400 to-cyan-500 shadow-[3px_0_10px_rgba(20,184,166,0.5)]'
-                                : 'bg-gradient-to-b from-[#2B6AFF] to-[#6366F1] shadow-[3px_0_10px_rgba(43,106,255,0.5)]'
+                                ? 'bg-gradient-to-b from-teal-400 to-emerald-500 shadow-[3px_0_10px_rgba(20,184,166,0.5)]'
+                                : 'bg-gradient-to-b from-[#10b981] to-[#6366f1] shadow-[3px_0_10px_rgba(16,185,129,0.5)]'
                             }
                         `} />
                     )}
 
                     {/* Collapsed active dot */}
                     {isActive && isCollapsed && (
-                        <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isFirmas ? 'bg-teal-400 shadow-[0_0_6px_rgba(45,212,191,0.9)]' : 'bg-[#2B6AFF] shadow-[0_0_6px_rgba(43,106,255,0.9)]'}`} />
+                        <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isFirmas ? 'bg-teal-400 shadow-[0_0_6px_rgba(45,212,191,0.9)]' : 'bg-[#10b981] shadow-[0_0_6px_rgba(16,185,129,0.9)]'}`} />
                     )}
                 </button>
             </React.Fragment>
@@ -202,7 +202,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             transition-all duration-500 overflow-visible no-print
             ${isCollapsed ? 'w-[84px]' : 'w-[264px]'}
             ${theme === 'dark'
-                ? 'bg-slate-950 border-white/5 shadow-2xl'
+                ? 'bg-[#0b1326] border-white/10 shadow-2xl'
                 : 'bg-white border-slate-200 shadow-xl'
             }
         `}>

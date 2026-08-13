@@ -27,14 +27,14 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({ navItems, activeScre
             <nav className="
                 relative
                 backdrop-blur-3xl
-                bg-slate-950/60
-                border border-white/8
+                bg-[#0b1326]/85
+                border border-white/10
                 rounded-[2rem]
                 px-3 py-2.5
-                shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.04)]
+                shadow-[0_20px_60px_rgba(0,0,0,0.6),0_0_0_1px_rgba(16,185,129,0.1)]
             ">
                 {/* Subtle inner glow */}
-                <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
+                <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-b from-white/[0.05] to-transparent pointer-events-none" />
 
                 <div className="relative flex justify-around items-end px-1">
                     {mobileItems.map((item) => {
@@ -60,7 +60,7 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({ navItems, activeScre
                                 `}>
                                     {/* Active glow behind icon */}
                                     {isActive && (
-                                        <div className="absolute inset-0 w-8 h-8 -m-1 rounded-full bg-[#2B6AFF]/25 blur-md" />
+                                        <div className="absolute inset-0 w-8 h-8 -m-1 rounded-full bg-[#10b981]/25 blur-md" />
                                     )}
                                     <item.icon
                                         size={20}
@@ -68,14 +68,14 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({ navItems, activeScre
                                         className={`
                                             relative z-10 transition-all duration-300
                                             ${isActive
-                                                ? 'text-white drop-shadow-[0_0_10px_rgba(43,106,255,0.8)]'
-                                                : 'text-slate-500'
+                                                ? 'text-[#10b981] drop-shadow-[0_0_10px_rgba(16,185,129,0.8)]'
+                                                : 'text-slate-400'
                                             }
                                         `}
                                     />
                                     {/* Count badge */}
                                     {item.count !== undefined && item.count > 0 && (
-                                        <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 flex items-center justify-center bg-rose-500 text-white rounded-full text-[7px] font-black border border-slate-950 shadow-[0_0_8px_rgba(244,63,94,0.7)]">
+                                        <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 flex items-center justify-center bg-rose-500 text-white rounded-full text-[7px] font-mono font-bold border border-slate-950 shadow-[0_0_8px_rgba(244,63,94,0.7)]">
                                             {item.count > 9 ? '9+' : item.count}
                                         </span>
                                     )}
@@ -83,9 +83,9 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({ navItems, activeScre
 
                                 {/* Label */}
                                 <span className={`
-                                    text-[8px] font-black uppercase tracking-[0.08em] leading-none
+                                    text-[8px] font-mono font-bold uppercase tracking-[0.08em] leading-none
                                     transition-all duration-300
-                                    ${isActive ? (item.screen === 'firmas' ? 'text-teal-300' : 'text-white') : 'text-slate-600'}
+                                    ${isActive ? (item.screen === 'firmas' ? 'text-teal-300' : 'text-white') : 'text-slate-500'}
                                 `}>
                                     {item.label === 'Facturador' || item.label === 'Facturación SRI' ? 'Factura' : item.label}
                                 </span>
@@ -94,8 +94,8 @@ export const MobileNavBar: React.FC<MobileNavBarProps> = ({ navItems, activeScre
                                 {isActive && (
                                     <div className={`absolute -bottom-0.5 w-4 h-0.5 rounded-full ${
                                         item.screen === 'firmas'
-                                            ? 'bg-gradient-to-r from-teal-400 to-cyan-400 shadow-[0_0_8px_rgba(20,184,166,0.9)]'
-                                            : 'bg-gradient-to-r from-[#2B6AFF] to-[#6366F1] shadow-[0_0_8px_rgba(43,106,255,0.9)]'
+                                            ? 'bg-gradient-to-r from-teal-400 to-emerald-400 shadow-[0_0_8px_rgba(20,184,166,0.9)]'
+                                            : 'bg-gradient-to-r from-[#10b981] to-[#6366f1] shadow-[0_0_8px_rgba(16,185,129,0.9)]'
                                     }`} />
                                 )}
                             </button>
