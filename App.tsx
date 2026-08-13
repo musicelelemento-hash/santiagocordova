@@ -901,6 +901,9 @@ const App: React.FC = () => {
           onClose={() => setIsSalesModalOpen(false)}
           onEmitSriInvoice={(client, description, amount) => {
             setIsSalesModalOpen(false);
+            setSriInvoiceClientId(client.id);
+            setSriInvoiceDescription(description);
+            setSriInvoiceAmount(amount);
             navigate('sri_facturacion');
           }}
         />
