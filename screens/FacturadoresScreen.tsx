@@ -43,9 +43,63 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const [totalCount, setTotalCount] = useState(0);
     const [page, setPage] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
-    const [expiringAlerts, setExpiringAlerts] = useState<Client[]>([]);
-
     const parentRef = useRef<HTMLDivElement>(null);
+
+    // KPI Counters from local store for ultra-fast instant UI responsiveness
+    const allFacturadorClients = useMemo(() => {
+        return storeClients.filter(c => !c.isDeleted && c.isActive && (c.billingPlan || c.facturadorConfig || c.clientType === 'solo_plan' || c.requiresDeclarations === false));
+    }, [storeClients]);
+
+    const kpis = useMemo(() => {
+        const total = allFacturadorClients.length;
+        const particulares = allFacturadorClients.filter(c => c.clientType === 'solo_plan' || c.requiresDeclarations === false).length;
+        const contables = allFacturadorClients.filter(c => c.clientType !== 'solo_plan' && c.requiresDeclarations !== false).length;
+        const recursos = allFacturadorClients.filter(c => !c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos').length;
+        const activado = allFacturadorClients.filter(c => c.facturadorActivationStatus === 'activado').length;
+        const sinFirma = allFacturadorClients.filter(c => !c.signatureFile).length;
+        return { total, particulares, contables, recursos, activado, sinFirma };
+    }, [allFacturadorClients]);
+
+    // Combinar búsqueda y filtros locales de alta velocidad respaldados con Supabase
+    const displayClients = useMemo(() => {
+        let list = allFacturadorClients;
+
+        if (searchTerm.trim()) {
+            const q = searchTerm.toLowerCase().trim();
+            list = list.filter(c => 
+                c.name.toLowerCase().includes(q) || 
+                (c.tradeName && c.tradeName.toLowerCase().includes(q)) || 
+                c.ruc.includes(q) ||
+                c.billingPlan?.programName?.toLowerCase().includes(q) ||
+                c.facturadorConfig?.programName?.toLowerCase().includes(q)
+            );
+        }
+
+        if (filterStatus === 'particulares') {
+            list = list.filter(c => c.clientType === 'solo_plan' || c.requiresDeclarations === false);
+        } else if (filterStatus === 'clientes') {
+            list = list.filter(c => c.clientType !== 'solo_plan' && c.requiresDeclarations !== false);
+        } else if (filterStatus === 'recursos_listos') {
+            list = list.filter(c => !c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos');
+        } else if (filterStatus === 'subido_plataforma') {
+            list = list.filter(c => c.facturadorActivationStatus === 'subido_plataforma');
+        } else if (filterStatus === 'activado') {
+            list = list.filter(c => c.facturadorActivationStatus === 'activado');
+        } else if (filterStatus === 'sin_firma') {
+            list = list.filter(c => !c.signatureFile);
+        }
+
+        return list;
+    }, [allFacturadorClients, searchTerm, filterStatus]);
+
+    const expiringAlerts = useMemo(() => {
+        return allFacturadorClients.filter(c => {
+            if (!c.signatureExpirationDate) return false;
+            const expDate = new Date(c.signatureExpirationDate);
+            const diffDays = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 3600 * 24));
+            return diffDays <= 15 && diffDays >= 0;
+        });
+    }, [allFacturadorClients]);
 
     useEffect(() => {
         let isMounted = true;
@@ -67,16 +121,6 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
         const debounce = setTimeout(() => fetchFacturadores(), 300);
         return () => { isMounted = false; clearTimeout(debounce); };
     }, [page, searchTerm, filterStatus]);
-
-    useEffect(() => {
-        const expiring = facturadorClients.filter(c => {
-            if (!c.signatureExpirationDate) return false;
-            const expDate = new Date(c.signatureExpirationDate);
-            const diffDays = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 3600 * 24));
-            return diffDays <= 15 && diffDays >= 0;
-        });
-        setExpiringAlerts(expiring);
-    }, [facturadorClients]);
 
     const rowVirtualizer = useVirtualizer({
         count: displayClients.length,
@@ -210,53 +254,6 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
         if (!file) return;
         onDrop([file]);
     };
-
-    // KPI Counters from local store for ultra-fast instant UI responsiveness
-    const allFacturadorClients = useMemo(() => {
-        return storeClients.filter(c => !c.isDeleted && c.isActive && (c.billingPlan || c.facturadorConfig || c.clientType === 'solo_plan' || c.requiresDeclarations === false));
-    }, [storeClients]);
-
-    const kpis = useMemo(() => {
-        const total = allFacturadorClients.length;
-        const particulares = allFacturadorClients.filter(c => c.clientType === 'solo_plan' || c.requiresDeclarations === false).length;
-        const contables = allFacturadorClients.filter(c => c.clientType !== 'solo_plan' && c.requiresDeclarations !== false).length;
-        const recursos = allFacturadorClients.filter(c => !c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos').length;
-        const activado = allFacturadorClients.filter(c => c.facturadorActivationStatus === 'activado').length;
-        const sinFirma = allFacturadorClients.filter(c => !c.signatureFile).length;
-        return { total, particulares, contables, recursos, activado, sinFirma };
-    }, [allFacturadorClients]);
-
-    // Combinar búsqueda y filtros locales de alta velocidad respaldados con Supabase
-    const displayClients = useMemo(() => {
-        let list = allFacturadorClients;
-
-        if (searchTerm.trim()) {
-            const q = searchTerm.toLowerCase().trim();
-            list = list.filter(c => 
-                c.name.toLowerCase().includes(q) || 
-                (c.tradeName && c.tradeName.toLowerCase().includes(q)) || 
-                c.ruc.includes(q) ||
-                c.billingPlan?.programName?.toLowerCase().includes(q) ||
-                c.facturadorConfig?.programName?.toLowerCase().includes(q)
-            );
-        }
-
-        if (filterStatus === 'particulares') {
-            list = list.filter(c => c.clientType === 'solo_plan' || c.requiresDeclarations === false);
-        } else if (filterStatus === 'clientes') {
-            list = list.filter(c => c.clientType !== 'solo_plan' && c.requiresDeclarations !== false);
-        } else if (filterStatus === 'recursos_listos') {
-            list = list.filter(c => !c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos');
-        } else if (filterStatus === 'subido_plataforma') {
-            list = list.filter(c => c.facturadorActivationStatus === 'subido_plataforma');
-        } else if (filterStatus === 'activado') {
-            list = list.filter(c => c.facturadorActivationStatus === 'activado');
-        } else if (filterStatus === 'sin_firma') {
-            list = list.filter(c => !c.signatureFile);
-        }
-
-        return list;
-    }, [allFacturadorClients, searchTerm, filterStatus]);
 
     return (
         <div className="space-y-8 animate-fade-in pb-24">
