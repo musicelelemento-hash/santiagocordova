@@ -36,7 +36,7 @@ interface SidebarProps {
 // Groupings for nav items to add visual section separators
 const NAV_GROUPS: { label: string; screens: string[] }[] = [
     { label: 'Principal', screens: ['home', 'clients', 'declaraciones', 'firmas', 'facturadores', 'cobranza'] },
-    { label: 'Operaciones', screens: ['sri_facturacion', 'tasks', 'calendar', 'web_orders'] },
+    { label: 'Operaciones', screens: ['sri_facturacion', '3d-studio', 'tasks', 'calendar', 'web_orders'] },
     { label: 'Sistema', screens: ['settings', 'audit_log', 'services'] },
 ];
 

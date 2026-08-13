@@ -13,6 +13,7 @@ import { Logo } from '../components/ui/Logo';
 import { PublicUser } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { validarIdentificacionEcuatoriana } from '../utils/sriCalculators';
+import { Scroll3DCanvas } from '../components/3d/Scroll3DCanvas';
 
 interface LandingPageProps {
     onAdminAccess: () => void;
@@ -932,6 +933,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 HERO SECTION (Luminous Equity Design)
             ════════════════════════════════════════════════════════════════ */}
             <header id="top" className={`relative min-h-screen flex items-center justify-center overflow-hidden transition-colors duration-500 pt-32 pb-24 md:pt-40 md:pb-32 ${theme === 'dark' ? 'bg-[#0b1326]' : 'bg-slate-50'}`}>
+                {/* 3D Interactive Scroll Canvas Layer */}
+                <div className="absolute inset-0 pointer-events-none z-0 opacity-80">
+                    <Scroll3DCanvas scrollProgress={scrollProgress / 100} />
+                </div>
+
                 <AuroraBackground />
                 <motion.div style={{ y: heroY }} className="absolute inset-0 pointer-events-none">
                     <div className="absolute top-1/4 -left-20 w-[600px] h-[600px] bg-[#10b981]/10 rounded-full blur-[160px]" />

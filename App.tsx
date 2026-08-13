@@ -22,6 +22,7 @@ import { LicenciasScreen } from './screens/LicenciasScreen';
 import { RefinanciacionScreen } from './screens/RefinanciacionScreen';
 import { CajaChicaScreen } from './screens/CajaChicaScreen';
 import { CrmPipelineScreen } from './screens/CrmPipelineScreen';
+import { ThreeDStudioScreen } from './screens/ThreeDStudioScreen';
 import { AdaptadorConvert } from './components/features/AdaptadorConvert';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
@@ -568,6 +569,7 @@ const App: React.FC = () => {
       case 'refinanciacion': return <RefinanciacionScreen navigate={navigate} />;
       case 'caja_chica': return <CajaChicaScreen navigate={navigate} />;
       case 'crm_pipeline': return <CrmPipelineScreen navigate={navigate} />;
+      case '3d-studio': return <ThreeDStudioScreen />;
       case 'migracion_zifact': return <AdaptadorConvert />;
       default: return <AdminDashboardScreen navigate={navigate} />;
     }
@@ -578,6 +580,7 @@ const App: React.FC = () => {
     { screen: 'clients', icon: LucideIcons.Users, label: 'Directorio', count: clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length, groupLabel: 'Clientes', isSubItem: true },
     { screen: 'declaraciones', icon: LucideIcons.LayoutGrid, label: 'Declaraciones', isSubItem: true },
     { screen: 'crm_pipeline', icon: LucideIcons.Kanban, label: 'CRM Embudo' },
+    { screen: '3d-studio', icon: LucideIcons.Box, label: 'Studio 3D Alpha3D' },
     { screen: 'firmas', icon: LucideIcons.KeyRound, label: 'Firmas' },
     { screen: 'facturadores', icon: LucideIcons.ShoppingBag, label: 'Facturadores y Planes' },
     { screen: 'cotizaciones', icon: LucideIcons.FileSpreadsheet, label: 'Cotizaciones' },

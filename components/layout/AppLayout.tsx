@@ -143,7 +143,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             licencias: '/dashboard/licencias',
             refinanciacion: '/dashboard/refinanciacion',
             caja_chica: '/dashboard/caja_chica',
-            crm_pipeline: '/dashboard/crm_pipeline'
+            crm_pipeline: '/dashboard/crm_pipeline',
+            '3d-studio': '/dashboard/3d-studio'
         };
         navigate(routeMap[screen] || '/dashboard/clientes');
     };
