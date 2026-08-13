@@ -2360,7 +2360,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     disabled={isUploadingProof}
                                                     className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] rounded-lg transition-colors flex items-center gap-1 shadow-sm"
                                                 >
-                                                    <LucideIcons.CloudUpload size={12} />
+                                                    <LucideIcons.UploadCloud size={12} />
                                                     Migrar
                                                 </button>
                                             </div>
