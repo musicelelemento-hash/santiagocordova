@@ -36,17 +36,30 @@ export const SupabaseService = {
       throw error;
     }
 
-    // NUEVO: Sincronizar array 'declarations' hacia la nueva tabla relacional sri_declaraciones
+    // Sincronizar array 'declarations' hacia la tabla relacional sri_declaraciones
     if (client.declarations && client.declarations.length > 0) {
         const recordsToUpsert = client.declarations.map(dec => {
+            let sanitizedProofFile = null;
+            if (dec.proof_file) {
+                sanitizedProofFile = {
+                    name: dec.proof_file.name || 'comprobante.pdf',
+                    type: dec.proof_file.type || 'pdf',
+                    size: dec.proof_file.size || 0,
+                    lastModified: dec.proof_file.lastModified || Date.now(),
+                    url: dec.proof_file.url || (typeof dec.proof_file.content === 'string' && dec.proof_file.content.startsWith('http') ? dec.proof_file.content : null),
+                    content: dec.proof_file.url ? null : dec.proof_file.content,
+                    metadata: dec.proof_file.metadata || {}
+                };
+            }
+
             return {
                 client_id: client.id,
-                type: dec.type || (dec.period?.length === 7 ? 'IVA' : 'RENTA'),
+                type: dec.type || (dec.period?.includes('ANEXO') ? 'ANEXO' : (dec.period?.length === 7 ? 'IVA' : 'RENTA')),
                 period: dec.period || 'UNK',
                 status: dec.status || 'Pendiente',
                 is_paid: !!dec.is_paid,
                 paid_at: dec.paidAt || null,
-                proof_file: dec.proof_file || null,
+                proof_file: sanitizedProofFile,
                 is_notified_whatsapp: !!dec.isNotifiedWhatsApp,
                 notified_whatsapp_at: dec.notifiedWhatsAppAt || null,
                 created_at: dec.declaredAt || new Date().toISOString(),
@@ -54,12 +67,20 @@ export const SupabaseService = {
             };
         });
 
-        const { error: decError } = await supabase
-            .from('sri_declaraciones')
-            .upsert(recordsToUpsert, { onConflict: 'client_id,type,period' });
-        
-        if (decError) {
-            console.error(`[Supabase Error] FAILED upserting sri_declaraciones para ${client.ruc}:`, decError);
+        try {
+            const { error: decError } = await supabase
+                .from('sri_declaraciones')
+                .upsert(recordsToUpsert, { onConflict: 'client_id,type,period' });
+            
+            if (decError) {
+                console.warn(`[Supabase Warning] primary upsert onConflict (client_id,type,period) failed:`, decError);
+                // Fallback con onConflict client_id,period
+                await supabase
+                    .from('sri_declaraciones')
+                    .upsert(recordsToUpsert, { onConflict: 'client_id,period' });
+            }
+        } catch (decCatchErr) {
+            console.warn(`[Supabase Warning] sri_declaraciones upsert caught:`, decCatchErr);
         }
     }
 
@@ -314,6 +335,7 @@ export const SupabaseService = {
       signature_expiration: client.signatureExpirationDate,
       advance_credits: client.advanceCredits,
       sri_declaraciones: client.declarations,
+      declaration_history: client.declarations,
       vault: client.vault,
       structured_notes: client.structuredNotes,
       signature_file: client.signatureFile,
@@ -380,6 +402,27 @@ export const SupabaseService = {
       taxProfile.requiresAnnualRenta = true;
     }
 
+    // Unificar y desduplicar declaraciones del join relacional y del JSON history
+    const relDeclarations = Array.isArray(db.sri_declaraciones) ? db.sri_declaraciones : [];
+    const jsonDeclarations = Array.isArray(db.declaration_history) ? db.declaration_history : [];
+
+    const declMap = new Map<string, any>();
+    [...jsonDeclarations, ...relDeclarations].forEach((d: any) => {
+      if (!d || !d.period) return;
+      const key = `${d.type || 'IVA'}_${d.period}`;
+      const existing = declMap.get(key);
+      if (!existing || (d.proof_file && !existing.proof_file)) {
+        declMap.set(key, {
+          ...existing,
+          ...d,
+          isNotifiedWhatsApp: d.is_notified_whatsapp ?? existing?.isNotifiedWhatsApp,
+          notifiedWhatsAppAt: d.notified_whatsapp_at ?? existing?.notifiedWhatsAppAt
+        });
+      }
+    });
+
+    const unifiedDeclarations = Array.from(declMap.values());
+
     return {
       id: db.id,
       ruc: db.ruc,
@@ -408,11 +451,7 @@ export const SupabaseService = {
       iessPassword: db.iess_password,
       signatureExpirationDate: db.signature_expiration,
       advanceCredits: db.advance_credits,
-      declarations: (db.sri_declaraciones || []).map((d: any) => ({
-        ...d,
-        isNotifiedWhatsApp: d.is_notified_whatsapp,
-        notifiedWhatsAppAt: d.notified_whatsapp_at
-      })),
+      declarations: unifiedDeclarations,
       vault: db.vault || [],
       structuredNotes: db.structured_notes || [],
       signatureFile: db.signature_file,

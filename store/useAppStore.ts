@@ -849,23 +849,55 @@ export const useAppStore = create<AppState>((set, get) => ({
 
           if (mergedCloudClients.length > 0) {
             const cloudClients = sanitizeClients(mergedCloudClients);
-            
-            // Solo actualizar si la nube tiene datos diferentes/más completos
             const currentClients = get().clients;
-            if (cloudClients.length >= currentClients.length || currentClients.length === 0) {
+            
+            // Smart Merge con clientes locales para proteger comprobantes y anexos recién subidos
+            const protectedClients = cloudClients.map(cloudClient => {
+              const localMatch = currentClients.find(c => c.id === cloudClient.id || (c.ruc && c.ruc === cloudClient.ruc));
+              if (!localMatch) return cloudClient;
+
+              const localDecls = localMatch.declarations || [];
+              const cloudDecls = cloudClient.declarations || [];
+              
+              const declMap = new Map<string, Declaration>();
+              cloudDecls.forEach(d => {
+                if (d && d.period) declMap.set(`${d.type || 'IVA'}_${d.period}`, d);
+              });
+
+              localDecls.forEach(d => {
+                if (!d || !d.period) return;
+                const key = `${d.type || 'IVA'}_${d.period}`;
+                const existing = declMap.get(key);
+                if (!existing) {
+                  declMap.set(key, d);
+                } else if (d.proof_file && !existing.proof_file) {
+                  declMap.set(key, { ...existing, proof_file: d.proof_file, status: d.status || existing.status });
+                }
+              });
+
+              return {
+                ...cloudClient,
+                declarations: Array.from(declMap.values()),
+                vault: localMatch.vault?.length > 0 && (!cloudClient.vault || cloudClient.vault.length === 0) 
+                  ? localMatch.vault 
+                  : (cloudClient.vault || localMatch.vault || [])
+              };
+            });
+
+            // Solo actualizar si la nube tiene datos o para refrescar
+            if (protectedClients.length >= currentClients.length || currentClients.length === 0) {
               set({ 
-                clients: cloudClients, 
+                clients: protectedClients, 
                 auditLogs: cloudAuditLogs || [],
                 ...(cloudTasks && cloudTasks.length > 0 ? { tasks: cloudTasks } : {})
               });
-              db.setLocal('clients', cloudClients);
-              sendFullClientsMatrixToExtension(cloudClients);
+              db.setLocal('clients', protectedClients);
+              sendFullClientsMatrixToExtension(protectedClients);
               if (cloudTasks && cloudTasks.length > 0) db.setLocal('tasks', cloudTasks);
-              console.log(`☁️ Fase 2 (Nube): ${cloudClients.length} clientes, ${cloudTasks?.length || 0} tareas sincronizadas en ${(performance.now() - t1).toFixed(0)}ms`);
+              console.log(`☁️ Fase 2 (Nube): ${protectedClients.length} clientes protegidos y sincronizados en ${(performance.now() - t1).toFixed(0)}ms`);
             } else {
-              // La nube tiene menos — solo actualizar audit logs
               set({ auditLogs: cloudAuditLogs || [] });
-              console.log(`☁️ Fase 2: Nube tiene menos datos (${cloudClients.length} vs ${currentClients.length} local). Manteniendo local.`);
+              console.log(`☁️ Fase 2: Nube tiene menos datos (${protectedClients.length} vs ${currentClients.length} local). Manteniendo local.`);
             }
           } else if (!localData) {
             // Sin datos locales ni en la nube — usar mock

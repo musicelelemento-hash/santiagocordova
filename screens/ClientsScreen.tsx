@@ -23,6 +23,7 @@ import { VirtualClientList } from '../components/features/VirtualClientList';
 import { VirtualClientTable } from '../components/features/VirtualClientTable';
 import { ClientCard } from '../components/features/ClientCard';
 import { extractDataFromDeclarationPdf, fileToBase64, extractDataFromSriPdf } from '../services/pdfExtraction';
+import { UnifiedStorageService } from '../services/unifiedStorageService';
 import { StoredFile } from '../types';
 import { BulkUploadReportModal, BulkUploadResult } from '../components/features/BulkUploadReportModal';
 import { BulkClientWizardModal } from '../components/features/BulkClientWizardModal';
@@ -739,7 +740,6 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 return;
             }
 
-            const base64 = await fileToBase64(file);
             const today = new Date();
             let period = receiptUploadState.period || data.period || getPeriod(receiptUploadState.client, today);
             const nowIso = today.toISOString();
@@ -749,7 +749,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             
             const targetType = receiptUploadState.obligationType || (
                 data.formType === 'ICE' ? 'ICE' :
-                data.formType === 'ANEXO_ICE' ? 'ANEXO' :
+                (data.formType === 'ANEXO_ICE' || data.formType?.includes('ANEXO')) ? 'ANEXO' :
                 data.formType === 'PVP' ? 'PVP' :
                 (period.includes('-') ? 'IVA' : 'RENTA')
             );
@@ -761,8 +761,8 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     period = `${period.split(':')[0]}:ICE`;
                 }
             } else if (targetType === 'ANEXO') {
-                if (!period.includes(':ANEXO_ICE')) {
-                    period = `${period.split(':')[0]}:ANEXO_ICE`;
+                if (!period.includes(':ANEXO_ICE') && !period.includes(':ANEXO')) {
+                    period = `${period.split(':')[0]}:ANEXO`;
                 }
             } else if (targetType === 'PVP') {
                 if (!period.includes(':PVP')) {
@@ -770,16 +770,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 }
             }
 
-            const history = [...(freshClient.declarations || [])];
-            const idx = history.findIndex(d => d.period === period);
-
-            const proofFileObj: StoredFile = {
-                name: file.name,
-                type: 'pdf',
-                size: file.size,
-                lastModified: file.lastModified,
-                content: base64,
-                metadata: {
+            // Subir PDF al almacenamiento en la nube (Cloudflare R2 / Supabase Storage)
+            const uploadedStoredFile = await UnifiedStorageService.uploadFile(
+                file,
+                file.name,
+                'declaraciones',
+                {
                     amount: data.amount,
                     period: period,
                     formType: data.formType,
@@ -787,7 +783,15 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     uploadedAt: nowIso,
                     previewText: data.previewText
                 }
+            );
+
+            const proofFileObj: StoredFile = {
+                ...uploadedStoredFile,
+                content: null // 💡 Cero base64 en base de datos = Cero perdida por split o límite
             };
+
+            const history = [...(freshClient.declarations || [])];
+            const idx = history.findIndex(d => arePeriodsEqual(d.period, period) && (d.type === type || !d.type));
 
             const isCortesia = isCourtesyClient(freshClient);
             const entry: Declaration = {
@@ -809,10 +813,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 history.push(entry);
             }
 
-            const updates: Partial<Client> = { declarations: history };
+            const updates: Partial<Client> = { 
+                declarations: history,
+                vault: [...(freshClient.vault || []), proofFileObj]
+            };
 
-            updateClient(freshClient.id, updates);
-            toast.success(isCortesia ? '¡Comprobante validado! (Tarifa de Cortesía Aplicada)' : '¡Comprobante validado! Obligación marcada como HECHA (Cobro Pendiente)');
+            await updateClient(freshClient.id, updates);
+            toast.success(isCortesia ? '¡Comprobante validado y guardado en la nube! (Cortesía)' : '¡Comprobante validado y guardado en la nube!');
 
         } catch (err) {
             console.error("Error procesando PDF:", err);
@@ -974,13 +981,12 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     continue;
                 }
 
-                const proofFileObj: StoredFile = {
-                    name: file.name,
-                    type: 'pdf',
-                    size: file.size,
-                    lastModified: file.lastModified,
-                    content: base64,
-                    metadata: {
+                // Subir comprobante a la nube
+                const uploadedStoredFile = await UnifiedStorageService.uploadFile(
+                    file,
+                    file.name,
+                    'declaraciones',
+                    {
                         amount: data.amount,
                         period: period,
                         formType: data.formType,
@@ -988,11 +994,16 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                         uploadedAt: nowIso,
                         previewText: data.previewText
                     }
+                );
+
+                const proofFileObj: StoredFile = {
+                    ...uploadedStoredFile,
+                    content: null
                 };
 
                 const entry: Declaration = {
                     period,
-                    type: (data.formType === 'IVA' ? 'IVA' : (data.formType === 'RENTA' ? 'RENTA' : (period.includes('-') ? 'IVA' : 'RENTA'))),
+                    type: (data.formType === 'IVA' ? 'IVA' : (data.formType === 'RENTA' ? 'RENTA' : ((data.formType?.includes('ANEXO') || data.formType === 'ANEXO_ICE') ? 'ANEXO' : (period.includes('-') ? 'IVA' : 'RENTA')))),
                     status: isAlreadyPaid ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
                     updatedAt: nowIso,
                     declaredAt: nowIso,

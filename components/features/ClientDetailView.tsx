@@ -441,7 +441,37 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                         updatedAt: new Date().toISOString()
                     });
                 }
+            } else if (uploadingTarget.type === 'anexo' || (uploadingTarget as any).type === 'anexo_gastos' || (uploadingTarget as any).type === 'anexoGastos' || extractedData?.formType?.includes('ANEXO') || extractedData?.formType === 'ANEXO_ICE') {
+                const currentYear = getYear(new Date());
+                const period = (uploadingTarget as any).period || (currentYear - 1).toString();
+                const updatedHistory = [...(editedClient.declarations || [])];
+                const idx = updatedHistory.findIndex(d => arePeriodsEqual(d.period, period) && (d.type === 'ANEXO' || d.type === 'ANEXO_ICE'));
+                const isCortesia = isCourtesyClient(editedClient);
+                if (idx !== -1) {
+                    updatedHistory[idx] = {
+                        ...updatedHistory[idx],
+                        proof_file: storedFile,
+                        type: 'ANEXO',
+                        status: isCortesia ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        is_paid: isCortesia ? true : updatedHistory[idx].is_paid,
+                        paidAt: isCortesia ? new Date().toISOString() : updatedHistory[idx].paidAt,
+                        updatedAt: new Date().toISOString(),
+                        declaredAt: extractedData?.declarationDate || new Date().toISOString()
+                    };
+                } else {
+                    updatedHistory.push({
+                        period,
+                        type: 'ANEXO',
+                        status: isCortesia ? DeclarationStatus.Pagada : DeclarationStatus.Enviada,
+                        is_paid: isCortesia ? true : false,
+                        paidAt: isCortesia ? new Date().toISOString() : undefined,
+                        proof_file: storedFile,
+                        updatedAt: new Date().toISOString(),
+                        declaredAt: extractedData?.declarationDate || new Date().toISOString()
+                    });
+                }
                 updatedClient.declarations = updatedHistory;
+                updatedClient.vault = [...(updatedClient.vault || []), storedFile];
             } else if (uploadingTarget.type === 'devolucionRenta') {
                 updatedClient.rentaRefundResolutionFile = storedFile;
                 updatedClient.rentaRefundStatus = 'Completado';
@@ -578,14 +608,32 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
 
     const handleExtraAction = (type: 'renta' | 'anexo' | 'devolucion', action: 'declare' | 'pay') => {
         let updated = { ...editedClient };
+        const currentYear = getYear(new Date());
+        const period = (currentYear - 1).toString();
+        const updatedHistory = [...(updated.declarations || [])];
+
         if (type === 'renta') {
-            const currentYear = getYear(new Date());
-            const period = (currentYear - 1).toString();
-            const updatedHistory = [...(updated.declarations || [])];
-            const idx = updatedHistory.findIndex(d => d.period === period);
+            const idx = updatedHistory.findIndex(d => arePeriodsEqual(d.period, period) && (d.type === 'RENTA' || !d.type));
             if (idx === -1) {
                 updatedHistory.push({
                     period,
+                    type: 'RENTA',
+                    status: action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente,
+                    is_paid: action === 'pay',
+                    updatedAt: new Date().toISOString()
+                });
+            } else {
+                if (action === 'declare') updatedHistory[idx].status = DeclarationStatus.Enviada;
+                if (action === 'pay') updatedHistory[idx].is_paid = true;
+                updatedHistory[idx].updatedAt = new Date().toISOString();
+            }
+            updated.declarations = updatedHistory;
+        } else if (type === 'anexo') {
+            const idx = updatedHistory.findIndex(d => arePeriodsEqual(d.period, period) && d.type === 'ANEXO');
+            if (idx === -1) {
+                updatedHistory.push({
+                    period,
+                    type: 'ANEXO',
                     status: action === 'declare' ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente,
                     is_paid: action === 'pay',
                     updatedAt: new Date().toISOString()
