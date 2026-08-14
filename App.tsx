@@ -622,6 +622,8 @@ const App: React.FC = () => {
         currentUser={publicUser}
         onLogin={setPublicUser}
         onLogout={() => setPublicUser(null)}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
     </Suspense>
   );
