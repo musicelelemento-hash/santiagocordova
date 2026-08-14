@@ -247,129 +247,134 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
     };
 
     return (
-        <div className="space-y-8 animate-fade-in pb-24">
-            {/* ── HEADER DE FACTURADORES (STITCH LUXURY) ── */}
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/[0.08] bg-[#051424]/90 backdrop-blur-2xl shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] p-8 md:p-10">
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-teal-500/15 via-indigo-500/5 to-transparent blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-[#10b981]/10 to-transparent blur-3xl pointer-events-none" />
+        <div className="space-y-6 pb-24 animate-in fade-in duration-300 relative font-sans min-h-screen">
+            {/* ── TOP EXECUTIVE STRIPE ── */}
+            <div className="relative z-20 px-4 sm:px-0">
+                <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 border-t-white/20 bg-[#051424]/90 shadow-2xl backdrop-blur-2xl p-6 sm:p-10 transition-all duration-500">
+                    {/* Mesh Gradient */}
+                    <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-radial from-[#2B6AFF]/15 to-transparent blur-3xl" />
+                        <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-gradient-radial from-[#00A896]/15 to-transparent blur-3xl" />
+                    </div>
 
-                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    <div className="flex items-center gap-5">
-                        <div className="p-4.5 rounded-3xl bg-gradient-to-br from-[#10b981] to-teal-700 shadow-xl shadow-[#10b981]/30 text-white shrink-0">
-                            <ShoppingBag size={34} strokeWidth={2.2} />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2 mb-1.5">
-                                <div className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                                <span className="text-[10px] font-black text-[#10b981] uppercase tracking-[0.3em] font-mono">Control de Emisión & Planes SRI</span>
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
+                        <div className="w-full sm:w-auto font-mono">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00A896]/15 border border-[#00A896]/30 shadow-[0_0_10px_rgba(0,168,150,0.2)]">
+                                    <div className="relative w-2 h-2 rounded-full bg-[#00A896]">
+                                        <div className="absolute inset-0 rounded-full bg-[#00A896] animate-ping opacity-60" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.25em]">CONTROL DE EMISIÓN & PLANES SRI</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">• Plataformas SRI 2026</span>
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-display">
-                                Facturación Electrónica & Planes
+                            <h1 className="text-3xl sm:text-5xl font-black text-white leading-none tracking-tight font-display">
+                                FACTURACIÓN & <span className="bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF] bg-clip-text text-transparent">PLANES</span>
                             </h1>
-                            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium max-w-2xl">
-                                Gestión de software de emisión (Ecuafact, Zifact, etc.), expedientes de firma .p12 y separación estricta de clientes particulares vs contables.
+                            <p className="mt-2.5 text-xs sm:text-sm text-slate-300 font-sans font-medium max-w-2xl">
+                                Gestión de software de emisión (Ecuafact, Zifact, etc.), expedientes de firma .p12 y separación estricta de particulares vs contables.
                             </p>
                         </div>
+
+                        {/* ACCIONES DE REGISTRO RÁPIDO */}
+                        <div className="flex items-center gap-3 flex-wrap shrink-0 font-mono">
+                            <button
+                                onClick={() => setIsSalesModalOpen(true)}
+                                className="px-6 py-3.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-[#00A896] hover:to-teal-500 text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-[#00A896]/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer border border-white/10"
+                            >
+                                <Plus size={16} />
+                                <span>Vender Plan / Combo</span>
+                            </button>
+                            <button
+                                onClick={() => setIsQuickPlanModalOpen(true)}
+                                className="px-5 py-3.5 bg-[#0b1326] hover:bg-white/10 text-slate-200 border border-white/10 font-bold text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+                            >
+                                <FileText size={16} className="text-[#00A896]" />
+                                <span>Autorización Ecuafact</span>
+                            </button>
+                        </div>
                     </div>
 
-                    {/* ACCIONES DE REGISTRO RÁPIDO */}
-                    <div className="flex items-center gap-3 flex-wrap shrink-0">
-                        <button
-                            onClick={() => setIsSalesModalOpen(true)}
-                            className="px-5 py-3 bg-gradient-to-r from-[#10b981] via-teal-500 to-emerald-600 hover:from-[#10b981]/90 hover:to-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#10b981]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+                    {/* ── 4 TARJETAS EJECUTIVAS KPI ── */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-white/10 font-mono">
+                        {/* Card 1: Total Planes */}
+                        <div 
+                            onClick={() => setFilterStatus('todos')}
+                            className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                                filterStatus === 'todos' 
+                                    ? 'bg-[#00A896]/15 border-[#00A896]/40 text-[#00A896] shadow-lg shadow-[#00A896]/10 scale-[1.02]' 
+                                    : 'bg-[#020b14] border-white/10 text-slate-400 hover:border-white/20'
+                            }`}
                         >
-                            <Plus size={16} strokeWidth={2.5} />
-                            <span>Vender Plan / Combo</span>
-                        </button>
-                        <button
-                            onClick={() => setIsQuickPlanModalOpen(true)}
-                            className="px-5 py-3 bg-slate-900/90 hover:bg-slate-800 text-teal-300 border border-teal-500/30 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 cursor-pointer"
+                            <div className="flex justify-between items-start">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Planes</span>
+                                <ShoppingBag size={16} className="text-[#00A896]" />
+                            </div>
+                            <div className="text-3xl font-black text-white font-mono mt-2">{kpis.total}</div>
+                            <div className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1.5 font-sans">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#00A896]" />
+                                <span>Emisión Digital</span>
+                            </div>
+                        </div>
+
+                        {/* Card 2: Particulares (Solo Plan) */}
+                        <div 
+                            onClick={() => setFilterStatus('particulares')}
+                            className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                                filterStatus === 'particulares' 
+                                    ? 'bg-sky-500/15 border-sky-500/40 text-sky-300 shadow-lg shadow-sky-500/10 scale-[1.02]' 
+                                    : 'bg-[#020b14] border-white/10 text-slate-400 hover:border-white/20'
+                            }`}
                         >
-                            <FileText size={16} strokeWidth={2.5} />
-                            <span>Autorización Ecuafact (DOCX)</span>
-                        </button>
-                    </div>
-                </div>
+                            <div className="flex justify-between items-start">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-400">Solo Plan (Sin IVA)</span>
+                                <User size={16} className="text-sky-400" />
+                            </div>
+                            <div className="text-3xl font-black text-sky-400 font-mono mt-2">{kpis.particulares}</div>
+                            <div className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1.5 font-sans">
+                                <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                                <span>Aislados de Matriz IVA</span>
+                            </div>
+                        </div>
 
-                {/* ── 4 TARJETAS EJECUTIVAS KPI (STITCH SUITE) ── */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8 pt-8 border-t border-white/10">
-                    {/* Card 1: Total Planes */}
-                    <div 
-                        onClick={() => setFilterStatus('todos')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
-                            filterStatus === 'todos' 
-                                ? 'bg-teal-500/15 border-teal-500/40 text-teal-300 shadow-lg shadow-teal-500/10 scale-[1.02]' 
-                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:border-teal-500/30'
-                        }`}
-                    >
-                        <div className="flex justify-between items-start">
-                            <span className="text-[10px] font-black uppercase tracking-wider font-mono text-slate-400">Total Planes</span>
-                            <ShoppingBag size={16} className="text-teal-400" />
+                        {/* Card 3: Clientes Contables */}
+                        <div 
+                            onClick={() => setFilterStatus('clientes')}
+                            className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                                filterStatus === 'clientes' 
+                                    ? 'bg-[#C9A96E]/15 border-[#C9A96E]/40 text-[#C9A96E] shadow-lg shadow-[#C9A96E]/10 scale-[1.02]' 
+                                    : 'bg-[#020b14] border-white/10 text-slate-400 hover:border-white/20'
+                            }`}
+                        >
+                            <div className="flex justify-between items-start">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-[#C9A96E]">Clientes Contables</span>
+                                <UserCheck size={16} className="text-[#C9A96E]" />
+                            </div>
+                            <div className="text-3xl font-black text-[#C9A96E] font-mono mt-2">{kpis.contables}</div>
+                            <div className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1.5 font-sans">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#C9A96E]" />
+                                <span>Servicio Integral + Plan</span>
+                            </div>
                         </div>
-                        <div className="text-3xl font-black text-white font-mono mt-2">{kpis.total}</div>
-                        <div className="text-[10px] font-semibold text-teal-400/80 mt-1 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-                            <span>Emisión Digital</span>
-                        </div>
-                    </div>
 
-                    {/* Card 2: Particulares (Solo Plan) */}
-                    <div 
-                        onClick={() => setFilterStatus('particulares')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
-                            filterStatus === 'particulares' 
-                                ? 'bg-sky-500/15 border-sky-500/40 text-sky-300 shadow-lg shadow-sky-500/10 scale-[1.02]' 
-                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:border-sky-500/30'
-                        }`}
-                    >
-                        <div className="flex justify-between items-start">
-                            <span className="text-[10px] font-black uppercase tracking-wider font-mono text-sky-400">Solo Plan (Sin IVA)</span>
-                            <User size={16} className="text-sky-400" />
-                        </div>
-                        <div className="text-3xl font-black text-sky-400 font-mono mt-2">{kpis.particulares}</div>
-                        <div className="text-[10px] font-semibold text-slate-400 mt-1 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
-                            <span>Aislados de la Matriz IVA</span>
-                        </div>
-                    </div>
-
-                    {/* Card 3: Clientes Contables */}
-                    <div 
-                        onClick={() => setFilterStatus('clientes')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
-                            filterStatus === 'clientes' 
-                                ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300 shadow-lg shadow-indigo-500/10 scale-[1.02]' 
-                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:border-indigo-500/30'
-                        }`}
-                    >
-                        <div className="flex justify-between items-start">
-                            <span className="text-[10px] font-black uppercase tracking-wider font-mono text-indigo-400">Clientes Contables</span>
-                            <UserCheck size={16} className="text-indigo-400" />
-                        </div>
-                        <div className="text-3xl font-black text-indigo-300 font-mono mt-2">{kpis.contables}</div>
-                        <div className="text-[10px] font-semibold text-slate-400 mt-1 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                            <span>Servicio Integral + Facturador</span>
-                        </div>
-                    </div>
-
-                    {/* Card 4: Estado Activados */}
-                    <div 
-                        onClick={() => setFilterStatus('activado')}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
-                            filterStatus === 'activado' 
-                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-lg shadow-emerald-500/10 scale-[1.02]' 
-                                : 'bg-slate-900/40 border-white/5 text-slate-400 hover:border-emerald-500/30'
-                        }`}
-                    >
-                        <div className="flex justify-between items-start">
-                            <span className="text-[10px] font-black uppercase tracking-wider font-mono text-emerald-400">Activados & Listos</span>
-                            <CheckCircle2 size={16} className="text-emerald-400" />
-                        </div>
-                        <div className="text-3xl font-black text-emerald-400 font-mono mt-2">{kpis.activado}</div>
-                        <div className="text-[10px] font-semibold text-emerald-400/80 mt-1 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                            <span>{kpis.total > 0 ? Math.round((kpis.activado / kpis.total) * 100) : 100}% Operativos</span>
+                        {/* Card 4: Estado Activados */}
+                        <div 
+                            onClick={() => setFilterStatus('activado')}
+                            className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                                filterStatus === 'activado' 
+                                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-lg shadow-emerald-500/10 scale-[1.02]' 
+                                    : 'bg-[#020b14] border-white/10 text-slate-400 hover:border-white/20'
+                            }`}
+                        >
+                            <div className="flex justify-between items-start">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Activados & Listos</span>
+                                <CheckCircle2 size={16} className="text-emerald-400" />
+                            </div>
+                            <div className="text-3xl font-black text-emerald-400 font-mono mt-2">{kpis.activado}</div>
+                            <div className="text-[10px] font-medium text-slate-400 mt-1 flex items-center gap-1.5 font-sans">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                <span>{kpis.total > 0 ? Math.round((kpis.activado / kpis.total) * 100) : 100}% Operativos</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -377,341 +382,347 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
             {/* ── ALERTAS DE VENCIMIENTO DE FIRMA ── */}
             {expiringAlerts.length > 0 && (
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-6 backdrop-blur-xl">
-                    <div className="flex items-center gap-3 mb-3">
-                        <AlertTriangle className="text-amber-400" size={22} />
-                        <h3 className="text-amber-400 font-black text-sm uppercase tracking-wider font-mono">
-                            Firmas Electrónicas por Vencer (Próximos 15 días)
-                        </h3>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {expiringAlerts.map(client => {
-                            const expDate = new Date(client.signatureExpirationDate!);
-                            const diffDays = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 3600 * 24));
-                            return (
-                                <div key={client.id} className="bg-slate-950/60 border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between">
-                                    <div>
-                                        <div className="font-bold text-white uppercase text-xs truncate">{client.tradeName || client.name}</div>
-                                        <div className="text-[11px] font-mono text-slate-400 mt-0.5">RUC: {client.ruc}</div>
+                <div className="px-4 sm:px-0">
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-[2rem] p-6 backdrop-blur-2xl font-mono">
+                        <div className="flex items-center gap-3 mb-4">
+                            <AlertTriangle className="text-amber-400" size={20} />
+                            <h3 className="text-amber-400 font-bold text-xs uppercase tracking-wider">
+                                Firmas Electrónicas por Vencer (Próximos 15 días)
+                            </h3>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {expiringAlerts.map(client => {
+                                const expDate = new Date(client.signatureExpirationDate!);
+                                const diffDays = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 3600 * 24));
+                                return (
+                                    <div key={client.id} className="bg-[#020b14] border border-amber-500/20 rounded-2xl p-4 flex flex-col justify-between">
+                                        <div>
+                                            <div className="font-bold text-white uppercase text-xs truncate">{client.tradeName || client.name}</div>
+                                            <div className="text-[10px] font-mono text-slate-400 mt-0.5">RUC: {client.ruc}</div>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5 font-mono">
+                                            <span className="text-xs font-bold text-amber-400">{format(expDate, "dd/MM/yyyy")}</span>
+                                            <span className="text-[9px] uppercase font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">
+                                                {diffDays} días rest.
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
-                                        <span className="text-xs font-mono font-bold text-amber-400">{format(expDate, "dd/MM/yyyy")}</span>
-                                        <span className="text-[9px] uppercase font-black bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">
-                                            Vence en {diffDays} días
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* ── BARRA DE BÚSQUEDA Y FILTRADO SEGMENTADO ── */}
-            <div className="flex flex-col lg:flex-row items-center gap-4 justify-between bg-slate-900/60 p-4 rounded-3xl border border-white/10 backdrop-blur-xl">
-                <div className="relative w-full lg:max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                    <input
-                        type="text"
-                        placeholder="Buscar por cliente, RUC o software..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-11 pr-10 py-2.5 bg-slate-950/80 rounded-2xl border border-white/10 text-xs font-bold text-white placeholder-slate-500 outline-none focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/30 transition-all"
-                    />
-                    {searchTerm && (
-                        <button
-                            onClick={() => setSearchTerm('')}
-                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs font-bold p-1"
-                        >
-                            ✕
-                        </button>
-                    )}
-                </div>
+            <div className="px-4 sm:px-0">
+                <div className="flex flex-col lg:flex-row items-center gap-4 justify-between bg-[#051424]/90 p-4 rounded-[2rem] border border-white/10 backdrop-blur-2xl shadow-xl font-mono">
+                    <div className="relative w-full lg:max-w-md">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="BUSCAR POR CLIENTE, RUC O SOFTWARE..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-11 pr-10 py-3 bg-[#020b14] rounded-2xl border border-white/10 text-xs font-mono uppercase text-white placeholder-slate-500 outline-none focus:border-[#00A896]/50 transition-all"
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white text-xs font-bold p-1 cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
 
-                <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1">
-                    {[
-                        { id: 'todos', label: `Todos (${kpis.total})` },
-                        { id: 'particulares', label: `Solo Plan / Sin IVA (${kpis.particulares})`, icon: User },
-                        { id: 'clientes', label: `Clientes Contables (${kpis.contables})`, icon: UserCheck },
-                        { id: 'recursos_listos', label: `Por Subir (${kpis.recursos})` },
-                        { id: 'activado', label: `Activados (${kpis.activado})` },
-                        { id: 'sin_firma', label: `Sin Firma (${kpis.sinFirma})` }
-                    ].map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setFilterStatus(tab.id as any)}
-                            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 whitespace-nowrap ${
-                                filterStatus === tab.id
-                                    ? 'bg-[#10b981] text-white border-[#10b981] shadow-md shadow-[#10b981]/20 scale-[1.02]'
-                                    : 'bg-slate-950/60 border-white/5 text-slate-400 hover:text-white'
-                            }`}
-                        >
-                            {tab.icon && <tab.icon size={13} />}
-                            <span>{tab.label}</span>
-                        </button>
-                    ))}
+                    <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1">
+                        {[
+                            { id: 'todos', label: `Todos (${kpis.total})` },
+                            { id: 'particulares', label: `Solo Plan / Sin IVA (${kpis.particulares})`, icon: User },
+                            { id: 'clientes', label: `Clientes Contables (${kpis.contables})`, icon: UserCheck },
+                            { id: 'recursos_listos', label: `Por Subir (${kpis.recursos})` },
+                            { id: 'activado', label: `Activados (${kpis.activado})` },
+                            { id: 'sin_firma', label: `Sin Firma (${kpis.sinFirma})` }
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setFilterStatus(tab.id as any)}
+                                className={`px-3.5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                                    filterStatus === tab.id
+                                        ? 'bg-white/15 text-white border-white/20 shadow-md scale-[1.02]'
+                                        : 'bg-[#020b14] border-white/5 text-slate-400 hover:text-white'
+                                }`}
+                            >
+                                {tab.icon && <tab.icon size={12} />}
+                                <span>{tab.label}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            {/* ── LISTA DE FACTURADORES ── */}
-            <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-6 md:p-8 space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h3 className="text-sm font-black text-white uppercase tracking-wider">
-                            Registro de Trámites y Activaciones de Facturadores
-                        </h3>
-                        <p className="text-[11px] text-slate-400 font-medium">
-                            Descarga los recursos recopilados en 1-clic o inspecciona/sube directamente a la Bóveda del Cliente.
-                        </p>
+            {/* ── TABLA DE FACTURADORES ── */}
+            <div className="px-4 sm:px-0">
+                <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 border-t-white/20 shadow-2xl p-6 sm:p-8 space-y-6">
+                    <div className="flex items-center justify-between font-mono">
+                        <div>
+                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                                Registro de Trámites y Activaciones de Facturadores
+                            </h3>
+                            <p className="text-xs text-slate-400 font-sans mt-0.5">
+                                Descarga los recursos recopilados en 1-clic o inspecciona y sube directamente a la Bóveda del Cliente.
+                            </p>
+                        </div>
                     </div>
-                </div>
 
-                {displayClients.length === 0 ? (
-                    <div className="p-12 text-center border border-dashed border-white/10 rounded-3xl text-slate-400 space-y-2">
-                        <div className="text-sm font-bold text-slate-300">No se encontraron registros de planes</div>
-                        <p className="text-xs text-slate-500 max-w-md mx-auto">
-                            No hay clientes con planes de facturación que coincidan con los filtros activos. Usa el botón "Vender Plan / Combo" para registrar uno nuevo.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto rounded-3xl border border-white/5 bg-slate-950/40">
-                        <table className="w-full text-left border-collapse text-xs">
-                            <thead>
-                                <tr className="border-b border-white/10 bg-slate-900/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                    <th className="py-4 px-5">Cliente</th>
-                                    <th className="py-4 px-5">Plan Vendido</th>
-                                    <th className="py-4 px-5">Expediente & Firma en Bóveda</th>
-                                    <th className="py-4 px-5">Estado de Trámite</th>
-                                    <th className="py-4 px-5">Credenciales Facturador</th>
-                                    <th className="py-4 px-5 text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {displayClients.map((client) => {
-                                    if (!client) return null;
-                                    const config = client.billingPlan || client.facturadorConfig || {
-                                        programName: 'Plan Particular',
-                                        documentStatus: 'Registrado',
-                                        username: client.ruc,
-                                        password: client.sriPassword
-                                    };
-                                    const pwdVisible = visiblePasswords[client.id] || false;
-                                    const isCopied = copiedId === client.id;
-                                    const providerUrl = config.url || (config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' : 'https://app.ecuafact.com');
+                    {displayClients.length === 0 ? (
+                        <div className="p-12 text-center border border-dashed border-white/10 rounded-3xl text-slate-400 space-y-2 font-mono">
+                            <div className="text-xs font-bold text-slate-300 uppercase">No se encontraron registros de planes</div>
+                            <p className="text-xs text-slate-500 max-w-md mx-auto font-sans">
+                                No hay clientes con planes de facturación que coincidan con los filtros activos. Usa el botón "Vender Plan / Combo" para registrar uno nuevo.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto rounded-3xl border border-white/10 bg-[#020b14]">
+                            <table className="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr className="border-b border-white/10 bg-[#0b1326] text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                                        <th className="py-4 px-5">Cliente</th>
+                                        <th className="py-4 px-5">Plan Vendido</th>
+                                        <th className="py-4 px-5">Expediente & Firma en Bóveda</th>
+                                        <th className="py-4 px-5">Estado de Trámite</th>
+                                        <th className="py-4 px-5">Credenciales Facturador</th>
+                                        <th className="py-4 px-5 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5 font-mono">
+                                    {displayClients.map((client) => {
+                                        if (!client) return null;
+                                        const config = client.billingPlan || client.facturadorConfig || {
+                                            programName: 'Plan Particular',
+                                            documentStatus: 'Registrado',
+                                            username: client.ruc,
+                                            password: client.sriPassword
+                                        };
+                                        const pwdVisible = visiblePasswords[client.id] || false;
+                                        const isCopied = copiedId === client.id;
+                                        const providerUrl = config.url || (config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' : 'https://app.ecuafact.com');
 
-                                    // Contar archivos presentes vs totales
-                                    const isEcuafact = config.programName?.toLowerCase().includes('ecuafact');
-                                    const totalRequired = isEcuafact ? 6 : 5;
-                                    const presentCount = [
-                                        client.idCardFront, client.idCardBack, client.idCardSelfie, client.rucPdf, client.signatureFile,
-                                        ...(isEcuafact ? [client.ecuafactSignedRequest] : [])
-                                    ].filter(Boolean).length;
-                                    const isComplete = presentCount === totalRequired;
-                                    const totalVaultFiles = (client.vault?.length || 0) + presentCount;
+                                        // Contar archivos presentes vs totales
+                                        const isEcuafact = config.programName?.toLowerCase().includes('ecuafact');
+                                        const totalRequired = isEcuafact ? 6 : 5;
+                                        const presentCount = [
+                                            client.idCardFront, client.idCardBack, client.idCardSelfie, client.rucPdf, client.signatureFile,
+                                            ...(isEcuafact ? [client.ecuafactSignedRequest] : [])
+                                        ].filter(Boolean).length;
+                                        const isComplete = presentCount === totalRequired;
+                                        const totalVaultFiles = (client.vault?.length || 0) + presentCount;
 
-                                    return (
-                                        <tr key={client.id} className="hover:bg-white/[0.01] transition-colors">
-                                            <td className="py-4 px-5">
-                                                <p className="font-bold text-white uppercase">{client.tradeName || client.name}</p>
-                                                <p className="text-[10px] text-slate-400 font-mono">{client.ruc}</p>
-                                            </td>
-                                            <td className="py-4 px-5">
-                                                <p className="font-bold text-teal-400">{config.programName}</p>
-                                                <p className="text-[10px] text-slate-400 font-mono">
-                                                    {config.documentStatus || 'Plan Registrado'} {config.price ? `— $${config.price}` : ''}
-                                                </p>
-                                            </td>
-                                            <td className="py-4 px-5 space-y-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                                                        isComplete ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                                    }`}>
-                                                        {presentCount}/{totalRequired} Recursos
-                                                    </span>
-                                                    {presentCount > 0 && (
-                                                        <button
-                                                            onClick={() => handleDownloadAllResources(client)}
-                                                            className="px-2.5 py-1 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold border border-indigo-500/40 flex items-center gap-1 text-[10px] uppercase transition-all shadow-sm"
-                                                            title="Descargar todos los archivos del expediente en 1 clic"
-                                                        >
-                                                            <FolderDown size={12} /> Paquete Trámite
-                                                        </button>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {/* Firma Electrónica .p12 */}
-                                                    {client.signatureFile ? (
-                                                        <button
-                                                            onClick={() => downloadStoredFile(client.signatureFile)}
-                                                            className="px-2 py-0.5 rounded-lg bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 font-bold border border-teal-500/30 flex items-center gap-1 text-[9px]"
-                                                            title={`Descargar Firma .p12 (${client.signatureProvider || 'SRI'}) - Vence: ${client.signatureExpirationDate || 'Sin fecha'}`}
-                                                        >
-                                                            <Download size={9} /> 🔑 Firma .p12
-                                                        </button>
-                                                    ) : (
-                                                        <span className="px-2 py-0.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[9px]" title="Falta Firma Electrónica .p12 en Bóveda">⚠️ Sin Firma .p12</span>
-                                                    )}
-
-                                                    {client.idCardFront ? (
-                                                        <button
-                                                            onClick={() => downloadStoredFile(client.idCardFront)}
-                                                            className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px]"
-                                                            title="Descargar Cédula Frontal"
-                                                        >
-                                                            <Download size={9} /> 🪪 Frente
-                                                        </button>
-                                                    ) : (
-                                                        <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Frontal">⚠️ Frente</span>
-                                                    )}
-
-                                                    {client.idCardBack ? (
-                                                        <button
-                                                            onClick={() => downloadStoredFile(client.idCardBack)}
-                                                            className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px]"
-                                                            title="Descargar Cédula Reverso"
-                                                        >
-                                                            <Download size={9} /> 🪪 Reverso
-                                                        </button>
-                                                    ) : (
-                                                        <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Reverso">⚠️ Reverso</span>
-                                                    )}
-
-                                                    {client.idCardSelfie ? (
-                                                        <button
-                                                            onClick={() => downloadStoredFile(client.idCardSelfie)}
-                                                            className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px]"
-                                                            title="Descargar Foto Selfie"
-                                                        >
-                                                            <Download size={9} /> 📸 Selfie
-                                                        </button>
-                                                    ) : (
-                                                        <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-500 border border-white/5 text-[9px]" title="Falta Selfie">⚠️ Selfie</span>
-                                                    )}
-
-                                                    {client.rucPdf ? (
-                                                        <button
-                                                            onClick={() => downloadStoredFile(client.rucPdf)}
-                                                            className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px]"
-                                                            title="Descargar RUC Actualizado"
-                                                        >
-                                                            <Download size={9} /> 📄 RUC
-                                                        </button>
-                                                    ) : (
-                                                        <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-500 border border-white/5 text-[9px]" title="Falta RUC Actualizado">⚠️ RUC</span>
-                                                    )}
-
-                                                    {isEcuafact && (
-                                                        client.ecuafactSignedRequest ? (
+                                        return (
+                                            <tr key={client.id} className="hover:bg-white/[0.02] transition-colors">
+                                                <td className="py-4 px-5">
+                                                    <p className="font-bold text-white uppercase text-xs">{client.tradeName || client.name}</p>
+                                                    <p className="text-[10px] text-slate-400 font-mono">{client.ruc}</p>
+                                                </td>
+                                                <td className="py-4 px-5">
+                                                    <p className="font-bold text-[#00A896] text-xs">{config.programName}</p>
+                                                    <p className="text-[10px] text-slate-400 font-mono">
+                                                        {config.documentStatus || 'Plan Registrado'} {config.price ? `— $${config.price}` : ''}
+                                                    </p>
+                                                </td>
+                                                <td className="py-4 px-5 space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                                                            isComplete ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                                                        }`}>
+                                                            {presentCount}/{totalRequired} Recursos
+                                                        </span>
+                                                        {presentCount > 0 && (
                                                             <button
-                                                                onClick={() => downloadStoredFile(client.ecuafactSignedRequest)}
-                                                                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px]"
-                                                                title="Descargar Solicitud de Terceros Firmada"
+                                                                onClick={() => handleDownloadAllResources(client)}
+                                                                className="px-2.5 py-1 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 font-bold border border-indigo-500/30 flex items-center gap-1 text-[9px] uppercase tracking-wider transition-all cursor-pointer"
+                                                                title="Descargar todos los archivos del expediente en 1 clic"
                                                             >
-                                                                <Download size={9} /> ✍️ Solicitud
+                                                                <FolderDown size={11} /> Paquete Trámite
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {/* Firma Electrónica .p12 */}
+                                                        {client.signatureFile ? (
+                                                            <button
+                                                                onClick={() => downloadStoredFile(client.signatureFile)}
+                                                                className="px-2 py-0.5 rounded-lg bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] font-bold border border-[#00A896]/30 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                title={`Descargar Firma .p12 (${client.signatureProvider || 'SRI'}) - Vence: ${client.signatureExpirationDate || 'Sin fecha'}`}
+                                                            >
+                                                                <Download size={9} /> 🔑 Firma .p12
                                                             </button>
                                                         ) : (
-                                                            <span className="px-2 py-0.5 rounded-lg bg-slate-800 text-slate-500 border border-white/5 text-[9px]" title="Falta Solicitud Firmada">⚠️ Solicitud</span>
-                                                        )
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-5">
-                                                <select
-                                                    value={client.facturadorActivationStatus || 'recursos_listos'}
-                                                    onChange={(e) => {
-                                                        const newStatus = e.target.value as any;
-                                                        updateClient(client.id, { facturadorActivationStatus: newStatus });
-                                                        toast.success(`Trámite de ${client.name} marcado como: ${
-                                                            newStatus === 'recursos_listos' ? 'Recursos Listos' :
-                                                            newStatus === 'subido_plataforma' ? 'Subido a Plataforma' : 'Activado y Listo'
-                                                        }`);
-                                                    }}
-                                                    className={`px-3 py-1.5 rounded-xl border font-bold outline-none cursor-pointer bg-slate-950 ${
-                                                        (client.facturadorActivationStatus === 'activado') ? 'border-emerald-500/30 text-emerald-400' :
-                                                        (client.facturadorActivationStatus === 'subido_plataforma') ? 'border-amber-500/30 text-amber-400' :
-                                                        'border-rose-500/30 text-rose-400'
-                                                    }`}
-                                                >
-                                                    <option value="recursos_listos">🔴 Recursos Listos</option>
-                                                    <option value="subido_plataforma">🟡 Subido a Plataforma</option>
-                                                    <option value="activado">🟢 Activado y Listo</option>
-                                                </select>
-                                            </td>
-                                            <td className="py-4 px-5">
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-1 text-[11px] text-slate-300 font-mono">
-                                                        <span className="text-slate-500">U:</span> {config.username || client.ruc}
+                                                            <span className="px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[9px]" title="Falta Firma Electrónica .p12 en Bóveda">⚠️ Sin Firma .p12</span>
+                                                        )}
+
+                                                        {client.idCardFront ? (
+                                                            <button
+                                                                onClick={() => downloadStoredFile(client.idCardFront)}
+                                                                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                title="Descargar Cédula Frontal"
+                                                            >
+                                                                <Download size={9} /> 🪪 Frente
+                                                            </button>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Frontal">⚠️ Frente</span>
+                                                        )}
+
+                                                        {client.idCardBack ? (
+                                                            <button
+                                                                onClick={() => downloadStoredFile(client.idCardBack)}
+                                                                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                title="Descargar Cédula Reverso"
+                                                            >
+                                                                <Download size={9} /> 🪪 Reverso
+                                                            </button>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Reverso">⚠️ Reverso</span>
+                                                        )}
+
+                                                        {client.idCardSelfie ? (
+                                                            <button
+                                                                onClick={() => downloadStoredFile(client.idCardSelfie)}
+                                                                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                title="Descargar Foto Selfie"
+                                                            >
+                                                                <Download size={9} /> 📸 Selfie
+                                                            </button>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Selfie">⚠️ Selfie</span>
+                                                        )}
+
+                                                        {client.rucPdf ? (
+                                                            <button
+                                                                onClick={() => downloadStoredFile(client.rucPdf)}
+                                                                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                title="Descargar RUC Actualizado"
+                                                            >
+                                                                <Download size={9} /> 📄 RUC
+                                                            </button>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta RUC Actualizado">⚠️ RUC</span>
+                                                        )}
+
+                                                        {isEcuafact && (
+                                                            client.ecuafactSignedRequest ? (
+                                                                <button
+                                                                    onClick={() => downloadStoredFile(client.ecuafactSignedRequest)}
+                                                                    className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    title="Descargar Solicitud de Terceros Firmada"
+                                                                >
+                                                                    <Download size={9} /> ✍️ Solicitud
+                                                                </button>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Solicitud Firmada">⚠️ Solicitud</span>
+                                                            )
+                                                        )}
                                                     </div>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <span className="text-slate-500 font-mono text-[11px]">C:</span>
-                                                        <div className="inline-flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
-                                                            <span className="font-bold text-slate-300 min-w-[60px] text-[10px] font-mono">
-                                                                {pwdVisible ? (config.password || client.sriPassword) : '••••••••'}
-                                                            </span>
-                                                            <button
-                                                                onClick={() => togglePasswordVisibility(client.id)}
-                                                                className="p-0.5 hover:text-white text-slate-400 transition-colors"
-                                                                title="Ver / Ocultar"
-                                                            >
-                                                                {pwdVisible ? <EyeOff size={10} /> : <Eye size={10} />}
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleCopyPassword(client.id, config.password || client.sriPassword)}
-                                                                className="p-0.5 hover:text-teal-400 text-slate-400 transition-colors"
-                                                                title="Copiar clave"
-                                                            >
-                                                                {isCopied ? <Check size={10} className="text-teal-400" /> : <Copy size={10} />}
-                                                            </button>
+                                                </td>
+                                                <td className="py-4 px-5">
+                                                    <select
+                                                        value={client.facturadorActivationStatus || 'recursos_listos'}
+                                                        onChange={(e) => {
+                                                         const newStatus = e.target.value as any;
+                                                         updateClient(client.id, { facturadorActivationStatus: newStatus });
+                                                         toast.success(`Trámite de ${client.name} marcado como: ${
+                                                             newStatus === 'recursos_listos' ? 'Recursos Listos' :
+                                                             newStatus === 'subido_plataforma' ? 'Subido a Plataforma' : 'Activado y Listo'
+                                                         }`);
+                                                        }}
+                                                        className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold outline-none cursor-pointer bg-[#020b14] ${
+                                                            (client.facturadorActivationStatus === 'activado') ? 'border-emerald-500/30 text-emerald-400' :
+                                                            (client.facturadorActivationStatus === 'subido_plataforma') ? 'border-amber-500/30 text-amber-400' :
+                                                            'border-rose-500/30 text-rose-400'
+                                                        }`}
+                                                    >
+                                                        <option value="recursos_listos">🔴 Recursos Listos</option>
+                                                        <option value="subido_plataforma">🟡 Subido a Plataforma</option>
+                                                        <option value="activado">🟢 Activado y Listo</option>
+                                                    </select>
+                                                </td>
+                                                <td className="py-4 px-5">
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-1 text-[11px] text-slate-300 font-mono">
+                                                            <span className="text-slate-500">U:</span> {config.username || client.ruc}
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-slate-500 font-mono text-[11px]">C:</span>
+                                                            <div className="inline-flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
+                                                                <span className="font-bold text-slate-300 min-w-[60px] text-[10px] font-mono">
+                                                                    {pwdVisible ? (config.password || client.sriPassword) : '••••••••'}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => togglePasswordVisibility(client.id)}
+                                                                    className="p-0.5 hover:text-white text-slate-400 transition-colors cursor-pointer"
+                                                                    title="Ver / Ocultar"
+                                                                >
+                                                                    {pwdVisible ? <EyeOff size={10} /> : <Eye size={10} />}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleCopyPassword(client.id, config.password || client.sriPassword)}
+                                                                    className="p-0.5 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
+                                                                    title="Copiar clave"
+                                                                >
+                                                                    {isCopied ? <Check size={10} className="text-[#00A896]" /> : <Copy size={10} />}
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-5 text-right space-x-1.5 whitespace-nowrap">
-                                                <button
-                                                    onClick={() => setSelectedVaultClient(client)}
-                                                    className="px-2.5 py-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-indigo-500/30"
-                                                    title="Inspeccionar o subir archivos a la Bóveda del Cliente"
-                                                >
-                                                    <Lock size={11} /> Bóveda ({totalVaultFiles})
-                                                </button>
+                                                </td>
+                                                <td className="py-4 px-5 text-right space-x-1.5 whitespace-nowrap">
+                                                    <button
+                                                        onClick={() => setSelectedVaultClient(client)}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-indigo-500/30 text-[10px] cursor-pointer"
+                                                        title="Inspeccionar o subir archivos a la Bóveda del Cliente"
+                                                    >
+                                                        <Lock size={11} /> Bóveda ({totalVaultFiles})
+                                                    </button>
 
-                                                <button
-                                                    onClick={() => handleCopyClientSummary(client)}
-                                                    className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-white/10"
-                                                    title="Copiar texto con datos de cliente para registro en plataforma"
-                                                >
-                                                    <ClipboardCopy size={11} /> Ficha
-                                                </button>
+                                                    <button
+                                                        onClick={() => handleCopyClientSummary(client)}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-white/10 text-[10px] cursor-pointer"
+                                                        title="Copiar texto con datos de cliente para registro en plataforma"
+                                                    >
+                                                        <ClipboardCopy size={11} /> Ficha
+                                                    </button>
 
-                                                <button
-                                                    onClick={() => {
-                                                        const message = `Estimado(a) *${client.name}*, le saludamos de SantiagoCórdova.com. Le informamos que su facturador electrónico *${config.programName}* ha sido activado con éxito.\n\n*Plataforma:* ${providerUrl}\n*Usuario:* ${config.username || client.ruc}\n*Clave:* ${config.password || client.sriPassword}\n\nYa puede emitir sus facturas electrónicas normalmente.`;
-                                                        const pObj = client.phones?.[0];
-                                                        const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
-                                                        setWhatsAppPrompt({ clientName: client.name, phone, message });
-                                                    }}
-                                                    className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-emerald-500/20"
-                                                    title="Enviar credenciales de facturación por WhatsApp"
-                                                >
-                                                    <PhoneCall size={11} /> WhatsApp
-                                                </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            const message = `Estimado(a) *${client.name}*, le saludamos de SantiagoCórdova.com. Le informamos que su facturador electrónico *${config.programName}* ha sido activado con éxito.\n\n*Plataforma:* ${providerUrl}\n*Usuario:* ${config.username || client.ruc}\n*Clave:* ${config.password || client.sriPassword}\n\nYa puede emitir sus facturas electrónicas normalmente.`;
+                                                            const pObj = client.phones?.[0];
+                                                            const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
+                                                            setWhatsAppPrompt({ clientName: client.name, phone, message });
+                                                        }}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold uppercase transition-all inline-flex items-center gap-1 border border-emerald-500/20 text-[10px] cursor-pointer"
+                                                        title="Enviar credenciales de facturación por WhatsApp"
+                                                    >
+                                                        <PhoneCall size={11} /> WhatsApp
+                                                    </button>
 
-                                                <button
-                                                    onClick={() => window.open(providerUrl, '_blank')}
-                                                    className="px-2.5 py-1.5 rounded-lg bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] font-bold uppercase transition-all inline-flex items-center gap-1 border border-[#00A896]/20"
-                                                    title="Visitar plataforma del Facturador"
-                                                >
-                                                    <Globe size={11} /> Abrir
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                                                    <button
+                                                        onClick={() => window.open(providerUrl, '_blank')}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] font-bold uppercase transition-all inline-flex items-center gap-1 border border-[#00A896]/20 text-[10px] cursor-pointer"
+                                                        title="Visitar plataforma del Facturador"
+                                                    >
+                                                        <Globe size={11} /> Abrir
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* ── MODAL BÓVEDA DEL CLIENTE DIRECTA ── */}
@@ -722,18 +733,18 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                     title={`🔐 Bóveda de Recursos — ${selectedVaultClient.name}`}
                     size="lg"
                 >
-                    <div className="space-y-6 p-4 text-white">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <div className="space-y-6 p-2 text-white font-mono">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-[#020b14] border border-white/10">
                             <div>
-                                <h3 className="text-base font-black text-white">{selectedVaultClient.name}</h3>
-                                <p className="text-xs text-slate-400 font-mono">RUC: {selectedVaultClient.ruc} • {selectedVaultClient.regime || 'Régimen General'}</p>
+                                <h3 className="text-sm font-bold text-white uppercase">{selectedVaultClient.name}</h3>
+                                <p className="text-[10px] text-slate-400 font-mono">RUC: {selectedVaultClient.ruc} • {selectedVaultClient.regime || 'Régimen General'}</p>
                             </div>
                             <button
                                 onClick={() => {
                                     setSelectedVaultClient(null);
                                     navigate('clients', { clientIdToView: selectedVaultClient.id, initialTab: 'vault' });
                                 }}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0"
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 shrink-0 cursor-pointer"
                             >
                                 <ExternalLink size={14} /> Abrir Ficha Completa
                             </button>
@@ -741,29 +752,29 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                         {/* Credenciales Básicas de la Bóveda */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clave SRI</span>
-                                <div className="flex items-center justify-between font-mono text-xs text-teal-300">
+                            <div className="p-3.5 rounded-2xl bg-[#020b14] border border-white/10 space-y-1">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Clave SRI</span>
+                                <div className="flex items-center justify-between font-mono text-xs text-[#00A896]">
                                     <span>{selectedVaultClient.sriPassword || '—'}</span>
-                                    <button onClick={() => handleCopyPassword('sri', selectedVaultClient.sriPassword)} className="p-1 hover:text-white text-slate-400">
+                                    <button onClick={() => handleCopyPassword('sri', selectedVaultClient.sriPassword)} className="p-1 hover:text-white text-slate-400 cursor-pointer">
                                         <Copy size={12} />
                                     </button>
                                 </div>
                             </div>
-                            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clave Firma .p12</span>
-                                <div className="flex items-center justify-between font-mono text-xs text-amber-300">
+                            <div className="p-3.5 rounded-2xl bg-[#020b14] border border-white/10 space-y-1">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Clave Firma .p12</span>
+                                <div className="flex items-center justify-between font-mono text-xs text-[#C9A96E]">
                                     <span>{selectedVaultClient.electronicSignaturePassword || '—'}</span>
-                                    <button onClick={() => handleCopyPassword('p12', selectedVaultClient.electronicSignaturePassword)} className="p-1 hover:text-white text-slate-400">
+                                    <button onClick={() => handleCopyPassword('p12', selectedVaultClient.electronicSignaturePassword)} className="p-1 hover:text-white text-slate-400 cursor-pointer">
                                         <Copy size={12} />
                                     </button>
                                 </div>
                             </div>
-                            <div className="p-3.5 rounded-2xl bg-black/40 border border-white/10 space-y-1">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Clave Facturador</span>
-                                <div className="flex items-center justify-between font-mono text-xs text-emerald-300">
+                            <div className="p-3.5 rounded-2xl bg-[#020b14] border border-white/10 space-y-1">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Clave Facturador</span>
+                                <div className="flex items-center justify-between font-mono text-xs text-emerald-400">
                                     <span>{selectedVaultClient.facturadorConfig?.password || selectedVaultClient.sriPassword || '—'}</span>
-                                    <button onClick={() => handleCopyPassword('fact', selectedVaultClient.facturadorConfig?.password || selectedVaultClient.sriPassword)} className="p-1 hover:text-white text-slate-400">
+                                    <button onClick={() => handleCopyPassword('fact', selectedVaultClient.facturadorConfig?.password || selectedVaultClient.sriPassword)} className="p-1 hover:text-white text-slate-400 cursor-pointer">
                                         <Copy size={12} />
                                     </button>
                                 </div>
@@ -771,10 +782,10 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                         </div>
 
                         {/* Cargador Directo a Bóveda */}
-                        <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-3">
+                        <div className="p-5 rounded-2xl bg-[#020b14] border border-white/10 space-y-3">
                             <div className="flex items-center justify-between">
-                                <h4 className="text-xs font-black uppercase text-indigo-300 tracking-wider flex items-center gap-2">
-                                    <Upload size={14} /> Subir Recursos a la Bóveda del Cliente
+                                <h4 className="text-xs font-bold uppercase text-white tracking-wider flex items-center gap-2">
+                                    <Upload size={14} className="text-[#00A896]" /> Subir Recursos a la Bóveda del Cliente
                                 </h4>
                             </div>
                             
@@ -791,10 +802,10 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                     <button
                                         key={target.id}
                                         onClick={() => setVaultUploadTarget(target.id as any)}
-                                        className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold transition-all flex items-center gap-1.5 ${
+                                        className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
                                             vaultUploadTarget === target.id
-                                                ? 'bg-indigo-600 border-indigo-500 text-white'
-                                                : 'bg-slate-900 border-white/10 text-slate-400 hover:text-white'
+                                                ? 'bg-[#00A896] border-[#00A896] text-white shadow-md shadow-[#00A896]/20'
+                                                : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                                         }`}
                                     >
                                         <span>{target.label}</span>
@@ -804,28 +815,28 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
 
                             <div 
                                 {...getRootProps()} 
-                                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                                    isDragActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-slate-700 hover:border-indigo-400/50 bg-slate-900/50'
+                                className={`border border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                                    isDragActive ? 'border-[#00A896] bg-[#00A896]/10' : 'border-white/20 hover:border-[#00A896]/50 bg-white/5'
                                 }`}
                             >
                                 <input {...getInputProps()} />
-                                <UploadCloud className="mx-auto text-slate-400 mb-2" size={32} />
-                                <p className="text-sm text-slate-300 font-bold">
+                                <UploadCloud className="mx-auto text-slate-400 mb-2" size={28} />
+                                <p className="text-xs text-white font-bold uppercase">
                                     {isDragActive ? "¡Suelta el archivo aquí!" : "Arrastra un archivo aquí, o haz clic para seleccionar"}
                                 </p>
-                                <p className="text-xs text-slate-500 mt-1">
-                                    El archivo se guardará como: <span className="font-bold text-indigo-300 uppercase">{vaultUploadTarget}</span>
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                    Destino: <span className="font-bold text-[#00A896] uppercase">{vaultUploadTarget}</span>
                                 </p>
                             </div>
                         </div>
 
                         {/* Lista de Documentos en la Bóveda */}
                         <div className="space-y-3">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-300">
+                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                                 Documentos Disponibles en Bóveda
                             </h4>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto no-scrollbar pr-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto no-scrollbar pr-1">
                                 {[
                                     { file: selectedVaultClient.signatureFile, name: 'Firma Electrónica .p12', type: 'p12' },
                                     { file: selectedVaultClient.idCardFront, name: 'Cédula Frente', type: 'image' },
@@ -835,17 +846,17 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                     { file: selectedVaultClient.ecuafactSignedRequest, name: 'Solicitud Ecuafact Firmada', type: 'pdf' },
                                     ...(selectedVaultClient.vault || []).map(f => ({ file: f, name: f.name, type: f.type }))
                                 ].filter(item => item.file && item.file.content).map((item, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-white/5 text-xs">
+                                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-[#020b14] border border-white/10 text-xs">
                                         <div className="flex items-center gap-2.5 truncate">
-                                            <FileCode size={16} className="text-teal-400 shrink-0" />
-                                            <span className="font-bold text-slate-200 truncate">{item.name}</span>
+                                            <FileCode size={14} className="text-[#00A896] shrink-0" />
+                                            <span className="font-bold text-white truncate text-[11px]">{item.name}</span>
                                         </div>
                                         <button
                                             onClick={() => downloadStoredFile(item.file!)}
-                                            className="p-1.5 bg-white/5 hover:bg-white/10 text-teal-300 rounded-lg transition-all shrink-0"
+                                            className="p-1.5 bg-white/5 hover:bg-white/10 text-[#00A896] rounded-lg transition-all shrink-0 cursor-pointer"
                                             title="Descargar Archivo"
                                         >
-                                            <Download size={14} />
+                                            <Download size={13} />
                                         </button>
                                     </div>
                                 ))}
@@ -855,7 +866,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                         <div className="flex justify-end pt-2">
                             <button
                                 onClick={() => setSelectedVaultClient(null)}
-                                className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold"
+                                className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
                             >
                                 Cerrar Bóveda
                             </button>
