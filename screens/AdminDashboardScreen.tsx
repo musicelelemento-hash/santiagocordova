@@ -1215,90 +1215,155 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         </div>
                     </div>
 
-                    {/* TAB CONTENT 1: RADAR EJECUTIVO & CALENDARIO SRI */}
+                    {/* ── TAB CONTENT 1: RADAR EJECUTIVO & CALENDARIO SRI (STITCH NUEVA LUZ 3.0) ── */}
                     {hubTab === 'radar' && (
                         <div className="space-y-8 animate-fade-in">
                             {/* 1. CALENDARIO FISCAL SRI POR 9NO DÍGITO (10 DÍGITOS) */}
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2">
-                                        <Clock size={16} className="text-[#00A896]" />
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-[#00A896] shadow-[0_0_8px_#00A896]"></div>
                                         <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono">
-                                            Calendario de Vencimientos SRI · Por 9no Dígito del RUC
+                                            SRI Tax Deadline Matrix · Por 9no Dígito del RUC
                                         </h4>
                                     </div>
-                                    <span className="text-[10px] text-slate-400 font-mono">
-                                        Período Activo: <strong className="text-[#00A896]">{monthlyPeriodStr}</strong>
+                                    <span className="text-[10px] text-slate-400 font-mono bg-slate-900/60 dark:bg-white/5 px-3 py-1 rounded-lg border border-white/10">
+                                        Período Fiscal Activo: <strong className="text-[#00A896]">{monthlyPeriodStr}</strong>
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2.5">
-                                    {[
-                                        { digit: '1', day: 10 },
-                                        { digit: '2', day: 12 },
-                                        { digit: '3', day: 14 },
-                                        { digit: '4', day: 16 },
-                                        { digit: '5', day: 18 },
-                                        { digit: '6', day: 20 },
-                                        { digit: '7', day: 22 },
-                                        { digit: '8', day: 24 },
-                                        { digit: '9', day: 26 },
-                                        { digit: '0', day: 28 },
-                                    ].map(({ digit, day }) => {
-                                        const digitClients = clients.filter(c => !c.isDeleted && (c.isActive ?? true) && c.ruc[8] === digit);
-                                        const today = new Date();
-                                        const currentDay = today.getDate();
-                                        const isDueToday = currentDay === day;
-                                        const isPastDue = currentDay > day;
-                                        const daysDiff = day - currentDay;
+                                {/* Filas 1 y 2 (Dígitos 0 al 4 y 5 al 9) */}
+                                <div className="p-6 rounded-3xl border border-white/10 bg-slate-900/40 dark:bg-[#051424]/90 backdrop-blur-2xl shadow-xl space-y-4">
+                                    {/* Fila 1: Dígitos 0, 1, 2, 3, 4 */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                        {[
+                                            { digit: '0', day: 28 },
+                                            { digit: '1', day: 10 },
+                                            { digit: '2', day: 12 },
+                                            { digit: '3', day: 14 },
+                                            { digit: '4', day: 16 },
+                                        ].map(({ digit, day }) => {
+                                            const digitClients = clients.filter(c => !c.isDeleted && (c.isActive ?? true) && c.ruc[8] === digit);
+                                            const today = new Date();
+                                            const currentDay = today.getDate();
+                                            const isDueToday = currentDay === day;
+                                            const isPastDue = currentDay > day;
+                                            const daysDiff = day - currentDay;
 
-                                        return (
-                                            <button
-                                                key={digit}
-                                                onClick={() => navigate('declaraciones')}
-                                                className={`group relative overflow-hidden p-3.5 rounded-2xl border text-left transition-all duration-300 hover:scale-[1.03] hover:shadow-lg ${
-                                                    isDueToday
-                                                        ? 'bg-gradient-to-b from-rose-500/20 via-rose-500/10 to-transparent border-rose-500/50 shadow-rose-500/20 animate-pulse ring-2 ring-rose-500/40'
-                                                        : isPastDue
-                                                        ? 'bg-slate-900/40 border-white/5 opacity-80 hover:opacity-100'
-                                                        : 'bg-gradient-to-b from-white/5 to-transparent border-white/10 hover:border-[#00A896]/40'
-                                                }`}
-                                            >
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center font-mono ${
+                                            return (
+                                                <button
+                                                    key={digit}
+                                                    onClick={() => navigate('declaraciones')}
+                                                    className={`group relative overflow-hidden p-4 rounded-2xl border text-left transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
                                                         isDueToday
-                                                            ? 'bg-rose-500 text-white shadow-md'
+                                                            ? 'bg-gradient-to-b from-rose-500/20 via-rose-500/10 to-transparent border-rose-500/50 shadow-rose-500/20 ring-2 ring-rose-500/40 animate-pulse'
                                                             : isPastDue
-                                                            ? 'bg-slate-800 text-slate-400'
-                                                            : 'bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/30'
-                                                    }`}>
-                                                        {digit}
-                                                    </span>
-                                                    <span className="text-[9px] font-bold font-mono text-slate-400">
-                                                        {day} {format(today, 'MMM', { locale: es })}
-                                                    </span>
-                                                </div>
+                                                            ? 'bg-slate-900/40 border-white/5 opacity-80 hover:opacity-100 hover:border-white/20'
+                                                            : 'bg-gradient-to-b from-white/5 to-transparent border-white/10 hover:border-[#00A896]/50'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <span className={`text-2xl font-black font-mono tracking-tight ${
+                                                            isDueToday ? 'text-rose-400' : isPastDue ? 'text-slate-400' : 'text-white'
+                                                        }`}>
+                                                            {digit}
+                                                        </span>
+                                                        <div className={`w-2.5 h-2.5 rounded-full ${
+                                                            isDueToday
+                                                                ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
+                                                                : isPastDue
+                                                                ? 'bg-slate-600'
+                                                                : 'bg-[#00A896] shadow-[0_0_8px_#00A896]'
+                                                        }`}></div>
+                                                    </div>
 
-                                                <div className="space-y-1">
-                                                    <div className="flex items-baseline justify-between">
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase font-mono">Clientes</span>
-                                                        <span className="text-sm font-extrabold text-slate-900 dark:text-white font-mono">{digitClients.length}</span>
+                                                    <div className="space-y-1.5">
+                                                        <div className="font-mono text-xs text-slate-400">
+                                                            Clts: <strong className="text-white font-bold">{digitClients.length}</strong>
+                                                        </div>
+                                                        <div className={`text-[9px] font-black uppercase tracking-wider py-0.5 px-2 rounded font-mono inline-block ${
+                                                            isDueToday
+                                                                ? 'bg-rose-500 text-white'
+                                                                : isPastDue
+                                                                ? `Día ${day} (Pasó)`
+                                                                : daysDiff <= 3
+                                                                ? 'bg-amber-500/20 text-amber-300'
+                                                                : 'bg-[#00A896]/15 text-[#00A896]'
+                                                        }`}>
+                                                            {isDueToday ? '¡VENCE HOY!' : isPastDue ? 'Vencido' : `Vence en ${daysDiff}d`}
+                                                        </div>
                                                     </div>
-                                                    <div className={`text-[8px] font-black uppercase tracking-wider py-0.5 px-1.5 rounded text-center font-mono ${
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Línea decorativa de línea de tiempo */}
+                                    <div className="w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-2"></div>
+
+                                    {/* Fila 2: Dígitos 5, 6, 7, 8, 9 */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                        {[
+                                            { digit: '5', day: 18 },
+                                            { digit: '6', day: 20 },
+                                            { digit: '7', day: 22 },
+                                            { digit: '8', day: 24 },
+                                            { digit: '9', day: 26 },
+                                        ].map(({ digit, day }) => {
+                                            const digitClients = clients.filter(c => !c.isDeleted && (c.isActive ?? true) && c.ruc[8] === digit);
+                                            const today = new Date();
+                                            const currentDay = today.getDate();
+                                            const isDueToday = currentDay === day;
+                                            const isPastDue = currentDay > day;
+                                            const daysDiff = day - currentDay;
+
+                                            return (
+                                                <button
+                                                    key={digit}
+                                                    onClick={() => navigate('declaraciones')}
+                                                    className={`group relative overflow-hidden p-4 rounded-2xl border text-left transition-all duration-300 hover:scale-[1.03] hover:shadow-xl ${
                                                         isDueToday
-                                                            ? 'bg-rose-500 text-white'
+                                                            ? 'bg-gradient-to-b from-rose-500/20 via-rose-500/10 to-transparent border-rose-500/50 shadow-rose-500/20 ring-2 ring-rose-500/40 animate-pulse'
                                                             : isPastDue
-                                                            ? 'bg-slate-800/80 text-slate-400'
-                                                            : daysDiff <= 3
-                                                            ? 'bg-amber-500/20 text-amber-300'
-                                                            : 'bg-[#00A896]/10 text-[#00A896]'
-                                                    }`}>
-                                                        {isDueToday ? '¡VENCE HOY!' : isPastDue ? 'Vencido' : `En ${daysDiff}d`}
+                                                            ? 'bg-slate-900/40 border-white/5 opacity-80 hover:opacity-100 hover:border-white/20'
+                                                            : 'bg-gradient-to-b from-white/5 to-transparent border-white/10 hover:border-[#00A896]/50'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <span className={`text-2xl font-black font-mono tracking-tight ${
+                                                            isDueToday ? 'text-rose-400' : isPastDue ? 'text-slate-400' : 'text-white'
+                                                        }`}>
+                                                            {digit}
+                                                        </span>
+                                                        <div className={`w-2.5 h-2.5 rounded-full ${
+                                                            isDueToday
+                                                                ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
+                                                                : isPastDue
+                                                                ? 'bg-slate-600'
+                                                                : 'bg-[#00A896] shadow-[0_0_8px_#00A896]'
+                                                        }`}></div>
                                                     </div>
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
+
+                                                    <div className="space-y-1.5">
+                                                        <div className="font-mono text-xs text-slate-400">
+                                                            Clts: <strong className="text-white font-bold">{digitClients.length}</strong>
+                                                        </div>
+                                                        <div className={`text-[9px] font-black uppercase tracking-wider py-0.5 px-2 rounded font-mono inline-block ${
+                                                            isDueToday
+                                                                ? 'bg-rose-500 text-white'
+                                                                : isPastDue
+                                                                ? `Día ${day} (Pasó)`
+                                                                : daysDiff <= 3
+                                                                ? 'bg-amber-500/20 text-amber-300'
+                                                                : 'bg-[#00A896]/15 text-[#00A896]'
+                                                        }`}>
+                                                            {isDueToday ? '¡VENCE HOY!' : isPastDue ? 'Vencido' : `Vence en ${daysDiff}d`}
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
 
@@ -1306,88 +1371,93 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             <div className="space-y-3">
                                 <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-2">
                                     <Sparkles size={16} className="text-[#2B6AFF]" />
-                                    Lanzador de Mando Operativo
+                                    Command Actions Launcher
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {/* Card 1: Declaraciones */}
                                     <button
                                         onClick={() => navigate('declaraciones')}
-                                        className="group p-5 rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 via-[#00A896]/5 to-transparent hover:border-[#00A896]/50 hover:bg-[#00A896]/10 transition-all duration-300 text-left relative overflow-hidden shadow-sm hover:shadow-xl"
+                                        className="group p-5 rounded-2xl border border-white/10 border-t-white/20 bg-gradient-to-br from-white/5 via-[#00A896]/5 to-transparent hover:border-[#00A896]/50 hover:bg-[#00A896]/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg hover:shadow-2xl"
                                     >
                                         <div className="flex items-center justify-between mb-3">
-                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00A896] to-teal-600 text-white flex items-center justify-center shadow-lg shadow-[#00A896]/30 group-hover:scale-110 transition-transform">
-                                                <FileText size={20} />
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00A896] to-teal-600 text-white flex items-center justify-center shadow-lg shadow-[#00A896]/30 group-hover:scale-110 transition-transform">
+                                                <FileText size={22} />
                                             </div>
                                             <ArrowRight size={14} className="text-slate-500 group-hover:text-[#00A896] group-hover:translate-x-1 transition-all" />
                                         </div>
-                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Matriz de Declaraciones</h5>
-                                        <p className="text-[11px] text-slate-400">Control de IVA mensual, semestral y Renta anual con automatización SRI.</p>
+                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-0.5 font-display">Matriz Fiscal</h5>
+                                        <p className="text-[10px] text-[#00A896] font-mono mb-1">Full Audit View & Automation</p>
+                                        <p className="text-[11px] text-slate-400">Control de IVA mensual, semestral y Renta anual con RPA.</p>
                                     </button>
 
                                     {/* Card 2: Clientes */}
                                     <button
                                         onClick={() => navigate('clients')}
-                                        className="group p-5 rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 via-[#2B6AFF]/5 to-transparent hover:border-[#2B6AFF]/50 hover:bg-[#2B6AFF]/10 transition-all duration-300 text-left relative overflow-hidden shadow-sm hover:shadow-xl"
+                                        className="group p-5 rounded-2xl border border-white/10 border-t-white/20 bg-gradient-to-br from-white/5 via-[#2B6AFF]/5 to-transparent hover:border-[#2B6AFF]/50 hover:bg-[#2B6AFF]/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg hover:shadow-2xl"
                                     >
                                         <div className="flex items-center justify-between mb-3">
-                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-[#2B6AFF] text-white flex items-center justify-center shadow-lg shadow-[#2B6AFF]/30 group-hover:scale-110 transition-transform">
-                                                <Users size={20} />
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-[#2B6AFF] text-white flex items-center justify-center shadow-lg shadow-[#2B6AFF]/30 group-hover:scale-110 transition-transform">
+                                                <Users size={22} />
                                             </div>
                                             <ArrowRight size={14} className="text-slate-500 group-hover:text-[#2B6AFF] group-hover:translate-x-1 transition-all" />
                                         </div>
-                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Directorio de Clientes</h5>
-                                        <p className="text-[11px] text-slate-400">Expedientes fiscales, claves SRI, tarifas y WhatsApp directo.</p>
+                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-0.5 font-display">Directorio Clientes</h5>
+                                        <p className="text-[10px] text-[#2B6AFF] font-mono mb-1">Manage Profiles & SRI Keys</p>
+                                        <p className="text-[11px] text-slate-400">Expedientes fiscales, tarifas, WhatsApp y accesos.</p>
                                     </button>
 
                                     {/* Card 3: Facturador SRI */}
                                     <button
                                         onClick={() => navigate('sri_facturacion')}
-                                        className="group p-5 rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 via-[#C9A96E]/5 to-transparent hover:border-[#C9A96E]/50 hover:bg-[#C9A96E]/10 transition-all duration-300 text-left relative overflow-hidden shadow-sm hover:shadow-xl"
+                                        className="group p-5 rounded-2xl border border-white/10 border-t-white/20 bg-gradient-to-br from-white/5 via-[#C9A96E]/5 to-transparent hover:border-[#C9A96E]/50 hover:bg-[#C9A96E]/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg hover:shadow-2xl"
                                     >
                                         <div className="flex items-center justify-between mb-3">
-                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-[#C9A96E] text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform font-bold">
-                                                <Zap size={20} />
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-[#C9A96E] text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform font-bold">
+                                                <Zap size={22} />
                                             </div>
                                             <ArrowRight size={14} className="text-slate-500 group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all" />
                                         </div>
-                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Facturador SRI Electrónico</h5>
-                                        <p className="text-[11px] text-slate-400">Emisión instantánea de facturas autorizadas con firma .p12.</p>
+                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-0.5 font-display">Facturación Electrónica</h5>
+                                        <p className="text-[10px] text-[#C9A96E] font-mono mb-1">XML Processing & SRI Sync</p>
+                                        <p className="text-[11px] text-slate-400">Emisión de facturas autorizadas con firma .p12.</p>
                                     </button>
 
                                     {/* Card 4: Firmas .P12 */}
                                     <button
                                         onClick={() => navigate('firmas')}
-                                        className="group p-5 rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 via-teal-500/5 to-transparent hover:border-teal-400/50 hover:bg-teal-500/10 transition-all duration-300 text-left relative overflow-hidden shadow-sm hover:shadow-xl"
+                                        className="group p-5 rounded-2xl border border-white/10 border-t-white/20 bg-gradient-to-br from-white/5 via-teal-500/5 to-transparent hover:border-teal-400/50 hover:bg-teal-500/10 transition-all duration-300 text-left relative overflow-hidden shadow-lg hover:shadow-2xl"
                                     >
                                         <div className="flex items-center justify-between mb-3">
-                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 text-white flex items-center justify-center shadow-lg shadow-teal-500/20 group-hover:scale-110 transition-transform">
-                                                <KeyRound size={20} />
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 text-white flex items-center justify-center shadow-lg shadow-teal-500/20 group-hover:scale-110 transition-transform">
+                                                <KeyRound size={22} />
                                             </div>
                                             <ArrowRight size={14} className="text-slate-500 group-hover:text-teal-400 group-hover:translate-x-1 transition-all" />
                                         </div>
-                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Bóveda de Firmas .P12</h5>
-                                        <p className="text-[11px] text-slate-400">Control de vigencia, recordatorios y certificados digitales.</p>
+                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-0.5 font-display">Bóveda de Llaves .P12</h5>
+                                        <p className="text-[10px] text-teal-400 font-mono mb-1">Secure Vault Access</p>
+                                        <p className="text-[11px] text-slate-400">Control de vigencia, renovaciones y certificados.</p>
                                     </button>
                                 </div>
                             </div>
 
-                            {/* 3. RADAR DE CARTERA POR RÉGIMEN TRIBUTARIO */}
-                            <div className="p-6 rounded-2xl border border-white/10 bg-slate-950/40 space-y-4">
+                            {/* 3. RADAR DE CARTERA POR RÉGIMEN TRIBUTARIO (PROJECTED REVENUE BY REGIME) */}
+                            <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] font-mono">
-                                        Desglose de Cartera por Régimen Fiscal
-                                    </span>
+                                    <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                                        <TrendingUp size={16} className="text-[#00A896]" />
+                                        Projected Revenue by Regime
+                                    </h4>
                                     <span className="text-xs font-mono font-bold text-[#00A896]">
-                                        {clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length} Contribuyentes
+                                        {clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length} Contribuyentes Activos
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {[
-                                        { label: 'Régimen General', filterId: 'general', regime: TaxRegime.General, color: 'text-[#2B6AFF]', borderColor: 'border-[#2B6AFF]/30', bgGlow: 'from-[#2B6AFF]/10' },
-                                        { label: 'RIMPE Emprendedor', filterId: 'rimpe_emp', regime: TaxRegime.RimpeEmprendedor, color: 'text-[#00A896]', borderColor: 'border-[#00A896]/30', bgGlow: 'from-[#00A896]/10' },
-                                        { label: 'RIMPE Negocio Popular', filterId: 'rimpe_np', regime: TaxRegime.RimpeNegocioPopular, color: 'text-[#C9A96E]', borderColor: 'border-[#C9A96E]/30', bgGlow: 'from-[#C9A96E]/10' },
-                                        { label: 'Solo Firma / Plan', filterId: 'solo_plan', regime: null, color: 'text-teal-400', borderColor: 'border-teal-500/30', bgGlow: 'from-teal-500/10' },
+                                        { label: 'Régimen General', filterId: 'general', regime: TaxRegime.General, barColor: 'bg-[#2B6AFF]', textColor: 'text-[#2B6AFF]', hoverText: 'group-hover:text-[#2B6AFF]' },
+                                        { label: 'RIMPE Emprendedor', filterId: 'rimpe_emp', regime: TaxRegime.RimpeEmprendedor, barColor: 'bg-[#00A896]', textColor: 'text-[#00A896]', hoverText: 'group-hover:text-[#00A896]' },
+                                        { label: 'RIMPE Negocio Popular', filterId: 'rimpe_np', regime: TaxRegime.RimpeNegocioPopular, barColor: 'bg-[#C9A96E]', textColor: 'text-[#C9A96E]', hoverText: 'group-hover:text-[#C9A96E]' },
+                                        { label: 'Solo Firma / Plan', filterId: 'solo_plan', regime: null, barColor: 'bg-teal-400', textColor: 'text-teal-400', hoverText: 'group-hover:text-teal-400' },
                                     ].map((item, idx) => {
                                         const matched = item.regime
                                             ? clients.filter(c => !c.isDeleted && (c.isActive ?? true) && c.regime === item.regime)
@@ -1398,12 +1468,20 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             <div
                                                 key={idx}
                                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: item.filterId } })}
-                                                className={`p-4 rounded-xl border ${item.borderColor} bg-gradient-to-br ${item.bgGlow} to-transparent hover:scale-[1.02] cursor-pointer transition-all duration-300`}
+                                                className="p-5 rounded-2xl border border-white/10 bg-slate-900/40 dark:bg-[#051424]/90 hover:bg-white/5 cursor-pointer transition-all duration-300 relative overflow-hidden group shadow-lg"
                                             >
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase font-mono">{item.label}</p>
-                                                <div className="flex items-baseline justify-between mt-2">
-                                                    <span className={`text-2xl font-black font-mono ${item.color}`}>{matched.length}</span>
-                                                    <span className="text-xs font-bold text-slate-300 font-mono">${Math.round(feeSum).toLocaleString()}/mes</span>
+                                                <div className={`absolute top-0 left-0 w-1.5 h-full ${item.barColor} opacity-70 group-hover:opacity-100 transition-opacity`}></div>
+                                                <div className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                                    {item.label}
+                                                </div>
+                                                <div className={`font-mono text-2xl font-black text-slate-900 dark:text-white ${item.hoverText} transition-colors`}>
+                                                    ${Math.round(feeSum).toLocaleString()}.00
+                                                </div>
+                                                <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
+                                                    <span className="text-[10px] text-slate-400 font-mono">Projected MRR</span>
+                                                    <span className={`text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-white/5 ${item.textColor}`}>
+                                                        {matched.length} clientes
+                                                    </span>
                                                 </div>
                                             </div>
                                         );
