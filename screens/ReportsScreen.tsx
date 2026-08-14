@@ -22,26 +22,25 @@ interface ReportsScreenProps {
     navigate: (screen: Screen, options?: { clientIdToView?: string }) => void;
 }
 
-const COLORS = ['#14b8a6', '#0ea5e9', '#f59e0b', '#f43f5e', '#8b5cf6'];
+const COLORS = ['#00A896', '#2B6AFF', '#C9A96E', '#f43f5e', '#8b5cf6'];
 
 const MetricCard: React.FC<{ title: string; value: string; description: string; color: string; icon: React.ElementType; trend?: string }> = ({ title, value, description, color, icon: Icon, trend }) => (
-    <div className="p-5 sm:p-6 rounded-[2rem] glass-tactical border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden group transition-all duration-500 hover:scale-[1.02] hover:border-brand-teal/30">
-        <div className={`absolute -right-10 -top-10 w-24 h-24 sm:w-32 sm:h-32 rounded-full blur-[60px] opacity-10 transition-all duration-700 group-hover:opacity-30 ${color}`}></div>
+    <div className="p-6 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl relative overflow-hidden group transition-all duration-300 hover:border-white/20 hover:scale-[1.01] font-mono">
         <div className="relative z-10">
             <div className="flex justify-between items-start mb-4">
-                <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-inner group-hover:border-brand-teal/40 transition-colors">
-                    <Icon size={20} className="text-brand-teal" />
+                <div className={`p-3.5 rounded-2xl ${color} text-white shadow-lg`}>
+                    <Icon size={20} />
                 </div>
                 {trend && (
-                    <span className="text-[10px] font-bold bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full flex items-center border border-emerald-500/20 uppercase tracking-widest font-mono">
-                        <TrendingUp size={10} className="mr-1.5" /> {trend}
+                    <span className="text-[9px] font-bold bg-[#00A896]/15 text-[#00A896] px-2.5 py-1 rounded-full flex items-center border border-[#00A896]/30 uppercase tracking-widest font-mono">
+                        <TrendingUp size={10} className="mr-1" /> {trend}
                     </span>
                 )}
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1 group-hover:text-brand-teal transition-colors">{title}</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none mb-2">{value}</h3>
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60">
-                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{description}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{title}</p>
+            <h3 className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight leading-none mb-2">{value}</h3>
+            <div className="pt-3 border-t border-white/5">
+                <p className="text-xs font-medium text-slate-400 font-sans">{description}</p>
             </div>
         </div>
     </div>
@@ -216,54 +215,73 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
     };
 
     return (
-        <div className="space-y-6 pb-24 animate-fade-in relative pt-4 sm:pt-0 aurora-premium min-h-screen">
-            {/* ELITE TACTICAL HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10 px-1 sm:px-0 mb-8">
-                <div className="animate-fade-in-left w-full sm:w-auto">
-                    <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-400/10 border border-sky-400/20 shadow-lg shadow-sky-400/5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(14,165,233,0.8)]"></div>
-                            <span className="text-xs font-semibold text-sky-400 uppercase tracking-widest">Global Analytics Intelligence</span>
-                        </div>
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Dashboard v4.5</span>
+        <div className="space-y-6 pb-24 animate-in fade-in duration-300 relative font-sans min-h-screen">
+            {/* ── TOP EXECUTIVE STRIPE ── */}
+            <div className="relative z-20 px-4 sm:px-0">
+                <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 border-t-white/20 bg-[#051424]/90 shadow-2xl backdrop-blur-2xl p-6 sm:p-10 transition-all duration-500">
+                    {/* Mesh Gradient */}
+                    <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-radial from-[#2B6AFF]/15 to-transparent blur-3xl" />
+                        <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-gradient-radial from-[#00A896]/15 to-transparent blur-3xl" />
                     </div>
-                    <h2 className="text-3xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-[0.85] tracking-tighter mb-2 italic">
-                        Strategic <span className="text-gradient-sky">Reports</span>
-                    </h2>
-                    <div className="flex items-center gap-2 text-slate-500 text-[11px] font-medium uppercase tracking-widest">
-                        <Target size={12} className="text-sky-400" />
-                        <span>Métricas de Rendimiento y Proyección Fiscal</span>
-                    </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto animate-fade-in-right">
-                    <button 
-                        onClick={() => handleRunAnalysis(AnalysisType.Strategic, 'Análisis Estratégico Global')}
-                        className="flex items-center justify-center gap-3 px-8 py-4 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] w-full sm:w-auto group relative overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-sky-400/20 border border-white/5"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-r from-sky-400/0 via-sky-400/10 to-sky-400/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                        <Zap size={18} className="text-sky-400 dark:text-sky-500 transition-transform group-hover:scale-125 group-hover:rotate-12" />
-                        EJECUTAR IA STRATEGY
-                    </button>
-                    <div className="flex p-1 bg-white/5 dark:bg-white/5 rounded-2xl border border-white/10 backdrop-blur-xl">
-                        <button 
-                            onClick={() => setTimeRange('month')}
-                            className={`px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-[0.15em] transition-all duration-500 ${timeRange === 'month' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/20' : 'text-slate-500 hover:text-slate-300'}`}
-                        >MES</button>
-                        <button 
-                            onClick={() => setTimeRange('year')}
-                            className={`px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-[0.15em] transition-all duration-500 ${timeRange === 'year' ? 'bg-sky-400 text-white shadow-lg shadow-sky-400/20' : 'text-slate-500 hover:text-slate-300'}`}
-                        >AÑO</button>
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
+                        <div className="w-full sm:w-auto font-mono">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00A896]/15 border border-[#00A896]/30 shadow-[0_0_10px_rgba(0,168,150,0.2)]">
+                                    <div className="relative w-2 h-2 rounded-full bg-[#00A896]">
+                                        <div className="absolute inset-0 rounded-full bg-[#00A896] animate-ping opacity-60" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.25em]">INTELIGENCIA ANALÍTICA TRIBUTARIA</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">• Santiago Córdova Intelligence</span>
+                            </div>
+                            <h1 className="text-3xl sm:text-5xl font-black text-white leading-none tracking-tight font-display">
+                                REPORTES & <span className="bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF] bg-clip-text text-transparent">ANALÍTICAS</span>
+                            </h1>
+                            <p className="mt-2.5 text-xs sm:text-sm text-slate-300 font-sans font-medium">
+                                Métricas de rendimiento, liquidaciones efectivas y proyecciones de capital.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto font-mono">
+                            <button 
+                                onClick={() => handleRunAnalysis(AnalysisType.Strategic, 'Análisis Estratégico Global')}
+                                className="flex items-center justify-center gap-2.5 px-6 py-3 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-[#00A896] hover:to-teal-500 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#00A896]/20 cursor-pointer border border-white/10 hover:scale-[1.02] active:scale-95"
+                            >
+                                <Zap size={16} />
+                                EJECUTAR IA STRATEGY
+                            </button>
+                            <div className="flex p-1.5 bg-[#0b1326] rounded-2xl border border-white/10">
+                                <button 
+                                    onClick={() => setTimeRange('month')}
+                                    className={`px-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                        timeRange === 'month' 
+                                            ? 'bg-white/15 text-white shadow-md border border-white/20' 
+                                            : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >MES</button>
+                                <button 
+                                    onClick={() => setTimeRange('year')}
+                                    className={`px-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                        timeRange === 'year' 
+                                            ? 'bg-white/15 text-white shadow-md border border-white/20' 
+                                            : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >AÑO</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-slide-up-fade">
+            {/* ── 4 LUXURY KPI METRIC CARDS ── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-4 sm:px-0">
                 <MetricCard 
                     title="Ingresos Totales" 
                     value={`$${metrics.totalPaid.toFixed(2)}`} 
                     description="Efectivo Liquidado (Pagado)" 
-                    color="bg-sky-400" 
+                    color="bg-gradient-to-br from-[#00A896] to-teal-600 shadow-[#00A896]/20" 
                     icon={DollarSign} 
                     trend="+12.4%"
                 />
@@ -271,66 +289,67 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                     title="Cuentas x Cobrar" 
                     value={`$${metrics.accountsReceivable.toFixed(2)}`} 
                     description="Cartera Pendiente de Gestión" 
-                    color="bg-amber-400" 
+                    color="bg-gradient-to-br from-rose-500 to-red-600 shadow-rose-500/20" 
                     icon={Clock} 
                 />
                 <MetricCard 
                     title="Ingreso Potencial" 
                     value={`$${metrics.potentialIncome.toFixed(2)}`} 
                     description="Proyección Mensual Teórica" 
-                    color="bg-emerald-400" 
+                    color="bg-gradient-to-br from-amber-500 to-[#C9A96E] shadow-amber-500/20" 
                     icon={TrendingUp} 
                 />
                 <MetricCard
                     title="Activos Totales"
-                    value={`${clients.filter(c => c.isActive !== false).length}`}
+                    value={`${clients.filter(c => c.isActive !== false && !c.isDeleted).length}`}
                     description="Base de Operaciones Activa"
-                    color="bg-violet-500"
+                    color="bg-gradient-to-br from-indigo-500 to-[#2B6AFF] shadow-[#2B6AFF]/20"
                     icon={Users}
                 />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                <div className="lg:col-span-2 p-8 glass-tactical rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden h-[450px] group transition-all duration-500 hover:border-sky-400/20">
-                    <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-sky-400/5 blur-[120px] rounded-full -mr-32 -mt-32 pointer-events-none opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                    <div className="flex items-center justify-between mb-8 relative z-10">
+            {/* ── CHARTS SECTION ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 sm:px-0">
+                {/* Evolution Area Chart */}
+                <div className="lg:col-span-2 p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl relative overflow-hidden h-[450px]">
+                    <div className="flex items-center justify-between mb-6 relative z-10 font-mono">
                         <div>
-                            <h3 className="text-xl font-display font-semibold text-slate-900 dark:text-white uppercase tracking-tighter group-hover:text-sky-400 transition-colors">Evolución Operativa</h3>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mt-1">Histórico de Ingresos (6 Ciclos)</p>
+                            <h3 className="text-xl font-bold font-display text-white uppercase tracking-tight">Evolución Operativa</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Histórico de Ingresos (Últimos 6 Ciclos)</p>
                         </div>
-                        <div className="p-4 bg-sky-400/10 rounded-2xl border border-sky-400/20 shadow-inner group-hover:rotate-12 transition-transform duration-500">
-                            <Activity className="text-sky-400" size={20} />
+                        <div className="p-3 bg-[#00A896]/15 border border-[#00A896]/30 rounded-2xl text-[#00A896]">
+                            <Activity size={18} />
                         </div>
                     </div>
                     
-                    <div className="h-[300px] w-full relative z-10">
+                    <div className="h-[300px] w-full relative z-10 font-mono">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={trendData}>
                                 <defs>
                                     <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#00A896" stopOpacity={0.4} />
+                                        <stop offset="95%" stopColor="#00A896" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#94a3b8" vertical={false} opacity={0.05} />
-                                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b', fontWeight: '900' }} axisLine={false} tickLine={false} dy={10} />
-                                <YAxis tick={{ fontSize: 10, fill: '#64748b', fontWeight: '900' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} dx={-10} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" vertical={false} opacity={0.05} />
+                                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 'bold', fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} dy={10} />
+                                <YAxis tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 'bold', fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} dx={-10} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', backdropFilter: 'blur(20px)', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}
-                                    itemStyle={{ color: '#0EA5E9', fontSize: '13px', fontWeight: '900', textTransform: 'uppercase' }}
-                                    labelStyle={{ color: '#94a3b8', fontSize: '10px', fontWeight: '900', marginBottom: '4px', letterSpacing: '0.1em' }}
-                                    cursor={{ stroke: '#0EA5E9', strokeWidth: 2, strokeDasharray: '4 4' }}
+                                    contentStyle={{ backgroundColor: '#020b14', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', backdropFilter: 'blur(20px)', boxShadow: '0 20px 40px rgba(0,0,0,0.6)', fontFamily: 'JetBrains Mono' }}
+                                    itemStyle={{ color: '#00A896', fontSize: '12px', fontWeight: 'bold' }}
+                                    labelStyle={{ color: '#ffffff', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px' }}
+                                    cursor={{ stroke: '#00A896', strokeWidth: 1.5, strokeDasharray: '4 4' }}
                                 />
-                                <Area type="monotone" dataKey="Ingresos" stroke="#0EA5E9" strokeWidth={5} fillOpacity={1} fill="url(#colorIngresos)" animationDuration={2000} />
+                                <Area type="monotone" dataKey="Ingresos" stroke="#00A896" strokeWidth={3} fillOpacity={1} fill="url(#colorIngresos)" animationDuration={1500} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                <div className="p-8 glass-tactical rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden group hover:border-sky-400/20 transition-all duration-500">
-                    <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-violet-500/5 blur-[100px] rounded-full -mr-32 -mb-32 pointer-events-none opacity-50 group-hover:opacity-100"></div>
-                    <h3 className="text-xl font-display font-semibold text-slate-900 dark:text-white uppercase tracking-tighter self-start mb-2 group-hover:text-sky-400 transition-colors">Estructura Regime</h3>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest self-start mb-8 tracking-[0.2em]">Composición de Cartera</p>
+                {/* Regime Donut Pie Chart */}
+                <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl flex flex-col items-center justify-center relative overflow-hidden font-mono">
+                    <h3 className="text-xl font-bold font-display text-white uppercase tracking-tight self-start mb-0.5">Estructura Regime</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest self-start mb-6">Composición de Cartera SRI</p>
                     
                     <div className="flex-1 w-full min-h-[250px] relative">
                         <ResponsiveContainer width="100%" height="100%">
@@ -339,9 +358,9 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                                     data={regimeData}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={75}
-                                    outerRadius={95}
-                                    paddingAngle={10}
+                                    innerRadius={70}
+                                    outerRadius={92}
+                                    paddingAngle={8}
                                     dataKey="value"
                                     stroke="none"
                                 >
@@ -350,132 +369,129 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                                     ))}
                                 </Pie>
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', backdropFilter: 'blur(20px)' }}
-                                    itemStyle={{ color: '#fff', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }}
+                                    contentStyle={{ backgroundColor: '#020b14', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '14px', fontFamily: 'JetBrains Mono' }}
+                                    itemStyle={{ color: '#fff', fontSize: '11px', fontWeight: 'bold' }}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] text-center group-hover:scale-110 transition-transform duration-500">
-                            <span className="text-5xl font-semibold text-slate-900 dark:text-white leading-none tracking-tighter italic">{clients.length}</span>
-                            <p className="text-xs font-semibold text-sky-400 uppercase tracking-[0.2em] mt-2">Activos</p>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] text-center">
+                            <span className="text-4xl font-black text-white leading-none font-mono">{clients.filter(c => c.isActive !== false && !c.isDeleted).length}</span>
+                            <p className="text-[9px] font-bold text-[#00A896] uppercase tracking-widest mt-1">Activos</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 relative z-10">
-                <div className="p-8 glass-tactical rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden group hover:border-emerald-400/20 transition-all duration-500">
-                    <div className="flex justify-between items-center mb-10 relative z-10">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-emerald-400/10 rounded-2xl border border-emerald-400/20 shadow-inner group-hover:scale-110 transition-transform">
-                                <Users className="text-emerald-400" size={24} />
+            {/* ── PARTNERS & RISK PERIMETER (TOP 5 LISTS) ── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 sm:px-0">
+                {/* Elite Partners */}
+                <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl">
+                    <div className="flex justify-between items-center mb-6 font-mono">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-[#00A896]/15 border border-[#00A896]/30 rounded-2xl text-[#00A896]">
+                                <Users size={20} />
                             </div>
-                            <h3 className="text-2xl font-display font-semibold text-slate-900 dark:text-white uppercase tracking-tighter group-hover:text-emerald-400 transition-colors">Elite Partners</h3>
+                            <h3 className="text-xl font-bold font-display text-white uppercase tracking-tight">Elite Partners</h3>
                         </div>
-                        <span className="text-[11px] font-semibold text-emerald-400/60 bg-emerald-400/5 px-3 py-1.5 rounded-full border border-emerald-400/10 uppercase tracking-widest italic font-mono">Performance: HIGH</span>
+                        <span className="text-[9px] font-bold text-[#00A896] bg-[#00A896]/15 px-3 py-1 rounded-full border border-[#00A896]/30 uppercase tracking-wider">Top Ingresos</span>
                     </div>
 
-                    <div className="space-y-4 relative z-10">
+                    <div className="space-y-3 font-mono">
                         {metrics.topClientsData.length > 0 ? metrics.topClientsData.map((client, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-5 bg-white/5 rounded-[1.5rem] border border-white/5 hover:bg-white/10 hover:translate-x-1 transition-all group/item">
-                                <div className="flex items-center gap-5">
-                                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400/20 to-sky-400/20 text-emerald-400 flex items-center justify-center font-semibold text-lg border border-white/10 shadow-lg">
+                            <div key={idx} className="flex items-center justify-between p-4 bg-[#020b14] rounded-2xl border border-white/10 hover:border-[#00A896]/40 transition-all">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-[#00A896]/15 text-[#00A896] flex items-center justify-center font-bold text-sm border border-[#00A896]/30">
                                         {idx + 1}
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="font-semibold text-[13px] text-slate-800 dark:text-slate-100 uppercase tracking-tight mb-0.5">{client.name}</span>
-                                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest opacity-60 italic">Vip Transaction Node</span>
+                                        <span className="font-bold text-xs text-white uppercase truncate max-w-[160px] sm:max-w-xs">{client.name}</span>
+                                        <span className="text-[10px] text-slate-400">Contribuyente Destacado</span>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-lg font-semibold text-emerald-400 tracking-tighter block">${client.Ingresos.toFixed(2)}</span>
-                                    <span className="text-xs font-semibold text-emerald-400/40 uppercase tracking-widest">Liquidated</span>
+                                    <span className="text-base font-bold text-[#00A896] block font-mono">${client.Ingresos.toFixed(2)}</span>
+                                    <span className="text-[9px] text-slate-400 uppercase">Liquidado</span>
                                 </div>
                             </div>
                         )) : (
-                            <div className="text-center py-16 text-slate-500 font-semibold text-xs uppercase tracking-[0.3em] opacity-30">Stream Offline</div>
+                            <div className="text-center py-12 text-slate-500 font-bold text-xs uppercase tracking-wider">Sin datos de ingresos</div>
                         )}
                     </div>
                 </div>
 
-                <div className="p-8 glass-tactical rounded-[2.5rem] border border-white/5 shadow-2xl relative overflow-hidden group hover:border-rose-400/20 transition-all duration-500">
-                    <div className="flex justify-between items-center mb-10 relative z-10">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-rose-400/10 rounded-2xl border border-rose-400/20 shadow-inner group-hover:scale-110 transition-transform">
-                                <AlertTriangle className="text-rose-400" size={24} />
+                {/* Risk Perimeter */}
+                <div className="p-6 sm:p-8 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl">
+                    <div className="flex justify-between items-center mb-6 font-mono">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-rose-500/15 border border-rose-500/30 rounded-2xl text-rose-400">
+                                <AlertTriangle size={20} />
                             </div>
-                            <h3 className="text-2xl font-display font-semibold text-slate-900 dark:text-white uppercase tracking-tighter group-hover:text-rose-400 transition-colors">Risk Perimeter</h3>
+                            <h3 className="text-xl font-bold font-display text-white uppercase tracking-tight">Risk Perimeter</h3>
                         </div>
-                        <span className="text-[11px] font-semibold text-rose-400/60 bg-rose-400/5 px-3 py-1.5 rounded-full border border-rose-400/10 uppercase tracking-widest italic font-mono">Cartera: CRITICAL</span>
+                        <span className="text-[9px] font-bold text-rose-300 bg-rose-500/15 px-3 py-1 rounded-full border border-rose-500/30 uppercase tracking-wider">Por Cobrar</span>
                     </div>
 
-                    <div className="space-y-4 relative z-10">
+                    <div className="space-y-3 font-mono">
                         {metrics.topDebtors.length > 0 ? metrics.topDebtors.map((debtor, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-4 sm:p-5 bg-rose-400/5 rounded-[1.5rem] border border-rose-400/10 hover:bg-rose-400/10 hover:translate-x-1 transition-all group/item">
-                                <div className="flex items-center gap-3 sm:gap-5">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-rose-400/10 text-rose-400 flex items-center justify-center font-semibold text-lg sm:text-xl border border-rose-400/20 shadow-lg animate-pulse">
+                            <div key={idx} className="flex items-center justify-between p-4 bg-[#020b14] rounded-2xl border border-white/10 hover:border-rose-500/40 transition-all">
+                                <div className="flex items-center gap-3 sm:gap-4">
+                                    <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center font-bold text-sm border border-rose-500/30 animate-pulse">
                                         !
                                     </div>
                                     <div className="flex flex-col min-w-0">
-                                        <span className="font-semibold text-[12px] sm:text-[13px] text-slate-800 dark:text-slate-100 uppercase tracking-tight mb-0.5 truncate max-w-[120px] sm:max-w-none">{debtor.name}</span>
+                                        <span className="font-bold text-xs text-white uppercase truncate max-w-[130px] sm:max-w-xs">{debtor.name}</span>
                                         <button 
                                             onClick={() => navigate('clients', { clientIdToView: debtor.id })}
-                                            className="group/btn flex items-center gap-2 text-xs sm:text-[11px] text-sky-400 font-semibold uppercase tracking-widest text-left transition-all"
+                                            className="flex items-center gap-1 text-[10px] text-[#00A896] font-bold uppercase tracking-wider hover:underline cursor-pointer text-left"
                                         >
-                                            Interceptar <span className="hidden sm:inline">Perfil</span>
-                                            <ChevronRight size={10} className="group-hover/btn:translate-x-1 transition-transform" />
+                                            Ver Expediente <ChevronRight size={11} />
                                         </button>
                                     </div>
                                 </div>
                                 <div className="text-right shrink-0">
-                                    <span className="text-base sm:text-lg font-semibold text-rose-400 tracking-tighter block">${debtor.amount.toFixed(2)}</span>
-                                    <span className="text-xs font-semibold text-rose-400/40 uppercase tracking-widest">Unsettled</span>
+                                    <span className="text-base font-bold text-rose-400 block font-mono">${debtor.amount.toFixed(2)}</span>
+                                    <span className="text-[9px] text-slate-400 uppercase">Pendiente</span>
                                 </div>
                             </div>
                         )) : (
-                            <div className="text-center py-16 flex flex-col items-center justify-center overflow-hidden">
-                                <Shield size={48} className="text-emerald-400 opacity-20 mb-4 animate-pulse" />
-                                <p className="text-xs font-semibold text-emerald-400 uppercase tracking-[0.25em] italic">No Risks Detected in Sector</p>
+                            <div className="text-center py-12 flex flex-col items-center justify-center">
+                                <Shield size={36} className="text-[#00A896] mb-2" />
+                                <p className="text-xs font-bold text-[#00A896] uppercase tracking-wider">Cartera 100% al Día</p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
+            {/* ── AI STRATEGY MODAL ── */}
             <Modal isOpen={isAnalysisModalOpen} onClose={() => setIsAnalysisModalOpen(false)} title={analysisTitle}>
-                <div className="aurora-premium p-1 rounded-[2.5rem]">
-                    <div className="glass-tactical rounded-[2.4rem] p-8 min-h-[400px]">
+                <div className="p-2 font-mono">
+                    <div className="bg-[#020b14] rounded-2xl p-6 sm:p-8 min-h-[350px] border border-white/10">
                         {isAnalyzing && (
-                            <div className="flex flex-col items-center justify-center text-center p-12 min-h-[400px]">
-                                <div className="relative mb-10 scale-150">
-                                    <Loader className="w-12 h-12 text-sky-400 animate-spin" />
-                                    <div className="absolute inset-x-0 bottom-0 top-0 left-0 bg-sky-400/20 blur-xl animate-pulse rounded-full"></div>
-                                </div>
-                                <p className="text-3xl font-display font-semibold text-slate-900 dark:text-white uppercase tracking-tighter mb-2 italic">Neural Processing...</p>
-                                <p className="text-xs font-semibold text-slate-400 uppercase tracking-[0.2em] max-w-xs leading-loose">Decodificando flujos de capital e indicadores estratégicos mediante protocolo avanzado</p>
+                            <div className="flex flex-col items-center justify-center text-center p-10 min-h-[300px]">
+                                <Loader className="w-10 h-10 text-[#00A896] animate-spin mb-4" />
+                                <p className="text-xl font-bold font-display text-white uppercase tracking-tight mb-2">Neural Processing...</p>
+                                <p className="text-xs text-slate-400 uppercase tracking-wider max-w-xs leading-relaxed font-mono">
+                                    Decodificando flujos de capital e indicadores estratégicos mediante protocolo avanzado SRI.
+                                </p>
                             </div>
                         )}
                         {analysisError && (
-                            <div className="p-8 bg-rose-400/10 border border-rose-400/20 text-rose-400 rounded-3xl flex items-center gap-6 animate-shake">
-                                <div className="p-4 bg-rose-400/20 rounded-2xl">
-                                    <AlertTriangle size={40} />
-                                </div>
+                            <div className="p-6 bg-rose-500/10 border border-rose-500/20 text-rose-300 rounded-2xl flex items-center gap-4">
+                                <AlertTriangle size={32} className="shrink-0 text-rose-400" />
                                 <div>
-                                    <p className="font-semibold text-lg uppercase tracking-widest mb-1 italic">Link Failure</p>
-                                    <span className="text-sm font-medium opacity-80 leading-relaxed">{analysisError}</span>
+                                    <p className="font-bold text-sm uppercase tracking-wider mb-1">Error de Comunicación</p>
+                                    <span className="text-xs opacity-80">{analysisError}</span>
                                 </div>
                             </div>
                         )}
                         {analysisResult && (
-                            <div className="prose prose-sm prose-slate dark:prose-invert max-w-none animate-fade-in">
-                                <div className="p-8 bg-white/5 rounded-[2rem] border border-white/10 backdrop-blur-sm shadow-inner relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-sky-400/5 blur-3xl -mr-16 -mt-16 group-hover:opacity-100 transition-opacity"></div>
-                                    <div dangerouslySetInnerHTML={{ __html: analysisResult }} className="relative z-10 text-[13px] leading-relaxed font-medium text-slate-700 dark:text-slate-300" />
-                                </div>
-                                <div className="mt-10 flex justify-end">
+                            <div className="prose prose-sm prose-invert max-w-none">
+                                <div className="p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm text-xs leading-relaxed text-slate-300 font-sans" dangerouslySetInnerHTML={{ __html: analysisResult }} />
+                                <div className="mt-6 flex justify-end">
                                     <button 
                                         onClick={() => setIsAnalysisModalOpen(false)}
-                                        className="px-10 py-5 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl text-[11px] font-semibold uppercase tracking-[0.2em] transition-all hover:scale-[1.05] hover:shadow-2xl hover:shadow-sky-400/10 active:scale-95 italic"
+                                        className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-white/10"
                                     >Cerrar Interfaz</button>
                                 </div>
                             </div>
