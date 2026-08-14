@@ -133,7 +133,7 @@ const App: React.FC = () => {
   const [publicUser, setPublicUser] = useState<PublicUser | null>(null);
   const [loggedClient, setLoggedClient] = useState<Client | null>(null);
   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'dark');
-  const [activeScreen, setActiveScreen] = useState<Screen>('home');
+  const [activeScreen, setActiveScreen] = useState<Screen>('declaraciones');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [previousScreen, setPreviousScreen] = useState<Screen | null>(null);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
@@ -590,12 +590,11 @@ const App: React.FC = () => {
   };
 
   const navItems = ([
-    { screen: 'home', icon: Home, label: 'Dashboard' },
-    { screen: 'clients', icon: Users, label: 'Directorio', count: clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length, groupLabel: 'Clientes', isSubItem: true },
-    { screen: 'declaraciones', icon: LayoutGrid, label: 'Declaraciones', isSubItem: true },
+    { screen: 'declaraciones', icon: LayoutGrid, label: 'Declaraciones SRI', count: clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length },
+    { screen: 'clients', icon: Users, label: 'Directorio Clientes' },
+    { screen: 'firmas', icon: KeyRound, label: 'Firmas Electrónicas' },
     { screen: 'crm_pipeline', icon: Kanban, label: 'CRM Embudo' },
     { screen: '3d-studio', icon: Box, label: 'Studio 3D Alpha3D' },
-    { screen: 'firmas', icon: KeyRound, label: 'Firmas' },
     { screen: 'facturadores', icon: ShoppingBag, label: 'Facturadores y Planes' },
     { screen: 'cotizaciones', icon: FileSpreadsheet, label: 'Cotizaciones' },
     { screen: 'licencias', icon: Key, label: 'Licencias SaaS' },

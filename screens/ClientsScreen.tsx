@@ -107,7 +107,6 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [isWorkspaceView, setIsWorkspaceView] = useState(false);
     const [isCobrosView, setIsCobrosView] = useState(false);
     const [isAlertasView, setIsAlertasView] = useState(false);
-    const [isMatrixView, setIsMatrixView] = useState(false);
     const [previewItem, setPreviewItem] = useState<{ client: Client, declaration: Declaration } | null>(null);
 
     // Bulk Wizard State
@@ -121,6 +120,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     };
 
     const [activeGroupTab, setActiveGroupTab] = useState(getInitialGroupTab());
+    const isMatrixView = activeGroupTab === 'matrix' || activeGroupTab === 'declaraciones';
     const [specificCategoryFilter, setSpecificCategoryFilter] = useState<any | null>(null);
     const [regimeFilter, setRegimeFilter] = useState<TaxRegime | 'all'>('all');
 
@@ -1224,6 +1224,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
                     <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 bg-surface-medium rounded-2xl border border-outline-variant/20 shrink-0">
                         {[
+                            { id: 'matrix', label: '📊 Matriz Declaraciones', icon: LayoutGrid },
                             { id: 'all', label: 'Todos', icon: Users },
                             { id: 'al-dia', label: 'Al Día', icon: CheckCircle2 },
                             { id: 'vencidos', label: 'Alertas SRI', icon: AlertTriangle, badge: globalStats.vencidos, badgeStyle: 'bg-rose-500/20 text-rose-500 dark:text-rose-400' },

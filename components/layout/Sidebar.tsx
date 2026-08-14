@@ -34,7 +34,7 @@ interface SidebarProps {
 
 // Groupings for nav items following Stitch Nueva Luz 3.0 Architecture
 const NAV_GROUPS: { label: string; screens: string[] }[] = [
-    { label: 'Principal', screens: ['home', 'clients', 'declaraciones', 'firmas', 'facturadores', 'cobranza'] },
+    { label: 'Principal', screens: ['declaraciones', 'clients', 'firmas', 'facturadores', 'cobranza'] },
     { label: 'Operaciones', screens: ['sri_facturacion', '3d-studio', 'tasks', 'calendar', 'web_orders'] },
     { label: 'Sistema & Control', screens: ['settings', 'audit_log', 'services'] },
 ];
