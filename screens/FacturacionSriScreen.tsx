@@ -2389,26 +2389,32 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     const latestDocs = history.slice(0, 5);
 
     return (
-      <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="space-y-6 animate-in fade-in duration-300 font-sans">
         
-        {/* Welcome Card */}
-        <div className="glass-card-premium p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
-          <div className="space-y-1 relative z-10">
-            <span className="text-[9px] font-black uppercase tracking-wider text-primary">Mi Oficina</span>
-            <h3 className="text-lg font-black uppercase tracking-wide text-slate-800 dark:text-white font-premium">
+        {/* Welcome Banner Card (Stitch Obsidian Luxury) */}
+        <div className="p-6 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[#2B6AFF]/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#00A896]/10 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none"></div>
+          
+          <div className="space-y-1.5 relative z-10 font-mono">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#00A896]/15 text-[#00A896] text-[9px] font-bold uppercase tracking-widest border border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.3)]">
+                Emisor SRI • Modo Producción
+              </span>
+            </div>
+            <h3 className="text-xl font-black uppercase tracking-tight text-white font-display">
               {emisorRazonSocial || 'Emisor No Configurado'}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
-              RUC Emisor: <span className="font-mono">{emisorRuc || '0705787745001'}</span> — {emisorNombreComercial || 'SOLUCIONES TRIBUTARIAS'}
+            <p className="text-xs text-slate-400 font-medium tracking-wide">
+              RUC: <span className="font-mono text-white font-bold">{emisorRuc || '0705787745001'}</span> — <span className="text-[#2B6AFF] font-bold">{emisorNombreComercial || 'SOLUCIONES TRIBUTARIAS'}</span>
             </p>
           </div>
           
-          <div className="flex flex-wrap gap-2 relative z-10 shrink-0">
+          <div className="flex flex-wrap gap-2.5 relative z-10 shrink-0 font-mono">
             <button
               type="button"
               onClick={() => setIsDevolucionModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-md active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-rose-500/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <HeartHandshake size={14} />
               <span>👴 Devolución IVA</span>
@@ -2416,7 +2422,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsBatchModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-sky-600 hover:from-indigo-600 hover:to-sky-700 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-md active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#2B6AFF]/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <Zap size={14} />
               <span>🚀 Facturación Masiva</span>
@@ -2424,7 +2430,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsPosModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-600 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-md active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#00A896]/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <Store size={14} />
               <span>⚡ Caja TPV POS</span>
@@ -2432,67 +2438,119 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsSalesModalOpen(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-md active:scale-95"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <ShoppingBag size={14} />
-              <span>💳 Registrar Venta de Plan</span>
+              <span>💳 Venta de Plan</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('factura')}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-sm shadow-primary/10 active:scale-[0.98]"
+              className="flex items-center gap-1.5 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all border border-white/15 active:scale-95 cursor-pointer shadow-md"
             >
-              <Plus size={12} />
-              Nueva Factura
+              <Plus size={14} />
+              <span>Nueva Factura</span>
             </button>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* 4 Stats Grid Cards (Stitch Obsidian Luxury) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
           <div 
             onClick={() => setActiveTab('historial')}
-            className="glass-card-premium p-5 space-y-2 cursor-pointer hover:border-primary/40 active:scale-[0.99] transition-all group"
+            className="p-5 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl space-y-2 cursor-pointer hover:border-[#00A896]/40 active:scale-[0.99] transition-all group relative overflow-hidden"
           >
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary transition-colors">Total Facturado (Autorizados)</span>
+            <div className="flex items-center justify-between text-slate-400 group-hover:text-[#00A896] transition-colors">
+              <span className="text-[10px] font-bold uppercase tracking-widest">Total Facturado</span>
+              <DollarSign size={16} className="text-[#00A896]" />
+            </div>
             <div className="flex justify-between items-baseline">
-              <span className="text-2xl font-mono font-black text-slate-800 dark:text-white">${totalRevenue.toFixed(2)}</span>
+              <span className="text-2xl font-black text-[#00A896]">${totalRevenue.toFixed(2)}</span>
               <span className="text-[10px] font-bold text-slate-400 uppercase">USD</span>
             </div>
-            <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
-              Ingresos de facturas autorizadas por el SRI. Clic para ver historial.
+            <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider truncate">
+              Ingresos autorizados SRI
             </div>
           </div>
           
           <div 
             onClick={() => setActiveTab('historial')}
-            className="glass-card-premium p-5 space-y-2 cursor-pointer hover:border-primary/40 active:scale-[0.99] transition-all group"
+            className="p-5 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl space-y-2 cursor-pointer hover:border-[#2B6AFF]/40 active:scale-[0.99] transition-all group relative overflow-hidden"
           >
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 group-hover:text-primary transition-colors">Facturas Emitidas</span>
+            <div className="flex items-center justify-between text-slate-400 group-hover:text-[#2B6AFF] transition-colors">
+              <span className="text-[10px] font-bold uppercase tracking-widest">Facturas Emitidas</span>
+              <FileText size={16} className="text-[#2B6AFF]" />
+            </div>
             <div className="flex justify-between items-baseline">
-              <span className="text-2xl font-mono font-black text-slate-800 dark:text-white">{invoicesCount}</span>
+              <span className="text-2xl font-black text-white">{invoicesCount}</span>
               <span className="text-[10px] font-bold text-slate-400 uppercase">Docs</span>
             </div>
-            <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">
-              Comprobantes de tipo factura en archivo. Clic para ver historial.
+            <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider truncate">
+              Comprobantes en archivo
+            </div>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('historial')}
+            className="p-5 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl space-y-2 cursor-pointer hover:border-indigo-400/40 active:scale-[0.99] transition-all group relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between text-slate-400 group-hover:text-indigo-400 transition-colors">
+              <span className="text-[10px] font-bold uppercase tracking-widest">Retenciones</span>
+              <Receipt size={16} className="text-indigo-400" />
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className="text-2xl font-black text-white">{withholdingsCount}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Docs</span>
+            </div>
+            <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider truncate">
+              Retenciones emitidas
+            </div>
+          </div>
+
+          <div 
+            onClick={() => setActiveTab('historial')}
+            className="p-5 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl space-y-2 cursor-pointer hover:border-amber-400/40 active:scale-[0.99] transition-all group relative overflow-hidden"
+          >
+            <div className="flex items-center justify-between text-slate-400 group-hover:text-amber-400 transition-colors">
+              <span className="text-[10px] font-bold uppercase tracking-widest">Total Comprobantes</span>
+              <Activity size={16} className="text-amber-400" />
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className="text-2xl font-black text-white">{totalIssued}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Total</span>
+            </div>
+            <div className="text-[9px] font-medium text-slate-400 uppercase tracking-wider truncate">
+              Historial completo SRI
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Latest Activity Table */}
-          <div className="lg:col-span-8 glass-card-premium p-6 space-y-4">
-            <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Comprobantes Recientes</h4>
+          {/* Latest Activity Table (Stitch Obsidian Luxury) */}
+          <div className="lg:col-span-8 p-6 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl space-y-4 font-mono">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <h4 className="text-xs font-bold uppercase tracking-widest text-slate-300 flex items-center gap-2">
+                <FileText size={14} className="text-[#00A896]" />
+                <span>Comprobantes Electrónicos Recientes</span>
+              </h4>
+              <button 
+                onClick={() => setActiveTab('historial')} 
+                className="text-[10px] font-bold text-[#2B6AFF] hover:underline uppercase tracking-wider cursor-pointer"
+              >
+                Ver Historial Completo →
+              </button>
+            </div>
             
             {latestDocs.length === 0 ? (
-              <div className="h-48 flex items-center justify-center text-xs font-bold text-slate-400 uppercase italic">
-                Aún no hay comprobantes emitidos.
+              <div className="h-48 flex flex-col items-center justify-center text-xs font-bold text-slate-500 uppercase italic">
+                <FileText size={28} className="mb-2 opacity-30 text-slate-400" />
+                Aún no hay comprobantes emitidos en este período.
               </div>
             ) : (
               <div className="overflow-x-auto no-scrollbar">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 dark:border-white/5 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                    <tr className="border-b border-white/10 text-[9px] font-bold uppercase tracking-widest text-slate-400">
                       <th className="pb-3 pr-2">Comprobante</th>
                       <th className="pb-3 pr-2">Receptor</th>
                       <th className="pb-3 pr-2">Fecha</th>
@@ -2506,26 +2564,26 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       <tr 
                         key={doc.id} 
                         onClick={() => printRideDocument(doc)}
-                        className="border-b border-slate-100 dark:border-white/5 last:border-0 hover:bg-slate-50/80 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                        className="border-b border-white/5 last:border-0 hover:bg-white/5 cursor-pointer transition-colors"
                       >
                         <td className="py-3 font-semibold pr-2">
-                          <span className="uppercase text-[10px] font-black text-slate-700 dark:text-slate-300 block">
+                          <span className="uppercase text-[10px] font-black text-white block">
                             {doc.tipo === 'factura' ? 'Factura' : 'Retención'}
                           </span>
                           <span className="text-[9px] font-mono text-slate-400">{doc.secuencial}</span>
                         </td>
-                        <td className="py-3 font-bold pr-2 truncate max-w-[155px] uppercase text-[10px]" title={doc.nombreReceptor}>
+                        <td className="py-3 font-bold pr-2 truncate max-w-[155px] uppercase text-[10px] text-slate-200" title={doc.nombreReceptor}>
                           {doc.nombreReceptor}
                         </td>
-                        <td className="py-3 text-slate-500 pr-2">{doc.fechaEmision}</td>
-                        <td className="py-3 font-mono font-bold pr-2">${doc.total.toFixed(2)}</td>
+                        <td className="py-3 text-slate-400 pr-2">{doc.fechaEmision}</td>
+                        <td className="py-3 font-mono font-black text-[#00A896] pr-2">${doc.total.toFixed(2)}</td>
                         <td className="py-3 text-center">
-                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${
+                          <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
                             doc.estado === 'Autorizado'
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                              ? 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/40 shadow-[0_0_6px_rgba(0,168,150,0.3)]'
                               : doc.estado === 'Rechazado' || doc.estado === 'Error'
-                              ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                              : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                           }`}>
                             {doc.estado}
                           </span>
@@ -2535,7 +2593,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             {doc.estado !== 'Autorizado' && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleReuseAsTemplate(doc); }}
-                                className="p-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg transition-colors flex items-center gap-1 text-[9px] font-bold px-1.5"
+                                className="p-1.5 bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] border border-[#00A896]/30 rounded-xl transition-all flex items-center gap-1 text-[9px] font-bold px-2 cursor-pointer"
                                 title="Usar como plantilla y volver a emitir"
                               >
                                 <RefreshCw size={10} />
@@ -2544,7 +2602,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             )}
                             <button
                               onClick={(e) => { e.stopPropagation(); viewRideDocument(doc); }}
-                              className="p-1 bg-slate-100 hover:bg-primary/20 dark:bg-white/5 dark:hover:bg-primary/20 text-slate-600 dark:text-slate-300 hover:text-primary rounded-lg transition-colors flex items-center gap-1 text-[9px] font-bold px-1.5"
+                              className="p-1.5 bg-[#2B6AFF]/15 hover:bg-[#2B6AFF]/25 text-[#2B6AFF] border border-[#2B6AFF]/30 rounded-xl transition-all flex items-center gap-1 text-[9px] font-bold px-2 cursor-pointer"
                               title="Ver RIDE en Pantalla / Previsualizar"
                             >
                               <Eye size={10} />
@@ -2552,7 +2610,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); downloadRideDocument(doc); }}
-                              className="p-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-lg transition-colors flex items-center gap-1 text-[9px] font-bold px-1.5"
+                              className="p-1.5 bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10 rounded-xl transition-all flex items-center gap-1 text-[9px] font-bold px-2 cursor-pointer"
                               title="Descargar / Guardar PDF (Para WhatsApp)"
                             >
                               <Download size={10} />
@@ -2568,22 +2626,22 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             )}
           </div>
 
-          {/* Quick info widgets */}
-          <div className="lg:col-span-4 space-y-4">
+          {/* Quick Info & Telemetry Widgets (Stitch Obsidian Luxury) */}
+          <div className="lg:col-span-4 space-y-4 font-mono">
             
             {/* Connection widget */}
-            <div className="glass-card-premium p-5 space-y-3">
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Servidor API</span>
+            <div className="p-5 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl space-y-3">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Servidor API SRI</span>
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl border ${
+                <div className={`p-2.5 rounded-2xl border ${
                   connectionStatus === 'connected'
-                    ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-500'
-                    : 'bg-rose-500/10 border-rose-500/25 text-rose-500'
+                    ? 'bg-[#00A896]/15 border-[#00A896]/30 text-[#00A896] shadow-[0_0_8px_rgba(0,168,150,0.3)]'
+                    : 'bg-rose-500/15 border-rose-500/30 text-rose-400'
                 }`}>
                   {connectionStatus === 'connected' ? <Wifi size={18} /> : <WifiOff size={18} />}
                 </div>
                 <div className="flex flex-col text-left">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-white">
                     {connectionStatus === 'connected' ? 'Laravel Conectado' : 'Modo Simulación'}
                   </span>
                   <span className="text-[9px] font-mono text-slate-400 truncate max-w-[150px]">{apiUrl}</span>
@@ -2592,125 +2650,108 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
 
             {/* Signature expiry warning */}
-            <div className="glass-card-premium p-5 space-y-3">
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Vigencia Firma Electrónica</span>
+            <div className="p-5 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl space-y-3">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Vigencia Firma Electrónica (.p12)</span>
               {p12FileBase64 ? (
                 (() => {
                   const daysLeft = p12ExpiryDate ? Math.max(0, Math.ceil((new Date(p12ExpiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 365;
-                  const pct = Math.min(100, Math.max(0, (daysLeft / 730) * 100)); // Out of 2 years (730 days)
+                  const pct = Math.min(100, Math.max(0, (daysLeft / 730) * 100));
                   const isExpiringSoon = daysLeft < 30;
                   const isExpired = daysLeft === 0;
                   
                   return (
-                    <div className="space-y-4 animate-fade-in">
+                    <div className="space-y-4 animate-in fade-in duration-300">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={`p-2 rounded-xl ${isExpired ? 'bg-rose-500/10 text-rose-500 animate-pulse' : 'bg-primary/10 text-primary'}`}>
+                          <div className={`p-2.5 rounded-2xl ${isExpired ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/30 shadow-sm'}`}>
                             <Lock size={15} />
                           </div>
                           <div className="flex flex-col text-left min-w-0">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200 truncate max-w-[130px]">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-white truncate max-w-[130px]">
                               {p12FileName || 'firma.p12'}
                             </span>
-                            <span className="text-[8px] font-mono text-slate-400">Inicio: {p12StartDate || 'N/A'} | Vence: {p12ExpiryDate || 'N/A'}</span>
+                            <span className="text-[8px] font-mono text-slate-400">Vence: {p12ExpiryDate || 'N/A'}</span>
                           </div>
                         </div>
-                        <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-lg ${isExpired ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                        <span className={`text-[10px] font-black font-mono px-2.5 py-1 rounded-full border ${isExpired ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/30'}`}>
                           {daysLeft} Días
                         </span>
                       </div>
                       
                       {/* Animated Progress Bar */}
-                      <div className="space-y-1">
-                        <div className="h-2 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden relative">
+                      <div className="space-y-1.5">
+                        <div className="h-2 w-full bg-[#020b14] rounded-full overflow-hidden relative border border-white/5">
                           <div 
                             className={`h-full rounded-full transition-all duration-1000 ease-out bg-gradient-to-r ${
                               isExpired 
                                 ? 'from-rose-500 to-red-600' 
                                 : isExpiringSoon 
                                 ? 'from-amber-500 to-orange-400 animate-pulse' 
-                                : 'from-emerald-500 to-teal-400 animate-pulse'
+                                : 'from-[#00A896] to-teal-400 shadow-[0_0_8px_rgba(0,168,150,0.5)]'
                             }`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
-                        <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none">
-                          <span>Vigencia</span>
+                        <div className="flex justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider">
+                          <span>Vigencia Certificado</span>
                           <span>{pct.toFixed(0)}% restante</span>
                         </div>
                       </div>
                       
-                      <div className="text-[8.5px] font-semibold text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-white/5 pt-2">
-                        Propietario: <span className="font-bold text-slate-700 dark:text-slate-300 uppercase block truncate">{p12OwnerName || emisorRazonSocial}</span>
+                      <div className="text-[8.5px] font-medium text-slate-400 border-t border-white/5 pt-2">
+                        Propietario: <span className="font-bold text-white uppercase block truncate">{p12OwnerName || emisorRazonSocial}</span>
                       </div>
                     </div>
                   );
                 })()
               ) : (
-                <div className="text-center space-y-2">
-                  <div className="p-2 bg-rose-500/10 border border-rose-500/25 text-rose-500 rounded-xl w-fit mx-auto animate-bounce">
+                <div className="text-center space-y-2 py-2">
+                  <div className="p-2 bg-rose-500/15 border border-rose-500/30 text-rose-400 rounded-2xl w-fit mx-auto">
                     <AlertTriangle size={18} />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-rose-500 block">Firma no configurada</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 block">Firma no configurada</span>
                   <button
                     type="button"
                     onClick={() => setActiveTab('configuracion')}
-                    className="text-[9px] font-black uppercase tracking-wider text-primary hover:underline"
+                    className="text-[9px] font-bold uppercase tracking-wider text-[#2B6AFF] hover:underline cursor-pointer"
                   >
-                    Configurar Ahora
+                    Configurar Ahora →
                   </button>
                 </div>
               )}
             </div>
 
             {/* Protocolo de Conectividad & Enlaces widget */}
-            <div className="glass-card-premium p-5 space-y-3.5">
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Guía de Acceso & Enlaces SRI</span>
+            <div className="p-5 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl space-y-3.5">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Guía & Portales SRI</span>
               
-              {/* Protocol info */}
-              <div className="space-y-2 text-[10px] leading-relaxed text-slate-600 dark:text-slate-400">
-                <div className="bg-slate-50 dark:bg-white/5 p-3 rounded-xl space-y-1.5 border border-slate-100 dark:border-white/5">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 block">Facturación Local (Actual)</span>
-                  <div>🌐 <strong>Interfaz:</strong> <span className="font-mono">localhost:3000</span></div>
-                  <div>🔌 <strong>Firmador:</strong> <span className="font-mono">localhost:8000</span> (Laravel API)</div>
-                </div>
-
-                <div className="bg-primary/5 dark:bg-primary/10 p-3 rounded-xl space-y-1.5 border border-primary/10">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-primary block">Facturación Cloud (Render)</span>
-                  <div>🚀 <strong>Dominio:</strong> <span className="font-mono">santiagocordova.com</span></div>
-                  <div className="text-[9px] opacity-75">No requerirá correr comandos locales. Todo se procesará seguro en la nube.</div>
-                </div>
-              </div>
-
               {/* Quick links */}
-              <div className="pt-2 border-t border-slate-200 dark:border-white/5 space-y-1.5">
-                <span className="text-[8px] font-black uppercase tracking-widest text-slate-400 block mb-1">Portales Oficiales SRI</span>
-                
+              <div className="space-y-1.5">
                 <a
                   href="https://srienlinea.sri.gob.ec/sri-enlinea/pages/comprobantesElectronicos/svalidezComprobantes.jsf"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all"
+                  className="w-full flex items-center justify-between px-3.5 py-2 bg-white/5 hover:bg-white/10 text-slate-200 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all border border-white/5"
                 >
                   <span>Consulta Validez SRI</span>
-                  <ExternalLink size={10} className="text-primary" />
+                  <ExternalLink size={10} className="text-[#00A896]" />
                 </a>
 
                 <a
                   href="https://srienlinea.sri.gob.ec/sri-enlinea-pruebas/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-black uppercase tracking-wider font-premium transition-all"
+                  className="w-full flex items-center justify-between px-3.5 py-2 bg-white/5 hover:bg-white/10 text-slate-200 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all border border-white/5"
                 >
                   <span>SRI en Línea (Pruebas)</span>
-                  <ExternalLink size={10} className="text-primary" />
+                  <ExternalLink size={10} className="text-[#2B6AFF]" />
                 </a>
               </div>
             </div>
           </div>
 
-          </div>
         </div>
+      </div>
     );
   };
 
@@ -4810,30 +4851,30 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           </div>
         </div>
       )}
-      {/* Sticky Bottom Action Bar for Invoicing */}
+      {/* Sticky Bottom Action Bar for Invoicing (Stitch Obsidian Luxury) */}
       {(activeTab === 'factura' || activeTab === 'retencion') && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/92 dark:bg-slate-900/92 border-t border-slate-200/80 dark:border-white/10 px-4 py-3 shadow-2xl backdrop-blur-md transition-transform duration-300">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#051424]/95 border-t border-white/10 px-4 py-3 shadow-[0_-10px_30px_rgba(0,0,0,0.7)] backdrop-blur-2xl transition-transform duration-300 font-mono text-white">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-3">
             <div className="flex items-center gap-4 flex-1 min-w-0">
               <div className="flex flex-col text-left shrink-0">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Receptor</span>
-                <div className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5 mt-0.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Receptor</span>
+                <div className="text-xs font-bold text-white flex items-center gap-1.5 mt-0.5">
                   {activeClientObj ? (
                     <>
-                      <User size={11} className="text-primary shrink-0" />
-                      <span className="truncate max-w-[160px] text-[11px]">{activeClientObj.name}</span>
+                      <User size={12} className="text-[#00A896] shrink-0" />
+                      <span className="truncate max-w-[160px] text-[11px] font-sans">{activeClientObj.name}</span>
                     </>
                   ) : (
-                    <span className="text-slate-400 italic text-[11px]">Sin cliente</span>
+                    <span className="text-slate-400 italic text-[11px] font-sans">Sin cliente</span>
                   )}
                 </div>
               </div>
 
-              <div className="h-8 w-px bg-slate-200 dark:bg-white/10 shrink-0" />
+              <div className="h-8 w-px bg-white/10 shrink-0" />
 
               <div className="flex flex-col text-left">
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Ítems</span>
-                <span className="text-[11px] font-black font-mono text-slate-700 dark:text-slate-200 mt-0.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Ítems</span>
+                <span className="text-[11px] font-bold text-[#00A896] mt-0.5">
                   {docType === 'factura' ? invoiceItems.length : withholdings.length} línea{((docType === 'factura' ? invoiceItems.length : withholdings.length) !== 1) ? 's' : ''}
                 </span>
               </div>
@@ -4851,7 +4892,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     setBuyerPhone('');
                     setBuyerAddress('');
                   }}
-                  className="ml-2 flex items-center gap-1 px-2.5 py-1 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-500/20 text-rose-500 dark:text-rose-400 rounded-lg text-[9px] font-black uppercase tracking-wider font-premium hover:bg-rose-100 dark:hover:bg-rose-950/30 transition-colors shrink-0"
+                  className="ml-2 flex items-center gap-1 px-3 py-1.5 bg-rose-500/15 border border-rose-500/30 text-rose-400 rounded-xl text-[9px] font-bold uppercase tracking-wider hover:bg-rose-500/25 transition-all shrink-0 cursor-pointer"
                   title="Limpiar y comenzar una nueva factura"
                 >
                   <Trash2 size={10} />
@@ -4863,22 +4904,22 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
               <div className="flex flex-col text-right justify-center">
                 {(!buyerName.trim() || !buyerRuc.trim()) && !selectedClient && (
-                  <span className="text-[8px] text-rose-500 font-black uppercase tracking-wider mb-1 animate-pulse">
+                  <span className="text-[8px] text-rose-400 font-bold uppercase tracking-wider mb-1 animate-pulse">
                     ⚠️ Falta Comprador (RUC/Nombre)
                   </span>
                 )}
                 {docType === 'factura' && invoiceItems.length === 0 && (
-                  <span className="text-[8px] text-rose-500 font-black uppercase tracking-wider mb-1 animate-pulse">
+                  <span className="text-[8px] text-rose-400 font-bold uppercase tracking-wider mb-1 animate-pulse">
                     ⚠️ Agregue al menos un Ítem
                   </span>
                 )}
                 {docType === 'retencion' && withholdings.length === 0 && (
-                  <span className="text-[8px] text-rose-500 font-black uppercase tracking-wider mb-1 animate-pulse">
+                  <span className="text-[8px] text-rose-400 font-bold uppercase tracking-wider mb-1 animate-pulse">
                     ⚠️ Agregue una Retención
                   </span>
                 )}
-                <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 leading-none">Total a Facturar</span>
-                <span className="text-lg font-mono font-black text-primary leading-none mt-0.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none">Total a Facturar</span>
+                <span className="text-xl font-black text-[#00A896] leading-none mt-1 shadow-sm">
                   ${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}
                 </span>
               </div>
@@ -4891,17 +4932,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   (!selectedClient && (!buyerName.trim() || !buyerRuc.trim())) || 
                   (docType === 'factura' ? invoiceItems.length === 0 : withholdings.length === 0)
                 }
-                className="flex items-center justify-center gap-2 px-5 py-3 bg-primary hover:bg-gradient-azure disabled:bg-slate-100 dark:disabled:bg-white/5 disabled:text-slate-400 dark:disabled:text-slate-600 text-white rounded-xl text-xs font-black uppercase tracking-wider font-premium shadow-primary active:scale-[0.99] transition-all min-w-[190px]"
+                className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 disabled:bg-white/5 disabled:text-slate-600 text-white rounded-2xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#00A896]/25 active:scale-[0.99] transition-all min-w-[200px] border border-white/10 cursor-pointer"
               >
                 {processStatus === 'running' ? (
                   <>
-                    <RefreshCw size={13} className="animate-spin" />
-                    Enviando SRI...
+                    <RefreshCw size={13} className="animate-spin text-white" />
+                    <span>Enviando SRI...</span>
                   </>
                 ) : (
                   <>
                     <Play size={13} fill="currentColor" />
-                    Procesar y Autorizar
+                    <span>Procesar y Autorizar</span>
                   </>
                 )}
               </button>
@@ -4910,30 +4951,29 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         </div>
       )}
 
-      {/* WhatsApp Send Suggestion Modal */}
-      {/* WhatsApp Send Suggestion Modal */}
+      {/* WhatsApp Send Suggestion Modal (Stitch Obsidian Luxury) */}
       {showWhatsAppModal && createPortal(
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[10000] flex items-center justify-center p-4 animate-fade-in">
-          <div className="glass-card-premium rounded-[2.5rem] p-8 max-w-md w-full space-y-6 relative overflow-hidden my-auto">
+        <div className="fixed inset-0 bg-[#020b14]/85 backdrop-blur-xl z-[10000] flex items-center justify-center p-4 animate-in fade-in duration-300 font-sans">
+          <div className="bg-[#051424]/95 border border-white/10 border-t-white/20 rounded-[2.5rem] p-8 max-w-md w-full space-y-6 relative overflow-hidden my-auto shadow-2xl backdrop-blur-2xl text-white font-mono">
             {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#00A896]/15 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
             
             <div className="text-center space-y-3 relative z-10">
-              <div className="mx-auto w-12 h-12 bg-emerald-100 dark:bg-emerald-950/30 rounded-full flex items-center justify-center text-emerald-500 mb-2">
-                <CheckCircle2 size={24} />
+              <div className="mx-auto w-14 h-14 bg-[#00A896]/20 border border-[#00A896]/30 rounded-2xl flex items-center justify-center text-[#00A896] mb-2 shadow-[0_0_12px_rgba(0,168,150,0.3)]">
+                <CheckCircle2 size={26} />
               </div>
-              <h3 className="text-lg font-black uppercase tracking-wider text-slate-800 dark:text-white font-premium">
+              <h3 className="text-lg font-black uppercase tracking-wider text-white font-display">
                 ¡Comprobante Autorizado!
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
-                El comprobante para <strong className="text-slate-700 dark:text-slate-200">{buyerName}</strong> por un valor total de <strong className="text-primary font-mono">${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}</strong> ha sido firmado y autorizado por el SRI.
+              <p className="text-xs text-slate-300 font-medium leading-relaxed font-sans">
+                El comprobante para <strong className="text-white">{buyerName}</strong> por un valor total de <strong className="text-[#00A896] font-mono">${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}</strong> ha sido firmado y autorizado por el SRI.
               </p>
             </div>
 
-            <div className="bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-2xl p-4 space-y-2 text-[10px] text-slate-600 dark:text-slate-400 font-medium font-mono leading-relaxed">
-              <div><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Razón Social:</strong> {buyerName}</div>
-              <div><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Identificación:</strong> {buyerRuc}</div>
-              <div className="truncate"><strong className="text-slate-400 font-sans uppercase tracking-wider text-[8px] block">Clave de Acceso SRI:</strong> {generatedAccessKey}</div>
+            <div className="bg-[#0b1326]/80 border border-white/10 rounded-2xl p-4 space-y-2 text-[10px] text-slate-300 font-medium font-mono leading-relaxed">
+              <div><strong className="text-slate-400 uppercase tracking-wider text-[8px] block">Razón Social:</strong> {buyerName}</div>
+              <div><strong className="text-slate-400 uppercase tracking-wider text-[8px] block">Identificación:</strong> {buyerRuc}</div>
+              <div className="truncate"><strong className="text-slate-400 uppercase tracking-wider text-[8px] block">Clave de Acceso SRI:</strong> {generatedAccessKey}</div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 pt-2 relative z-10">
@@ -4957,10 +4997,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   };
                   printRideDocument(currentComp);
                 }}
-                className="flex items-center justify-center gap-1.5 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#2B6AFF]/20 cursor-pointer border border-white/10 active:scale-[0.98]"
               >
                 <FileText size={12} />
-                Ver RIDE
+                <span>Ver RIDE</span>
               </button>
 
               {/* Button 2: Descargar XML */}
@@ -4983,10 +5023,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   };
                   downloadXmlFile(currentComp);
                 }}
-                className="flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border border-white/10 cursor-pointer active:scale-[0.98]"
               >
                 <Download size={12} />
-                Descargar XML
+                <span>Descargar XML</span>
               </button>
 
               {/* Button 3: WhatsApp */}
@@ -5006,10 +5046,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setShowWhatsAppModal(false)}
-                className="flex items-center justify-center gap-1.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 cursor-pointer border border-white/10 active:scale-[0.98]"
               >
                 <Globe size={11} />
-                WhatsApp
+                <span>WhatsApp</span>
               </a>
 
               {/* Button 4: Correo */}
@@ -5028,16 +5068,16 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   `${emisorNombreComercial}`
                 )}`}
                 onClick={() => setShowWhatsAppModal(false)}
-                className="flex items-center justify-center gap-1.5 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                className="flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-indigo-500/20 cursor-pointer border border-white/10 active:scale-[0.98]"
               >
                 <Mail size={12} />
-                Enviar Correo
+                <span>Enviar Correo</span>
               </a>
 
               <button
                 type="button"
                 onClick={() => setShowWhatsAppModal(false)}
-                className="col-span-2 py-3 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-xs font-black uppercase tracking-wider font-premium transition-all"
+                className="col-span-2 py-3 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all border border-white/10 cursor-pointer"
               >
                 Cerrar Ventana
               </button>
@@ -5047,23 +5087,23 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         document.body
       )}
 
-      {/* FULL SCREEN PROCESS LOADING OVERLAY (Cargando / Validando) */}
+      {/* FULL SCREEN PROCESS LOADING OVERLAY (Stitch Obsidian Luxury) */}
       {processStatus === 'running' && createPortal(
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[10000] flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-2xl p-8 max-w-sm w-full space-y-6 text-center relative overflow-hidden my-auto">
+        <div className="fixed inset-0 bg-[#020b14]/85 backdrop-blur-xl z-[10000] flex items-center justify-center p-4 animate-in fade-in duration-300 font-sans">
+          <div className="bg-[#051424]/95 border border-white/10 border-t-white/20 rounded-[2.5rem] shadow-2xl p-8 max-w-sm w-full space-y-6 text-center relative overflow-hidden my-auto backdrop-blur-2xl text-white font-mono">
             {/* Decorative pulse blur */}
-            <div className="absolute -top-12 -left-12 w-32 h-32 bg-primary/20 rounded-full blur-2xl animate-pulse"></div>
-            <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl animate-pulse"></div>
+            <div className="absolute -top-12 -left-12 w-32 h-32 bg-[#00A896]/20 rounded-full blur-2xl animate-pulse"></div>
+            <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-[#2B6AFF]/20 rounded-full blur-2xl animate-pulse"></div>
 
             {/* Modern Rotating Spinner */}
             <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
-              <div className="absolute inset-0 border-4 border-slate-800 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-t-primary border-r-indigo-500 rounded-full animate-spin"></div>
-              <FileText size={28} className="text-primary animate-pulse" />
+              <div className="absolute inset-0 border-4 border-white/10 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-t-[#00A896] border-r-[#2B6AFF] rounded-full animate-spin"></div>
+              <FileText size={28} className="text-[#00A896] animate-pulse" />
             </div>
 
-            <div className="space-y-2">
-              <h3 className="text-sm font-black uppercase tracking-widest text-white">Transmisión SRI Activa</h3>
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-black uppercase tracking-widest text-white font-display">Transmisión SRI Activa</h3>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                 Procesando comprobante electrónico...
               </p>
@@ -5083,18 +5123,18 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   <div key={s.step} className="flex items-center gap-3 transition-opacity duration-300">
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 ${
                       isDone 
-                        ? 'bg-emerald-500 text-white' 
+                        ? 'bg-[#00A896] text-white shadow-[0_0_6px_rgba(0,168,150,0.5)]' 
                         : isActive 
-                        ? 'bg-primary text-white animate-pulse' 
-                        : 'bg-slate-800 text-slate-500'
+                        ? 'bg-[#2B6AFF] text-white animate-pulse' 
+                        : 'bg-white/10 text-slate-500'
                     }`}>
                       {isDone ? <Check size={10} strokeWidth={3} /> : s.step}
                     </div>
-                    <span className={`text-[10px] font-black uppercase tracking-wider ${
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${
                       isDone 
-                        ? 'text-emerald-500 font-bold' 
+                        ? 'text-[#00A896] font-bold' 
                         : isActive 
-                        ? 'text-primary font-bold' 
+                        ? 'text-[#2B6AFF] font-bold' 
                         : 'text-slate-500'
                     }`}>
                       {s.label}
@@ -5108,27 +5148,27 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         document.body
       )}
 
-      {/* ERROR DETAILS DIALOG MODAL */}
+      {/* ERROR DETAILS DIALOG MODAL (Stitch Obsidian Luxury) */}
       {processErrorMessage && createPortal(
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[10000] flex items-center justify-center p-4 animate-fade-in">
-          <div className="glass-card-premium rounded-[2.5rem]  p-8 max-w-md w-full space-y-6 relative overflow-hidden text-center">
+        <div className="fixed inset-0 bg-[#020b14]/85 backdrop-blur-xl z-[10000] flex items-center justify-center p-4 animate-in fade-in duration-300 font-sans">
+          <div className="bg-[#051424]/95 border border-white/10 border-t-white/20 rounded-[2.5rem] p-8 max-w-md w-full space-y-6 relative overflow-hidden text-center backdrop-blur-2xl text-white font-mono shadow-2xl">
             {/* Background decoration */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
             
-            <div className="mx-auto w-12 h-12 bg-rose-100 dark:bg-rose-950/30 rounded-full flex items-center justify-center text-rose-500 mb-2">
-              <AlertTriangle size={24} />
+            <div className="mx-auto w-14 h-14 bg-rose-500/20 border border-rose-500/30 rounded-2xl flex items-center justify-center text-rose-400 mb-2">
+              <AlertTriangle size={26} />
             </div>
 
-            <div className="space-y-2">
-              <h3 className="text-lg font-black uppercase tracking-wider text-slate-800 dark:text-white font-premium">
+            <div className="space-y-1.5">
+              <h3 className="text-lg font-black uppercase tracking-wider text-white font-display">
                 ⚠️ Error de Transmisión SRI
               </h3>
-              <p className="text-xs text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wider">
+              <p className="text-xs text-rose-400 font-bold uppercase tracking-wider">
                 El comprobante fue devuelto o rechazado
               </p>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-white/5 rounded-2xl p-4 text-xs font-mono font-bold leading-relaxed text-slate-700 dark:text-slate-300 max-h-[150px] overflow-y-auto no-scrollbar text-left">
+            <div className="bg-[#0b1326]/90 border border-white/10 rounded-2xl p-4 text-xs font-mono font-bold leading-relaxed text-slate-300 max-h-[150px] overflow-y-auto no-scrollbar text-left">
               {processErrorMessage}
             </div>
 
@@ -5140,14 +5180,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   const logsEl = document.getElementById('console-terminal-logs');
                   if (logsEl) logsEl.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="w-full py-3 bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
+                className="w-full py-3 bg-white/5 hover:bg-white/10 text-slate-300 rounded-2xl text-[10px] font-bold uppercase tracking-wider transition-all border border-white/10 cursor-pointer active:scale-[0.98]"
               >
                 Ver Consola
               </button>
               <button
                 type="button"
                 onClick={() => setProcessErrorMessage(null)}
-                className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium shadow-rose-500/10 transition-all active:scale-[0.98]"
+                className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-rose-600/20 transition-all border border-white/10 cursor-pointer active:scale-[0.98]"
               >
                 Cerrar Diálogo
               </button>

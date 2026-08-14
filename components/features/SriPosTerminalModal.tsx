@@ -349,27 +349,27 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xl animate-fade-in">
-            <div className="relative w-full max-w-6xl h-[92vh] bg-[hsl(222,47%,5%)] rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-col overflow-hidden text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[#020b14]/85 backdrop-blur-2xl animate-in fade-in duration-300 font-sans">
+            <div className="relative w-full max-w-6xl h-[92vh] bg-[#051424]/95 rounded-[2.5rem] border border-white/10 border-t-white/20 shadow-2xl flex flex-col overflow-hidden text-white backdrop-blur-2xl">
                 
                 {/* ── HEADER TPV BARRA SUPERIOR ── */}
-                <div className="p-4 sm:p-6 bg-slate-900/80 border-b border-white/10 flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-yellow-500 text-white font-bold shadow-lg shadow-amber-500/20">
+                <div className="p-4 sm:p-6 bg-[#0b1326]/90 border-b border-white/10 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                        <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#00A896] to-teal-600 text-white font-bold shadow-lg shadow-[#00A896]/20 border border-white/10">
                             <Store size={22} />
                         </div>
                         <div>
-                            <span className="text-[9px] font-black uppercase text-amber-400 tracking-[0.2em] block">
-                                Terminal Punto de Venta (TPV POS SRI)
+                            <span className="text-[9px] font-bold uppercase text-[#00A896] tracking-[0.2em] block font-mono">
+                                Terminal Punto de Venta • TPV POS SRI
                             </span>
-                            <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                            <h2 className="text-lg sm:text-xl font-black text-white tracking-tight font-display">
                                 Caja de Venta Rápida & Facturación Electrónica
                             </h2>
                         </div>
                     </div>
 
                     {/* Selector de Rubros de Negocio Comprados */}
-                    <div className="flex items-center gap-1.5 p-1.5 bg-black/40 rounded-2xl border border-white/10 overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-1.5 p-1.5 bg-[#020b14]/70 rounded-2xl border border-white/10 overflow-x-auto no-scrollbar font-mono">
                         {[
                             { id: 'servicios', label: '💼 Contador', icon: Briefcase },
                             { id: 'minimarket', label: '🛒 Minimarket', icon: Store },
@@ -380,10 +380,10 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                             <button
                                 key={sec.id}
                                 onClick={() => setActiveSector(sec.id as any)}
-                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shrink-0 ${
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
                                     activeSector === sec.id
-                                        ? 'bg-amber-500 text-white shadow-md font-black'
-                                        : 'text-slate-400 hover:text-white'
+                                        ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-md shadow-[#00A896]/30 border border-white/10 font-bold'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                                 }`}
                             >
                                 <sec.icon size={12} />
@@ -392,7 +392,7 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                         ))}
                     </div>
 
-                    <button onClick={onClose} className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white">
+                    <button onClick={onClose} className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer">
                         <X size={20} />
                     </button>
                 </div>
@@ -401,7 +401,7 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                 <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
                     
                     {/* COLUMNA IZQUIERDA: CATÁLOGO DE PRODUCTOS (7 COLS) */}
-                    <div className="lg:col-span-7 p-4 sm:p-6 space-y-4 flex flex-col overflow-hidden border-r border-white/5">
+                    <div className="lg:col-span-7 p-4 sm:p-6 space-y-4 flex flex-col overflow-hidden border-r border-white/10">
                         
                         {/* Buscador + Escáner Barcode */}
                         <div className="relative">
@@ -411,9 +411,9 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                                 placeholder="Escanear código de barras o buscar producto..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-11 pr-10 py-3 bg-slate-900/80 rounded-2xl border border-white/10 text-xs font-bold text-white placeholder-slate-500 outline-none focus:border-amber-500"
+                                className="w-full pl-11 pr-10 py-3 bg-[#0b1326]/80 rounded-2xl border border-white/10 text-xs font-semibold text-white placeholder-slate-500 outline-none focus:border-[#00A896]/50 transition-all font-mono"
                             />
-                            <Barcode className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-400 animate-pulse" size={18} />
+                            <Barcode className="absolute right-4 top-1/2 -translate-y-1/2 text-[#00A896] animate-pulse" size={18} />
                         </div>
 
                         {/* Catálogo en Rejilla Táctil */}
@@ -422,20 +422,20 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                                 <button
                                     key={prod.id}
                                     onClick={() => handleAddToCart(prod)}
-                                    className="group p-4 rounded-2xl bg-slate-900/60 hover:bg-amber-500/10 border border-white/5 hover:border-amber-500/30 text-left transition-all flex flex-col justify-between h-32 active:scale-95 shadow-sm"
+                                    className="group p-4 rounded-2xl bg-[#0b1326]/70 hover:bg-[#00A896]/10 border border-white/5 hover:border-[#00A896]/30 text-left transition-all flex flex-col justify-between h-32 active:scale-95 shadow-md cursor-pointer"
                                 >
                                     <div>
-                                        <span className="text-[9px] font-mono text-amber-400 font-bold block">{prod.codigo}</span>
-                                        <p className="font-bold text-white text-xs line-clamp-2 mt-0.5 group-hover:text-amber-300">
+                                        <span className="text-[9px] font-mono text-[#00A896] font-bold block">{prod.codigo}</span>
+                                        <p className="font-bold text-white text-xs line-clamp-2 mt-0.5 group-hover:text-teal-200 font-sans">
                                             {prod.nombre}
                                         </p>
                                     </div>
 
-                                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 font-mono">
                                         <span className="text-[9px] font-bold text-slate-400">
                                             {prod.ivaRate > 0 ? 'IVA 15%' : 'IVA 0%'}
                                         </span>
-                                        <span className="text-sm font-black font-mono text-emerald-400">
+                                        <span className="text-sm font-black text-[#00A896] shadow-sm">
                                             ${prod.precioUnitario.toFixed(2)}
                                         </span>
                                     </div>
@@ -445,17 +445,17 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                     </div>
 
                     {/* COLUMNA DERECHA: CARRITO DE COMPRAS & CAJA (5 COLS) */}
-                    <div className="lg:col-span-5 p-4 sm:p-6 bg-slate-950/60 flex flex-col justify-between space-y-4 overflow-y-auto no-scrollbar">
+                    <div className="lg:col-span-5 p-4 sm:p-6 bg-[#020b14]/90 flex flex-col justify-between space-y-4 overflow-y-auto no-scrollbar">
                         
                         {/* Selector de Cliente Comprador */}
-                        <div className="space-y-2">
+                        <div className="space-y-2 font-mono">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                                 Cliente Receptor de Factura
                             </span>
                             <select
                                 value={selectedClientId}
                                 onChange={(e) => handleSelectClient(e.target.value)}
-                                className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-xs font-bold text-white outline-none"
+                                className="w-full px-3.5 py-2.5 rounded-xl bg-[#0b1326] border border-white/10 text-xs font-bold text-white outline-none cursor-pointer"
                             >
                                 <option value="">👤 CONSUMIDOR FINAL (9999999999999)</option>
                                 {clients.map(c => (
@@ -467,29 +467,29 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                         </div>
 
                         {/* Ítems en Carrito */}
-                        <div className="flex-1 space-y-2 overflow-y-auto no-scrollbar max-h-48 border-y border-white/10 py-3">
+                        <div className="flex-1 space-y-2 overflow-y-auto no-scrollbar max-h-48 border-y border-white/10 py-3 font-mono">
                             {cart.length === 0 ? (
                                 <div className="p-8 text-center text-slate-500 text-xs font-bold">
                                     🛒 El carrito está vacío.<br/>Haz clic en un producto para vender.
                                 </div>
                             ) : (
                                 cart.map(item => (
-                                    <div key={item.id} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-white/5 text-xs">
+                                    <div key={item.id} className="flex items-center justify-between p-2.5 rounded-xl bg-[#0b1326]/80 border border-white/5 text-xs">
                                         <div className="flex-1 truncate pr-2">
-                                            <p className="font-bold text-white truncate">{item.nombre}</p>
+                                            <p className="font-bold text-white truncate font-sans">{item.nombre}</p>
                                             <p className="text-[10px] text-slate-400 font-mono">${item.precioUnitario.toFixed(2)} c/u</p>
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <div className="flex items-center bg-slate-950 rounded-lg border border-white/10 font-mono">
-                                                <button onClick={() => handleUpdateQuantity(item.id, -1)} className="px-2 py-0.5 hover:bg-white/10 text-slate-300">-</button>
-                                                <span className="px-2 font-bold text-amber-300">{item.cantidad}</span>
-                                                <button onClick={() => handleUpdateQuantity(item.id, 1)} className="px-2 py-0.5 hover:bg-white/10 text-slate-300">+</button>
+                                            <div className="flex items-center bg-[#020b14] rounded-lg border border-white/10 font-mono">
+                                                <button onClick={() => handleUpdateQuantity(item.id, -1)} className="px-2 py-0.5 hover:bg-white/10 text-slate-300 cursor-pointer">-</button>
+                                                <span className="px-2 font-bold text-[#00A896]">{item.cantidad}</span>
+                                                <button onClick={() => handleUpdateQuantity(item.id, 1)} className="px-2 py-0.5 hover:bg-white/10 text-slate-300 cursor-pointer">+</button>
                                             </div>
 
                                             <span className="font-mono font-bold text-white w-14 text-right">${item.subtotal.toFixed(2)}</span>
 
-                                            <button onClick={() => handleRemoveFromCart(item.id)} className="p-1 text-rose-400 hover:text-rose-300">
+                                            <button onClick={() => handleRemoveFromCart(item.id)} className="p-1 text-rose-400 hover:text-rose-300 cursor-pointer">
                                                 <Trash2 size={13} />
                                             </button>
                                         </div>
@@ -499,14 +499,14 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                         </div>
 
                         {/* Totales y Caja Registradora */}
-                        <div className="space-y-3 p-4 rounded-2xl bg-black/40 border border-white/10">
+                        <div className="space-y-3 p-4 rounded-2xl bg-[#051424]/90 border border-white/10 shadow-2xl">
                             {activeSector === 'restaurante' && (
-                                <label className="flex items-center gap-2 text-xs font-bold text-amber-300 cursor-pointer">
+                                <label className="flex items-center gap-2 text-xs font-bold text-amber-300 cursor-pointer font-mono">
                                     <input
                                         type="checkbox"
                                         checked={incluirPropinaServicio}
                                         onChange={(e) => setIncluirPropinaServicio(e.target.checked)}
-                                        className="rounded accent-amber-500"
+                                        className="rounded accent-[#00A896]"
                                     />
                                     <span>Incluir 10% Propina / Servicio Restaurante</span>
                                 </label>
@@ -525,14 +525,14 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                                     <span>IVA 15%:</span>
                                     <span>${cartTotals.ivaTotal.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-lg font-black text-emerald-400 pt-1 border-t border-white/10">
+                                <div className="flex justify-between text-lg font-black text-[#00A896] pt-1.5 border-t border-white/10">
                                     <span>TOTAL A PAGAR:</span>
                                     <span>${cartTotals.grandTotal.toFixed(2)}</span>
                                 </div>
                             </div>
 
                             {/* Campo de Vuelto / Efectivo */}
-                            <div className="grid grid-cols-2 gap-2 pt-1">
+                            <div className="grid grid-cols-2 gap-2 pt-1 font-mono">
                                 <div>
                                     <span className="text-[9px] font-bold text-slate-400 uppercase block">Efectivo Recibido</span>
                                     <input
@@ -541,7 +541,7 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                                         placeholder="$0.00"
                                         value={efectivoRecibido}
                                         onChange={(e) => setEfectivoRecibido(parseFloat(e.target.value) || '')}
-                                        className="w-full px-3 py-1.5 rounded-xl bg-slate-950 border border-white/10 text-xs font-mono text-white text-right outline-none"
+                                        className="w-full px-3 py-1.5 rounded-xl bg-[#020b14] border border-white/10 text-xs font-mono text-white text-right outline-none focus:border-[#00A896]/50"
                                     />
                                 </div>
                                 <div className="text-right">
@@ -556,7 +556,7 @@ export const SriPosTerminalModal: React.FC<SriPosTerminalModalProps> = ({ isOpen
                             <button
                                 onClick={handleEmitPosInvoice}
                                 disabled={isIssuingInvoice || cart.length === 0}
-                                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-600 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-[#00A896]/25 flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 border border-white/10 cursor-pointer font-mono"
                             >
                                 <Zap size={16} />
                                 <span>Facturar SRI & Imprimir Recibo</span>
