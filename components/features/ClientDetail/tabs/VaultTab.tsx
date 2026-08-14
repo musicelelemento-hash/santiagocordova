@@ -209,41 +209,41 @@ export const VaultTab: React.FC<VaultTabProps> = ({
         }
     };
     return (
-        <div {...getRootProps()} className="relative space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700 h-full">
+        <div {...getRootProps()} className="relative space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 h-full">
             <input {...getInputProps()} />
             {isDragActive && (
-                <div className="absolute inset-0 z-50 bg-brand-navy/90 backdrop-blur-sm rounded-[3rem] border-4 border-dashed border-emerald-500 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-200">
-                    <div className="w-32 h-32 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
-                        <LucideIcons.UploadCloud size={64} className="text-emerald-400" />
+                <div className="absolute inset-0 z-50 bg-[#051424]/95 backdrop-blur-md rounded-3xl border-2 border-dashed border-[#00A896] flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-200">
+                    <div className="w-28 h-28 bg-[#00A896]/20 rounded-full flex items-center justify-center mb-5 animate-pulse shadow-[0_0_30px_rgba(0,168,150,0.3)]">
+                        <LucideIcons.UploadCloud size={56} className="text-[#00A896]" />
                     </div>
-                    <h2 className="text-3xl font-black text-white tracking-widest uppercase font-premium">Suelta para Subir</h2>
-                    <p className="text-emerald-400 font-medium text-lg mt-2">El archivo se guardará en el repositorio seguro</p>
+                    <h2 className="text-2xl font-black text-white tracking-widest uppercase font-display">Suelta para Subir a Bóveda</h2>
+                    <p className="text-[#00A896] font-mono font-medium text-sm mt-2">El archivo se encriptará y almacenará en el repositorio seguro</p>
                 </div>
             )}
 
-            {/* Encabezado Premium Bóveda */}
-            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-[2rem] p-6 sm:p-8 relative overflow-hidden shadow-xl border border-slate-700/50">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-teal/20 blur-[80px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
-                <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-500/10 blur-[60px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/2"></div>
+            {/* Encabezado Premium Bóveda (Stitch Obsidian Glass) */}
+            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl border border-white/10 border-t-white/20">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-[#00A896]/10 blur-[90px] rounded-full pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
+                <div className="absolute bottom-0 left-0 w-60 h-60 bg-[#2B6AFF]/10 blur-[70px] rounded-full pointer-events-none translate-y-1/2 -translate-x-1/2"></div>
                 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-brand-teal shadow-xl">
+                        <div className="w-14 h-14 rounded-2xl bg-[#00A896]/15 backdrop-blur-md border border-[#00A896]/30 flex items-center justify-center text-[#00A896] shadow-lg shadow-[#00A896]/20">
                             <LucideIcons.Shield size={28} />
                         </div>
                         <div>
-                            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-3">
-                                Mi Bóveda (Firma Contable) <span className="px-2.5 py-1 bg-brand-teal/20 text-brand-teal text-[9px] font-bold uppercase tracking-widest rounded-lg border border-brand-teal/30">Encriptación Activa</span>
+                            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-3 font-display">
+                                Bóveda & Credenciales <span className="px-2.5 py-1 bg-[#00A896]/15 text-[#00A896] text-[9px] font-mono font-bold uppercase tracking-widest rounded-full border border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]">Encriptación Activa</span>
                             </h2>
                             <p className="text-slate-300 font-medium text-xs mt-1 max-w-lg">
-                                Bóveda central del despacho. Administra tokens `.p12` de firma electrónica, llaves privadas, requisitos de tramitación y expedientes certificados.
+                                Bóveda de seguridad militar. Administra certificados `.p12`, llaves privadas, expedientes de tramitación y facturadores electrónicos.
                             </p>
                         </div>
                     </div>
                     {/* Botones de Edición de Bóveda */}
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-3 flex-shrink-0 font-mono">
                         {vaultSaved && (
-                            <span className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold animate-in fade-in">
+                            <span className="flex items-center gap-1.5 text-[#00A896] text-xs font-bold animate-in fade-in">
                                 <LucideIcons.CheckCircle size={14} /> Guardado
                             </span>
                         )}
@@ -258,7 +258,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                                 <button
                                     onClick={handleSaveVault}
                                     disabled={isSavingVault}
-                                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-500/25 active:scale-95 disabled:opacity-50"
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#00A896]/25 active:scale-95 disabled:opacity-50 border border-white/10"
                                 >
                                     {isSavingVault ? <LucideIcons.Loader size={13} className="animate-spin" /> : <LucideIcons.Save size={13} />}
                                     {isSavingVault ? 'Guardando...' : '💾 Guardar Bóveda'}
@@ -267,7 +267,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                         ) : (
                             <button
                                 onClick={() => setIsVaultEditing(true)}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all border border-white/10 hover:border-white/30 active:scale-95"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all border border-white/10 hover:border-white/20 active:scale-95 shadow-md"
                             >
                                 <LucideIcons.Edit3 size={13} /> Editar Claves
                             </button>
@@ -279,29 +279,29 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             {/* Top Security Cards Grid */}
             <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
                 {onOpenAnulacionSRI && (
-                    <div className="p-6 bg-slate-900/60 dark:bg-slate-900/80 backdrop-blur-2xl rounded-3xl border border-rose-500/20 shadow-xl flex flex-col justify-between space-y-4 hover:border-rose-500/40 transition-all group">
+                    <div className="p-6 bg-[#051424]/90 backdrop-blur-2xl rounded-3xl border border-rose-500/30 border-t-white/20 shadow-xl flex flex-col justify-between space-y-4 hover:border-rose-500/50 transition-all group">
                         <div className="space-y-3">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between font-mono">
                                 <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shadow-md">
                                     <LucideIcons.FileX size={22} />
                                 </div>
-                                <span className="px-2.5 py-1 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                <span className="px-2.5 py-1 bg-rose-500/15 text-rose-300 border border-rose-500/30 rounded-full text-[9px] font-bold uppercase tracking-wider">
                                     Herramienta Directa
                                 </span>
                             </div>
                             <div>
-                                <h4 className="text-sm font-black text-white uppercase tracking-wide group-hover:text-rose-400 transition-colors">
+                                <h4 className="text-sm font-black text-white uppercase tracking-wide group-hover:text-rose-400 transition-colors font-display">
                                     Anulación de Comprobantes SRI
                                 </h4>
                                 <p className="text-xs text-slate-300 leading-relaxed mt-1">
-                                    Carga las credenciales de <strong>{client.name}</strong> (RUC: {client.ruc}) e inicia el portal oficial de anulación de facturas PDF.
+                                    Carga las credenciales de <strong>{client.name}</strong> (<span className="font-mono text-[#00A896]">{client.ruc}</span>) e inicia el portal oficial de anulación de comprobantes.
                                 </p>
                             </div>
                         </div>
 
                         <button
                             onClick={onOpenAnulacionSRI}
-                            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-rose-500/20 active:scale-95"
+                            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-2xl text-xs font-mono font-bold uppercase tracking-wider transition-all shadow-lg shadow-rose-600/20 active:scale-95 border border-white/10"
                         >
                             <LucideIcons.FileX size={15} />
                             <span>🔑 Abrir Portal & Anular Facturas</span>
@@ -364,40 +364,40 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 )}
             </div>
 
-            {/* Estado y Metadatos de la Firma Electrónica Decodificada */}
+            {/* Estado y Metadatos de la Firma Electrónica Decodificada (Stitch Telemetry) */}
             {editedClient.signatureFile && (
-                <div className={`p-6 rounded-[2.5rem] border transition-all duration-500 font-sans
-                    ${p12Meta 
+                <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl transition-all duration-500 font-sans shadow-xl ${
+                    p12Meta 
                         ? p12Meta.isValid 
-                            ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-400' 
-                            : 'bg-amber-500/5 border-amber-500/20 text-amber-400' 
-                        : 'bg-slate-900/40 border-white/5 text-slate-400'
-                    }`}>
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            ? 'bg-[#051424]/90 border-[#00A896]/30 border-t-white/20 text-[#00A896]' 
+                            : 'bg-[#051424]/90 border-amber-500/30 border-t-white/20 text-amber-400' 
+                        : 'bg-[#051424]/90 border-white/10 border-t-white/20 text-slate-400'
+                }`}>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="flex items-center gap-4">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border
-                                ${p12Meta 
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border shadow-lg ${
+                                p12Meta 
                                     ? p12Meta.isValid 
-                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 animate-pulse' 
-                                        : 'bg-amber-500/10 border-amber-500/20 text-amber-400' 
-                                    : 'bg-slate-950 border-white/5 text-slate-500'
-                                }`}>
-                                <LucideIcons.KeyRound size={22} />
+                                        ? 'bg-[#00A896]/15 border-[#00A896]/30 text-[#00A896] shadow-[#00A896]/20' 
+                                        : 'bg-amber-500/15 border-amber-500/30 text-amber-400' 
+                                    : 'bg-white/5 border-white/10 text-slate-500'
+                            }`}>
+                                <LucideIcons.KeyRound size={24} />
                             </div>
                             <div>
-                                <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2 font-display">
                                     <span>Verificación de Firma Electrónica (.p12)</span>
                                     {p12Meta && (
-                                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-widest border
-                                            ${p12Meta.isValid 
-                                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                                                : 'bg-red-500/20 text-red-400 border-red-500/30'
-                                            }`}>
+                                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider border ${
+                                            p12Meta.isValid 
+                                                ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]' 
+                                                : 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                                        }`}>
                                             {p12Meta.isValid ? 'Válida / Activa' : 'Caducada / Inactiva'}
                                         </span>
                                     )}
                                 </h4>
-                                <p className="text-slate-400 text-[11px] mt-1 font-light">
+                                <p className="text-slate-400 text-xs mt-1 font-medium">
                                     {p12Meta 
                                         ? `Certificado emitido por ${p12Meta.issuerName}.` 
                                         : p12Error || 'Esperando contraseña de la firma para descifrar...'
@@ -407,22 +407,22 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                         </div>
 
                         {p12Meta && (
-                            <div className="flex flex-wrap gap-6 text-[11px] p-4 bg-slate-950/60 rounded-2xl border border-white/5 min-w-[280px]">
+                            <div className="flex flex-wrap gap-6 text-xs p-4 bg-[#0b1326]/80 rounded-2xl border border-white/10 min-w-[280px]">
                                 <div>
-                                    <span className="text-slate-500 block uppercase tracking-widest font-mono text-[9px]">Titular</span>
-                                    <strong className="text-white font-medium block truncate max-w-[200px]" title={p12Meta.commonName}>
+                                    <span className="text-slate-400 block uppercase tracking-widest font-mono text-[9px]">Titular</span>
+                                    <strong className="text-white font-bold block truncate max-w-[200px]" title={p12Meta.commonName}>
                                         {p12Meta.commonName}
                                     </strong>
                                 </div>
                                 <div>
-                                    <span className="text-slate-500 block uppercase tracking-widest font-mono text-[9px]">Cédula / RUC</span>
-                                    <strong className="text-[#00A896] font-mono block">
+                                    <span className="text-slate-400 block uppercase tracking-widest font-mono text-[9px]">Cédula / RUC</span>
+                                    <strong className="text-[#00A896] font-mono font-bold block">
                                         {p12Meta.ruc || p12Meta.cedula || 'No disponible'}
                                     </strong>
                                 </div>
                                 <div>
-                                    <span className="text-slate-500 block uppercase tracking-widest font-mono text-[9px]">Caducidad</span>
-                                    <strong className={`${p12Meta.isValid ? 'text-emerald-400' : 'text-red-400'} font-mono block`}>
+                                    <span className="text-slate-400 block uppercase tracking-widest font-mono text-[9px]">Caducidad</span>
+                                    <strong className={`${p12Meta.isValid ? 'text-[#00A896]' : 'text-rose-400'} font-mono font-bold block`}>
                                         {new Date(p12Meta.notAfter).toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' })}
                                     </strong>
                                 </div>
@@ -460,14 +460,14 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             />
 
             {/* Respaldo para Tramitar Firma Electrónica */}
-            <div className="bg-slate-900/60 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] p-8 border border-slate-700/50 shadow-xl space-y-6">
+            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/10 border-t-white/20 shadow-xl space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-2xl bg-[#2B6AFF]/15 border border-[#2B6AFF]/30 text-[#2B6AFF] flex items-center justify-center shadow-md shadow-[#2B6AFF]/10">
                             <LucideIcons.Camera size={24} />
                         </div>
                         <div>
-                            <h3 className="text-base font-black text-white uppercase tracking-wide">
+                            <h3 className="text-base font-black text-white uppercase tracking-wide font-display">
                                 Recursos para Trámites (Firma / Facturadores)
                             </h3>
                             <p className="text-slate-400 text-xs mt-0.5">
@@ -475,12 +475,12 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                             </p>
                         </div>
                     </div>
-                    <span className="px-3 py-1 bg-indigo-500/10 text-indigo-300 text-[10px] font-black uppercase tracking-wider rounded-lg border border-indigo-500/20 self-start sm:self-auto">
+                    <span className="px-3 py-1 bg-[#2B6AFF]/15 text-[#2B6AFF] text-[10px] font-mono font-bold uppercase tracking-wider rounded-full border border-[#2B6AFF]/30 self-start sm:self-auto">
                         Expediente de Recursos
                     </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
                     <VaultCard 
                         icon={LucideIcons.CreditCard} 
                         label="Cédula (Frontal)" 
@@ -531,51 +531,51 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 </div>
             </div>
 
-            {/* Document Repository - Modularized Section */}
-            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-slate-200/50 dark:border-white/10 relative overflow-hidden group shadow-2xl shadow-slate-200/50 dark:shadow-none transition-all duration-500 hover:shadow-primary/5">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+            {/* Document Repository - Modularized Section (Stitch Obsidian Container) */}
+            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-10 border border-white/10 border-t-white/20 relative overflow-hidden group shadow-2xl transition-all duration-500">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-6">
                     <div>
-                        <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-4">
-                            <div className="p-3 bg-primary/10 rounded-2xl">
-                                <LucideIcons.Store className="text-primary" size={24} />
+                        <h3 className="text-xl sm:text-2xl font-display font-black text-white tracking-tight flex items-center gap-3">
+                            <div className="p-3 bg-[#00A896]/15 rounded-2xl text-[#00A896] border border-[#00A896]/30">
+                                <LucideIcons.Store size={24} />
                             </div>
                             Repositorio de Documentos
                         </h3>
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mt-3 font-premium">Gestión centralizada de archivos y comprobantes</p>
+                        <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mt-2">Gestión centralizada de archivos y comprobantes protegidos</p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="p-1.5 bg-slate-100/50 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/5 flex gap-1 shadow-sm backdrop-blur-md">
+                        <div className="p-1.5 bg-[#0b1326]/80 rounded-2xl border border-white/10 flex gap-1 shadow-sm backdrop-blur-md font-mono">
                             {(['gallery', 'list', 'table'] as const).map((mode) => (
                                 <button
                                     key={mode}
                                     onClick={() => setVaultViewMode(mode)}
-                                    className={`px-5 py-2.5 rounded-xl text-[9px] font-bold uppercase tracking-[0.15em] transition-all font-premium ${
+                                    className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all ${
                                         vaultViewMode === mode 
-                                            ? 'bg-white dark:bg-primary/20 text-primary shadow-lg shadow-slate-200/50 dark:shadow-none ring-1 ring-slate-100 dark:ring-primary/30' 
-                                            : 'text-slate-400 dark:text-slate-500 hover:text-primary hover:bg-white/50 dark:hover:bg-white/10'
+                                            ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-md shadow-[#00A896]/20 border border-white/10' 
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
                                     {mode === 'gallery' ? 'Galería' : mode === 'list' ? 'Lista' : 'Tabla'}
                                 </button>
                             ))}
                         </div>
-                        <div className="hidden sm:flex px-6 py-3 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl text-[9px] font-bold text-emerald-600 dark:text-emerald-400 items-center gap-3 border border-emerald-100 dark:border-emerald-500/20 shadow-sm uppercase tracking-[0.2em] font-premium">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                            {(client.declarations || []).filter(d => d.proof_file).length} Archivos Protegidos
+                        <div className="hidden sm:flex px-4 py-2 bg-[#00A896]/15 rounded-2xl text-[10px] font-mono font-bold text-[#00A896] items-center gap-2.5 border border-[#00A896]/30 shadow-sm uppercase tracking-wider">
+                            <div className="w-2 h-2 bg-[#00A896] rounded-full animate-pulse shadow-[0_0_6px_#00A896]"></div>
+                            {(client.declarations || []).filter(d => d.proof_file).length} Archivos
                         </div>
                     </div>
                 </div>
 
                 {vaultViewMode === 'gallery' && (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 animate-in fade-in slide-in-from-bottom-5 duration-700">
                         <button
                             onClick={() => { setUploadingTarget({ type: 'iva', period: '2024-03' }); proofInputRef.current?.click(); }}
-                            className="aspect-square rounded-[2.5rem] border-2 border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-primary/5 transition-all group relative overflow-hidden shadow-sm bg-white/30 dark:bg-white/5 backdrop-blur-sm"
+                            className="aspect-square rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/10 flex flex-col items-center justify-center gap-3 hover:border-[#00A896]/50 hover:bg-[#00A896]/5 transition-all group relative overflow-hidden shadow-sm bg-white/30 dark:bg-white/5 backdrop-blur-sm"
                         >
-                            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform border border-slate-100 dark:border-white/5 relative z-10 shadow-sm">
-                                <LucideIcons.Plus className="text-slate-300 group-hover:text-primary" size={32} />
+                            <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform border border-slate-100 dark:border-white/5 relative z-10 shadow-sm">
+                                <LucideIcons.Plus className="text-slate-400 group-hover:text-[#00A896]" size={28} />
                             </div>
-                            <span className="text-[10px] font-bold uppercase text-slate-400 group-hover:text-primary tracking-widest relative z-10 font-premium">Subir Nuevo</span>
+                            <span className="text-[10px] font-mono font-bold uppercase text-slate-400 group-hover:text-[#00A896] tracking-wider relative z-10">Subir Archivo</span>
                         </button>
 
                         {[...(client.declarations || [])]
@@ -584,33 +584,33 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                             .map((decl, idx) => (
                                 <div 
                                     key={idx} 
-                                    className="bg-white/60 dark:bg-white/5 rounded-[2.5rem] p-6 border border-slate-100 dark:border-white/5 hover:bg-white dark:hover:bg-white/10 hover:scale-[1.03] shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all cursor-pointer group relative overflow-hidden" 
+                                    className="bg-white/80 dark:bg-[#0b1326]/80 rounded-3xl p-5 border border-slate-200/80 dark:border-white/10 dark:border-t-white/20 hover:border-[#00A896]/40 hover:scale-[1.02] shadow-sm hover:shadow-xl transition-all cursor-pointer group relative overflow-hidden" 
                                     onClick={() => setPreviewItem(decl)}
                                 >
-                                    <div className="aspect-[4/3] rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-white/5 mb-6 flex items-center justify-center relative overflow-hidden group-hover:bg-primary/5 transition-all duration-500">
-                                        <LucideIcons.FileText className="text-slate-200 dark:text-slate-700 group-hover:text-primary group-hover:scale-110 transition-all duration-700" size={48} />
+                                    <div className="aspect-[4/3] rounded-2xl bg-slate-100 dark:bg-slate-900/60 border border-slate-200/60 dark:border-white/5 mb-4 flex items-center justify-center relative overflow-hidden group-hover:bg-[#00A896]/5 transition-all duration-500">
+                                        <LucideIcons.FileText className="text-slate-300 dark:text-slate-600 group-hover:text-[#00A896] group-hover:scale-110 transition-all duration-500" size={40} />
                                         {decl.proof_file?.metadata?.formType && (
-                                            <div className="absolute top-4 left-4 px-3 py-1 bg-primary text-white text-[9px] font-bold rounded-lg uppercase tracking-widest shadow-lg shadow-primary/20 font-premium">
+                                            <div className="absolute top-3 left-3 px-2.5 py-0.5 bg-[#00A896] text-white text-[9px] font-mono font-bold rounded-lg uppercase tracking-wider shadow-md shadow-[#00A896]/20">
                                                 {decl.proof_file.metadata.formType}
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
-                                            <div className="p-4 bg-white dark:bg-slate-800 rounded-full shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                                                <LucideIcons.Eye className="text-primary" size={24} />
+                                        <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+                                            <div className="p-3 bg-white dark:bg-[#051424] rounded-full shadow-xl translate-y-2 group-hover:translate-y-0 transition-transform duration-300 border border-white/10">
+                                                <LucideIcons.Eye className="text-[#00A896]" size={20} />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="space-y-4 relative z-10">
+                                    <div className="space-y-3 relative z-10 font-mono">
                                         <div className="flex items-center justify-between">
                                             <div className="flex flex-col">
-                                                <span className="text-[13px] font-bold text-emerald-600 dark:text-emerald-400 tracking-tight font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
-                                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1 font-premium">{formatPeriodForDisplay(decl.period)}</span>
+                                                <span className="text-xs font-bold text-[#00A896] tracking-tight">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{formatPeriodForDisplay(decl.period)}</span>
                                             </div>
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); decl.proof_file && onDownloadFile?.(decl.proof_file); }}
-                                                className="p-3 bg-slate-50 dark:bg-white/5 hover:bg-primary hover:text-white rounded-xl text-slate-300 transition-all shadow-sm"
+                                                className="p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-[#00A896] hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-200 dark:border-white/10"
                                             >
-                                                <LucideIcons.Download size={14} />
+                                                <LucideIcons.Download size={13} />
                                             </button>
                                         </div>
                                     </div>
@@ -620,46 +620,46 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 )}
 
                 {vaultViewMode === 'list' && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-left-5 duration-500">
+                    <div className="space-y-3 animate-in fade-in slide-in-from-left-5 duration-500 font-mono">
                         <button
                             onClick={() => { setUploadingTarget({ type: 'iva', period: '2024-03' }); proofInputRef.current?.click(); }}
-                            className="w-full p-6 rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/10 flex items-center justify-center gap-4 hover:border-primary/50 hover:bg-primary/5 transition-all group shadow-sm font-premium"
+                            className="w-full p-5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 flex items-center justify-center gap-3 hover:border-[#00A896]/50 hover:bg-[#00A896]/5 transition-all group shadow-sm text-xs font-bold uppercase text-slate-400 hover:text-[#00A896] tracking-wider"
                         >
-                            <LucideIcons.Plus className="text-slate-400 group-hover:text-primary" size={20} />
-                            <span className="text-[11px] font-black uppercase text-slate-400 group-hover:text-primary tracking-widest">Subir Nuevo Documento al Repositorio</span>
+                            <LucideIcons.Plus className="group-hover:scale-110 transition-transform" size={18} />
+                            <span>Subir Nuevo Documento al Repositorio</span>
                         </button>
 
                         {[...(client.declarations || [])]
                             .filter(d => d.proof_file)
                             .sort((a, b) => b.period.localeCompare(a.period))
                             .map((decl, idx) => (
-                                <div key={idx} className="bg-slate-50 dark:bg-white/5 hover:bg-white dark:hover:bg-white/10 rounded-[2rem] p-6 border border-slate-100 dark:border-white/5 flex items-center justify-between shadow-sm hover:shadow-lg transition-all group cursor-pointer" onClick={() => setPreviewItem(decl)}>
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-16 h-16 rounded-2xl glass-card-premium flex items-center justify-center  group-hover:bg-primary/10 transition-colors">
-                                            <LucideIcons.FileText className="text-slate-400 group-hover:text-primary" size={28} />
+                                <div key={idx} className="bg-white/60 dark:bg-[#0b1326]/60 hover:bg-white dark:hover:bg-[#0b1326] rounded-2xl p-5 border border-slate-200/60 dark:border-white/10 flex items-center justify-between shadow-sm hover:shadow-lg transition-all group cursor-pointer" onClick={() => setPreviewItem(decl)}>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-white/5 flex items-center justify-center group-hover:bg-[#00A896]/15 transition-colors border border-slate-200/60 dark:border-white/5">
+                                            <LucideIcons.FileText className="text-slate-400 group-hover:text-[#00A896]" size={22} />
                                         </div>
                                         <div>
-                                            <h4 className="text-sm font-extrabold text-slate-900 dark:text-white font-premium tracking-tight uppercase">Comprobante de {formatPeriodForDisplay(decl.period)}</h4>
-                                            <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest font-premium truncate max-w-[200px]">{decl.proof_file?.name}</p>
+                                            <h4 className="text-xs font-bold text-slate-900 dark:text-white tracking-tight uppercase font-display">Comprobante de {formatPeriodForDisplay(decl.period)}</h4>
+                                            <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wider truncate max-w-[220px]">{decl.proof_file?.name}</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-10">
+                                    <div className="flex items-center gap-6">
                                         <div className="text-right">
-                                            <span className="block text-[13px] font-black text-emerald-600 font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-premium">Monto Validado</span>
+                                            <span className="block text-xs font-bold text-[#00A896]">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Validado</span>
                                         </div>
                                         <div className="flex gap-2">
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); decl.proof_file && onDownloadFile?.(decl.proof_file); }}
-                                                className="p-3 bg-white dark:bg-white/5 hover:bg-slate-900 dark:hover:bg-primary hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-100 dark:border-white/5"
+                                                className="p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-[#00A896] hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-200 dark:border-white/10"
                                             >
-                                                <LucideIcons.Download size={16} />
+                                                <LucideIcons.Download size={14} />
                                             </button>
                                             <button 
                                                 onClick={(e) => { e.stopPropagation(); setPreviewItem(decl); }}
-                                                className="p-3 bg-white dark:bg-white/5 hover:bg-primary hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-100 dark:border-white/5"
+                                                className="p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-[#2B6AFF] hover:text-white rounded-xl text-slate-400 transition-all shadow-sm border border-slate-200 dark:border-white/10"
                                             >
-                                                <LucideIcons.Eye size={16} />
+                                                <LucideIcons.Eye size={14} />
                                             </button>
                                         </div>
                                     </div>
@@ -669,49 +669,49 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 )}
 
                 {vaultViewMode === 'table' && (
-                    <div className="bg-white dark:bg-surface-low rounded-[2.5rem] border border-slate-100 dark:border-white/5 overflow-hidden animate-in fade-in slide-in-from-right-5 duration-500">
+                    <div className="bg-white/60 dark:bg-[#0b1326]/60 rounded-2xl border border-slate-200/60 dark:border-white/10 overflow-hidden animate-in fade-in slide-in-from-right-5 duration-500 font-mono">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50/50 dark:bg-white/5 border-b border-slate-100 dark:border-white/5">
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium">Documento</th>
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium">Periodo</th>
-                                    <th className="px-10 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium">Monto</th>
-                                    <th className="px-10 py-6 text-right text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] font-premium pr-12">Acciones</th>
+                                <tr className="bg-slate-100/50 dark:bg-white/5 border-b border-slate-200/60 dark:border-white/10">
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Documento</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Periodo</th>
+                                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Monto</th>
+                                    <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider pr-8">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-white/5 bg-white dark:bg-surface-low">
+                            <tbody className="divide-y divide-slate-200/60 dark:divide-white/5">
                                 {[...(client.declarations || [])]
                                     .filter(d => d.proof_file)
                                     .sort((a, b) => b.period.localeCompare(a.period))
                                     .map((decl, idx) => (
                                         <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => setPreviewItem(decl)}>
-                                            <td className="px-10 py-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="p-2 bg-slate-50 dark:bg-white/5 rounded-lg text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
-                                                        <LucideIcons.FileText size={18} />
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-1.5 bg-slate-100 dark:bg-white/5 rounded-lg text-slate-400 group-hover:text-[#00A896] transition-colors">
+                                                        <LucideIcons.FileText size={16} />
                                                     </div>
-                                                    <span className="text-xs font-black text-slate-800 dark:text-slate-50 uppercase tracking-tight font-premium truncate max-w-[150px]">{decl.proof_file?.name}</span>
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[200px]">{decl.proof_file?.name}</span>
                                                 </div>
                                             </td>
-                                            <td className="px-10 py-6">
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-premium">{formatPeriodForDisplay(decl.period)}</span>
+                                            <td className="px-6 py-4">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{formatPeriodForDisplay(decl.period)}</span>
                                             </td>
-                                            <td className="px-10 py-6">
-                                                <span className="text-[12px] font-extrabold text-slate-900 dark:text-white font-premium">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
+                                            <td className="px-6 py-4">
+                                                <span className="text-xs font-bold text-[#00A896]">${(decl.amount || decl.proof_file?.metadata?.amount || 0).toFixed(2)}</span>
                                             </td>
-                                            <td className="px-10 py-6 text-right pr-12">
-                                                <div className="flex justify-end gap-3 opacity-20 group-hover:opacity-100 transition-opacity">
+                                            <td className="px-6 py-4 text-right pr-8">
+                                                <div className="flex justify-end gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); decl.proof_file && onDownloadFile?.(decl.proof_file); }}
-                                                        className="p-2.5 hover:bg-white dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shadow-sm"
+                                                        className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-[#00A896] transition-colors shadow-sm"
                                                     >
-                                                        <LucideIcons.Download size={16} />
+                                                        <LucideIcons.Download size={14} />
                                                     </button>
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); setPreviewItem(decl); }}
-                                                        className="p-2.5 hover:bg-white dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shadow-sm"
+                                                        className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-[#2B6AFF] transition-colors shadow-sm"
                                                     >
-                                                        <LucideIcons.Eye size={16} />
+                                                        <LucideIcons.Eye size={14} />
                                                     </button>
                                                 </div>
                                             </td>

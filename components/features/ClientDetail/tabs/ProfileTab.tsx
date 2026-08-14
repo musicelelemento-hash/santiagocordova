@@ -182,22 +182,22 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 <div className="space-y-6 flex flex-col">
                     
                     {/* 1. Módulo de Inteligencia Fiscal SRI */}
-                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 space-y-5 shadow-sm">
-                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/5 pb-4">
+                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-5 shadow-xl">
+                        <div className="flex items-center justify-between border-b border-slate-200/40 dark:border-white/10 pb-4">
                             <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
-                                    <Activity size={18} />
+                                <div className="w-10 h-10 rounded-2xl bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 flex items-center justify-center font-bold shadow-md shadow-[#00A896]/10">
+                                    <Activity size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
+                                    <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight font-display">
                                         Inteligencia Fiscal SRI
                                     </h3>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                                    <p className="text-[10px] text-slate-400 font-medium font-mono">
                                         Diagnóstico estratégico y régimen de contribuyente
                                     </p>
                                 </div>
                             </div>
-                            <span className="px-3 py-1 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl text-[10px] font-bold uppercase tracking-wider">
+                            <span className="px-3 py-1 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider shadow-[0_0_8px_rgba(0,168,150,0.2)]">
                                 Diagnóstico IA Active
                             </span>
                         </div>
@@ -209,9 +209,9 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         <div className="space-y-3">
                             {/* RIMPE NP: sin IVA */}
                             {isNegocioPopular && !complianceStats?.renta?.needed && (
-                                <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-500/5 rounded-2xl border border-amber-100 dark:border-amber-500/20 text-amber-700 dark:text-amber-400">
-                                    <Info size={16} strokeWidth={2} className="mt-0.5 flex-shrink-0" />
-                                    <p className="text-xs font-medium leading-relaxed">
+                                <div className="flex items-start gap-3 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/30 text-amber-400 font-mono text-xs">
+                                    <Info size={16} strokeWidth={2} className="mt-0.5 flex-shrink-0 text-amber-400" />
+                                    <p className="leading-relaxed">
                                         RIMPE Negocio Popular no declara IVA. Solo tiene una declaración anual de Impuesto a la Renta RIMPE.
                                     </p>
                                 </div>
@@ -246,9 +246,9 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     </div>
 
                     {/* 2. Gráfico de Historial de Honorarios */}
-                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 shadow-sm flex-1 flex flex-col">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <Activity size={14} className="text-blue-500" strokeWidth={2.5} />
+                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl flex-1 flex flex-col">
+                        <h3 className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Activity size={14} className="text-[#2B6AFF]" strokeWidth={2.5} />
                             Historial de Honorarios y Recaudación
                         </h3>
                         <div className="flex-1 min-h-[220px]">
@@ -257,7 +257,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     </div>
 
                     {/* 3. Bitácora / Notas Estructuradas del Cliente */}
-                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 shadow-sm">
+                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl">
                         <ClientNotes
                             clientId={client.id}
                             notes={client.structuredNotes || []}
@@ -270,37 +270,37 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                 <div className="space-y-6 flex flex-col">
 
                     {/* 1. Acceso Rápido al Sistema de Facturación (Enlace a Bóveda) */}
-                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 space-y-4 shadow-sm">
+                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-4 shadow-xl">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center font-bold">
+                                <div className="w-10 h-10 rounded-2xl bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 flex items-center justify-center font-bold shadow-md shadow-[#00A896]/10">
                                     <FileText size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
+                                    <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight font-display">
                                         Facturación Electrónica del Cliente
                                     </h3>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                                    <p className="text-[11px] text-slate-400 font-mono font-medium">
                                         {editedClient.facturadorConfig?.programName || 'No configurado'}
                                     </p>
                                 </div>
                             </div>
-                            <span className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider ${
+                            <span className={`px-3 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider border ${
                                 editedClient.facturadorConfig?.programName
-                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                    ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
+                                    : 'bg-white/5 text-slate-400 border-white/10'
                             }`}>
                                 {editedClient.facturadorConfig?.programName ? 'Configurado' : 'Sin Configurar'}
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 font-mono">
                             {editedClient.facturadorConfig?.url && (
                                 <a
                                     href={editedClient.facturadorConfig.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 p-3 bg-slate-900 text-white hover:bg-slate-800 dark:bg-teal-600 dark:hover:bg-teal-500 rounded-2xl text-xs font-bold transition-all shadow-sm active:scale-95"
+                                    className="flex items-center justify-center gap-2 p-3 bg-slate-900 text-white hover:bg-slate-800 dark:bg-gradient-to-r dark:from-[#00A896] dark:to-teal-600 dark:hover:from-teal-600 dark:hover:to-emerald-600 rounded-2xl text-xs font-bold transition-all shadow-md shadow-[#00A896]/20 active:scale-95 border border-white/10"
                                 >
                                     <Globe size={14} />
                                     <span>Abrir Sistema Web</span>
@@ -308,9 +308,9 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                             )}
                             <button
                                 onClick={() => setActiveTab('vault')}
-                                className="flex items-center justify-center gap-2 p-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-2xl text-xs font-bold transition-all active:scale-95"
+                                className="flex items-center justify-center gap-2 p-3 bg-slate-100 dark:bg-[#0b1326]/80 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-white/10 rounded-2xl text-xs font-bold transition-all active:scale-95 border border-slate-200 dark:border-white/10"
                             >
-                                <ShieldCheck size={14} className="text-teal-500" />
+                                <ShieldCheck size={14} className="text-[#00A896]" />
                                 <span>Ver en Bóveda</span>
                                 <ArrowRight size={13} className="text-slate-400" />
                             </button>
@@ -318,9 +318,9 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     </div>
 
                     {/* 2. Claves de Acceso y Firma Electrónica (.p12) */}
-                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 space-y-4 shadow-sm">
-                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            <FileKey size={14} className="text-emerald-500" strokeWidth={2.5} />
+                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-4 shadow-xl font-mono">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 font-display">
+                            <FileKey size={14} className="text-[#00A896]" strokeWidth={2.5} />
                             Credenciales & Archivo de Firma Electrónica
                         </h3>
 
@@ -329,34 +329,34 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                             <div className="flex items-center justify-between mb-1.5">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clave SRI</p>
                                 {isEditing && (
-                                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Modo Edición</span>
+                                    <span className="text-[8px] font-bold text-amber-400 uppercase tracking-widest">Modo Edición</span>
                                 )}
                             </div>
-                            <div className="flex items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200/40 dark:border-white/5">
+                            <div className="flex items-center justify-between gap-2 p-3 bg-slate-100/60 dark:bg-[#0b1326]/80 rounded-2xl border border-slate-200/40 dark:border-white/10">
                                 {isEditing ? (
                                     <input
                                         type={passwordVisible ? "text" : "password"}
                                         value={editedClient.sriPassword || ''}
                                         onChange={e => setEditedClient({ ...editedClient, sriPassword: e.target.value })}
-                                        className="w-full bg-transparent text-sm font-bold text-slate-900 dark:text-white tracking-wider font-mono outline-none border-b border-primary/30 pb-0.5 focus:border-primary"
+                                        className="w-full bg-transparent text-sm font-bold text-slate-900 dark:text-white tracking-wider font-mono outline-none border-b border-[#2B6AFF]/40 pb-0.5 focus:border-[#2B6AFF]"
                                         placeholder="Clave SRI"
                                     />
                                 ) : (
-                                    <code className="text-sm font-bold text-blue-600 dark:text-blue-400 tracking-wider font-mono truncate">
+                                    <code className="text-sm font-bold text-[#2B6AFF] tracking-wider font-mono truncate">
                                         {passwordVisible ? editedClient.sriPassword : '•'.repeat(Math.min(editedClient.sriPassword?.length || 8, 12))}
                                     </code>
                                 )}
                                 <div className="flex items-center gap-1 shrink-0">
                                     <button
                                         onClick={() => handleCopy(editedClient.sriPassword)}
-                                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90"
+                                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-all active:scale-90"
                                         title="Copiar Clave"
                                     >
                                         <Copy size={13} />
                                     </button>
                                     <button
                                         onClick={() => setPasswordVisible(!passwordVisible)}
-                                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90"
+                                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-all active:scale-90"
                                     >
                                         {passwordVisible ? <EyeOff size={13} /> : <Eye size={13} />}
                                     </button>
@@ -367,17 +367,17 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         {/* Clave Firma Electrónica */}
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Clave Firma Electrónica</p>
-                            <div className="flex items-center justify-between gap-2 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200/40 dark:border-white/5">
+                            <div className="flex items-center justify-between gap-2 p-3 bg-slate-100/60 dark:bg-[#0b1326]/80 rounded-2xl border border-slate-200/40 dark:border-white/10">
                                 {isEditing ? (
                                     <input
                                         type={passwordVisible ? "text" : "password"}
                                         value={editedClient.electronicSignaturePassword || ''}
                                         onChange={e => setEditedClient({ ...editedClient, electronicSignaturePassword: e.target.value })}
-                                        className="w-full bg-transparent text-sm font-bold text-slate-900 dark:text-white tracking-wider font-mono outline-none border-b border-primary/30 pb-0.5 focus:border-primary"
+                                        className="w-full bg-transparent text-sm font-bold text-slate-900 dark:text-white tracking-wider font-mono outline-none border-b border-[#00A896]/40 pb-0.5 focus:border-[#00A896]"
                                         placeholder="Clave Firma"
                                     />
                                 ) : (
-                                    <code className="text-sm font-bold text-emerald-600 dark:text-emerald-400 tracking-wider font-mono truncate">
+                                    <code className="text-sm font-bold text-[#00A896] tracking-wider font-mono truncate">
                                         {editedClient.electronicSignaturePassword 
                                             ? (passwordVisible ? editedClient.electronicSignaturePassword : '•'.repeat(Math.min(editedClient.electronicSignaturePassword.length, 12)))
                                             : 'NO REGISTRADA'}
@@ -387,7 +387,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     {editedClient.electronicSignaturePassword && (
                                         <button
                                             onClick={() => handleCopy(editedClient.electronicSignaturePassword)}
-                                            className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90"
+                                            className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-all active:scale-90"
                                             title="Copiar Clave"
                                         >
                                             <Copy size={13} />
@@ -395,7 +395,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                     )}
                                     <button
                                         onClick={() => setPasswordVisible(!passwordVisible)}
-                                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-90"
+                                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-200 transition-all active:scale-90"
                                     >
                                         {passwordVisible ? <EyeOff size={13} /> : <Eye size={13} />}
                                     </button>
@@ -406,12 +406,12 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         {/* Archivo Firma Electrónica (.p12 / .pdf) */}
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                                <FileKey size={10} className="text-primary/50" /> Archivo de Firma (.p12 / PDF)
+                                <FileKey size={10} className="text-[#00A896]" /> Archivo de Firma (.p12 / PDF)
                             </p>
-                            <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200/40 dark:border-white/5">
+                            <div className="flex items-center justify-between gap-3 p-3 bg-slate-100/60 dark:bg-[#0b1326]/80 rounded-2xl border border-slate-200/40 dark:border-white/10">
                                 {editedClient.signatureFile ? (
                                     <div className="flex items-center justify-between w-full">
-                                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-200 truncate max-w-[200px] uppercase">
+                                        <span className="text-xs font-mono font-bold text-slate-900 dark:text-white truncate max-w-[200px] uppercase">
                                             {editedClient.signatureFile.name}
                                         </span>
                                         <div className="flex items-center gap-1">
@@ -422,7 +422,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                                         downloadStoredFile(editedClient.signatureFile);
                                                     }
                                                 }}
-                                                className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                                className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-[#00A896]"
                                                 title="Descargar Firma"
                                             >
                                                 <Download size={14} />
@@ -435,7 +435,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                                         delete updated.signatureFile;
                                                         return updated;
                                                     })}
-                                                    className="p-1.5 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-lg text-rose-400 hover:text-rose-600 dark:hover:text-rose-200"
+                                                    className="p-1.5 hover:bg-rose-500/15 rounded-lg text-slate-400 hover:text-rose-400"
                                                     title="Eliminar Firma"
                                                 >
                                                     <Trash2 size={14} />
@@ -446,7 +446,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                 ) : (
                                     <div className="w-full">
                                         {isEditing ? (
-                                            <label className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 dark:bg-white/5 hover:bg-primary/10 dark:hover:bg-primary/20 text-slate-400 hover:text-primary rounded-lg border border-dashed border-slate-300 dark:border-white/10 cursor-pointer transition-all text-xs font-bold">
+                                            <label className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-white/5 hover:bg-[#00A896]/15 text-slate-400 hover:text-[#00A896] rounded-xl border border-dashed border-slate-300 dark:border-white/10 cursor-pointer transition-all text-xs font-bold">
                                                 <UploadCloud size={14} /> Subir Firma (.p12)
                                                 <input 
                                                     type="file" 
@@ -458,7 +458,7 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                                                             setEditedClient(prev => ({
                                                                 ...prev,
                                                                 signatureFile: uploaded
-                                                            }));
+                                                             }));
                                                         }
                                                     }}
                                                 />
@@ -474,18 +474,18 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                         {/* Fecha de Vencimiento de la Firma */}
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                                <CalendarDays size={10} className="text-primary/50" /> Vencimiento de Firma
+                                <CalendarDays size={10} className="text-[#2B6AFF]" /> Vencimiento de Firma
                             </p>
-                            <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-200/40 dark:border-white/5">
+                            <div className="flex items-center gap-2 p-3 bg-slate-100/60 dark:bg-[#0b1326]/80 rounded-2xl border border-slate-200/40 dark:border-white/10">
                                 {isEditing ? (
                                     <input
                                         type="date"
                                         value={editedClient.signatureExpirationDate || ''}
                                         onChange={e => setEditedClient({ ...editedClient, signatureExpirationDate: e.target.value })}
-                                        className="w-full bg-transparent text-xs font-bold text-slate-900 dark:text-white outline-none border-b border-primary/30 pb-0.5 focus:border-primary [color-scheme:light] dark:[color-scheme:dark] cursor-pointer"
+                                        className="w-full bg-transparent text-xs font-bold text-slate-900 dark:text-white outline-none border-b border-[#2B6AFF]/40 pb-0.5 focus:border-[#2B6AFF] [color-scheme:light] dark:[color-scheme:dark] cursor-pointer"
                                     />
                                 ) : (
-                                    <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                                    <span className="text-xs font-mono font-bold text-slate-900 dark:text-white">
                                         {editedClient.signatureExpirationDate 
                                             ? new Date(editedClient.signatureExpirationDate).toLocaleDateString()
                                             : 'NO REGISTRADA'}
@@ -496,96 +496,96 @@ export const ProfileTab: React.FC<ProfileTabProps> = ({
                     </div>
 
                     {/* 3. Centro de Acciones Tácticas */}
-                    <div className="bg-white dark:bg-slate-900/60 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/50 dark:border-white/5 space-y-3 shadow-sm">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <Zap size={14} className="text-amber-500" strokeWidth={2.5} />
+                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 space-y-3 shadow-xl font-mono">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2 font-display">
+                            <Zap size={14} className="text-amber-400" strokeWidth={2.5} />
                             Centro de Acciones Tácticas
                         </p>
 
                         <button
                             onClick={handleWhatsApp}
-                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 hover:bg-emerald-500/5 dark:hover:bg-emerald-500/10 border border-slate-200/40 dark:border-white/5 hover:border-emerald-200 dark:hover:border-emerald-500/30 rounded-2xl transition-all group active:scale-[0.98]"
+                            className="w-full flex items-center justify-between p-4 bg-slate-100/60 dark:bg-[#0b1326]/80 hover:bg-[#00A896]/10 border border-slate-200/40 dark:border-white/10 hover:border-[#00A896]/40 rounded-2xl transition-all group active:scale-[0.98]"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl text-emerald-500 group-hover:scale-110 transition-transform">
-                                    <MessageCircle size={16} strokeWidth={2} />
+                                <div className="p-2.5 bg-[#00A896]/15 text-[#00A896] rounded-xl group-hover:scale-110 transition-transform shadow-md shadow-[#00A896]/10">
+                                    <MessageCircle size={16} strokeWidth={2.5} />
                                 </div>
-                                <div className="text-left">
-                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">WhatsApp Directo</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">Enviar mensaje o cobro al cliente</p>
+                                <div className="text-left font-display">
+                                    <p className="text-xs font-bold text-slate-900 dark:text-white">WhatsApp Directo</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5 font-mono">Enviar mensaje o cobro al cliente</p>
                                 </div>
                             </div>
-                            <ArrowRight size={14} className="text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                            <ArrowRight size={14} className="text-slate-400 group-hover:text-[#00A896] group-hover:translate-x-1 transition-all" />
                         </button>
 
                         {handleEmail && (
                             <button
                                 onClick={handleEmail}
-                                className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 hover:bg-sky-500/5 dark:hover:bg-sky-500/10 border border-slate-200/40 dark:border-white/5 hover:border-sky-200 dark:hover:border-sky-500/30 rounded-2xl transition-all group active:scale-[0.98]"
+                                className="w-full flex items-center justify-between p-4 bg-slate-100/60 dark:bg-[#0b1326]/80 hover:bg-sky-500/10 border border-slate-200/40 dark:border-white/10 hover:border-sky-500/40 rounded-2xl transition-all group active:scale-[0.98]"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-sky-50 dark:bg-sky-500/10 rounded-xl text-sky-500 group-hover:scale-110 transition-transform">
-                                        <Mail size={16} strokeWidth={2} />
+                                    <div className="p-2.5 bg-sky-500/15 text-sky-400 rounded-xl group-hover:scale-110 transition-transform shadow-md shadow-sky-500/10">
+                                        <Mail size={16} strokeWidth={2.5} />
                                     </div>
-                                    <div className="text-left">
-                                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Correo Electrónico Seguro</p>
-                                        <p className="text-[10px] text-slate-400 mt-0.5">Enviar dossier o comprobantes</p>
+                                    <div className="text-left font-display">
+                                        <p className="text-xs font-bold text-slate-900 dark:text-white">Correo Electrónico Seguro</p>
+                                        <p className="text-[10px] text-slate-400 mt-0.5 font-mono">Enviar dossier o comprobantes</p>
                                     </div>
                                 </div>
-                                <ArrowRight size={14} className="text-slate-300 group-hover:text-sky-500 group-hover:translate-x-1 transition-all" />
+                                <ArrowRight size={14} className="text-slate-400 group-hover:text-sky-400 group-hover:translate-x-1 transition-all" />
                             </button>
                         )}
 
                         <button
                             onClick={handleOpenSRI}
-                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 hover:bg-blue-500/5 dark:hover:bg-blue-500/10 border border-slate-200/40 dark:border-white/5 hover:border-blue-200 dark:hover:border-blue-500/30 rounded-2xl transition-all group active:scale-[0.98]"
+                            className="w-full flex items-center justify-between p-4 bg-slate-100/60 dark:bg-[#0b1326]/80 hover:bg-[#2B6AFF]/10 border border-slate-200/40 dark:border-white/10 hover:border-[#2B6AFF]/40 rounded-2xl transition-all group active:scale-[0.98]"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-blue-50 dark:bg-blue-500/10 rounded-xl text-blue-500 group-hover:scale-110 transition-transform">
-                                    <Globe size={16} strokeWidth={2} />
+                                <div className="p-2.5 bg-[#2B6AFF]/15 text-[#2B6AFF] rounded-xl group-hover:scale-110 transition-transform shadow-md shadow-[#2B6AFF]/10">
+                                    <Globe size={16} strokeWidth={2.5} />
                                 </div>
-                                <div className="text-left">
-                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Portal SRI en Línea</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">Abrir acceso directo en nueva pestaña</p>
+                                <div className="text-left font-display">
+                                    <p className="text-xs font-bold text-slate-900 dark:text-white">Portal SRI en Línea</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5 font-mono">Abrir acceso directo en nueva pestaña</p>
                                 </div>
                             </div>
-                            <ArrowRight size={14} className="text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                            <ArrowRight size={14} className="text-slate-400 group-hover:text-[#2B6AFF] group-hover:translate-x-1 transition-all" />
                         </button>
 
                         <button
                             onClick={handleShareViaWhatsApp}
-                            className="w-full flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/40 hover:bg-purple-500/5 dark:hover:bg-purple-500/10 border border-slate-200/40 dark:border-white/5 hover:border-purple-200 dark:hover:border-purple-500/30 rounded-2xl transition-all group active:scale-[0.98]"
+                            className="w-full flex items-center justify-between p-4 bg-slate-100/60 dark:bg-[#0b1326]/80 hover:bg-[#C9A96E]/10 border border-slate-200/40 dark:border-white/10 hover:border-[#C9A96E]/40 rounded-2xl transition-all group active:scale-[0.98]"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-purple-50 dark:bg-purple-500/10 rounded-xl text-purple-500 group-hover:scale-110 transition-transform">
-                                    <Share2 size={16} strokeWidth={2} />
+                                <div className="p-2.5 bg-[#C9A96E]/15 text-[#C9A96E] rounded-xl group-hover:scale-110 transition-transform shadow-md shadow-[#C9A96E]/10">
+                                    <Share2 size={16} strokeWidth={2.5} />
                                 </div>
-                                <div className="text-left">
-                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Compartir Ficha del Cliente</p>
-                                    <p className="text-[10px] text-slate-400 mt-0.5">Enviar resumen de estado por WhatsApp</p>
+                                <div className="text-left font-display">
+                                    <p className="text-xs font-bold text-slate-900 dark:text-white">Compartir Ficha del Cliente</p>
+                                    <p className="text-[10px] text-slate-400 mt-0.5 font-mono">Enviar resumen de estado por WhatsApp</p>
                                 </div>
                             </div>
-                            <ArrowRight size={14} className="text-slate-300 group-hover:text-purple-500 group-hover:translate-x-1 transition-all" />
+                            <ArrowRight size={14} className="text-slate-400 group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all" />
                         </button>
 
                         {/* Cambio de frecuencia IVA */}
                         {editedClient.taxProfile?.ivaFrequency !== 'Ninguno' && onChangeIvaFrequency && (
                             <button
                                 onClick={onChangeIvaFrequency}
-                                className="w-full flex items-center justify-between p-4 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/15 border border-indigo-100 dark:border-indigo-500/20 hover:border-indigo-300 dark:hover:border-indigo-500/40 rounded-2xl transition-all group active:scale-[0.98]"
+                                className="w-full flex items-center justify-between p-4 bg-[#2B6AFF]/10 hover:bg-[#2B6AFF]/15 border border-[#2B6AFF]/30 hover:border-[#2B6AFF]/50 rounded-2xl transition-all group active:scale-[0.98]"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2.5 bg-indigo-100 dark:bg-indigo-500/20 rounded-xl text-indigo-500 group-hover:scale-110 transition-transform">
-                                        <RefreshCcw size={16} strokeWidth={2} />
+                                    <div className="p-2.5 bg-[#2B6AFF]/20 rounded-xl text-[#2B6AFF] group-hover:scale-110 transition-transform shadow-md shadow-[#2B6AFF]/15">
+                                        <RefreshCcw size={16} strokeWidth={2.5} />
                                     </div>
-                                    <div className="text-left">
-                                        <p className="text-xs font-bold text-indigo-700 dark:text-indigo-300">Cambiar Frecuencia IVA</p>
-                                        <p className="text-[10px] text-indigo-500/70 dark:text-indigo-400/70 mt-0.5">
+                                    <div className="text-left font-display">
+                                        <p className="text-xs font-bold text-slate-900 dark:text-white">Cambiar Frecuencia IVA</p>
+                                        <p className="text-[10px] text-[#2B6AFF] mt-0.5 font-mono">
                                             Actual: <strong>{editedClient.taxProfile?.ivaFrequency}</strong>
                                         </p>
                                     </div>
                                 </div>
-                                <ArrowRight size={14} className="text-indigo-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                                <ArrowRight size={14} className="text-[#2B6AFF] group-hover:translate-x-1 transition-all" />
                             </button>
                         )}
                     </div>

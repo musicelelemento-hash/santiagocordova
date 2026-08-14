@@ -40,46 +40,46 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
     const totalPending = (client.declarations || []).filter(d => d.status === 'Pendiente').length;
 
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700">
 
-            {/* KPI Strip */}
-            <div className="grid grid-cols-3 gap-6">
+            {/* KPI Strip (Stitch Telemetry Cards) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 font-mono">
                 {[
-                    { label: 'Declaradas', value: totalDeclared, icon: LucideIcons.Send, color: 'text-blue-500 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/10', border: 'border-blue-100 dark:border-blue-500/20' },
-                    { label: 'Pagadas', value: totalPaid, icon: LucideIcons.CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', border: 'border-emerald-100 dark:border-emerald-500/20' },
-                    { label: 'Pendientes', value: totalPending, icon: LucideIcons.Clock, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', border: 'border-amber-100 dark:border-amber-500/20' },
+                    { label: 'Declaradas', value: totalDeclared, icon: LucideIcons.Send, color: 'text-[#2B6AFF]', bg: 'bg-[#2B6AFF]/10 border-[#2B6AFF]/25', glow: 'shadow-[#2B6AFF]/15' },
+                    { label: 'Pagadas', value: totalPaid, icon: LucideIcons.CheckCircle2, color: 'text-[#00A896]', bg: 'bg-[#00A896]/10 border-[#00A896]/25', glow: 'shadow-[#00A896]/15' },
+                    { label: 'Pendientes', value: totalPending, icon: LucideIcons.Clock, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/25', glow: 'shadow-amber-500/15' },
                 ].map((kpi) => (
-                    <div key={kpi.label} className={`${kpi.bg} ${kpi.border} border rounded-3xl p-7 flex items-center gap-6 transition-all hover:scale-[1.02] shadow-sm backdrop-blur-sm`}>
-                        <div className={`p-3.5 rounded-2xl bg-white/80 dark:bg-white/10 shadow-sm`}>
-                            <kpi.icon className={kpi.color} size={22} strokeWidth={2} />
+                    <div key={kpi.label} className={`bg-[#051424]/90 backdrop-blur-2xl ${kpi.border} border border-t-white/20 rounded-3xl p-6 flex items-center gap-5 transition-all hover:scale-[1.02] shadow-xl ${kpi.glow}`}>
+                        <div className={`p-3.5 rounded-2xl ${kpi.bg} border ${kpi.border} ${kpi.color} shadow-sm`}>
+                            <kpi.icon size={22} strokeWidth={2.5} />
                         </div>
                         <div>
-                            <p className={`text-3xl font-bold ${kpi.color} leading-none font-mono tracking-tighter`}>{kpi.value}</p>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 mt-2">{kpi.label}</p>
+                            <p className={`text-3xl font-black ${kpi.color} leading-none font-mono tracking-tighter`}>{kpi.value}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mt-1.5">{kpi.label}</p>
                         </div>
                     </div>
                 ))}
             </div>
 
             {/* Registro Operativo */}
-            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-10 shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden group border border-slate-200/50 dark:border-white/10 transition-all duration-500 hover:shadow-primary/5">
+            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-10 shadow-2xl border border-white/10 border-t-white/20 relative overflow-hidden group transition-all duration-500">
                 {/* Decorative glow */}
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/5 rounded-full blur-[100px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#2B6AFF]/10 rounded-full blur-[100px] pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-12 gap-6 relative z-10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-6 relative z-10">
                     <div>
-                        <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-4">
-                            <div className="p-3 bg-blue-500/10 dark:bg-blue-500/15 rounded-2xl">
-                                <LucideIcons.Activity className="text-blue-500" size={24} />
+                        <h3 className="text-xl sm:text-2xl font-display font-black text-white tracking-tight flex items-center gap-3">
+                            <div className="p-3 bg-[#2B6AFF]/15 text-[#2B6AFF] border border-[#2B6AFF]/30 rounded-2xl">
+                                <LucideIcons.Activity size={24} />
                             </div>
                             Registro Operativo
                         </h3>
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mt-3">
-                            Trazabilidad de acciones y validaciones
+                        <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mt-2">
+                            Trazabilidad de acciones y validaciones contables
                         </p>
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-white/5 px-5 py-3 rounded-2xl border border-slate-100 dark:border-white/5 self-start sm:self-auto">
-                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    <div className="flex items-center gap-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#2B6AFF] bg-[#2B6AFF]/10 px-4 py-2 rounded-2xl border border-[#2B6AFF]/25 self-start sm:self-auto shadow-sm">
+                        <div className="w-2 h-2 rounded-full bg-[#2B6AFF] animate-pulse shadow-[0_0_6px_#2B6AFF]" />
                         {(client.declarations || []).filter(d => d.proof_file || d.status === 'Enviada' || d.status === 'Pagada').length} registros
                     </div>
                 </div>
@@ -93,23 +93,23 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
             </div>
 
             {/* Historial de Declaraciones */}
-            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-2xl shadow-slate-200/50 dark:shadow-none border border-slate-200/50 dark:border-white/10 transition-all duration-500 hover:shadow-primary/5">
+            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-2xl border border-white/10 border-t-white/20 transition-all duration-500">
 
-                <div className="px-10 pt-10 pb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-100 dark:border-white/5">
+                <div className="p-6 sm:px-10 sm:pt-10 sm:pb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-white/10">
                     <div>
-                        <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-4">
-                            <div className="p-3 bg-primary/10 rounded-2xl">
-                                <LucideIcons.FileClock className="text-primary" size={24} />
+                        <h3 className="text-xl sm:text-2xl font-display font-black text-white tracking-tight flex items-center gap-3">
+                            <div className="p-3 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 rounded-2xl">
+                                <LucideIcons.FileClock size={24} />
                             </div>
                             Resumen de Declaraciones
                         </h3>
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mt-3">
-                            Gestión fiscal detallada por período
+                        <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mt-2">
+                            Gestión fiscal detallada por período impositivo
                         </p>
                     </div>
-                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-white/5 px-5 py-3 rounded-2xl border border-slate-100 dark:border-white/5 self-start sm:self-auto">
-                        <LucideIcons.Database size={14} className="text-primary" />
-                        {(editedClient.declarations || []).length} registros
+                    <div className="flex items-center gap-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-[#00A896] bg-[#00A896]/10 px-4 py-2 rounded-2xl border border-[#00A896]/25 self-start sm:self-auto shadow-sm">
+                        <LucideIcons.Database size={14} className="text-[#00A896]" />
+                        {(editedClient.declarations || []).length} períodos
                     </div>
                 </div>
 

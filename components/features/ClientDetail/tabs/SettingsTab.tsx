@@ -24,17 +24,17 @@ const TaxProfileField: React.FC<{
     options?: { value: string; label: string }[];
     placeholder?: string;
 }> = ({ label, value, icon: Icon, isEditing, onChange, onStartEdit, type = 'text', options, placeholder }) => (
-    <div className="space-y-3 group/field animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-2 group/field animate-in fade-in slide-in-from-bottom-2 duration-500 font-mono">
         <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-                <Icon size={13} className="text-primary/50 group-hover/field:text-primary transition-colors" />
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">{label}</span>
+            <div className="flex items-center gap-2">
+                <Icon size={13} className="text-[#00A896] group-hover/field:text-[#00A896] transition-colors" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</span>
             </div>
             {(!isEditing && onStartEdit) && (
                 <button
                     type="button"
                     onClick={onStartEdit}
-                    className="text-[9px] text-primary hover:text-primary-dark font-black uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover/field:opacity-100 transition-opacity"
+                    className="text-[9px] text-[#2B6AFF] hover:text-blue-400 font-bold uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover/field:opacity-100 transition-opacity"
                 >
                     <LucideIcons.Edit3 size={10} /> Editar
                 </button>
@@ -45,10 +45,10 @@ const TaxProfileField: React.FC<{
                 <select
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer "
+                    className="w-full bg-slate-100/80 dark:bg-[#0b1326]/80 rounded-2xl px-4 py-3 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 focus:outline-none focus:border-[#00A896] transition-all appearance-none cursor-pointer"
                 >
                     {options?.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">{opt.label}</option>
                     ))}
                 </select>
             ) : (
@@ -57,16 +57,16 @@ const TaxProfileField: React.FC<{
                     value={value}
                     placeholder={placeholder}
                     onChange={(e) => onChange(e.target.value)}
-                    className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all "
+                    className="w-full bg-slate-100/80 dark:bg-[#0b1326]/80 rounded-2xl px-4 py-3 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 focus:outline-none focus:border-[#00A896] transition-all"
                 />
             )
         ) : (
             <div 
                 onClick={onStartEdit}
-                className={`px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 tracking-wide shadow-sm flex items-center justify-between ${onStartEdit ? 'cursor-pointer hover:border-primary/20 hover:bg-slate-100/50 dark:hover:bg-white/10 transition-all' : ''}`}
+                className={`px-4 py-3 bg-slate-100/60 dark:bg-[#0b1326]/80 rounded-2xl border border-slate-200/40 dark:border-white/10 text-xs font-bold text-slate-900 dark:text-slate-100 tracking-wide shadow-sm flex items-center justify-between ${onStartEdit ? 'cursor-pointer hover:border-[#00A896]/40 hover:bg-slate-200/50 dark:hover:bg-[#0b1326] transition-all' : ''}`}
             >
-                <span>{options?.find(o => o.value === value)?.label || value || <span className="text-slate-350 dark:text-slate-650 font-normal">—</span>}</span>
-                {onStartEdit && <LucideIcons.Lock size={10} className="text-slate-300 dark:text-slate-650 opacity-60 group-hover/field:opacity-100 transition-opacity" />}
+                <span>{options?.find(o => o.value === value)?.label || value || <span className="text-slate-500 font-normal italic">—</span>}</span>
+                {onStartEdit && <LucideIcons.Lock size={10} className="text-slate-400 opacity-60 group-hover/field:opacity-100 transition-opacity" />}
             </div>
         )}
     </div>
@@ -82,25 +82,25 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 }) => {
     const { toast } = useToast();
     return (
-        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-5 duration-700 pb-20">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-5 duration-700 pb-20">
             {/* Grid for Technical Parameters */}
-            <div className="grid grid-cols-1 2xl:grid-cols-12 gap-10">
+            <div className="grid grid-cols-1 2xl:grid-cols-12 gap-8">
                 
                 {/* Left Column: Core Identity & Tax Profile */}
-                <div className="2xl:col-span-8 space-y-10">
-                    <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-slate-200/50 dark:border-white/10 shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden group transition-all duration-500">
+                <div className="2xl:col-span-8 space-y-8">
+                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl relative overflow-hidden group transition-all duration-500">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-all duration-1000 group-hover:scale-110 pointer-events-none">
-                            <LucideIcons.ShieldCheck size={96} className="text-primary" />
+                            <LucideIcons.ShieldCheck size={96} className="text-[#00A896]" />
                         </div>
                         
-                        <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-4 mb-10 relative z-10">
-                            <div className="p-3 bg-primary/10 rounded-2xl">
-                                <LucideIcons.User className="text-primary" size={22} />
+                        <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3 mb-8 relative z-10">
+                            <div className="p-3 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 rounded-2xl">
+                                <LucideIcons.User size={22} />
                             </div>
                             Identificación y Perfil Fiscal
                         </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-7 relative z-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                             <TaxProfileField 
                                 label="Número de RUC" 
                                 value={editedClient.ruc} 
@@ -125,109 +125,110 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 onStartEdit={onStartEdit}
                                 onChange={(val) => setEditedClient({ ...editedClient, email: val })} 
                             />
+
                             {/* Teléfonos y Canales de WhatsApp Múltiples */}
-                            <div className="space-y-3 group/field animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="space-y-2 group/field animate-in fade-in slide-in-from-bottom-2 duration-500 font-mono">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2.5">
-                                        <LucideIcons.Phone size={13} className="text-primary/50 group-hover/field:text-primary transition-colors" />
-                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Teléfonos / WhatsApp</span>
+                                    <div className="flex items-center gap-2">
+                                        <LucideIcons.Phone size={13} className="text-[#00A896] group-hover/field:text-[#00A896] transition-colors" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Teléfonos / WhatsApp</span>
                                     </div>
                                     {isEditing && (
                                         <button
-                                            type="button"
-                                            onClick={() => setEditedClient(prev => ({ ...prev, phones: [...(prev.phones || ['']), ''] }))}
-                                            className="text-[9px] text-emerald-500 hover:text-emerald-600 font-black uppercase tracking-wider flex items-center gap-1"
-                                        >
-                                            <LucideIcons.Plus size={10} strokeWidth={3} /> Añadir Número
-                                        </button>
-                                    )}
-                                </div>
+                                             type="button"
+                                             onClick={() => setEditedClient(prev => ({ ...prev, phones: [...(prev.phones || ['']), ''] }))}
+                                             className="text-[9px] text-[#00A896] hover:text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1"
+                                         >
+                                             <LucideIcons.Plus size={10} strokeWidth={3} /> Añadir Número
+                                         </button>
+                                     )}
+                                 </div>
 
-                                {isEditing ? (
-                                    <div className="space-y-3">
-                                        {(editedClient.phones || ['']).map((phone, idx) => (
-                                            <div key={idx} className="flex gap-3 items-center animate-in fade-in duration-300">
-                                                <div className="relative flex-1">
-                                                    <LucideIcons.Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                                    <input
-                                                        type="text"
-                                                        value={phone}
-                                                        onChange={(e) => {
-                                                            const newPhones = [...(editedClient.phones || [''])];
-                                                            newPhones[idx] = e.target.value;
-                                                            setEditedClient({ ...editedClient, phones: newPhones });
-                                                        }}
-                                                        className="w-full glass-card-premium rounded-2xl pl-11 pr-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all "
-                                                        placeholder="Ej: 0991234567"
-                                                    />
-                                                </div>
-                                                {(editedClient.phones || []).length > 1 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const newPhones = (editedClient.phones || []).filter((_, i) => i !== idx);
-                                                            setEditedClient({ ...editedClient, phones: newPhones });
-                                                        }}
-                                                        className="p-3.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-2xl transition-all border border-rose-500/10 active:scale-95"
-                                                    >
-                                                        <LucideIcons.Trash2 size={15} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div 
-                                        onClick={onStartEdit}
-                                        className={`space-y-3 ${onStartEdit ? 'cursor-pointer' : ''}`}
-                                    >
-                                        {(client.phones || []).length > 0 ? (
-                                            (client.phones || []).map((phone, idx) => {
-                                                const cleanPhone = phone.replace(/\D/g, '');
-                                                const ecuadorianPhone = cleanPhone.startsWith('0') ? '593' + cleanPhone.substring(1) : cleanPhone;
-                                                return (
-                                                    <div key={idx} className="flex items-center justify-between px-5 py-3 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-900 dark:text-slate-200 shadow-sm group/phone hover:border-primary/20 hover:bg-slate-100/50 dark:hover:bg-white/10 transition-all">
-                                                        <div className="flex items-center gap-3">
-                                                            <LucideIcons.Smartphone size={14} className="text-slate-400" />
-                                                            <span className="font-mono tracking-wider">{phone}</span>
-                                                        </div>
-                                                        <div className="flex gap-2 opacity-60 group-hover/phone:opacity-100 transition-opacity">
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    navigator.clipboard.writeText(phone);
-                                                                    toast.success("Teléfono copiado al portapapeles.");
-                                                                }}
-                                                                className="p-2 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-slate-500 dark:text-slate-400 transition-colors"
-                                                                title="Copiar Número"
-                                                            >
-                                                                <LucideIcons.Copy size={13} />
-                                                            </button>
-                                                            {ecuadorianPhone && (
-                                                                <a
-                                                                    href={`https://wa.me/${ecuadorianPhone}`}
-                                                                    target="_blank"
-                                                                    rel="noreferrer"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className="p-2 hover:bg-emerald-500/10 hover:text-emerald-500 rounded-xl text-slate-500 dark:text-slate-400 transition-colors flex items-center justify-center"
-                                                                    title="Enviar Mensaje por WhatsApp"
-                                                                >
-                                                                    <LucideIcons.MessageSquare size={13} />
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })
-                                        ) : (
-                                            <div className="px-5 py-3.5 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 text-xs font-bold text-slate-300 dark:text-slate-650 italic shadow-sm flex items-center justify-between hover:border-primary/20 hover:bg-slate-100/50 dark:hover:bg-white/10 transition-all">
-                                                <span>Sin números telefónicos registrados</span>
-                                                <LucideIcons.Lock size={10} className="text-slate-300 dark:text-slate-650 opacity-60" />
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
+                                 {isEditing ? (
+                                     <div className="space-y-2">
+                                         {(editedClient.phones || ['']).map((phone, idx) => (
+                                             <div key={idx} className="flex gap-2 items-center animate-in fade-in duration-300">
+                                                 <div className="relative flex-1">
+                                                     <LucideIcons.Phone size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                     <input
+                                                         type="text"
+                                                         value={phone}
+                                                         onChange={(e) => {
+                                                             const newPhones = [...(editedClient.phones || [''])];
+                                                             newPhones[idx] = e.target.value;
+                                                             setEditedClient({ ...editedClient, phones: newPhones });
+                                                         }}
+                                                         className="w-full bg-slate-100/80 dark:bg-[#0b1326]/80 rounded-2xl pl-10 pr-4 py-3 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 focus:outline-none focus:border-[#00A896] transition-all"
+                                                         placeholder="Ej: 0991234567"
+                                                     />
+                                                 </div>
+                                                 {(editedClient.phones || []).length > 1 && (
+                                                     <button
+                                                         type="button"
+                                                         onClick={() => {
+                                                             const newPhones = (editedClient.phones || []).filter((_, i) => i !== idx);
+                                                             setEditedClient({ ...editedClient, phones: newPhones });
+                                                         }}
+                                                         className="p-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-2xl transition-all border border-rose-500/20 active:scale-95"
+                                                     >
+                                                         <LucideIcons.Trash2 size={14} />
+                                                     </button>
+                                                 )}
+                                             </div>
+                                         ))}
+                                     </div>
+                                 ) : (
+                                     <div 
+                                         onClick={onStartEdit}
+                                         className={`space-y-2 ${onStartEdit ? 'cursor-pointer' : ''}`}
+                                     >
+                                         {(client.phones || []).length > 0 ? (
+                                             (client.phones || []).map((phone, idx) => {
+                                                 const cleanPhone = phone.replace(/\D/g, '');
+                                                 const ecuadorianPhone = cleanPhone.startsWith('0') ? '593' + cleanPhone.substring(1) : cleanPhone;
+                                                 return (
+                                                     <div key={idx} className="flex items-center justify-between px-4 py-2.5 bg-slate-100/60 dark:bg-[#0b1326]/80 rounded-2xl border border-slate-200/40 dark:border-white/10 text-xs font-bold text-slate-900 dark:text-slate-100 shadow-sm group/phone hover:border-[#00A896]/40 hover:bg-slate-200/50 dark:hover:bg-[#0b1326] transition-all">
+                                                         <div className="flex items-center gap-3">
+                                                             <LucideIcons.Smartphone size={14} className="text-[#00A896]" />
+                                                             <span className="font-mono tracking-wider">{phone}</span>
+                                                         </div>
+                                                         <div className="flex gap-1.5 opacity-60 group-hover/phone:opacity-100 transition-opacity">
+                                                             <button
+                                                                 type="button"
+                                                                 onClick={(e) => {
+                                                                     e.stopPropagation();
+                                                                     navigator.clipboard.writeText(phone);
+                                                                     toast.success("Teléfono copiado al portapapeles.");
+                                                                 }}
+                                                                 className="p-1.5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-slate-400 hover:text-slate-200 transition-colors"
+                                                                 title="Copiar Número"
+                                                             >
+                                                                 <LucideIcons.Copy size={13} />
+                                                             </button>
+                                                             {ecuadorianPhone && (
+                                                                 <a
+                                                                     href={`https://wa.me/${ecuadorianPhone}`}
+                                                                     target="_blank"
+                                                                     rel="noreferrer"
+                                                                     onClick={(e) => e.stopPropagation()}
+                                                                     className="p-1.5 hover:bg-emerald-500/15 hover:text-[#00A896] rounded-xl text-slate-400 transition-colors flex items-center justify-center"
+                                                                     title="Enviar Mensaje por WhatsApp"
+                                                                 >
+                                                                     <LucideIcons.MessageSquare size={13} />
+                                                                 </a>
+                                                             )}
+                                                         </div>
+                                                     </div>
+                                                 );
+                                             })
+                                         ) : (
+                                             <div className="px-4 py-3 bg-slate-100/60 dark:bg-[#0b1326]/80 rounded-2xl border border-slate-200/40 dark:border-white/10 text-xs font-bold text-slate-500 italic shadow-sm flex items-center justify-between hover:border-[#00A896]/40 hover:bg-slate-200/50 dark:hover:bg-[#0b1326] transition-all">
+                                                 <span>Sin números telefónicos registrados</span>
+                                                 <LucideIcons.Lock size={10} className="text-slate-400 opacity-60" />
+                                             </div>
+                                         )}
+                                     </div>
+                                 )}
                             </div>
                             <div className="md:col-span-2">
                                 <TaxProfileField 
@@ -242,10 +243,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                         </div>
                     </div>
 
-                    <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-10 border border-slate-200/50 dark:border-white/10 shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden transition-all duration-500">
-                        <h3 className="text-2xl font-display font-bold text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-4 mb-10">
-                            <div className="p-3 bg-emerald-500/10 rounded-2xl">
-                                <LucideIcons.GanttChartSquare className="text-emerald-600 dark:text-emerald-400" size={22} />
+                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl relative overflow-hidden transition-all duration-500">
+                        <h3 className="text-xl sm:text-2xl font-display font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3 mb-8">
+                            <div className="p-3 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 rounded-2xl">
+                                <LucideIcons.GanttChartSquare size={22} />
                             </div>
                             Configuración de Obligaciones
                         </h3>
@@ -254,11 +255,11 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                 </div>
 
                 {/* Right Column: Technical Stats & Meta */}
-                <div className="2xl:col-span-4 space-y-10">
-                    <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl rounded-[3rem] p-8 border border-slate-200/50 dark:border-white/10 shadow-2xl shadow-slate-200/50 dark:shadow-none transition-all duration-500">
-                        <h3 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-8">Parámetros del Sistema</h3>
+                <div className="2xl:col-span-4 space-y-8">
+                    <div className="bg-white/80 dark:bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-slate-200/60 dark:border-white/10 dark:border-t-white/20 shadow-xl transition-all duration-500">
+                        <h3 className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mb-6">Parámetros del Sistema</h3>
                         
-                        <div className="space-y-7">
+                        <div className="space-y-6">
                             <TaxProfileField 
                                 label="Régimen Impositivo" 
                                 value={editedClient.regime} 
@@ -342,9 +343,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             />
 
                             {(editedClient.isCourtesy || editedClient.customServiceFee === 0) && (
-                                <div className="p-3 bg-sky-500/10 border border-sky-500/30 rounded-2xl flex items-center gap-2.5 text-xs text-sky-400 font-medium">
+                                <div className="p-3.5 bg-sky-500/10 border border-sky-500/30 rounded-2xl flex items-center gap-2.5 text-xs text-sky-400 font-mono font-medium">
                                     <LucideIcons.Info size={16} className="flex-shrink-0" />
-                                    <span>Cliente de Cortesía / Trueque ($0): Las declaraciones se marcan automáticamente como AL DÍA (Pagadas) sin generar cuentas por cobrar.</span>
+                                    <span>Cliente de Cortesía ($0): Declaraciones marcadas AL DÍA sin cuentas por cobrar.</span>
                                 </div>
                             )}
 
@@ -366,17 +367,17 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 />
                             )}
 
-                            <div className="space-y-3 group/field animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="space-y-2 group/field animate-in fade-in slide-in-from-bottom-2 duration-500 font-mono">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2.5">
-                                        <LucideIcons.CalendarRange size={13} className="text-primary/50 group-hover/field:text-primary transition-colors" />
-                                        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Inicio de Obligaciones</span>
+                                    <div className="flex items-center gap-2">
+                                        <LucideIcons.CalendarRange size={13} className="text-[#00A896] group-hover/field:text-[#00A896] transition-colors" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inicio de Obligaciones</span>
                                     </div>
                                     {(!isEditing && onStartEdit) && (
                                         <button
                                             type="button"
                                             onClick={onStartEdit}
-                                            className="text-[9px] text-primary hover:text-primary-dark font-black uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover/field:opacity-100 transition-opacity"
+                                            className="text-[9px] text-[#2B6AFF] hover:text-blue-400 font-bold uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover/field:opacity-100 transition-opacity"
                                         >
                                             <LucideIcons.Edit3 size={10} /> Editar
                                         </button>
@@ -384,8 +385,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 </div>
                                 {isEditing ? (
                                     editedClient.taxProfile?.ivaFrequency === 'Semestral' ? (
-                                        <div className="space-y-3">
-                                            <div className="flex gap-3">
+                                        <div className="space-y-2">
+                                            <div className="flex gap-2">
                                                 <div className="flex-1 relative">
                                                     <select
                                                         value={editedClient.clientStartPeriod?.split('-')[0] || new Date().getFullYear().toString()}
@@ -394,10 +395,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                             const sem = editedClient.clientStartPeriod?.split('-')[1] || 'S1';
                                                             setEditedClient({ ...editedClient, clientStartPeriod: `${year}-${sem}` });
                                                         }}
-                                                        className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer"
+                                                        className="w-full bg-slate-100/80 dark:bg-[#0b1326]/80 rounded-2xl px-4 py-3 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 focus:outline-none focus:border-[#00A896] transition-all appearance-none cursor-pointer"
                                                     >
                                                         {Array.from({ length: 6 }, (_, i) => (new Date().getFullYear() - 3 + i).toString()).map(y => (
-                                                            <option key={y} value={y} className="bg-slate-900 dark:bg-slate-950 text-slate-900 dark:text-white">{y}</option>
+                                                            <option key={y} value={y} className="bg-slate-900 text-white">{y}</option>
                                                         ))}
                                                     </select>
                                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
@@ -412,10 +413,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                             const year = editedClient.clientStartPeriod?.split('-')[0] || new Date().getFullYear().toString();
                                                             setEditedClient({ ...editedClient, clientStartPeriod: `${year}-${sem}` });
                                                         }}
-                                                        className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer"
+                                                        className="w-full bg-slate-100/80 dark:bg-[#0b1326]/80 rounded-2xl px-4 py-3 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 focus:outline-none focus:border-[#00A896] transition-all appearance-none cursor-pointer"
                                                     >
-                                                        <option value="S1" className="bg-slate-900 dark:bg-slate-950 text-slate-900 dark:text-white">1er Semestre (S1)</option>
-                                                        <option value="S2" className="bg-slate-900 dark:bg-slate-950 text-slate-900 dark:text-white">2do Semestre (S2)</option>
+                                                        <option value="S1" className="bg-slate-900 text-white">1er Semestre (S1)</option>
+                                                        <option value="S2" className="bg-slate-900 text-white">2do Semestre (S2)</option>
                                                     </select>
                                                     <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                                                         <LucideIcons.ChevronDown size={14} />
@@ -423,14 +424,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                 </div>
                                             </div>
                                             {editedClient.clientStartPeriod?.endsWith('-S2') && (
-                                                <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                                                <div className="flex items-center gap-2 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl text-[10px] font-bold uppercase tracking-wider animate-pulse">
                                                     <LucideIcons.Info size={12} strokeWidth={2.5} />
                                                     <span>Ciclo S2 activo: Cerrará en diciembre y se declarará en enero.</span>
                                                 </div>
                                             )}
                                         </div>
                                     ) : (
-                                        <div className="flex gap-3">
+                                        <div className="flex gap-2">
                                             <div className="flex-1 relative">
                                                 <select
                                                     value={(() => {
@@ -444,10 +445,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                         if (month.startsWith('S')) month = '01';
                                                         setEditedClient({ ...editedClient, clientStartPeriod: `${year}-${month}` });
                                                     }}
-                                                    className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer"
+                                                    className="w-full bg-slate-100/80 dark:bg-[#0b1326]/80 rounded-2xl px-4 py-3 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 focus:outline-none focus:border-[#00A896] transition-all appearance-none cursor-pointer"
                                                 >
                                                     {Array.from({ length: 6 }, (_, i) => (new Date().getFullYear() - 3 + i).toString()).map(y => (
-                                                        <option key={y} value={y} className="bg-white dark:bg-slate-950 text-slate-900 dark:text-white">{y}</option>
+                                                        <option key={y} value={y} className="bg-slate-900 text-white">{y}</option>
                                                     ))}
                                                 </select>
                                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
@@ -468,7 +469,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                         const year = parts[0] || new Date().getFullYear().toString();
                                                         setEditedClient({ ...editedClient, clientStartPeriod: `${year}-${month}` });
                                                     }}
-                                                    className="w-full glass-card-premium rounded-2xl px-5 py-3.5 text-xs font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all appearance-none cursor-pointer"
+                                                    className="w-full bg-slate-100/80 dark:bg-[#0b1326]/80 rounded-2xl px-4 py-3 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 focus:outline-none focus:border-[#00A896] transition-all appearance-none cursor-pointer"
                                                 >
                                                     {[
                                                         { val: '01', label: 'Enero' },
@@ -484,7 +485,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                                         { val: '11', label: 'Noviembre' },
                                                         { val: '12', label: 'Diciembre' }
                                                     ].map(m => (
-                                                        <option key={m.val} value={m.val} className="bg-white dark:bg-slate-950 text-slate-900 dark:text-white">{m.label}</option>
+                                                        <option key={m.val} value={m.val} className="bg-slate-900 text-white">{m.label}</option>
                                                     ))}
                                                 </select>
                                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
@@ -496,14 +497,14 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 ) : (
                                     <div 
                                         onClick={onStartEdit}
-                                        className={`px-5 py-3.5 bg-slate-100 dark:bg-white/10 rounded-2xl border border-slate-200 dark:border-white/10 text-xs font-black text-slate-900 dark:text-white tracking-wide shadow-sm flex items-center justify-between ${onStartEdit ? 'cursor-pointer hover:border-primary/40 hover:bg-slate-200/50 dark:hover:bg-white/15 transition-all' : ''}`}
+                                        className={`px-4 py-3 bg-slate-100/60 dark:bg-[#0b1326]/80 rounded-2xl border border-slate-200/40 dark:border-white/10 text-xs font-bold text-slate-900 dark:text-white tracking-wide shadow-sm flex items-center justify-between ${onStartEdit ? 'cursor-pointer hover:border-[#00A896]/40 hover:bg-slate-200/50 dark:hover:bg-[#0b1326] transition-all' : ''}`}
                                     >
                                         <div className="flex items-center gap-2">
-                                            <LucideIcons.CalendarDays size={14} className="text-primary" />
-                                            <span className="font-mono text-primary font-extrabold uppercase">
+                                            <LucideIcons.CalendarDays size={14} className="text-[#00A896]" />
+                                            <span className="font-mono text-[#00A896] font-bold uppercase">
                                                 {(() => {
                                                     const val = editedClient.clientStartPeriod;
-                                                    if (!val) return <span className="text-slate-400 dark:text-slate-400 font-sans font-normal">Sin fecha configurada (Usa valor por defecto)</span>;
+                                                    if (!val) return <span className="text-slate-500 font-sans font-normal">Sin fecha configurada</span>;
                                                     if (val.includes('-S1')) return `${val.split('-')[0]} · 1er Semestre (Ene - Jun)`;
                                                     if (val.includes('-S2')) return `${val.split('-')[0]} · 2do Semestre (Jul - Dic)`;
                                                     const parts = val.split('-');
@@ -518,52 +519,52 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {editedClient.taxProfile?.ivaFrequency === 'Semestral' && editedClient.clientStartPeriod?.endsWith('-S2') && (
-                                                <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-xl font-black uppercase tracking-wider animate-pulse flex items-center gap-1">
+                                                <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-xl font-bold uppercase tracking-wider animate-pulse flex items-center gap-1">
                                                     <span className="w-1 h-1 rounded-full bg-amber-400"></span>
                                                     Espera en Enero
                                                 </span>
                                             )}
-                                            {onStartEdit && <LucideIcons.Pencil size={12} className="text-slate-400 hover:text-primary transition-colors" />}
+                                            {onStartEdit && <LucideIcons.Pencil size={12} className="text-slate-400 hover:text-[#00A896] transition-colors" />}
                                         </div>
                                     </div>
                                 )}
                             </div>
                             
-                            <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-slate-100 dark:border-white/5 space-y-5">
+                            <div className="p-5 bg-slate-100/60 dark:bg-[#0b1326]/80 rounded-2xl border border-slate-200/40 dark:border-white/10 space-y-4 font-mono">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Creado</span>
-                                    <span className="text-[10px] font-mono text-primary font-bold">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Creado</span>
+                                    <span className="text-[10px] font-mono text-[#00A896] font-bold">
                                         {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'No Registrada'}
                                     </span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Último Acceso</span>
-                                    <span className="text-[10px] font-mono text-slate-600 dark:text-slate-300 font-bold">Hoy</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Último Acceso</span>
+                                    <span className="text-[10px] font-mono text-slate-300 font-bold">Hoy</span>
                                 </div>
-                                <div className="pt-5 border-t border-slate-100 dark:border-white/5">
+                                <div className="pt-4 border-t border-white/10">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm">
+                                        <div className="w-9 h-9 rounded-xl bg-[#00A896]/15 border border-[#00A896]/30 flex items-center justify-center text-[#00A896] shadow-sm">
                                             <LucideIcons.ShieldCheck size={18} />
                                         </div>
                                         <div>
-                                            <div className="text-[10px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-widest">Estado del Perfil</div>
-                                            <div className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-0.5">Seguro y Encriptado</div>
+                                            <div className="text-[10px] font-bold text-white uppercase tracking-widest font-display">Estado del Perfil</div>
+                                            <div className="text-[9px] font-bold text-[#00A896] uppercase tracking-widest mt-0.5">Seguro y Encriptado</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <button className="w-full p-6 bg-rose-50/80 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/15 rounded-3xl border border-rose-200/80 dark:border-rose-500/20 hover:border-rose-300 dark:hover:border-rose-500/30 transition-all group/btn flex items-center justify-between shadow-sm active:scale-95">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-rose-100 dark:bg-rose-500/20 rounded-xl">
-                                        <LucideIcons.AlertTriangle size={18} className="text-rose-500 group-hover/btn:scale-110 transition-transform" />
+                            <button className="w-full p-5 bg-rose-500/10 hover:bg-rose-500/15 rounded-2xl border border-rose-500/25 hover:border-rose-500/40 transition-all group/btn flex items-center justify-between shadow-sm active:scale-95 font-mono">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-rose-500/20 rounded-xl text-rose-400">
+                                        <LucideIcons.AlertTriangle size={16} className="group-hover/btn:scale-110 transition-transform" />
                                     </div>
-                                    <div className="text-left">
-                                        <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest">Zona de Peligro</div>
-                                        <div className="text-[9px] font-bold text-rose-400 dark:text-rose-500 uppercase tracking-widest mt-0.5">Gestión de baja de cliente</div>
+                                    <div className="text-left font-display">
+                                        <div className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Zona de Peligro</div>
+                                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 font-mono">Baja y eliminación</div>
                                     </div>
                                 </div>
-                                <LucideIcons.ChevronRight size={16} className="text-rose-400 dark:text-rose-500 opacity-60 group-hover/btn:translate-x-1.5 transition-all" />
+                                <LucideIcons.ChevronRight size={16} className="text-rose-400 opacity-60 group-hover/btn:translate-x-1 transition-all" />
                             </button>
                         </div>
                     </div>

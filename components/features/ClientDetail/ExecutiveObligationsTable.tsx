@@ -62,31 +62,31 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
     };
 
     return (
-        <div className="w-full bg-white dark:bg-slate-900/60 rounded-3xl border border-slate-200/60 dark:border-white/5 overflow-hidden shadow-sm animate-in fade-in duration-300">
+        <div className="w-full bg-[#051424]/90 backdrop-blur-2xl rounded-3xl border border-white/10 border-t-white/20 overflow-hidden shadow-2xl animate-in fade-in duration-300">
             {/* Encabezado del Panel de Control */}
-            <div className="p-5 sm:px-6 bg-slate-50/70 dark:bg-slate-900/80 border-b border-slate-200/50 dark:border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="p-5 sm:px-6 bg-[#0b1326]/80 border-b border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-blue-600/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center font-bold">
-                        <Activity size={18} />
+                    <div className="w-10 h-10 rounded-2xl bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 flex items-center justify-center font-bold shadow-md shadow-[#00A896]/10">
+                        <Activity size={20} />
                     </div>
                     <div>
-                        <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
-                            Panel de Control Tributario y Honorarios
+                        <h3 className="text-sm font-black text-white tracking-tight font-display">
+                            Mesa de Control Tributario y Honorarios
                         </h3>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                        <p className="text-[11px] text-slate-400 font-mono font-medium">
                             Gestión ejecutiva en 1-clic por período activo
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 bg-slate-200/50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-wider">
+                <div className="flex items-center gap-2 font-mono">
+                    <span className="px-3 py-1 bg-white/5 border border-white/10 text-slate-300 rounded-xl text-[10px] font-bold uppercase tracking-wider">
                         {client.taxProfile?.ivaFrequency || 'Mensual'}
                     </span>
-                    <span className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider ${
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
                         (ivaPaid && (!rentaData?.needed || rentaPaid))
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                            : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                            ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
+                            : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                     }`}>
                         {(ivaPaid && (!rentaData?.needed || rentaPaid)) ? '✓ Honorarios al Día' : '⚠ Cobro Pendiente'}
                     </span>
@@ -95,30 +95,30 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
 
             {/* Tabla de Obligaciones */}
             <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse font-mono">
                     <thead>
-                        <tr className="border-b border-slate-200/40 dark:border-white/5 bg-slate-50/40 dark:bg-slate-950/20 text-[9px] font-black uppercase tracking-widest text-slate-400">
-                            <th className="py-3.5 px-6">Obligación / Período</th>
-                            <th className="py-3.5 px-4">Estado SRI</th>
-                            <th className="py-3.5 px-4">Comprobante PDF</th>
-                            <th className="py-3.5 px-4">Honorarios</th>
-                            <th className="py-3.5 px-6 text-right">Acciones Directas</th>
+                        <tr className="border-b border-white/10 bg-[#020b14]/50 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                            <th className="py-4 px-6">Obligación / Período</th>
+                            <th className="py-4 px-4">Estado SRI</th>
+                            <th className="py-4 px-4">Comprobante PDF</th>
+                            <th className="py-4 px-4">Honorarios</th>
+                            <th className="py-4 px-6 text-right">Acciones Directas</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-white/5 text-xs font-medium">
+                    <tbody className="divide-y divide-white/5 text-xs font-medium">
                         {/* FILA 1: IVA */}
                         {ivaPeriod && (
-                            <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
+                            <tr className="hover:bg-white/5 transition-all">
                                 <td className="py-4 px-6">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 font-bold">
-                                            <FileText size={16} />
+                                        <div className="w-9 h-9 rounded-xl bg-[#2B6AFF]/15 text-[#2B6AFF] border border-[#2B6AFF]/30 flex items-center justify-center flex-shrink-0 font-bold shadow-sm">
+                                            <FileText size={18} />
                                         </div>
                                         <div>
-                                            <p className="font-bold text-slate-900 dark:text-slate-100">
+                                            <p className="font-bold text-white font-display">
                                                 Declaración IVA ({client.taxProfile?.ivaFrequency || 'Mensual'})
                                             </p>
-                                            <p className="text-[11px] text-slate-400 font-mono">
+                                            <p className="text-[11px] text-slate-400 font-mono mt-0.5">
                                                 Período: {formatPeriodForDisplay(ivaPeriod)}
                                             </p>
                                         </div>
@@ -127,11 +127,11 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
 
                                 <td className="py-4 px-4">
                                     {ivaDeclared ? (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20 rounded-xl text-[10px] font-bold">
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 rounded-full text-[10px] font-bold shadow-[0_0_8px_rgba(0,168,150,0.2)]">
                                             <ShieldCheck size={12} /> Declarado
                                         </span>
                                     ) : (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/20 rounded-xl text-[10px] font-bold">
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-full text-[10px] font-bold">
                                             <Clock size={12} /> Pendiente
                                         </span>
                                     )}
@@ -141,14 +141,14 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                     {ivaDeclItem?.proof_file ? (
                                         <button
                                             onClick={() => setPreviewItem && setPreviewItem(ivaDeclItem)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 rounded-xl text-[10px] font-bold transition-all"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2B6AFF]/15 text-[#2B6AFF] hover:bg-[#2B6AFF]/25 border border-[#2B6AFF]/30 rounded-xl text-[10px] font-bold transition-all"
                                         >
                                             <Eye size={12} /> Ver Respaldo PDF
                                         </button>
                                     ) : (
                                         <button
                                             onClick={() => triggerUpload('iva', ivaPeriod)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl text-[10px] font-bold transition-all"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 rounded-xl text-[10px] font-bold transition-all"
                                         >
                                             <UploadCloud size={12} /> Subir PDF
                                         </button>
@@ -157,13 +157,13 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
 
                                 <td className="py-4 px-4 font-mono font-bold">
                                     <div className="flex items-center gap-2">
-                                        <span className={ivaPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'}>
+                                        <span className={ivaPaid ? 'text-[#00A896]' : 'text-white'}>
                                             ${ivaFee.toFixed(2)}
                                         </span>
-                                        <span className={`text-[9px] px-2 py-0.5 rounded-md uppercase font-sans ${
+                                        <span className={`text-[9px] px-2 py-0.5 rounded-md uppercase border ${
                                             ivaPaid
-                                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
-                                                : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                                                ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
+                                                : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                                         }`}>
                                             {ivaPaid ? 'Pagado' : 'Pendiente'}
                                         </span>
@@ -171,11 +171,11 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                 </td>
 
                                 <td className="py-4 px-6 text-right">
-                                    <div className="flex items-center justify-end gap-2">
+                                    <div className="flex items-center justify-end gap-2 font-mono">
                                         {!ivaDeclared && (
                                             <button
                                                 onClick={() => onDeclare(ivaPeriod)}
-                                                className="px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all active:scale-95"
+                                                className="px-3.5 py-1.5 bg-gradient-to-r from-[#2B6AFF] to-blue-600 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md shadow-[#2B6AFF]/20 transition-all active:scale-95 border border-white/10"
                                             >
                                                 Declarar
                                             </button>
@@ -184,7 +184,7 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                         {!ivaPaid && (
                                             <button
                                                 onClick={() => onQuickPay(ivaPeriod)}
-                                                className="px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all active:scale-95 flex items-center gap-1"
+                                                className="px-3.5 py-1.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md shadow-[#00A896]/20 transition-all active:scale-95 flex items-center gap-1 border border-white/10"
                                             >
                                                 <DollarSign size={12} /> Cobrar ${ivaFee.toFixed(2)}
                                             </button>
@@ -193,7 +193,7 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                         {onWhatsAppPaymentRequest && client.phones?.length && (
                                             <button
                                                 onClick={() => onWhatsAppPaymentRequest(ivaPeriod, 'IVA')}
-                                                className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-xl border border-emerald-200/40"
+                                                className="p-2 text-[#00A896] hover:bg-[#00A896]/15 rounded-xl border border-[#00A896]/30 transition-all"
                                                 title="Cobrar por WhatsApp"
                                             >
                                                 <MessageCircle size={15} />
@@ -206,17 +206,17 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
 
                         {/* FILA 2: IMPUESTO A LA RENTA (Si aplica) */}
                         {rentaData?.needed && (
-                            <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all">
+                            <tr className="hover:bg-white/5 transition-all">
                                 <td className="py-4 px-6">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0 font-bold">
-                                            <ShieldCheck size={16} />
+                                        <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center justify-center flex-shrink-0 font-bold shadow-sm">
+                                            <ShieldCheck size={18} />
                                         </div>
                                         <div>
-                                            <p className="font-bold text-slate-900 dark:text-slate-100">
+                                            <p className="font-bold text-white font-display">
                                                 Impuesto a la Renta Anual
                                             </p>
-                                            <p className="text-[11px] text-slate-400 font-mono">
+                                            <p className="text-[11px] text-slate-400 font-mono mt-0.5">
                                                 Período: {rentaPeriod}
                                             </p>
                                         </div>
@@ -225,11 +225,11 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
 
                                 <td className="py-4 px-4">
                                     {rentaDeclared ? (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 rounded-xl text-[10px] font-bold">
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 rounded-full text-[10px] font-bold shadow-[0_0_8px_rgba(0,168,150,0.2)]">
                                             <ShieldCheck size={12} /> Declarado
                                         </span>
                                     ) : (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-200/50 rounded-xl text-[10px] font-bold">
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-full text-[10px] font-bold">
                                             <Clock size={12} /> Pendiente
                                         </span>
                                     )}
@@ -239,14 +239,14 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                     {rentaDeclItem?.proof_file ? (
                                         <button
                                             onClick={() => setPreviewItem && setPreviewItem(rentaDeclItem)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 rounded-xl text-[10px] font-bold transition-all"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2B6AFF]/15 text-[#2B6AFF] hover:bg-[#2B6AFF]/25 border border-[#2B6AFF]/30 rounded-xl text-[10px] font-bold transition-all"
                                         >
                                             <Eye size={12} /> Ver Respaldo PDF
                                         </button>
                                     ) : (
                                         <button
                                             onClick={() => triggerUpload('renta', rentaPeriod)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl text-[10px] font-bold transition-all"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 rounded-xl text-[10px] font-bold transition-all"
                                         >
                                             <UploadCloud size={12} /> Subir PDF
                                         </button>
@@ -255,13 +255,13 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
 
                                 <td className="py-4 px-4 font-mono font-bold">
                                     <div className="flex items-center gap-2">
-                                        <span className={rentaPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-slate-100'}>
+                                        <span className={rentaPaid ? 'text-[#00A896]' : 'text-white'}>
                                             ${rentaFee.toFixed(2)}
                                         </span>
-                                        <span className={`text-[9px] px-2 py-0.5 rounded-md uppercase font-sans ${
+                                        <span className={`text-[9px] px-2 py-0.5 rounded-md uppercase border ${
                                             rentaPaid
-                                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
-                                                : 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                                                ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
+                                                : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                                         }`}>
                                             {rentaPaid ? 'Pagado' : 'Pendiente'}
                                         </span>
@@ -269,11 +269,11 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                 </td>
 
                                 <td className="py-4 px-6 text-right">
-                                    <div className="flex items-center justify-end gap-2">
+                                    <div className="flex items-center justify-end gap-2 font-mono">
                                         {!rentaDeclared && (
                                             <button
                                                 onClick={() => onDeclare(rentaPeriod)}
-                                                className="px-3 py-1.5 bg-purple-600 text-white hover:bg-purple-700 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all active:scale-95"
+                                                className="px-3.5 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md shadow-purple-600/20 transition-all active:scale-95 border border-white/10"
                                             >
                                                 Declarar Renta
                                             </button>
@@ -282,7 +282,7 @@ export const ExecutiveObligationsTable: React.FC<ExecutiveObligationsTableProps>
                                         {!rentaPaid && (
                                             <button
                                                 onClick={() => onQuickPay(rentaPeriod)}
-                                                className="px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all active:scale-95 flex items-center gap-1"
+                                                className="px-3.5 py-1.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-md shadow-[#00A896]/20 transition-all active:scale-95 flex items-center gap-1 border border-white/10"
                                             >
                                                 <DollarSign size={12} /> Cobrar ${rentaFee.toFixed(2)}
                                             </button>
