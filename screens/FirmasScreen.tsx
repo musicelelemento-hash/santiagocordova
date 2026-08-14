@@ -231,126 +231,126 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
     };
 
     return (
-        <div className="space-y-8 animate-fade-in pb-24">
+        <div className="space-y-6 animate-in fade-in duration-300 pb-24 font-sans">
 
-            {/* ── HEADER DE CONTROL DE FIRMAS ── */}
-            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/[0.06] bg-[hsl(222,47%,4%)] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] p-8 md:p-10">
-                <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-to-bl from-teal-500/10 via-cyan-500/5 to-transparent blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-gradient-to-tr from-purple-500/10 to-transparent blur-3xl pointer-events-none" />
+            {/* ── HEADER DE CONTROL DE FIRMAS (Stitch Obsidian Luxury) ── */}
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 border-t-white/20 bg-[#051424]/90 shadow-2xl backdrop-blur-2xl p-8 md:p-10">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[#00A896]/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#2B6AFF]/10 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none" />
 
                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="flex items-center gap-5">
-                        <div className="p-4.5 rounded-3xl bg-gradient-to-br from-teal-500 to-cyan-500 shadow-xl shadow-teal-500/30 text-white shrink-0">
+                        <div className="p-4 rounded-3xl bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] shadow-[0_0_15px_rgba(0,168,150,0.3)] shrink-0">
                             <KeyRound size={32} strokeWidth={2.2} />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2 mb-1.5">
-                                <div className="w-2 h-2 rounded-full bg-teal-400 animate-pulse shadow-[0_0_10px_rgba(45,212,191,0.8)]" />
-                                <span className="text-[10px] font-black text-teal-400 uppercase tracking-[0.3em]">Auditoría de Certificados Digitales</span>
+                            <div className="flex items-center gap-2 mb-1.5 font-mono">
+                                <div className="w-2 h-2 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_8px_rgba(0,168,150,0.8)]" />
+                                <span className="text-[9px] font-bold text-[#00A896] uppercase tracking-[0.3em]">Auditoría de Certificados Digitales SRI</span>
                             </div>
                             <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-display">
                                 Verificación de Firmas Electrónicas (.p12)
                             </h1>
-                            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
+                            <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium font-sans">
                                 Control de vigencia, renovaciones automáticas y Bóveda General de Clientes Esporádicos y Ventas Externas.
                             </p>
                         </div>
                     </div>
 
-                    {/* KPI RESUMEN VITAL */}
-                    <div className="flex items-center gap-3 flex-wrap shrink-0">
-                        <div className="flex flex-col items-center px-5 py-3.5 rounded-2xl bg-teal-500/10 border border-teal-500/20 backdrop-blur-md">
-                            <span className="text-2xl font-black text-teal-400 font-mono">{signatureData.ok.length}</span>
-                            <span className="text-[9px] font-bold text-teal-300 uppercase tracking-widest mt-0.5">Válidas / Activas</span>
+                    {/* KPI RESUMEN VITAL (Stitch Obsidian Tokens) */}
+                    <div className="flex items-center gap-3 flex-wrap shrink-0 font-mono">
+                        <div className="flex flex-col items-center px-4 py-3 rounded-2xl bg-[#00A896]/15 border border-[#00A896]/30 shadow-sm">
+                            <span className="text-2xl font-black text-[#00A896] font-mono">{signatureData.ok.length}</span>
+                            <span className="text-[8.5px] font-bold text-[#00A896] uppercase tracking-wider mt-0.5">Válidas / Activas</span>
                         </div>
-                        <div className="flex flex-col items-center px-5 py-3.5 rounded-2xl bg-amber-400/10 border border-amber-400/20 backdrop-blur-md">
+                        <div className="flex flex-col items-center px-4 py-3 rounded-2xl bg-amber-500/15 border border-amber-500/30 shadow-sm">
                             <span className="text-2xl font-black text-amber-400 font-mono">{signatureData.expiringSoon.length}</span>
-                            <span className="text-[9px] font-bold text-amber-300 uppercase tracking-widest mt-0.5">Por Vencer (≤30d)</span>
+                            <span className="text-[8.5px] font-bold text-amber-300 uppercase tracking-wider mt-0.5">Por Vencer (≤30d)</span>
                         </div>
-                        <div className="flex flex-col items-center px-5 py-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 backdrop-blur-md">
+                        <div className="flex flex-col items-center px-4 py-3 rounded-2xl bg-purple-500/15 border border-purple-500/30 shadow-sm">
                             <span className="text-2xl font-black text-purple-300 font-mono">{backupSignatures.length}</span>
-                            <span className="text-[9px] font-bold text-purple-300 uppercase tracking-widest mt-0.5">Bóveda Respaldos</span>
+                            <span className="text-[8.5px] font-bold text-purple-300 uppercase tracking-wider mt-0.5">Bóveda Respaldos</span>
                         </div>
-                        <div className="flex flex-col items-center px-5 py-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 backdrop-blur-md">
-                            <div className="flex items-center gap-1.5 text-cyan-400 font-mono font-black text-xl">
-                                <Cloud size={18} />
-                                <span>R2 Cloud</span>
+                        <div className="flex flex-col items-center px-4 py-3 rounded-2xl bg-[#2B6AFF]/15 border border-[#2B6AFF]/30 shadow-sm">
+                            <div className="flex items-center gap-1 text-[#2B6AFF] font-mono font-black text-xl">
+                                <Cloud size={16} />
+                                <span>Cloud R2</span>
                             </div>
-                            <span className="text-[9px] font-bold text-cyan-300 uppercase tracking-widest mt-0.5">Cloudflare Synced</span>
+                            <span className="text-[8.5px] font-bold text-[#2B6AFF] uppercase tracking-wider mt-0.5">Cloudflare Synced</span>
                         </div>
 
                         {/* Botón de Subida Masiva */}
                         <button
                             onClick={() => setIsBulkModalOpen(true)}
-                            className="px-5 py-3.5 rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-teal-500/25 active:scale-95 flex items-center gap-2"
+                            className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#00A896]/25 active:scale-95 flex items-center gap-2 border border-white/10 cursor-pointer"
                         >
-                            <UploadCloud size={18} />
+                            <UploadCloud size={16} />
                             <span>📥 Subidor Masivo (.p12)</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* ── BARRA DE BÚSQUEDA, PESTAÑAS Y SWITCHER DE VISTA ── */}
-            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+            {/* ── BARRA DE BÚSQUEDA, PESTAÑAS Y SWITCHER DE VISTA (Stitch Obsidian Luxury) ── */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 font-mono">
                 <div className="flex flex-wrap items-center gap-3">
                     {/* Pestañas de Estado */}
-                    <div className="flex items-center gap-2 bg-slate-900/60 backdrop-blur-2xl p-1.5 rounded-2xl border border-white/10 w-fit">
+                    <div className="flex items-center gap-1.5 bg-[#0b1326] p-1.5 rounded-2xl border border-white/10 w-fit">
                         <button
                             onClick={() => setTab('vigentes')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                                 tab === 'vigentes'
-                                    ? 'bg-teal-600 text-white shadow-md shadow-teal-500/25'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    ? 'bg-white/15 text-white shadow-lg border border-white/20'
+                                    : 'text-slate-400 hover:text-white'
                             }`}
                         >
-                            <ShieldCheck size={14} />
+                            <ShieldCheck size={14} className={tab === 'vigentes' ? 'text-[#00A896]' : ''} />
                             <span>Clientes Activos</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${tab === 'vigentes' ? 'bg-white/20 text-white' : 'bg-teal-500/15 text-teal-400'}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tab === 'vigentes' ? 'bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/30' : 'bg-white/10 text-slate-400'}`}>
                                 {signatureData.withSignature.length}
                             </span>
                         </button>
                         <button
                             onClick={() => setTab('sin-firma')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                                 tab === 'sin-firma'
-                                    ? 'bg-rose-600 text-white shadow-md shadow-rose-500/25'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    ? 'bg-rose-500/20 text-rose-300 shadow-lg border border-rose-500/30'
+                                    : 'text-slate-400 hover:text-white'
                             }`}
                         >
                             <ShieldOff size={14} />
                             <span>Sin Firma</span>
                             {signatureData.withoutSignature.length > 0 && (
-                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${tab === 'sin-firma' ? 'bg-white/20 text-white' : 'bg-rose-500/15 text-rose-400'}`}>
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tab === 'sin-firma' ? 'bg-rose-500 text-white' : 'bg-rose-500/20 text-rose-400'}`}>
                                     {signatureData.withoutSignature.length}
                                 </span>
                             )}
                         </button>
                         <button
                             onClick={() => setTab('respaldos-externos')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                                 tab === 'respaldos-externos'
-                                    ? 'bg-purple-600 text-white shadow-md shadow-purple-500/25'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    ? 'bg-purple-500/20 text-purple-200 shadow-lg border border-purple-500/30'
+                                    : 'text-slate-400 hover:text-white'
                             }`}
                         >
                             <Archive size={14} />
-                            <span>📦 Respaldos & Ventas Externas</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${tab === 'respaldos-externos' ? 'bg-white/20 text-white' : 'bg-purple-500/15 text-purple-300'}`}>
+                            <span>Respaldos & Ventas</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tab === 'respaldos-externos' ? 'bg-purple-500 text-white' : 'bg-purple-500/20 text-purple-300'}`}>
                                 {filteredBackupSignatures.length}
                             </span>
                         </button>
                         <button
                             onClick={() => setTab('facturadores')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                                 tab === 'facturadores'
-                                    ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/25'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                    ? 'bg-[#00A896]/20 text-[#00A896] shadow-lg border border-[#00A896]/30'
+                                    : 'text-slate-400 hover:text-white'
                             }`}
                         >
                             <ShoppingBag size={14} />
                             <span>Facturadores y Planes</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${tab === 'facturadores' ? 'bg-white/20 text-white' : 'bg-[#00A896]/15 text-[#00A896]'}`}>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tab === 'facturadores' ? 'bg-[#00A896] text-white' : 'bg-[#00A896]/15 text-[#00A896]'}`}>
                                 {clients.filter(c => !c.isDeleted && c.isActive && c.facturadorConfig).length}
                             </span>
                         </button>
@@ -358,13 +358,13 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
 
                     {/* SELECTOR DE MODO DE VISTA */}
                     {(tab !== 'respaldos-externos' && tab !== 'facturadores') && (
-                        <div className="flex items-center gap-1 bg-slate-900/60 backdrop-blur-2xl p-1 rounded-2xl border border-white/10">
+                        <div className="flex items-center gap-1 bg-[#0b1326] p-1 rounded-2xl border border-white/10">
                             <button
                                 onClick={() => setViewMode('lineal')}
-                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                                     viewMode === 'lineal'
-                                        ? 'bg-primary text-white shadow-md shadow-primary/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        ? 'bg-white/15 text-white shadow-md border border-white/20'
+                                        : 'text-slate-400 hover:text-white'
                                 }`}
                                 title="Vista Lineal Minimalista (Tabla Limpia)"
                             >
@@ -373,10 +373,10 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             </button>
                             <button
                                 onClick={() => setViewMode('tarjetas')}
-                                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                                     viewMode === 'tarjetas'
-                                        ? 'bg-primary text-white shadow-md shadow-primary/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                        ? 'bg-white/15 text-white shadow-md border border-white/20'
+                                        : 'text-slate-400 hover:text-white'
                                 }`}
                                 title="Vista Tarjetas (Cuadros Ejecutivos)"
                             >
@@ -393,27 +393,27 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                         <select
                             value={selectedProvider}
                             onChange={(e) => setSelectedProvider(e.target.value)}
-                            className="appearance-none pl-9 pr-8 py-2.5 bg-slate-900/60 border border-white/10 rounded-2xl text-xs text-white focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 transition-all outline-none cursor-pointer"
+                            className="appearance-none pl-8 pr-8 py-2 bg-[#0b1326]/90 border border-white/10 rounded-2xl text-xs text-white focus:border-[#00A896]/50 transition-all outline-none cursor-pointer font-mono"
                         >
-                            <option value="all" className="bg-slate-900 text-white">Todos los Emisores</option>
-                            <option value="Security Data" className="bg-slate-900 text-white">Security Data</option>
-                            <option value="ANF" className="bg-slate-900 text-white">ANF AC</option>
-                            <option value="Banco Central" className="bg-slate-900 text-white">Banco Central (BCE)</option>
-                            <option value="UANATACA" className="bg-slate-900 text-white">UANATACA</option>
-                            <option value="Consejo de la Judicatura" className="bg-slate-900 text-white">Consejo Judicatura</option>
+                            <option value="all" className="bg-[#051424] text-white">Todos los Emisores</option>
+                            <option value="Security Data" className="bg-[#051424] text-white">Security Data</option>
+                            <option value="ANF" className="bg-[#051424] text-white">ANF AC</option>
+                            <option value="Banco Central" className="bg-[#051424] text-white">Banco Central (BCE)</option>
+                            <option value="UANATACA" className="bg-[#051424] text-white">UANATACA</option>
+                            <option value="Consejo de la Judicatura" className="bg-[#051424] text-white">Consejo Judicatura</option>
                         </select>
-                        <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        <Filter size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
 
                     {/* Buscador de Clientes / RUC / Entidad */}
-                    <div className="relative min-w-[240px] sm:w-72">
+                    <div className="relative min-w-[220px] sm:w-72">
                         <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Buscar por Nombre, RUC o Categoría..."
-                            className="w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border border-white/10 rounded-2xl text-xs text-white placeholder-slate-400 focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500/50 transition-all outline-none"
+                            placeholder="BUSCAR TITULAR O RUC..."
+                            className="w-full pl-9 pr-4 py-2 bg-[#0b1326]/90 border border-white/10 rounded-2xl text-xs text-white placeholder-slate-500 focus:border-[#00A896]/50 transition-all outline-none font-mono"
                         />
                     </div>
                 </div>
@@ -421,11 +421,11 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
 
             {/* ── TAB 1: CLIENTES ACTIVOS VIGENTES / POR CADUCIDAD ── */}
             {tab === 'vigentes' && (
-                <div className="space-y-6">
+                <div className="space-y-6 font-mono">
                     {(signatureData.expired.length > 0 || signatureData.expiringSoon.length > 0) && (
-                        <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-400/[0.08] border border-amber-400/25 shadow-lg">
+                        <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 shadow-lg">
                             <AlertTriangle size={18} className="text-amber-400 shrink-0" />
-                            <p className="text-xs text-amber-200 font-medium">
+                            <p className="text-xs text-amber-200 font-medium font-sans">
                                 {signatureData.expired.length > 0 && <strong className="text-rose-400">{signatureData.expired.length} firma(s) caducada(s). </strong>}
                                 {signatureData.expiringSoon.length > 0 && <strong className="text-amber-300">{signatureData.expiringSoon.length} firma(s) vencen en ≤30 días. </strong>}
                                 Haz clic en WhatsApp para notificar la renovación al cliente.
@@ -435,19 +435,19 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
 
                     {signatureData.withSignature.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-                            <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/[0.06]">
-                                <KeyRound size={32} className="text-slate-600" />
+                            <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
+                                <KeyRound size={32} className="text-slate-500" />
                             </div>
-                            <p className="text-sm font-bold text-slate-400">No se encontraron firmas para esta búsqueda.</p>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">No se encontraron firmas para esta búsqueda.</p>
                         </div>
                     ) : (
                         viewMode === 'lineal' ? (
-                            /* VISTA LINEAL MINIMALISTA (TABLA ULTRA LIMPIA) */
-                            <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+                            /* VISTA LINEAL MINIMALISTA (TABLA ULTRA LIMPIA EN OBSIDIANA) */
+                            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 border-t-white/20 overflow-hidden shadow-2xl">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse">
                                         <thead>
-                                            <tr className="border-b border-white/10 bg-white/[0.02] text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                            <tr className="border-b border-white/10 bg-[#0b1326]/80 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                                 <th className="py-4 px-5 text-center w-12">#</th>
                                                 <th className="py-4 px-5">Titular / RUC</th>
                                                 <th className="py-4 px-5">Emisor de Certificado</th>
@@ -466,12 +466,12 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                 const isCopied = copiedId === client.id;
 
                                                 return (
-                                                    <tr key={client.id} className="hover:bg-white/[0.02] transition-colors group">
+                                                    <tr key={client.id} className="hover:bg-white/5 transition-colors group">
                                                         <td className="py-4 px-5 text-center font-bold text-slate-500">{idx + 1}</td>
                                                         <td className="py-4 px-5">
                                                             <button
                                                                 onClick={() => navigate('client-detail', { clientId: client.id, initialTab: 'vault' })}
-                                                                className="font-black text-white hover:text-teal-400 transition-colors uppercase tracking-tight text-left block"
+                                                                className="font-bold text-white hover:text-[#00A896] transition-colors uppercase tracking-tight text-left block font-display text-sm cursor-pointer"
                                                             >
                                                                 {client.name}
                                                             </button>
@@ -483,10 +483,10 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                                             e.stopPropagation();
                                                                             navigate('facturadores', { searchTerm: client.ruc });
                                                                         }}
-                                                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#00A896]/15 hover:bg-[#00A896]/25 border border-[#00A896]/20 text-[#00A896] text-[8px] font-black uppercase tracking-wider transition-all"
+                                                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#00A896]/15 hover:bg-[#00A896]/25 border border-[#00A896]/30 text-[#00A896] text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                                                                         title={`Cliente con Facturador: ${client.facturadorConfig.programName}. Clic para ver.`}
                                                                     >
-                                                                        <ShoppingBag size={8} /> Facturador
+                                                                        <ShoppingBag size={9} /> Facturador
                                                                     </button>
                                                                 )}
                                                             </div>
@@ -498,23 +498,23 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                         </td>
                                                         <td className="py-4 px-5">
                                                             {client.electronicSignaturePassword ? (
-                                                                <div className="inline-flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-xl border border-white/10">
-                                                                    <span className="font-bold text-teal-300 min-w-[70px]">
+                                                                <div className="inline-flex items-center gap-1.5 bg-[#020b14] px-2.5 py-1 rounded-xl border border-white/10">
+                                                                    <span className="font-bold text-[#00A896] min-w-[70px]">
                                                                         {pwdVisible ? client.electronicSignaturePassword : '••••••••'}
                                                                     </span>
                                                                     <button
                                                                         onClick={() => togglePasswordVisibility(client.id)}
-                                                                        className="p-1 hover:text-white text-slate-400 transition-colors"
+                                                                        className="p-1 hover:text-white text-slate-400 transition-colors cursor-pointer"
                                                                         title="Ver / Ocultar"
                                                                     >
                                                                         {pwdVisible ? <EyeOff size={12} /> : <Eye size={12} />}
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleCopyPassword(client.id, client.electronicSignaturePassword)}
-                                                                        className="p-1 hover:text-teal-400 text-slate-400 transition-colors"
+                                                                        className="p-1 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
                                                                         title="Copiar clave"
                                                                     >
-                                                                        {isCopied ? <Check size={12} className="text-teal-400" /> : <Copy size={12} />}
+                                                                        {isCopied ? <Check size={12} className="text-[#00A896]" /> : <Copy size={12} />}
                                                                     </button>
                                                                 </div>
                                                             ) : (
@@ -526,15 +526,15 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                         </td>
                                                         <td className="py-4 px-5 text-center">
                                                             {isExpired ? (
-                                                                <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                                                                <span className="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40">
                                                                     Caducada ({Math.abs(daysLeft!)}d)
                                                                 </span>
                                                             ) : isExpiringSoon ? (
-                                                                <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                                                                <span className="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
                                                                     Vence en {daysLeft}d
                                                                 </span>
                                                             ) : (
-                                                                <span className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                                                                <span className="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/40 shadow-[0_0_6px_rgba(0,168,150,0.3)]">
                                                                     Válida / Activa
                                                                 </span>
                                                             )}
@@ -543,7 +543,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                             {client.signatureFile && (
                                                                 <button
                                                                     onClick={() => downloadStoredFile(client.signatureFile)}
-                                                                    className="px-3 py-1.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-[10px] font-bold uppercase transition-all border border-teal-500/40 inline-flex items-center gap-1 shadow-sm"
+                                                                    className="px-3 py-1.5 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] text-[10px] font-bold uppercase transition-all border border-[#00A896]/30 inline-flex items-center gap-1 shadow-sm cursor-pointer"
                                                                     title="Descargar archivo Firma Electrónica (.p12)"
                                                                 >
                                                                     <UploadCloud size={12} className="rotate-180" /> Descargar .p12
@@ -556,13 +556,13 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                                     const msg = `Estimado(a) *${client.name}*, le saludamos de SantiagoCórdova.com. Le recordamos que su Firma Electrónica (.p12) vence el *${formatExpiry(client.signatureExpirationDate)}*. Por favor comuníquese para renovar su certificado a tiempo.`;
                                                                     setWhatsAppPrompt({ clientName: client.name, phone, message: msg });
                                                                 }}
-                                                                className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-[10px] font-bold uppercase transition-all border border-emerald-500/30 inline-flex items-center gap-1"
+                                                                className="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 text-[10px] font-bold uppercase transition-all border border-emerald-500/30 inline-flex items-center gap-1 cursor-pointer"
                                                             >
                                                                 <PhoneCall size={12} /> WhatsApp
                                                             </button>
                                                             <button
                                                                 onClick={() => navigate('clients', { clientIdToView: client.id, initialTab: 'vault' })}
-                                                                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] font-bold uppercase transition-all inline-flex items-center gap-1"
+                                                                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[10px] font-bold uppercase transition-all inline-flex items-center gap-1 border border-white/10 cursor-pointer"
                                                             >
                                                                 <ExternalLink size={12} /> Bóveda
                                                             </button>
@@ -585,23 +585,23 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                     return (
                                         <div
                                             key={client.id}
-                                            className={`p-6 rounded-[2rem] border transition-all duration-300 flex flex-col justify-between gap-4 bg-slate-900/60 backdrop-blur-2xl ${
+                                            className={`p-6 rounded-[2.5rem] border transition-all duration-300 flex flex-col justify-between gap-4 bg-[#051424]/90 backdrop-blur-2xl shadow-xl ${
                                                 isExpired
                                                     ? 'border-rose-500/40 shadow-[0_0_25px_rgba(244,63,94,0.15)]'
                                                     : isExpiringSoon
                                                     ? 'border-amber-400/40 shadow-[0_0_25px_rgba(251,191,36,0.15)]'
-                                                    : 'border-white/10 hover:border-teal-500/40'
+                                                    : 'border-white/10 hover:border-[#00A896]/40'
                                             }`}
                                         >
                                             <div className="space-y-3">
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Verificación .p12</span>
+                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Verificación .p12</span>
                                                     {isExpired ? (
-                                                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">Caducada</span>
+                                                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/40">Caducada</span>
                                                     ) : isExpiringSoon ? (
-                                                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-400/20 text-amber-300 border border-amber-400/30">Vence en {daysLeft}d</span>
+                                                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">Vence en {daysLeft}d</span>
                                                     ) : (
-                                                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-teal-500/20 text-teal-300 border border-teal-500/30">Válida / Activa</span>
+                                                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/40">Válida / Activa</span>
                                                     )}
                                                 </div>
 
@@ -614,8 +614,8 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     navigate('facturadores', { searchTerm: client.ruc });
-                                                                        }}
-                                                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#00A896]/15 hover:bg-[#00A896]/25 border border-[#00A896]/20 text-[#00A896] text-[8px] font-black uppercase tracking-wider transition-all"
+                                                                }}
+                                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#00A896]/15 hover:bg-[#00A896]/25 border border-[#00A896]/30 text-[#00A896] text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                                                                 title={`Cliente con Facturador: ${client.facturadorConfig.programName}. Clic para ver.`}
                                                             >
                                                                 <ShoppingBag size={8} /> Facturador
@@ -624,14 +624,14 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                     </div>
                                                 </div>
 
-                                                <div className="p-3 rounded-2xl bg-black/40 border border-white/5 space-y-1.5 text-xs font-mono">
+                                                <div className="p-3 rounded-2xl bg-[#020b14] border border-white/5 space-y-1.5 text-xs font-mono">
                                                     <div className="flex justify-between text-slate-400">
                                                         <span>Caducidad:</span>
                                                         <strong className="text-white">{formatExpiry(client.signatureExpirationDate)}</strong>
                                                     </div>
                                                     <div className="flex justify-between text-slate-400">
                                                         <span>Emisor:</span>
-                                                        <strong className="text-teal-300 truncate max-w-[140px]">{client.signatureProvider || 'SRI Standard'}</strong>
+                                                        <strong className="text-[#00A896] truncate max-w-[140px]">{client.signatureProvider || 'SRI Standard'}</strong>
                                                     </div>
                                                 </div>
                                             </div>
@@ -640,7 +640,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                 {client.signatureFile && (
                                                     <button
                                                         onClick={() => downloadStoredFile(client.signatureFile)}
-                                                        className="py-2.5 px-3 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-xs font-bold uppercase transition-all text-center flex items-center justify-center gap-1.5 border border-teal-500/40 shadow-sm"
+                                                        className="py-2 px-3 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] text-xs font-bold uppercase transition-all text-center flex items-center justify-center gap-1.5 border border-[#00A896]/30 shadow-sm cursor-pointer"
                                                         title="Descargar Firma Electrónica (.p12)"
                                                     >
                                                         <UploadCloud size={14} className="rotate-180" /> Descargar .p12
@@ -648,7 +648,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                 )}
                                                 <button
                                                     onClick={() => navigate('clients', { clientIdToView: client.id, initialTab: 'vault' })}
-                                                    className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold uppercase transition-all text-center"
+                                                    className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold uppercase transition-all text-center border border-white/10 cursor-pointer"
                                                 >
                                                     Ir a Bóveda
                                                 </button>
@@ -662,23 +662,23 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                 </div>
             )}
 
-            {/* ── TAB 2: CLIENTES SIN FIRMA REGISTRADA ── */}
+            {/* ── TAB 2: CLIENTES SIN FIRMA REGISTRADA (Stitch Obsidian Luxury) ── */}
             {tab === 'sin-firma' && (
-                <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-6 md:p-8 space-y-6">
-                    <p className="text-xs text-slate-300">
-                        Mostrando {signatureData.withoutSignature.length} clientes activos sin archivo de Firma Electrónica (.p12) registrado en su bóveda.
+                <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 border-t-white/20 p-6 md:p-8 space-y-6 font-mono">
+                    <p className="text-xs text-slate-300 font-sans">
+                        Mostrando <strong className="text-white">{signatureData.withoutSignature.length}</strong> clientes activos sin archivo de Firma Electrónica (.p12) registrado en su bóveda.
                     </p>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {signatureData.withoutSignature.map((client) => (
-                            <div key={client.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/20 transition-all flex items-center justify-between gap-3">
+                            <div key={client.id} className="p-4 rounded-2xl bg-[#0b1326]/80 border border-white/10 hover:border-white/20 transition-all flex items-center justify-between gap-3 shadow-md">
                                 <div>
-                                    <p className="text-xs font-bold text-white uppercase tracking-tight">{client.name}</p>
+                                    <p className="text-xs font-bold text-white uppercase tracking-tight font-display">{client.name}</p>
                                     <p className="text-[10px] font-mono text-slate-400">{client.ruc}</p>
                                 </div>
                                 <button
                                     onClick={() => navigate('clients', { clientIdToView: client.id, initialTab: 'vault' })}
-                                    className="px-3 py-1.5 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 text-[10px] font-bold uppercase transition-all"
+                                    className="px-3 py-1.5 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] border border-[#00A896]/30 text-[10px] font-bold uppercase transition-all cursor-pointer"
                                 >
                                     Cargar Firma
                                 </button>
@@ -688,35 +688,35 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                 </div>
             )}
 
-            {/* ── TAB 3: BÓVEDA DE RESPALDOS & CLIENTES EXTERNOS ── */}
+            {/* ── TAB 3: BÓVEDA DE RESPALDOS & CLIENTES EXTERNOS (Stitch Obsidian Luxury) ── */}
             {tab === 'respaldos-externos' && (
-                <div className="space-y-6">
-                    <div className="p-5 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-6 font-mono">
+                    <div className="p-5 rounded-[2.5rem] bg-purple-500/10 border border-purple-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
-                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                            <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest bg-purple-500/20 text-purple-300 border border-purple-500/30">
                                 Bóveda General de Clientes Esporádicos y Ventas Externas
                             </span>
-                            <h3 className="text-base font-black text-white mt-1">Firmas de Sistemas, Facturadores y Ventas Ocasionales</h3>
-                            <p className="text-xs text-slate-300 leading-relaxed">
+                            <h3 className="text-base font-black text-white mt-1 font-display">Firmas de Sistemas, Facturadores y Ventas Ocasionales</h3>
+                            <p className="text-xs text-slate-300 leading-relaxed font-sans mt-0.5">
                                 Aquí se respaldan las firmas de clientes que no llevan contabilidad mensual contigo (ej: solo venta de sistema Ecuafact o firma ocasional). Puedes convertirlos a cliente activo en 1 clic.
                             </p>
                         </div>
                     </div>
 
                     {filteredBackupSignatures.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center bg-slate-900/40 rounded-[2.5rem] border border-white/10">
-                            <div className="p-6 rounded-3xl bg-white/[0.03] border border-white/[0.06]">
+                        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center bg-[#051424]/90 rounded-[2.5rem] border border-white/10">
+                            <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
                                 <Archive size={36} className="text-slate-500" />
                             </div>
                             <p className="text-sm font-bold text-slate-300">No hay firmas guardadas en la Bóveda de Respaldos Externos.</p>
-                            <p className="text-xs text-slate-400 max-w-sm">Al usar el Subidor Masivo, puedes seleccionar "Bóveda de Respaldos" para guardar firmas de clientes ocasionales.</p>
+                            <p className="text-xs text-slate-400 max-w-sm font-sans">Al usar el Subidor Masivo, puedes seleccionar "Bóveda de Respaldos" para guardar firmas de clientes ocasionales.</p>
                         </div>
                     ) : (
-                        <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl">
+                        <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 border-t-white/20 overflow-hidden shadow-2xl">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="border-b border-white/10 bg-white/[0.02] text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                        <tr className="border-b border-white/10 bg-[#0b1326]/80 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                             <th className="py-4 px-5 text-center w-12">#</th>
                                             <th className="py-4 px-5">Titular / RUC</th>
                                             <th className="py-4 px-5">Categoría de Servicio</th>
@@ -731,12 +731,12 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                             const isCopied = copiedId === item.id;
 
                                             return (
-                                                <tr key={item.id} className="hover:bg-white/[0.02] transition-colors">
+                                                <tr key={item.id} className="hover:bg-white/5 transition-colors">
                                                     <td className="py-4 px-5 text-center font-bold text-slate-500">{idx + 1}</td>
                                                     <td className="py-4 px-5">
-                                                        <span className="font-black text-white uppercase tracking-tight block text-sm">{item.titular}</span>
+                                                        <span className="font-bold text-white uppercase tracking-tight block text-sm font-display">{item.titular}</span>
                                                         <span className="text-[10px] text-slate-400 font-bold block">{item.ruc || 'Sin RUC registrado'}</span>
-                                                        <span className="text-[9px] text-slate-500 block font-sans">{item.fileName}</span>
+                                                        <span className="text-[9px] text-slate-500 block font-mono">{item.fileName}</span>
                                                     </td>
                                                     <td className="py-4 px-5">
                                                         <span className="px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 inline-flex items-center gap-1">
@@ -745,20 +745,20 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                     </td>
                                                     <td className="py-4 px-5">
                                                         {item.password ? (
-                                                            <div className="inline-flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-xl border border-white/10">
+                                                            <div className="inline-flex items-center gap-1.5 bg-[#020b14] px-2.5 py-1 rounded-xl border border-white/10">
                                                                 <span className="font-bold text-purple-300 min-w-[70px]">
                                                                     {pwdVisible ? item.password : '••••••••'}
                                                                 </span>
                                                                 <button
                                                                     onClick={() => togglePasswordVisibility(item.id)}
-                                                                    className="p-1 hover:text-white text-slate-400 transition-colors"
+                                                                    className="p-1 hover:text-white text-slate-400 transition-colors cursor-pointer"
                                                                     title="Ver / Ocultar"
                                                                 >
                                                                     {pwdVisible ? <EyeOff size={12} /> : <Eye size={12} />}
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleCopyPassword(item.id, item.password)}
-                                                                    className="p-1 hover:text-purple-400 text-slate-400 transition-colors"
+                                                                    className="p-1 hover:text-purple-400 text-slate-400 transition-colors cursor-pointer"
                                                                     title="Copiar clave"
                                                                 >
                                                                     {isCopied ? <Check size={12} className="text-purple-400" /> : <Copy size={12} />}
@@ -775,7 +775,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                         {(item.fileContent || (item as any).signatureFile) && (
                                                             <button
                                                                 onClick={() => downloadStoredFile((item as any).signatureFile || { name: item.fileName || `${item.titular}_firma.p12`, content: item.fileContent, type: 'p12' })}
-                                                                className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-[10px] font-bold uppercase transition-all border border-purple-500/40 inline-flex items-center gap-1 shadow-sm"
+                                                                className="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-[10px] font-bold uppercase transition-all border border-purple-500/40 inline-flex items-center gap-1 shadow-sm cursor-pointer"
                                                                 title="Descargar archivo Firma Electrónica (.p12)"
                                                             >
                                                                 <UploadCloud size={12} className="rotate-180" /> Descargar .p12
@@ -783,14 +783,14 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                                         )}
                                                         <button
                                                             onClick={() => handleConvertBackupToActiveClient(item)}
-                                                            className="px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 text-[10px] font-bold uppercase transition-all border border-teal-500/30 inline-flex items-center gap-1"
+                                                            className="px-3 py-1.5 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] text-[10px] font-bold uppercase transition-all border border-[#00A896]/30 inline-flex items-center gap-1 cursor-pointer"
                                                             title="Convertir a Cliente Contable Activo"
                                                         >
                                                             <UserPlus size={12} /> Convertir a Cliente
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteBackupItem(item.id)}
-                                                            className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-all"
+                                                            className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition-all cursor-pointer border border-rose-500/20"
                                                             title="Eliminar de Bóveda de Respaldos"
                                                         >
                                                             <Trash2 size={13} />
@@ -813,22 +813,22 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                 onClose={() => setIsBulkModalOpen(false)}
             />
 
-            {/* ── MODAL WHATSAPP NOTIFICACIÓN ── */}
+            {/* ── MODAL WHATSAPP NOTIFICACIÓN (Stitch Obsidian Luxury) ── */}
             {whatsAppPrompt && (
                 <Modal isOpen={true} onClose={() => setWhatsAppPrompt(null)} title="💬 Enviar Recordatorio por WhatsApp" size="md">
-                    <div className="space-y-4 p-4 text-white">
-                        <p className="text-xs text-slate-300">
-                            Enviarás un mensaje directo al cliente <strong>{whatsAppPrompt.clientName}</strong> sobre la caducidad de su firma electrónica:
+                    <div className="space-y-4 p-4 text-white font-mono">
+                        <p className="text-xs text-slate-300 font-sans">
+                            Enviarás un mensaje directo al cliente <strong className="text-white">{whatsAppPrompt.clientName}</strong> sobre la caducidad de su firma electrónica:
                         </p>
 
-                        <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 text-xs font-mono text-emerald-300 whitespace-pre-wrap">
+                        <div className="p-4 rounded-2xl bg-[#020b14] border border-white/10 text-xs font-mono text-emerald-300 whitespace-pre-wrap">
                             {whatsAppPrompt.message}
                         </div>
 
                         <div className="flex justify-end gap-3 pt-2">
                             <button
                                 onClick={() => setWhatsAppPrompt(null)}
-                                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold"
+                                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-bold cursor-pointer border border-white/10"
                             >
                                 Cancelar
                             </button>
@@ -837,7 +837,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                                 target="_blank"
                                 rel="noreferrer"
                                 onClick={() => setWhatsAppPrompt(null)}
-                                className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
+                                className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-600/25 flex items-center gap-1.5 border border-white/10 cursor-pointer"
                             >
                                 <PhoneCall size={14} /> Abrir WhatsApp
                             </a>
@@ -846,8 +846,8 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                 </Modal>
             )}
 
-            {/* ── DOCK FLOTANTE PRO (NAVEGACIÓN RÁPIDA & BÚSQUEDA FLOTANTE) ── */}
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/90 backdrop-blur-2xl border border-white/15 rounded-3xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.7)] flex items-center gap-3 text-white transition-all duration-300 hover:scale-[1.02]">
+            {/* ── DOCK FLOTANTE PRO (Stitch Obsidian Luxury) ── */}
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-[#051424]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] flex items-center gap-3 text-white transition-all duration-300 font-mono">
                 {/* Buscador Rápido Flotante */}
                 <div className="relative flex items-center">
                     <Search size={14} className="absolute left-3 text-slate-400" />
@@ -855,8 +855,8 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                         type="text"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar por cliente o RUC..."
-                        className="pl-8 pr-3 py-1.5 bg-black/50 border border-white/10 rounded-2xl text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-teal-400 w-44 sm:w-56 font-mono"
+                        placeholder="BUSCAR TITULAR O RUC..."
+                        className="pl-8 pr-3 py-1.5 bg-[#020b14] border border-white/10 rounded-2xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00A896]/50 w-44 sm:w-56 font-mono"
                     />
                 </div>
 
@@ -865,7 +865,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                 {/* Botón Subida Masiva Rápida */}
                 <button
                     onClick={() => setIsBulkModalOpen(true)}
-                    className="px-4 py-2 rounded-2xl bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-400 hover:to-cyan-500 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-teal-500/25 flex items-center gap-1.5 shrink-0 transition-all active:scale-95"
+                    className="px-4 py-2 rounded-2xl bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#00A896]/25 flex items-center gap-1.5 shrink-0 transition-all active:scale-95 border border-white/10 cursor-pointer"
                 >
                     <UploadCloud size={14} />
                     <span className="hidden md:inline">Subida Masiva (.p12)</span>
@@ -878,14 +878,14 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                 <div className="flex items-center gap-1">
                     <button
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                        className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 transition-all active:scale-90"
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 transition-all active:scale-90 cursor-pointer border border-white/5"
                         title="Ir arriba de la página"
                     >
                         <ArrowRight size={14} className="-rotate-90" />
                     </button>
                     <button
                         onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
-                        className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 transition-all active:scale-90"
+                        className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 transition-all active:scale-90 cursor-pointer border border-white/5"
                         title="Ir al final de la página"
                     >
                         <ArrowRight size={14} className="rotate-90" />
