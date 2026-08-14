@@ -45,6 +45,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     const [isVaultEditing, setIsVaultEditing] = React.useState(false);
     const [isSavingVault, setIsSavingVault] = React.useState(false);
     const [vaultSaved, setVaultSaved] = React.useState(false);
+    const [isSalesModalOpen, setIsSalesModalOpen] = React.useState(false);
     const { toast } = useToast();
 
     // Estado para metadatos de firma .p12 decodificada en tiempo real
