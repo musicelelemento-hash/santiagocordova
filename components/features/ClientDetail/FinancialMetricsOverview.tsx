@@ -210,27 +210,27 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-            {/* BARRA SUPERIOR Y SELECTOR DE PERÍODO */}
-            <div className={`p-6 sm:p-8 rounded-[2.5rem] border backdrop-blur-xl shadow-2xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${
+            {/* BARRA SUPERIOR Y SELECTOR DE PERÍODO (STITCH LUXURY HEADER) */}
+            <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 ${
                 isDark
-                    ? 'bg-slate-900/80 border-white/10 text-white'
+                    ? 'bg-[#051424]/90 border-white/10 border-t-white/20 text-white shadow-2xl shadow-black/40'
                     : 'bg-white/90 border-slate-200 text-slate-900 shadow-slate-200/50'
             }`}>
-                <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+                <div className="absolute top-0 right-0 w-96 h-96 bg-[#00A896]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
 
                 <div className="relative z-10 space-y-1">
                     <div className="flex items-center gap-3">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-lg ${
                             isDark
-                                ? 'bg-teal-500/20 border-teal-500/30 text-teal-400'
+                                ? 'bg-[#00A896]/15 border-[#00A896]/30 text-[#00A896] shadow-[#00A896]/20'
                                 : 'bg-teal-50 border-teal-200 text-teal-600'
                         }`}>
                             <BarChart3 size={24} />
                         </div>
                         <div>
-                            <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2">
+                            <h2 className="text-xl sm:text-2xl font-black font-display tracking-tight flex items-center gap-2">
                                 Métricas & Histórico SRI
-                                <span className="bg-teal-500/20 border border-teal-500/30 text-teal-400 text-[10px] font-black uppercase px-3 py-1 rounded-full tracking-wider">
+                                <span className="bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] text-[10px] font-mono font-bold uppercase px-3 py-1 rounded-full tracking-wider shadow-[0_0_8px_rgba(0,168,150,0.2)]">
                                     Form 2011 IVA
                                 </span>
                             </h2>
@@ -243,20 +243,20 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
 
                 <div className="relative z-10 flex flex-wrap items-center gap-3 w-full md:w-auto">
                     {/* Selector de Mes */}
-                    <div className={`flex items-center gap-2 border rounded-2xl px-4 py-3 text-xs font-semibold ${
+                    <div className={`flex items-center gap-2 border rounded-2xl px-4 py-2.5 text-xs font-mono font-bold ${
                         isDark
-                            ? 'bg-slate-950/80 border-white/10 text-slate-300'
+                            ? 'bg-[#0b1326]/80 border-white/10 text-slate-300'
                             : 'bg-slate-50 border-slate-200 text-slate-700'
                     }`}>
-                        <Calendar size={14} className="text-teal-500" />
+                        <Calendar size={14} className="text-[#00A896]" />
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Mes:</span>
                         <select
                             value={selectedPeriod}
                             onChange={(e) => setSelectedPeriod(e.target.value)}
-                            className="bg-transparent font-bold outline-none cursor-pointer pr-2 text-teal-400"
+                            className="bg-transparent font-bold outline-none cursor-pointer pr-2 text-[#00A896]"
                         >
                             {availablePeriods.map(p => (
-                                <option key={p} value={p} className={isDark ? 'bg-slate-900 text-white' : 'bg-white text-slate-900'}>
+                                <option key={p} value={p} className={isDark ? 'bg-[#051424] text-white' : 'bg-white text-slate-900'}>
                                     {formatPeriodForDisplay(p)} ({p})
                                 </option>
                             ))}
@@ -265,7 +265,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
 
                     <button
                         onClick={handleExportCSV}
-                        className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-teal-500 text-white hover:bg-teal-600 text-xs font-bold transition-all shadow-lg shadow-teal-500/20 active:scale-95"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white text-xs font-mono font-bold transition-all shadow-lg shadow-[#00A896]/20 active:scale-95 border border-white/10"
                     >
                         <FileSpreadsheet size={15} />
                         <span>Exportar Excel</span>
@@ -275,12 +275,12 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
 
             {/* TERMÓMETRO DE LÍMITE DE RENTA (INTELIGENCIA FINANCIERA) */}
             {isGeneralRegime && (
-                <div className={`p-6 sm:p-8 rounded-[2.5rem] border backdrop-blur-xl shadow-xl relative overflow-hidden ${
-                    isDark ? 'bg-slate-900/60 border-white/10' : 'bg-white border-slate-200'
+                <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
+                    isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
                 }`}>
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
                         <div>
-                            <h3 className={`text-base font-extrabold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            <h3 className={`text-base font-black font-display flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                 <Sparkles size={18} className="text-amber-400" />
                                 Termómetro de Renta (YTD ${currentYear})
                             </h3>
@@ -289,30 +289,30 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Facturado</p>
-                            <p className={`text-3xl font-black font-display tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest mb-1">Total Facturado</p>
+                            <p className={`text-3xl font-black font-mono tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                 ${(ytdSales || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                             </p>
                         </div>
                     </div>
 
                     <div className="space-y-3">
-                        <div className="flex justify-between text-xs font-bold">
+                        <div className="flex justify-between text-xs font-mono font-bold">
                             <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Progreso hacia: {currentBracket.msg}</span>
                             <span className={`${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                                 {currentBracket.limit === Infinity ? 'Tope Máximo' : `Tope: ${currentBracket.limit.toLocaleString()}`}
                             </span>
                         </div>
-                        <div className="w-full h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden flex">
+                        <div className="w-full h-3.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden flex border border-white/5">
                             <div 
                                 className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                                    currentBracket.tax === 0 ? 'bg-emerald-500' : 
-                                    currentBracket.tax <= 12 ? 'bg-amber-500' : 'bg-rose-500'
+                                    currentBracket.tax === 0 ? 'bg-[#00A896] shadow-[0_0_8px_#00A896]' : 
+                                    currentBracket.tax <= 12 ? 'bg-amber-400 shadow-[0_0_8px_#f59e0b]' : 'bg-rose-500 shadow-[0_0_8px_#f43f5e]'
                                 }`}
                                 style={{ width: `${currentBracket.limit === Infinity ? 100 : Math.min(100, (ytdSales / currentBracket.limit) * 100)}%` }}
                             />
                         </div>
-                        <p className="text-xs text-slate-500 font-medium">
+                        <p className="text-xs text-slate-400 font-medium">
                             {currentBracket.limit === Infinity 
                                 ? "Has superado el último tramo de la tabla de impuestos."
                                 : `Te faltan ${(currentBracket.limit - ytdSales).toLocaleString('en-US', { minimumFractionDigits: 2 })} para pasar a la siguiente categoría de impuestos (${taxBrackets[taxBrackets.indexOf(currentBracket) + 1]?.msg || 'N/A'}).`
@@ -323,30 +323,30 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
             )}
 
             {/* GRÁFICO COMPARATIVO DE EVOLUCIÓN MENSUAL */}
-            <div className={`p-6 sm:p-8 rounded-[2.5rem] border backdrop-blur-xl shadow-xl relative overflow-hidden ${
-                isDark ? 'bg-slate-900/60 border-white/10' : 'bg-white border-slate-200'
+            <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl relative overflow-hidden ${
+                isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
             }`}>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
-                        <h3 className={`text-base font-extrabold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                            <TrendingUp size={18} className="text-teal-400" />
+                        <h3 className={`text-base font-black font-display flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            <TrendingUp size={18} className="text-[#00A896]" />
                             Evolución de Flujo Financiero (Últimos Meses)
                         </h3>
                         <p className="text-xs text-slate-400">Comparativa directa entre Ventas (🟢), Compras (🔵) y Retenciones (🟣)</p>
                     </div>
 
                     {/* Leyenda */}
-                    <div className="flex items-center gap-4 text-xs font-bold">
+                    <div className="flex items-center gap-4 text-xs font-mono font-bold">
                         <div className="flex items-center gap-1.5">
-                            <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-[#00A896] shadow-[0_0_6px_#00A896]"></span>
                             <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>Ventas</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                            <span className="w-3 h-3 rounded-full bg-indigo-500"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-[#2B6AFF] shadow-[0_0_6px_#2B6AFF]"></span>
                             <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>Compras</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                            <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-[#C9A96E] shadow-[0_0_6px_#C9A96E]"></span>
                             <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>Retenciones</span>
                         </div>
                     </div>
@@ -364,10 +364,10 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             <div
                                 key={item.period}
                                 onClick={() => setSelectedPeriod(item.period)}
-                                className={`flex flex-col items-center p-3 rounded-2xl cursor-pointer transition-all duration-300 ${
+                                className={`flex flex-col items-center p-3.5 rounded-2xl cursor-pointer transition-all duration-300 ${
                                     isSelected
                                         ? isDark
-                                            ? 'bg-teal-500/10 border border-teal-500/40 shadow-lg shadow-teal-500/10 scale-105'
+                                            ? 'bg-[#00A896]/15 border border-[#00A896]/50 shadow-lg shadow-[#00A896]/20 scale-105'
                                             : 'bg-teal-50 border border-teal-300 shadow-md scale-105'
                                         : isDark
                                             ? 'hover:bg-white/5 border border-transparent'
@@ -379,25 +379,25 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                                     {/* Barra Ventas */}
                                     <div
                                         style={{ height: `${vHeight}px` }}
-                                        className="w-3 rounded-t-md bg-gradient-to-t from-emerald-600 to-emerald-400 transition-all duration-500 hover:brightness-125"
+                                        className="w-3 rounded-t-md bg-gradient-to-t from-teal-700 to-[#00A896] transition-all duration-500 hover:brightness-125"
                                         title={`Ventas: $${item.totalVentas.toFixed(2)}`}
                                     ></div>
                                     {/* Barra Compras */}
                                     <div
                                         style={{ height: `${cHeight}px` }}
-                                        className="w-3 rounded-t-md bg-gradient-to-t from-indigo-600 to-indigo-400 transition-all duration-500 hover:brightness-125"
+                                        className="w-3 rounded-t-md bg-gradient-to-t from-indigo-700 to-[#2B6AFF] transition-all duration-500 hover:brightness-125"
                                         title={`Compras: $${item.totalCompras.toFixed(2)}`}
                                     ></div>
                                     {/* Barra Retenciones */}
                                     <div
                                         style={{ height: `${rHeight}px` }}
-                                        className="w-3 rounded-t-md bg-gradient-to-t from-purple-600 to-purple-400 transition-all duration-500 hover:brightness-125"
+                                        className="w-3 rounded-t-md bg-gradient-to-t from-amber-700 to-[#C9A96E] transition-all duration-500 hover:brightness-125"
                                         title={`Retenciones: $${item.totalRet.toFixed(2)}`}
                                     ></div>
                                 </div>
 
-                                <span className={`text-[10px] font-extrabold uppercase tracking-tight text-center ${
-                                    isSelected ? 'text-teal-400' : isDark ? 'text-slate-400' : 'text-slate-600'
+                                <span className={`text-[10px] font-mono font-bold uppercase tracking-tight text-center ${
+                                    isSelected ? 'text-[#00A896]' : isDark ? 'text-slate-400' : 'text-slate-600'
                                 }`}>
                                     {item.monthName.split(' ')[0]}
                                 </span>
@@ -414,26 +414,26 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                 {/* KPI 1: VENTAS */}
                 <div
                     onClick={() => handleCopy('Total Ventas', metrics.totalVentas)}
-                    className={`group relative rounded-[2rem] p-6 border backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl ${
+                    className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
                         isDark
-                            ? 'bg-slate-900/70 border-emerald-500/20 hover:border-emerald-500/50'
+                            ? 'bg-[#051424]/90 border-[#00A896]/30 border-t-white/20 hover:border-[#00A896]/60 shadow-black/40'
                             : 'bg-white border-emerald-200 hover:border-emerald-400 shadow-emerald-500/5'
                     }`}
                 >
                     <div className="flex justify-between items-start mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 rounded-2xl bg-[#00A896]/10 border border-[#00A896]/20 flex items-center justify-center text-[#00A896] group-hover:scale-110 transition-transform shadow-md shadow-[#00A896]/10">
                             <ShoppingCart size={22} />
                         </div>
-                        <span className="text-[10px] font-black uppercase text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                        <span className="text-[10px] font-mono font-bold uppercase text-[#00A896] bg-[#00A896]/15 px-2.5 py-1 rounded-lg border border-[#00A896]/30">
                             VENTAS
                         </span>
                     </div>
-                    <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Ventas Brutas Totales</div>
-                    <div className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1">Ventas Brutas Totales</div>
+                    <div className={`text-2xl font-black font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         ${metrics.totalVentas.toFixed(2)}
                     </div>
-                    <div className="mt-4 text-[11px] text-slate-400 flex items-center justify-between border-t border-white/5 pt-3">
-                        <span>Base 15%: <strong className="text-emerald-400">${metrics.ventas15.toFixed(2)}</strong></span>
+                    <div className="mt-4 text-[11px] text-slate-400 font-mono flex items-center justify-between border-t border-white/5 pt-3">
+                        <span>Base 15%: <strong className="text-[#00A896]">${metrics.ventas15.toFixed(2)}</strong></span>
                         <Copy size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" />
                     </div>
                 </div>
@@ -441,26 +441,26 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                 {/* KPI 2: COMPRAS */}
                 <div
                     onClick={() => handleCopy('Total Compras', metrics.totalCompras)}
-                    className={`group relative rounded-[2rem] p-6 border backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl ${
+                    className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
                         isDark
-                            ? 'bg-slate-900/70 border-indigo-500/20 hover:border-indigo-500/50'
+                            ? 'bg-[#051424]/90 border-[#2B6AFF]/30 border-t-white/20 hover:border-[#2B6AFF]/60 shadow-black/40'
                             : 'bg-white border-indigo-200 hover:border-indigo-400 shadow-indigo-500/5'
                     }`}
                 >
                     <div className="flex justify-between items-start mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 rounded-2xl bg-[#2B6AFF]/10 border border-[#2B6AFF]/20 flex items-center justify-center text-[#2B6AFF] group-hover:scale-110 transition-transform shadow-md shadow-[#2B6AFF]/10">
                             <ShoppingBag size={22} />
                         </div>
-                        <span className="text-[10px] font-black uppercase text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
+                        <span className="text-[10px] font-mono font-bold uppercase text-[#2B6AFF] bg-[#2B6AFF]/15 px-2.5 py-1 rounded-lg border border-[#2B6AFF]/30">
                             COMPRAS
                         </span>
                     </div>
-                    <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Compras Facturadas SRI</div>
-                    <div className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1">Compras Facturadas SRI</div>
+                    <div className={`text-2xl font-black font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         ${metrics.totalCompras.toFixed(2)}
                     </div>
-                    <div className="mt-4 text-[11px] text-slate-400 flex items-center justify-between border-t border-white/5 pt-3">
-                        <span>IVA Compras: <strong className="text-indigo-400">${metrics.montoIvaCompras.toFixed(2)}</strong></span>
+                    <div className="mt-4 text-[11px] text-slate-400 font-mono flex items-center justify-between border-t border-white/5 pt-3">
+                        <span>IVA Compras: <strong className="text-[#2B6AFF]">${metrics.montoIvaCompras.toFixed(2)}</strong></span>
                         <Copy size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" />
                     </div>
                 </div>
@@ -468,89 +468,89 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                 {/* KPI 3: RETENCIONES */}
                 <div
                     onClick={() => handleCopy('Total Retenciones', metrics.totalRetenciones)}
-                    className={`group relative rounded-[2rem] p-6 border backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl ${
+                    className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
                         isDark
-                            ? 'bg-slate-900/70 border-purple-500/20 hover:border-purple-500/50'
+                            ? 'bg-[#051424]/90 border-[#C9A96E]/30 border-t-white/20 hover:border-[#C9A96E]/60 shadow-black/40'
                             : 'bg-white border-purple-200 hover:border-purple-400 shadow-purple-500/5'
                     }`}
                 >
                     <div className="flex justify-between items-start mb-4">
-                        <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                        <div className="w-12 h-12 rounded-2xl bg-[#C9A96E]/10 border border-[#C9A96E]/20 flex items-center justify-center text-[#C9A96E] group-hover:scale-110 transition-transform shadow-md shadow-[#C9A96E]/10">
                             <Coins size={22} />
                         </div>
-                        <span className="text-[10px] font-black uppercase text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
+                        <span className="text-[10px] font-mono font-bold uppercase text-[#C9A96E] bg-[#C9A96E]/15 px-2.5 py-1 rounded-lg border border-[#C9A96E]/30">
                             RETENCIONES
                         </span>
                     </div>
-                    <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">Retenciones Recibidas</div>
-                    <div className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1">Retenciones Recibidas</div>
+                    <div className={`text-2xl font-black font-mono tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         ${metrics.totalRetenciones.toFixed(2)}
                     </div>
-                    <div className="mt-4 text-[11px] text-slate-400 flex items-center justify-between border-t border-white/5 pt-3">
-                        <span>Ret. IVA (609): <strong className="text-purple-400">${metrics.retIva.toFixed(2)}</strong></span>
+                    <div className="mt-4 text-[11px] text-slate-400 font-mono flex items-center justify-between border-t border-white/5 pt-3">
+                        <span>Ret. IVA (609): <strong className="text-[#C9A96E]">${metrics.retIva.toFixed(2)}</strong></span>
                         <Copy size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" />
                     </div>
                 </div>
 
                 {/* KPI 4: RESULTADO IMPOSITIVO */}
-                <div className={`group relative rounded-[2rem] p-6 border backdrop-blur-xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl ${
+                <div className={`group relative rounded-3xl p-6 border backdrop-blur-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl overflow-hidden ${
                     metrics.esCreditoFavor
                         ? isDark
-                            ? 'bg-emerald-950/40 border-emerald-500/30 hover:border-emerald-500/60'
+                            ? 'bg-[#051424]/90 border-[#00A896]/40 border-t-white/20 hover:border-[#00A896]/70 shadow-black/40'
                             : 'bg-emerald-50/50 border-emerald-200 hover:border-emerald-400'
                         : isDark
-                            ? 'bg-amber-950/40 border-amber-500/30 hover:border-amber-500/60'
+                            ? 'bg-[#051424]/90 border-amber-500/40 border-t-white/20 hover:border-amber-500/70 shadow-black/40'
                             : 'bg-amber-50/50 border-amber-200 hover:border-amber-400'
                 }`}>
                     <div className="flex justify-between items-start mb-4">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform ${
                             metrics.esCreditoFavor
-                                ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400'
+                                ? 'bg-[#00A896]/20 border border-[#00A896]/30 text-[#00A896]'
                                 : 'bg-amber-500/20 border border-amber-500/30 text-amber-400'
                         }`}>
                             <TrendingUp size={22} />
                         </div>
-                        <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border ${
+                        <span className={`text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-lg border ${
                             metrics.esCreditoFavor
-                                ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
-                                : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                                ? 'text-[#00A896] bg-[#00A896]/15 border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
+                                : 'text-amber-400 bg-amber-500/15 border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]'
                         }`}>
                             {metrics.esCreditoFavor ? 'A FAVOR' : 'A PAGAR'}
                         </span>
                     </div>
-                    <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">
+                    <div className="text-xs text-slate-400 font-mono font-bold uppercase tracking-wider mb-1">
                         {metrics.esCreditoFavor ? 'Crédito Tributario IVA' : 'Impuesto a Pagar SRI'}
                     </div>
-                    <div className={`text-2xl font-black tracking-tight ${
-                        metrics.esCreditoFavor ? 'text-emerald-400' : 'text-amber-400'
+                    <div className={`text-2xl font-black font-mono tracking-tight ${
+                        metrics.esCreditoFavor ? 'text-[#00A896]' : 'text-amber-400'
                     }`}>
                         ${metrics.resultadoNetoIva.toFixed(2)}
                     </div>
-                    <div className="mt-4 text-[11px] text-slate-400 flex items-center justify-between border-t border-white/5 pt-3">
+                    <div className="mt-4 text-[11px] text-slate-400 font-mono flex items-center justify-between border-t border-white/5 pt-3">
                         <span>{metrics.esCreditoFavor ? '🟢 Sin Pago Pendiente' : '⚠️ Pago Requerido'}</span>
-                        <Sparkles size={12} className={metrics.esCreditoFavor ? 'text-emerald-400' : 'text-amber-400'} />
+                        <Sparkles size={12} className={metrics.esCreditoFavor ? 'text-[#00A896]' : 'text-amber-400'} />
                     </div>
                 </div>
 
             </div>
 
             {/* TABLA DE DESGLOSE DETALLADO CASILLEROS FORMULARIO 2011 */}
-            <div className={`p-6 sm:p-8 rounded-[2.5rem] border backdrop-blur-xl shadow-xl ${
-                isDark ? 'bg-slate-900/60 border-white/10' : 'bg-white border-slate-200'
+            <div className={`p-6 sm:p-8 rounded-3xl border backdrop-blur-2xl shadow-xl ${
+                isDark ? 'bg-[#051424]/90 border-white/10 border-t-white/20' : 'bg-white border-slate-200'
             }`}>
-                <h3 className={`text-base font-extrabold mb-6 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    <Layers size={18} className="text-teal-400" />
+                <h3 className={`text-base font-black font-display mb-6 flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <Layers size={18} className="text-[#00A896]" />
                     Desglose por Casilleros Formulario 2011 ({formatPeriodForDisplay(selectedPeriod)})
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-mono">
                     {/* VENTAS */}
                     <div className={`p-5 rounded-2xl border space-y-3 ${
-                        isDark ? 'bg-slate-950/60 border-white/5' : 'bg-slate-50 border-slate-200'
+                        isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
                     }`}>
                         <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">🛍️ Ventas (Ingresos)</span>
-                            <span className={`text-xs font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalVentas.toFixed(2)}</span>
+                            <span className="text-xs font-bold text-[#00A896] uppercase tracking-wider">🛍️ Ventas (Ingresos)</span>
+                            <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalVentas.toFixed(2)}</span>
                         </div>
                         <div className="space-y-2 text-xs">
                             <div className="flex justify-between text-slate-400">
@@ -563,18 +563,18 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             </div>
                             <div className="flex justify-between text-slate-400">
                                 <span>IVA Generado (15%):</span>
-                                <strong className="text-emerald-400">${metrics.montoIvaVentas.toFixed(2)}</strong>
+                                <strong className="text-[#00A896]">${metrics.montoIvaVentas.toFixed(2)}</strong>
                             </div>
                         </div>
                     </div>
 
                     {/* COMPRAS */}
                     <div className={`p-5 rounded-2xl border space-y-3 ${
-                        isDark ? 'bg-slate-950/60 border-white/5' : 'bg-slate-50 border-slate-200'
+                        isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
                     }`}>
                         <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                            <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">🛒 Compras (Egresos)</span>
-                            <span className={`text-xs font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalCompras.toFixed(2)}</span>
+                            <span className="text-xs font-bold text-[#2B6AFF] uppercase tracking-wider">🛒 Compras (Egresos)</span>
+                            <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalCompras.toFixed(2)}</span>
                         </div>
                         <div className="space-y-2 text-xs">
                             <div className="flex justify-between text-slate-400">
@@ -587,23 +587,23 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
                             </div>
                             <div className="flex justify-between text-slate-400">
                                 <span>Crédito IVA (Cas. 564):</span>
-                                <strong className="text-indigo-400">${metrics.montoIvaCompras.toFixed(2)}</strong>
+                                <strong className="text-[#2B6AFF]">${metrics.montoIvaCompras.toFixed(2)}</strong>
                             </div>
                         </div>
                     </div>
 
                     {/* RETENCIONES */}
                     <div className={`p-5 rounded-2xl border space-y-3 ${
-                        isDark ? 'bg-slate-950/60 border-white/5' : 'bg-slate-50 border-slate-200'
+                        isDark ? 'bg-[#0b1326]/60 border-white/10' : 'bg-slate-50 border-slate-200'
                     }`}>
                         <div className="flex justify-between items-center pb-2 border-b border-white/10">
-                            <span className="text-xs font-bold text-purple-400 uppercase tracking-wider">🟣 Retenciones Recibidas</span>
-                            <span className={`text-xs font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalRetenciones.toFixed(2)}</span>
+                            <span className="text-xs font-bold text-[#C9A96E] uppercase tracking-wider">🟣 Retenciones Recibidas</span>
+                            <span className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>${metrics.totalRetenciones.toFixed(2)}</span>
                         </div>
                         <div className="space-y-2 text-xs">
                             <div className="flex justify-between text-slate-400">
                                 <span>Retenciones IVA (Cas. 609):</span>
-                                <strong className="text-purple-400">${metrics.retIva.toFixed(2)}</strong>
+                                <strong className="text-[#C9A96E]">${metrics.retIva.toFixed(2)}</strong>
                             </div>
                             <div className="flex justify-between text-slate-400">
                                 <span>Retenciones Renta (Cas. 610):</span>

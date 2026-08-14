@@ -950,61 +950,61 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
     );
 
     return (
-        <div className="w-full h-full bg-slate-50 dark:bg-slate-900 border-none dark:border-white/5 md:rounded-[2.5rem] flex flex-col relative overflow-hidden group/modal shadow-[0_32px_64px_-12px_rgba(0,0,0,0.14)] animate-in fade-in duration-700">
+        <div className="w-full h-full bg-slate-50 dark:bg-[#020b14] border-none dark:border-white/5 md:rounded-[2.5rem] flex flex-col relative overflow-hidden group/modal shadow-[0_32px_64px_-12px_rgba(0,0,0,0.4)] animate-in fade-in duration-700">
             {/* DYNAMIC ISLAND - The Central Command Dock (Viewport Fixed relative to modal) */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4">
-                <div className="flex items-center gap-1 p-1 bg-white/90 dark:bg-slate-900/90 backdrop-blur-[40px] border border-slate-200 dark:border-white/10 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.08)] pointer-events-auto ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[300] animate-in slide-in-from-bottom-20 duration-1000 pointer-events-none w-full max-w-fit px-4 font-mono">
+                <div className="flex items-center gap-1.5 p-1.5 bg-white/90 dark:bg-[#051424]/90 backdrop-blur-[40px] border border-slate-200 dark:border-white/10 dark:border-t-white/20 rounded-[2.5rem] shadow-2xl shadow-black/40 pointer-events-auto ring-1 ring-black/[0.05] dark:ring-white/[0.05]">
                     {(['profile', 'metrics', 'history', 'vault', 'settings'] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`group relative flex items-center gap-3 px-5 py-3.5 rounded-[2rem] transition-all duration-700 overflow-hidden ${activeTab === tab
+                            className={`group relative flex items-center gap-3 px-5 py-3 rounded-[2rem] transition-all duration-500 overflow-hidden ${activeTab === tab
                                     ? (isDark
-                                        ? 'bg-white text-slate-900 shadow-xl shadow-white/5 scale-[1.08] -translate-y-1'
-                                        : 'bg-slate-900 text-white shadow-xl shadow-slate-200 scale-[1.08] -translate-y-1')
+                                        ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-lg shadow-[#00A896]/30 scale-[1.05] -translate-y-0.5 border border-white/20'
+                                        : 'bg-slate-900 text-white shadow-xl shadow-slate-200 scale-[1.05] -translate-y-0.5')
                                     : (isDark
                                         ? 'text-slate-400 hover:text-white hover:bg-white/5'
                                         : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50')
                                 }`}
                         >
-                            <div className="relative z-10 flex items-center gap-2.5">
-                                {tab === 'profile' && <LayoutDashboard size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-12 group-hover:scale-110'}`} />}
-                                {tab === 'metrics' && <BarChart3 size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
-                                {tab === 'history' && <Activity size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
-                                {tab === 'vault' && <Lock size={16} className={`transition-all duration-700 ${activeTab === tab ? 'scale-110' : 'group-hover:-translate-y-0.5'}`} />}
-                                {tab === 'settings' && <Settings size={16} className={`transition-all duration-700 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-90 group-hover:scale-110'}`} />}
+                            <div className="relative z-10 flex items-center gap-2">
+                                {tab === 'profile' && <LayoutDashboard size={15} className={`transition-all duration-500 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-12 group-hover:scale-110'}`} />}
+                                {tab === 'metrics' && <BarChart3 size={15} className={`transition-all duration-500 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
+                                {tab === 'history' && <Activity size={15} className={`transition-all duration-500 ${activeTab === tab ? 'scale-110' : 'group-hover:scale-125'}`} />}
+                                {tab === 'vault' && <Lock size={15} className={`transition-all duration-500 ${activeTab === tab ? 'scale-110' : 'group-hover:-translate-y-0.5'}`} />}
+                                {tab === 'settings' && <Settings size={15} className={`transition-all duration-500 ${activeTab === tab ? 'rotate-0' : 'group-hover:rotate-90 group-hover:scale-110'}`} />}
 
-                                <span className={`text-[11px] font-black uppercase tracking-[0.2em] font-premium transition-all duration-700 ${activeTab === tab ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0 md:opacity-100 md:max-w-[150px] overflow-hidden'
+                                <span className={`text-[10px] font-bold uppercase tracking-wider transition-all duration-500 ${activeTab === tab ? 'opacity-100 max-w-[150px]' : 'opacity-0 max-w-0 md:opacity-100 md:max-w-[150px] overflow-hidden'
                                     }`}>
                                     {tab === 'profile' ? 'Resumen' : tab === 'metrics' ? 'Métricas' : tab === 'history' ? 'Declaraciones' : tab === 'vault' ? 'Bóveda' : 'Configuración'}
                                 </span>
                             </div>
                             {activeTab === tab && (
-                                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(255,255,255,0.1),transparent)] animate-shine"></div>
+                                <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent,rgba(255,255,255,0.15),transparent)] animate-shine"></div>
                             )}
                         </button>
                     ))}
 
-                    <div className="w-[1px] h-8 bg-slate-200 dark:bg-white/10 mx-3 hidden md:block"></div>
+                    <div className="w-[1px] h-8 bg-slate-200 dark:bg-white/10 mx-2 hidden md:block"></div>
 
                     <button
                         onClick={onBack}
-                        className="hidden md:flex items-center gap-3 px-6 py-4 text-slate-400 hover:text-rose-500 transition-all duration-500 group rounded-[2rem] hover:bg-rose-50 dark:hover:bg-rose-500/10"
+                        className="hidden md:flex items-center gap-2.5 px-5 py-3 text-slate-400 hover:text-rose-400 transition-all duration-500 group rounded-[2rem] hover:bg-rose-500/10"
                         title="Regresar al Directorio"
                     >
-                        <X size={16} className="group-hover:rotate-90 transition-transform duration-700" />
-                        <span className="text-[11px] font-black uppercase tracking-[0.25em] font-premium">Salir</span>
+                        <X size={15} className="group-hover:rotate-90 transition-transform duration-500" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Salir</span>
                     </button>
                 </div>
             </div>
 
-            <button onClick={onBack} className="absolute top-8 right-8 z-50 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-white/5 text-slate-400 hover:text-blue-600 rounded-2xl transition-all md:flex hidden hover:scale-110 active:scale-90 group/close shadow-xl hover:border-blue-500/30">
-                <X size={24} className="group-hover:rotate-90 transition-transform duration-700" />
+            <button onClick={onBack} className="absolute top-8 right-8 z-50 p-3.5 bg-white/80 dark:bg-[#051424]/90 backdrop-blur-xl border border-slate-200 dark:border-white/10 text-slate-400 hover:text-rose-400 rounded-2xl transition-all md:flex hidden hover:scale-105 active:scale-95 group/close shadow-xl hover:border-rose-500/30">
+                <X size={20} className="group-hover:rotate-90 transition-transform duration-500" />
             </button>
 
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
                 {/* LEFT COLUMN - Profile Header (Static/Scroll-independent on Desktop) */}
-                <div ref={leftColRef} className="w-full lg:w-[320px] xl:w-[360px] flex-none border-b lg:border-b-0 lg:border-r border-slate-200/50 dark:border-white/5 bg-slate-50/50 dark:bg-slate-900/50 p-6 lg:p-10 overflow-y-auto no-scrollbar">
+                <div ref={leftColRef} className="w-full lg:w-[330px] xl:w-[370px] flex-none border-b lg:border-b-0 lg:border-r border-slate-200/50 dark:border-white/10 bg-slate-50/50 dark:bg-[#051424]/60 p-6 lg:p-8 overflow-y-auto no-scrollbar">
                     <ClientHeader
                         client={client}
                         onBack={onBack}
@@ -1027,8 +1027,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
                 </div>
 
                 {/* RIGHT COLUMN - Main Tab Content (Full Width on Desktop PC) */}
-                <div ref={rightColRef} className="flex-1 overflow-y-auto p-6 sm:p-10 pb-40 no-scrollbar relative scroll-smooth bg-white dark:bg-slate-950">
-                    <div className="w-full max-w-none animate-in fade-in slide-in-from-bottom-10 duration-1000">
+                <div ref={rightColRef} className="flex-1 overflow-y-auto p-6 sm:p-10 pb-40 no-scrollbar relative scroll-smooth bg-white dark:bg-[#020b14]">
+                    <div className="w-full max-w-none animate-in fade-in slide-in-from-bottom-6 duration-700">
                         {activeTab === 'profile' && renderProfileTab()}
                         {activeTab === 'metrics' && <MetricsTab client={editedClient} />}
                         {activeTab === 'history' && renderHistoryTab()}
