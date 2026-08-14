@@ -24,6 +24,15 @@ export function arePeriodsEqual(p1?: string, p2?: string): boolean {
     return false;
 }
 
+export function getP12RemainingDays(client: Client): number | null {
+    if (!client.signatureExpirationDate) return null;
+    const expDate = new Date(client.signatureExpirationDate);
+    if (isNaN(expDate.getTime())) return null;
+    const now = new Date();
+    const diffTime = expDate.getTime() - now.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
