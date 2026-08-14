@@ -114,8 +114,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
         }
     }, [workspaceClient, navigate]);
 
-    // Mesa de Trabajo Táctica — estados faltantes
-    const [hubTab, setHubTab] = useState<'operativa' | 'cargas' | 'alertas' | 'firmas'>('operativa');
+    // Hub Táctico Ejecutivo (Stitch Nueva Luz 3.0)
+    const [hubTab, setHubTab] = useState<'radar' | 'cargas' | 'alertas' | 'firmas'>('radar');
     const [firmasSubTab, setFirmasSubTab] = useState<'vigentes' | 'sin-firma'>('vigentes');
     const [mesaTrabajoTab, setMesaTrabajoTab] = useState<'mensual' | 'semestral'>('mensual');
     const [mesaUploadingTarget, setMesaUploadingTarget] = useState<{ client: Client; period: string } | null>(null);
@@ -1137,30 +1137,23 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <Command size={18} strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-[0.15em] font-display">CENTRO OPERATIVO TÁCTICO</h3>
-                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 font-mono">Gestión Inmediata & Herramientas Rápidas</p>
+                                <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-[0.15em] font-display">CENTRO DE MANDO EJECUTIVO</h3>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 font-mono">Radar Tributario & Accesos Inmediatos</p>
                             </div>
                         </div>
 
                         {/* TAB PILLS */}
                         <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-black/40 p-1.5 rounded-2xl border border-slate-200/70 dark:border-white/10 overflow-x-auto hide-scrollbar">
                             <button
-                                onClick={() => setHubTab('operativa')}
+                                onClick={() => setHubTab('radar')}
                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all duration-300 ${
-                                    hubTab === 'operativa'
+                                    hubTab === 'radar'
                                         ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }`}
                             >
-                                <Zap size={14} />
-                                <span>Mesa Operativa</span>
-                                {mesaTrabajoList.length > 0 && (
-                                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                                        hubTab === 'operativa' ? 'bg-white/20 text-white' : 'bg-[#00A896]/15 text-[#00A896]'
-                                    }`}>
-                                        {mesaTrabajoList.length}
-                                    </span>
-                                )}
+                                <Sparkles size={14} />
+                                <span>Radar Ejecutivo & SRI</span>
                             </button>
 
                             <button
@@ -1222,175 +1215,201 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         </div>
                     </div>
 
-                    {/* TAB CONTENT 1: MESA OPERATIVA */}
-                    {hubTab === 'operativa' && (
-                        <div className="space-y-6 animate-fade-in">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Campaña Actual:</span>
-                                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest px-2.5 py-1 bg-slate-100 dark:bg-white/5 rounded-lg border border-slate-200/50 dark:border-white/5">
-                                        {mesaTrabajoTab === 'mensual' ? `Junio (${monthlyPeriodStr})` : `1er Semestre (${semestralPeriodStr})`}
+                    {/* TAB CONTENT 1: RADAR EJECUTIVO & CALENDARIO SRI */}
+                    {hubTab === 'radar' && (
+                        <div className="space-y-8 animate-fade-in">
+                            {/* 1. CALENDARIO FISCAL SRI POR 9NO DÍGITO (10 DÍGITOS) */}
+                            <div className="space-y-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <Clock size={16} className="text-[#00A896]" />
+                                        <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono">
+                                            Calendario de Vencimientos SRI · Por 9no Dígito del RUC
+                                        </h4>
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 font-mono">
+                                        Período Activo: <strong className="text-[#00A896]">{monthlyPeriodStr}</strong>
                                     </span>
                                 </div>
 
-                                <div className="flex bg-slate-100/70 dark:bg-white/5 p-1 rounded-xl border border-slate-200/40 dark:border-white/5">
+                                <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2.5">
+                                    {[
+                                        { digit: '1', day: 10 },
+                                        { digit: '2', day: 12 },
+                                        { digit: '3', day: 14 },
+                                        { digit: '4', day: 16 },
+                                        { digit: '5', day: 18 },
+                                        { digit: '6', day: 20 },
+                                        { digit: '7', day: 22 },
+                                        { digit: '8', day: 24 },
+                                        { digit: '9', day: 26 },
+                                        { digit: '0', day: 28 },
+                                    ].map(({ digit, day }) => {
+                                        const digitClients = clients.filter(c => !c.isDeleted && (c.isActive ?? true) && c.ruc[8] === digit);
+                                        const today = new Date();
+                                        const currentDay = today.getDate();
+                                        const isDueToday = currentDay === day;
+                                        const isPastDue = currentDay > day;
+                                        const daysDiff = day - currentDay;
+
+                                        return (
+                                            <button
+                                                key={digit}
+                                                onClick={() => navigate('declaraciones')}
+                                                className={`group relative overflow-hidden p-3.5 rounded-2xl border text-left transition-all duration-300 hover:scale-[1.03] hover:shadow-lg ${
+                                                    isDueToday
+                                                        ? 'bg-gradient-to-b from-rose-500/20 via-rose-500/10 to-transparent border-rose-500/50 shadow-rose-500/20 animate-pulse ring-2 ring-rose-500/40'
+                                                        : isPastDue
+                                                        ? 'bg-slate-900/40 border-white/5 opacity-80 hover:opacity-100'
+                                                        : 'bg-gradient-to-b from-white/5 to-transparent border-white/10 hover:border-[#00A896]/40'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center font-mono ${
+                                                        isDueToday
+                                                            ? 'bg-rose-500 text-white shadow-md'
+                                                            : isPastDue
+                                                            ? 'bg-slate-800 text-slate-400'
+                                                            : 'bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/30'
+                                                    }`}>
+                                                        {digit}
+                                                    </span>
+                                                    <span className="text-[9px] font-bold font-mono text-slate-400">
+                                                        {day} {format(today, 'MMM', { locale: es })}
+                                                    </span>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <div className="flex items-baseline justify-between">
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase font-mono">Clientes</span>
+                                                        <span className="text-sm font-extrabold text-slate-900 dark:text-white font-mono">{digitClients.length}</span>
+                                                    </div>
+                                                    <div className={`text-[8px] font-black uppercase tracking-wider py-0.5 px-1.5 rounded text-center font-mono ${
+                                                        isDueToday
+                                                            ? 'bg-rose-500 text-white'
+                                                            : isPastDue
+                                                            ? 'bg-slate-800/80 text-slate-400'
+                                                            : daysDiff <= 3
+                                                            ? 'bg-amber-500/20 text-amber-300'
+                                                            : 'bg-[#00A896]/10 text-[#00A896]'
+                                                    }`}>
+                                                        {isDueToday ? '¡VENCE HOY!' : isPastDue ? 'Vencido' : `En ${daysDiff}d`}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* 2. CENTRO DE ACCESO RÁPIDO EJECUTIVO (4 COMMAND LAUNCHERS) */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                                    <Sparkles size={16} className="text-[#2B6AFF]" />
+                                    Lanzador de Mando Operativo
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {/* Card 1: Declaraciones */}
                                     <button
-                                        onClick={() => setMesaTrabajoTab('mensual')}
-                                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
-                                            mesaTrabajoTab === 'mensual'
-                                                ? 'bg-blue-600 text-white shadow-sm'
-                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                                        }`}
+                                        onClick={() => navigate('declaraciones')}
+                                        className="group p-5 rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 via-[#00A896]/5 to-transparent hover:border-[#00A896]/50 hover:bg-[#00A896]/10 transition-all duration-300 text-left relative overflow-hidden shadow-sm hover:shadow-xl"
                                     >
-                                        Mensuales
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00A896] to-teal-600 text-white flex items-center justify-center shadow-lg shadow-[#00A896]/30 group-hover:scale-110 transition-transform">
+                                                <FileText size={20} />
+                                            </div>
+                                            <ArrowRight size={14} className="text-slate-500 group-hover:text-[#00A896] group-hover:translate-x-1 transition-all" />
+                                        </div>
+                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Matriz de Declaraciones</h5>
+                                        <p className="text-[11px] text-slate-400">Control de IVA mensual, semestral y Renta anual con automatización SRI.</p>
                                     </button>
+
+                                    {/* Card 2: Clientes */}
                                     <button
-                                        onClick={() => setMesaTrabajoTab('semestral')}
-                                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
-                                            mesaTrabajoTab === 'semestral'
-                                                ? 'bg-blue-600 text-white shadow-sm'
-                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-                                        }`}
+                                        onClick={() => navigate('clients')}
+                                        className="group p-5 rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 via-[#2B6AFF]/5 to-transparent hover:border-[#2B6AFF]/50 hover:bg-[#2B6AFF]/10 transition-all duration-300 text-left relative overflow-hidden shadow-sm hover:shadow-xl"
                                     >
-                                        Semestrales
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-[#2B6AFF] text-white flex items-center justify-center shadow-lg shadow-[#2B6AFF]/30 group-hover:scale-110 transition-transform">
+                                                <Users size={20} />
+                                            </div>
+                                            <ArrowRight size={14} className="text-slate-500 group-hover:text-[#2B6AFF] group-hover:translate-x-1 transition-all" />
+                                        </div>
+                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Directorio de Clientes</h5>
+                                        <p className="text-[11px] text-slate-400">Expedientes fiscales, claves SRI, tarifas y WhatsApp directo.</p>
+                                    </button>
+
+                                    {/* Card 3: Facturador SRI */}
+                                    <button
+                                        onClick={() => navigate('sri_facturacion')}
+                                        className="group p-5 rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 via-[#C9A96E]/5 to-transparent hover:border-[#C9A96E]/50 hover:bg-[#C9A96E]/10 transition-all duration-300 text-left relative overflow-hidden shadow-sm hover:shadow-xl"
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-[#C9A96E] text-slate-950 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform font-bold">
+                                                <Zap size={20} />
+                                            </div>
+                                            <ArrowRight size={14} className="text-slate-500 group-hover:text-[#C9A96E] group-hover:translate-x-1 transition-all" />
+                                        </div>
+                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Facturador SRI Electrónico</h5>
+                                        <p className="text-[11px] text-slate-400">Emisión instantánea de facturas autorizadas con firma .p12.</p>
+                                    </button>
+
+                                    {/* Card 4: Firmas .P12 */}
+                                    <button
+                                        onClick={() => navigate('firmas')}
+                                        className="group p-5 rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 via-teal-500/5 to-transparent hover:border-teal-400/50 hover:bg-teal-500/10 transition-all duration-300 text-left relative overflow-hidden shadow-sm hover:shadow-xl"
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 text-white flex items-center justify-center shadow-lg shadow-teal-500/20 group-hover:scale-110 transition-transform">
+                                                <KeyRound size={20} />
+                                            </div>
+                                            <ArrowRight size={14} className="text-slate-500 group-hover:text-teal-400 group-hover:translate-x-1 transition-all" />
+                                        </div>
+                                        <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-1">Bóveda de Firmas .P12</h5>
+                                        <p className="text-[11px] text-slate-400">Control de vigencia, recordatorios y certificados digitales.</p>
                                     </button>
                                 </div>
                             </div>
 
-                            {mesaTrabajoList.length === 0 ? (
-                                <div className="p-12 text-center border-2 border-dashed border-slate-200/70 dark:border-white/5 rounded-3xl bg-slate-50/30 dark:bg-white/[0.01]">
-                                    <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto text-emerald-500 mb-3 border border-emerald-200/30 dark:border-emerald-500/20">
-                                        <CheckCircle2 size={24} />
-                                    </div>
-                                    <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">¡Todo al Día!</h4>
-                                    <p className="text-xs text-slate-400 mt-1">No quedan clientes pendientes en esta campaña.</p>
+                            {/* 3. RADAR DE CARTERA POR RÉGIMEN TRIBUTARIO */}
+                            <div className="p-6 rounded-2xl border border-white/10 bg-slate-950/40 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] font-mono">
+                                        Desglose de Cartera por Régimen Fiscal
+                                    </span>
+                                    <span className="text-xs font-mono font-bold text-[#00A896]">
+                                        {clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length} Contribuyentes
+                                    </span>
                                 </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
-                                    {mesaTrabajoList.map(c => {
-                                        const targetPeriod = mesaTrabajoTab === 'mensual' ? monthlyPeriodStr : semestralPeriodStr;
-                                        const ninthDigit = c.ruc[8] || '0';
-                                        const dueDate = getDueDateForPeriod(c, targetPeriod);
-                                        const daysLeft = getDaysUntilDue(dueDate);
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    {[
+                                        { label: 'Régimen General', filterId: 'general', regime: TaxRegime.General, color: 'text-[#2B6AFF]', borderColor: 'border-[#2B6AFF]/30', bgGlow: 'from-[#2B6AFF]/10' },
+                                        { label: 'RIMPE Emprendedor', filterId: 'rimpe_emp', regime: TaxRegime.RimpeEmprendedor, color: 'text-[#00A896]', borderColor: 'border-[#00A896]/30', bgGlow: 'from-[#00A896]/10' },
+                                        { label: 'RIMPE Negocio Popular', filterId: 'rimpe_np', regime: TaxRegime.RimpeNegocioPopular, color: 'text-[#C9A96E]', borderColor: 'border-[#C9A96E]/30', bgGlow: 'from-[#C9A96E]/10' },
+                                        { label: 'Solo Firma / Plan', filterId: 'solo_plan', regime: null, color: 'text-teal-400', borderColor: 'border-teal-500/30', bgGlow: 'from-teal-500/10' },
+                                    ].map((item, idx) => {
+                                        const matched = item.regime
+                                            ? clients.filter(c => !c.isDeleted && (c.isActive ?? true) && c.regime === item.regime)
+                                            : clients.filter(c => !c.isDeleted && (c.isActive ?? true) && c.isSignatureOnly);
+                                        const feeSum = matched.reduce((acc, c) => acc + getClientServiceFee(c, serviceFees), 0);
 
                                         return (
-                                            <div 
-                                                key={c.id} 
-                                                className="group relative overflow-hidden rounded-2xl border border-slate-200/70 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] p-5 hover:shadow-xl hover:border-blue-500/30 transition-all duration-300 flex flex-col justify-between gap-4"
+                                            <div
+                                                key={idx}
+                                                onClick={() => navigate('clients', { initialFilter: { activeGroupTab: item.filterId } })}
+                                                className={`p-4 rounded-xl border ${item.borderColor} bg-gradient-to-br ${item.bgGlow} to-transparent hover:scale-[1.02] cursor-pointer transition-all duration-300`}
                                             >
-                                                <div className="flex justify-between items-start gap-3">
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                                                            <div className="flex items-center gap-2 min-w-0">
-                                                                <span className="w-5 h-5 rounded-md bg-blue-500/10 dark:bg-blue-400/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-[10px] font-black flex items-center justify-center font-mono flex-shrink-0">
-                                                                    {ninthDigit}
-                                                                </span>
-                                                                <h4 className="text-xs font-bold text-slate-900 dark:text-white tracking-tight truncate font-premium">
-                                                                    {c.name}
-                                                                </h4>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="px-2 py-0.5 bg-slate-200/60 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[9px] font-bold font-mono rounded">
-                                                                    {c.ruc}
-                                                                </span>
-                                                                <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase rounded">
-                                                                    {c.regime.replace('Rimpe ', '')}
-                                                                </span>
-                                                            </div>
-
-                                                            {dueDate && daysLeft !== null && (
-                                                                <span className={`px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1 border transition-all ${
-                                                                    daysLeft < 0
-                                                                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
-                                                                        : daysLeft === 0
-                                                                        ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 animate-pulse shadow-sm shadow-amber-500/20'
-                                                                        : daysLeft <= 3
-                                                                        ? 'bg-orange-500/10 border-orange-500/30 text-orange-600 dark:text-orange-400'
-                                                                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                                                                }`}>
-                                                                    <Clock size={11} className="flex-shrink-0" />
-                                                                    <span>
-                                                                        {daysLeft < 0
-                                                                            ? `Vencido (${Math.abs(daysLeft)}d)`
-                                                                            : daysLeft === 0
-                                                                            ? '¡Vence Hoy!'
-                                                                            : daysLeft === 1
-                                                                            ? 'Falta 1 día'
-                                                                            : `Faltan ${daysLeft} días`}
-                                                                    </span>
-                                                                    <span className="opacity-60 text-[8px] font-mono font-medium ml-0.5">
-                                                                        ({format(dueDate, 'dd/MM')})
-                                                                    </span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* ACTIONS GRID */}
-                                                <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-200/50 dark:border-white/5">
-                                                    <button
-                                                        onClick={() => handleCopyRuc(c.ruc, c.name)}
-                                                        className="py-2.5 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-bold uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-sm"
-                                                        title="Copiar RUC al Portapapeles"
-                                                    >
-                                                        <Copy size={13} className="text-slate-400 group-hover:text-blue-500" />
-                                                        <span>RUC</span>
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => window.open("https://srienlinea.sri.gob.ec", "_blank")}
-                                                        className="py-2.5 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300 rounded-xl text-[9px] font-bold uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-sm"
-                                                        title="Abrir SRI en línea"
-                                                    >
-                                                        <ExternalLink size={13} className="text-slate-400 group-hover:text-sky-500" />
-                                                        <span>Portal</span>
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => handleMesaUploadClick(c, targetPeriod)}
-                                                        className="py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[9px] font-black uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95 shadow-md shadow-blue-500/20"
-                                                        title="Subir Comprobante PDF de Declaración"
-                                                    >
-                                                        <UploadCloud size={13} />
-                                                        <span>Subir</span>
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => {
-                                                            if (c.phones?.length) {
-                                                                const feeNum = getClientServiceFee(c, serviceFees, targetPeriod);
-                                                                const generatedMsg = generateDeclarationWhatsAppMessage(
-                                                                    c.name,
-                                                                    mesaTrabajoTab === 'mensual' ? 'IVA' : 'Impuesto a la Renta',
-                                                                    targetPeriod,
-                                                                    feeNum,
-                                                                    false
-                                                                );
-                                                                setWhatsAppPrompt({
-                                                                    clientName: c.name,
-                                                                    phone: c.phones[0].replace(/\D/g, ''),
-                                                                    message: generatedMsg
-                                                                });
-                                                            } else {
-                                                                toast.error("El cliente no tiene teléfono registrado");
-                                                            }
-                                                        }}
-                                                        className="py-2.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 hover:text-white border border-emerald-500/20 rounded-xl text-[9px] font-black uppercase transition-all flex flex-col items-center justify-center gap-1 active:scale-95"
-                                                        title="Notificar por WhatsApp"
-                                                    >
-                                                        <MessageCircle size={13} />
-                                                        <span>WApp</span>
-                                                    </button>
+                                                <p className="text-[10px] font-bold text-slate-400 uppercase font-mono">{item.label}</p>
+                                                <div className="flex items-baseline justify-between mt-2">
+                                                    <span className={`text-2xl font-black font-mono ${item.color}`}>{matched.length}</span>
+                                                    <span className="text-xs font-bold text-slate-300 font-mono">${Math.round(feeSum).toLocaleString()}/mes</span>
                                                 </div>
                                             </div>
                                         );
                                     })}
                                 </div>
-                            )}
+                            </div>
                         </div>
                     )}
 

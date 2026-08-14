@@ -133,7 +133,7 @@ const App: React.FC = () => {
   const [publicUser, setPublicUser] = useState<PublicUser | null>(null);
   const [loggedClient, setLoggedClient] = useState<Client | null>(null);
   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'dark');
-  const [activeScreen, setActiveScreen] = useState<Screen>('declaraciones');
+  const [activeScreen, setActiveScreen] = useState<Screen>('home');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [previousScreen, setPreviousScreen] = useState<Screen | null>(null);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
@@ -590,6 +590,7 @@ const App: React.FC = () => {
   };
 
   const navItems = ([
+    { screen: 'home', icon: Home, label: 'Dashboard' },
     { screen: 'declaraciones', icon: LayoutGrid, label: 'Declaraciones SRI', count: clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length },
     { screen: 'clients', icon: Users, label: 'Directorio Clientes' },
     { screen: 'firmas', icon: KeyRound, label: 'Firmas Electrónicas' },
