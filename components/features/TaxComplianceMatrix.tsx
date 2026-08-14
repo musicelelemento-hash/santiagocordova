@@ -1232,65 +1232,65 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             {/* Executive Stitch Glassmorphic KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Card 1: Total Clientes */}
-                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 relative overflow-hidden group hover:border-indigo-500/40 transition-all shadow-lg">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all" />
+                <div className="bg-[#051424]/90 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-3xl p-5 relative overflow-hidden group hover:border-[#2B6AFF]/40 transition-all shadow-2xl">
+                    <div className="absolute top-0 right-0 w-28 h-28 bg-[#2B6AFF]/10 rounded-full blur-2xl group-hover:bg-[#2B6AFF]/20 transition-all" />
                     <div className="flex justify-between items-start relative z-10">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-mono">Total Clientes</span>
-                        <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 font-mono">Total Clientes</span>
+                        <div className="p-2.5 rounded-2xl bg-[#2B6AFF]/15 border border-[#2B6AFF]/30 text-[#2B6AFF] shadow-sm">
                             <LucideIcons.Users size={16} />
                         </div>
                     </div>
                     <div className="mt-3 relative z-10 flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-white font-mono">{totalFiltered}</span>
-                        <span className="text-[10px] font-bold text-slate-400">
+                        <span className="text-3xl font-black text-white font-mono">{totalFiltered}</span>
+                        <span className="text-[10px] font-bold text-slate-400 font-mono">
                             {matrixMode === 'RENTA' ? 'Renta Activa' : frequency}
                         </span>
                     </div>
-                    <div className="mt-2 text-[10px] font-medium text-slate-400/80 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <div className="mt-2 text-[10px] font-medium text-slate-400/90 flex items-center gap-1.5 font-mono">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#00A896] shadow-[0_0_8px_rgba(0,168,150,0.8)]" />
                         <span>Portafolio fiscal en seguimiento</span>
                     </div>
                 </div>
 
                 {/* Card 2: % Al Día */}
-                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 relative overflow-hidden group hover:border-emerald-500/40 transition-all shadow-lg">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all" />
+                <div className="bg-[#051424]/90 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-3xl p-5 relative overflow-hidden group hover:border-[#00A896]/40 transition-all shadow-2xl">
+                    <div className="absolute top-0 right-0 w-28 h-28 bg-[#00A896]/10 rounded-full blur-2xl group-hover:bg-[#00A896]/20 transition-all" />
                     <div className="flex justify-between items-start relative z-10">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 font-mono">% Cumplimiento SRI</span>
-                        <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-[#00A896] font-mono">% Cumplimiento SRI</span>
+                        <div className="p-2.5 rounded-2xl bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] shadow-sm">
                             <LucideIcons.ShieldCheck size={16} />
                         </div>
                     </div>
                     <div className="mt-3 relative z-10 flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-emerald-400 font-mono">{complianceRate}%</span>
-                        <span className="text-[10px] font-bold text-slate-400">({compliantClientsCount} al día)</span>
+                        <span className="text-3xl font-black text-[#00A896] font-mono">{complianceRate}%</span>
+                        <span className="text-[10px] font-bold text-slate-400 font-mono">({compliantClientsCount} al día)</span>
                     </div>
-                    <div className="mt-2 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                    <div className="mt-2 w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-white/5">
                         <div 
-                            className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500" 
+                            className="bg-gradient-to-r from-[#00A896] to-teal-400 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(0,168,150,0.4)]" 
                             style={{ width: `${complianceRate}%` }} 
                         />
                     </div>
                 </div>
 
                 {/* Card 3: Pendientes del Periodo */}
-                <div className={`bg-slate-900/40 backdrop-blur-xl border rounded-2xl p-4 relative overflow-hidden group transition-all shadow-lg ${
+                <div className={`bg-[#051424]/90 backdrop-blur-2xl border rounded-3xl p-5 relative overflow-hidden group transition-all shadow-2xl ${
                     pendingDeclarationsCount > 0 
-                        ? 'border-amber-500/30 hover:border-amber-500/60 bg-amber-500/5' 
-                        : 'border-white/10 hover:border-emerald-500/40'
+                        ? 'border-amber-500/40 hover:border-amber-500/60' 
+                        : 'border-white/10 border-t-white/20 hover:border-[#00A896]/40'
                 }`}>
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all" />
+                    <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all" />
                     <div className="flex justify-between items-start relative z-10">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 font-mono">Pendientes {activePeriodForKpi}</span>
-                        <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 font-mono">Pendientes {activePeriodForKpi}</span>
+                        <div className="p-2.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 shadow-sm">
                             <LucideIcons.Clock size={16} />
                         </div>
                     </div>
                     <div className="mt-3 relative z-10 flex items-baseline gap-2">
-                        <span className="text-2xl font-black text-amber-400 font-mono">{pendingDeclarationsCount}</span>
-                        <span className="text-[10px] font-bold text-slate-400">por declarar</span>
+                        <span className="text-3xl font-black text-amber-400 font-mono">{pendingDeclarationsCount}</span>
+                        <span className="text-[10px] font-bold text-slate-400 font-mono">por declarar</span>
                     </div>
-                    <div className="mt-2 text-[10px] font-semibold text-amber-400/90 flex items-center gap-1.5">
+                    <div className="mt-2 text-[10px] font-semibold text-amber-400/90 flex items-center gap-1.5 font-mono">
                         {pendingDeclarationsCount > 0 ? (
                             <>
                                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
@@ -1298,7 +1298,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </>
                         ) : (
                             <>
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#00A896]" />
                                 <span>Periodo completamente al día</span>
                             </>
                         )}
@@ -1306,29 +1306,29 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
 
                 {/* Card 4: Cloud Storage Sync (R2 / Supabase) */}
-                <div className="bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl p-4 relative overflow-hidden group hover:border-sky-500/40 transition-all shadow-lg flex flex-col justify-between">
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/20 transition-all" />
+                <div className="bg-[#051424]/90 backdrop-blur-2xl border border-white/10 border-t-white/20 rounded-3xl p-5 relative overflow-hidden group hover:border-sky-500/40 transition-all shadow-2xl flex flex-col justify-between">
+                    <div className="absolute top-0 right-0 w-28 h-28 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/20 transition-all" />
                     <div>
                         <div className="flex justify-between items-start relative z-10">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-sky-400 font-mono">Bóveda Nube R2</span>
-                            <div className="p-2 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-sky-400 font-mono">Bóveda Nube R2</span>
+                            <div className="p-2.5 rounded-2xl bg-sky-500/15 border border-sky-500/30 text-sky-400 shadow-sm">
                                 <LucideIcons.UploadCloud size={16} />
                             </div>
                         </div>
                         <div className="mt-3 relative z-10 flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-sky-400 font-mono">{cloudStoredPdfsCount}</span>
-                            <span className="text-[10px] font-bold text-slate-400">PDFs Respaldados</span>
+                            <span className="text-3xl font-black text-sky-400 font-mono">{cloudStoredPdfsCount}</span>
+                            <span className="text-[10px] font-bold text-slate-400 font-mono">PDFs Respaldados</span>
                         </div>
                     </div>
-                    <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between">
-                        <span className="text-[9px] font-mono text-emerald-400 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between font-mono">
+                        <span className="text-[9px] text-[#00A896] flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00A896] shadow-[0_0_6px_rgba(0,168,150,0.8)]" />
                             $0 Egress Cloudflare
                         </span>
                         <button
                             onClick={handleOptimizeSupabaseStorage}
                             disabled={isOptimizingStorage}
-                            className="text-[9px] font-black uppercase tracking-wider text-sky-300 hover:text-white bg-sky-500/20 hover:bg-sky-500/30 px-2 py-0.5 rounded-lg border border-sky-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                            className="text-[9px] font-bold uppercase tracking-wider text-sky-300 hover:text-white bg-sky-500/20 hover:bg-sky-500/30 px-2.5 py-1 rounded-xl border border-sky-500/30 transition-all flex items-center gap-1 cursor-pointer"
                             title="Optimizar almacenamiento y migrar Base64 restante a la nube"
                         >
                             <LucideIcons.Sparkles size={10} />
@@ -1339,9 +1339,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             </div>
 
             {/* Header / Controls (Stitch Nueva Luz 3.0) */}
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white/95 dark:bg-[#051424]/90 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-slate-200/80 dark:border-white/10 shadow-2xl relative overflow-hidden transition-all duration-500">
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-[#051424]/90 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-white/10 border-t-white/20 shadow-2xl relative overflow-hidden transition-all duration-500 font-sans">
                 <div className="flex items-center gap-4">
-                    <div className={`p-3.5 text-white rounded-2xl shadow-lg ${
+                    <div className={`p-4 text-white rounded-2xl shadow-lg border border-white/10 ${
                         matrixMode === 'RENTA' 
                             ? 'bg-gradient-to-br from-amber-400 to-[#C9A96E] shadow-amber-400/25' 
                             : 'bg-gradient-to-br from-[#00A896] to-teal-600 shadow-[#00A896]/30'
@@ -1349,16 +1349,16 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         {matrixMode === 'RENTA' ? <LucideIcons.Award size={22} /> : <LucideIcons.LayoutGrid size={22} />}
                     </div>
                     <div>
-                        <h2 className="text-xl font-extrabold text-slate-900 dark:text-white uppercase tracking-tight font-display">
+                        <h2 className="text-xl font-black text-white uppercase tracking-tight font-display">
                             {matrixMode === 'RENTA' ? 'MATRIZ DE RENTA ANUAL' : 'MATRIZ FISCAL Y OBLIGACIONES'}
                         </h2>
-                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-0.5 font-mono">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 font-mono">
                             {matrixMode === 'RENTA' ? 'Impuesto a la Renta · Historial Fiscal SRI' : 'Control Integral de Respaldos y Declaraciones SRI'}
                         </p>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto font-mono">
                     {/* Buscador Directo en Matriz */}
                     <div className="relative flex-1 min-w-[220px] sm:min-w-[280px]">
                         <LucideIcons.Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1367,12 +1367,12 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             placeholder="🔍 Buscar cliente o RUC..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-8 py-2.5 bg-slate-100 dark:bg-black/40 border border-slate-200/80 dark:border-white/10 rounded-2xl text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#00A896]/40 focus:border-[#00A896] transition-all font-mono shadow-inner"
+                            className="w-full pl-9 pr-8 py-2.5 bg-[#0b1326]/80 border border-white/10 rounded-2xl text-xs font-medium text-white placeholder:text-slate-500 focus:outline-none focus:border-[#00A896] transition-all font-mono shadow-inner"
                         />
                         {searchTerm && (
                             <button
                                 onClick={() => setSearchTerm('')}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-rose-500 hover:text-white text-slate-400 transition-all"
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/10 hover:bg-rose-500 hover:text-white text-slate-400 transition-all"
                                 title="Limpiar filtro"
                             >
                                 <LucideIcons.X size={10} strokeWidth={3} />
@@ -1388,7 +1388,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 sendBatchDeclarationToExtension(filteredClients, type, 'declare');
                                 toast.info(`Iniciando Bucle Automático 🚀 Se han enviado ${filteredClients.length} clientes a la extensión para declaración en bucle.`);
                             }}
-                            className="px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-[#00A896]/90 hover:to-teal-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#00A896]/20 cursor-pointer"
+                            className="px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#00A896]/20 cursor-pointer border border-white/10 active:scale-95"
                             title="Iniciar automatización completa (Auditar, Llenar formulario y Declarar)"
                         >
                             <LucideIcons.Play size={13} fill="currentColor" />
@@ -1401,7 +1401,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 sendBatchDeclarationToExtension(filteredClients, type, 'recover_pdf_only');
                                 toast.info(`Iniciando Búsqueda de Comprobantes 🔍 Se han enviado ${filteredClients.length} clientes a la extensión para buscar únicamente PDFs faltantes.`);
                             }}
-                            className="px-4 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-[#2B6AFF]/90 hover:to-indigo-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#2B6AFF]/20 cursor-pointer"
+                            className="px-4 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 shadow-lg shadow-[#2B6AFF]/20 cursor-pointer border border-white/10 active:scale-95"
                             title="Desacoplado: Ir directo a buscar y descargar PDFs de comprobantes emitidos sin llenar formularios"
                         >
                             <LucideIcons.Search size={13} />
@@ -1410,13 +1410,13 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     </div>
 
                     {/* Control de Ordenamiento: Dígito vs Semáforo de Colores vs Alfabético */}
-                    <div className="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-black/40 p-1.5 rounded-2xl border border-slate-200/80 dark:border-white/10">
+                    <div className="flex flex-wrap items-center gap-1 bg-[#020b14]/60 p-1.5 rounded-2xl border border-white/10">
                         <button
                             onClick={() => setSortOption('9th_digit')}
                             className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 ${
                                 sortOption === '9th_digit'
-                                    ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30 scale-[1.02]'
-                                    : 'text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30 scale-[1.02] border border-white/10'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                             title="Ordenar por Dígito RUC (Calendario SRI)"
                         >
@@ -1429,7 +1429,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 border ${
                                 sortOption === 'color_orange'
                                     ? 'bg-orange-500 text-white border-orange-600 shadow-md shadow-orange-500/20 scale-[1.02]'
-                                    : 'bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-500/20'
+                                    : 'bg-orange-500/10 border-orange-500/20 text-orange-400 hover:bg-orange-500/20'
                             }`}
                             title="Ver Naranjas Primero (Declarado, Falta Cancelar/Cobrar)"
                         >
@@ -1442,7 +1442,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 border ${
                                 sortOption === 'color_red'
                                     ? 'bg-rose-600 text-white border-rose-700 shadow-md shadow-rose-500/20 scale-[1.02]'
-                                    : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20'
+                                    : 'bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/20'
                             }`}
                             title="Ver Rojos Primero (Vencidos / Urgentes)"
                         >
@@ -1467,8 +1467,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             onClick={() => setSortOption('alphabetical')}
                             className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-1.5 ${
                                 sortOption === 'alphabetical'
-                                    ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/20 scale-[1.02]'
-                                    : 'text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/20 scale-[1.02] border border-white/10'
+                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                             title="Ordenar por Nombre Alfabético (A - Z)"
                         >
@@ -1478,7 +1478,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     </div>
 
                     {/* Integrated Segmented Control for Mode/Frequency */}
-                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-black/40 p-1.5 rounded-2xl border border-slate-200/80 dark:border-white/10">
+                    <div className="flex items-center gap-1.5 bg-[#020b14]/60 p-1.5 rounded-2xl border border-white/10">
                         {[
                             { id: 'iva-mensual', label: 'IVA Mensual', mode: 'IVA' as MatrixMode, freq: 'Mensual' as IvaFrequency, icon: LucideIcons.Calendar },
                             { id: 'iva-semestral', label: 'IVA Semestral', mode: 'IVA' as MatrixMode, freq: 'Semestral' as IvaFrequency, icon: LucideIcons.CalendarRange },
@@ -1496,8 +1496,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     }}
                                     className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all duration-300 flex items-center gap-2 ${
                                         isActive 
-                                            ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30 scale-[1.02]' 
-                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                            ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-md shadow-[#00A896]/30 scale-[1.02] border border-white/10' 
+                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
                                     }`}
                                 >
                                     <tab.icon size={12} />
@@ -1512,10 +1512,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         <select
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-                            className="bg-slate-100 dark:bg-black/40 text-slate-800 dark:text-slate-200 text-[10px] font-bold font-mono uppercase tracking-wider px-3.5 py-2.5 rounded-xl border border-slate-200/80 dark:border-white/10 outline-none cursor-pointer hover:border-slate-300 dark:hover:border-white/20 transition-all shadow-sm"
+                            className="bg-[#0b1326]/80 text-white text-[10px] font-bold font-mono uppercase tracking-wider px-3.5 py-2.5 rounded-2xl border border-white/10 outline-none cursor-pointer hover:border-white/20 transition-all shadow-sm"
                         >
                             {[today.getFullYear(), today.getFullYear() - 1].map(y => (
-                                <option key={y} value={y} className="bg-white dark:bg-[#051424] text-slate-800 dark:text-white">{y}</option>
+                                <option key={y} value={y} className="bg-slate-900 text-white">{y}</option>
                             ))}
                         </select>
                     )}
@@ -1523,10 +1523,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     {/* Workspace desk switcher */}
                     <button
                         onClick={() => setIsWorkspaceMode(!isWorkspaceMode)}
-                        className={`px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-2 border shadow-sm ${
+                        className={`px-4 py-2.5 rounded-2xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all flex items-center gap-2 border shadow-sm active:scale-95 ${
                             isWorkspaceMode 
                                 ? 'bg-gradient-to-r from-[#00A896] to-teal-500 text-white border-[#00A896]/50 shadow-[#00A896]/20' 
-                                : 'bg-slate-100 dark:bg-black/40 text-slate-500 dark:text-slate-400 border-slate-200/80 dark:border-white/10 hover:text-slate-900 dark:hover:text-white'
+                                : 'bg-[#0b1326]/80 text-slate-400 border-white/10 hover:text-white hover:border-white/20'
                         }`}
                         title="Priorizar clientes con obligaciones pendientes"
                     >
@@ -1536,7 +1536,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                     <button 
                         onClick={() => window.print()}
-                        className="p-2.5 bg-slate-100 dark:bg-black/40 text-slate-500 hover:text-[#00A896] dark:text-slate-400 dark:hover:text-white rounded-xl border border-slate-200/80 dark:border-white/10 transition-all no-print shadow-sm"
+                        className="p-2.5 bg-[#0b1326]/80 text-slate-400 hover:text-white rounded-2xl border border-white/10 hover:border-white/20 transition-all no-print shadow-sm"
                         title="Imprimir Reporte"
                     >
                         <LucideIcons.Printer size={16} />
@@ -1545,7 +1545,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             </div>
 
             {/* Progress Summary mini-dashboard (Stitch Luxury Cards) */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 no-print">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 no-print font-mono">
                 {(() => {
                     const totalClients = filteredClients.length;
                     if (totalClients === 0) return null;
@@ -1562,43 +1562,43 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                     return (
                         <>
-                            <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-[#051424]/90 backdrop-blur-xl shadow-xl flex items-center gap-4 hover:translate-y-[-2px] transition-all">
-                                <div className="p-3 bg-[#00A896]/15 text-[#00A896] rounded-2xl">
-                                    <LucideIcons.CheckSquare size={18} />
+                            <div className="p-5 rounded-3xl border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl shadow-2xl flex items-center gap-4 hover:translate-y-[-2px] transition-all">
+                                <div className="p-3 bg-[#00A896]/15 text-[#00A896] rounded-2xl border border-[#00A896]/30 shadow-sm">
+                                    <LucideIcons.CheckSquare size={20} />
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 font-mono">Declarados</p>
-                                    <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-none font-mono">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Declarados</p>
+                                    <p className="text-2xl font-black text-white leading-none font-mono">
                                         {declaredCount}
                                         <span className="text-xs text-slate-400 font-normal ml-1">/ {denominator}</span>
                                     </p>
                                 </div>
                             </div>
-                            <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-[#051424]/90 backdrop-blur-xl shadow-xl flex items-center gap-4 hover:translate-y-[-2px] transition-all">
-                                <div className="p-3 bg-[#2B6AFF]/15 text-[#2B6AFF] rounded-2xl">
-                                    <LucideIcons.Paperclip size={18} />
+                            <div className="p-5 rounded-3xl border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl shadow-2xl flex items-center gap-4 hover:translate-y-[-2px] transition-all">
+                                <div className="p-3 bg-[#2B6AFF]/15 text-[#2B6AFF] rounded-2xl border border-[#2B6AFF]/30 shadow-sm">
+                                    <LucideIcons.Paperclip size={20} />
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 font-mono">Respaldos</p>
-                                    <p className="text-2xl font-extrabold text-slate-900 dark:text-white leading-none font-mono">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Respaldos</p>
+                                    <p className="text-2xl font-black text-white leading-none font-mono">
                                         {pdfCount}
                                         <span className="text-xs text-slate-400 font-normal ml-1">/ {denominator}</span>
                                     </p>
                                 </div>
                             </div>
-                            <div className="md:col-span-2 p-4 rounded-2xl border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-[#051424]/90 backdrop-blur-xl shadow-xl flex flex-col justify-center hover:translate-y-[-2px] transition-all">
+                            <div className="md:col-span-2 p-5 rounded-3xl border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl shadow-2xl flex flex-col justify-center hover:translate-y-[-2px] transition-all">
                                 <div className="flex justify-between items-center mb-2">
                                     <div>
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-mono">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                             {matrixMode === 'RENTA' ? 'Eficiencia Renta' : 'Eficiencia Mensual'}
                                         </p>
-                                        <p className="text-[9px] font-bold text-slate-400 mt-0.5 font-mono">Ciclo {formatPeriodForDisplay(lastPeriod)}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 mt-0.5">Ciclo {formatPeriodForDisplay(lastPeriod)}</p>
                                     </div>
-                                    <span className="text-base font-extrabold text-[#00A896] font-mono">{efficiencyPercent}%</span>
+                                    <span className="text-lg font-black text-[#00A896]">{efficiencyPercent}%</span>
                                 </div>
-                                <div className="w-full h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden p-0.5 border border-slate-200/80 dark:border-white/10">
+                                <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-white/10">
                                     <div 
-                                        className="h-full rounded-full bg-gradient-to-r from-[#00A896] to-teal-400 shadow-[0_0_10px_rgba(0,168,150,0.3)] transition-all duration-1000"
+                                        className="h-full rounded-full bg-gradient-to-r from-[#00A896] to-teal-400 shadow-[0_0_10px_rgba(0,168,150,0.4)] transition-all duration-1000"
                                         style={{ width: `${efficiencyPercent}%` }}
                                     ></div>
                                 </div>
@@ -1609,11 +1609,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             </div>
 
             {/* 🚀 SUPER DOCK BAR DE ACCIONES MASIVAS (Stitch Nueva Luz 3.0) */}
-            <div className="bg-gradient-to-r from-[#051424]/95 via-[#0b1326]/90 to-[#051424]/95 backdrop-blur-2xl p-5 rounded-[2.5rem] border border-white/10 shadow-2xl flex flex-wrap items-center justify-between gap-4">
+            <div className="bg-gradient-to-r from-[#051424]/95 via-[#0b1326]/90 to-[#051424]/95 backdrop-blur-2xl p-5 rounded-[2.5rem] border border-white/10 border-t-white/20 shadow-2xl flex flex-wrap items-center justify-between gap-4 font-mono">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleToggleSelectAll}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold font-mono uppercase tracking-wider transition-all border border-white/10 cursor-pointer"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold font-mono uppercase tracking-wider transition-all border border-white/10 cursor-pointer active:scale-95"
                     >
                         <input
                             type="checkbox"
@@ -1624,7 +1624,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         <span>{isAllSelected ? 'Desmarcar Todos' : 'Seleccionar Todos'} ({filteredClients.length})</span>
                     </button>
                     {selectedClientIds.length > 0 && (
-                        <span className="px-4 py-2 rounded-2xl bg-[#00A896]/20 border border-[#00A896]/40 text-[#00A896] text-[10px] font-bold font-mono uppercase tracking-widest animate-pulse">
+                        <span className="px-4 py-2 rounded-2xl bg-[#00A896]/20 border border-[#00A896]/40 text-[#00A896] text-[10px] font-bold font-mono uppercase tracking-widest shadow-[0_0_10px_rgba(0,168,150,0.3)] animate-pulse">
                             🎯 {selectedClientIds.length} Seleccionados
                         </span>
                     )}
@@ -1634,10 +1634,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     <button
                         onClick={handleBulkPrint}
                         disabled={selectedClientIds.length === 0}
-                        className={`px-4 py-2.5 rounded-2xl text-[10px] font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg ${
+                        className={`px-4 py-2.5 rounded-2xl text-[10px] font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg active:scale-95 border border-white/10 ${
                             selectedClientIds.length > 0
-                                ? 'bg-gradient-to-r from-[#2B6AFF] to-blue-600 hover:from-[#2B6AFF]/90 hover:to-blue-500 text-white shadow-[#2B6AFF]/25 scale-[1.02] cursor-pointer'
-                                : 'bg-slate-800/50 text-slate-500 cursor-not-allowed border border-white/5'
+                                ? 'bg-gradient-to-r from-[#2B6AFF] to-blue-600 hover:from-blue-600 hover:to-indigo-600 text-white shadow-[#2B6AFF]/25 cursor-pointer'
+                                : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border-white/5'
                         }`}
                         title="Abrir lote de impresión con los PDFs de comprobante originales guardados en Supabase Storage"
                     >
@@ -1648,10 +1648,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     <button
                         onClick={handleBulkDownload}
                         disabled={selectedClientIds.length === 0}
-                        className={`px-4 py-2.5 rounded-2xl text-[10px] font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg ${
+                        className={`px-4 py-2.5 rounded-2xl text-[10px] font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg active:scale-95 border border-white/10 ${
                             selectedClientIds.length > 0
-                                ? 'bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-[#00A896]/90 hover:to-teal-500 text-white shadow-[#00A896]/25 scale-[1.02] cursor-pointer'
-                                : 'bg-slate-800/50 text-slate-500 cursor-not-allowed border border-white/5'
+                                ? 'bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white shadow-[#00A896]/25 cursor-pointer'
+                                : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border-white/5'
                         }`}
                         title="Descargar comprobantes PDF reales en lote"
                     >
@@ -1662,10 +1662,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     <button
                         onClick={handleBulkWhatsAppNotify}
                         disabled={selectedClientIds.length === 0}
-                        className={`px-4 py-2.5 rounded-2xl text-[10px] font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg ${
+                        className={`px-4 py-2.5 rounded-2xl text-[10px] font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-lg active:scale-95 border border-white/10 ${
                             selectedClientIds.length > 0
-                                ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-emerald-500/25 scale-[1.02] cursor-pointer'
-                                : 'bg-slate-800/50 text-slate-500 cursor-not-allowed border border-white/5'
+                                ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white shadow-emerald-500/25 cursor-pointer'
+                                : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border-white/5'
                         }`}
                         title="Enviar notificación por WhatsApp con enlace al comprobante de Supabase"
                     >
@@ -1676,10 +1676,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     <button
                         onClick={handleBulkMarkNotified}
                         disabled={selectedClientIds.length === 0}
-                        className={`px-4 py-2.5 rounded-2xl text-[10px] font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                        className={`px-4 py-2.5 rounded-2xl text-[10px] font-bold font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 ${
                             selectedClientIds.length > 0
-                                ? 'bg-white/5 hover:bg-white/10 text-[#00A896] border border-[#00A896]/30 cursor-pointer'
-                                : 'bg-slate-800/50 text-slate-500 cursor-not-allowed border border-white/5'
+                                ? 'bg-white/5 hover:bg-white/10 text-[#00A896] border border-[#00A896]/30 cursor-pointer shadow-sm'
+                                : 'bg-slate-900/50 text-slate-500 cursor-not-allowed border border-white/5'
                         }`}
                         title="Marcar como Notificados en la plataforma"
                     >
@@ -1690,33 +1690,33 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             </div>
 
             {/* Matrix Table */}
-            <div className="rounded-[2.5rem] shadow-2xl overflow-hidden overflow-x-auto custom-scrollbar border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-[#051424]/90 backdrop-blur-2xl">
+            <div className="rounded-[2.5rem] shadow-2xl overflow-hidden overflow-x-auto custom-scrollbar border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl font-sans">
                 <table className="w-full min-w-[800px] text-left border-collapse">
                     <thead>
-                        <tr className="bg-slate-50/50 dark:bg-white/5 border-b border-slate-200/30 dark:border-white/5">
-                            <th className="px-3 py-4 sticky left-0 bg-slate-50 dark:bg-slate-900 z-30 w-10 text-center border-r border-slate-200/30 dark:border-white/10">
+                        <tr className="bg-[#0b1326]/90 border-b border-white/10 font-mono">
+                            <th className="px-3 py-4 sticky left-0 bg-[#0b1326] z-30 w-10 text-center border-r border-white/10">
                                 <input
                                     type="checkbox"
                                     checked={isAllSelected}
                                     onChange={handleToggleSelectAll}
-                                    className="rounded accent-primary cursor-pointer w-3.5 h-3.5"
+                                    className="rounded accent-[#00A896] cursor-pointer w-3.5 h-3.5"
                                     title="Seleccionar Todos"
                                 />
                             </th>
-                            <th className="px-6 py-4 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] sticky left-10 bg-slate-50 dark:bg-slate-900 z-20 w-64 border-r border-slate-200/30 dark:border-white/10">Cliente</th>
+                            <th className="px-6 py-4 text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] sticky left-10 bg-[#0b1326] z-20 w-64 border-r border-white/10">Cliente</th>
                             {periods.map(p => (
                                 <th 
                                     key={p} 
-                                    className="px-4 py-4 text-[9px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-[0.15em] text-center border-r border-slate-200/30 dark:border-white/5 last:border-r-0 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors select-none group/th"
+                                    className="px-4 py-4 text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em] text-center border-r border-white/10 last:border-r-0 cursor-pointer hover:bg-[#051424] transition-colors select-none group/th"
                                     onClick={() => handleSortByPeriod(p)}
                                     title="Clic para agrupar (Faltantes / Listos)"
                                 >
                                     <div className="flex items-center justify-center gap-1.5 relative">
-                                        {formatPeriodForDisplay(p).replace('IVA ', '')}
+                                        <span>{formatPeriodForDisplay(p).replace('IVA ', '')}</span>
                                         <div className={`transition-all duration-200 ${sortPeriod === p ? 'opacity-100' : 'opacity-0 group-hover/th:opacity-30'}`}>
                                             <LucideIcons.ArrowDownUp 
                                                 size={12} 
-                                                className={sortPeriod === p ? (sortDirection === 'missing_first' ? 'text-rose-500' : 'text-emerald-500') : 'text-slate-400'} 
+                                                className={sortPeriod === p ? (sortDirection === 'missing_first' ? 'text-rose-500' : 'text-[#00A896]') : 'text-slate-400'} 
                                             />
                                         </div>
                                     </div>
@@ -1724,7 +1724,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200/20 dark:divide-white/5">
+                    <tbody className="divide-y divide-white/5 font-sans">
                         {filteredClients.map((client, index) => {
                             const currentDigit = parseInt(client.ruc[8], 10);
                             const prevDigit = index > 0 ? parseInt(filteredClients[index - 1].ruc[8], 10) : null;
@@ -1739,18 +1739,18 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             return (
                                 <React.Fragment key={client.id}>
                                     {showFreqDivider && (
-                                        <tr className="bg-primary/5 border-t border-b border-primary/20">
+                                        <tr className="bg-[#2B6AFF]/10 border-t border-b border-[#2B6AFF]/20 font-mono">
                                             <td colSpan={periods.length + 2} className="px-6 py-3">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="p-1.5 rounded-lg bg-primary text-white shadow-lg shadow-primary/30 animate-pulse">
+                                                        <div className="p-1.5 rounded-lg bg-[#2B6AFF] text-white shadow-lg shadow-[#2B6AFF]/30 animate-pulse">
                                                             {currentFreq === 'Semestral' ? <LucideIcons.CalendarRange size={14} /> : <LucideIcons.Calendar size={14} />}
                                                         </div>
-                                                        <span className="text-[11px] font-black text-primary uppercase tracking-[0.2em] font-premium">
+                                                        <span className="text-[11px] font-bold text-[#2B6AFF] uppercase tracking-[0.2em]">
                                                             Clientes {currentFreq}es
                                                         </span>
-                                                        <span className="text-primary/30 mx-1">|</span>
-                                                        <span className="text-[10px] text-primary/70 font-semibold tracking-wider">
+                                                        <span className="text-white/20 mx-1">|</span>
+                                                        <span className="text-[10px] text-slate-400 font-semibold tracking-wider">
                                                             Resultados de Búsqueda
                                                         </span>
                                                     </div>
@@ -1759,240 +1759,150 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         </tr>
                                     )}
                                     {showDivider && (
-                                        <tr className="bg-slate-100/30 dark:bg-[#020617]/50 border-t border-b border-slate-200/30 dark:border-white/10">
+                                        <tr className="bg-[#0b1326]/80 border-t border-b border-white/10 font-mono">
                                             <td colSpan={periods.length + 2} className="px-6 py-2.5">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(43,106,255,0.6)]"></div>
-                                                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.15em] font-premium">
-                                                            Dígito RUC <span className="font-mono text-primary font-black">{currentDigit}</span>
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_8px_rgba(0,168,150,0.8)]"></div>
+                                                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.15em]">
+                                                            Dígito RUC <span className="font-mono text-[#00A896] font-black">{currentDigit}</span>
                                                         </span>
-                                                        <span className="text-slate-300 dark:text-white/10 mx-1">|</span>
-                                                        <span className="text-[9px] text-slate-400 dark:text-slate-400 font-mono tracking-wider">
+                                                        <span className="text-white/10 mx-1">|</span>
+                                                        <span className="text-[9px] text-slate-400 font-mono tracking-wider">
                                                             Vence: Día {currentDigit === 1 ? '10' : currentDigit === 2 ? '12' : currentDigit === 3 ? '14' : currentDigit === 4 ? '16' : currentDigit === 5 ? '18' : currentDigit === 6 ? '20' : currentDigit === 7 ? '22' : currentDigit === 8 ? '24' : currentDigit === 9 ? '26' : '28'} de cada mes
                                                         </span>
                                                     </div>
-                                                    <span className="text-[8px] font-bold text-slate-400/80 uppercase tracking-widest no-print">
+                                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest no-print">
                                                         {filteredClients.filter(c => parseInt(c.ruc[8], 10) === currentDigit).length} Clientes
                                                     </span>
                                                 </div>
                                             </td>
                                         </tr>
                                     )}
-                                    <tr className={`transition-all duration-700 group/row ${
+                                    <tr className={`transition-all duration-300 group/row border-b border-white/5 ${
     client.ruc === highlightedRuc
-        ? 'bg-primary/10 dark:bg-primary/20 ring-2 ring-primary border-primary shadow-[0_0_30px_rgba(59,130,246,0.5)] z-20 relative animate-pulse'
-        : 'hover:bg-slate-50/50 dark:bg-white/[0.02] dark:hover:bg-slate-950/20'
+        ? 'bg-[#00A896]/15 ring-2 ring-[#00A896] border-[#00A896] shadow-[0_0_30px_rgba(0,168,150,0.4)] z-20 relative animate-pulse'
+        : 'hover:bg-white/[0.03]'
 }`}>
                                         <td 
-                                            className="px-3 py-4 sticky left-0 bg-white/95 dark:bg-[#020617]/95 backdrop-blur-md z-20 border-r border-slate-200/30 dark:border-white/10 text-center"
+                                            className="px-3 py-4 sticky left-0 bg-[#051424]/95 backdrop-blur-md z-20 border-r border-white/10 text-center"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <input
                                                 type="checkbox"
                                                 checked={selectedClientIds.includes(client.id)}
                                                 onChange={() => handleToggleSelectClient(client.id)}
-                                                className="rounded accent-primary cursor-pointer w-3.5 h-3.5"
+                                                className="rounded accent-[#00A896] cursor-pointer w-3.5 h-3.5"
                                             />
                                         </td>
                                         <td 
-                                            className="px-6 py-4 sticky left-10 bg-white/95 dark:bg-[#020617]/95 backdrop-blur-md z-10 border-r border-slate-200/30 dark:border-white/10 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-950/80 transition-colors shadow-[4px_0_12px_-4px_rgba(0,0,0,0.03)] dark:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.4)]"
+                                            className="px-6 py-4 sticky left-10 bg-[#051424]/95 backdrop-blur-md z-10 border-r border-white/10 group-hover/row:bg-[#0b1326]/95 transition-colors shadow-[4px_0_16px_rgba(0,0,0,0.5)]"
                                             onClick={() => onViewClient(client)}
                                         >
-                                            <div className="flex items-center gap-3 cursor-pointer group/name relative">
-                                                {/* ZEN 3.1 Compliance Dot */}
-                                                {(() => {
-                                                    const compliance = getClientCompliance(client, today, (frequency === 'Ninguno' ? 'all' : frequency) as any);
-                                                    const dotColor = 
-                                                        compliance.overallColor === 'red' ? 'bg-rose-500 shadow-rose-500/50' :
-                                                        compliance.overallColor === 'orange' ? 'bg-orange-500 shadow-orange-500/50' :
-                                                        compliance.overallColor === 'yellow' ? 'bg-amber-400 shadow-amber-400/50' :
-                                                        compliance.overallColor === 'green' ? 'bg-emerald-500 shadow-emerald-500/50' :
-                                                        'bg-slate-400';
-                                                    return (
-                                                        <div 
-                                                            className={`absolute -left-2 w-1.5 h-6 rounded-full transition-all duration-300 ${dotColor}`}
-                                                            title={`Cumplimiento: ${compliance.score}%`}
-                                                        />
-                                                    );
-                                                })()}
-                                                {(() => {
-                                                    const compliance = getClientCompliance(client, today, (frequency === 'Ninguno' ? 'all' : frequency) as any);
-                                                    const colorClasses = 
-                                                        compliance.overallColor === 'red' ? 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400 font-black shadow-sm shadow-rose-500/10' :
-                                                        compliance.overallColor === 'orange' ? 'bg-orange-500/15 border-orange-500/40 text-orange-600 dark:text-orange-400 font-black shadow-sm shadow-orange-500/10 animate-pulse' :
-                                                        compliance.overallColor === 'yellow' ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 font-black' :
-                                                        compliance.overallColor === 'green' ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-black' :
-                                                        'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500';
-                                                    return (
-                                                        <div 
-                                                            className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-mono tracking-wider transition-all border ${colorClasses}`}
-                                                            title={`Semáforo: ${compliance.overallColor.toUpperCase()} (${compliance.score}% al día)`}
-                                                        >
-                                                            {client.ruc[8]}
-                                                        </div>
-                                                    );
-                                                })()}
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs font-black truncate max-w-[160px] text-slate-900 dark:text-white group-hover/name:text-primary transition-colors font-premium">
+                                            <div className="flex items-center gap-3 cursor-pointer">
+                                                <div className="w-8 h-8 rounded-xl bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] flex items-center justify-center font-bold text-xs font-mono group-hover/row:scale-105 transition-transform shadow-sm">
+                                                    {client.ruc[8]}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <h4 className="font-bold text-xs text-white truncate max-w-[170px] group-hover/row:text-[#00A896] transition-colors">
                                                             {client.tradeName || client.name}
-                                                        </span>
-                                                        {client.ruc === highlightedRuc && (
-                                                            <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-primary text-white shadow-lg shadow-primary/50 animate-bounce shrink-0">
-                                                                🎯 DESTACADO
-                                                            </span>
+                                                        </h4>
+                                                        {client.isPriority && (
+                                                            <LucideIcons.Star size={10} className="text-amber-400 fill-amber-400 shrink-0 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
                                                         )}
-                                                        {isWorkspaceMode && (
-                                                            <span className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
-                                                                isClientUpToDate(client) 
-                                                                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' 
-                                                                    : 'bg-rose-500/10 text-rose-500 border border-rose-500/20 animate-pulse'
-                                                            }`}>
-                                                                {isClientUpToDate(client) ? 'Al Día' : 'Pendiente'}
-                                                            </span>
-                                                        )}
-                                                        {/* ── Firma Electrónica Neon Dot ── */}
-                                                        {(() => {
-                                                            if (!client.signatureFile) {
-                                                                return (
-                                                                    <span
-                                                                        title="Sin firma electrónica"
-                                                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shrink-0"
-                                                                    >
-                                                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-                                                                        <span className="text-[8px] font-bold text-slate-400 uppercase hidden sm:inline">Sin firma</span>
-                                                                    </span>
-                                                                );
-                                                            }
-                                                            const daysLeft = client.signatureExpirationDate
-                                                                ? (() => {
-                                                                    const exp = new Date(client.signatureExpirationDate);
-                                                                    exp.setHours(0,0,0,0);
-                                                                    const now = new Date(); now.setHours(0,0,0,0);
-                                                                    return Math.ceil((exp.getTime() - now.getTime()) / 86400000);
-                                                                })()
-                                                                : null;
-                                                            if (daysLeft === null) {
-                                                                return (
-                                                                    <span title="Firma cargada (fecha desconocida)" className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 shrink-0">
-                                                                        <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" style={{boxShadow:'0 0 6px rgba(20,184,166,0.8)'}} />
-                                                                    </span>
-                                                                );
-                                                            }
-                                                            if (daysLeft < 0) {
-                                                                return (
-                                                                    <span title={`Firma CADUCADA hace ${Math.abs(daysLeft)} días`} className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 shrink-0">
-                                                                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" style={{boxShadow:'0 0 6px rgba(239,68,68,0.8)'}} />
-                                                                        <span className="text-[8px] font-black text-rose-500 uppercase hidden sm:inline">Caducada</span>
-                                                                    </span>
-                                                                );
-                                                            }
-                                                            if (daysLeft <= 30) {
-                                                                return (
-                                                                    <span title={`Firma vence en ${daysLeft} días`} className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 shrink-0">
-                                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse shrink-0" style={{boxShadow:'0 0 6px rgba(251,191,36,0.8)'}} />
-                                                                        <span className="text-[8px] font-black text-amber-500 uppercase hidden sm:inline">{daysLeft}d</span>
-                                                                    </span>
-                                                                );
-                                                            }
-                                                            return (
-                                                                <span title={`Firma activa · ${daysLeft} días restantes`} className="flex items-center px-1.5 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" style={{boxShadow:'0 0 6px rgba(20,184,166,0.8)'}} />
-                                                                </span>
-                                                            );
-                                                        })()}
-                                                        {/* ── Insignia Estado Clave SRI ── */}
-                                                        {(() => {
-                                                            const statusInfo = isSriPasswordUpdated(client);
-                                                            if (!client.sriPassword) {
-                                                                return (
-                                                                    <span
-                                                                        title="Sin clave SRI registrada"
-                                                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shrink-0"
-                                                                    >
-                                                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-                                                                        <span className="text-[8px] font-bold text-slate-400 uppercase hidden sm:inline">Sin Clave</span>
-                                                                    </span>
-                                                                );
-                                                            }
-
-                                                            if (statusInfo.isUpdated) {
-                                                                return (
-                                                                    <span
-                                                                        title={statusInfo.tooltip}
-                                                                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.25)]"
-                                                                    >
-                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" style={{boxShadow:'0 0 6px rgba(16,185,129,0.8)'}} />
-                                                                        <span className="text-[8px] font-black uppercase tracking-wider hidden sm:inline">{statusInfo.label}</span>
-                                                                    </span>
-                                                                );
-                                                            }
-                                                            return (
-                                                                <span
-                                                                    title={statusInfo.tooltip}
-                                                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold shrink-0"
-                                                                >
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" style={{boxShadow:'0 0 6px rgba(251,191,36,0.8)'}} />
-                                                                    <span className="text-[8px] font-black uppercase tracking-wider hidden sm:inline">{statusInfo.label}</span>
-                                                                </span>
-                                                            );
-                                                        })()}
                                                     </div>
 
-                                                    <div className="flex items-center gap-1.5 mt-1 no-print">
+                                                    <div className="flex items-center gap-2 mt-0.5 font-mono">
+                                                        {(() => {
+                                                            const p12Days = getP12RemainingDays(client);
+                                                            if (p12Days === null) {
+                                                                return (
+                                                                    <span className="text-[8px] font-bold text-slate-500 flex items-center gap-0.5">
+                                                                        <LucideIcons.ShieldAlert size={8} /> Sin P12
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            if (p12Days <= 0) {
+                                                                return (
+                                                                    <span className="text-[8px] font-bold text-rose-400 flex items-center gap-0.5 animate-pulse">
+                                                                        <LucideIcons.AlertTriangle size={8} /> P12 Vencido
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            if (p12Days <= 30) {
+                                                                return (
+                                                                    <span className="text-[8px] font-bold text-amber-400 flex items-center gap-0.5">
+                                                                        <LucideIcons.Clock size={8} /> P12: {p12Days}d
+                                                                    </span>
+                                                                );
+                                                            }
+                                                            return (
+                                                                <span className="text-[8px] font-bold text-[#00A896] flex items-center gap-0.5">
+                                                                    <LucideIcons.ShieldCheck size={8} /> P12: {p12Days}d
+                                                                </span>
+                                                            );
+                                                        })()}
+
+                                                        {client.sriPassword ? (
+                                                            <span className="text-[8px] font-bold text-emerald-400 flex items-center gap-0.5">
+                                                                <LucideIcons.Key size={8} /> SRI Clave
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[8px] font-bold text-amber-400 flex items-center gap-0.5">
+                                                                <LucideIcons.Lock size={8} /> Sin Clave
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1.5 mt-1 no-print font-mono">
                                                         <span className="text-[9px] font-mono font-bold text-slate-400 tracking-wider">
                                                             {client.ruc}
                                                         </span>
                                                         
-                                                        {/* Copiar RUC */}
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleCopyRuc(client.ruc, client.name); }}
-                                                            className={`p-1 rounded transition-all border ${
+                                                            className={`p-1 rounded-lg transition-all border ${
                                                                 copiedRuc === client.ruc
-                                                                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500'
-                                                                    : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-primary hover:border-primary/30'
+                                                                    ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896]'
+                                                                    : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:border-white/20'
                                                             }`}
                                                             title={copiedRuc === client.ruc ? "RUC Copiado" : "Copiar RUC"}
                                                         >
-                                                            {copiedRuc === client.ruc ? <LucideIcons.Check size={8} className="text-emerald-500" strokeWidth={3} /> : <LucideIcons.Copy size={8} />}
+                                                            {copiedRuc === client.ruc ? <LucideIcons.Check size={8} className="text-[#00A896]" strokeWidth={3} /> : <LucideIcons.Copy size={8} />}
                                                         </button>
 
-                                                        {/* Copiar Clave SRI */}
                                                         {client.sriPassword && (
                                                             <button
                                                                 onClick={(e) => { 
                                                                     e.stopPropagation(); 
                                                                     handleCopyKey(client.sriPassword!, client.id, client.name);
                                                                 }}
-                                                                className={`p-1 rounded transition-all border ${
+                                                                className={`p-1 rounded-lg transition-all border ${
                                                                     copiedKey === client.id
-                                                                        ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500'
-                                                                        : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-emerald-500 hover:border-emerald-500/30'
+                                                                        ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896]'
+                                                                    : 'bg-white/5 border-white/10 text-slate-400 hover:text-[#00A896] hover:border-[#00A896]/30'
                                                                 }`}
                                                                 title={copiedKey === client.id ? "Clave Copiada" : `Copiar Clave SRI`}
                                                             >
-                                                                {copiedKey === client.id ? <LucideIcons.Check size={8} className="text-emerald-500" strokeWidth={3} /> : <LucideIcons.Key size={8} />}
+                                                                {copiedKey === client.id ? <LucideIcons.Check size={8} className="text-[#00A896]" strokeWidth={3} /> : <LucideIcons.Key size={8} />}
                                                             </button>
                                                         )}
 
-                                                        {/* Enlace SRI con Autocarga de Credenciales */}
                                                         <button
                                                             onClick={(e) => handleOpenSriPortal(client, e)}
-                                                            className="p-1 rounded border bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:text-amber-400 hover:border-amber-400/30 transition-all flex items-center justify-center"
+                                                            className="p-1 rounded-lg border bg-white/5 border-white/10 text-slate-400 hover:text-amber-400 hover:border-amber-400/30 transition-all flex items-center justify-center"
                                                             title="Abrir SRI en Línea y Cargar Credenciales del Cliente"
                                                         >
                                                             <LucideIcons.ExternalLink size={8} />
                                                         </button>
 
-                                                        {/* Icono Minimalista de Notificación WhatsApp por Cliente (Solo cuando hay comprobante y no está todo pagado) */}
                                                         {(() => {
                                                             const activePeriod = periods[0];
                                                             const clientDecls = client.declarations || [];
                                                             const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
                                                             const mainDecl = findDeclarationForOb(clientDecls, activePeriod, mainObType);
                                                             
-                                                            // Si no hay declaración/comprobante cargado, o si ya está todo pagado, NO MOSTRAR (0 ruido visual)
                                                             const hasProof = !!mainDecl?.proof_file || mainDecl?.status === DeclarationStatus.Enviada || mainDecl?.status === DeclarationStatus.Pagada;
                                                             const isPaid = mainDecl?.status === DeclarationStatus.Pagada || !!mainDecl?.is_paid || client.isCourtesy;
                                                             
@@ -2011,10 +1921,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         e.stopPropagation();
                                                                         handleToggleWhatsAppNotification(client, activePeriod, mainObType, mainDecl);
                                                                     }}
-                                                                    className={`p-1 rounded-md transition-all border flex items-center justify-center ${
+                                                                    className={`p-1 rounded-lg transition-all border flex items-center justify-center ${
                                                                         isNotified
-                                                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20'
-                                                                            : 'bg-amber-500/20 border-amber-500/50 text-amber-500 hover:bg-amber-500/30 animate-pulse shadow-sm shadow-amber-500/20'
+                                                                            ? 'bg-[#00A896]/15 border-[#00A896]/30 text-[#00A896] hover:bg-[#00A896]/25'
+                                                                            : 'bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30 animate-pulse shadow-sm shadow-amber-500/20'
                                                                     }`}
                                                                     title={
                                                                         isNotified
@@ -2031,10 +1941,6 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             );
                                                         })()}
                                                     </div>
-
-                                                    <span className="text-[9px] font-mono font-bold text-slate-400 tracking-wider mt-1 print-only hidden">
-                                                        {client.ruc}
-                                                    </span>
                                                 </div>
                                             </div>
                                         </td>
@@ -2042,13 +1948,13 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             const isBeforeStart = isPeriodBeforeClientStart(client, p);
                                             if (isBeforeStart) {
                                                 return (
-                                                    <td key={p} className="px-2 py-3 border-r border-slate-200/20 dark:border-white/5 bg-slate-100/30 dark:bg-slate-950/40 opacity-75">
-                                                        <div className="flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200/30 dark:border-white/5 text-[9px] font-mono text-slate-400 text-center gap-0.5" title={`Obligaciones iniciaron en ${client.clientStartPeriod}`}>
-                                                            <span className="flex items-center gap-1 text-[8px] font-black uppercase tracking-wider text-slate-400">
+                                                    <td key={p} className="px-2 py-3 border-r border-white/5 bg-[#020b14]/40 opacity-70">
+                                                        <div className="flex flex-col items-center justify-center p-2 rounded-2xl border border-white/5 text-[9px] font-mono text-slate-500 text-center gap-0.5" title={`Obligaciones iniciaron en ${client.clientStartPeriod}`}>
+                                                            <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider text-slate-400">
                                                                 <LucideIcons.MinusCircle size={10} />
                                                                 No Aplica
                                                             </span>
-                                                            <span className="text-[7px] font-bold text-slate-500 font-sans">
+                                                            <span className="text-[7px] font-medium text-slate-500 font-mono">
                                                                 Inicio {client.clientStartPeriod}
                                                             </span>
                                                         </div>
@@ -2065,30 +1971,25 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             });
 
                                             return (
-                                                <td key={p} className={`px-2 py-3 border-r border-slate-200/20 dark:border-white/5 last:border-r-0 transition-colors ${allObligationsDone ? 'bg-emerald-500/[0.02] dark:bg-emerald-500/[0.03]' : ''}`}>
+                                                <td key={p} className={`px-2 py-3 border-r border-white/5 last:border-r-0 transition-colors ${allObligationsDone ? 'bg-[#00A896]/[0.03]' : ''}`}>
                                                     <div className="flex flex-wrap justify-center gap-2 min-w-[70px]">
                                                         {obligations.map(ob => {
                                                             const d = findDeclarationForOb(declarations, p, ob.type);
                                                             const hasProof = !!d?.proof_file;
-                                                            const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
-                                                            const isSent = d?.status === DeclarationStatus.Enviada || isPaid || hasProof;
-                                                            
-                                                            const realInvoice = findRealInvoice(client.ruc, d, p);
-                                                            const isTrulyInvoiced = !!realInvoice || !!(d as any)?.invoice_secuencial;
-
                                                             const isDone = hasProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
                                                             const isManualDone = false;
                                                             const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
+                                                            const isTrulyInvoiced = !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
 
                                                             return (
                                                                 <div 
                                                                     key={`${p}-${ob.type}`}
-                                                                    className={`group/ob relative flex flex-col items-center justify-center w-14 h-14 rounded-xl cursor-pointer transition-all duration-300 border ${
-                                                                        isDone ? 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-emerald-600/50 shadow-md shadow-emerald-500/10 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/20 z-10' : 
-                                                                        isManualDone ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-white border-amber-500/50 shadow-md shadow-amber-500/10 hover:scale-105 hover:shadow-lg z-10 animate-pulse' :
-                                                                        d?.isPriority ? 'bg-gradient-to-br from-orange-500 to-rose-500 text-white border-orange-600/50 shadow-md shadow-orange-500/10 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/25 z-10 animate-pulse' :
-                                                                        isOverdue ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-500 dark:text-rose-400 border-rose-250 dark:border-rose-900/40 hover:bg-rose-100 dark:hover:bg-rose-950/30 hover:scale-105' :
-                                                                        'bg-slate-50 dark:bg-slate-900/40 text-slate-400 dark:text-slate-400 border-slate-200/50 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-600 dark:hover:text-slate-200 hover:scale-105'
+                                                                    className={`group/ob relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl cursor-pointer transition-all duration-300 border ${
+                                                                        isDone ? 'bg-gradient-to-br from-[#00A896]/30 to-teal-600/30 text-white border-[#00A896]/50 shadow-md shadow-[#00A896]/15 hover:scale-105 hover:border-[#00A896] hover:shadow-lg hover:shadow-[#00A896]/25 z-10' : 
+                                                                        isManualDone ? 'bg-gradient-to-br from-amber-400/20 to-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/15 hover:scale-105 hover:shadow-lg z-10 animate-pulse' :
+                                                                        d?.isPriority ? 'bg-gradient-to-br from-orange-500/20 to-rose-500/20 text-orange-300 border-orange-500/50 shadow-md shadow-orange-500/15 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/25 z-10 animate-pulse' :
+                                                                        isOverdue ? 'bg-rose-500/15 text-rose-400 border-rose-500/30 hover:bg-rose-500/25 hover:scale-105' :
+                                                                        'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white hover:scale-105'
                                                                     }`}
                                                                     title={isDone ? `Ver Comprobante & Facturación de ${ob.label}` : isManualDone ? `Atención: Sin PDF de ${ob.label}. Haz click para subirlo.` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
                                                                     onClick={(e) => {
@@ -2099,76 +2000,49 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                                 period: p,
                                                                                 declaration: d!,
                                                                                 obType: ob.type as any,
-                                                                                realInvoice
+                                                                                realInvoice: findRealInvoice(client.ruc, d, p)
                                                                             });
                                                                         } else {
                                                                             onUploadReceipt(client, p, ob.type as any);
                                                                         }
                                                                     }}
                                                                 >
-                                                                    <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 ${isDone || isManualDone || d?.isPriority ? 'opacity-90' : 'opacity-55'}`}>{ob.type}</span>
+                                                                    <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 font-mono ${isDone || isManualDone || d?.isPriority ? 'opacity-95 text-[#00A896]' : 'opacity-60'}`}>{ob.type}</span>
                                                                     
                                                                     {isDone ? (
-                                                                        <LucideIcons.ShieldCheck size={14} strokeWidth={3} className="text-white drop-shadow-sm" />
+                                                                        <LucideIcons.ShieldCheck size={14} strokeWidth={3} className="text-[#00A896] drop-shadow-[0_0_6px_rgba(0,168,150,0.6)]" />
                                                                     ) : isManualDone ? (
-                                                                        <LucideIcons.AlertTriangle size={14} strokeWidth={3} className="text-white drop-shadow-sm" />
+                                                                        <LucideIcons.AlertTriangle size={14} strokeWidth={3} className="text-amber-400 drop-shadow-sm" />
                                                                     ) : d?.isPriority ? (
-                                                                        <LucideIcons.Pin size={12} strokeWidth={2.5} className="text-white rotate-45" />
+                                                                        <LucideIcons.Pin size={12} strokeWidth={2.5} className="text-orange-400 rotate-45" />
                                                                     ) : isOverdue ? (
-                                                                        <LucideIcons.AlertCircle size={14} strokeWidth={2.5} />
+                                                                        <LucideIcons.AlertCircle size={14} strokeWidth={2.5} className="text-rose-400" />
                                                                     ) : (
-                                                                        <LucideIcons.Upload size={12} strokeWidth={2} className="opacity-40 group-hover/ob:opacity-100 group-hover/ob:scale-110 transition-all" />
+                                                                        <LucideIcons.Upload size={12} strokeWidth={2} className="opacity-40 group-hover/ob:opacity-100 group-hover/ob:scale-110 transition-all text-slate-300" />
                                                                     )}
 
-                                                                    {/* Resaltador / Barra FACTURADO solo si consta factura real en registros */}
                                                                     {isTrulyInvoiced && (
-                                                                        <span className="px-1 py-[1.5px] bg-slate-950/85 text-emerald-300 border border-emerald-400/50 rounded text-[6px] font-black uppercase tracking-wider font-mono shadow-sm mt-0.5 leading-none">
+                                                                        <span className="px-1 py-[1.5px] bg-[#020b14]/90 text-[#00A896] border border-[#00A896]/50 rounded text-[6px] font-black uppercase tracking-wider font-mono shadow-sm mt-0.5 leading-none">
                                                                             FACTURADO
                                                                         </span>
                                                                     )}
 
                                                                     {isDone ? (
                                                                         <>
-                                                                        {/* Botón Descargar PDF Directo */}
                                                                         {hasProof && (
                                                                             <button
                                                                                 onClick={async (e) => {
                                                                                     e.stopPropagation();
                                                                                     if (d?.proof_file) {
-                                                                                        const ok = await downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
-                                                                                        if (ok) {
-                                                                                            toast.success("Comprobante descargado correctamente");
-                                                                                        } else {
-                                                                                            toast.error("No se pudo procesar el archivo PDF del comprobante");
-                                                                                        }
-                                                                                    } else {
-                                                                                        toast.info("Este comprobante fue registrado sin un archivo PDF adjunto");
+                                                                                        await downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
                                                                                     }
                                                                                 }}
-                                                                                className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/50 opacity-90 group-hover/ob:opacity-100 scale-100 hover:scale-110 flex items-center justify-center"
-                                                                                title="Descargar PDF Directo del Comprobante"
+                                                                                className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-[#051424] hover:bg-[#0b1326] text-[#00A896] border border-[#00A896]/50 opacity-90 group-hover/ob:opacity-100 scale-100 hover:scale-110 flex items-center justify-center shadow-[0_0_8px_rgba(0,168,150,0.4)]"
+                                                                                title="Descargar PDF"
                                                                             >
                                                                                 <LucideIcons.Download size={10} strokeWidth={3} />
                                                                             </button>
                                                                         )}
-                                                                        {/* Botón WhatsApp */}
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                const msg = encodeURIComponent(`Buen día, le adjunto el comprobante de la declaración.`);
-                                                                                const phoneStr = client.phones && client.phones.length > 0 ? client.phones[0].replace(/\D/g, '') : '';
-                                                                                if (phoneStr) {
-                                                                                    const whatsappPhone = phoneStr.startsWith('0') ? '593' + phoneStr.substring(1) : (phoneStr.startsWith('593') ? phoneStr : '593' + phoneStr);
-                                                                                    window.open(`https://wa.me/${whatsappPhone}?text=${msg}`, '_blank');
-                                                                                } else {
-                                                                                    alert('El cliente no tiene un número de teléfono registrado.');
-                                                                                }
-                                                                            }}
-                                                                            className={`absolute -bottom-1.5 -right-1.5 rounded-full p-1 shadow-sm transition-all z-20 bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110`}
-                                                                            title="Notificar por WhatsApp"
-                                                                        >
-                                                                            <LucideIcons.MessageCircle size={10} strokeWidth={2.5} />
-                                                                        </button>
                                                                         </>
                                                                     ) : (
                                                                         <button
@@ -2179,7 +2053,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                             className={`absolute -top-1.5 -right-1.5 rounded-full p-0.5 shadow-sm transition-all z-20 ${
                                                                                 d?.isPriority 
                                                                                     ? 'bg-amber-500 text-white shadow-amber-500/20 scale-100' 
-                                                                                    : 'bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-300/30 dark:border-slate-700/30 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110'
+                                                                                    : 'bg-white/10 hover:bg-white/20 text-slate-400 border border-white/10 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110'
                                                                             }`}
                                                                             title={d?.isPriority ? "Quitar Prioridad" : "Marcar como Prioridad"}
                                                                         >
@@ -2187,12 +2061,12 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                         </button>
                                                                     )}
                                                                     {!hasProof && isOverdue && (
-                                                                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse border border-white dark:border-slate-900" />
+                                                                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse border border-slate-900" />
                                                                     )}
                                                                 </div>
                                                             );
                                                         })}
-                                                        {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-slate-200/30 dark:bg-white/5 my-6 mx-auto" />}
+                                                        {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-white/10 my-6 mx-auto" />}
                                                     </div>
                                                     {obligations.length > 0 && (() => {
                                                          const allPaid = obligations.every(ob => {
@@ -2201,50 +2075,38 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                          });
                                                          const isCellTrulyInvoiced = obligations.some(ob => {
                                                              const d = findDeclarationForOb(declarations, p, ob.type);
-                                                             const realInvoice = findRealInvoice(client.ruc, d, p);
-                                                             return !!realInvoice || !!(d as any)?.invoice_secuencial;
+                                                             return !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
                                                          });
                                                          const obTypes = obligations.map(ob => ob.type);
 
                                                          return (
-                                                             <div className="mt-2 flex justify-center">
+                                                             <div className="mt-2 flex justify-center font-mono">
                                                                  <button
                                                                      onClick={(e) => {
                                                                          e.stopPropagation();
-                                                                         if (onTogglePayment) {
-                                                                             onTogglePayment(client, p, obTypes as any, !allPaid);
-                                                                         }
+                                                                         if (onTogglePayment) onTogglePayment(client, p, obTypes as any, !allPaid);
                                                                      }}
-                                                                     className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-xl text-[9px] font-black uppercase tracking-wider border transition-all duration-300 ${
+                                                                     className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-xl text-[9px] font-bold uppercase tracking-wider border transition-all duration-300 active:scale-95 ${
                                                                          allPaid && isCellTrulyInvoiced
-                                                                             ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white border-blue-400/50 shadow-md shadow-blue-500/25 active:scale-95'
+                                                                             ? 'bg-gradient-to-r from-[#2B6AFF] via-indigo-600 to-[#2B6AFF] hover:from-blue-500 hover:to-indigo-500 text-white border-blue-400/50 shadow-md shadow-[#2B6AFF]/25'
                                                                              : allPaid
-                                                                                 ? 'bg-sky-500 hover:bg-sky-600 border-sky-600 text-white shadow-sm active:scale-95'
-                                                                                 : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 active:scale-95'
+                                                                                 ? 'bg-[#00A896]/20 hover:bg-[#00A896]/30 border-[#00A896]/40 text-[#00A896] shadow-sm'
+                                                                                 : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-white/10'
                                                                      }`}
-                                                                     title={
-                                                                         allPaid && isCellTrulyInvoiced
-                                                                             ? "Cobrado y Facturado (Click para revertir a pendiente)"
-                                                                             : allPaid
-                                                                                 ? "Marcar todo como Pendiente"
-                                                                                 : "Marcar Cobro Completo"
-                                                                     }
                                                                  >
                                                                      {allPaid && isCellTrulyInvoiced ? (
                                                                          <>
                                                                              <LucideIcons.ShieldCheck size={11} strokeWidth={2.5} className="text-blue-200" />
                                                                              <span className="flex items-center gap-1">
-                                                                                 <span className="font-black text-white">COBRADO</span>
+                                                                                 <span className="font-bold text-white">COBRADO</span>
                                                                                  <span className="text-blue-200/80 font-bold">|</span>
-                                                                                 <span className="font-black text-blue-100">FACTURADO</span>
+                                                                                 <span className="font-bold text-blue-100">FACTURADO</span>
                                                                              </span>
                                                                          </>
                                                                      ) : (
                                                                          <>
                                                                              <LucideIcons.Coins size={11} strokeWidth={2.5} />
-                                                                             <span>
-                                                                                 {allPaid ? 'COBRADO' : `COBRO COMPLETO ($${getClientServiceFee(client, serviceFees, p)})`}
-                                                                             </span>
+                                                                             <span>{allPaid ? 'COBRADO' : `COBRO COMPLETO`}</span>
                                                                          </>
                                                                      )}
                                                                  </button>
@@ -2261,47 +2123,47 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     </tbody>
                 </table>
                 {filteredClients.length === 0 && (
-                    <div className="py-20 text-center">
-                        <LucideIcons.Inbox size={32} className="mx-auto text-slate-300 dark:text-slate-700 mb-3" />
-                        <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">No hay clientes para este criterio</p>
+                    <div className="py-20 text-center font-mono">
+                        <LucideIcons.Inbox size={32} className="mx-auto text-slate-600 mb-3" />
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No hay clientes para este criterio</p>
                     </div>
                 )}
             </div>
 
-            {/* Legend */}
-            <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-white/40 dark:bg-slate-900/20 backdrop-blur-md rounded-2xl border border-slate-200/30 dark:border-white/5 no-print">
-                <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-premium">Leyenda de Estados</span>
+            {/* Legend (Stitch Obsidian Luxury) */}
+            <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-[#051424]/90 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-xl no-print font-mono">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Leyenda de Estados</span>
                 <div className="flex flex-wrap items-center gap-6">
                     <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[9px]">
+                        <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-[#00A896] to-teal-600 flex items-center justify-center text-white text-[9px] shadow-sm">
                             <LucideIcons.Check size={10} strokeWidth={3} />
                         </div>
-                        <span className="text-[9px] font-bold text-slate-650 dark:text-slate-400 uppercase tracking-wider">Completado (PDF + Declaración)</span>
+                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Completado (PDF + Declaración)</span>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-md bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-700/40 flex items-center justify-center text-[9px]">
+                        <div className="w-5 h-5 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center justify-center text-[9px]">
                             <LucideIcons.Upload size={10} strokeWidth={2.5} />
                         </div>
-                        <span className="text-[9px] font-bold text-slate-650 dark:text-slate-400 uppercase tracking-wider">Sin Respaldo (Falta PDF)</span>
+                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Sin Respaldo (Falta PDF)</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-md bg-rose-50 dark:bg-rose-950/20 text-rose-500 border border-rose-200 dark:border-rose-900/40 flex items-center justify-center relative text-[9px]">
+                        <div className="w-5 h-5 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 flex items-center justify-center relative text-[9px]">
                             <LucideIcons.AlertCircle size={10} strokeWidth={2.5} />
                             <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />
                         </div>
-                        <span className="text-[9px] font-bold text-slate-650 dark:text-slate-400 uppercase tracking-wider">Vencido (Urgente)</span>
+                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Vencido (Urgente)</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="relative w-5 h-5 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[9px]">
+                        <div className="relative w-5 h-5 rounded-lg bg-gradient-to-br from-[#00A896] to-teal-600 flex items-center justify-center text-white text-[9px]">
                             <LucideIcons.Check size={10} strokeWidth={3} />
-                            <div className="absolute -top-1 -right-1 bg-sky-500 text-white rounded-full p-0.25 shadow-sm">
+                            <div className="absolute -top-1 -right-1 bg-[#2B6AFF] text-white rounded-full p-0.5 shadow-sm">
                                 <LucideIcons.DollarSign size={6} strokeWidth={4} />
                             </div>
                         </div>
-                        <span className="text-[9px] font-bold text-slate-650 dark:text-slate-400 uppercase tracking-wider">Honorario Pagado</span>
+                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wider">Honorario Pagado</span>
                     </div>
                 </div>
             </div>
@@ -2334,38 +2196,38 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
             {/* Modal de Detalle de Celda: Comprobante PDF + Factura SRI */}
             {activeCellModal && (
-                <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="relative w-full max-w-xl bg-slate-900 border border-white/10 rounded-[2.5rem] shadow-2xl p-6 overflow-hidden flex flex-col gap-6 text-white">
+                <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-[#020b14]/85 backdrop-blur-xl animate-in fade-in duration-300 font-sans">
+                    <div className="relative w-full max-w-xl bg-[#051424]/95 border border-white/10 border-t-white/20 rounded-[2.5rem] shadow-2xl p-6 overflow-hidden flex flex-col gap-6 text-white backdrop-blur-2xl">
                         {/* Header */}
                         <div className="flex items-start justify-between border-b border-white/10 pb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="p-3 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-2xl">
+                            <div className="flex items-center gap-3.5">
+                                <div className="p-3 bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 rounded-2xl shadow-sm">
                                     <LucideIcons.ShieldCheck size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black tracking-tight text-white font-premium">
+                                    <h3 className="text-base font-black tracking-tight text-white font-display">
                                         Comprobante & Facturación SRI
                                     </h3>
-                                    <p className="text-xs font-semibold text-slate-400">
-                                        {activeCellModal.client.tradeName || activeCellModal.client.name} — <span className="font-mono text-emerald-400">{activeCellModal.period}</span> ({activeCellModal.obType})
+                                    <p className="text-xs font-semibold text-slate-400 font-mono">
+                                        {activeCellModal.client.tradeName || activeCellModal.client.name} — <span className="font-mono text-[#00A896]">{activeCellModal.period}</span> ({activeCellModal.obType})
                                     </p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setActiveCellModal(null)}
-                                className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+                                className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all active:scale-95 cursor-pointer"
                             >
                                 <LucideIcons.X size={18} />
                             </button>
                         </div>
 
                         {/* 📑 PESTAÑAS DE CLASIFICACIÓN DE COMPROBANTES */}
-                        <div className="flex items-center gap-1.5 p-1 bg-white/5 rounded-2xl border border-white/10">
+                        <div className="flex items-center gap-1.5 p-1 bg-[#020b14]/60 rounded-2xl border border-white/10 font-mono">
                             <button
                                 onClick={() => setModalTab('declaracion')}
-                                className={`flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
                                     modalTab === 'declaracion'
-                                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 scale-[1.02]'
+                                        ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-lg shadow-[#00A896]/25 border border-white/10'
                                         : 'text-slate-400 hover:text-white'
                                 }`}
                             >
@@ -2374,9 +2236,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </button>
                             <button
                                 onClick={() => setModalTab('factura')}
-                                className={`flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
                                     modalTab === 'factura'
-                                        ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25 scale-[1.02]'
+                                        ? 'bg-gradient-to-r from-[#2B6AFF] to-indigo-600 text-white shadow-lg shadow-[#2B6AFF]/25 border border-white/10'
                                         : 'text-slate-400 hover:text-white'
                                 }`}
                             >
@@ -2385,14 +2247,14 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </button>
                             <button
                                 onClick={() => setModalTab('respaldos')}
-                                className={`flex-1 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                className={`flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
                                     modalTab === 'respaldos'
-                                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 scale-[1.02]'
+                                        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25 border border-white/10'
                                         : 'text-slate-400 hover:text-white'
                                 }`}
                             >
                                 <LucideIcons.FolderCheck size={14} />
-                                <span>📑 Retenciones & Respaldos</span>
+                                <span>📑 Respaldos</span>
                             </button>
                         </div>
 
@@ -2402,24 +2264,24 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             {modalTab === 'declaracion' && (
                                 <div className="space-y-4 animate-in fade-in duration-200">
                                     {/* Comprobante PDF */}
-                                    <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
+                                    <div className="p-4 bg-[#0b1326]/80 border border-white/10 rounded-2xl flex flex-col gap-3">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                                <LucideIcons.FileText size={16} className="text-emerald-400" />
-                                                <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                                <LucideIcons.FileText size={16} className="text-[#00A896]" />
+                                                <span className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">
                                                     Comprobante de Declaración PDF
                                                 </span>
                                             </div>
-                                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1 ${
+                                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 font-mono ${
                                                 activeCellModal.declaration.proof_file?.url 
-                                                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm shadow-emerald-500/20' 
+                                                    ? 'bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/40 shadow-sm shadow-[#00A896]/20' 
                                                     : activeCellModal.declaration.proof_file?.content 
                                                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' 
                                                     : 'bg-slate-800 text-slate-400 border border-white/10'
                                             }`}>
                                                 {activeCellModal.declaration.proof_file?.url ? (
                                                     <>
-                                                        <LucideIcons.Cloud size={11} className="text-emerald-400" />
+                                                        <LucideIcons.Cloud size={11} className="text-[#00A896]" />
                                                         <span>Almacenado en la Nube</span>
                                                     </>
                                                 ) : activeCellModal.declaration.proof_file?.content ? (
@@ -2445,20 +2307,20 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         </div>
 
                                         {activeCellModal.declaration.proof_file?.url ? (
-                                            <div className="rounded-xl overflow-hidden border border-white/10 bg-slate-950/60 max-h-48 relative group">
+                                            <div className="rounded-xl overflow-hidden border border-white/10 bg-[#020b14] max-h-48 relative group">
                                                 <iframe src={activeCellModal.declaration.proof_file.url} className="w-full h-44 border-none" title="Vista Previa SRI" />
                                                 <a 
                                                     href={activeCellModal.declaration.proof_file.url} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
-                                                    className="absolute top-2 right-2 p-1.5 bg-slate-900/80 hover:bg-slate-900 border border-white/20 rounded-lg text-slate-300 hover:text-white transition-all shadow-md"
+                                                    className="absolute top-2 right-2 p-1.5 bg-[#051424]/90 hover:bg-[#051424] border border-white/20 rounded-lg text-slate-300 hover:text-white transition-all shadow-md"
                                                     title="Abrir en pestaña nueva"
                                                 >
                                                     <LucideIcons.ExternalLink size={12} />
                                                 </a>
                                             </div>
                                         ) : activeCellModal.declaration.proof_file?.content ? (
-                                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-center justify-between">
+                                            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200 text-xs flex items-center justify-between font-mono">
                                                 <span className="text-[11px]">Este PDF está guardado en base64 local. Puedes migrarlo a la nube para reducir el gasto de Supabase.</span>
                                                 <button
                                                     onClick={async () => {
@@ -2476,7 +2338,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         await handleUploadProofPdf(fakeEvent);
                                                     }}
                                                     disabled={isUploadingProof}
-                                                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                                                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] rounded-lg transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
                                                 >
                                                     <LucideIcons.UploadCloud size={12} />
                                                     Migrar
@@ -2485,16 +2347,16 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         ) : null}
 
                                         {/* Acciones del Comprobante */}
-                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1 font-mono">
                                             {/* Input para subir o reemplazar PDF directamente a la nube */}
-                                            <label className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider cursor-pointer transition-all border ${
+                                            <label className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold uppercase tracking-wider cursor-pointer transition-all border ${
                                                 isUploadingProof 
                                                     ? 'bg-slate-800 text-slate-500 border-white/5 cursor-wait' 
-                                                    : 'bg-indigo-600/20 hover:bg-indigo-600/30 border-indigo-500/40 text-indigo-300 hover:text-white shadow-sm'
+                                                    : 'bg-[#2B6AFF]/15 hover:bg-[#2B6AFF]/25 border-[#2B6AFF]/30 text-[#2B6AFF] hover:text-white shadow-sm'
                                             }`}>
                                                 {isUploadingProof ? (
                                                     <>
-                                                        <LucideIcons.RefreshCw size={14} className="animate-spin text-indigo-400" />
+                                                        <LucideIcons.RefreshCw size={14} className="animate-spin text-[#2B6AFF]" />
                                                         <span>Subiendo a la Nube...</span>
                                                     </>
                                                 ) : (
@@ -2525,7 +2387,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                             toast.error("El archivo del comprobante no se pudo descargar");
                                                         }
                                                     }}
-                                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+                                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#00A896]/20 cursor-pointer border border-white/10"
                                                 >
                                                     <LucideIcons.Download size={14} />
                                                     Descargar PDF
@@ -2539,7 +2401,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     setActiveCellModal(null);
                                                     onPreviewReceipt(clientObj, decl);
                                                 }}
-                                                className="py-2.5 px-4 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                                className="py-2.5 px-4 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-white/10"
                                             >
                                                 <LucideIcons.Eye size={14} />
                                                 Ver Detalle
@@ -2548,7 +2410,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     </div>
 
                                     {/* Notificación WhatsApp al Cliente */}
-                                    <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
+                                    <div className="p-4 bg-[#0b1326]/80 border border-white/10 rounded-2xl flex flex-col gap-3 font-mono">
                                         {(() => {
                                             const currentCount = activeCellModal.declaration.notificationCount || 0;
                                             const isPaid = activeCellModal.declaration.status === DeclarationStatus.Pagada || !!activeCellModal.declaration.is_paid || activeCellModal.client.isCourtesy;
@@ -2556,7 +2418,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                                             let stageLabel = "Etapa 1: Notificación Inicial";
                                             let buttonLabel = `Enviar Comprobante WhatsApp (${getTimeBasedGreeting()})`;
-                                            let stageColor = "text-emerald-400";
+                                            let stageColor = "text-[#00A896]";
                                             let IconComponent = LucideIcons.Send;
 
                                             if (isNotified && !isPaid) {
@@ -2578,17 +2440,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-2">
                                                             <IconComponent size={16} className={stageColor} />
-                                                            <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
                                                                 Notificación WhatsApp ({stageLabel})
                                                             </span>
                                                         </div>
                                                         {isNotified ? (
-                                                            <span className="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                                            <span className="px-2.5 py-1 bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/30 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-[0_0_6px_rgba(0,168,150,0.4)]">
                                                                 <LucideIcons.CheckCheck size={12} />
                                                                 NOTIFICADO ({currentCount}x)
                                                             </span>
                                                         ) : (
-                                                            <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
+                                                            <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
                                                                 <LucideIcons.Bookmark size={12} />
                                                                 PENDIENTE DE NOTIFICAR
                                                             </span>
@@ -2598,7 +2460,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
                                                         <button
                                                             onClick={() => handleSendWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
-                                                            className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
+                                                            className="w-full sm:flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/20 cursor-pointer border border-white/10"
                                                         >
                                                             <IconComponent size={14} />
                                                             {buttonLabel}
@@ -2606,10 +2468,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                                                         <button
                                                             onClick={() => handleToggleWhatsAppNotification(activeCellModal.client, activeCellModal.period, activeCellModal.obType, activeCellModal.declaration)}
-                                                            className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
+                                                            className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
                                                                 activeCellModal.declaration.isNotifiedWhatsApp
-                                                                    ? 'bg-slate-800 hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border-slate-700 hover:border-rose-500/40'
-                                                                    : 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30'
+                                                                    ? 'bg-[#051424] hover:bg-rose-500/20 text-slate-300 hover:text-rose-300 border-white/10 hover:border-rose-500/40'
+                                                                    : 'bg-[#00A896]/20 hover:bg-[#00A896]/30 text-[#00A896] border-[#00A896]/30'
                                                             }`}
                                                             title="Cambiar marca de notificación sin enviar mensaje por WhatsApp"
                                                         >
@@ -2627,30 +2489,30 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             {/* PESTAÑA 2: FACTURA ELECTRÓNICA / RIDE */}
                             {modalTab === 'factura' && (
                                 <div className="space-y-4 animate-in fade-in duration-200">
-                                    <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
-                                        <div className="flex items-center justify-between">
+                                    <div className="p-4 bg-[#0b1326]/80 border border-white/10 rounded-2xl flex flex-col gap-3">
+                                        <div className="flex items-center justify-between font-mono">
                                             <div className="flex items-center gap-2">
-                                                <LucideIcons.Receipt size={16} className={activeCellModal.realInvoice ? "text-sky-400" : "text-amber-400"} />
-                                                <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                                <LucideIcons.Receipt size={16} className={activeCellModal.realInvoice ? "text-[#2B6AFF]" : "text-amber-400"} />
+                                                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
                                                     Factura Electrónica de Honorarios SRI
                                                 </span>
                                             </div>
                                             {activeCellModal.realInvoice ? (
-                                                <span className="px-2 py-0.5 bg-sky-500/20 text-sky-300 border border-sky-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                                <span className="px-2.5 py-1 bg-[#2B6AFF]/20 text-[#2B6AFF] border border-[#2B6AFF]/30 rounded-full text-[9px] font-bold uppercase tracking-wider">
                                                     ✅ FACTURA REGISTRADA
                                                 </span>
                                             ) : (
-                                                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                                <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[9px] font-bold uppercase tracking-wider">
                                                     ⚠️ SIN FACTURA EN REGISTRO
                                                 </span>
                                             )}
                                         </div>
 
                                         {activeCellModal.realInvoice ? (
-                                            <div className="space-y-2 bg-slate-950/60 p-3.5 rounded-xl border border-sky-500/20 font-mono text-xs">
+                                            <div className="space-y-2 bg-[#020b14] p-3.5 rounded-xl border border-[#2B6AFF]/20 font-mono text-xs">
                                                 <div className="flex justify-between text-slate-300 font-bold">
                                                     <span>Factura Autorizada SRI:</span>
-                                                    <span className="text-sky-400">001-001-{activeCellModal.realInvoice.secuencial}</span>
+                                                    <span className="text-[#2B6AFF]">001-001-{activeCellModal.realInvoice.secuencial}</span>
                                                 </div>
                                                 <div className="flex justify-between text-slate-400 text-[10px]">
                                                     <span>Fecha Autorización:</span>
@@ -2658,25 +2520,25 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                 </div>
                                                 <div className="flex justify-between text-slate-400 text-[10px]">
                                                     <span>Monto Total:</span>
-                                                    <span className="text-emerald-400 font-bold">${Number(activeCellModal.realInvoice.total || 0).toFixed(2)}</span>
+                                                    <span className="text-[#00A896] font-bold">${Number(activeCellModal.realInvoice.total || 0).toFixed(2)}</span>
                                                 </div>
                                                 <div className="text-[9px] text-slate-400 truncate border-t border-white/5 pt-1.5 mt-1">
                                                     Clave: <span className="text-slate-300">{activeCellModal.realInvoice.claveAcceso}</span>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <p className="text-xs text-slate-400 leading-relaxed bg-amber-500/5 p-3.5 rounded-xl border border-amber-500/20">
+                                            <p className="text-xs text-slate-400 leading-relaxed bg-amber-500/5 p-3.5 rounded-xl border border-amber-500/20 font-mono">
                                                 No consta factura electrónica autorizada emitida a este RUC ({activeCellModal.client.ruc}) para esta declaración en el registro local.
                                             </p>
                                         )}
 
-                                        <div className="flex items-center gap-2 pt-1">
+                                        <div className="flex items-center gap-2 pt-1 font-mono">
                                             {activeCellModal.realInvoice ? (
                                                 <button
                                                     onClick={() => {
                                                         printRideFromInvoice(activeCellModal.realInvoice, activeCellModal.client);
                                                     }}
-                                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-primary/20 cursor-pointer"
+                                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#2B6AFF]/20 cursor-pointer border border-white/10"
                                                 >
                                                     <LucideIcons.FileText size={14} />
                                                     Ver RIDE Factura (A4)
@@ -2691,7 +2553,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                         if (onNavigateToBilling) onNavigateToBilling(ruc, periodStr, description);
                                                         else toast.info(`Selecciona Facturación SRI para emitir comprobante a ${ruc}`);
                                                     }}
-                                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+                                                    className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 cursor-pointer border border-white/10"
                                                 >
                                                     <LucideIcons.Zap size={14} />
                                                     Emitir Factura SRI Ahora
@@ -2705,39 +2567,39 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             {/* PESTAÑA 3: RETENCIONES & RESPALDOS DE BÓVEDA */}
                             {modalTab === 'respaldos' && (
                                 <div className="space-y-4 animate-in fade-in duration-200">
-                                    <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl flex flex-col gap-3">
-                                        <div className="flex items-center justify-between">
+                                    <div className="p-4 bg-[#0b1326]/80 border border-white/10 rounded-2xl flex flex-col gap-3">
+                                        <div className="flex items-center justify-between font-mono">
                                             <div className="flex items-center gap-2">
                                                 <LucideIcons.FolderCheck size={16} className="text-indigo-400" />
-                                                <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                                                <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
                                                     Métricas Extraídas & Retenciones
                                                 </span>
                                             </div>
-                                            <span className="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                            <span className="px-2.5 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-[9px] font-bold uppercase tracking-wider">
                                                 Métricas SRI
                                             </span>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                                            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                            <div className="bg-[#020b14] p-2.5 rounded-xl border border-white/5">
                                                 <div className="text-[10px] text-slate-400 font-bold uppercase">Ventas 15%:</div>
-                                                <div className="text-emerald-400 font-extrabold">${(activeCellModal.declaration.proof_file?.metadata?.ventas15 || 0).toFixed(2)}</div>
+                                                <div className="text-[#00A896] font-black text-sm">${(activeCellModal.declaration.proof_file?.metadata?.ventas15 || 0).toFixed(2)}</div>
                                             </div>
-                                            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                            <div className="bg-[#020b14] p-2.5 rounded-xl border border-white/5">
                                                 <div className="text-[10px] text-slate-400 font-bold uppercase">Ventas 0%:</div>
-                                                <div className="text-slate-200 font-extrabold">${(activeCellModal.declaration.proof_file?.metadata?.ventas0 || 0).toFixed(2)}</div>
+                                                <div className="text-slate-200 font-black text-sm">${(activeCellModal.declaration.proof_file?.metadata?.ventas0 || 0).toFixed(2)}</div>
                                             </div>
-                                            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                            <div className="bg-[#020b14] p-2.5 rounded-xl border border-white/5">
                                                 <div className="text-[10px] text-slate-400 font-bold uppercase">Compras 15%:</div>
-                                                <div className="text-sky-400 font-extrabold">${(activeCellModal.declaration.proof_file?.metadata?.compras15 || 0).toFixed(2)}</div>
+                                                <div className="text-sky-400 font-black text-sm">${(activeCellModal.declaration.proof_file?.metadata?.compras15 || 0).toFixed(2)}</div>
                                             </div>
-                                            <div className="bg-slate-950/60 p-2.5 rounded-xl border border-white/5">
+                                            <div className="bg-[#020b14] p-2.5 rounded-xl border border-white/5">
                                                 <div className="text-[10px] text-slate-400 font-bold uppercase">Retenciones IVA:</div>
-                                                <div className="text-indigo-400 font-extrabold">${(activeCellModal.declaration.proof_file?.metadata?.retIva || 0).toFixed(2)}</div>
+                                                <div className="text-indigo-400 font-black text-sm">${(activeCellModal.declaration.proof_file?.metadata?.retIva || 0).toFixed(2)}</div>
                                             </div>
                                         </div>
 
-                                        <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] font-semibold text-slate-400">
+                                        <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] font-semibold text-slate-400 font-mono">
                                             <span>Documentos en Bóveda del Cliente:</span>
                                             <span className="text-indigo-400 font-bold">{(activeCellModal.client.vaultFiles || []).length} archivos</span>
                                         </div>
@@ -2747,17 +2609,17 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         </div>
 
                         {/* Footer */}
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10 pt-4">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10 pt-4 font-mono">
                             <button
                                 onClick={() => handleOpenSriPortal(activeCellModal.client)}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95"
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer"
                             >
                                 <LucideIcons.Key size={14} />
                                 <span>🔑 Abrir SRI & Cargar Credenciales</span>
                             </button>
                             <button
                                 onClick={() => setActiveCellModal(null)}
-                                className="w-full sm:w-auto px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all"
+                                className="w-full sm:w-auto px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-bold transition-all border border-white/10 cursor-pointer"
                             >
                                 Cerrar
                             </button>
@@ -2776,7 +2638,6 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             calculatedOpacity = 1;
                         } else {
                             // Entre encabezado y fila 3/4 (100px a 360px)
-                            // 1a fila (~100px): ~15% de opacidad. Crece suavemente a 100% al llegar al cliente 3 u 4.
                             calculatedOpacity = 0.15 + ((scrollY - 100) / 260) * 0.85;
                         }
                     }
@@ -2790,10 +2651,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 opacity: isHeader ? 0 : calculatedOpacity
                             }}
                         >
-                            <div className="backdrop-blur-2xl bg-slate-900/90 dark:bg-slate-950/90 border border-slate-700/60 dark:border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_20px_rgba(59,130,246,0.15)] group-hover:!opacity-100 rounded-full px-3.5 py-2 flex items-center gap-2 sm:gap-3 text-slate-900 dark:text-white transition-all duration-300">
+                            <div className="backdrop-blur-2xl bg-[#051424]/95 border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_20px_rgba(0,168,150,0.2)] group-hover:!opacity-100 rounded-full px-4 py-2.5 flex items-center gap-2 sm:gap-3 text-white transition-all duration-300 font-mono">
                                 
                                 {/* Selector de Modo (Mensual / Semestral / Renta) */}
-                                <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-white/5 p-1 rounded-full border border-slate-200/50 dark:border-white/10">
+                                <div className="flex items-center gap-1 bg-[#020b14]/70 p-1 rounded-full border border-white/10">
                                     {[
                                         { id: 'dock-iva-mensual', label: 'Mensual', short: 'M', mode: 'IVA' as MatrixMode, freq: 'Mensual' as IvaFrequency, icon: LucideIcons.Calendar },
                                         { id: 'dock-iva-semestral', label: 'Semestral', short: 'S', mode: 'IVA' as MatrixMode, freq: 'Semestral' as IvaFrequency, icon: LucideIcons.CalendarRange },
@@ -2807,10 +2668,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                     setMatrixMode(tab.mode);
                                                     if (tab.mode === 'IVA') setFrequency(tab.freq);
                                                 }}
-                                                className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 ${
+                                                className={`px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
                                                     isActive
-                                                        ? 'bg-primary text-white shadow-lg shadow-primary/40 scale-[1.03]'
-                                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10'
+                                                        ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-lg shadow-[#00A896]/30 scale-[1.03] border border-white/10'
+                                                        : 'text-slate-400 hover:text-white hover:bg-white/5'
                                                 }`}
                                                 title={`Cambiar vista a ${tab.label}`}
                                             >
@@ -2823,7 +2684,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 </div>
 
                                 {/* Separador */}
-                                <div className="h-5 w-px bg-slate-300/60 dark:bg-white/15 hidden sm:block" />
+                                <div className="h-5 w-px bg-white/15 hidden sm:block" />
 
                                 {/* Buscador Rápido Flotante */}
                                 <div className="relative flex-1 min-w-[110px] max-w-[170px] sm:max-w-[200px]">
@@ -2833,10 +2694,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                         placeholder="Filtrar cliente..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-8 pr-6 py-1.5 bg-slate-100/80 dark:bg-white/5 hover:bg-slate-200/50 dark:hover:bg-white/10 focus:bg-white dark:focus:bg-slate-900 border border-slate-200/50 dark:border-white/10 focus:border-primary/50 rounded-full text-[11px] font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none transition-all"
+                                        className="w-full pl-8 pr-6 py-1.5 bg-[#020b14]/70 hover:bg-[#020b14] focus:bg-[#020b14] border border-white/10 focus:border-[#00A896]/50 rounded-full text-[11px] font-medium text-white placeholder:text-slate-500 focus:outline-none transition-all"
                                     />
                                     {searchTerm && (
-                                        <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 dark:hover:text-white">
+                                        <button onClick={() => setSearchTerm('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white">
                                             <LucideIcons.X size={10} />
                                         </button>
                                     )}
@@ -2851,7 +2712,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             const main = document.querySelector('main');
                                             if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
                                         }}
-                                        className="p-2 rounded-full bg-primary/10 dark:bg-primary/20 hover:bg-primary text-primary hover:text-white border border-primary/20 dark:border-primary/30 transition-all duration-300 shadow-sm hover:scale-110 active:scale-95 shrink-0"
+                                        className="p-2 rounded-full bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 transition-all duration-300 shadow-sm hover:scale-110 active:scale-95 shrink-0 cursor-pointer"
                                         title="Subir al inicio de la Matriz (Scroll to Top)"
                                     >
                                         <LucideIcons.ArrowUp size={14} strokeWidth={2.5} />
@@ -2864,7 +2725,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             const main = document.querySelector('main');
                                             if (main) main.scrollTo({ top: main.scrollHeight, behavior: 'smooth' });
                                         }}
-                                        className="p-2 rounded-full bg-slate-100/80 dark:bg-white/5 hover:bg-primary text-slate-600 dark:text-slate-300 hover:text-white border border-slate-200/60 dark:border-white/10 hover:border-primary transition-all duration-300 shadow-sm hover:scale-110 active:scale-95 shrink-0"
+                                        className="p-2 rounded-full bg-white/5 hover:bg-[#2B6AFF] text-slate-300 hover:text-white border border-white/10 hover:border-[#2B6AFF] transition-all duration-300 shadow-sm hover:scale-110 active:scale-95 shrink-0 cursor-pointer"
                                         title="Bajar al final de la Matriz (Scroll to Bottom)"
                                     >
                                         <LucideIcons.ArrowDown size={14} strokeWidth={2.5} />
@@ -2872,7 +2733,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                 </div>
 
                                 {/* Total Clientes Badge */}
-                                <span className="hidden md:inline-flex px-2.5 py-1 rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-[9px] font-mono font-bold text-slate-600 dark:text-slate-400">
+                                <span className="hidden md:inline-flex px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[9px] font-mono font-bold text-slate-400">
                                     {filteredClients.length}
                                 </span>
                             </div>
@@ -2884,27 +2745,27 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
             {/* Modal Emergente Post-Subida de Comprobante (3 Acciones Rápidas) */}
             {postUploadModal && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[10000] flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="bg-slate-900 border border-white/15 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-300">
+                <div className="fixed inset-0 bg-[#020b14]/85 backdrop-blur-xl z-[10000] flex items-center justify-center p-4 animate-in fade-in duration-300 font-sans">
+                    <div className="bg-[#051424]/95 border border-white/10 border-t-white/20 rounded-[2.5rem] p-6 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95 duration-300 backdrop-blur-2xl">
                         <div className="flex items-center justify-between border-b border-white/10 pb-4">
                             <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
+                                <div className="p-3 bg-[#00A896]/15 text-[#00A896] rounded-2xl border border-[#00A896]/30 shadow-sm">
                                     <LucideIcons.FileCheck size={22} />
                                 </div>
                                 <div>
-                                    <h3 className="text-sm font-black text-white uppercase tracking-wider">Comprobante Registrado</h3>
+                                    <h3 className="text-sm font-black text-white uppercase tracking-wider font-display">Comprobante Registrado</h3>
                                     <p className="text-[10px] text-slate-400 font-mono mt-0.5">{postUploadModal.client.tradeName || postUploadModal.client.name}</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setPostUploadModal(null)}
-                                className="p-2 text-slate-400 hover:text-white rounded-full bg-white/5 hover:bg-white/10 transition-all"
+                                className="p-2 text-slate-400 hover:text-white rounded-full bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
                             >
                                 <LucideIcons.X size={16} />
                             </button>
                         </div>
 
-                        <div className="p-4 bg-slate-950/60 rounded-2xl border border-white/5 space-y-2 text-xs">
+                        <div className="p-4 bg-[#0b1326]/80 rounded-2xl border border-white/5 space-y-2 text-xs font-mono">
                             <div className="flex justify-between text-slate-300">
                                 <span className="text-slate-400">Obligación:</span>
                                 <span className="font-bold text-white uppercase">{postUploadModal.obType} - {formatPeriodForDisplay(postUploadModal.period)}</span>
@@ -2915,7 +2776,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                             </div>
                         </div>
 
-                        <div className="space-y-2.5 pt-1">
+                        <div className="space-y-2.5 pt-1 font-mono">
                             {/* Acción 1: Notificar por WhatsApp de una vez */}
                             <button
                                 onClick={() => {
@@ -2923,7 +2784,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     setPostUploadModal(null);
                                     handleSendWhatsAppNotification(modalData.client, modalData.period, modalData.obType, modalData.declaration);
                                 }}
-                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 border border-white/10 cursor-pointer active:scale-95"
                             >
                                 <LucideIcons.MessageSquare size={16} />
                                 📲 Enviar Notificación WhatsApp ({getTimeBasedGreeting()})
@@ -2948,7 +2809,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     }
                                     toast.success(`Declaración marcada como PAGADA`);
                                 }}
-                                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-[#0b1326] hover:bg-slate-800 text-[#00A896] border border-[#00A896]/30 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                             >
                                 <LucideIcons.CheckCircle2 size={16} />
                                 💳 Marcar como Pagado Ahora
@@ -2960,7 +2821,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     toast.info("Comprobante guardado. Notificación dejada PENDIENTE para después.");
                                     setPostUploadModal(null);
                                 }}
-                                className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                                className="w-full py-2.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border border-white/10 cursor-pointer"
                             >
                                 ✕ Cerrar (Notificar Luego)
                             </button>
