@@ -782,43 +782,42 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
     return (
         <div className="space-y-6 animate-fade-in pb-20 relative aurora-zen min-h-screen">
             <div className="relative z-20 px-4 sm:px-0">
-                <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 dark:border-white/[0.06] bg-white dark:bg-[hsl(222,47%,4%)] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] dark:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+                <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/80 dark:border-white/10 bg-white/95 dark:bg-[#051424]/90 shadow-2xl backdrop-blur-2xl transition-all duration-500">
 
                     {/* Mesh gradient background */}
                     <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-radial from-blue-500/5 to-transparent blur-3xl" />
-                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-radial from-emerald-500/5 to-transparent blur-3xl" />
-                        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23000%22%20fill-opacity%3D%220.015%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-40 dark:opacity-20" />
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-radial from-[#2B6AFF]/10 to-transparent blur-3xl" />
+                        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-radial from-[#00A896]/10 to-transparent blur-3xl" />
+                        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23000%22%20fill-opacity%3D%220.015%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-40 dark:opacity-10" />
                     </div>
 
                     {/* ── TOP STRIPE ── */}
                     <div className="px-6 sm:px-10 pt-8 pb-6 sm:pt-10 relative z-10">
                         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
 
-                            {/* ── BRAND BLOCK ── */}
+                            {/* ── BRAND BLOCK (Stitch Nueva Luz 3.0) ── */}
                             <div className="flex flex-col gap-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
-                                        <div className="relative w-2 h-2 rounded-full bg-emerald-500">
-                                            <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00A896]/10 border border-[#00A896]/30 backdrop-blur-md">
+                                        <div className="relative w-2 h-2 rounded-full bg-[#00A896]">
+                                            <div className="absolute inset-0 rounded-full bg-[#00A896] animate-ping opacity-60" />
                                         </div>
-                                        <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-[0.3em]">Sistema Activo</span>
+                                        <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.25em] font-mono">SISTEMA ACTIVO · SRI 2026</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                                        <Database size={10} className="text-slate-400" />
-                                        <span className="text-[10px] font-bold text-slate-400 tech-font">Firebase Live</span>
+                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+                                        <Database size={11} className="text-[#00A896]" />
+                                        <span className="text-[10px] font-bold text-slate-400 font-mono">Motor Nueva Luz 3.0</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-[-0.04em] leading-none">
-                                        Panel
+                                    <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none font-display">
+                                        CENTRO DE CONTROL
                                         <span className="ml-3 relative inline-block">
-                                            <span className="relative z-10 bg-gradient-to-br from-blue-600 to-blue-500 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">Tributario</span>
-                                            <span className="absolute -inset-1 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 blur-xl rounded-lg" />
+                                            <span className="relative z-10 bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF] bg-clip-text text-transparent">TRIBUTARIO</span>
                                         </span>
                                     </h1>
-                                    <p className="mt-2 text-sm text-slate-400 dark:text-slate-500 font-medium">
-                                        Gestión interna · <span className="text-slate-600 dark:text-slate-400 font-semibold">{kpis.total} clientes activos</span>
+                                    <p className="mt-2.5 text-sm text-slate-500 dark:text-slate-400 font-light">
+                                        Gestión contable de élite y automatización SRI · <span className="text-[#00A896] font-semibold font-mono">{kpis.total} clientes activos</span>
                                     </p>
                                 </div>
                             </div>
@@ -831,8 +830,8 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         onClick={() => setShowIntelligencePanels(p => !p)}
                                         className={`p-3.5 rounded-2xl border transition-all duration-300 flex items-center justify-center shadow-sm shrink-0 ${
                                             showIntelligencePanels 
-                                                ? 'bg-blue-600/10 border-blue-500/20 text-blue-600 dark:text-blue-400' 
-                                                : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-white'
+                                                ? 'bg-[#00A896]/15 border-[#00A896]/30 text-[#00A896]' 
+                                                : 'bg-white dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                         }`}
                                         title={showIntelligencePanels ? "Modo minimalista (ocultar paneles)" : "Mostrar paneles de control e inteligencia"}
                                     >
@@ -841,10 +840,10 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <button
                                         onClick={() => setShowUploader(p => !p)}
                                         disabled={isProcessing}
-                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl font-bold text-[11px] uppercase tracking-[0.2em] hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-50 group font-premium ${
+                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider hover:scale-[1.02] transition-all duration-300 shadow-xl disabled:opacity-50 group font-mono ${
                                             showUploader 
-                                                ? 'bg-emerald-600 dark:bg-emerald-500 text-white shadow-emerald-500/25' 
-                                                : 'bg-blue-600 dark:bg-blue-500 text-white shadow-blue-500/25'
+                                                ? 'bg-[#00A896] text-white shadow-[#00A896]/30' 
+                                                : 'bg-gradient-to-r from-[#00A896] to-[#028090] text-white shadow-[#00A896]/20'
                                         }`}
                                     >
                                         {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} className="group-hover:-translate-y-0.5 transition-transform" />}
@@ -864,36 +863,36 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                         />
                     </div>
 
-                    {/* ── KPI STRIP ── */}
+                    {/* ── TELEMETRY STRIP (4 LUXURY FISCAL KPI CARDS) ── */}
                     <div className="px-6 sm:px-10 pb-6 relative z-10">
-                        <div className="glass-card-premium p-0 relative overflow-hidden flex sm:grid sm:grid-cols-4 overflow-x-auto snap-x snap-mandatory hide-scrollbar">
+                        <div className="p-0 relative overflow-hidden flex sm:grid sm:grid-cols-4 overflow-x-auto snap-x snap-mandatory hide-scrollbar rounded-3xl border border-slate-200/70 dark:border-white/10 bg-slate-50/50 dark:bg-black/40 backdrop-blur-xl">
                             {/* KPI 1: Clientes */}
                             <button
                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
-                                className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-100 dark:border-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
+                                className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-200/50 dark:border-white/5 hover:bg-slate-100/50 dark:hover:bg-white/5 transition-colors text-left"
                             >
-                                <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/25 group-hover:scale-110 transition-transform duration-300 shrink-0">
+                                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-500 to-[#2B6AFF] text-white shadow-lg shadow-[#2B6AFF]/25 group-hover:scale-110 transition-transform duration-300 shrink-0">
                                     <Users size={20} strokeWidth={2} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Total Clientes</p>
-                                    <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">{kpis.total}</p>
-                                    <p className="text-[10px] text-slate-400 mt-1">ir a expedientes</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1 font-mono">Total Clientes</p>
+                                    <p className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none font-mono">{kpis.total}</p>
+                                    <p className="text-[10px] text-[#00A896] mt-1 font-mono">ir a expedientes →</p>
                                 </div>
                             </button>
 
                             {/* KPI 2: Facturación */}
                             <button
                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'all' } })}
-                                className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-100 dark:border-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
+                                className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-200/50 dark:border-white/5 hover:bg-slate-100/50 dark:hover:bg-white/5 transition-colors text-left"
                             >
-                                <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 group-hover:scale-110 transition-transform duration-300 shrink-0">
+                                <div className="p-3.5 rounded-2xl bg-gradient-to-br from-[#00A896] to-teal-600 text-white shadow-lg shadow-[#00A896]/30 group-hover:scale-110 transition-transform duration-300 shrink-0">
                                     <TrendingUp size={20} strokeWidth={2} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Facturación Est.</p>
-                                    <p className="text-3xl font-black tracking-tighter leading-none text-emerald-600 dark:text-emerald-400">${Math.round(kpis.projectedIncome)}</p>
-                                    <p className="text-[10px] text-slate-400 mt-1">ingreso mensual</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1 font-mono">Facturación Est.</p>
+                                    <p className="text-3xl font-extrabold tracking-tight leading-none text-[#00A896] font-mono">${Math.round(kpis.projectedIncome).toLocaleString()}</p>
+                                    <p className="text-[10px] text-slate-400 mt-1 font-mono">ingreso proyectado</p>
                                 </div>
                             </button>
 
@@ -908,21 +907,21 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 return (
                                     <button
                                         onClick={() => navigate('clients', { initialFilter: { hasMissingPdf: true } })}
-                                        className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-100 dark:border-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
+                                        className="group flex-none w-[55vw] sm:w-auto snap-center flex items-center gap-4 p-6 sm:p-7 border-r border-slate-200/50 dark:border-white/5 hover:bg-slate-100/50 dark:hover:bg-white/5 transition-colors text-left"
                                     >
-                                        <div className={`p-3 rounded-2xl text-white shadow-lg shrink-0 group-hover:scale-110 transition-transform duration-300 ${
+                                        <div className={`p-3.5 rounded-2xl text-white shadow-lg shrink-0 group-hover:scale-110 transition-transform duration-300 ${
                                             hasMissing
-                                                ? 'bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-400/25'
-                                                : 'bg-gradient-to-br from-slate-400 to-slate-500 shadow-slate-400/25'
+                                                ? 'bg-gradient-to-br from-amber-400 to-[#C9A96E] shadow-amber-400/25'
+                                                : 'bg-gradient-to-br from-slate-500 to-slate-600 shadow-slate-500/20'
                                         }`}>
                                             <Vault size={20} strokeWidth={2} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-1">Archivo Digital</p>
-                                            <p className={`text-3xl font-black tracking-tighter leading-none ${
-                                                hasMissing ? 'text-amber-500' : 'text-slate-300 dark:text-slate-600'
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1 font-mono">Archivo Digital</p>
+                                            <p className={`text-3xl font-extrabold tracking-tight leading-none font-mono ${
+                                                hasMissing ? 'text-[#C9A96E]' : 'text-slate-300 dark:text-slate-500'
                                             }`}>{missingPdfCount}</p>
-                                            <p className="text-[10px] text-slate-400 mt-1">{hasMissing ? 'sin comprobante' : 'bóveda completa ✓'}</p>
+                                            <p className="text-[10px] text-slate-400 mt-1 font-mono">{hasMissing ? 'sin comprobante' : 'bóveda completa ✓'}</p>
                                         </div>
                                     </button>
                                 );
@@ -931,21 +930,21 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                             {/* KPI 4: Cartera por Cobrar */}
                             <button
                                 onClick={() => navigate('clients', { initialFilter: { activeGroupTab: 'cobros' } })}
-                                className="group flex-none w-[60vw] sm:w-auto snap-center flex flex-col justify-center p-6 sm:p-7 relative overflow-hidden hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors text-left"
+                                className="group flex-none w-[60vw] sm:w-auto snap-center flex flex-col justify-center p-6 sm:p-7 relative overflow-hidden hover:bg-slate-100/50 dark:hover:bg-white/5 transition-colors text-left"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                                 <div className="relative z-10">
                                     <div className="flex items-center gap-2 mb-2">
-                                        <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-500 group-hover:scale-110 transition-transform">
+                                        <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 group-hover:scale-110 transition-transform">
                                             <Wallet size={14} />
                                         </div>
-                                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Por Cobrar</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] font-mono">Por Cobrar</p>
                                     </div>
                                     <div className="flex items-baseline gap-2 mb-3">
-                                        <span className={`text-3xl font-black tracking-tighter leading-none ${
-                                            kpis.pendingCollectionsAmount > 0 ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'
-                                        }`}>${Math.round(kpis.pendingCollectionsAmount)}</span>
-                                        <span className="text-xs text-slate-400 font-medium">{kpis.pendingCollectionsCount} c. activos</span>
+                                        <span className={`text-3xl font-extrabold tracking-tight leading-none font-mono ${
+                                            kpis.pendingCollectionsAmount > 0 ? 'text-rose-400' : 'text-[#00A896]'
+                                        }`}>${Math.round(kpis.pendingCollectionsAmount).toLocaleString()}</span>
+                                        <span className="text-xs text-slate-400 font-mono">{kpis.pendingCollectionsCount} c.</span>
                                     </div>
                                     {(() => {
                                         const collectedPercent = kpis.projectedIncome > 0
@@ -953,18 +952,18 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                             : 100;
                                         return (
                                             <>
-                                                <div className="w-full h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                                                <div className="w-full h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                                                     <div
                                                         className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                                                            collectedPercent >= 80 ? 'bg-gradient-to-r from-emerald-500 to-teal-400' :
-                                                            collectedPercent >= 50 ? 'bg-gradient-to-r from-amber-400 to-orange-400' :
+                                                            collectedPercent >= 80 ? 'bg-gradient-to-r from-[#00A896] to-teal-400' :
+                                                            collectedPercent >= 50 ? 'bg-gradient-to-r from-amber-400 to-[#C9A96E]' :
                                                             'bg-gradient-to-r from-rose-500 to-red-400'
                                                         }`}
                                                         style={{ width: `${collectedPercent}%` }}
                                                     />
                                                 </div>
                                                 <div className="flex items-center justify-between mt-1.5">
-                                                    <p className="text-[10px] text-slate-400">{collectedPercent}% cobrado</p>
+                                                    <p className="text-[10px] text-slate-400 font-mono">{collectedPercent}% cobrado</p>
                                                     <ArrowRight size={12} className="text-rose-400 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                                                 </div>
                                             </>
@@ -1126,30 +1125,30 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             )}
 
             {/* ══════════════════════════════════════════════════════
-                CENTRO OPERATIVO Y MESA DE TRABAJO TÁCTICA v4.0
+                CENTRO OPERATIVO Y MESA DE TRABAJO TÁCTICA (Stitch Nueva Luz 3.0)
             ══════════════════════════════════════════════════════ */}
             <div className="relative z-30 px-4 sm:px-0 mt-6">
-                <div className="bg-white dark:bg-[hsl(222,47%,4%)] rounded-[2.5rem] border border-slate-200/60 dark:border-white/[0.06] p-6 sm:p-8 shadow-xl shadow-slate-200/40 dark:shadow-none backdrop-blur-xl">
+                <div className="bg-white/95 dark:bg-[#051424]/90 rounded-[2.5rem] border border-slate-200/80 dark:border-white/10 p-6 sm:p-8 shadow-2xl backdrop-blur-2xl transition-all duration-500">
                     
                     {/* HUB NAVIGATION TABS */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-100 dark:border-white/[0.05]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-200/60 dark:border-white/10">
                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25">
+                            <div className="p-2.5 rounded-2xl bg-gradient-to-br from-[#00A896] to-[#2B6AFF] text-white shadow-lg shadow-[#00A896]/30">
                                 <Command size={18} strokeWidth={2.5} />
                             </div>
                             <div>
-                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.15em] font-premium">Centro Operativo Táctico</h3>
-                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Gestión Inmediata & Herramientas Rápidas</p>
+                                <h3 className="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-[0.15em] font-display">CENTRO OPERATIVO TÁCTICO</h3>
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5 font-mono">Gestión Inmediata & Herramientas Rápidas</p>
                             </div>
                         </div>
 
                         {/* TAB PILLS */}
-                        <div className="flex items-center gap-1.5 bg-slate-100/80 dark:bg-white/[0.04] p-1.5 rounded-2xl border border-slate-200/50 dark:border-white/5 overflow-x-auto hide-scrollbar">
+                        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-black/40 p-1.5 rounded-2xl border border-slate-200/70 dark:border-white/10 overflow-x-auto hide-scrollbar">
                             <button
                                 onClick={() => setHubTab('operativa')}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all duration-300 ${
                                     hubTab === 'operativa'
-                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                        ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }`}
                             >
@@ -1157,7 +1156,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <span>Mesa Operativa</span>
                                 {mesaTrabajoList.length > 0 && (
                                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                                        hubTab === 'operativa' ? 'bg-white/20 text-white' : 'bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                                        hubTab === 'operativa' ? 'bg-white/20 text-white' : 'bg-[#00A896]/15 text-[#00A896]'
                                     }`}>
                                         {mesaTrabajoList.length}
                                     </span>
@@ -1166,9 +1165,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                             <button
                                 onClick={() => setHubTab('cargas')}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all duration-300 ${
                                     hubTab === 'cargas'
-                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                        ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }`}
                             >
@@ -1185,9 +1184,9 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                             <button
                                 onClick={() => setHubTab('alertas')}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all duration-300 ${
                                     hubTab === 'alertas'
-                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                                        ? 'bg-[#C9A96E] text-slate-950 font-extrabold shadow-md shadow-[#C9A96E]/30'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }`}
                             >
@@ -1195,7 +1194,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 <span>Alertas Especiales</span>
                                 {(activeRentaRefunds.length + expiringSignatures.length) > 0 && (
                                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                                        hubTab === 'alertas' ? 'bg-white/20 text-white' : 'bg-rose-500/15 text-rose-500'
+                                        hubTab === 'alertas' ? 'bg-slate-900/30 text-slate-950' : 'bg-amber-500/15 text-amber-500'
                                     }`}>
                                         {activeRentaRefunds.length + expiringSignatures.length}
                                     </span>
@@ -1204,14 +1203,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
 
                             <button
                                 onClick={() => setHubTab('firmas')}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all duration-300 ${
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider font-mono transition-all duration-300 ${
                                     hubTab === 'firmas'
-                                        ? 'bg-teal-600 text-white shadow-md shadow-teal-500/20'
+                                        ? 'bg-gradient-to-r from-teal-500 to-[#00A896] text-white shadow-md shadow-teal-500/25'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }`}
                             >
                                 <KeyRound size={14} />
-                                <span>Firmas</span>
+                                <span>Firmas .P12</span>
                                 {signatureData.withoutSignature.length > 0 && (
                                     <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
                                         hubTab === 'firmas' ? 'bg-white/20 text-white' : 'bg-teal-500/15 text-teal-600 dark:text-teal-400'

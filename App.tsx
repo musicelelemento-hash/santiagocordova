@@ -691,28 +691,28 @@ const App: React.FC = () => {
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
         />
         <div className={`flex-1 flex flex-col min-w-0 relative z-10 transition-all duration-500 ${(isSidebarCollapsed || !!clientToView) ? 'md:pl-[84px]' : 'md:pl-[280px]'}`}>
-          <header className="hidden md:flex items-center justify-between p-6 px-10 bg-white/40 dark:bg-surface/60 backdrop-blur-3xl border-b border-slate-200/50 dark:border-white/10 relative z-30 transition-all duration-700 no-print">
+          <header className="hidden md:flex items-center justify-between p-5 px-10 bg-white/90 dark:bg-[#051424]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/10 relative z-30 transition-all duration-500 no-print">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-light tracking-tight text-slate-800 dark:text-white capitalize">
-                {activeScreen === 'home' ? 'Resumen General' : activeScreen.replace('_', ' ')}
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white capitalize font-display">
+                {activeScreen === 'home' ? 'Centro de Control' : activeScreen.replace('_', ' ')}
               </h1>
             </div>
 
-            {/* Universal Search Bar */}
+            {/* Universal Search Bar (Stitch High-Tech Glass) */}
             <div className="relative w-80 group max-w-md no-print">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
-                    <Search className="text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" size={16} />
+                    <Search className="text-slate-400 group-focus-within:text-[#00A896] transition-colors" size={15} />
                 </div>
                 <input 
                     type="text"
-                    placeholder="Buscar por RUC o nombre..."
+                    placeholder="Buscar por RUC o cliente..."
                     value={globalSearchQuery}
                     onChange={(e) => {
                         setGlobalSearchQuery(e.target.value);
                         setIsGlobalDropdownOpen(true);
                     }}
                     onFocus={() => setIsGlobalDropdownOpen(true)}
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-premium uppercase tracking-wider"
+                    className="w-full pl-10 pr-10 py-2.5 bg-slate-100 dark:bg-black/40 border border-slate-200/80 dark:border-white/10 rounded-2xl text-xs font-medium outline-none focus:ring-2 focus:ring-[#00A896]/20 focus:border-[#00A896] transition-all font-mono tracking-wider"
                 />
             {globalSearchQuery ? (
                 <button 
