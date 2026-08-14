@@ -4,7 +4,8 @@ import {
     ShoppingBag, PhoneCall, AlertTriangle, CheckCircle2, ArrowRight,
     Search, FileText, Check, Copy, ExternalLink, Download, Eye, EyeOff,
     Globe, RefreshCw, UploadCloud, UserCheck, ShieldCheck, Laptop, Lock, Info,
-    FolderDown, ClipboardCopy, Key, Shield, Plus, FileCode, Upload, User
+    FolderDown, ClipboardCopy, Key, Shield, Plus, FileCode, Upload, User,
+    Trash2, CheckSquare, Square, AlertOctagon, X, Sliders
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -24,7 +25,7 @@ interface FacturadoresScreenProps {
 }
 
 export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate, initialSearchTerm = '' }) => {
-    const { clients: storeClients, updateClient } = useAppStore();
+    const { clients: storeClients, updateClient, removeClient, bulkUpdateClients } = useAppStore();
     const { toast } = useToast();
     
     const [searchTerm, setSearchTerm] = useState<string>(initialSearchTerm);
@@ -37,6 +38,12 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const [isQuickPlanModalOpen, setIsQuickPlanModalOpen] = useState(false);
     const directVaultUploadInputRef = useRef<HTMLInputElement>(null);
     const [vaultUploadTarget, setVaultUploadTarget] = useState<'idCardFront' | 'idCardBack' | 'idCardSelfie' | 'rucPdf' | 'signatureFile' | 'ecuafactSignedRequest' | 'vault'>('vault');
+
+    // ── Estados de Depuración & Selección Múltiple ──
+    const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
+    const [depurationTargetClient, setDepurationTargetClient] = useState<Client | null>(null);
+    const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+    const [bulkConfirmText, setBulkConfirmText] = useState('');
 
     const [facturadorClients, setFacturadorClients] = useState<Client[]>([]);
     const [totalCount, setTotalCount] = useState(0);
@@ -244,6 +251,60 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
         const file = event.target.files?.[0];
         if (!file) return;
         onDrop([file]);
+    };
+
+    // ── MÉTODOS DE DEPURACIÓN SEGURA (Stitch Obsidian Luxury) ──
+    const handleToggleSelectAll = () => {
+        if (selectedClientIds.length === displayClients.length) {
+            setSelectedClientIds([]);
+        } else {
+            setSelectedClientIds(displayClients.map(c => c.id));
+        }
+    };
+
+    const handleToggleSelectClient = (clientId: string) => {
+        setSelectedClientIds(prev => 
+            prev.includes(clientId) ? prev.filter(id => id !== clientId) : [...prev, clientId]
+        );
+    };
+
+    const handleUnlinkPlan = async (client: Client) => {
+        await updateClient(client.id, {
+            billingPlan: undefined,
+            facturadorConfig: undefined,
+            clientType: undefined,
+            requiresDeclarations: true
+        });
+        toast.success(`Plan desvinculado de ${client.name}. El cliente permanece en tu Directorio Contable.`);
+        setDepurationTargetClient(null);
+    };
+
+    const handleDeleteClient = async (client: Client) => {
+        removeClient(client.id);
+        toast.success(`Cliente ${client.name} movido a la Papelera de reciclaje.`);
+        setDepurationTargetClient(null);
+    };
+
+    const handleBulkUnlinkPlans = async () => {
+        if (selectedClientIds.length === 0) return;
+        bulkUpdateClients(selectedClientIds, {
+            billingPlan: undefined,
+            facturadorConfig: undefined,
+            clientType: undefined,
+            requiresDeclarations: true
+        });
+        toast.success(`Se desvinculó el plan de ${selectedClientIds.length} clientes.`);
+        setSelectedClientIds([]);
+    };
+
+    const handleBulkDeleteClients = async () => {
+        for (const id of selectedClientIds) {
+            removeClient(id);
+        }
+        toast.success(`Se eliminaron ${selectedClientIds.length} clientes del sistema.`);
+        setSelectedClientIds([]);
+        setIsBulkDeleteModalOpen(false);
+        setBulkConfirmText('');
     };
 
     return (
@@ -488,6 +549,19 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                             <table className="w-full text-left border-collapse text-xs">
                                 <thead>
                                     <tr className="border-b border-white/10 bg-[#0b1326] text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                                        <th className="py-4 px-4 w-10 text-center">
+                                            <button
+                                                onClick={handleToggleSelectAll}
+                                                className="p-1 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
+                                                title={selectedClientIds.length === displayClients.length ? "Deseleccionar todos" : "Seleccionar todos"}
+                                            >
+                                                {displayClients.length > 0 && selectedClientIds.length === displayClients.length ? (
+                                                    <CheckSquare size={16} className="text-[#00A896]" />
+                                                ) : (
+                                                    <Square size={16} />
+                                                )}
+                                            </button>
+                                        </th>
                                         <th className="py-4 px-5">Cliente</th>
                                         <th className="py-4 px-5">Plan Vendido</th>
                                         <th className="py-4 px-5">Expediente & Firma en Bóveda</th>
@@ -507,6 +581,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                         };
                                         const pwdVisible = visiblePasswords[client.id] || false;
                                         const isCopied = copiedId === client.id;
+                                        const isSelected = selectedClientIds.includes(client.id);
                                         const providerUrl = config.url || (config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' : 'https://app.ecuafact.com');
 
                                         // Contar archivos presentes vs totales
@@ -520,7 +595,19 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                         const totalVaultFiles = (client.vault?.length || 0) + presentCount;
 
                                         return (
-                                            <tr key={client.id} className="hover:bg-white/[0.02] transition-colors">
+                                            <tr key={client.id} className={`hover:bg-white/[0.02] transition-colors ${isSelected ? 'bg-[#00A896]/10' : ''}`}>
+                                                <td className="py-4 px-4 text-center">
+                                                    <button
+                                                        onClick={() => handleToggleSelectClient(client.id)}
+                                                        className="p-1 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
+                                                    >
+                                                        {isSelected ? (
+                                                            <CheckSquare size={16} className="text-[#00A896]" />
+                                                        ) : (
+                                                            <Square size={16} />
+                                                        )}
+                                                    </button>
+                                                </td>
                                                 <td className="py-4 px-5">
                                                     <p className="font-bold text-white uppercase text-xs">{client.tradeName || client.name}</p>
                                                     <p className="text-[10px] text-slate-400 font-mono">{client.ruc}</p>
@@ -714,6 +801,15 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                     >
                                                         <Globe size={11} /> Abrir
                                                     </button>
+                                                    
+                                                    {/* 🛡️ Botón Táctico de Depuración / Eliminación */}
+                                                    <button
+                                                        onClick={() => setDepurationTargetClient(client)}
+                                                        className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold uppercase transition-all inline-flex items-center gap-1 border border-rose-500/20 text-[10px] cursor-pointer"
+                                                        title="Depurar / Desvincular Plan o Eliminar Cliente"
+                                                    >
+                                                        <Trash2 size={11} /> Depurar
+                                                    </button>
                                                 </td>
                                             </tr>
                                         );
@@ -724,6 +820,47 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                     )}
                 </div>
             </div>
+
+            {/* ── BARRA FLOTANTE DE ACCIONES EN LOTE (BATCH DEPURATION) ── */}
+            {selectedClientIds.length > 0 && (
+                <div className="fixed bottom-6 inset-x-0 mx-auto max-w-2xl z-50 px-4 animate-in slide-in-from-bottom-5 duration-300">
+                    <div className="p-4 rounded-3xl bg-[#051424]/95 border border-white/20 shadow-2xl backdrop-blur-2xl flex items-center justify-between gap-4 font-mono flex-wrap sm:flex-nowrap">
+                        <div className="flex items-center gap-3">
+                            <span className="w-8 h-8 rounded-full bg-[#00A896]/20 text-[#00A896] font-bold text-xs flex items-center justify-center border border-[#00A896]/30">
+                                {selectedClientIds.length}
+                            </span>
+                            <span className="text-xs font-bold text-white uppercase">
+                                {selectedClientIds.length === 1 ? '1 seleccionado' : `${selectedClientIds.length} seleccionados`}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                            <button
+                                onClick={handleBulkUnlinkPlans}
+                                className="px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 text-[11px] font-bold uppercase transition-all cursor-pointer"
+                            >
+                                Desvincular Planes ({selectedClientIds.length})
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setBulkConfirmText('');
+                                    setIsBulkDeleteModalOpen(true);
+                                }}
+                                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold uppercase transition-all shadow-lg cursor-pointer flex items-center gap-1.5"
+                            >
+                                <Trash2 size={13} /> Eliminar ({selectedClientIds.length})
+                            </button>
+                            <button
+                                onClick={() => setSelectedClientIds([])}
+                                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white cursor-pointer"
+                                title="Cancelar selección"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* ── MODAL BÓVEDA DEL CLIENTE DIRECTA ── */}
             {selectedVaultClient && (
@@ -763,70 +900,56 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                             </div>
                             <div className="p-3.5 rounded-2xl bg-[#020b14] border border-white/10 space-y-1">
                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Clave Firma .p12</span>
-                                <div className="flex items-center justify-between font-mono text-xs text-[#C9A96E]">
+                                <div className="flex items-center justify-between font-mono text-xs text-[#2B6AFF]">
                                     <span>{selectedVaultClient.electronicSignaturePassword || '—'}</span>
-                                    <button onClick={() => handleCopyPassword('p12', selectedVaultClient.electronicSignaturePassword)} className="p-1 hover:text-white text-slate-400 cursor-pointer">
+                                    <button onClick={() => handleCopyPassword('firma', selectedVaultClient.electronicSignaturePassword)} className="p-1 hover:text-white text-slate-400 cursor-pointer">
                                         <Copy size={12} />
                                     </button>
                                 </div>
                             </div>
                             <div className="p-3.5 rounded-2xl bg-[#020b14] border border-white/10 space-y-1">
-                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Clave Facturador</span>
-                                <div className="flex items-center justify-between font-mono text-xs text-emerald-400">
-                                    <span>{selectedVaultClient.facturadorConfig?.password || selectedVaultClient.sriPassword || '—'}</span>
-                                    <button onClick={() => handleCopyPassword('fact', selectedVaultClient.facturadorConfig?.password || selectedVaultClient.sriPassword)} className="p-1 hover:text-white text-slate-400 cursor-pointer">
-                                        <Copy size={12} />
-                                    </button>
+                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Vigencia Firma</span>
+                                <div className="font-mono text-xs text-amber-400 truncate">
+                                    {selectedVaultClient.signatureExpirationDate || 'Sin Registrar'}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Cargador Directo a Bóveda */}
-                        <div className="p-5 rounded-2xl bg-[#020b14] border border-white/10 space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h4 className="text-xs font-bold uppercase text-white tracking-wider flex items-center gap-2">
-                                    <Upload size={14} className="text-[#00A896]" /> Subir Recursos a la Bóveda del Cliente
-                                </h4>
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-2 mb-3">
-                                {[
-                                    { id: 'signatureFile', label: '🔑 Firma .p12' },
-                                    { id: 'idCardFront', label: '🪪 Frente' },
-                                    { id: 'idCardBack', label: '🪪 Reverso' },
-                                    { id: 'idCardSelfie', label: '📸 Selfie' },
-                                    { id: 'rucPdf', label: '📄 RUC PDF' },
-                                    { id: 'ecuafactSignedRequest', label: '✍️ Solicitud' },
-                                    { id: 'vault', label: '📂 General' }
-                                ].map((target) => (
-                                    <button
-                                        key={target.id}
-                                        onClick={() => setVaultUploadTarget(target.id as any)}
-                                        className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
-                                            vaultUploadTarget === target.id
-                                                ? 'bg-[#00A896] border-[#00A896] text-white shadow-md shadow-[#00A896]/20'
-                                                : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                                        }`}
-                                    >
-                                        <span>{target.label}</span>
-                                    </button>
-                                ))}
-                            </div>
+                        {/* Subida Rápida a la Bóveda */}
+                        <div className="p-4 rounded-2xl bg-[#051424]/60 border border-white/10 space-y-3">
+                            <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                                <UploadCloud size={14} className="text-[#00A896]" />
+                                Subir Documento a la Bóveda
+                            </h4>
 
-                            <div 
-                                {...getRootProps()} 
-                                className={`border border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
-                                    isDragActive ? 'border-[#00A896] bg-[#00A896]/10' : 'border-white/20 hover:border-[#00A896]/50 bg-white/5'
-                                }`}
-                            >
-                                <input {...getInputProps()} />
-                                <UploadCloud className="mx-auto text-slate-400 mb-2" size={28} />
-                                <p className="text-xs text-white font-bold uppercase">
-                                    {isDragActive ? "¡Suelta el archivo aquí!" : "Arrastra un archivo aquí, o haz clic para seleccionar"}
-                                </p>
-                                <p className="text-[10px] text-slate-400 mt-1">
-                                    Destino: <span className="font-bold text-[#00A896] uppercase">{vaultUploadTarget}</span>
-                                </p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <select
+                                    value={vaultUploadTarget}
+                                    onChange={(e) => setVaultUploadTarget(e.target.value as any)}
+                                    className="px-3 py-2 rounded-xl bg-[#020b14] border border-white/10 text-xs text-white outline-none cursor-pointer"
+                                >
+                                    <option value="vault">📁 Archivo General a Bóveda</option>
+                                    <option value="signatureFile">🔑 Firma Electrónica (.p12)</option>
+                                    <option value="idCardFront">🪪 Cédula Frente</option>
+                                    <option value="idCardBack">🪪 Cédula Reverso</option>
+                                    <option value="idCardSelfie">📸 Foto Selfie</option>
+                                    <option value="rucPdf">📄 RUC Actualizado</option>
+                                    <option value="ecuafactSignedRequest">✍️ Solicitud Terceros</option>
+                                </select>
+
+                                <input
+                                    type="file"
+                                    ref={directVaultUploadInputRef}
+                                    onChange={handleUploadFileToVault}
+                                    className="hidden"
+                                />
+
+                                <button
+                                    onClick={() => directVaultUploadInputRef.current?.click()}
+                                    className="px-4 py-2 bg-[#00A896] hover:bg-[#00A896]/90 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                                >
+                                    <Upload size={14} /> Seleccionar y Subir
+                                </button>
                             </div>
                         </div>
 
@@ -869,6 +992,130 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                 className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
                             >
                                 Cerrar Bóveda
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* ── MODAL DEPURACIÓN INDIVIDUAL (Stitch Obsidian Luxury) ── */}
+            {depurationTargetClient && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setDepurationTargetClient(null)}
+                    title="🛡️ Depuración & Gestión de Registro"
+                    size="md"
+                >
+                    <div className="space-y-5 p-2 text-white font-sans">
+                        <div className="p-4 rounded-2xl bg-[#020b14] border border-white/10 space-y-1">
+                            <h4 className="text-xs font-bold text-white uppercase">{depurationTargetClient.name}</h4>
+                            <p className="text-[11px] font-mono text-[#00A896]">RUC: {depurationTargetClient.ruc}</p>
+                            <p className="text-[10px] text-slate-400">
+                                Plan actual: {depurationTargetClient.billingPlan?.programName || depurationTargetClient.facturadorConfig?.programName || 'Plan Particular'}
+                            </p>
+                        </div>
+
+                        <p className="text-xs text-slate-300">
+                            Selecciona la acción adecuada para este registro:
+                        </p>
+
+                        <div className="space-y-3">
+                            {/* Opción 1: Desvincular Plan */}
+                            <button
+                                onClick={() => handleUnlinkPlan(depurationTargetClient)}
+                                className="w-full p-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-left transition-all group cursor-pointer"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wide">
+                                        1. Solo Desvincular Plan
+                                    </span>
+                                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-md">
+                                        Conserva Contabilidad
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-slate-300 mt-1">
+                                    El cliente seguirá existiendo en tu Directorio Contable y Matriz de Declaraciones, pero se quitará de este menú de Facturadores.
+                                </p>
+                            </button>
+
+                            {/* Opción 2: Eliminar / Papelera */}
+                            <button
+                                onClick={() => handleDeleteClient(depurationTargetClient)}
+                                className="w-full p-4 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-left transition-all group cursor-pointer"
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-rose-400 uppercase tracking-wide">
+                                        2. Eliminar Cliente por Completo
+                                    </span>
+                                    <span className="text-[10px] font-bold text-rose-400 bg-rose-500/20 px-2 py-0.5 rounded-md">
+                                        Mover a Papelera
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-slate-300 mt-1">
+                                    Usa esta opción si el cliente se creó por error (ej: al subir firmas antiguas). Se moverá a la Papelera de reciclaje.
+                                </p>
+                            </button>
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                            <button
+                                onClick={() => setDepurationTargetClient(null)}
+                                className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold uppercase tracking-wider cursor-pointer"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {/* ── MODAL CONFIRMACIÓN ELIMINACIÓN EN LOTE ── */}
+            {isBulkDeleteModalOpen && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setIsBulkDeleteModalOpen(false)}
+                    title="⚠️ Confirmación de Eliminación Masiva"
+                    size="md"
+                >
+                    <div className="space-y-4 p-2 text-white font-sans">
+                        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3">
+                            <AlertOctagon size={24} className="text-rose-400 shrink-0 mt-0.5" />
+                            <div>
+                                <h4 className="text-xs font-bold text-rose-400 uppercase">
+                                    ¿Estás seguro de eliminar {selectedClientIds.length} clientes?
+                                </h4>
+                                <p className="text-[11px] text-slate-300 mt-1">
+                                    Los clientes seleccionados se moverán a la Papelera de reciclaje del sistema. Esta acción limpiará los registros no deseados.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5 font-mono">
+                            <label className="text-[10px] text-slate-400 uppercase block font-bold">
+                                Escribe <span className="text-rose-400 font-bold">CONFIRMAR</span> para proceder:
+                            </label>
+                            <input
+                                type="text"
+                                value={bulkConfirmText}
+                                onChange={(e) => setBulkConfirmText(e.target.value)}
+                                placeholder="CONFIRMAR"
+                                className="w-full px-3.5 py-2 bg-[#020b14] border border-white/10 rounded-xl text-xs text-white uppercase outline-none focus:border-rose-500"
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-3">
+                            <button
+                                onClick={() => setIsBulkDeleteModalOpen(false)}
+                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-bold uppercase"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleBulkDeleteClients}
+                                disabled={bulkConfirmText.trim().toLowerCase() !== 'confirmar'}
+                                className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-bold uppercase transition-all shadow-lg flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                            >
+                                <Trash2 size={13} /> Eliminar {selectedClientIds.length} Registros
                             </button>
                         </div>
                     </div>
