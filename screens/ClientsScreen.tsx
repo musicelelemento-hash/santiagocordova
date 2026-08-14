@@ -27,6 +27,7 @@ import { UnifiedStorageService } from '../services/unifiedStorageService';
 import { StoredFile } from '../types';
 import { BulkUploadReportModal, BulkUploadResult } from '../components/features/BulkUploadReportModal';
 import { BulkClientWizardModal } from '../components/features/BulkClientWizardModal';
+import { GlobalUploadModal } from '../components/features/GlobalUploadModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TaxComplianceMatrix } from '../components/features/TaxComplianceMatrix';
 import { ClientsDashboard } from '../components/features/ClientsDashboard';
@@ -103,6 +104,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [receiptUploadState, setReceiptUploadState] = useState<{ client: Client, period?: string, obligationType?: TaxObligationType } | null>(null);
     const [bulkResults, setBulkResults] = useState<BulkUploadResult[]>([]);
     const [isBulkReportOpen, setIsBulkReportOpen] = useState(false);
+    const [isGlobalUploadOpen, setIsGlobalUploadOpen] = useState(false);
     const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
     const [previewItem, setPreviewItem] = useState<{ client: Client, declaration: Declaration } | null>(null);
 
@@ -1135,10 +1137,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={handleBulkUpload}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.15em] border border-outline-variant hover:bg-surface-medium transition-all shadow-sm font-premium"
+                        onClick={() => setIsGlobalUploadOpen(true)}
+                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3.5 rounded-[1.2rem] bg-surface-low text-on-surface font-bold text-[11px] uppercase tracking-[0.15em] border border-outline-variant hover:bg-surface-medium transition-all shadow-sm font-premium cursor-pointer"
                     >
-                        <UploadCloud size={16} />
+                        <UploadCloud size={16} className="text-[#00A896]" />
                         SUBIR PDFs / RUCs
                     </motion.button>
                     
@@ -1805,6 +1807,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     addClient(clientData);
                     toast.success(`Cliente ${clientData.name} aprobado y registrado.`);
                 }}
+            />
+
+            <GlobalUploadModal
+                isOpen={isGlobalUploadOpen}
+                onClose={() => setIsGlobalUploadOpen(false)}
             />
 
             </div> {/* End of inner padding container */}
