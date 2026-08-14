@@ -606,47 +606,45 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     };
 
     return (
-        <div className="space-y-4 sm:space-y-6 pb-24 animate-fade-in relative pt-4 sm:pt-0">
-            {/* ELITE TACTICAL HEADER */}
+        <div className="space-y-6 pb-24 animate-in fade-in duration-300 relative pt-4 sm:pt-0 font-sans">
+            {/* ELITE TACTICAL HEADER (Stitch Obsidian Luxury) */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 sm:gap-6 relative z-10 px-4 sm:px-0">
-                <div className="animate-fade-in-left w-full sm:w-auto">
-                    <div className="flex items-center justify-between sm:justify-start gap-2 mb-2 sm:mb-2 text-center sm:text-left">
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-teal/10 border border-brand-teal/20">
-                            <div className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.8)]"></div>
-                            <span className="text-xs sm:text-xs font-semibold text-brand-teal uppercase tracking-widest">Financial Grid Alpha</span>
-                        </div>
-                        <span className="text-xs sm:text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Santiago Cordova Protocol</span>
+                <div className="space-y-1.5 w-full sm:w-auto">
+                    <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-full bg-[#00A896]/15 text-[#00A896] text-[9px] font-bold uppercase tracking-widest border border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.3)] flex items-center gap-1.5 font-mono">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00A896] animate-pulse"></span>
+                            Financial Grid Alpha • Santiago Cordova Protocol
+                        </span>
                     </div>
-                    <h2 className="text-4xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-tight sm:leading-[0.85] tracking-tighter mb-2">
-                        Financial <span className="text-brand-teal">Command</span>
+                    <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight font-display">
+                        Financial <span className="text-[#00A896]">Command</span>
                     </h2>
-                    <div className="flex items-center gap-2 text-slate-500 text-[11px] sm:text-[11px] font-medium uppercase tracking-widest">
-                        <LucideIcons.ShieldCheck size={12} className="text-brand-teal" />
-                        <span>Gestión de Cobranzas de Alto Nivel</span>
+                    <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider font-mono">
+                        <LucideIcons.ShieldCheck size={14} className="text-[#00A896]" />
+                        <span>Gestión de Cobranzas y Cuentas por Cobrar de Alto Nivel</span>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto animate-fade-in-right">
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto font-mono">
                     <button 
                         onClick={handleSyncAllDeclaredAsPaid}
-                        className="flex items-center justify-center gap-2 px-6 py-4.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 w-full sm:w-auto"
+                        className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer w-full sm:w-auto"
                         title="Marcar como pagados en lote todos los cobros cuyas declaraciones ya están enviadas en la Matriz"
                     >
-                        <LucideIcons.RefreshCw size={16} />
-                        <span>⚡ Sincronizar Cobros con Matriz</span>
+                        <LucideIcons.RefreshCw size={14} />
+                        <span>⚡ Sincronizar con Matriz</span>
                     </button>
 
                     <button 
                         onClick={() => setIsPaymentModalOpen(true)}
                         disabled={selectedItems.size === 0}
-                        className={`group relative overflow-hidden flex items-center justify-center gap-3 px-8 py-5 rounded-2xl text-xs sm:text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-500 w-full sm:w-auto
+                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all duration-300 w-full sm:w-auto cursor-pointer border
                             ${selectedItems.size > 0 
-                                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-2xl shadow-brand-teal/20 hover:scale-[1.05] active:scale-[0.95]' 
-                                : 'bg-slate-100 dark:bg-slate-900/40 text-slate-400 cursor-not-allowed border border-slate-200 dark:border-slate-800'}`}
+                                ? 'bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white shadow-xl shadow-[#00A896]/25 border-white/15 active:scale-95' 
+                                : 'bg-white/5 text-slate-500 cursor-not-allowed border-white/5'}`}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-brand-teal/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <LucideIcons.DollarSign size={18} className={selectedItems.size > 0 ? "text-brand-teal" : ""} />
-                        LIQUIDAR SELECCIÓN <span className="text-brand-teal">({selectedItems.size})</span>
+                        <LucideIcons.DollarSign size={16} className={selectedItems.size > 0 ? "text-white" : "text-slate-600"} />
+                        <span>LIQUIDAR SELECCIÓN ({selectedItems.size})</span>
                     </button>
                 </div>
             </div>
@@ -656,267 +654,271 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 <CampaignBanner campaign={campaignContext} compact />
             </div>
 
-            {/* ZENITH FINANCIAL STRIP - KPI Bar Minimalista */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
-                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+            {/* ZENITH FINANCIAL STRIP - 3 Executive KPI Cards (Stitch Obsidian Luxury) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 font-mono">
+                <div className="p-5 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-rose-500/10 text-rose-500 rounded-2xl border border-rose-500/20">
+                        <div className="p-3 bg-rose-500/15 text-rose-400 rounded-2xl border border-rose-500/30">
                             <LucideIcons.AlertTriangle size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest font-premium">Por Recaudar</p>
-                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">
+                            <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Por Recaudar</p>
+                            <p className="text-2xl font-black text-rose-400 font-mono tracking-tight">
                                 ${financialData.receivable.reduce((s, i) => s + i.amount, 0).toFixed(2)}
                             </p>
                         </div>
                     </div>
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                    <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
                         {financialData.receivable.length} Pendientes
                     </span>
                 </div>
 
-                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+                <div className="p-5 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl border border-emerald-500/20">
+                        <div className="p-3 bg-[#00A896]/15 text-[#00A896] rounded-2xl border border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.3)]">
                             <LucideIcons.CheckCircle size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest font-premium">Efectivo Cobrado</p>
-                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">
+                            <p className="text-[10px] font-bold text-[#00A896] uppercase tracking-widest">Efectivo Cobrado</p>
+                            <p className="text-2xl font-black text-white font-mono tracking-tight">
                                 ${financialData.collected.reduce((s, i) => s + i.amount, 0).toFixed(2)}
                             </p>
                         </div>
                     </div>
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30">
                         {financialData.collected.length} Pagados
                     </span>
                 </div>
 
-                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+                <div className="p-5 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/10 text-primary rounded-2xl border border-primary/20">
+                        <div className="p-3 bg-[#2B6AFF]/15 text-[#2B6AFF] rounded-2xl border border-[#2B6AFF]/30">
                             <LucideIcons.Activity size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-primary uppercase tracking-widest font-premium">Cobertura Mensual</p>
-                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">
+                            <p className="text-[10px] font-bold text-[#2B6AFF] uppercase tracking-widest">Cobertura Mensual</p>
+                            <p className="text-2xl font-black text-white font-mono tracking-tight">
                                 {Math.round((financialData.collected.reduce((s, i) => s + i.amount, 0) / (financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0) || 1)) * 100)}%
                             </p>
                         </div>
                     </div>
-                    <div className="w-16 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200 dark:border-white/10">
+                    <div className="w-20 h-2 bg-[#020b14] rounded-full overflow-hidden border border-white/10">
                         <div 
-                            className="h-full bg-primary transition-all duration-700" 
+                            className="h-full bg-gradient-to-r from-[#2B6AFF] to-[#00A896] transition-all duration-700 shadow-[0_0_8px_rgba(0,168,150,0.5)]" 
                             style={{ width: `${Math.round((financialData.collected.reduce((s, i) => s + i.amount, 0) / ((financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0)) || 1)) * 100)}%` }}
                         />
                     </div>
                 </div>
             </div>
 
-            {/* TACTICAL FILTERS & SEARCH */}
-            <div className="glass-tactical p-2 rounded-[1.8rem] sm:rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col lg:flex-row gap-4 items-center">
-                <div className="flex p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar border border-slate-200 dark:border-slate-800">
+            {/* TACTICAL FILTERS & SEARCH (Stitch Obsidian Luxury) */}
+            <div className="p-3 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl flex flex-col lg:flex-row gap-3 items-center font-mono">
+                <div className="flex p-1 bg-[#0b1326] rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar border border-white/10">
                     {[
                         { id: 'receivable', label: 'Pendientes', icon: LucideIcons.AlertTriangle, color: 'text-rose-400' },
                         { id: 'projected', label: 'Proyectado', icon: LucideIcons.Timer, color: 'text-amber-400' },
-                        { id: 'collected', label: 'Efectivo', icon: LucideIcons.CheckCircle, color: 'text-brand-teal' }
+                        { id: 'collected', label: 'Efectivo', icon: LucideIcons.CheckCircle, color: 'text-[#00A896]' }
                     ].map(tab => (
                         <button 
                             key={tab.id} 
                             onClick={() => setActiveTab(tab.id as any)} 
-                            className={`flex flex-1 lg:flex-none items-center justify-center gap-3 px-6 py-4 rounded-xl text-[11px] sm:text-[11px] font-semibold uppercase tracking-widest transition-all duration-300 shrink-0
+                            className={`flex flex-1 lg:flex-none items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shrink-0 cursor-pointer
                                 ${activeTab === tab.id 
-                                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xl shadow-brand-teal/10 ring-1 ring-brand-teal/30 scale-105 z-10' 
-                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                    ? 'bg-white/15 text-white shadow-lg border border-white/20' 
+                                    : 'text-slate-400 hover:text-slate-200'}`}
                         >
                             <tab.icon size={14} className={activeTab === tab.id ? tab.color : 'text-slate-400'} />
                             <span className="whitespace-nowrap">{tab.label}</span>
                             {tab.id === 'receivable' && financialData.receivable.length > 0 && (
-                                <span className={`px-2 py-0.5 rounded-md text-[11px] font-semibold font-mono ml-1 ${activeTab === tab.id ? 'bg-rose-400 text-white shadow-lg shadow-rose-400/30' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ml-1 ${activeTab === tab.id ? 'bg-rose-500 text-white shadow-md' : 'bg-white/10 text-slate-400'}`}>
                                     {financialData.receivable.length}
                                 </span>
                             )}
                         </button>
                     ))}
                 </div>
-                <div className="relative flex-grow w-full px-2">
-                    <LucideIcons.Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                <div className="relative flex-grow w-full px-1">
+                    <LucideIcons.Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                     <input 
                         type="text" 
-                        placeholder="IDENTIFICADOR / RUC / PROTOCOLO" 
+                        placeholder="BUSCAR POR CLIENTE / RUC / PERÍODO..." 
                         value={searchTerm} 
                         onChange={e => setSearchTerm(e.target.value)} 
-                        className="w-full pl-14 pr-6 py-4 sm:py-5 bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl text-[11px] font-semibold uppercase tracking-widest placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-teal/10 focus:border-brand-teal/30 transition-all text-slate-900 dark:text-white" 
+                        className="w-full pl-12 pr-5 py-3 bg-[#0b1326]/90 border border-white/10 rounded-2xl text-xs font-mono font-medium text-white uppercase tracking-wider placeholder:text-slate-500 focus:outline-none focus:border-[#00A896]/50 transition-all" 
                     />
                 </div>
-                <div className="flex items-center gap-3 sm:px-2 w-full lg:w-auto">
+                <div className="flex items-center gap-2 px-1 w-full lg:w-auto">
                     <button 
                         onClick={() => setIsRecalculating(p => !p)} 
-                        className="flex-1 lg:flex-none flex items-center justify-center p-4 text-slate-400 hover:text-brand-teal transition-all hover:rotate-180 duration-700 bg-white dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-lg active:scale-90"
+                        className="flex-1 lg:flex-none flex items-center justify-center p-3 text-slate-300 hover:text-[#00A896] transition-all hover:rotate-180 duration-700 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 shadow-lg active:scale-90 cursor-pointer"
+                        title="Recalcular Cartera de Clientes"
                     >
-                        <LucideIcons.RefreshCw size={20} />
+                        <LucideIcons.RefreshCw size={18} />
                     </button>
                 </div>
             </div>
 
-            {/* FULL WIDTH FINANCIAL GRID */}
-            <div className="w-full">
-                <div className="glass-tactical rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col relative group shadow-2xl">
-                        <div className="relative z-10 p-5 sm:p-6 bg-white/50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center backdrop-blur-2xl">
-                            <button onClick={() => {
+            {/* FULL WIDTH FINANCIAL GRID (Stitch Obsidian Luxury) */}
+            <div className="w-full font-mono">
+                <div className="rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl overflow-hidden flex flex-col relative group">
+                    <div className="relative z-10 p-5 bg-[#0b1326]/80 border-b border-white/10 flex justify-between items-center backdrop-blur-2xl">
+                        <button 
+                            onClick={() => {
                                 if (selectedItems.size === currentList.length) setSelectedItems(new Set());
                                 else setSelectedItems(new Set(currentList.map(i => `${i.clientId}-${i.period}`)));
-                            }} className="flex items-center gap-3 px-5 py-3 rounded-2xl glass-card-premium text-xs font-semibold uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 hover:text-brand-teal dark:hover:text-brand-teal transition-all active:scale-95 ">
-                                {selectedItems.size === currentList.length ? <LucideIcons.CheckSquare size={16} className="text-brand-teal" /> : <LucideIcons.Square size={16} />}
-                                SELECT ALL ENTRIES
-                            </button>
-                            <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-brand-teal/10 border border-brand-teal/20 shadow-inner">
-                                <LucideIcons.Layers size={14} className="text-brand-teal" />
-                                <span className="text-xs sm:text-[11px] font-semibold text-brand-teal uppercase tracking-widest">{currentList.length} OPERACIONES</span>
-                            </div>
+                            }} 
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-all active:scale-95 border border-white/10 cursor-pointer"
+                        >
+                            {selectedItems.size === currentList.length ? <LucideIcons.CheckSquare size={16} className="text-[#00A896]" /> : <LucideIcons.Square size={16} />}
+                            <span>SELECCIONAR TODOS</span>
+                        </button>
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00A896]/15 border border-[#00A896]/30 shadow-inner">
+                            <LucideIcons.Layers size={14} className="text-[#00A896]" />
+                            <span className="text-xs font-bold text-[#00A896] uppercase tracking-wider">{currentList.length} OPERACIONES</span>
                         </div>
+                    </div>
 
-                        <div className="relative z-10 divide-y divide-slate-100 dark:divide-slate-800/50 max-h-[700px] overflow-y-auto no-scrollbar p-3 sm:p-0">
-                            {currentList.length === 0 ? (
-                                <div className="py-32 flex flex-col items-center justify-center text-slate-400">
-                                    <div className="p-8 rounded-full bg-slate-50 dark:bg-slate-900/40 mb-6 border border-slate-100 dark:border-slate-800">
-                                        <LucideIcons.ShieldCheck size={64} className="text-slate-200 dark:text-slate-800" />
-                                    </div>
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.4em] text-slate-500">No Operations Found</p>
+                    <div className="relative z-10 divide-y divide-white/5 max-h-[700px] overflow-y-auto no-scrollbar p-2 sm:p-0">
+                        {currentList.length === 0 ? (
+                            <div className="py-28 flex flex-col items-center justify-center text-slate-500">
+                                <div className="p-6 rounded-full bg-white/5 mb-4 border border-white/10">
+                                    <LucideIcons.ShieldCheck size={48} className="text-slate-600" />
                                 </div>
-                            ) : (
-                                currentList.map(item => {
-                                    const key = `${item.clientId}-${item.period}`;
-                                    const isSelected = selectedItems.has(key);
-                                    return (
-                                        <div 
-                                            key={key} 
-                                            onClick={() => activeTab !== 'collected' && (isSelected ? setSelectedItems(s => { const n = new Set(s); n.delete(key); return n; }) : setSelectedItems(s => new Set(s).add(key)))} 
-                                            className={`group relative p-5 mb-2 sm:mb-0 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between transition-all duration-500 cursor-pointer overflow-hidden rounded-3xl sm:rounded-none
+                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">No se encontraron operaciones en este estado</p>
+                            </div>
+                        ) : (
+                            currentList.map(item => {
+                                const key = `${item.clientId}-${item.period}`;
+                                const isSelected = selectedItems.has(key);
+                                return (
+                                    <div 
+                                        key={key} 
+                                        onClick={() => activeTab !== 'collected' && (isSelected ? setSelectedItems(s => { const n = new Set(s); n.delete(key); return n; }) : setSelectedItems(s => new Set(s).add(key)))} 
+                                        className={`group relative p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between transition-all duration-300 cursor-pointer overflow-hidden border-b border-white/5 last:border-0
+                                            ${isSelected 
+                                                ? 'bg-[#00A896]/10 shadow-inner' 
+                                                : 'hover:bg-white/5'}`}
+                                    >
+                                        <div className="flex items-center gap-5 relative z-10">
+                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 border
                                                 ${isSelected 
-                                                    ? 'bg-brand-teal/10 dark:bg-brand-teal/5 shadow-inner' 
-                                                    : 'hover:bg-slate-50 dark:hover:bg-slate-900/40'}`}
-                                        >
-                                            <div className="flex items-center gap-6 relative z-10">
-                                                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl flex items-center justify-center transition-all duration-500 border
-                                                    ${isSelected 
-                                                        ? 'bg-brand-teal border-brand-teal shadow-[0_0_20px_rgba(20,184,166,0.4)] text-white' 
-                                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 group-hover:border-brand-teal/30 group-hover:text-brand-teal shadow-sm'}`}>
-                                                    {item.type === 'mensual' ? <LucideIcons.Calendar size={24} /> : <LucideIcons.Zap size={24} />}
-                                                </div>
-                                                <div className="flex-grow min-w-0">
-                                                    <div className="flex items-center gap-3 mb-1">
-                                                        <p className="font-semibold text-sm sm:text-base text-slate-900 dark:text-white uppercase tracking-tight truncate max-w-[200px] sm:max-w-none">{item.clientName}</p>
-                                                        {item.daysDiff && item.daysDiff > 0 && (
-                                                            <div className="px-2 py-0.5 rounded-lg bg-rose-400/10 border border-rose-400/20">
-                                                                <span className="text-xs font-semibold text-rose-400 uppercase tracking-widest">URGENT</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-slate-100 dark:bg-slate-800/80">
-                                                            <LucideIcons.Activity size={10} className="text-slate-400" />
-                                                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 font-mono tracking-widest uppercase">{item.ruc}</span>
+                                                    ? 'bg-[#00A896] border-[#00A896] shadow-[0_0_15px_rgba(0,168,150,0.5)] text-white' 
+                                                    : 'bg-[#0b1326] border-white/10 text-slate-400 group-hover:border-[#00A896]/40 group-hover:text-[#00A896]'}`}>
+                                                {item.type === 'mensual' ? <LucideIcons.Calendar size={20} /> : <LucideIcons.Zap size={20} />}
+                                            </div>
+                                            <div className="flex-grow min-w-0">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <p className="font-bold text-sm text-white uppercase tracking-tight truncate max-w-[200px] sm:max-w-none font-display">{item.clientName}</p>
+                                                    {item.daysDiff && item.daysDiff > 0 && (
+                                                        <div className="px-2 py-0.5 rounded-md bg-rose-500/20 border border-rose-500/30">
+                                                            <span className="text-[9px] font-bold text-rose-300 uppercase tracking-widest">ATRASADO</span>
                                                         </div>
-                                                        <span className="text-slate-200 dark:text-slate-800 text-xs">•</span>
-                                                        <span className="text-xs font-semibold text-brand-teal uppercase tracking-widest">{formatPeriodForDisplay(item.period)}</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs">
+                                                    <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-white/5 border border-white/5">
+                                                        <LucideIcons.Activity size={10} className="text-[#00A896]" />
+                                                        <span className="text-[10px] font-bold text-slate-300 font-mono tracking-wider">{item.ruc}</span>
                                                     </div>
+                                                    <span className="text-slate-600">•</span>
+                                                    <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-wider">{formatPeriodForDisplay(item.period)}</span>
                                                 </div>
                                             </div>
-                                            <div className="mt-5 sm:mt-0 flex sm:flex-col justify-between items-end sm:items-end relative z-10 w-full sm:w-auto bg-white/50 dark:bg-black/20 sm:bg-transparent p-4 sm:p-0 rounded-2xl border border-slate-100 dark:border-slate-800/50 sm:border-transparent">
-                                                <div className="flex flex-col sm:items-end">
-                                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-[0.2em] mb-1 sm:hidden">Transaction Sum</span>
-                                                    <p className={`text-xl sm:text-2xl font-semibold font-display tracking-tight transition-colors duration-300 ${isSelected ? 'text-brand-teal' : 'text-slate-900 dark:text-white'}`}>
-                                                        ${item.amount.toFixed(2)}
-                                                    </p>
+                                        </div>
+
+                                        <div className="mt-4 sm:mt-0 flex sm:flex-col justify-between items-end sm:items-end relative z-10 w-full sm:w-auto bg-white/5 sm:bg-transparent p-3 sm:p-0 rounded-2xl border border-white/5 sm:border-transparent">
+                                            <div className="flex flex-col sm:items-end">
+                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 sm:hidden">Total a Cobrar</span>
+                                                <p className={`text-xl font-black font-mono tracking-tight transition-colors duration-300 ${isSelected ? 'text-[#00A896]' : 'text-white'}`}>
+                                                    ${item.amount.toFixed(2)}
+                                                </p>
+                                            </div>
+                                            <div className="mt-1.5 flex items-center gap-2">
+                                                <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider
+                                                    ${item.status === 'Pagada' 
+                                                        ? 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/40 shadow-[0_0_6px_rgba(0,168,150,0.3)]' 
+                                                        : item.daysDiff && item.daysDiff > 0 
+                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
+                                                            : 'bg-white/10 text-slate-400 border-white/10'}`}>
+                                                    <span>{item.status === 'Pagada' ? 'COBRADO' : item.daysDiff && item.daysDiff > 0 ? `ATRASADO ${item.daysDiff}D` : 'PENDIENTE'}</span>
                                                 </div>
-                                                <div className="mt-2 flex items-center gap-2">
-                                                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full border
-                                                        ${item.status === 'Pagada' 
-                                                            ? 'bg-emerald-400/20 text-emerald-400' 
-                                                            : item.daysDiff && item.daysDiff > 0 
-                                                                ? 'bg-rose-400/20 text-rose-400' 
-                                                                : 'bg-slate-200/50 dark:bg-white/10 text-slate-400'}`}>
-                                                        <span className="text-[11px] font-semibold uppercase tracking-widest">
-                                                            {item.status === 'Pagada' ? 'EJECUTADO' : item.daysDiff && item.daysDiff > 0 ? `ATRASADO ${item.daysDiff}D` : 'PENDIENTE'}
-                                                        </span>
-                                                    </div>
-                                                    {(() => {
-                                                        const sriDoc = findSriInvoice(item.ruc, item.period);
-                                                        return sriDoc ? (
-                                                            <div
+                                                {(() => {
+                                                    const sriDoc = findSriInvoice(item.ruc, item.period);
+                                                    return sriDoc ? (
+                                                        <div
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (navigate) navigate('sri_facturacion');
+                                                            }}
+                                                            className="px-2.5 py-1 rounded-xl bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] text-[10px] font-bold font-mono flex items-center gap-1 cursor-pointer hover:bg-[#00A896]/25 transition-all shadow-sm"
+                                                            title={`Factura SRI Autorizada #${sriDoc.secuencial} — Clave: ${sriDoc.claveAcceso}`}
+                                                        >
+                                                            <LucideIcons.CheckCircle size={10} />
+                                                            <span>SRI #{sriDoc.secuencial}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    if (navigate) navigate('sri_facturacion');
+                                                                    handleEmitFastInvoice(item);
                                                                 }}
-                                                                className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold font-mono flex items-center gap-1 cursor-pointer hover:bg-emerald-500/25 transition-all"
-                                                                title={`Factura SRI Autorizada #${sriDoc.secuencial} — Clave: ${sriDoc.claveAcceso}`}
+                                                                className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-[10px] font-bold rounded-xl transition-all shadow-md flex items-center gap-1 cursor-pointer border border-white/10"
+                                                                title="Emisión rápida de Factura SRI con firma .p12"
                                                             >
-                                                                <LucideIcons.CheckCircle size={10} />
-                                                                <span>SRI #{sriDoc.secuencial}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center gap-1.5">
+                                                                <LucideIcons.Zap size={11} />
+                                                                <span>Facturar SRI</span>
+                                                            </button>
+                                                            {navigate && (
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        handleEmitFastInvoice(item);
+                                                                        navigate('sri_facturacion', {
+                                                                            clientId: item.clientId,
+                                                                            amount: item.amount,
+                                                                            description: `Honorarios Profesionales - Período ${item.period}`
+                                                                        });
                                                                     }}
-                                                                    className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-lg transition-colors border border-amber-500/20 flex items-center gap-1"
-                                                                    title="Emisión rápida de Factura SRI con firma .p12"
+                                                                    className="p-1.5 bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 cursor-pointer"
+                                                                    title="Abrir en Módulo de Facturación SRI"
                                                                 >
-                                                                    <LucideIcons.Zap size={11} />
-                                                                    <span>Facturar SRI</span>
+                                                                    <LucideIcons.ExternalLink size={11} />
                                                                 </button>
-                                                                {navigate && (
-                                                                    <button
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            navigate('sri_facturacion', {
-                                                                                clientId: item.clientId,
-                                                                                amount: item.amount,
-                                                                                description: `Honorarios Profesionales - Período ${item.period}`
-                                                                            });
-                                                                        }}
-                                                                        className="p-1.5 bg-slate-800 hover:bg-primary/20 text-slate-300 hover:text-primary rounded-lg transition-colors border border-white/10"
-                                                                        title="Abrir en Módulo de Facturación SRI"
-                                                                    >
-                                                                        <LucideIcons.ExternalLink size={11} />
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })()}
                                             </div>
-                                            {isSelected && (
-                                                <div className="absolute left-0 top-0 bottom-0 w-2 bg-brand-teal shadow-[4px_0_15px_rgba(20,184,166,0.5)]"></div>
-                                            )}
                                         </div>
-                                    );
-                                })
-                            )}
-                        </div>
+                                        {isSelected && (
+                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#00A896] shadow-[2px_0_10px_rgba(0,168,150,0.8)]"></div>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
+            </div>
 
+            {/* MODAL 1: LIQUIDAR TRANSACCIÓN FINANCIERA (Stitch Obsidian Luxury) */}
             <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Autorizar Transacción Financiera">
-                <div className="p-4 sm:p-8 space-y-10">
+                <div className="p-4 sm:p-8 space-y-8 font-mono text-white">
                     <div className="relative group">
-                        <div className="absolute -inset-2 bg-gradient-to-r from-brand-teal to-brand-navy rounded-3xl blur-2xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-                        <div className="relative glass-card-premium p-10 rounded-3xl text-center shadow-inner-premium">
-                            <div className="flex justify-center mb-6">
-                                <div className="p-4 rounded-2xl bg-brand-teal/10 border border-brand-teal/20 text-brand-teal">
+                        <div className="absolute -inset-2 bg-gradient-to-r from-[#00A896] to-[#2B6AFF] rounded-[2.5rem] blur-2xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                        <div className="relative p-8 rounded-[2.5rem] bg-[#051424]/95 border border-white/10 border-t-white/20 text-center shadow-2xl backdrop-blur-2xl">
+                            <div className="flex justify-center mb-4">
+                                <div className="p-4 rounded-2xl bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] shadow-[0_0_12px_rgba(0,168,150,0.3)]">
                                     <LucideIcons.ShieldCheck size={32} />
                                 </div>
                             </div>
-                            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-[0.4em] mb-4">Monto de Liquidación Total</p>
-                            <p className="text-5xl sm:text-6xl font-semibold text-slate-900 dark:text-white mb-4 tracking-tighter">
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Monto Total de Liquidación</p>
+                            <p className="text-4xl sm:text-5xl font-black text-[#00A896] mb-3 tracking-tight">
                                 ${Array.from(selectedItems).reduce<number>((sum: number, key) => sum + (currentList.find(i => `${i.clientId}-${i.period}` === key)?.amount || 0), 0).toFixed(2)}
                             </p>
-                            <div className="flex items-center justify-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-brand-teal animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.8)]"></div>
-                                <span className="text-xs font-semibold text-brand-teal uppercase tracking-widest">Protocolo de Procedencia Verificado</span>
+                            <div className="flex items-center justify-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_8px_rgba(0,168,150,0.8)]"></div>
+                                <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-wider">Protocolo de Procedencia Verificado</span>
                             </div>
                         </div>
                     </div>
@@ -925,83 +927,84 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         <button 
                             onClick={handleProcessPayment} 
                             disabled={isProcessing} 
-                            className="group relative w-full overflow-hidden py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-semibold text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                            className="group relative w-full overflow-hidden py-4 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl font-bold text-xs uppercase tracking-wider shadow-xl shadow-[#00A896]/25 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 border border-white/10 cursor-pointer"
                         >
-                            <span className="relative z-10 flex items-center justify-center gap-3">
-                                {isProcessing ? <LucideIcons.RefreshCw className="animate-spin text-brand-teal" size={20} /> : <LucideIcons.ShieldAlert size={20} className="text-brand-teal" />}
-                                {isProcessing ? 'AUTORIZANDO...' : 'CONFIRMAR OPERACIÓN TACTICAL'}
+                            <span className="relative z-10 flex items-center justify-center gap-2">
+                                {isProcessing ? <LucideIcons.RefreshCw className="animate-spin text-white" size={18} /> : <LucideIcons.ShieldAlert size={18} className="text-white" />}
+                                <span>{isProcessing ? 'AUTORIZANDO COBRO...' : 'CONFIRMAR OPERACIÓN Y REGISTRAR PAGO'}</span>
                             </span>
-                            <div className="absolute inset-0 bg-brand-teal/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </button>
-                        <p className="text-center text-[11px] font-semibold text-slate-400 uppercase tracking-widest leading-relaxed opacity-50">
-                            Al confirmar, se generará un asiento contable digital <br />y se actualizará el historial del contribuyente en el Grid.
+                        <p className="text-center text-[10px] font-medium text-slate-400 uppercase tracking-wider leading-relaxed">
+                            Al confirmar, se generará el recibo contable digital y se actualizará el historial del cliente en la base de datos.
                         </p>
                     </div>
                 </div>
             </Modal>
 
+            {/* MODAL 2: PROTOCOLO DE EJECUCIÓN EXITOSA (RECIBO DIGITAL) (Stitch Obsidian Luxury) */}
             <Modal isOpen={isReceiptOpen} onClose={() => setIsReceiptOpen(false)} title="Protocolo de Ejecución Exitosa">
                 {receiptData && (
-                    <div className="p-4 sm:p-10 space-y-10">
+                    <div className="p-4 sm:p-8 space-y-8 font-mono text-white">
                         <div className="relative group">
-                            <div className="absolute -inset-2 bg-gradient-to-r from-brand-teal to-brand-navy rounded-[2.5rem] blur-3xl opacity-10"></div>
-                            <div ref={receiptRef} className="relative glass-card-premium p-8 sm:p-12 text-slate-800 dark:text-slate-200 font-mono text-[11px]  overflow-hidden">
-                                <div className="absolute top-0 right-0 p-8 text-slate-100 dark:text-slate-800/40">
+                            <div className="absolute -inset-2 bg-gradient-to-r from-[#00A896] to-[#2B6AFF] rounded-[2.5rem] blur-3xl opacity-15"></div>
+                            <div ref={receiptRef} className="relative p-8 rounded-[2.5rem] bg-[#051424]/95 border border-white/10 border-t-white/20 text-slate-200 font-mono text-xs overflow-hidden shadow-2xl backdrop-blur-2xl">
+                                <div className="absolute top-0 right-0 p-8 text-white/5 pointer-events-none">
                                     <LucideIcons.Shield size={120} />
                                 </div>
                                 
-                                <div className="text-center mb-10 border-b border-dashed border-slate-200 dark:border-slate-800 pb-8 relative z-10">
-                                    <p className="font-semibold text-lg uppercase tracking-[0.2em] mb-2 text-slate-900 dark:text-white">{defaultBusinessProfile.businessName}</p>
-                                    <p className="text-xs font-medium uppercase tracking-widest leading-tight text-slate-400">{defaultBusinessProfile.tradeName}</p>
-                                    <p className="text-xs text-slate-500 mt-2">{defaultBusinessProfile.address}</p>
-                                    <div className="inline-block mt-6 px-4 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-full font-semibold text-[11px] uppercase tracking-widest shadow-lg">
+                                <div className="text-center mb-8 border-b border-white/10 pb-6 relative z-10">
+                                    <p className="font-bold text-base uppercase tracking-wider mb-1 text-white font-display">{defaultBusinessProfile.businessName}</p>
+                                    <p className="text-xs font-medium uppercase tracking-wider text-[#00A896]">{defaultBusinessProfile.tradeName}</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">{defaultBusinessProfile.address}</p>
+                                    <div className="inline-block mt-4 px-3 py-1 bg-white/10 border border-white/15 text-white rounded-full font-bold text-[10px] uppercase tracking-wider">
                                         TX-AUTH: {receiptData.transactionId}
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 mb-10 bg-slate-50 dark:bg-slate-800/40 p-6 rounded-3xl border border-slate-100 dark:border-slate-800/50 relative z-10">
+                                <div className="space-y-3 mb-8 bg-[#0b1326]/80 p-5 rounded-2xl border border-white/10 relative z-10">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 uppercase font-semibold text-[11px] tracking-widest">Contribuyente</span>
-                                        <span className="text-right font-semibold uppercase text-slate-900 dark:text-white tracking-tight">{receiptData.clientName}</span>
+                                        <span className="text-slate-400 uppercase font-bold text-[10px] tracking-wider">Contribuyente</span>
+                                        <span className="text-right font-bold uppercase text-white tracking-tight">{receiptData.clientName}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 uppercase font-semibold text-[11px] tracking-widest">Identificación</span>
-                                        <span className="text-right font-semibold text-brand-teal">{receiptData.clientRuc}</span>
+                                        <span className="text-slate-400 uppercase font-bold text-[10px] tracking-wider">Identificación</span>
+                                        <span className="text-right font-bold text-[#00A896]">{receiptData.clientRuc}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 uppercase font-semibold text-[11px] tracking-widest">Digital Timestamp</span>
-                                        <span className="text-right font-semibold opacity-80">{receiptData.paymentDate}</span>
+                                        <span className="text-slate-400 uppercase font-bold text-[10px] tracking-wider">Fecha de Emisión</span>
+                                        <span className="text-right font-medium text-slate-300">{receiptData.paymentDate}</span>
                                     </div>
                                 </div>
 
-                                <div className="mb-10 relative z-10">
-                                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-[0.3em] mb-4 border-b border-dashed border-slate-200 dark:border-slate-800 pb-2">Desglose de Cargo</p>
-                                    <div className="space-y-3">
+                                <div className="mb-8 relative z-10">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 border-b border-white/10 pb-2">Desglose de Cargo</p>
+                                    <div className="space-y-2">
                                         {receiptData.paidPeriods.map((p, i) => (
                                             <div key={i} className="flex justify-between items-center py-1">
-                                                <span className="font-medium uppercase text-slate-600 dark:text-slate-400">Honorarios Profesionales {p.period}</span>
-                                                <span className="font-semibold text-slate-900 dark:text-white tracking-tighter">${p.amount.toFixed(2)}</span>
+                                                <span className="font-medium uppercase text-slate-300">Honorarios Profesionales {p.period}</span>
+                                                <span className="font-bold text-white tracking-tight">${p.amount.toFixed(2)}</span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
-                                <div className="bg-brand-teal p-6 rounded-[2rem] flex justify-between items-center text-white shadow-xl shadow-brand-teal/20 relative z-10">
+                                <div className="bg-gradient-to-r from-[#00A896] to-teal-600 p-5 rounded-2xl flex justify-between items-center text-white shadow-xl shadow-[#00A896]/20 relative z-10 border border-white/10">
                                     <div className="flex flex-col">
-                                        <span className="font-semibold text-[11px] uppercase tracking-[0.3em] opacity-80">Total Transado</span>
-                                        <span className="text-xs font-medium opacity-60">PAGO CONFIRMADO</span>
+                                        <span className="font-bold text-[10px] uppercase tracking-wider opacity-90">Total Transado</span>
+                                        <span className="text-[9px] font-bold opacity-75">PAGO CONFIRMADO</span>
                                     </div>
-                                    <span className="text-3xl font-semibold font-display tracking-tighter">${receiptData.totalAmount.toFixed(2)}</span>
+                                    <span className="text-3xl font-black font-mono tracking-tight">${receiptData.totalAmount.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex flex-col sm:flex-row gap-3">
                             <button 
                                 onClick={() => printSalesNote(receiptData, defaultBusinessProfile)} 
-                                className="flex-1 py-5 bg-slate-900 dark:bg-white dark:text-slate-900 text-white rounded-2xl font-semibold text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] transition-all"
+                                className="flex-1 py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all border border-white/10 cursor-pointer"
                             >
-                                <LucideIcons.Printer size={20} className="text-brand-teal" /> GENERAR TICKET FÍSICO
+                                <LucideIcons.Printer size={16} className="text-[#00A896]" />
+                                <span>Ticket Físico</span>
                             </button>
                             {navigate && (
                                 <>
@@ -1021,9 +1024,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                             };
                                             handleEmitFastInvoice(tempItem);
                                         }} 
-                                        className="flex-1 py-5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-semibold text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] transition-all"
+                                        className="flex-1 py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all border border-white/10 cursor-pointer"
                                     >
-                                        <LucideIcons.Zap size={20} className="text-white" /> EMISIÓN SRI RÁPIDA
+                                        <LucideIcons.Zap size={16} className="text-white" />
+                                        <span>Factura SRI Rápida</span>
                                     </button>
                                     <button 
                                         onClick={() => {
@@ -1034,42 +1038,44 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                 description: `Honorarios Profesionales - ${receiptData.paidPeriods.map((p: any) => p.period).join(', ')}`
                                             });
                                         }} 
-                                        className="flex-1 py-5 bg-primary text-white rounded-2xl font-semibold text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] transition-all"
+                                        className="flex-1 py-3.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-[#2B6AFF]/20 transition-all border border-white/10 cursor-pointer"
                                     >
-                                        <LucideIcons.FileText size={20} className="text-white" /> DETALLAR EN SRI
+                                        <LucideIcons.FileText size={16} className="text-white" />
+                                        <span>Detallar en SRI</span>
                                     </button>
                                 </>
                             )}
                             <button 
                                 onClick={() => setIsReceiptOpen(false)} 
-                                className="flex-1 py-5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-2xl font-semibold text-[11px] uppercase tracking-[0.2em] hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                                className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-2xl font-bold text-xs uppercase tracking-wider transition-all border border-white/10 cursor-pointer"
                             >
-                                CERRAR PROTOCOLO
+                                Cerrar
                             </button>
                         </div>
                     </div>
                 )}
             </Modal>
 
+            {/* MODAL 3: EMISIÓN DE FACTURA SRI RÁPIDA (Stitch Obsidian Luxury) */}
             <Modal isOpen={isFastBillingOpen} onClose={() => setIsFastBillingOpen(false)} title="Emisión de Factura SRI Rápida">
                 {fastBillingItem && (
-                    <div className="p-4 sm:p-6 space-y-6">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80">
+                    <div className="p-4 sm:p-6 space-y-6 font-mono text-white">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-[#0b1326]/90 border border-white/10">
                             <div>
-                                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Cliente / Receptor</p>
-                                <h4 className="font-semibold text-slate-900 dark:text-white uppercase">{fastBillingItem.clientName}</h4>
-                                <p className="text-xs font-mono text-slate-500">{fastBillingItem.ruc}</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Cliente / Receptor</p>
+                                <h4 className="font-bold text-white uppercase font-display">{fastBillingItem.clientName}</h4>
+                                <p className="text-xs font-mono text-[#00A896]">{fastBillingItem.ruc}</p>
                             </div>
-                            <div className="text-right">
-                                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Monto de Honorarios</p>
-                                <p className="text-2xl font-semibold text-brand-teal">${fastBillingItem.amount.toFixed(2)}</p>
-                                <p className="text-xs text-slate-500 font-semibold uppercase">Período: {formatPeriodForDisplay(fastBillingItem.period)}</p>
+                            <div className="text-left md:text-right">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Monto de Honorarios</p>
+                                <p className="text-2xl font-black text-[#00A896]">${fastBillingItem.amount.toFixed(2)}</p>
+                                <p className="text-xs text-slate-400 font-bold uppercase">Período: {formatPeriodForDisplay(fastBillingItem.period)}</p>
                             </div>
                         </div>
 
                         {/* Progreso del Flujo */}
-                        <div className="space-y-4">
-                            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Estado de Transmisión Electrónica</p>
+                        <div className="space-y-3">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado de Transmisión Electrónica</p>
                             
                             <div className="grid grid-cols-4 gap-2">
                                 {[
@@ -1085,16 +1091,16 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     return (
                                         <div key={i} className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300
                                             ${isDone 
-                                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' 
+                                                ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896] shadow-[0_0_8px_rgba(0,168,150,0.3)]' 
                                                 : isCurrent 
-                                                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 animate-pulse' 
+                                                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 animate-pulse' 
                                                     : isFailed && fastBillingStep === s.step
-                                                        ? 'bg-rose-500/10 border-rose-500/30 text-rose-500'
-                                                        : 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400'}`}>
+                                                        ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
+                                                        : 'bg-white/5 border-white/10 text-slate-500'}`}>
                                             {isDone ? <LucideIcons.CheckCircle size={16} className="mb-1" />
                                                 : isCurrent ? <LucideIcons.RefreshCw size={16} className="animate-spin mb-1" />
                                                     : <LucideIcons.Calendar size={16} className="mb-1" />}
-                                            <span className="text-[10px] font-semibold uppercase tracking-widest">{s.label}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider">{s.label}</span>
                                         </div>
                                     );
                                 })}
@@ -1103,15 +1109,15 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
                         {/* Logs del Proceso */}
                         <div className="space-y-2">
-                            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Detalle del Proceso (Logs)</p>
-                            <div className="p-4 rounded-xl bg-slate-900 text-slate-300 dark:bg-black/60 font-mono text-[10px] space-y-1.5 max-h-[160px] overflow-y-auto border border-slate-800 shadow-inner">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Detalle del Proceso (Logs)</p>
+                            <div className="p-4 rounded-xl bg-[#020b14] text-slate-300 font-mono text-[10px] space-y-1.5 max-h-[160px] overflow-y-auto no-scrollbar border border-white/10 shadow-inner">
                                 {fastBillingLogs.map((log, idx) => (
-                                    <div key={idx} className={log.includes('✅') || log.includes('éxito') || log.includes('AUTORIZADO') ? 'text-emerald-400 font-semibold' : log.includes('❌') || log.includes('Error') ? 'text-rose-400 font-semibold' : ''}>
+                                    <div key={idx} className={log.includes('✅') || log.includes('éxito') || log.includes('AUTORIZADO') ? 'text-[#00A896] font-bold' : log.includes('❌') || log.includes('Error') ? 'text-rose-400 font-bold' : ''}>
                                         {log}
                                     </div>
                                 ))}
                                 {['generating', 'signing', 'sending', 'authorizing'].includes(fastBillingStep) ? (
-                                    <div className="flex items-center gap-1 text-amber-500 font-semibold animate-pulse">
+                                    <div className="flex items-center gap-1 text-amber-400 font-bold animate-pulse">
                                         <span>Procesando...</span>
                                         <LucideIcons.RefreshCw size={8} className="animate-spin" />
                                     </div>
@@ -1134,27 +1140,29 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         document.body.removeChild(a);
                                         URL.revokeObjectURL(url);
                                     }}
-                                    className="flex-1 py-4 bg-slate-850 hover:bg-slate-850 text-white rounded-xl font-semibold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all border border-slate-700"
+                                    className="flex-1 py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all border border-white/10 cursor-pointer"
                                 >
-                                    <LucideIcons.Download size={14} /> XML Firmado
+                                    <LucideIcons.Download size={14} />
+                                    <span>XML Firmado</span>
                                 </button>
                             )}
 
                             {fastBillingStep === 'failed' && (
                                 <button
                                     onClick={() => handleEmitFastInvoice(fastBillingItem)}
-                                    className="flex-1 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                                    className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20"
                                 >
-                                    <LucideIcons.RefreshCw size={14} /> Reintentar Emisión
+                                    <LucideIcons.RefreshCw size={14} />
+                                    <span>Reintentar Emisión</span>
                                 </button>
                             )}
 
                             <button
                                 onClick={() => setIsFastBillingOpen(false)}
-                                className={`flex-1 py-4 rounded-xl font-semibold text-[11px] uppercase tracking-widest transition-all
+                                className={`flex-1 py-3.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer border
                                     ${fastBillingStep === 'success' 
-                                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
-                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'}`}
+                                        ? 'bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white border-white/10 shadow-lg shadow-[#00A896]/20' 
+                                        : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-white/10'}`}
                             >
                                 {fastBillingStep === 'success' ? 'Listo / Cerrar' : 'Cerrar Ventana'}
                             </button>
