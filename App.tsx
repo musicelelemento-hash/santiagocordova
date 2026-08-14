@@ -1,46 +1,60 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import * as LucideIcons from 'lucide-react';
-import { AdminDashboardScreen } from './screens/AdminDashboardScreen';
-import { ClientsScreen } from './screens/ClientsScreen';
-import { ReportsScreen } from './screens/ReportsScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
-import { CobranzaScreen } from './screens/CobranzaScreen';
-import { CalendarScreen } from './screens/CalendarScreen';
-import { WebOrdersScreen } from './screens/WebOrdersScreen';
-import { TasksScreen } from './screens/TasksScreen';
+import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import {
+  Home, Users, LayoutGrid, Kanban, Box, KeyRound, ShoppingBag,
+  FileSpreadsheet, Key, Coins, Wallet, BarChart, FileText, CheckCircle,
+  CalendarDays, ShoppingCart, Globe, Settings, History, ArrowRightLeft,
+  Search, Sun, Moon, Zap, X, ArrowRight
+} from 'lucide-react';
 import { LandingPage } from './screens/LandingPage';
-import { LoginScreen } from './screens/LoginScreen';
-import { ServicesPage } from './screens/ServicesPage';
-import { ClientPortalScreen } from './screens/ClientPortalScreen';
-import { MusicPage } from './screens/MusicPage';
-import { AuditLogScreen } from './screens/AuditLogScreen';
-import { FacturacionSriScreen } from './screens/FacturacionSriScreen';
-import { FirmasScreen } from './screens/FirmasScreen';
-import { FacturadoresScreen } from './screens/FacturadoresScreen';
-import { CotizacionesScreen } from './screens/CotizacionesScreen';
-import { LicenciasScreen } from './screens/LicenciasScreen';
-import { RefinanciacionScreen } from './screens/RefinanciacionScreen';
-import { CajaChicaScreen } from './screens/CajaChicaScreen';
-import { CrmPipelineScreen } from './screens/CrmPipelineScreen';
-import { ThreeDStudioScreen } from './screens/ThreeDStudioScreen';
-import { AdaptadorConvert } from './components/features/AdaptadorConvert';
 import { Logo } from './Logo';
 import { Clock } from './components/ui/Clock';
 import { NotificationBell } from './components/layout/NotificationBell';
 import { Sidebar } from './components/layout/Sidebar';
 import { MobileNavBar } from './components/layout/MobileNavBar';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { GlobalUploadModal } from './components/features/GlobalUploadModal';
-import { SalesComboModal } from './components/features/SalesComboModal';
-import { SriPasswordChangerModal } from './components/features/SriPasswordChangerModal';
 import { Client, Task, Screen, Theme, ClientFilter, PublicUser, TaxRegime, Declaration, DeclarationStatus } from './types';
 import { loadDataFromSheet, syncDataToSheet } from './services/sheetApi';
-import { CommandPalette } from './components/CommandPalette';
 import { Modal } from './components/ui/Modal';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useAppStore } from './store/useAppStore';
 import { getClientUndeclaredSummary } from './services/complianceEngine';
+
+// Lazy-loaded heavy modules & admin screens
+const AdminDashboardScreen = React.lazy(() => import('./screens/AdminDashboardScreen').then(m => ({ default: m.AdminDashboardScreen })));
+const ClientsScreen = React.lazy(() => import('./screens/ClientsScreen').then(m => ({ default: m.ClientsScreen })));
+const ReportsScreen = React.lazy(() => import('./screens/ReportsScreen').then(m => ({ default: m.ReportsScreen })));
+const SettingsScreen = React.lazy(() => import('./screens/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
+const CobranzaScreen = React.lazy(() => import('./screens/CobranzaScreen').then(m => ({ default: m.CobranzaScreen })));
+const CalendarScreen = React.lazy(() => import('./screens/CalendarScreen').then(m => ({ default: m.CalendarScreen })));
+const WebOrdersScreen = React.lazy(() => import('./screens/WebOrdersScreen').then(m => ({ default: m.WebOrdersScreen })));
+const TasksScreen = React.lazy(() => import('./screens/TasksScreen').then(m => ({ default: m.TasksScreen })));
+const LoginScreen = React.lazy(() => import('./screens/LoginScreen').then(m => ({ default: m.LoginScreen })));
+const ServicesPage = React.lazy(() => import('./screens/ServicesPage').then(m => ({ default: m.ServicesPage })));
+const ClientPortalScreen = React.lazy(() => import('./screens/ClientPortalScreen').then(m => ({ default: m.ClientPortalScreen })));
+const MusicPage = React.lazy(() => import('./screens/MusicPage').then(m => ({ default: m.MusicPage })));
+const AuditLogScreen = React.lazy(() => import('./screens/AuditLogScreen').then(m => ({ default: m.AuditLogScreen })));
+const FacturacionSriScreen = React.lazy(() => import('./screens/FacturacionSriScreen').then(m => ({ default: m.FacturacionSriScreen })));
+const FirmasScreen = React.lazy(() => import('./screens/FirmasScreen').then(m => ({ default: m.FirmasScreen })));
+const FacturadoresScreen = React.lazy(() => import('./screens/FacturadoresScreen').then(m => ({ default: m.FacturadoresScreen })));
+const CotizacionesScreen = React.lazy(() => import('./screens/CotizacionesScreen').then(m => ({ default: m.CotizacionesScreen })));
+const LicenciasScreen = React.lazy(() => import('./screens/LicenciasScreen').then(m => ({ default: m.LicenciasScreen })));
+const RefinanciacionScreen = React.lazy(() => import('./screens/RefinanciacionScreen').then(m => ({ default: m.RefinanciacionScreen })));
+const CajaChicaScreen = React.lazy(() => import('./screens/CajaChicaScreen').then(m => ({ default: m.CajaChicaScreen })));
+const CrmPipelineScreen = React.lazy(() => import('./screens/CrmPipelineScreen').then(m => ({ default: m.CrmPipelineScreen })));
+const ThreeDStudioScreen = React.lazy(() => import('./screens/ThreeDStudioScreen').then(m => ({ default: m.ThreeDStudioScreen })));
+const AdaptadorConvert = React.lazy(() => import('./components/features/AdaptadorConvert').then(m => ({ default: m.AdaptadorConvert })));
+const GlobalUploadModal = React.lazy(() => import('./components/features/GlobalUploadModal').then(m => ({ default: m.GlobalUploadModal })));
+const SalesComboModal = React.lazy(() => import('./components/features/SalesComboModal').then(m => ({ default: m.SalesComboModal })));
+const SriPasswordChangerModal = React.lazy(() => import('./components/features/SriPasswordChangerModal').then(m => ({ default: m.SriPasswordChangerModal })));
+const CommandPalette = React.lazy(() => import('./components/CommandPalette').then(m => ({ default: m.CommandPalette })));
+
+const ScreenLoader = () => (
+  <div className="flex flex-col items-center justify-center min-h-[300px] w-full py-16">
+    <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin mb-3" />
+    <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Cargando módulo...</span>
+  </div>
+);
 
 
 type AppState = 'landing' | 'login' | 'dashboard' | 'services' | 'client_portal' | 'music';
@@ -576,38 +590,40 @@ const App: React.FC = () => {
   };
 
   const navItems = ([
-    { screen: 'home', icon: LucideIcons.Home, label: 'Dashboard' },
-    { screen: 'clients', icon: LucideIcons.Users, label: 'Directorio', count: clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length, groupLabel: 'Clientes', isSubItem: true },
-    { screen: 'declaraciones', icon: LucideIcons.LayoutGrid, label: 'Declaraciones', isSubItem: true },
-    { screen: 'crm_pipeline', icon: LucideIcons.Kanban, label: 'CRM Embudo' },
-    { screen: '3d-studio', icon: LucideIcons.Box, label: 'Studio 3D Alpha3D' },
-    { screen: 'firmas', icon: LucideIcons.KeyRound, label: 'Firmas' },
-    { screen: 'facturadores', icon: LucideIcons.ShoppingBag, label: 'Facturadores y Planes' },
-    { screen: 'cotizaciones', icon: LucideIcons.FileSpreadsheet, label: 'Cotizaciones' },
-    { screen: 'licencias', icon: LucideIcons.Key, label: 'Licencias SaaS' },
-    { screen: 'refinanciacion', icon: LucideIcons.Coins, label: 'Refinanciación' },
-    { screen: 'caja_chica', icon: LucideIcons.Wallet, label: 'Caja Chica TPV' },
-    { screen: 'cobranza', icon: LucideIcons.BarChart, label: 'Cobranza' },
-    { screen: 'sri_facturacion', icon: LucideIcons.FileText, label: 'Facturador' },
-    { screen: 'tasks', icon: LucideIcons.CheckCircle, label: 'Tareas' },
-    { screen: 'calendar', icon: LucideIcons.CalendarDays, label: 'Agenda' },
-    { screen: 'web_orders', icon: LucideIcons.ShoppingCart, label: 'Tienda' },
-    { screen: 'services', icon: LucideIcons.Globe, label: 'Servicios' },
-    { screen: 'settings', icon: LucideIcons.Settings, label: 'Ajustes' },
-    { screen: 'audit_log', icon: LucideIcons.History, label: 'Auditoría' },
-    { screen: 'migracion_zifact', icon: LucideIcons.ArrowRightLeft, label: 'Migración Zifact', onClick: () => navigate('migracion_zifact') },
-    { screen: 'landing', icon: LucideIcons.Globe, label: 'Sitio Público' },
+    { screen: 'home', icon: Home, label: 'Dashboard' },
+    { screen: 'clients', icon: Users, label: 'Directorio', count: clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length, groupLabel: 'Clientes', isSubItem: true },
+    { screen: 'declaraciones', icon: LayoutGrid, label: 'Declaraciones', isSubItem: true },
+    { screen: 'crm_pipeline', icon: Kanban, label: 'CRM Embudo' },
+    { screen: '3d-studio', icon: Box, label: 'Studio 3D Alpha3D' },
+    { screen: 'firmas', icon: KeyRound, label: 'Firmas' },
+    { screen: 'facturadores', icon: ShoppingBag, label: 'Facturadores y Planes' },
+    { screen: 'cotizaciones', icon: FileSpreadsheet, label: 'Cotizaciones' },
+    { screen: 'licencias', icon: Key, label: 'Licencias SaaS' },
+    { screen: 'refinanciacion', icon: Coins, label: 'Refinanciación' },
+    { screen: 'caja_chica', icon: Wallet, label: 'Caja Chica TPV' },
+    { screen: 'cobranza', icon: BarChart, label: 'Cobranza' },
+    { screen: 'sri_facturacion', icon: FileText, label: 'Facturador' },
+    { screen: 'tasks', icon: CheckCircle, label: 'Tareas' },
+    { screen: 'calendar', icon: CalendarDays, label: 'Agenda' },
+    { screen: 'web_orders', icon: ShoppingCart, label: 'Tienda' },
+    { screen: 'services', icon: Globe, label: 'Servicios' },
+    { screen: 'settings', icon: Settings, label: 'Ajustes' },
+    { screen: 'audit_log', icon: History, label: 'Auditoría' },
+    { screen: 'migracion_zifact', icon: ArrowRightLeft, label: 'Migración Zifact', onClick: () => navigate('migracion_zifact') },
+    { screen: 'landing', icon: Globe, label: 'Sitio Público' },
   ] as any[]);
 
   if (appState === 'services') return (
-    <ServicesPage
-      onAdminAccess={() => setAppState('login')}
-      onSubmitOrder={(o) => setWebOrders(p => [...p, o])}
-      onNavigateToHome={() => setAppState('landing')}
-      currentUser={publicUser}
-      onLogin={setPublicUser}
-      onLogout={() => setPublicUser(null)}
-    />
+    <Suspense fallback={<ScreenLoader />}>
+      <ServicesPage
+        onAdminAccess={() => setAppState('login')}
+        onSubmitOrder={(o) => setWebOrders(p => [...p, o])}
+        onNavigateToHome={() => setAppState('landing')}
+        currentUser={publicUser}
+        onLogin={setPublicUser}
+        onLogout={() => setPublicUser(null)}
+      />
+    </Suspense>
   );
 
   if (appState === 'landing') return (
@@ -621,17 +637,29 @@ const App: React.FC = () => {
       toggleTheme={toggleTheme}
     />
   );
-  if (appState === 'login') return <LoginScreen onSuccess={handleLoginSuccess} onBack={() => setAppState('landing')} clients={clients} />;
-  if (appState === 'client_portal' && loggedClient) return <ClientPortalScreen
-    client={loggedClient}
-    onLogout={() => { setLoggedClient(null); setAppState('landing'); }}
-    serviceFees={serviceFees}
-    onUpdateClient={(updatedClient) => {
-      setLoggedClient(updatedClient);
-      setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
-    }}
-  />;
-  if (appState === 'music') return <MusicPage onBack={() => setAppState('landing')} />;
+  if (appState === 'login') return (
+    <Suspense fallback={<ScreenLoader />}>
+      <LoginScreen onSuccess={handleLoginSuccess} onBack={() => setAppState('landing')} clients={clients} />
+    </Suspense>
+  );
+  if (appState === 'client_portal' && loggedClient) return (
+    <Suspense fallback={<ScreenLoader />}>
+      <ClientPortalScreen
+        client={loggedClient}
+        onLogout={() => { setLoggedClient(null); setAppState('landing'); }}
+        serviceFees={serviceFees}
+        onUpdateClient={(updatedClient) => {
+          setLoggedClient(updatedClient);
+          setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+        }}
+      />
+    </Suspense>
+  );
+  if (appState === 'music') return (
+    <Suspense fallback={<ScreenLoader />}>
+      <MusicPage onBack={() => setAppState('landing')} />
+    </Suspense>
+  );
 
   return (
     <ToastProvider>
@@ -673,7 +701,7 @@ const App: React.FC = () => {
             {/* Universal Search Bar */}
             <div className="relative w-80 group max-w-md no-print">
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none z-10">
-                    <LucideIcons.Search className="text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" size={16} />
+                    <Search className="text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors" size={16} />
                 </div>
                 <input 
                     type="text"
@@ -694,7 +722,7 @@ const App: React.FC = () => {
                     }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all z-10"
                 >
-                    <LucideIcons.X size={12} />
+                    <X size={12} />
                 </button>
             ) : (
                 <kbd 
@@ -732,7 +760,7 @@ const App: React.FC = () => {
                                                 RUC: {highlightText(c.ruc, globalSearchQuery)}
                                             </span>
                                         </div>
-                                        <LucideIcons.ArrowRight size={12} className="text-slate-400 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all" />
+                                        <ArrowRight size={12} className="text-slate-400 group-hover/item:text-primary group-hover/item:translate-x-1 transition-all" />
                                     </button>
                                 ))}
                             </div>
@@ -759,7 +787,7 @@ const App: React.FC = () => {
                                                     </span>
                                                     <span className="text-[9px] font-mono text-slate-400 mt-0.5">RUC: {c.ruc}</span>
                                                 </div>
-                                                <LucideIcons.ArrowRight size={10} className="text-slate-400 group-hover/recent:text-primary group-hover/recent:translate-x-1 transition-all" />
+                                                <ArrowRight size={10} className="text-slate-400 group-hover/recent:text-primary group-hover/recent:translate-x-1 transition-all" />
                                             </button>
                                         ))}
                                     </div>
@@ -770,29 +798,34 @@ const App: React.FC = () => {
                                     <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Guía de Búsqueda Rápida</span>
                                     <button 
                                         onClick={() => {
-                                            setIsGlobalDropdownOpen(false);
-                                            setIsCommandPaletteOpen(true);
+                                            setGlobalSearchQuery('r:');
+                                            setIsGlobalDropdownOpen(true);
                                         }}
-                                        className="text-[9px] font-bold text-primary hover:underline uppercase tracking-wider flex items-center gap-1"
+                                        className="text-[9px] font-mono text-primary font-bold hover:underline"
                                     >
-                                        <LucideIcons.Command size={10} /> Consola de Comandos
+                                        Probar tags
                                     </button>
                                 </div>
-                                <div className="grid grid-cols-1 gap-1.5">
+                                <div className="grid grid-cols-2 gap-2">
                                     {[
-                                        { tag: 'Ctrl + K', desc: 'Abrir atajos y comandos rápidos', isKbd: true, onClick: () => { setIsGlobalDropdownOpen(false); setIsCommandPaletteOpen(true); } },
-                                        { tag: 'r:popular', desc: 'Filtrar por Régimen Negocio Popular', onClick: () => setGlobalSearchQuery('r:popular') },
-                                        { tag: 'r:emprendedor', desc: 'Filtrar por Régimen Emprendedor', onClick: () => setGlobalSearchQuery('r:emprendedor') },
-                                        { tag: 'v:vencido', desc: 'Ver clientes con obligaciones vencidas', onClick: () => setGlobalSearchQuery('v:vencido') },
-                                        { tag: 'd:9', desc: 'Buscar RUC por noveno dígito (ej: 9)', onClick: () => setGlobalSearchQuery('d:9') },
-                                        { tag: 'n:viaje', desc: 'Buscar términos dentro de las notas', onClick: () => setGlobalSearchQuery('n:') }
+                                        { tag: 'r: rimpe', desc: 'Régimen RIMPE' },
+                                        { tag: 'v: vencido', desc: 'Vencidos / Deuda' },
+                                        { tag: 'd: 9', desc: '9no Dígito del RUC' },
+                                        { tag: 'Ctrl + K', desc: 'Comandos Pro', isKbd: true }
                                     ].map((item, idx) => (
                                         <button
                                             key={idx}
-                                            onClick={item.onClick}
-                                            className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-all flex items-center justify-between group/guide text-[11px] font-bold"
+                                            onClick={() => {
+                                                if (item.isKbd) {
+                                                    setIsGlobalDropdownOpen(false);
+                                                    setIsCommandPaletteOpen(true);
+                                                } else {
+                                                    setGlobalSearchQuery(item.tag);
+                                                }
+                                            }}
+                                            className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-white/5 border border-slate-200/60 dark:border-white/5 hover:border-primary/40 transition-all text-left group/guide"
                                         >
-                                            <span className="text-slate-600 dark:text-slate-300 group-hover/guide:text-slate-800 dark:group-hover/guide:text-white transition-colors">
+                                            <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 truncate mr-1">
                                                 {item.desc}
                                             </span>
                                             <span className={`px-2 py-0.5 rounded text-[10px] font-mono border transition-all ${
@@ -820,7 +853,7 @@ const App: React.FC = () => {
                   onClick={toggleTheme}
                   className={`p-2.5 rounded-xl transition-all duration-500 ${theme === 'dark' ? 'bg-slate-700 text-yellow-400' : 'bg-white text-sky-600 shadow-xl'}`}
                 >
-                  {theme === 'dark' ? <LucideIcons.Sun size={20} fill="currentColor" /> : <LucideIcons.Moon size={20} fill="currentColor" />}
+                  {theme === 'dark' ? <Sun size={20} fill="currentColor" /> : <Moon size={20} fill="currentColor" />}
                 </button>
               </div>
 
@@ -847,7 +880,7 @@ const App: React.FC = () => {
             
             <div className="flex items-center gap-4">
               <button onClick={() => setIsUploadModalOpen(true)} className="w-8 h-8 flex items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:scale-110 active:scale-95 transition-transform shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-                <LucideIcons.Zap size={14} className="fill-current" />
+                <Zap size={14} className="fill-current" />
               </button>
               
               <div className="scale-75 origin-right">
@@ -855,7 +888,7 @@ const App: React.FC = () => {
               </div>
 
               <button onClick={toggleTheme} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 dark:bg-slate-800/40 border border-white/20 dark:border-white/10 text-sky-600 dark:text-yellow-400 shadow-lg hover:scale-110 active:scale-95 transition-transform">
-                {theme === 'dark' ? <LucideIcons.Sun size={14} fill="currentColor" /> : <LucideIcons.Moon size={14} fill="currentColor" />}
+                {theme === 'dark' ? <Sun size={14} fill="currentColor" /> : <Moon size={14} fill="currentColor" />}
               </button>
             </div>
           </header>
@@ -863,7 +896,9 @@ const App: React.FC = () => {
           <main className="flex-grow px-4 pt-24 pb-32 sm:pt-6 sm:p-6 sm:px-10 sm:pb-32 overflow-y-auto w-full relative no-scrollbar">
             <ErrorBoundary>
               <div key={activeScreen} className="max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-5 duration-700">
-                {renderScreen()}
+                <Suspense fallback={<ScreenLoader />}>
+                  {renderScreen()}
+                </Suspense>
               </div>
             </ErrorBoundary>
             {!clientToView && (
@@ -886,37 +921,36 @@ const App: React.FC = () => {
             <div className="flex space-x-3">
               <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg">Cancelar</button>
               <button onClick={() => toggleTheme()} className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-sky-500 transition-all border border-slate-200 dark:border-slate-700 shadow-sm">
-                {theme === 'dark' ? <LucideIcons.Sun size={20} /> : <LucideIcons.Moon size={20} />}
+                {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
               </button>
               <button onClick={handleLogoutConfirm} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-bold">Sí, Salir</button>
             </div>
           </div>
         </Modal>
-        <GlobalUploadModal
-          isOpen={isUploadModalOpen}
-          onClose={() => setIsUploadModalOpen(false)}
-        />
-        <SalesComboModal
-          isOpen={isSalesModalOpen}
-          onClose={() => setIsSalesModalOpen(false)}
-          onEmitSriInvoice={(client, description, amount) => {
-            setIsSalesModalOpen(false);
-            setSriInvoiceClientId(client.id);
-            setSriInvoiceDescription(description);
-            setSriInvoiceAmount(amount);
-            navigate('sri_facturacion');
-          }}
-        />
-
-        <CommandPalette 
-          isOpen={isCommandPaletteOpen}
-          onClose={() => setIsCommandPaletteOpen(false)}
-          clients={clients}
-          onNavigate={(screen) => navigate(screen as Screen)}
-          onAction={handleCommandAction}
-        />
-        
-
+        <Suspense fallback={null}>
+          <GlobalUploadModal
+            isOpen={isUploadModalOpen}
+            onClose={() => setIsUploadModalOpen(false)}
+          />
+          <SalesComboModal
+            isOpen={isSalesModalOpen}
+            onClose={() => setIsSalesModalOpen(false)}
+            onEmitSriInvoice={(client, description, amount) => {
+              setIsSalesModalOpen(false);
+              setSriInvoiceClientId(client.id);
+              setSriInvoiceDescription(description);
+              setSriInvoiceAmount(amount);
+              navigate('sri_facturacion');
+            }}
+          />
+          <CommandPalette 
+            isOpen={isCommandPaletteOpen}
+            onClose={() => setIsCommandPaletteOpen(false)}
+            clients={clients}
+            onNavigate={(screen) => navigate(screen as Screen)}
+            onAction={handleCommandAction}
+          />
+        </Suspense>
       </div>
     </ToastProvider>
   );

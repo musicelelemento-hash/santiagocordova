@@ -30,12 +30,31 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      chunkSizeWarningLimit: 2500,
+      chunkSizeWarningLimit: 1200,
       rollupOptions: {
         output: {
           entryFileNames: `assets/[name].${Date.now()}.js`,
           chunkFileNames: `assets/[name].${Date.now()}.js`,
           assetFileNames: `assets/[name].${Date.now()}.[ext]`,
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('three') || id.includes('@react-three')) {
+                return 'vendor-three';
+              }
+              if (id.includes('pdfjs-dist') || id.includes('html2pdf.js') || id.includes('xlsx') || id.includes('docxtemplater') || id.includes('pizzip') || id.includes('jszip') || id.includes('node-forge') || id.includes('crypto-js')) {
+                return 'vendor-office';
+              }
+              if (id.includes('recharts')) {
+                return 'vendor-recharts';
+              }
+              if (id.includes('firebase') || id.includes('@supabase')) {
+                return 'vendor-db';
+              }
+              if (id.includes('framer-motion') || id.includes('gsap')) {
+                return 'vendor-animation';
+              }
+            }
+          }
         },
       },
     }

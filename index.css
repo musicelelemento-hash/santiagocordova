@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap');
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
     /* Zenith Protocol - Obsidian & Azure Design Tokens */
     --primary: 221.2 83.2% 53.3%;    /* Vivid Azure #2B6AFF */

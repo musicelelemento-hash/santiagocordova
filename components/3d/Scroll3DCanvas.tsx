@@ -1,11 +1,7 @@
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, MeshTransmissionMaterial, OrbitControls, useGLTF, Environment } from '@react-three/drei';
+import { Float, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-gsap.registerPlugin(ScrollTrigger);
 
 interface Scroll3DCanvasProps {
     scrollProgress: number; // 0 to 1
@@ -13,22 +9,22 @@ interface Scroll3DCanvasProps {
     themeColor?: string;
 }
 
-// 1. Dynamic Particles Field
+// 1. High-Performance Particle Field (Optimized vertex count)
 const ParticlesField: React.FC<{ progress: number }> = ({ progress }) => {
-    const count = 300;
+    const count = 120;
     const pointsRef = useRef<THREE.Points>(null);
 
     const [positions, colors] = useMemo(() => {
         const pos = new Float32Array(count * 3);
         const col = new Float32Array(count * 3);
-        const color1 = new THREE.Color('#6366f1');
-        const color2 = new THREE.Color('#38bdf8');
-        const color3 = new THREE.Color('#f43f5e');
+        const color1 = new THREE.Color('#2B6AFF');
+        const color2 = new THREE.Color('#00A896');
+        const color3 = new THREE.Color('#6366f1');
 
         for (let i = 0; i < count; i++) {
-            pos[i * 3] = (Math.random() - 0.5) * 20;
-            pos[i * 3 + 1] = (Math.random() - 0.5) * 20;
-            pos[i * 3 + 2] = (Math.random() - 0.5) * 20;
+            pos[i * 3] = (Math.random() - 0.5) * 16;
+            pos[i * 3 + 1] = (Math.random() - 0.5) * 16;
+            pos[i * 3 + 2] = (Math.random() - 0.5) * 16;
 
             const lerpColor = i % 3 === 0 ? color1 : i % 3 === 1 ? color2 : color3;
             col[i * 3] = lerpColor.r;
@@ -40,8 +36,8 @@ const ParticlesField: React.FC<{ progress: number }> = ({ progress }) => {
 
     useFrame((state, delta) => {
         if (pointsRef.current) {
-            pointsRef.current.rotation.y += delta * 0.08 * (1 + progress);
-            pointsRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.2) * 0.2 + progress * 0.5;
+            pointsRef.current.rotation.y += delta * 0.05 * (1 + progress);
+            pointsRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.15) * 0.15 + progress * 0.3;
         }
     });
 
@@ -58,11 +54,12 @@ const ParticlesField: React.FC<{ progress: number }> = ({ progress }) => {
                 />
             </bufferGeometry>
             <pointsMaterial
-                size={0.06}
+                size={0.05}
                 vertexColors
                 transparent
-                opacity={0.7}
+                opacity={0.6}
                 blending={THREE.AdditiveBlending}
+                depthWrite={false}
             />
         </points>
     );
@@ -84,7 +81,7 @@ const Alpha3DModel: React.FC<{ url: string; progress: number }> = ({ url, progre
     return <primitive ref={groupRef} object={scene} scale={1.5} />;
 };
 
-// 3. Main Procedural Sculptures (Morphing 3D Shapes based on Scroll)
+// 3. Ultra-Fast Glass Polyhedron (Single-Pass Hardware Accelerated)
 const ScrollSculpture: React.FC<{ progress: number }> = ({ progress }) => {
     const meshRef = useRef<THREE.Mesh>(null);
     const ringRef = useRef<THREE.Mesh>(null);
@@ -94,83 +91,73 @@ const ScrollSculpture: React.FC<{ progress: number }> = ({ progress }) => {
 
         const time = state.clock.getElapsedTime();
 
-        // Rotation morph according to scroll
-        meshRef.current.rotation.x = time * 0.3 + progress * Math.PI * 2;
-        meshRef.current.rotation.y = time * 0.5 + progress * Math.PI * 4;
-        meshRef.current.rotation.z = Math.sin(time * 0.2) * 0.5;
+        // Smooth rotation morph
+        meshRef.current.rotation.x = time * 0.25 + progress * Math.PI * 1.5;
+        meshRef.current.rotation.y = time * 0.35 + progress * Math.PI * 2;
+        meshRef.current.rotation.z = Math.sin(time * 0.15) * 0.3;
 
-        // Position morphing across 4 scroll phases
-        // Phase 0 (Hero): Center elevated [0, 0.2, 0]
-        // Phase 1 (Services): Rotated right [2, 0, -1]
-        // Phase 2 (Analytics): Zoomed left [-2.2, 0.5, 1]
-        // Phase 3 (CTA): Epic spin center [0, -0.5, 2]
-
+        // Position interpolation across scroll phases
         const targetX = progress < 0.25 
             ? 0 
             : progress < 0.5 
-            ? 2.2 - (progress - 0.25) * 8.8 
+            ? 2.0 - (progress - 0.25) * 8.0 
             : progress < 0.75 
-            ? -2.2 + (progress - 0.5) * 8.8 
+            ? -2.0 + (progress - 0.5) * 8.0 
             : 0;
 
         const targetY = progress < 0.25
-            ? Math.sin(time * 1.5) * 0.2
-            : Math.sin(time * 2) * 0.3;
+            ? Math.sin(time * 1.2) * 0.15
+            : Math.sin(time * 1.5) * 0.2;
 
-        const targetScale = 1 + Math.sin(progress * Math.PI * 2) * 0.4;
+        const targetScale = 1 + Math.sin(progress * Math.PI) * 0.25;
 
         meshRef.current.position.x = THREE.MathUtils.lerp(meshRef.current.position.x, targetX, 0.05);
         meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, targetY, 0.05);
         meshRef.current.scale.setScalar(THREE.MathUtils.lerp(meshRef.current.scale.x, targetScale, 0.05));
 
         if (ringRef.current) {
-            ringRef.current.rotation.x = -time * 0.4 + progress * Math.PI * 3;
-            ringRef.current.rotation.y = time * 0.6;
+            ringRef.current.rotation.x = -time * 0.3 + progress * Math.PI * 2;
+            ringRef.current.rotation.y = time * 0.4;
             ringRef.current.position.x = meshRef.current.position.x;
             ringRef.current.position.y = meshRef.current.position.y;
         }
     });
 
-    // Dynamic Geometry morphing
     const geoStage = Math.floor(progress * 4);
 
     return (
         <group>
             {/* Outer Cyber Ring */}
             <mesh ref={ringRef}>
-                <torusGeometry args={[2.4, 0.04, 16, 100]} />
+                <torusGeometry args={[2.2, 0.03, 12, 64]} />
                 <meshStandardMaterial
-                    color={progress > 0.5 ? '#f43f5e' : '#38bdf8'}
-                    emissive={progress > 0.5 ? '#f43f5e' : '#38bdf8'}
-                    emissiveIntensity={0.8}
+                    color={progress > 0.5 ? '#00A896' : '#2B6AFF'}
+                    emissive={progress > 0.5 ? '#00A896' : '#2B6AFF'}
+                    emissiveIntensity={0.6}
                     wireframe
                 />
             </mesh>
 
-            {/* Main Polyhedron / Glass Core */}
-            <Float speed={2} rotationIntensity={1} floatIntensity={1.5}>
+            {/* Main Polyhedron / High-FPS Glass Core */}
+            <Float speed={1.5} rotationIntensity={0.8} floatIntensity={1.0}>
                 <mesh ref={meshRef}>
-                    {geoStage === 0 && <icosahedronGeometry args={[1.4, 1]} />}
-                    {geoStage === 1 && <torusKnotGeometry args={[1.0, 0.35, 128, 32]} />}
-                    {geoStage === 2 && <dodecahedronGeometry args={[1.3, 0]} />}
-                    {geoStage >= 3 && <octahedronGeometry args={[1.5, 2]} />}
+                    {geoStage === 0 && <icosahedronGeometry args={[1.3, 1]} />}
+                    {geoStage === 1 && <torusKnotGeometry args={[0.9, 0.3, 64, 16]} />}
+                    {geoStage === 2 && <dodecahedronGeometry args={[1.2, 0]} />}
+                    {geoStage >= 3 && <octahedronGeometry args={[1.3, 1]} />}
 
-                    {/* Premium Glassmorphism Material */}
-                    <MeshTransmissionMaterial
-                        backside
-                        samples={8}
-                        resolution={256}
-                        transmission={0.92}
-                        roughness={0.15}
-                        clearcoat={1}
+                    {/* Single-Pass High-Performance Glass / Crystal Material */}
+                    <meshPhysicalMaterial
+                        color={progress > 0.6 ? '#dbeafe' : '#cffafe'}
+                        transmission={0.85}
+                        opacity={0.85}
+                        transparent
+                        roughness={0.1}
+                        metalness={0.1}
+                        clearcoat={1.0}
                         clearcoatRoughness={0.1}
-                        thickness={0.8}
-                        chromaticAberration={0.4}
-                        anisotropy={0.3}
-                        distortion={0.4}
-                        distortionScale={0.3}
-                        temporalDistortion={0.2}
-                        color={progress > 0.6 ? '#e0e7ff' : '#c7d2fe'}
+                        reflectivity={0.9}
+                        ior={1.45}
                     />
                 </mesh>
             </Float>
@@ -183,15 +170,21 @@ export const Scroll3DCanvas: React.FC<Scroll3DCanvasProps> = ({
     customGlbUrl
 }) => {
     return (
-        <div className="w-full h-full absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="w-full h-full absolute inset-0 pointer-events-none z-0 overflow-hidden hidden sm:block">
             <Canvas
-                camera={{ position: [0, 0, 6], fov: 45 }}
-                gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+                camera={{ position: [0, 0, 5.5], fov: 45 }}
+                dpr={[1, 1.5]}
+                gl={{ 
+                    antialias: true, 
+                    alpha: true, 
+                    powerPreference: 'high-performance',
+                    depth: true
+                }}
             >
-                <ambientLight intensity={0.7} />
-                <directionalLight position={[10, 10, 5]} intensity={1.8} color="#6366f1" />
-                <directionalLight position={[-10, -10, -5]} intensity={1.2} color="#ec4899" />
-                <pointLight position={[0, 0, 3]} intensity={2} color="#38bdf8" />
+                <ambientLight intensity={0.8} />
+                <directionalLight position={[8, 8, 4]} intensity={1.5} color="#2B6AFF" />
+                <directionalLight position={[-8, -8, -4]} intensity={1.0} color="#00A896" />
+                <pointLight position={[0, 0, 2.5]} intensity={1.5} color="#38bdf8" />
 
                 <ParticlesField progress={scrollProgress} />
 
@@ -200,8 +193,6 @@ export const Scroll3DCanvas: React.FC<Scroll3DCanvasProps> = ({
                 ) : (
                     <ScrollSculpture progress={scrollProgress} />
                 )}
-
-                <Environment preset="city" />
             </Canvas>
         </div>
     );
