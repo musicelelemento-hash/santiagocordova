@@ -32,7 +32,7 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string } | null>(null);
     const [visiblePasswords, setVisiblePasswords] = useState<{ [id: string]: boolean }>({});
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const [filterStatus, setFilterStatus] = useState<'todos' | 'recursos_listos' | 'subido_plataforma' | 'activado' | 'sin_firma' | 'particulares' | 'clientes'>('todos');
+    const [filterStatus, setFilterStatus] = useState<'todos' | 'planes_pago' | 'sri_gratuito' | 'solo_firma' | 'particulares' | 'clientes' | 'recursos_listos' | 'activado' | 'sin_firma'>('todos');
     const [selectedVaultClient, setSelectedVaultClient] = useState<Client | null>(null);
     const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
     const [isQuickPlanModalOpen, setIsQuickPlanModalOpen] = useState(false);
@@ -52,17 +52,27 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
 
     // KPI Counters from local store for ultra-fast instant UI responsiveness
     const allFacturadorClients = useMemo(() => {
-        return storeClients.filter(c => !c.isDeleted && c.isActive && (c.billingPlan || c.facturadorConfig || c.clientType === 'solo_plan' || c.requiresDeclarations === false));
+        return storeClients.filter(c => !c.isDeleted && c.isActive && (
+            c.billingPlan || 
+            c.facturadorConfig || 
+            c.signatureFile || 
+            c.signatureExpirationDate || 
+            c.clientType === 'solo_plan' || 
+            c.requiresDeclarations === false
+        ));
     }, [storeClients]);
 
     const kpis = useMemo(() => {
         const total = allFacturadorClients.length;
+        const planesPago = allFacturadorClients.filter(c => !!(c.billingPlan || c.facturadorConfig)).length;
+        const sriGratuito = allFacturadorClients.filter(c => !(c.billingPlan || c.facturadorConfig) && !!c.signatureFile).length;
+        const soloFirma = allFacturadorClients.filter(c => c.clientType === 'solo_plan' || (c as any).signatureType === 'temporal_10_30dias' || (c as any).signatureType === 'tramite_puntual').length;
         const particulares = allFacturadorClients.filter(c => c.clientType === 'solo_plan' || c.requiresDeclarations === false).length;
         const contables = allFacturadorClients.filter(c => c.clientType !== 'solo_plan' && c.requiresDeclarations !== false).length;
         const recursos = allFacturadorClients.filter(c => !c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos').length;
         const activado = allFacturadorClients.filter(c => c.facturadorActivationStatus === 'activado').length;
         const sinFirma = allFacturadorClients.filter(c => !c.signatureFile).length;
-        return { total, particulares, contables, recursos, activado, sinFirma };
+        return { total, planesPago, sriGratuito, soloFirma, particulares, contables, recursos, activado, sinFirma };
     }, [allFacturadorClients]);
 
     // Combinar búsqueda y filtros locales de alta velocidad respaldados con Supabase
@@ -80,14 +90,18 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
             );
         }
 
-        if (filterStatus === 'particulares') {
+        if (filterStatus === 'planes_pago') {
+            list = list.filter(c => !!(c.billingPlan || c.facturadorConfig));
+        } else if (filterStatus === 'sri_gratuito') {
+            list = list.filter(c => !(c.billingPlan || c.facturadorConfig) && !!c.signatureFile);
+        } else if (filterStatus === 'solo_firma') {
+            list = list.filter(c => c.clientType === 'solo_plan' || (c as any).signatureType === 'temporal_10_30dias' || (c as any).signatureType === 'tramite_puntual');
+        } else if (filterStatus === 'particulares') {
             list = list.filter(c => c.clientType === 'solo_plan' || c.requiresDeclarations === false);
         } else if (filterStatus === 'clientes') {
             list = list.filter(c => c.clientType !== 'solo_plan' && c.requiresDeclarations !== false);
         } else if (filterStatus === 'recursos_listos') {
             list = list.filter(c => !c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos');
-        } else if (filterStatus === 'subido_plataforma') {
-            list = list.filter(c => c.facturadorActivationStatus === 'subido_plataforma');
         } else if (filterStatus === 'activado') {
             list = list.filter(c => c.facturadorActivationStatus === 'activado');
         } else if (filterStatus === 'sin_firma') {
@@ -500,9 +514,10 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                     <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pb-1">
                         {[
                             { id: 'todos', label: `Todos (${kpis.total})` },
-                            { id: 'particulares', label: `Solo Plan / Sin IVA (${kpis.particulares})`, icon: User },
-                            { id: 'clientes', label: `Clientes Contables (${kpis.contables})`, icon: UserCheck },
-                            { id: 'recursos_listos', label: `Por Subir (${kpis.recursos})` },
+                            { id: 'planes_pago', label: `Planes de Pago (${kpis.planesPago})`, icon: ShoppingBag },
+                            { id: 'sri_gratuito', label: `SRI Gratuito (${kpis.sriGratuito})`, icon: Laptop },
+                            { id: 'solo_firma', label: `Solo Firma 10-30d (${kpis.soloFirma})`, icon: ShieldCheck },
+                            { id: 'clientes', label: `Contables (${kpis.contables})`, icon: UserCheck },
                             { id: 'activado', label: `Activados (${kpis.activado})` },
                             { id: 'sin_firma', label: `Sin Firma (${kpis.sinFirma})` }
                         ].map(tab => (

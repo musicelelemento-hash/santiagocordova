@@ -433,6 +433,174 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                 </div>
             )}
 
+            {/* ── Contexto de Facturación & Cobro de Emisión al Vuelo (Stitch Obsidian Luxury) ── */}
+            <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 border border-white/10 border-t-white/20 shadow-2xl space-y-6">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#00A896]/20 to-[#2B6AFF]/20 border border-[#00A896]/30 flex items-center justify-center text-[#00A896] shadow-lg shadow-[#00A896]/15">
+                            <LucideIcons.Receipt size={28} />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-3">
+                                <h3 className="text-lg sm:text-xl font-display font-black text-white uppercase tracking-tight">
+                                    Contexto de Facturación & Emisión Directa
+                                </h3>
+                                <span className={`px-3 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-wider border ${
+                                    (editedClient.billingPlan || editedClient.facturadorConfig)
+                                        ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30'
+                                        : (editedClient.clientType === 'solo_plan' || (editedClient as any).signatureType === 'temporal_10_30dias')
+                                        ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                        : 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+                                }`}>
+                                    {(editedClient.billingPlan || editedClient.facturadorConfig) 
+                                        ? '💼 Facturador Pro (Zifact / Pago)' 
+                                        : (editedClient.clientType === 'solo_plan' || (editedClient as any).signatureType === 'temporal_10_30dias')
+                                        ? '⏳ Solo Firma (10-30 días / Trámites)'
+                                        : '🏛️ SRI Gratuito (SRI & Yo en Línea)'}
+                                </span>
+                            </div>
+                            <p className="text-slate-300 text-xs mt-1 font-medium max-w-xl">
+                                Gestión de comprobantes emitidos por el despacho para el cliente. Calcula honorarios automáticamente según la escala oficial.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start lg:self-auto font-mono">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                try {
+                                    const credentialsPayload = {
+                                        ruc: client.ruc,
+                                        password: client.sriPassword || '',
+                                        name: client.name,
+                                        timestamp: Date.now()
+                                    };
+                                    localStorage.setItem('sri_active_credentials', JSON.stringify(credentialsPayload));
+                                    if (client.sriPassword) {
+                                        navigator.clipboard.writeText(`${client.ruc}\t${client.sriPassword}`);
+                                    } else {
+                                        navigator.clipboard.writeText(client.ruc);
+                                    }
+                                    toast.success("Credenciales cargadas para emitir en SRI & Yo.");
+                                    window.open("https://srienlinea.sri.gob.ec/comprobantes-electronicos-internet/pages/facturacion/factura.jsf", "_blank");
+                                } catch (e) {
+                                    window.open("https://srienlinea.sri.gob.ec/", "_blank");
+                                }
+                            }}
+                            className="px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-95 flex items-center gap-2 cursor-pointer border border-white/10"
+                        >
+                            <LucideIcons.ExternalLink size={14} />
+                            <span>Abrir SRI & Yo</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Calculadora Táctica de Honorarios por Facturación On-Demand */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 bg-[#020b14]/90 p-6 rounded-3xl border border-white/10 font-mono">
+                    {/* Contadores */}
+                    <div className="md:col-span-7 space-y-4">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <LucideIcons.Sliders size={14} className="text-[#00A896]" />
+                            <span>Comprobantes Emitidos por Despacho este Mes</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Facturas Emitidas */}
+                            <div className="p-4 bg-[#051424] rounded-2xl border border-white/10 flex items-center justify-between">
+                                <div>
+                                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Facturas Emitidas</span>
+                                    <span className="text-2xl font-bold text-white font-mono mt-1 block">{managedInvoicesCount}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setManagedInvoicesCount(prev => Math.max(0, prev - 1))}
+                                        className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 flex items-center justify-center font-bold text-sm border border-white/10 transition-all cursor-pointer active:scale-90"
+                                    >
+                                        -
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setManagedInvoicesCount(prev => prev + 1)}
+                                        className="w-8 h-8 rounded-xl bg-[#00A896]/20 hover:bg-[#00A896]/30 text-[#00A896] flex items-center justify-center font-bold text-sm border border-[#00A896]/30 transition-all cursor-pointer active:scale-90"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Anulaciones */}
+                            <div className="p-4 bg-[#051424] rounded-2xl border border-white/10 flex items-center justify-between">
+                                <div>
+                                    <span className="text-[9px] text-slate-400 font-bold uppercase block">Anulaciones</span>
+                                    <span className="text-2xl font-bold text-rose-400 font-mono mt-1 block">{managedAnulationsCount}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setManagedAnulationsCount(prev => Math.max(0, prev - 1))}
+                                        className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 flex items-center justify-center font-bold text-sm border border-white/10 transition-all cursor-pointer active:scale-90"
+                                    >
+                                        -
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setManagedAnulationsCount(prev => prev + 1)}
+                                        className="w-8 h-8 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 flex items-center justify-center font-bold text-sm border border-rose-500/30 transition-all cursor-pointer active:scale-90"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Escala de Precios Informativa */}
+                        <div className="flex flex-wrap gap-2 text-[9px] text-slate-400 pt-1">
+                            <span className={`px-2 py-0.5 rounded-lg border ${managedInvoicesCount === 1 ? 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/40 font-bold' : 'bg-white/5 border-white/5'}`}>1 Factura: $2.00</span>
+                            <span className={`px-2 py-0.5 rounded-lg border ${managedInvoicesCount >= 2 && managedInvoicesCount <= 5 ? 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/40 font-bold' : 'bg-white/5 border-white/5'}`}>Hasta 5: $5.00</span>
+                            <span className={`px-2 py-0.5 rounded-lg border ${managedInvoicesCount >= 6 && managedInvoicesCount <= 15 ? 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/40 font-bold' : 'bg-white/5 border-white/5'}`}>Hasta 15: $10.00</span>
+                            <span className={`px-2 py-0.5 rounded-lg border ${managedInvoicesCount > 15 ? 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/40 font-bold' : 'bg-white/5 border-white/5'}`}>Gestión Mensual: $20.00</span>
+                        </div>
+                    </div>
+
+                    {/* Resumen de Cobro y Acciones */}
+                    <div className="md:col-span-5 p-5 bg-[#051424] rounded-2xl border border-white/10 flex flex-col justify-between space-y-4">
+                        <div>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Honorarios Calculados</span>
+                            <div className="text-3xl font-black text-[#00A896] font-mono mt-1">
+                                ${calculatedEmissionFee.toFixed(2)}
+                            </div>
+                            <span className="text-[9px] text-slate-400 font-sans block mt-1">
+                                {managedInvoicesCount === 0 && managedAnulationsCount === 0 
+                                    ? 'Sin emisiones pendientes de cobro' 
+                                    : `${managedInvoicesCount} facturas y ${managedAnulationsCount} anulaciones registradas`}
+                            </span>
+                        </div>
+
+                        <div className="space-y-2 pt-2 border-t border-white/5">
+                            <button
+                                type="button"
+                                onClick={handleSendInvoicingWhatsApp}
+                                disabled={calculatedEmissionFee === 0}
+                                className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-500/20 active:scale-95"
+                            >
+                                <LucideIcons.MessageSquare size={13} />
+                                <span>Cobrar por WhatsApp</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSaveManagedInvoicing}
+                                className="w-full py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer border border-white/10 active:scale-95"
+                            >
+                                <LucideIcons.Save size={13} />
+                                <span>Guardar Registro</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* ── Sistema de Facturación Electrónica del Cliente (Bóveda Full-Width) ── */}
             <div className="w-full">
                 <FacturadorCard
