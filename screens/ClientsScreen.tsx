@@ -104,9 +104,6 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     const [bulkResults, setBulkResults] = useState<BulkUploadResult[]>([]);
     const [isBulkReportOpen, setIsBulkReportOpen] = useState(false);
     const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
-    const [isWorkspaceView, setIsWorkspaceView] = useState(false);
-    const [isCobrosView, setIsCobrosView] = useState(false);
-    const [isAlertasView, setIsAlertasView] = useState(false);
     const [previewItem, setPreviewItem] = useState<{ client: Client, declaration: Declaration } | null>(null);
 
     // Bulk Wizard State
@@ -120,7 +117,10 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     };
 
     const [activeGroupTab, setActiveGroupTab] = useState(getInitialGroupTab());
-    const isMatrixView = activeGroupTab === 'matrix' || activeGroupTab === 'declaraciones';
+    const isMatrixView = ['matrix', 'matriz', 'renta', 'declaraciones'].includes(activeGroupTab);
+    const isCobrosView = ['cobros', 'recaudacion'].includes(activeGroupTab);
+    const isWorkspaceView = !isMatrixView && !isCobrosView;
+    const isAlertasView = false;
     const [specificCategoryFilter, setSpecificCategoryFilter] = useState<any | null>(null);
     const [regimeFilter, setRegimeFilter] = useState<TaxRegime | 'all'>('all');
 
@@ -151,13 +151,6 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
     useEffect(() => {
         sessionStorage.setItem('clients_sort', sortOption);
     }, [sortOption]);
-
-    useEffect(() => {
-        setIsMatrixView(['matrix', 'matriz', 'renta'].includes(activeGroupTab));
-        setIsWorkspaceView(['all', 'directorio', 'mensual', 'semestral', 'rimpe_emp', 'rimpe_np', 'al-dia', 'vencidos', 'trash', 'papelera'].includes(activeGroupTab));
-        setIsCobrosView(['cobros', 'recaudacion'].includes(activeGroupTab));
-        setIsAlertasView(false);
-    }, [activeGroupTab]);
 
     useEffect(() => {
         sessionStorage.setItem('clients_view_mode', viewMode);
