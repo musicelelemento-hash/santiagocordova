@@ -578,8 +578,9 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                             </button>
                                         </th>
                                         <th className="py-4 px-5">Cliente</th>
-                                        <th className="py-4 px-5">Plan Vendido</th>
-                                        <th className="py-4 px-5">Expediente & Firma en Bóveda</th>
+                                        <th className="py-4 px-5">Plan & Vencimiento Software</th>
+                                        <th className="py-4 px-5">Firma .p12 & Caducidad</th>
+                                        <th className="py-4 px-5">Expediente en Bóveda</th>
                                         <th className="py-4 px-5">Estado de Trámite</th>
                                         <th className="py-4 px-5">Credenciales Facturador</th>
                                         <th className="py-4 px-5 text-right">Acciones</th>
@@ -589,7 +590,7 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                     {displayClients.map((client) => {
                                         if (!client) return null;
                                         const config = client.billingPlan || client.facturadorConfig || {
-                                            programName: 'Plan Particular',
+                                            programName: client.signatureFile ? 'Emisión SRI Gratuito' : 'Plan Particular',
                                             documentStatus: 'Registrado',
                                             username: client.ruc,
                                             password: client.sriPassword
@@ -599,6 +600,18 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                         const isSelected = selectedClientIds.includes(client.id);
                                         const providerUrl = config.url || (config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' : 'https://app.ecuafact.com');
 
+                                        // Cálculos de Vencimiento de Plan
+                                        const planExpDays = config.expirationDate ? Math.ceil((new Date(config.expirationDate).getTime() - Date.now()) / (1000 * 3600 * 24)) : null;
+                                        const isPlanExpiringSoon = planExpDays !== null && planExpDays <= 30 && planExpDays >= 0;
+                                        const isPlanExpired = planExpDays !== null && planExpDays < 0;
+
+                                        // Cálculos de Vencimiento de Firma .p12
+                                        const sigExpDays = client.signatureExpirationDate ? Math.ceil((new Date(client.signatureExpirationDate).getTime() - Date.now()) / (1000 * 3600 * 24)) : null;
+                                        const isSigExpiringSoon = sigExpDays !== null && sigExpDays <= 30 && sigExpDays >= 0;
+                                        const isSigExpired = sigExpDays !== null && sigExpDays < 0;
+
+                                        const hasRuc = client.ruc && client.ruc.length === 13 && client.ruc.endsWith('001');
+
                                         // Contar archivos presentes vs totales
                                         const isEcuafact = config.programName?.toLowerCase().includes('ecuafact');
                                         const totalRequired = isEcuafact ? 6 : 5;
@@ -607,10 +620,9 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                             ...(isEcuafact ? [client.ecuafactSignedRequest] : [])
                                         ].filter(Boolean).length;
                                         const isComplete = presentCount === totalRequired;
-                                        const totalVaultFiles = (client.vault?.length || 0) + presentCount;
 
                                         return (
-                                            <tr key={client.id} className={`hover:bg-white/[0.02] transition-colors ${isSelected ? 'bg-[#00A896]/10' : ''}`}>
+                                            <tr key={client.id} className={`hover:bg-white/[0.02] transition-colors ${isSelected ? 'bg-[#00A896]/10' : ''} ${isPlanExpiringSoon || isSigExpiringSoon ? 'bg-amber-500/[0.02]' : ''}`}>
                                                 <td className="py-4 px-4 text-center">
                                                     <button
                                                         onClick={() => handleToggleSelectClient(client.id)}
@@ -625,13 +637,60 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                 </td>
                                                 <td className="py-4 px-5">
                                                     <p className="font-bold text-white uppercase text-xs">{client.tradeName || client.name}</p>
-                                                    <p className="text-[10px] text-slate-400 font-mono">{client.ruc}</p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <span className="text-[10px] text-slate-400 font-mono">{client.ruc}</span>
+                                                        <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider ${
+                                                            hasRuc ? 'bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                                        }`}>
+                                                            {hasRuc ? '🏢 RUC Emisor' : '👤 Persona Natural'}
+                                                        </span>
+                                                    </div>
                                                 </td>
+                                                {/* Columna Plan & Vencimiento Software */}
                                                 <td className="py-4 px-5">
-                                                    <p className="font-bold text-[#00A896] text-xs">{config.programName}</p>
-                                                    <p className="text-[10px] text-slate-400 font-mono">
-                                                        {config.documentStatus || 'Plan Registrado'} {config.price ? `— $${config.price}` : ''}
-                                                    </p>
+                                                    <p className="font-bold text-[#00A896] text-xs">{config.programName || 'Emisión SRI'}</p>
+                                                    <div className="mt-1">
+                                                        {config.expirationDate ? (
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold ${
+                                                                isPlanExpired 
+                                                                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
+                                                                    : isPlanExpiringSoon 
+                                                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' 
+                                                                    : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                                            }`}>
+                                                                📅 {new Date(config.expirationDate).toLocaleDateString('es-EC')}
+                                                                <span className="opacity-80">({isPlanExpired ? 'Vencido' : `${planExpDays}d rest.`})</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[10px] text-slate-400">Sin caducidad de software</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                {/* Columna Firma .p12 & Caducidad */}
+                                                <td className="py-4 px-5">
+                                                    {client.signatureFile ? (
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-xs font-bold text-white">🔑 {client.signatureProvider || 'Firma .p12'}</span>
+                                                            </div>
+                                                            {client.signatureExpirationDate ? (
+                                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold ${
+                                                                    isSigExpired 
+                                                                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
+                                                                        : isSigExpiringSoon 
+                                                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' 
+                                                                        : 'bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30'
+                                                                }`}>
+                                                                    🔐 {new Date(client.signatureExpirationDate).toLocaleDateString('es-EC')}
+                                                                    <span className="opacity-80">({isSigExpired ? 'Caducada' : `${sigExpDays}d rest.`})</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[9px] text-slate-500">Sin fecha de firma</span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[9px]">⚠️ Sin Firma .p12</span>
+                                                    )}
                                                 </td>
                                                 <td className="py-4 px-5 space-y-2">
                                                     <div className="flex items-center gap-2">
@@ -795,6 +854,25 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                                     >
                                                         <ClipboardCopy size={11} /> Ficha
                                                     </button>
+
+                                                    {/* Botón Prioritario de Renovación si el Plan o la Firma están por vencer */}
+                                                    {(isPlanExpiringSoon || isSigExpiringSoon || isPlanExpired || isSigExpired) && (
+                                                        <button
+                                                            onClick={() => {
+                                                                const reason = (isSigExpired || isSigExpiringSoon)
+                                                                    ? `su *Firma Electrónica .p12* ${isSigExpired ? 'ha CADUCADO' : `está por vencer el ${new Date(client.signatureExpirationDate!).toLocaleDateString('es-EC')} (en ${sigExpDays} días)`}`
+                                                                    : `su plan de facturación *${config.programName}* ${isPlanExpired ? 'ha CADUCADO' : `está por vencer el ${new Date(config.expirationDate!).toLocaleDateString('es-EC')} (en ${planExpDays} días)`}`;
+                                                                const message = `Estimado(a) *${client.name}* 👋, le saludamos de SantiagoCordova.com.\n\nLe recordamos que ${reason}. Para evitar la suspensión de la emisión de comprobantes electrónicos en el SRI, le sugerimos realizar la renovación con anticipación.\n\n¿Desea que gestionemos la renovación de inmediato?`;
+                                                                const pObj = client.phones?.[0];
+                                                                const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
+                                                                setWhatsAppPrompt({ clientName: client.name, phone, message });
+                                                            }}
+                                                            className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-amber-500/40 text-[10px] cursor-pointer animate-pulse"
+                                                            title="Enviar alerta de renovación por WhatsApp"
+                                                        >
+                                                            <PhoneCall size={11} /> Renovar
+                                                        </button>
+                                                    )}
 
                                                     <button
                                                         onClick={() => {

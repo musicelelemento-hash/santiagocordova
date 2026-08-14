@@ -20,7 +20,7 @@ interface FirmasScreenProps {
     navigate: (screen: any, options?: any) => void;
 }
 
-type FirmasTab = 'vigentes' | 'sin-firma' | 'respaldos-externos' | 'facturadores';
+type FirmasTab = 'vigentes' | 'con-ruc' | 'solo-firma' | 'sin-firma' | 'respaldos-externos';
 type ViewMode = 'lineal' | 'tarjetas';
 
 interface BackupSignatureItem {
@@ -119,7 +119,10 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
             return d === null || d > 30;
         });
 
-        return { withSignature, withoutSignature, getDaysLeft, expired, expiringSoon, ok };
+        const conRuc = withSignature.filter(c => c.ruc && c.ruc.trim().length === 13 && c.ruc.trim().endsWith('001') && c.clientType !== 'solo_plan');
+        const soloFirma = withSignature.filter(c => !c.ruc || c.ruc.trim().length !== 13 || !c.ruc.trim().endsWith('001') || c.clientType === 'solo_plan' || (c as any).signatureType === 'temporal_10_30dias');
+
+        return { withSignature, withoutSignature, conRuc, soloFirma, getDaysLeft, expired, expiringSoon, ok };
     }, [clients, searchTerm, selectedProvider]);
 
     const filteredBackupSignatures = useMemo(() => {
@@ -311,6 +314,34 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             </span>
                         </button>
                         <button
+                            onClick={() => setTab('con-ruc')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                                tab === 'con-ruc'
+                                    ? 'bg-[#00A896]/20 text-[#00A896] shadow-lg border border-[#00A896]/30'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            <Laptop size={14} className={tab === 'con-ruc' ? 'text-[#00A896]' : ''} />
+                            <span>Con RUC (Para Facturar)</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tab === 'con-ruc' ? 'bg-[#00A896] text-white' : 'bg-white/10 text-slate-400'}`}>
+                                {signatureData.conRuc.length}
+                            </span>
+                        </button>
+                        <button
+                            onClick={() => setTab('solo-firma')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                                tab === 'solo-firma'
+                                    ? 'bg-amber-500/20 text-amber-300 shadow-lg border border-amber-500/30'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            <Shield size={14} />
+                            <span>Solo Firma / 10-30d</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tab === 'solo-firma' ? 'bg-amber-500 text-white' : 'bg-white/10 text-slate-400'}`}>
+                                {signatureData.soloFirma.length}
+                            </span>
+                        </button>
+                        <button
                             onClick={() => setTab('sin-firma')}
                             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
                                 tab === 'sin-firma'
@@ -338,20 +369,6 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                             <span>Respaldos & Ventas</span>
                             <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tab === 'respaldos-externos' ? 'bg-purple-500 text-white' : 'bg-purple-500/20 text-purple-300'}`}>
                                 {filteredBackupSignatures.length}
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => setTab('facturadores')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all duration-300 cursor-pointer ${
-                                tab === 'facturadores'
-                                    ? 'bg-[#00A896]/20 text-[#00A896] shadow-lg border border-[#00A896]/30'
-                                    : 'text-slate-400 hover:text-white'
-                            }`}
-                        >
-                            <ShoppingBag size={14} />
-                            <span>Facturadores y Planes</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${tab === 'facturadores' ? 'bg-[#00A896] text-white' : 'bg-[#00A896]/15 text-[#00A896]'}`}>
-                                {clients.filter(c => !c.isDeleted && c.isActive && c.facturadorConfig).length}
                             </span>
                         </button>
                     </div>
