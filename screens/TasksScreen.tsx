@@ -277,124 +277,149 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
     }
 
     return (
-        <div className="space-y-6 animate-fade-in relative pb-24 pt-4 sm:pt-0">
-            {/* ELITE TACTICAL HEADER */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10 px-1 sm:px-0">
-                <div className="animate-fade-in-left w-full sm:w-auto">
-                    <div className="flex items-center justify-between sm:justify-start gap-2 mb-2">
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-brand-teal/10 border border-brand-teal/20">
-                            <div className="w-1.5 h-1.5 rounded-full bg-brand-teal animate-pulse shadow-[0_0_8px_rgba(20,184,166,0.8)]"></div>
-                            <span className="text-xs font-semibold text-brand-teal uppercase tracking-widest">Active Operations</span>
-                        </div>
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest opacity-50 sm:block hidden">• Santiago Cordova Protocol</span>
+        <div className="space-y-6 animate-in fade-in duration-300 relative pb-24 font-sans min-h-screen">
+            {/* ── TOP EXECUTIVE STRIPE ── */}
+            <div className="relative z-20 px-4 sm:px-0">
+                <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 border-t-white/20 bg-[#051424]/90 shadow-2xl backdrop-blur-2xl p-6 sm:p-10 transition-all duration-500">
+                    {/* Mesh Gradient */}
+                    <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-gradient-radial from-[#2B6AFF]/15 to-transparent blur-3xl" />
+                        <div className="absolute bottom-0 left-0 w-[350px] h-[350px] bg-gradient-radial from-[#00A896]/15 to-transparent blur-3xl" />
                     </div>
-                    <h2 className="text-4xl sm:text-5xl font-display font-semibold text-slate-900 dark:text-white leading-tight sm:leading-[0.85] tracking-tighter mb-2">
-                        Tactical <span className="text-brand-teal">Tasks</span>
-                    </h2>
-                    <div className="flex items-center gap-2 text-slate-500 text-[11px] font-medium uppercase tracking-widest">
-                        <Activity size={12} className="text-brand-teal" />
-                        <span>Gestión y Despliegue de Obligaciones</span>
-                    </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto animate-fade-in-right">
-                    <div className="flex p-1.5 bg-slate-100 dark:bg-slate-900/60 rounded-2xl border border-slate-200 dark:border-slate-800">
-                        <button 
-                            onClick={() => setActiveTab('all')} 
-                            className={`px-6 py-3 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all ${activeTab === 'all' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xl ring-1 ring-brand-teal/30 scale-105' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                        >
-                            General
-                        </button>
-                        <button 
-                            onClick={() => setActiveTab('orders')} 
-                            className={`px-6 py-3 rounded-xl text-xs font-semibold uppercase tracking-widest transition-all relative ${activeTab === 'orders' ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xl ring-1 ring-brand-teal/30 scale-105' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                        >
-                            Work Orders
-                            {stats.orders > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg">{stats.orders}</span>}
-                        </button>
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 relative z-10">
+                        <div className="w-full sm:w-auto font-mono">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#00A896]/15 border border-[#00A896]/30 shadow-[0_0_10px_rgba(0,168,150,0.2)]">
+                                    <div className="relative w-2 h-2 rounded-full bg-[#00A896]">
+                                        <div className="absolute inset-0 rounded-full bg-[#00A896] animate-ping opacity-60" />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.25em]">OPERACIONES ACTIVAS</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">• Protocolo Santiago Córdova</span>
+                            </div>
+                            <h1 className="text-3xl sm:text-5xl font-black text-white leading-none tracking-tight font-display">
+                                TAREAS & <span className="bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF] bg-clip-text text-transparent">FLUJOS</span>
+                            </h1>
+                            <p className="mt-2.5 text-xs sm:text-sm text-slate-300 font-sans font-medium">
+                                Gestión operativa de trámites, órdenes de trabajo y vencimientos fiscales.
+                            </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto font-mono">
+                            <div className="flex p-1.5 bg-[#0b1326] rounded-2xl border border-white/10">
+                                <button 
+                                    onClick={() => setActiveTab('all')} 
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                                        activeTab === 'all' 
+                                            ? 'bg-white/15 text-white shadow-md border border-white/20' 
+                                            : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    General
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('orders')} 
+                                    className={`px-5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all relative cursor-pointer ${
+                                        activeTab === 'orders' 
+                                            ? 'bg-white/15 text-white shadow-md border border-white/20' 
+                                            : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    Work Orders
+                                    {stats.orders > 0 && (
+                                        <span className="ml-2 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-[#C9A96E] text-slate-950 font-mono">
+                                            {stats.orders}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+                            
+                            <button 
+                                onClick={() => openAndPrepareModal()} 
+                                className="flex items-center gap-2 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-[#00A896] hover:to-teal-500 text-white px-6 py-3 rounded-2xl shadow-lg shadow-[#00A896]/20 transition-all text-xs font-bold uppercase tracking-wider cursor-pointer border border-white/10 hover:scale-[1.02] active:scale-95"
+                            >
+                                <Plus size={16} />
+                                NUEVA TAREA
+                            </button>
+                        </div>
                     </div>
-                    
-                    <button 
-                        onClick={() => openAndPrepareModal()} 
-                        className="flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-4 rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all text-xs font-semibold uppercase tracking-[0.2em]"
-                    >
-                        <Plus size={18} className="text-brand-teal" />
-                        NUEVA TAREA
-                    </button>
                 </div>
             </div>
 
-            {/* ZENITH TASK STRIP */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
-                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+            {/* ── ZENITH TASK KPI STRIP ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 px-4 sm:px-0 font-mono">
+                <div className="p-6 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/10 text-primary rounded-2xl border border-primary/20">
+                        <div className="p-3.5 bg-gradient-to-br from-indigo-500 to-[#2B6AFF] text-white rounded-2xl shadow-lg shadow-[#2B6AFF]/25">
                             <Briefcase size={20} />
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Carga Total</p>
-                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">{stats.total}</p>
+                            <p className="text-3xl font-black text-white font-mono tracking-tight">{stats.total}</p>
                         </div>
                     </div>
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    <span className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-white/5 text-slate-300 border border-white/10">
                         Registradas
                     </span>
                 </div>
 
-                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+                <div className="p-6 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl border border-amber-500/20">
+                        <div className="p-3.5 bg-gradient-to-br from-amber-500 to-[#C9A96E] text-slate-950 rounded-2xl shadow-lg shadow-amber-500/20 font-bold">
                             <Zap size={20} className="animate-pulse" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Work Orders</p>
-                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">{stats.orders}</p>
+                            <p className="text-[10px] font-bold text-[#C9A96E] uppercase tracking-widest">Work Orders</p>
+                            <p className="text-3xl font-black text-white font-mono tracking-tight">{stats.orders}</p>
                         </div>
                     </div>
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                    <span className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
                         Pendientes PDF
                     </span>
                 </div>
 
-                <div className="p-5 rounded-[2rem] bg-surface border border-outline-variant/30 shadow-sm flex items-center justify-between">
+                <div className="p-6 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-rose-500/10 text-rose-500 rounded-2xl border border-rose-500/20">
+                        <div className="p-3.5 bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-2xl shadow-lg shadow-rose-500/25">
                             <Clock size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Vencimientos Próximos</p>
-                            <p className="text-2xl font-black text-on-surface font-mono tracking-tight">{stats.urgent}</p>
+                            <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Vencimientos Próximos</p>
+                            <p className="text-3xl font-black text-white font-mono tracking-tight">{stats.urgent}</p>
                         </div>
                     </div>
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
-                        Urgent (&le; 3d)
+                    <span className="text-[9px] font-bold px-2.5 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                        Urgentes (≤ 3d)
                     </span>
                 </div>
             </div>
 
-            {/* SEARCH TACTICAL SCANNER */}
-            <div className="relative group z-10 px-1 sm:px-0">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors" size={18} />
+            {/* ── SEARCH SCANNER ── */}
+            <div className="relative group z-10 px-4 sm:px-0 font-mono">
+                <Search className="absolute left-9 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#00A896] transition-colors" size={18} />
                 <input 
                     type="text" 
-                    placeholder="IDENTIFICADOR / CLIENTE / RUC..." 
+                    placeholder="BUSCAR POR NOMBRE / RUC / DESCRIPCIÓN DE TAREA..." 
                     value={searchTerm} 
                     onChange={(e) => setSearchTerm(e.target.value)} 
-                    className="w-full pl-14 pr-6 py-4 sm:py-5 bg-white/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl text-[11px] font-semibold uppercase tracking-widest placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-brand-teal/10 focus:border-brand-teal/30 transition-all text-slate-900 dark:text-white"
+                    className="w-full pl-14 pr-6 py-4 bg-[#051424]/90 border border-white/10 focus:border-[#00A896]/50 rounded-[2rem] text-xs font-mono uppercase tracking-wider placeholder:text-slate-500 focus:outline-none transition-all text-white backdrop-blur-2xl shadow-xl"
                 />
             </div>
 
             {taskFilter?.clientId && (
-                <button 
-                    onClick={clearTaskFilter} 
-                    className="flex items-center gap-2 px-6 py-2 bg-rose-400/10 text-rose-400 border border-rose-400/20 rounded-full text-xs font-semibold uppercase tracking-widest hover:bg-rose-400/20 transition-all w-fit"
-                > 
-                    <X size={14} /> REMOVE CLIENT SECTOR LOCK
-                </button>
+                <div className="px-4 sm:px-0 font-mono">
+                    <button 
+                        onClick={clearTaskFilter} 
+                        className="flex items-center gap-2 px-4 py-2 bg-rose-500/15 text-rose-300 border border-rose-500/30 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-rose-500/25 transition-all w-fit cursor-pointer"
+                    > 
+                        <X size={14} /> Quitar Filtro de Cliente
+                    </button>
+                </div>
             )}
 
-            {/* TASK COMMAND LIST */}
-            <div className="space-y-6 relative z-10">
+            {/* ── TASK COMMAND LIST ── */}
+            <div className="space-y-4 relative z-10 px-4 sm:px-0">
                 {filteredTasks.length > 0 ? filteredTasks.map((task, index) => {
                     const client = task.clientId ? clients.find(c => c.id === task.clientId) : null;
                     const daysUntilDue = Math.ceil((new Date(task.dueDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24));
@@ -405,18 +430,18 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                     let glowColor = 'shadow-slate-500/20';
 
                     if (isAuto) {
-                        statusColor = 'bg-orange-500';
+                        statusColor = 'bg-amber-500 text-slate-950';
                         statusLabel = 'ORDEN TÁCTICA';
-                        glowColor = 'shadow-orange-500/30';
+                        glowColor = 'shadow-amber-500/30';
                     } else if (task.status === TaskStatus.Completada || task.status === TaskStatus.Pagada) {
-                        statusColor = 'bg-emerald-400';
-                        glowColor = 'shadow-emerald-400/20';
+                        statusColor = 'bg-emerald-500 text-white';
+                        glowColor = 'shadow-emerald-500/20';
                     } else if (daysUntilDue < 0) {
-                        statusColor = 'bg-rose-400';
-                        glowColor = 'shadow-rose-400/30';
+                        statusColor = 'bg-rose-500 text-white';
+                        glowColor = 'shadow-rose-500/30';
                     } else if (daysUntilDue <= 3) {
-                        statusColor = 'bg-amber-400';
-                        glowColor = 'shadow-amber-400/30';
+                        statusColor = 'bg-amber-500 text-slate-950';
+                        glowColor = 'shadow-amber-500/30';
                     }
 
                     return (
@@ -424,76 +449,75 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                             key={task.id} 
                             onClick={() => setSelectedTask(task)} 
                             className={`
-                                group relative p-6 sm:p-8 rounded-[1.8rem] sm:rounded-[2.5rem] glass-tactical border-white/5 
-                                transition-all duration-500 hover:bg-white/10 hover:border-sky-400/30 
-                                cursor-pointer overflow-hidden animate-slide-up-fade
-                                ${isAuto ? 'border-l-[12px] border-orange-500' : ''}
+                                group relative p-6 sm:p-7 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 backdrop-blur-2xl
+                                transition-all duration-300 hover:border-white/20 hover:scale-[1.005] hover:shadow-2xl
+                                cursor-pointer overflow-hidden
+                                ${isAuto ? 'border-l-4 border-l-amber-400' : ''}
                             `}
-                            style={{ animationDelay: `${index * 50}ms` }}
                         >
                             {!isAuto && (
-                                <div className={`absolute top-0 left-0 bottom-0 w-2 ${statusColor} opacity-50 shadow-2xl ${glowColor}`} />
+                                <div className={`absolute top-0 left-0 bottom-0 w-1.5 ${statusColor} opacity-70`} />
                             )}
                             
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
-                                <div className="flex items-start gap-6 flex-1 min-w-0">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                                <div className="flex items-start gap-5 flex-1 min-w-0">
                                     <div className={`
-                                        w-16 h-16 rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:rotate-3
-                                        ${isAuto ? 'bg-orange-500 text-white shadow-orange-500/20' : 
-                                          task.status === TaskStatus.Completada ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/20' : 
+                                        w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg transition-transform duration-300 group-hover:scale-105
+                                        ${isAuto ? 'bg-amber-500/15 text-[#C9A96E] border border-amber-500/30' : 
+                                          task.status === TaskStatus.Completada ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 
                                           'bg-white/5 text-slate-400 border border-white/10'}
                                     `}>
-                                        {isAuto ? <Zap size={28} className="animate-pulse" /> : 
-                                         task.status === TaskStatus.Completada ? <CheckCircle size={28} /> : 
-                                         <FileText size={28} />}
+                                        {isAuto ? <Zap size={24} className="animate-pulse" /> : 
+                                         task.status === TaskStatus.Completada ? <CheckCircle size={24} /> : 
+                                         <FileText size={24} />}
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <span className={`text-[11px] font-semibold px-3 py-1 rounded-full text-white uppercase tracking-widest shadow-lg ${statusColor} ${glowColor}`}>
+                                        <div className="flex items-center gap-3 mb-1.5 font-mono">
+                                            <span className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${statusColor} ${glowColor}`}>
                                                 {statusLabel}
                                             </span>
-                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest opacity-50">NODE • {task.id.substring(0, 8)}</span>
+                                            <span className="text-[10px] text-slate-500 font-mono">NODE · {task.id.substring(0, 8)}</span>
                                         </div>
-                                        <h3 className="text-xl sm:text-2xl font-display font-semibold text-slate-900 dark:text-white tracking-tight truncate group-hover:text-sky-400 transition-colors uppercase">
+                                        <h3 className="text-lg sm:text-xl font-bold font-display text-white tracking-tight truncate group-hover:text-[#00A896] transition-colors uppercase">
                                             {task.title}
                                         </h3>
                                         
-                                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3">
-                                            <div className="flex items-center gap-2 text-slate-500">
-                                                <div className="p-1.5 bg-white/5 rounded-lg">
-                                                    <User size={14} className="text-sky-400/50" />
+                                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-2 font-mono">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1 bg-white/5 rounded-lg border border-white/10">
+                                                    <User size={12} className="text-[#00A896]" />
                                                 </div>
-                                                <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
-                                                    {client ? client.name : (task.nonClientName || 'Externo Factor')}
+                                                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                                                    {client ? client.name : (task.nonClientName || 'Factor Externo')}
                                                 </span>
                                             </div>
 
                                             {client?.phones && client.phones.length > 0 && (
                                                 <button 
                                                     onClick={(e) => { e.stopPropagation(); window.open(getWhatsAppUrl(client.phones![0]), '_blank'); }} 
-                                                    className="group/wa flex items-center gap-2 text-xs font-semibold text-emerald-400 uppercase tracking-[0.2em] px-4 py-2 rounded-xl bg-emerald-400/5 hover:bg-emerald-400/10 border border-emerald-400/10 transition-all"
+                                                    className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wider px-3 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all cursor-pointer"
                                                 >
-                                                    <MessageSquare size={14} className="group-hover/wa:scale-110 transition-transform" /> 
-                                                    DIRECT COMMS
+                                                    <MessageSquare size={12} /> 
+                                                    WhatsApp
                                                 </button>
                                             )}
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="flex md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-6 shrink-0">
-                                    <div className="flex flex-col items-end px-6 py-3 rounded-2xl bg-white/5 border border-white/5 group-hover:border-sky-400/20 transition-all">
-                                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-[0.3em] mb-1">DEADLINE</span>
-                                        <div className="flex items-center gap-2">
-                                            <Clock size={12} className={daysUntilDue < 0 && task.status !== TaskStatus.Completada ? 'text-rose-400' : 'text-slate-500'} />
-                                            <span className={`text-sm font-semibold tracking-tight ${daysUntilDue < 0 && task.status !== TaskStatus.Completada ? 'text-rose-400' : 'text-slate-900 dark:text-white'}`}>
+                                <div className="flex md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-4 shrink-0 font-mono">
+                                    <div className="flex flex-col items-end px-4 py-2 rounded-xl bg-[#020b14] border border-white/10">
+                                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">VENCIMIENTO</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <Clock size={11} className={daysUntilDue < 0 && task.status !== TaskStatus.Completada ? 'text-rose-400' : 'text-slate-400'} />
+                                            <span className={`text-xs font-bold ${daysUntilDue < 0 && task.status !== TaskStatus.Completada ? 'text-rose-400' : 'text-slate-300'}`}>
                                                 {safeFormat(task.dueDate, 'dd MMM, yyyy')}
                                             </span>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2">
                                         {isAuto && (
                                             <button 
                                                 onClick={(e) => { 
@@ -501,20 +525,18 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                                                     setUploadingTask(task); 
                                                     fileInputRef.current?.click(); 
                                                 }} 
-                                                className="flex items-center gap-3 px-8 py-3.5 bg-sky-500 text-white text-xs font-semibold uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-sky-500/40 hover:scale-105 hover:bg-sky-400 active:scale-95 transition-all"
+                                                className="flex items-center gap-2 px-5 py-2.5 bg-[#00A896] hover:bg-[#00A896]/80 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-[#00A896]/20 transition-all cursor-pointer"
                                                 disabled={isAnalyzingPdf && uploadingTask?.id === task.id}
                                             >
                                                 {(isAnalyzingPdf && uploadingTask?.id === task.id) ? (
                                                     <span className="animate-pulse">PROCESANDO...</span>
                                                 ) : (
-                                                    <><UploadCloud size={16} /> SUBIR PDF</>
+                                                    <><UploadCloud size={14} /> SUBIR PDF</>
                                                 )}
                                             </button>
                                         )}
-                                        <div className="p-3 bg-white/5 rounded-2xl border border-white/5 group-hover:border-sky-400/30 transition-all"
-                                             onClick={(e) => { e.stopPropagation(); setSelectedTask(task); }}
-                                        >
-                                            <ArrowRight size={20} className="text-slate-500 group-hover:text-sky-400 group-hover:translate-x-1 transition-all" />
+                                        <div className="p-2.5 bg-white/5 rounded-xl border border-white/10 group-hover:border-[#00A896]/50 group-hover:text-[#00A896] text-slate-400 transition-all">
+                                            <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                                         </div>
                                     </div>
                                 </div>
@@ -522,98 +544,88 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
                         </div>
                     );
                 }) : (
-                    <div className="flex flex-col items-center justify-center py-32 opacity-20 text-center animate-pulse">
-                        <div className="w-24 h-24 rounded-[3rem] bg-white/5 flex items-center justify-center mb-8 border border-white/10">
-                            <Shield size={40} />
+                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono">
+                        <div className="w-20 h-20 rounded-[2.5rem] bg-[#051424] flex items-center justify-center mb-4 border border-white/10 shadow-xl">
+                            <Shield size={32} className="text-[#00A896]" />
                         </div>
-                        <p className="text-[12px] font-semibold tracking-[0.5em] uppercase text-slate-400">Security Clearance High • No Pending Tasks</p>
+                        <p className="text-sm font-bold tracking-wider uppercase text-white">Sin Tareas Pendientes</p>
+                        <p className="text-xs text-slate-400 mt-1 font-sans">Todas las operaciones y obligaciones están al día.</p>
                     </div>
                 )}
             </div>
 
-            {/* NEW TASK MODAL OVERALL */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="TACTICAL PROTOCOL: NEW TASK" disableBackdropClick={true}>
-                <div className="space-y-6 pt-4">
-                    <div className="group">
-                        <label className="text-xs font-semibold text-sky-400 uppercase tracking-widest mb-2 block">Objective Description</label>
+            {/* ── NEW TASK MODAL ── */}
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="TACTICAL PROTOCOL: NUEVA TAREA" disableBackdropClick={true}>
+                <div className="space-y-6 pt-2 font-mono">
+                    <div>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Descripción del Objetivo</label>
                         <input 
                             type="text" 
                             value={newTask.title || ''} 
                             onChange={e => handleNewTaskTitleChange(e.target.value)} 
-                            className="w-full h-14 px-6 bg-slate-900/50 dark:bg-black/50 border border-white/10 focus:border-sky-400/50 rounded-2xl text-sm font-medium text-white transition-all outline-none" 
-                            placeholder="Ej: Devolución Renta 2024..." 
+                            className="w-full h-12 px-4 bg-[#020b14] border border-white/10 focus:border-[#00A896]/50 rounded-xl text-xs font-mono text-white transition-all outline-none" 
+                            placeholder="Ej: Devolución Renta 2024, Anexo Gastos..." 
                         />
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs font-semibold text-sky-400 uppercase tracking-widest mb-2 block">Deployment Date</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Fecha Límite</label>
                             <input 
                                 type="date" 
                                 value={newTask.dueDate ? safeFormat(newTask.dueDate, 'yyyy-MM-dd') : ''} 
                                 onChange={e => setNewTask({ ...newTask, dueDate: new Date(e.target.value).toISOString() })} 
-                                className="w-full h-14 px-6 bg-slate-900/50 dark:bg-black/50 border border-white/10 focus:border-sky-400/50 rounded-2xl text-sm font-medium text-white transition-all outline-none" 
+                                className="w-full h-12 px-4 bg-[#020b14] border border-white/10 focus:border-[#00A896]/50 rounded-xl text-xs font-mono text-white transition-all outline-none" 
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-semibold text-sky-400 uppercase tracking-widest mb-2 block">Sector Targeting</label>
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Cliente Asignado</label>
                             <select 
                                 value={isNonClient ? 'non-client' : (newTask.clientId || '')} 
                                 onChange={handleClientSelectionChange} 
-                                className="w-full h-14 px-6 bg-slate-900/50 dark:bg-black/50 border border-white/10 focus:border-sky-400/50 rounded-2xl text-sm font-medium text-white transition-all outline-none appearance-none"
+                                className="w-full h-12 px-4 bg-[#020b14] border border-white/10 focus:border-[#00A896]/50 rounded-xl text-xs font-mono text-white transition-all outline-none appearance-none cursor-pointer"
                             >
-                                <option value="">Select Target...</option>
+                                <option value="">Seleccionar Cliente...</option>
                                 {sortedClients.map(client => <option key={client.id} value={client.id}>{client.name}</option>)}
-                                <option value="non-client">+ External Operative</option>
+                                <option value="non-client">+ Operativo Externo</option>
                             </select>
                         </div>
                     </div>
 
                     {isNonClient && (
-                        <div className="space-y-4 p-6 bg-sky-400/5 rounded-[1.5rem] border border-sky-400/20 animate-in fade-in zoom-in-95">
-                            <div className="flex items-center gap-2 mb-2">
-                                <User size={14} className="text-sky-400" />
-                                <span className="text-xs font-semibold text-sky-400 uppercase tracking-widest">External Data Profile</span>
+                        <div className="space-y-4 p-5 bg-[#020b14] rounded-2xl border border-white/10">
+                            <div className="flex items-center gap-2 mb-1">
+                                <User size={14} className="text-[#00A896]" />
+                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Datos de Contacto Externo</span>
                             </div>
-                            <input type="text" placeholder="Full Name" value={newTask.nonClientName || ''} onChange={e => setNewTask({ ...newTask, nonClientName: e.target.value })} className="w-full h-14 px-6 bg-black/30 border border-white/5 rounded-2xl text-sm font-medium text-white outline-none" />
-                            <input type="text" placeholder="RUC / ID Number" value={newTask.nonClientRuc || ''} onChange={e => setNewTask({ ...newTask, nonClientRuc: e.target.value })} className="w-full h-14 px-6 bg-black/30 border border-white/5 rounded-2xl text-sm font-medium text-white outline-none" />
+                            <input type="text" placeholder="Nombre Completo" value={newTask.nonClientName || ''} onChange={e => setNewTask({ ...newTask, nonClientName: e.target.value })} className="w-full h-11 px-4 bg-white/5 border border-white/10 rounded-xl text-xs text-white outline-none" />
+                            <input type="text" placeholder="RUC / Cédula" value={newTask.nonClientRuc || ''} onChange={e => setNewTask({ ...newTask, nonClientRuc: e.target.value })} className="w-full h-11 px-4 bg-white/5 border border-white/10 rounded-xl text-xs text-white outline-none" />
                         </div>
                     )}
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-5 rounded-2xl bg-slate-900/50 border border-white/5">
-                            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-1 block">Expected ROI</span>
-                            <div className="flex items-center gap-2">
-                                <p className="text-xl font-display font-semibold text-white">${(newTask.cost || 0).toFixed(2)}</p>
+                        <div className="p-4 rounded-xl bg-[#020b14] border border-white/10">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Tarifa Proyectada</span>
+                            <div className="flex items-center gap-1">
+                                <p className="text-xl font-bold font-mono text-white">${(newTask.cost || 0).toFixed(2)}</p>
                             </div>
                         </div>
-                        <div className="p-5 rounded-2xl bg-slate-900/50 border border-white/5">
-                            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-1 block">Advance Credit</span>
-                            <div className="flex items-center gap-2">
-                                <p className="text-xl font-display font-semibold text-emerald-400">${(newTask.advancePayment || 0).toFixed(2)}</p>
+                        <div className="p-4 rounded-xl bg-[#020b14] border border-white/10">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Anticipo Pagado</span>
+                            <div className="flex items-center gap-1">
+                                <p className="text-xl font-bold font-mono text-[#00A896]">${(newTask.advancePayment || 0).toFixed(2)}</p>
                             </div>
                         </div>
                     </div>
 
                     <button 
                         onClick={handleAddTask} 
-                        className="w-full py-5 bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold uppercase tracking-[0.3em] rounded-2xl shadow-2xl shadow-sky-500/40 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        className="w-full py-4 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-[#00A896] hover:to-teal-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-[#00A896]/25 transition-all cursor-pointer border border-white/10 active:scale-95"
                     >
-                        INITIALIZE DEPLOYMENT
+                        CREAR TAREA OPERATIVA
                     </button>
                 </div>
             </Modal>
-
-            {/* TACTICAL FOOTER LOGO */}
-            <div className="fixed bottom-10 right-10 opacity-10 hidden md:block pointer-events-none z-0">
-                <div className="flex items-center gap-4">
-                    <div className="text-right">
-                        <p className="text-[12px] font-semibold tracking-[0.5em] text-slate-400 uppercase">Strategic Grid</p>
-                        <p className="text-xs font-semibold text-sky-400 tracking-widest uppercase">Encryption Node • SC-OPS</p>
-                    </div>
-                    <Target size={40} className="text-slate-500" />
-                </div>
-            </div>
 
             <input 
                 type="file" 
