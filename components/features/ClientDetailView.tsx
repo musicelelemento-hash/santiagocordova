@@ -558,12 +558,6 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         else { toast.info("Cliente no existe."); setMismatchData(null); }
     };
 
-    const handleSoftDelete = () => {
-        updateClient(client.id, { isDeleted: true });
-        toast.success(`${client.name} enviado a la papelera`);
-        onBack();
-    };
-
     const handleSave = () => {
         const recurringFee = parseFloat(monthlyFee) || (editedClient.taxProfile?.ivaFrequency === 'Semestral' ? 10 : 5);
         const aFeeValue = parseFloat(annualFee) || 10;
@@ -908,6 +902,30 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         />
     );
 
+    const handleSoftDelete = React.useCallback(async () => {
+        try {
+            await removeClient(client.id);
+            toast.success(`Cliente ${client.name} enviado a la papelera.`);
+            setIsDeleteConfirmOpen(false);
+            onBack();
+        } catch (err) {
+            console.error("Error deleting client:", err);
+            toast.error("Error al enviar el cliente a la papelera.");
+        }
+    }, [client.id, client.name, removeClient, toast, onBack]);
+
+    const handleDeactivateClient = React.useCallback(async () => {
+        try {
+            const nextActive = !(editedClient.isActive ?? true);
+            await updateClient(client.id, { isActive: nextActive });
+            setEditedClient(prev => ({ ...prev, isActive: nextActive }));
+            toast.success(nextActive ? `Cliente ${client.name} reactivado correctamente.` : `Cliente ${client.name} dado de baja (Inactivo).`);
+        } catch (err) {
+            console.error("Error toggling active status:", err);
+            toast.error("Error al cambiar el estado del cliente.");
+        }
+    }, [client.id, client.name, editedClient.isActive, updateClient, toast]);
+
     const handleUpdateClientDirect = React.useCallback(async (updates: Partial<Client>, showNotification: boolean = false) => {
         try {
             await updateClient(client.id, updates);
@@ -946,6 +964,8 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             isEditing={isEditing}
             onUpdateClientDirect={handleUpdateClientDirect}
             onStartEdit={() => setIsEditing(true)}
+            onDeactivateClient={handleDeactivateClient}
+            onDeleteClient={() => setIsDeleteConfirmOpen(true)}
         />
     );
 

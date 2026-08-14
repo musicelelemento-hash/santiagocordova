@@ -181,17 +181,9 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 setIsSortMenuOpen(false);
             }
         };
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-                e.preventDefault();
-                searchInputRef.current?.focus();
-            }
-        };
         document.addEventListener('mousedown', handleClickOutside);
-        window.addEventListener('keydown', handleKeyDown);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
-            window.removeEventListener('keydown', handleKeyDown);
         };
     }, []);
 
@@ -307,14 +299,14 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                     const noteSearch = query.substring(2).trim();
                     searchMatch = !!(client.notes && client.notes.toLowerCase().includes(noteSearch));
                 } else {
-                    // Normal search
-                    const terms = query.split(/\s+/).filter(t => t.length > 0);
-                    searchMatch = terms.every(term =>
-                        client.name.toLowerCase().includes(term) ||
-                        client.ruc.includes(term) ||
-                        (client.tradeName && client.tradeName.toLowerCase().includes(term)) ||
-                        (client.notes && client.notes.toLowerCase().includes(term))
-                    );
+                    // Normal search (Accent-insensitive & unordered tokens)
+                    const normalizedQuery = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+                    const terms = normalizedQuery.split(/\s+/).filter(t => t.length > 0);
+                    const haystack = `${client.name} ${client.ruc} ${client.tradeName || ''} ${client.notes || ''}`
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .toLowerCase();
+                    searchMatch = terms.every(term => haystack.includes(term));
                 }
             }
 

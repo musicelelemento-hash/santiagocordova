@@ -45,7 +45,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     }, [isOpen]);
 
     const results = useMemo(() => {
-        const terms = searchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        const normalizedQuery = searchTerm.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        const terms = normalizedQuery.split(/\s+/).filter(Boolean);
         if (!terms.length) {
             const navs = [
                 { id: 'nav-dash', type: 'nav', label: 'Ver Dashboard', screen: 'dashboard', icon: <LayoutDashboard size={18} /> },
@@ -74,8 +75,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             { id: 'nav-services', type: 'nav', label: 'Ver Servicios', screen: 'services', icon: <Globe size={18} /> },
             { id: 'nav-settings', type: 'nav', label: 'Configuración', screen: 'settings', icon: <Settings size={18} /> },
         ].filter(item => {
-            const labelLower = item.label.toLowerCase();
-            return terms.every(t => labelLower.includes(t));
+            const labelNorm = item.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            return terms.every(t => labelNorm.includes(t));
         });
 
         const actionResults = [
@@ -83,14 +84,17 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             { id: 'act-sync', type: 'action', label: 'Sincronizar Datos', action: 'sync', icon: <RefreshCw size={18} /> },
             { id: 'act-logout', type: 'action', label: 'Cerrar Sesión', action: 'logout', icon: <LogOut size={18} /> },
         ].filter(item => {
-            const labelLower = item.label.toLowerCase();
-            return terms.every(t => labelLower.includes(t));
+            const labelNorm = item.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            return terms.every(t => labelNorm.includes(t));
         });
 
         const clientResults = clients
             .filter(c => {
-                if (c.isDeleted || !c.isActive) return false;
-                const fullText = `${c.name} ${c.ruc} ${c.tradeName || ''}`.toLowerCase();
+                if (c.isDeleted) return false;
+                const fullText = `${c.name} ${c.ruc} ${c.tradeName || ''} ${c.notes || ''}`
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "")
+                    .toLowerCase();
                 return terms.every(t => fullText.includes(t));
             })
             .slice(0, 10)
@@ -98,7 +102,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 id: `client-${c.id}`,
                 type: 'client',
                 label: c.name,
-                subLabel: c.ruc,
+                subLabel: `${c.ruc} · ${c.regime || 'General'}`,
                 client: c,
                 icon: <User size={18} />
             }));

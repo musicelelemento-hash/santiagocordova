@@ -181,12 +181,21 @@ const App: React.FC = () => {
       ).slice(0, 8);
     }
 
-    // Normal Search (Default)
-    return clients.filter(c => !c.isDeleted && (
-      c.name.toLowerCase().includes(query) ||
-      (c.tradeName && c.tradeName.toLowerCase().includes(query)) ||
-      c.ruc.includes(query)
-    )).slice(0, 8);
+    // Normal Search (Unordered multi-token & accent-insensitive)
+    const normTokens = query
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .split(/\s+/)
+      .filter(Boolean);
+
+    return clients.filter(c => {
+      if (c.isDeleted) return false;
+      const haystack = `${c.name} ${c.tradeName || ''} ${c.ruc} ${c.notes || ''}`
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+      return normTokens.every(tok => haystack.includes(tok));
+    }).slice(0, 8);
   }, [clients, globalSearchQuery]);
 
   const recentClients = useMemo(() => {
@@ -429,13 +438,15 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      const isK = e.key === 'k' || e.key === 'K' || e.code === 'KeyK';
+      if ((e.metaKey || e.ctrlKey) && isK) {
         e.preventDefault();
+        e.stopPropagation();
         setIsCommandPaletteOpen(prev => !prev);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, []);
 
   const handleCommandAction = (action: string, payload?: any) => {

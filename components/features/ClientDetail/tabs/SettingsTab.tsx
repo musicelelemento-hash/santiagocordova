@@ -11,6 +11,8 @@ interface SettingsTabProps {
     isEditing: boolean;
     onUpdateClientDirect?: (updates: Partial<Client>) => Promise<void>;
     onStartEdit?: () => void;
+    onDeactivateClient?: () => void;
+    onDeleteClient?: () => void;
 }
 
 const TaxProfileField: React.FC<{
@@ -78,7 +80,9 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     setEditedClient,
     isEditing,
     onUpdateClientDirect,
-    onStartEdit
+    onStartEdit,
+    onDeactivateClient,
+    onDeleteClient
 }) => {
     const { toast } = useToast();
     return (
@@ -554,17 +558,70 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                                 </div>
                             </div>
 
-                            <button className="w-full p-5 bg-rose-500/10 hover:bg-rose-500/15 rounded-2xl border border-rose-500/25 hover:border-rose-500/40 transition-all group/btn flex items-center justify-between shadow-sm active:scale-95 font-mono">
+                            {/* Zona Táctica de Estado y Peligro */}
+                            <div className="p-5 bg-slate-100/60 dark:bg-[#0b1326]/80 rounded-2xl border border-slate-200/40 dark:border-white/10 space-y-4 font-mono">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estado Contable</span>
+                                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono ${
+                                        (editedClient.isActive ?? true)
+                                            ? 'bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30'
+                                            : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                    }`}>
+                                        {(editedClient.isActive ?? true) ? '● Activo en Matriz' : '○ Dado de Baja'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Creado</span>
+                                    <span className="text-[10px] font-mono text-[#00A896] font-bold">
+                                        {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'No Registrada'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Botón de Dar de Baja / Reactivar */}
+                            <button 
+                                type="button"
+                                onClick={onDeactivateClient}
+                                className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between group/btn shadow-sm active:scale-95 cursor-pointer font-mono ${
+                                    (editedClient.isActive ?? true)
+                                        ? 'bg-amber-500/10 hover:bg-amber-500/15 border-amber-500/25 hover:border-amber-500/40 text-amber-300'
+                                        : 'bg-[#00A896]/10 hover:bg-[#00A896]/15 border-[#00A896]/25 hover:border-[#00A896]/40 text-[#00A896]'
+                                }`}
+                            >
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-rose-500/20 rounded-xl text-rose-400">
-                                        <LucideIcons.AlertTriangle size={16} className="group-hover/btn:scale-110 transition-transform" />
+                                    <div className={`p-2 rounded-xl ${
+                                        (editedClient.isActive ?? true) ? 'bg-amber-500/20 text-amber-400' : 'bg-[#00A896]/20 text-[#00A896]'
+                                    }`}>
+                                        <LucideIcons.Power size={16} />
                                     </div>
                                     <div className="text-left font-display">
-                                        <div className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Zona de Peligro</div>
-                                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 font-mono">Baja y eliminación</div>
+                                        <div className="text-[10px] font-bold uppercase tracking-widest">
+                                            {(editedClient.isActive ?? true) ? 'Dar de Baja Cliente' : 'Reactivar Cliente'}
+                                        </div>
+                                        <div className="text-[9px] font-normal text-slate-400 mt-0.5 font-mono">
+                                            {(editedClient.isActive ?? true) ? 'Pausar declaraciones automáticas' : 'Restablecer en matriz activa'}
+                                        </div>
                                     </div>
                                 </div>
-                                <LucideIcons.ChevronRight size={16} className="text-rose-400 opacity-60 group-hover/btn:translate-x-1 transition-all" />
+                                <LucideIcons.ArrowRightLeft size={16} className="opacity-60 group-hover/btn:translate-x-1 transition-all" />
+                            </button>
+
+                            {/* Botón de Eliminar a la Papelera */}
+                            <button 
+                                type="button"
+                                onClick={onDeleteClient}
+                                className="w-full p-4 bg-rose-500/10 hover:bg-rose-500/15 rounded-2xl border border-rose-500/25 hover:border-rose-500/40 text-rose-400 transition-all group/del flex items-center justify-between shadow-sm active:scale-95 cursor-pointer font-mono"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-rose-500/20 rounded-xl text-rose-400">
+                                        <LucideIcons.Trash2 size={16} className="group-hover/del:scale-110 transition-transform" />
+                                    </div>
+                                    <div className="text-left font-display">
+                                        <div className="text-[10px] font-bold uppercase tracking-widest text-rose-400">Enviar a Papelera</div>
+                                        <div className="text-[9px] font-normal text-slate-400 mt-0.5 font-mono">Borrado seguro recuperable</div>
+                                    </div>
+                                </div>
+                                <LucideIcons.ChevronRight size={16} className="text-rose-400 opacity-60 group-hover/del:translate-x-1 transition-all" />
                             </button>
                         </div>
                     </div>
