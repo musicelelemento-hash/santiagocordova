@@ -36,7 +36,7 @@ const MagneticButton = ({ children, className = "", onClick, href, target, rel }
         if (!btnRef.current) return;
         const { clientX, clientY } = e;
         const { left, top, width, height } = btnRef.current.getBoundingClientRect();
-        setPosition({ x: (clientX - (left + width / 2)) * 0.25, y: (clientY - (top + height / 2)) * 0.25 });
+        setPosition({ x: (clientX - (left + width / 2)) * 0.2, y: (clientY - (top + height / 2)) * 0.2 });
     };
     const content = (
         <div ref={btnRef} onMouseMove={handleMouseMove} onMouseLeave={() => setPosition({ x: 0, y: 0 })}
@@ -124,12 +124,12 @@ const ScrollProgressBar = () => {
 const TacticalGrid = () => <div className="fixed inset-0 tactical-grid pointer-events-none z-[1] opacity-35" />;
 
 // ─── AURORA BACKGROUND ───────────────────────────────────────────────────────
-const AuroraBackground = () => (
+const AuroraBackground = ({ theme = 'dark' }: { theme?: 'light' | 'dark' }) => (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -inset-[10px] opacity-50">
-            <div className="aurora-blob bg-[#00A896]/20 top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full animate-float" />
-            <div className="aurora-blob bg-[#2B6AFF]/15 bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full animate-float-delayed" />
-            <div className="aurora-blob bg-[#C9A96E]/10 top-[20%] right-[10%] w-[40%] h-[40%] rounded-full animate-float" style={{ animationDelay: '-4s' }} />
+        <div className={`absolute -inset-[10px] ${theme === 'dark' ? 'opacity-50' : 'opacity-30'}`}>
+            <div className="aurora-blob bg-[#00A896]/25 top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full animate-float" />
+            <div className="aurora-blob bg-[#2B6AFF]/20 bottom-[-10%] right-[-10%] w-[70%] h-[70%] rounded-full animate-float-delayed" />
+            <div className="aurora-blob bg-[#C9A96E]/15 top-[20%] right-[10%] w-[40%] h-[40%] rounded-full animate-float" style={{ animationDelay: '-4s' }} />
         </div>
     </div>
 );
@@ -198,78 +198,52 @@ const Reveal = ({ children, className = "", delay = 0, yOffset = 25 }: { childre
     );
 };
 
-const StaggerContainer = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => {
-    return (
-        <motion.div
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: "-8% 0px" }}
-            variants={{
-                hidden: { opacity: 0 },
-                show: {
-                    opacity: 1,
-                    transition: {
-                        staggerChildren: 0.1
-                    }
-                }
-            }}
-            className={className}
-        >
-            {children}
-        </motion.div>
-    );
-};
-
-const StaggerItem = ({ children, className = "", yOffset = 20 }: { children: React.ReactNode; className?: string; yOffset?: number }) => {
-    return (
-        <motion.div
-            className={className}
-            variants={{
-                hidden: { opacity: 0, y: yOffset },
-                show: { 
-                    opacity: 1, 
-                    y: 0, 
-                    transition: {
-                        duration: 0.6,
-                        ease: [0.22, 1, 0.36, 1]
-                    }
-                }
-            }}
-        >
-            {children}
-        </motion.div>
-    );
-};
-
-// ─── SPOTLIGHT CARD (Luminous Glass 2.0) ─────────────────────────────────────
+// ─── SPOTLIGHT CARD (Luminous Glass 2.0 with 3D Hover Tilt) ──────────────────
 const SpotlightCard = ({ children, className = "", theme = 'dark' }: { children: React.ReactNode; className?: string; theme?: 'light' | 'dark' }) => {
     const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
     const [opacity, setOpacity] = useState(0);
     const cardRef = useRef<HTMLDivElement>(null);
 
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!cardRef.current) return;
         const rect = cardRef.current.getBoundingClientRect();
-        setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        setPosition({ x, y });
         setOpacity(1);
+
+        // Subtle 3D perspective tilt
+        const rx = ((y / rect.height) - 0.5) * -5;
+        const ry = ((x / rect.width) - 0.5) * 5;
+        setTilt({ rx, ry });
+    };
+
+    const handleMouseLeave = () => {
+        setOpacity(0);
+        setTilt({ rx: 0, ry: 0 });
     };
 
     return (
         <div
             ref={cardRef}
             onMouseMove={handleMouseMove}
-            onMouseLeave={() => setOpacity(0)}
-            className={`relative rounded-[2rem] border overflow-hidden transition-all duration-300 ${
+            onMouseLeave={handleMouseLeave}
+            style={{
+                transform: `perspective(1000px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
+                transition: 'transform 0.2s ease-out'
+            }}
+            className={`relative rounded-[2rem] border overflow-hidden transition-colors duration-300 ${
                 theme === 'dark' 
-                    ? 'bg-[#051424]/80 border-white/10 text-white shadow-2xl backdrop-blur-xl' 
-                    : 'bg-white/95 border-slate-200 text-slate-900 shadow-xl backdrop-blur-md'
+                    ? 'bg-[#051424]/85 border-white/10 text-white shadow-2xl backdrop-blur-xl hover:border-[#00A896]/40' 
+                    : 'bg-white/95 border-slate-200/90 text-slate-900 shadow-xl shadow-slate-900/5 backdrop-blur-md hover:border-[#00A896]/50'
             } ${className}`}
         >
             <div
-                className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300"
+                className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300 z-10"
                 style={{
                     opacity,
-                    background: `radial-gradient(500px circle at ${position.x}px ${position.y}px, rgba(0, 168, 150, 0.15), transparent 80%)`,
+                    background: `radial-gradient(400px circle at ${position.x}px ${position.y}px, rgba(0, 168, 150, 0.18), transparent 80%)`,
                 }}
             />
             {children}
@@ -309,7 +283,7 @@ const AuthorityTicker = ({ theme = 'dark' }: { theme?: 'light' | 'dark' }) => {
 // ─── TRUST BADGE ─────────────────────────────────────────────────────────────
 const TrustBadge = ({ icon: Icon, label, value, theme = 'dark' }: { icon: React.ElementType; label: string; value: string; theme?: 'light' | 'dark' }) => (
     <div className={`flex items-center gap-3 px-4 py-2.5 rounded-full border backdrop-blur-md hover:border-[#00A896]/40 hover:bg-[#00A896]/10 transition-all duration-300 group
-        ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white shadow-sm'}`}>
+        ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white/90 shadow-sm'}`}>
         <Icon size={16} className="text-[#00A896] group-hover:scale-110 transition-transform" />
         <div>
             <div className={`text-xs font-bold leading-none font-mono ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{value}</div>
@@ -324,7 +298,7 @@ const TestimonialCard = ({ quote, name, role, stars = 5, theme = 'dark', delay =
         <div className={`relative border rounded-[2rem] p-8 transition-all duration-500 interactive-card h-full flex flex-col group/testi
             ${theme === 'dark' 
                 ? 'bg-[#051424]/90 border-white/10 hover:border-[#00A896]/50 shadow-2xl backdrop-blur-xl' 
-                : 'bg-white border-slate-200 shadow-lg hover:border-[#00A896]/40'
+                : 'bg-white border-slate-200/90 shadow-lg shadow-slate-900/5 hover:border-[#00A896]/50'
             }`}>
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#00A896] to-transparent opacity-0 group-hover/testi:opacity-100 transition-opacity" />
             <div className="flex gap-1 mb-5">
@@ -338,7 +312,7 @@ const TestimonialCard = ({ quote, name, role, stars = 5, theme = 'dark', delay =
                     {name.charAt(0)}
                 </div>
                 <div className="text-left">
-                    <div className={`font-bold text-sm ${theme === 'dark' ? 'text-white' : 'text-slate-800'}`}>{name}</div>
+                    <div className={`font-bold text-sm ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{name}</div>
                     <div className="text-[#00A896] text-xs font-semibold font-mono">{role}</div>
                 </div>
             </div>
@@ -353,14 +327,14 @@ const FaqItem = ({ question, answer, category, theme = 'dark', delay = 0 }: { qu
         <Reveal delay={delay}>
             <div className={`group relative border rounded-2xl transition-all duration-300 cursor-pointer overflow-hidden
                 ${open 
-                    ? (theme === 'dark' ? 'border-[#00A896]/50 bg-[#00A896]/10' : 'border-[#00A896]/40 bg-teal-50/40') 
+                    ? (theme === 'dark' ? 'border-[#00A896]/50 bg-[#00A896]/10' : 'border-[#00A896]/50 bg-teal-50/50') 
                     : (theme === 'dark' ? 'border-white/10 bg-[#051424]/60 hover:bg-white/5' : 'border-slate-200 bg-white hover:bg-slate-50 shadow-sm')
                 }`}
                 onClick={() => setOpen(o => !o)}>
                 <div className="p-6 flex justify-between items-start gap-4">
                     <div className="flex flex-col md:flex-row md:items-center gap-3 flex-1 text-left">
                         <span className="text-[9px] font-bold text-[#00A896] bg-[#00A896]/15 px-3 py-1 rounded-full uppercase tracking-[0.2em] w-fit flex-shrink-0 font-mono">{category}</span>
-                        <h3 className={`text-base md:text-lg font-bold transition-colors ${open ? 'text-[#00A896]' : (theme === 'dark' ? 'text-white' : 'text-slate-800')}`}>{question}</h3>
+                        <h3 className={`text-base md:text-lg font-bold transition-colors ${open ? 'text-[#00A896]' : (theme === 'dark' ? 'text-white' : 'text-slate-900')}`}>{question}</h3>
                     </div>
                     <div className={`w-8 h-8 rounded-full border flex items-center justify-center flex-shrink-0 transition-all duration-300 ${open ? 'bg-[#00A896] border-[#00A896] text-white' : (theme === 'dark' ? 'border-white/10 text-slate-400' : 'border-slate-200 text-slate-600')}`}>
                         <ChevronDown size={16} className={`transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
@@ -387,11 +361,9 @@ const FaqItem = ({ question, answer, category, theme = 'dark', delay = 0 }: { qu
 // ═══════════════════════════════════════════════════════════════════════════════
 export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavigateToServices, theme = 'dark', toggleTheme }) => {
     const [scrolled, setScrolled] = useState(false);
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [activeSection, setActiveSection] = useState<'top' | 'fases-ingenieria' | 'simulador' | 'calendario-ruc' | 'faq'>('top');
     const [scrollProgress, setScrollProgress] = useState(0);
     const [showBiometric, setShowBiometric] = useState(false);
-    const { scrollY } = useScroll();
-    const heroY = useTransform(scrollY, [0, 800], [0, -100]);
     const phoneNumber = "593978980722";
 
     const { serviceFees } = useAppStore();
@@ -454,10 +426,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
         }
     }, [calcRucInput]);
 
-    // Throttled Scroll Listener (passive + requestAnimationFrame)
+    // Throttled Scroll Listener (passive + requestAnimationFrame + Active Section Spy)
     useEffect(() => {
         let isScrolledVal = false;
         let ticking = false;
+
+        const sections: { id: 'top' | 'fases-ingenieria' | 'simulador' | 'calendario-ruc' | 'faq'; el: HTMLElement | null }[] = [
+            { id: 'top', el: document.getElementById('top') },
+            { id: 'fases-ingenieria', el: document.getElementById('fases-ingenieria') },
+            { id: 'simulador', el: document.getElementById('simulador') },
+            { id: 'calendario-ruc', el: document.getElementById('calendario-ruc') },
+            { id: 'faq', el: document.getElementById('faq') }
+        ];
+
         const handleScroll = () => {
             if (!ticking) {
                 requestAnimationFrame(() => {
@@ -472,6 +453,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         const prog = totalScroll > 0 ? (scrollYVal / totalScroll) * 100 : 0;
                         setScrollProgress(prog);
                     }
+
+                    // Section Spy
+                    const scrollPos = scrollYVal + window.innerHeight * 0.35;
+                    for (let i = sections.length - 1; i >= 0; i--) {
+                        const sec = sections[i];
+                        if (sec.el && sec.el.offsetTop <= scrollPos) {
+                            setActiveSection(sec.id);
+                            break;
+                        }
+                    }
+
                     ticking = false;
                 });
                 ticking = true;
@@ -489,7 +481,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
     const scrollToSection = (id: string) => {
         const element = document.getElementById(id);
         if (element) element.scrollIntoView({ behavior: 'smooth' });
-        setMobileMenuOpen(false);
     };
 
     // Tax recommendation calculation
@@ -612,10 +603,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             {/* ── TOP FLOATING NAVIGATION DOCK ── */}
             <header className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center pt-4 px-4 pointer-events-none">
                 <ScrollProgressBar />
-                <nav className={`pointer-events-auto transition-all duration-500 flex items-center justify-between px-4 py-2.5 rounded-full border shadow-2xl backdrop-blur-2xl
+                <nav className={`pointer-events-auto transition-all duration-500 flex items-center justify-between px-4 py-2 rounded-full border shadow-2xl backdrop-blur-2xl
                     ${scrolled 
-                        ? `w-full max-w-5xl scale-[0.98] ${theme === 'dark' ? 'bg-[#051424]/90 border-white/15 shadow-[#00A896]/5' : 'bg-white/90 border-slate-200 shadow-lg'}` 
-                        : `w-full max-w-6xl ${theme === 'dark' ? 'bg-[#051424]/70 border-white/10' : 'bg-slate-900/10 border-slate-900/10'}`
+                        ? `w-full max-w-5xl scale-[0.98] ${theme === 'dark' ? 'bg-[#051424]/90 border-white/15 shadow-[#00A896]/5' : 'bg-white/90 border-slate-200 shadow-lg shadow-slate-900/5'}` 
+                        : `w-full max-w-6xl ${theme === 'dark' ? 'bg-[#051424]/75 border-white/10' : 'bg-white/80 border-slate-200/80 shadow-md'}`
                     }`}>
                     {/* Brand Identifier */}
                     <div className="flex items-center gap-3 cursor-pointer pl-1 group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -628,27 +619,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         </div>
                     </div>
 
-                    {/* Navigation Desktop Links */}
-                    <div className="hidden md:flex items-center gap-1 bg-black/20 rounded-full p-1 border border-white/5 font-sans">
+                    {/* Navigation Desktop Links with Active Section Pill */}
+                    <div className="hidden md:flex items-center gap-1 bg-black/20 rounded-full p-1 border border-white/5 font-sans relative">
                         {[
                             { label: 'Inicio', target: 'top' },
                             { label: '4 Fases', target: 'fases-ingenieria' },
                             { label: 'Simulador', target: 'simulador' },
                             { label: 'Calendario SRI', target: 'calendario-ruc' },
                             { label: 'FAQ', target: 'faq' }
-                        ].map((link) => (
-                            <button
-                                key={link.label}
-                                onClick={() => scrollToSection(link.target)}
-                                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                                    theme === 'dark' 
-                                        ? 'text-slate-300 hover:text-white hover:bg-white/10' 
-                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                                }`}
-                            >
-                                {link.label}
-                            </button>
-                        ))}
+                        ].map((link) => {
+                            const isActive = activeSection === link.target;
+                            return (
+                                <button
+                                    key={link.label}
+                                    onClick={() => scrollToSection(link.target)}
+                                    className={`relative px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                                        isActive 
+                                            ? 'text-white font-bold' 
+                                            : theme === 'dark' 
+                                            ? 'text-slate-300 hover:text-white hover:bg-white/10' 
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                                    }`}
+                                >
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="activeNavSection"
+                                            className="absolute inset-0 bg-[#00A896] rounded-full shadow-md shadow-[#00A896]/30 z-[-1]"
+                                            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                        />
+                                    )}
+                                    <span className="relative z-10">{link.label}</span>
+                                </button>
+                            );
+                        })}
                     </div>
 
                     {/* Right Direct Actions */}
@@ -658,7 +661,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 onClick={toggleTheme}
                                 aria-label="Cambiar tema claro/oscuro"
                                 className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all ${
-                                    theme === 'dark' ? 'border-white/10 bg-white/5 text-slate-300 hover:text-white' : 'border-slate-200 bg-slate-100 text-slate-700'
+                                    theme === 'dark' ? 'border-white/10 bg-white/5 text-slate-300 hover:text-white hover:bg-white/10' : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
                                 }`}
                             >
                                 {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
@@ -679,7 +682,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             onClick={handleProtectedAccess}
                             aria-label="Acceso al panel administrativo"
                             className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all ${
-                                theme === 'dark' ? 'border-white/10 bg-white/5 text-slate-400 hover:text-[#00A896] hover:border-[#00A896]/40' : 'border-slate-200 bg-slate-100 text-slate-600'
+                                theme === 'dark' ? 'border-white/10 bg-white/5 text-slate-400 hover:text-[#00A896] hover:border-[#00A896]/40' : 'border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                             title="Panel Administrativo"
                         >
@@ -692,12 +695,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             {/* ── MOBILE BOTTOM FLOATING ISLAND DOCK ── */}
             <div className="md:hidden fixed bottom-4 left-4 right-4 z-50 pointer-events-auto">
                 <div className={`flex items-center justify-around py-2 px-3 rounded-full border shadow-2xl backdrop-blur-2xl
-                    ${theme === 'dark' ? 'bg-[#051424]/95 border-white/15' : 'bg-white/95 border-slate-200'}`}>
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex flex-col items-center p-1 text-slate-400 hover:text-white">
-                        <Home size={18} className={scrolled ? 'text-[#00A896]' : ''} />
+                    ${theme === 'dark' ? 'bg-[#051424]/95 border-white/15' : 'bg-white/95 border-slate-200 shadow-xl'}`}>
+                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`flex flex-col items-center p-1 ${activeSection === 'top' ? 'text-[#00A896]' : 'text-slate-400'}`}>
+                        <Home size={18} />
                         <span className="text-[9px] font-bold uppercase tracking-tighter mt-0.5">Inicio</span>
                     </button>
-                    <button onClick={() => scrollToSection('simulador')} className="flex flex-col items-center p-1 text-slate-400 hover:text-white">
+                    <button onClick={() => scrollToSection('simulador')} className={`flex flex-col items-center p-1 ${activeSection === 'simulador' ? 'text-[#00A896]' : 'text-slate-400'}`}>
                         <BarChart3 size={18} />
                         <span className="text-[9px] font-bold uppercase tracking-tighter mt-0.5">Simulador</span>
                     </button>
@@ -712,7 +715,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             <MessageCircle size={22} />
                         </a>
                     </div>
-                    <button onClick={() => scrollToSection('calendario-ruc')} className="flex flex-col items-center p-1 text-slate-400 hover:text-white">
+                    <button onClick={() => scrollToSection('calendario-ruc')} className={`flex flex-col items-center p-1 ${activeSection === 'calendario-ruc' ? 'text-[#00A896]' : 'text-slate-400'}`}>
                         <Calendar size={18} />
                         <span className="text-[9px] font-bold uppercase tracking-tighter mt-0.5">RUC SRI</span>
                     </button>
@@ -726,13 +729,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             {/* ════════════════════════════════════════════════════════════════
                 HERO SECTION (Stitch Luminous & Obsidian Luxury Tier)
             ════════════════════════════════════════════════════════════════ */}
-            <section id="top" className={`relative min-h-screen flex items-center justify-center overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28 ${theme === 'dark' ? 'bg-[#0b1326]' : 'bg-slate-50'}`}>
-                {/* Single-Pass High-FPS 3D Background */}
+            <section id="top" className={`relative min-h-screen flex items-center justify-center overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28 ${theme === 'dark' ? 'bg-[#0b1326]' : 'bg-gradient-to-b from-white via-slate-50 to-slate-100'}`}>
+                {/* Single-Pass High-FPS 3D Background with Dynamic Theme */}
                 <div className="absolute inset-0 pointer-events-none z-0 opacity-75">
-                    <Scroll3DCanvas scrollProgress={scrollProgress / 100} />
+                    <Scroll3DCanvas scrollProgress={scrollProgress / 100} theme={theme} />
                 </div>
 
-                <AuroraBackground />
+                <AuroraBackground theme={theme} />
                 <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none" />
 
                 <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
@@ -756,7 +759,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             {/* Main Headline with Liquid Gold Surname */}
                             <Reveal delay={80}>
                                 <h1 className="text-[2.7rem] sm:text-[4.2rem] md:text-[5rem] lg:text-[5.4rem] font-editorial tracking-tighter leading-[0.95] font-extrabold">
-                                    <span className="block text-white">SANTIAGO</span>
+                                    <span className={`block ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>SANTIAGO</span>
                                     <span className="relative inline-block mt-1">
                                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C9A96E] via-[#F2D79E] to-[#C9A96E] drop-shadow-[0_0_35px_rgba(201,169,110,0.4)]">
                                             CÓRDOVA
@@ -768,11 +771,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             {/* Brand Slogan / Promesa de Valor */}
                             <Reveal delay={140}>
                                 <div className="space-y-3 max-w-2xl">
-                                    <p className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-200 to-[#2B6AFF] font-display">
+                                    <p className="text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF] font-display">
                                         "Tu tranquilidad fiscal, nuestro compromiso de élite."
                                     </p>
                                     <p className={`text-base md:text-lg font-light leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-                                        La certeza de tener tu contabilidad, declaraciones del SRI y retenciones <span className="text-white font-semibold">100% blindadas</span> con automatización de software de precisión en Pasaje, El Oro y todo el Ecuador.
+                                        La certeza de tener tu contabilidad, declaraciones del SRI y retenciones <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>100% blindadas</span> con automatización de software de precisión en Pasaje, El Oro y todo el Ecuador.
                                     </p>
                                 </div>
                             </Reveal>
@@ -802,7 +805,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                         <div className={`flex items-center justify-center gap-3 transition-all duration-300 px-7 py-4 rounded-2xl border active:scale-95 h-14
                                             ${theme === 'dark' 
                                                 ? 'text-slate-300 hover:text-white border-white/10 hover:bg-white/5 hover:border-[#00A896]/40' 
-                                                : 'text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-50'
+                                                : 'text-slate-700 hover:text-slate-950 border-slate-200 bg-white/80 hover:bg-slate-100'
                                             }`}>
                                             <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-[#00A896]">
                                                 <MessageCircle size={16} />
@@ -817,7 +820,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         {/* Right Column: Live Telemetry Fiscal Cockpit */}
                         <div className="lg:col-span-5">
                             <Reveal delay={150}>
-                                <SpotlightCard theme={theme} className="p-8 border-white/15">
+                                <SpotlightCard theme={theme} className="p-8 relative">
+                                    {/* Continuous Laser Scanning Line */}
+                                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#00A896] to-transparent animate-scan pointer-events-none z-20" />
+
                                     <div className="flex items-center justify-between pb-5 border-b border-white/10">
                                         <div className="flex items-center gap-3">
                                             <div className="w-3 h-3 rounded-full bg-[#00A896] animate-ping" />
@@ -830,8 +836,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                                     <div className="py-6 space-y-6 font-mono text-left">
                                         <div>
-                                            <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Declaraciones Procesadas con Éxito</div>
-                                            <div className="text-3xl font-bold text-white tracking-tight flex items-center justify-between">
+                                            <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1 font-sans">Declaraciones Procesadas con Éxito</div>
+                                            <div className={`text-3xl font-bold tracking-tight flex items-center justify-between ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                                                 <span>12,548+</span>
                                                 <span className="text-xs text-[#00A896] font-semibold flex items-center gap-1">
                                                     <TrendingUp size={14} /> +18.4% este mes
@@ -841,21 +847,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                                         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
                                             <div>
-                                                <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Precisión Algorítmica</div>
+                                                <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1 font-sans">Precisión Algorítmica</div>
                                                 <div className="text-2xl font-bold text-[#00A896]">99.9%</div>
                                             </div>
                                             <div>
-                                                <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Ahorro Generado</div>
+                                                <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1 font-sans">Ahorro Generado</div>
                                                 <div className="text-2xl font-bold text-[#C9A96E]">$1.2M+</div>
                                             </div>
                                         </div>
 
-                                        <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+                                        <div className={`p-4 rounded-2xl border space-y-2 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
                                             <div className="flex justify-between items-center text-xs">
                                                 <span className="text-slate-400 font-sans">Motor de Automatización Nueva Luz 3.0:</span>
                                                 <span className="text-[#00A896] font-bold">SINCRONIZADO</span>
                                             </div>
-                                            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                            <div className="w-full h-1.5 bg-black/20 rounded-full overflow-hidden">
                                                 <div className="h-full bg-gradient-to-r from-[#00A896] via-[#2B6AFF] to-[#C9A96E] w-[98%] rounded-full animate-pulse" />
                                             </div>
                                             <div className="text-[9px] text-slate-400 font-sans">Conexión directa con SRI Ecuador, cálculo automático en casilleros 615/617.</div>
@@ -865,7 +871,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     <div className="pt-2">
                                         <button 
                                             onClick={() => scrollToSection('fases-ingenieria')}
-                                            className="w-full py-3.5 px-4 rounded-xl bg-white/10 hover:bg-[#00A896] hover:text-white text-white font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 border border-white/10 font-mono"
+                                            className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 border font-mono ${
+                                                theme === 'dark' 
+                                                    ? 'bg-white/10 hover:bg-[#00A896] hover:text-white text-white border-white/10' 
+                                                    : 'bg-slate-900 hover:bg-[#00A896] text-white border-slate-900'
+                                            }`}
                                         >
                                             <span>Conocer las 4 Fases de Blindaje</span>
                                             <ArrowUpRight size={16} />
@@ -884,14 +894,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             {/* ════════════════════════════════════════════════════════════════
                 SECCIÓN INTERACTIVA: LAS 4 FASES DE LA INGENIERÍA TRIBUTARIA
             ════════════════════════════════════════════════════════════════ */}
-            <section id="fases-ingenieria" className={`py-28 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-slate-100'}`}>
+            <section id="fases-ingenieria" className={`py-28 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-slate-100/70'}`}>
                 <div className="max-w-7xl mx-auto px-6 relative z-10">
                     <Reveal>
                         <div className="text-center mb-16 space-y-4">
                             <div className="text-[11px] font-bold text-[#00A896] uppercase tracking-[0.4em] font-mono">— Metodología de Control Total</div>
-                            <h2 className="text-3xl md:text-5xl lg:text-6xl font-editorial tracking-tight font-bold">
+                            <h2 className={`text-3xl md:text-5xl lg:text-6xl font-editorial tracking-tight font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
                                 LAS 4 FASES DE LA <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-200 to-[#2B6AFF]">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF]">
                                     INGENIERÍA TRIBUTARIA DE ÉLITE
                                 </span>
                             </h2>
@@ -901,59 +911,64 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         </div>
                     </Reveal>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[
-                            {
-                                step: "01",
-                                title: "Diagnóstico & Auditoría Preventiva",
-                                icon: Search,
-                                tag: "Detección de Glosas",
-                                desc: "Análisis profundo de tus declaraciones históricas en el SRI para identificar inconsistencias y casilleros omitidos antes de cualquier notificación oficial."
-                            },
-                            {
-                                step: "02",
-                                title: "Automatización & Facturación SRI",
-                                icon: Zap,
-                                tag: "Tecnología .P12",
-                                desc: "Implementación de firmas electrónicas, validación inmediata de facturas recibidas y sincronización en la nube con respaldo digital inmutable."
-                            },
-                            {
-                                step: "03",
-                                title: "Blindaje Fiscal & Retenciones",
-                                icon: ShieldCheck,
-                                tag: "Cero Errores 615/617",
-                                desc: "Cálculo matemático exacto de retenciones de IVA y Renta. Clasificación jurídica precisa en RIMPE Popular o Emprendedor."
-                            },
-                            {
-                                step: "04",
-                                title: "Devolución & Paz Tributaria",
-                                icon: Heart,
-                                tag: "Recuperación de Fondos",
-                                desc: "Gestión de devolución de IVA para 3ra Edad y Discapacidad, y créditos tributarios a favor. La tranquilidad de estar al 100% con la ley."
-                            }
-                        ].map((phase, idx) => (
-                            <Reveal key={phase.step} delay={idx * 100}>
-                                <SpotlightCard theme={theme} className="p-7 h-full flex flex-col justify-between group hover:border-[#00A896]/50">
-                                    <div>
-                                        <div className="flex justify-between items-center mb-6">
-                                            <div className="w-12 h-12 rounded-2xl bg-[#00A896]/15 border border-[#00A896]/30 flex items-center justify-center text-[#00A896] group-hover:scale-110 transition-transform">
-                                                <phase.icon size={22} />
+                    <div className="relative">
+                        {/* Connecting Trace Beam for Desktop */}
+                        <div className="hidden lg:block absolute top-1/2 left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-[#00A896]/40 to-transparent -translate-y-12 z-0 pointer-events-none" />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+                            {[
+                                {
+                                    step: "01",
+                                    title: "Diagnóstico & Auditoría Preventiva",
+                                    icon: Search,
+                                    tag: "Detección de Glosas",
+                                    desc: "Análisis profundo de tus declaraciones históricas en el SRI para identificar inconsistencias y casilleros omitidos antes de cualquier notificación oficial."
+                                },
+                                {
+                                    step: "02",
+                                    title: "Automatización & Facturación SRI",
+                                    icon: Zap,
+                                    tag: "Tecnología .P12",
+                                    desc: "Implementación de firmas electrónicas, validación inmediata de facturas recibidas y sincronización en la nube con respaldo digital inmutable."
+                                },
+                                {
+                                    step: "03",
+                                    title: "Blindaje Fiscal & Retenciones",
+                                    icon: ShieldCheck,
+                                    tag: "Cero Errores 615/617",
+                                    desc: "Cálculo matemático exacto de retenciones de IVA y Renta. Clasificación jurídica precisa en RIMPE Popular o Emprendedor."
+                                },
+                                {
+                                    step: "04",
+                                    title: "Devolución & Paz Tributaria",
+                                    icon: Heart,
+                                    tag: "Recuperación de Fondos",
+                                    desc: "Gestión de devolución de IVA para 3ra Edad y Discapacidad, y créditos tributarios a favor. La tranquilidad de estar al 100% con la ley."
+                                }
+                            ].map((phase, idx) => (
+                                <Reveal key={phase.step} delay={idx * 100}>
+                                    <SpotlightCard theme={theme} className="p-7 h-full flex flex-col justify-between group">
+                                        <div>
+                                            <div className="flex justify-between items-center mb-6">
+                                                <div className="w-12 h-12 rounded-2xl bg-[#00A896]/15 border border-[#00A896]/30 flex items-center justify-center text-[#00A896] group-hover:scale-110 transition-transform">
+                                                    <phase.icon size={22} />
+                                                </div>
+                                                <span className={`text-3xl font-bold font-editorial transition-colors ${theme === 'dark' ? 'text-white/20 group-hover:text-[#00A896]' : 'text-slate-300 group-hover:text-[#00A896]'}`}>{phase.step}</span>
                                             </div>
-                                            <span className="text-3xl font-bold font-editorial text-white/20 group-hover:text-[#00A896] transition-colors">{phase.step}</span>
+                                            <span className="text-[9px] font-bold font-mono px-2.5 py-1 rounded-full bg-[#00A896]/10 border border-[#00A896]/20 text-[#00A896] uppercase tracking-wider mb-3 inline-block">
+                                                {phase.tag}
+                                            </span>
+                                            <h3 className={`text-lg font-bold mb-3 group-hover:text-[#00A896] transition-colors text-left ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{phase.title}</h3>
+                                            <p className="text-xs md:text-sm font-light text-slate-400 leading-relaxed text-left">{phase.desc}</p>
                                         </div>
-                                        <span className="text-[9px] font-bold font-mono px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[#00A896] uppercase tracking-wider mb-3 inline-block">
-                                            {phase.tag}
-                                        </span>
-                                        <h3 className="text-lg font-bold mb-3 group-hover:text-[#00A896] transition-colors text-left">{phase.title}</h3>
-                                        <p className="text-xs md:text-sm font-light text-slate-400 leading-relaxed text-left">{phase.desc}</p>
-                                    </div>
-                                    <div className="mt-6 pt-4 border-t border-white/5 flex items-center gap-2 text-[10px] font-bold text-[#00A896] font-mono uppercase tracking-wider">
-                                        <CheckCircle2 size={13} />
-                                        <span>Proceso Certificado</span>
-                                    </div>
-                                </SpotlightCard>
-                            </Reveal>
-                        ))}
+                                        <div className="mt-6 pt-4 border-t border-white/5 flex items-center gap-2 text-[10px] font-bold text-[#00A896] font-mono uppercase tracking-wider">
+                                            <CheckCircle2 size={13} />
+                                            <span>Proceso Certificado</span>
+                                        </div>
+                                    </SpotlightCard>
+                                </Reveal>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </section>
@@ -966,9 +981,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <Reveal>
                         <div className="text-center mb-14 space-y-3">
                             <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em] font-mono">— Diagnóstico Instantáneo</div>
-                            <h2 className="text-3xl md:text-5xl font-editorial tracking-tight font-bold">
+                            <h2 className={`text-3xl md:text-5xl font-editorial tracking-tight font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
                                 SIMULADOR DE <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-200 to-[#2B6AFF]">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF]">
                                     RÉGIMEN TRIBUTARIO SRI
                                 </span>
                             </h2>
@@ -985,7 +1000,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 <div className="flex-1 space-y-6 text-left">
                                     <div className="space-y-2">
                                         <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest font-mono">Tipo de Actividad Económica</label>
-                                        <div className="grid grid-cols-3 gap-2 p-1 rounded-2xl bg-black/40 border border-white/10">
+                                        <div className={`grid grid-cols-3 gap-2 p-1 rounded-2xl border ${theme === 'dark' ? 'bg-black/40 border-white/10' : 'bg-slate-100 border-slate-200'}`}>
                                             {[
                                                 { id: 'comercial', label: 'Comercio / RIMPE', icon: Store },
                                                 { id: 'profesional', label: 'Serv. Profesional', icon: User },
@@ -998,7 +1013,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                     className={`py-3 px-2 rounded-xl text-[9px] font-bold uppercase tracking-wider flex flex-col items-center gap-1 transition-all ${
                                                         calcActividad === opt.id 
                                                             ? 'bg-[#00A896] text-white shadow-lg shadow-[#00A896]/30' 
-                                                            : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                                            : theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-white'
                                                     }`}
                                                 >
                                                     <opt.icon size={16} />
@@ -1023,7 +1038,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                     step="5000"
                                                     value={calcIngresos}
                                                     onChange={e => setCalcIngresos(parseInt(e.target.value, 10))}
-                                                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#00A896]"
+                                                    className="w-full h-2 bg-slate-300 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#00A896]"
                                                 />
                                                 <div className="flex justify-between text-[8px] text-slate-500 font-mono mt-2">
                                                     <span>$1k</span>
@@ -1036,20 +1051,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                     )}
                                 </div>
 
-                                <div className="hidden md:block w-[1px] bg-white/10" />
+                                <div className={`hidden md:block w-[1px] ${theme === 'dark' ? 'bg-white/10' : 'bg-slate-200'}`} />
 
                                 {/* Right Result */}
                                 <div className="flex-1 flex flex-col justify-between text-left space-y-6">
                                     <div className="space-y-2">
                                         <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.25em] font-mono">Régimen Detectado</div>
-                                        <div className="text-2xl font-editorial font-bold text-white tracking-wide">{recommendation.regimen}</div>
-                                        <p className="text-xs font-light text-slate-300 leading-relaxed">{recommendation.description}</p>
+                                        <div className={`text-2xl font-editorial font-bold tracking-wide ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>{recommendation.regimen}</div>
+                                        <p className="text-xs font-light text-slate-400 leading-relaxed">{recommendation.description}</p>
                                     </div>
                                     
-                                    <div className="p-4 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-between gap-4">
+                                    <div className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${theme === 'dark' ? 'bg-black/40 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
                                         <div>
                                             <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest font-mono">Plan Recomendado</div>
-                                            <div className="text-sm font-bold text-white truncate max-w-[160px]">{recommendation.planTitle}</div>
+                                            <div className={`text-sm font-bold truncate max-w-[160px] ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{recommendation.planTitle}</div>
                                             <div className="text-base font-mono font-bold text-[#00A896]">${recommendation.price} USD</div>
                                         </div>
                                         <a
@@ -1071,14 +1086,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             {/* ════════════════════════════════════════════════════════════════
                 CALENDARIO SRI & VALIDADOR DE RUC EN TIEMPO REAL
             ════════════════════════════════════════════════════════════════ */}
-            <section id="calendario-ruc" className={`py-28 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-slate-100'}`}>
+            <section id="calendario-ruc" className={`py-28 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-slate-100/70'}`}>
                 <div className="max-w-5xl mx-auto px-6 relative z-10">
                     <Reveal>
                         <div className="text-center mb-14 space-y-3">
                             <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em] font-mono">— Vencimientos SRI 2026</div>
-                            <h2 className="text-3xl md:text-5xl font-editorial tracking-tight font-bold">
+                            <h2 className={`text-3xl md:text-5xl font-editorial tracking-tight font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
                                 CALENDARIO SRI PERSONALIZADO <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-200 to-[#2B6AFF]">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF]">
                                     POR NOVENO DÍGITO DE RUC
                                 </span>
                             </h2>
@@ -1104,11 +1119,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                             value={calcRucInput}
                                             onChange={e => setCalcRucInput(e.target.value.replace(/\D/g, ''))}
                                             placeholder="Ej. 0702706813001"
-                                            className="w-full px-4 py-3.5 bg-black/50 border border-white/15 rounded-2xl text-center text-base font-mono tracking-widest text-white outline-none focus:border-[#00A896] transition-colors"
+                                            className={`w-full px-4 py-3.5 border rounded-2xl text-center text-base font-mono tracking-widest outline-none focus:border-[#00A896] transition-colors ${
+                                                theme === 'dark' ? 'bg-black/50 border-white/15 text-white' : 'bg-white border-slate-300 text-slate-900'
+                                            }`}
                                         />
                                     </div>
                                     {rucValidationMsg.text && (
-                                        <div className={`text-xs font-semibold font-mono ${rucValidationMsg.type === 'success' ? 'text-[#00A896]' : 'text-rose-400'}`}>
+                                        <div className={`text-xs font-semibold font-mono ${rucValidationMsg.type === 'success' ? 'text-[#00A896]' : 'text-rose-500'}`}>
                                             {rucValidationMsg.text}
                                             {rucValidationMsg.details && (
                                                 <p className="text-[11px] text-slate-400 mt-1 font-sans">{rucValidationMsg.details}</p>
@@ -1131,7 +1148,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                                 className={`w-11 h-11 rounded-xl font-mono text-sm font-bold transition-all ${
                                                     selectedRucDigit === digit 
                                                         ? 'bg-[#00A896] text-white shadow-lg shadow-[#00A896]/40 scale-105' 
-                                                        : 'bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                                                        : theme === 'dark' ? 'bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
                                                 }`}
                                             >
                                                 {digit}
@@ -1141,10 +1158,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 </div>
 
                                 {/* Calculated Deadline Banner */}
-                                <div className="p-6 rounded-2xl bg-black/40 border border-[#00A896]/30 flex flex-col md:flex-row items-center justify-between gap-6 text-left">
+                                <div className={`p-6 rounded-2xl border flex flex-col md:flex-row items-center justify-between gap-6 text-left ${
+                                    theme === 'dark' ? 'bg-black/40 border-[#00A896]/30' : 'bg-slate-50 border-teal-200'
+                                }`}>
                                     <div className="space-y-1">
                                         <div className="text-[9px] font-bold text-[#00A896] uppercase tracking-[0.25em] font-mono">Fecha Límite Mensual de Declaración</div>
-                                        <div className="text-2xl font-bold text-white font-editorial">{deadline.label}</div>
+                                        <div className={`text-2xl font-bold font-editorial ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{deadline.label}</div>
                                         <div className="text-xs text-slate-400">Si la fecha cae en fin de semana o feriado, se traslada al siguiente día hábil.</div>
                                     </div>
                                     <a
@@ -1170,9 +1189,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <Reveal>
                         <div className="text-center mb-16 space-y-3">
                             <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em] font-mono">— Comparativa de Precisión</div>
-                            <h2 className="text-3xl md:text-5xl font-editorial tracking-tight font-bold">
+                            <h2 className={`text-3xl md:text-5xl font-editorial tracking-tight font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
                                 CONTABILIDAD TRADICIONAL <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-200 to-[#2B6AFF]">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF]">
                                     VS. SOLUCIONES TRIBUTARIAS PRO
                                 </span>
                             </h2>
@@ -1185,26 +1204,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
                         {/* Traditional Accounting Box */}
                         <Reveal delay={100}>
-                            <div className="p-8 rounded-[2rem] border border-rose-500/20 bg-rose-950/10 backdrop-blur-xl h-full space-y-6">
-                                <div className="flex items-center gap-3 text-rose-400">
+                            <div className={`p-8 rounded-[2rem] border h-full space-y-6 ${
+                                theme === 'dark' 
+                                    ? 'border-rose-500/20 bg-rose-950/10 backdrop-blur-xl' 
+                                    : 'border-rose-200 bg-rose-50/70 shadow-sm'
+                            }`}>
+                                <div className="flex items-center gap-3 text-rose-500">
                                     <ShieldAlert size={24} />
-                                    <h3 className="text-xl font-bold font-editorial text-white">Contabilidad Tradicional</h3>
+                                    <h3 className={`text-xl font-bold font-editorial ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Contabilidad Tradicional</h3>
                                 </div>
-                                <ul className="space-y-4 text-xs md:text-sm text-slate-300">
+                                <ul className={`space-y-4 text-xs md:text-sm ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                                     <li className="flex items-start gap-3">
-                                        <span className="text-rose-400 font-bold">✕</span>
+                                        <span className="text-rose-500 font-bold">✕</span>
                                         <span>Procesos manuales propensos a errores de digitación en casilleros del SRI.</span>
                                     </li>
                                     <li className="flex items-start gap-3">
-                                        <span className="text-rose-400 font-bold">✕</span>
+                                        <span className="text-rose-500 font-bold">✕</span>
                                         <span>Declaraciones a última hora con alto riesgo de multas e intereses por mora.</span>
                                     </li>
                                     <li className="flex items-start gap-3">
-                                        <span className="text-rose-400 font-bold">✕</span>
+                                        <span className="text-rose-500 font-bold">✕</span>
                                         <span>Falta de seguimiento a retenciones y créditos tributarios acumulados.</span>
                                     </li>
                                     <li className="flex items-start gap-3">
-                                        <span className="text-rose-400 font-bold">✕</span>
+                                        <span className="text-rose-500 font-bold">✕</span>
                                         <span>Atención lenta y comunicación dispersa por canales no organizados.</span>
                                     </li>
                                 </ul>
@@ -1213,12 +1236,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                         {/* Soluciones Tributarias PRO Box */}
                         <Reveal delay={200}>
-                            <SpotlightCard theme={theme} className="p-8 border-[#00A896]/40 bg-[#051424]/90 h-full space-y-6">
+                            <SpotlightCard theme={theme} className="p-8 border-[#00A896]/40 h-full space-y-6">
                                 <div className="flex items-center gap-3 text-[#00A896]">
                                     <ShieldCheck size={24} />
-                                    <h3 className="text-xl font-bold font-editorial text-white">Soluciones Tributarias PRO</h3>
+                                    <h3 className={`text-xl font-bold font-editorial ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Soluciones Tributarias PRO</h3>
                                 </div>
-                                <ul className="space-y-4 text-xs md:text-sm text-slate-200">
+                                <ul className={`space-y-4 text-xs md:text-sm ${theme === 'dark' ? 'text-slate-200' : 'text-slate-700'}`}>
                                     <li className="flex items-start gap-3">
                                         <span className="text-[#00A896] font-bold">✓</span>
                                         <span><strong>Automatización algorítmica:</strong> Validación matemática continua sin fallas humanas.</span>
@@ -1245,14 +1268,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             {/* ════════════════════════════════════════════════════════════════
                 TESTIMONIOS DE CLIENTES VERIFICADOS
             ════════════════════════════════════════════════════════════════ */}
-            <section className={`py-28 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-slate-100'}`}>
+            <section className={`py-28 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-slate-100/70'}`}>
                 <div className="max-w-6xl mx-auto px-6 relative z-10">
                     <Reveal>
                         <div className="text-center mb-16 space-y-3">
                             <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em] font-mono">— Casos de Éxito Reales</div>
-                            <h2 className="text-3xl md:text-5xl font-editorial tracking-tight font-bold">
+                            <h2 className={`text-3xl md:text-5xl font-editorial tracking-tight font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
                                 LO QUE DICEN NUESTROS <br />
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-200 to-[#2B6AFF]">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00A896] via-teal-400 to-[#2B6AFF]">
                                     CLIENTES EN ECUADOR
                                 </span>
                             </h2>
@@ -1293,7 +1316,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <Reveal>
                         <div className="text-center mb-12 space-y-3">
                             <div className="text-[10px] font-bold text-[#00A896] uppercase tracking-[0.4em] font-mono">— Respuestas Claras</div>
-                            <h2 className="text-3xl md:text-5xl font-editorial tracking-tight font-bold">
+                            <h2 className={`text-3xl md:text-5xl font-editorial tracking-tight font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>
                                 PREGUNTAS FRECUENTES
                             </h2>
                             <p className="text-sm md:text-base font-light text-slate-400 max-w-lg mx-auto">
@@ -1311,7 +1334,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 className={`px-4 py-2 rounded-full text-xs font-mono font-semibold transition-all ${
                                     faqCategory === cat 
                                         ? 'bg-[#00A896] text-white shadow-md' 
-                                        : 'bg-white/5 border border-white/10 text-slate-400 hover:text-white'
+                                        : theme === 'dark' ? 'bg-white/5 border border-white/10 text-slate-400 hover:text-white' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
                                 }`}
                             >
                                 {cat}

@@ -6,20 +6,20 @@ import * as THREE from 'three';
 interface Scroll3DCanvasProps {
     scrollProgress: number; // 0 to 1
     customGlbUrl?: string;
-    themeColor?: string;
+    theme?: 'light' | 'dark';
 }
 
 // 1. High-Performance Particle Field (Optimized vertex count)
-const ParticlesField: React.FC<{ progress: number }> = ({ progress }) => {
+const ParticlesField: React.FC<{ progress: number; theme?: 'light' | 'dark' }> = ({ progress, theme = 'dark' }) => {
     const count = 120;
     const pointsRef = useRef<THREE.Points>(null);
 
     const [positions, colors] = useMemo(() => {
         const pos = new Float32Array(count * 3);
         const col = new Float32Array(count * 3);
-        const color1 = new THREE.Color('#2B6AFF');
-        const color2 = new THREE.Color('#00A896');
-        const color3 = new THREE.Color('#6366f1');
+        const color1 = new THREE.Color(theme === 'dark' ? '#2B6AFF' : '#0284c7');
+        const color2 = new THREE.Color(theme === 'dark' ? '#00A896' : '#0d9488');
+        const color3 = new THREE.Color(theme === 'dark' ? '#6366f1' : '#6366f1');
 
         for (let i = 0; i < count; i++) {
             pos[i * 3] = (Math.random() - 0.5) * 16;
@@ -32,7 +32,7 @@ const ParticlesField: React.FC<{ progress: number }> = ({ progress }) => {
             col[i * 3 + 2] = lerpColor.b;
         }
         return [pos, col];
-    }, [count]);
+    }, [count, theme]);
 
     useFrame((state, delta) => {
         if (pointsRef.current) {
@@ -57,7 +57,7 @@ const ParticlesField: React.FC<{ progress: number }> = ({ progress }) => {
                 size={0.05}
                 vertexColors
                 transparent
-                opacity={0.6}
+                opacity={theme === 'dark' ? 0.6 : 0.45}
                 blending={THREE.AdditiveBlending}
                 depthWrite={false}
             />
@@ -82,7 +82,7 @@ const Alpha3DModel: React.FC<{ url: string; progress: number }> = ({ url, progre
 };
 
 // 3. Ultra-Fast Glass Polyhedron (Single-Pass Hardware Accelerated)
-const ScrollSculpture: React.FC<{ progress: number }> = ({ progress }) => {
+const ScrollSculpture: React.FC<{ progress: number; theme?: 'light' | 'dark' }> = ({ progress, theme = 'dark' }) => {
     const meshRef = useRef<THREE.Mesh>(null);
     const ringRef = useRef<THREE.Mesh>(null);
 
@@ -91,7 +91,7 @@ const ScrollSculpture: React.FC<{ progress: number }> = ({ progress }) => {
 
         const time = state.clock.getElapsedTime();
 
-        // Smooth rotation morph
+        // Smooth continuous morphing rotation
         meshRef.current.rotation.x = time * 0.25 + progress * Math.PI * 1.5;
         meshRef.current.rotation.y = time * 0.35 + progress * Math.PI * 2;
         meshRef.current.rotation.z = Math.sin(time * 0.15) * 0.3;
@@ -131,9 +131,9 @@ const ScrollSculpture: React.FC<{ progress: number }> = ({ progress }) => {
             <mesh ref={ringRef}>
                 <torusGeometry args={[2.2, 0.03, 12, 64]} />
                 <meshStandardMaterial
-                    color={progress > 0.5 ? '#00A896' : '#2B6AFF'}
-                    emissive={progress > 0.5 ? '#00A896' : '#2B6AFF'}
-                    emissiveIntensity={0.6}
+                    color={progress > 0.5 ? '#00A896' : (theme === 'dark' ? '#2B6AFF' : '#0284c7')}
+                    emissive={progress > 0.5 ? '#00A896' : (theme === 'dark' ? '#2B6AFF' : '#0284c7')}
+                    emissiveIntensity={theme === 'dark' ? 0.6 : 0.4}
                     wireframe
                 />
             </mesh>
@@ -148,7 +148,7 @@ const ScrollSculpture: React.FC<{ progress: number }> = ({ progress }) => {
 
                     {/* Single-Pass High-Performance Glass / Crystal Material */}
                     <meshPhysicalMaterial
-                        color={progress > 0.6 ? '#dbeafe' : '#cffafe'}
+                        color={theme === 'dark' ? (progress > 0.6 ? '#dbeafe' : '#cffafe') : '#f8fafc'}
                         transmission={0.85}
                         opacity={0.85}
                         transparent
@@ -167,7 +167,8 @@ const ScrollSculpture: React.FC<{ progress: number }> = ({ progress }) => {
 
 export const Scroll3DCanvas: React.FC<Scroll3DCanvasProps> = ({
     scrollProgress,
-    customGlbUrl
+    customGlbUrl,
+    theme = 'dark'
 }) => {
     return (
         <div className="w-full h-full absolute inset-0 pointer-events-none z-0 overflow-hidden hidden sm:block">
@@ -181,17 +182,17 @@ export const Scroll3DCanvas: React.FC<Scroll3DCanvasProps> = ({
                     depth: true
                 }}
             >
-                <ambientLight intensity={0.8} />
-                <directionalLight position={[8, 8, 4]} intensity={1.5} color="#2B6AFF" />
+                <ambientLight intensity={theme === 'dark' ? 0.8 : 1.2} />
+                <directionalLight position={[8, 8, 4]} intensity={1.5} color={theme === 'dark' ? '#2B6AFF' : '#0284c7'} />
                 <directionalLight position={[-8, -8, -4]} intensity={1.0} color="#00A896" />
                 <pointLight position={[0, 0, 2.5]} intensity={1.5} color="#38bdf8" />
 
-                <ParticlesField progress={scrollProgress} />
+                <ParticlesField progress={scrollProgress} theme={theme} />
 
                 {customGlbUrl ? (
                     <Alpha3DModel url={customGlbUrl} progress={scrollProgress} />
                 ) : (
-                    <ScrollSculpture progress={scrollProgress} />
+                    <ScrollSculpture progress={scrollProgress} theme={theme} />
                 )}
             </Canvas>
         </div>

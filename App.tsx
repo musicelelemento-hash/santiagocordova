@@ -132,7 +132,7 @@ const App: React.FC = () => {
 
   const [publicUser, setPublicUser] = useState<PublicUser | null>(null);
   const [loggedClient, setLoggedClient] = useState<Client | null>(null);
-  const [theme, setTheme] = useLocalStorage<Theme>('theme', 'light');
+  const [theme, setTheme] = useLocalStorage<Theme>('theme', 'dark');
   const [activeScreen, setActiveScreen] = useState<Screen>('home');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [previousScreen, setPreviousScreen] = useState<Screen | null>(null);
