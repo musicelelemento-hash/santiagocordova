@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, ReminderConfig, BusinessProfile, FinancialItem } from '../types';
 import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, safeFormat } from '../services/sri';
 import { getClientServiceFee, isCourtesyClient } from '../services/clientService';
@@ -808,14 +808,28 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         setIsPaymentModalOpen(true);
     };
 
+    // Resolver información completa de cliente, período y monto desde una key 'clientId-period'
+    const getItemFromKey = useCallback((key: string) => {
+        const client = clients.find(c => key.startsWith(c.id));
+        if (!client) return null;
+        const period = key.slice(client.id.length + 1);
+        
+        const item = financialData.receivable.find(i => i.clientId === client.id && (arePeriodsEqual(i.period, period) || i.period === period))
+                  || financialData.projected.find(i => i.clientId === client.id && (arePeriodsEqual(i.period, period) || i.period === period))
+                  || financialData.collected.find(i => i.clientId === client.id && (arePeriodsEqual(i.period, period) || i.period === period));
+                  
+        const amount = item?.amount ?? getClientServiceFee(client, serviceFees);
+        return { client, period, amount, item };
+    }, [clients, financialData, serviceFees]);
+
     const selectedSummary = useMemo(() => {
         let total = 0;
         selectedItems.forEach(key => {
-            const item = currentList.find(i => `${i.clientId}-${i.period}` === key);
-            if (item) total += item.amount;
+            const resolved = getItemFromKey(key);
+            if (resolved) total += resolved.amount;
         });
         return { count: selectedItems.size, total };
-    }, [selectedItems, currentList]);
+    }, [selectedItems, getItemFromKey]);
 
     const handleExportCsv = () => {
         if (currentList.length === 0) {
@@ -853,48 +867,121 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         { name: 'Recaudado', value: financialData.collected.reduce((s, i) => s + i.amount, 0), color: '#10b981' }
     ].filter(d => d.value > 0);
 
+    // Registro de Pago Directo de 1 Solo Período (Matriz / Expediente / Celda)
+    const handlePaySinglePeriod = async (client: Client, period: string, amount: number) => {
+        const nowIso = new Date().toISOString();
+        const transactionId = `PAY-${Date.now().toString().slice(-6)}`;
+        const history = [...(client.declarations || [])];
+        const declIdx = history.findIndex(d => arePeriodsEqual(d.period, period) || d.period === period);
+        const existingDecl = declIdx > -1 ? history[declIdx] : null;
+
+        const entry: any = {
+            ...(existingDecl || {}),
+            period,
+            status: DeclarationStatus.Pagada,
+            is_paid: true,
+            paidAt: nowIso,
+            transactionId,
+            amount,
+            updatedAt: nowIso
+        };
+
+        if (declIdx > -1) {
+            history[declIdx] = entry;
+        } else {
+            history.push(entry);
+        }
+
+        const updatedClient = { ...client, declarations: history, updatedAt: nowIso };
+        
+        // Persistir en Zustand Store y Local DB
+        store.updateClient(client.id, { declarations: history });
+        const newClients = clients.map(c => c.id === client.id ? updatedClient : c);
+        setClients(newClients);
+        await db.setLocal('clients', newClients);
+
+        setSelectedCellAction(null);
+        setReceiptData({
+            transactionId,
+            clientName: client.name,
+            clientRuc: client.ruc,
+            client: updatedClient,
+            paymentDate: safeFormat(new Date(), 'PPpp'),
+            paidPeriods: [{ period, amount }],
+            totalAmount: amount
+        });
+        setIsReceiptOpen(true);
+        toast.success(`Pago de $${amount.toFixed(2)} registrado para ${client.name} (${formatPeriodForDisplay(period)})`);
+    };
+
+    // Procesamiento en Lote de Pagos Seleccionados
     const handleProcessPayment = () => {
         if (selectedItems.size === 0) return;
         setIsProcessing(true);
         const nowIso = new Date().toISOString();
         const transactionId = `PAY-${Date.now().toString().slice(-6)}`;
         
-        // Safety check for setClients
-        if (typeof setClients !== 'function') {
-            console.error("setClients is not a function", setClients);
-            setIsProcessing(false);
-            toast.error("Error al procesar: setClients no disponible");
-            return;
-        }
-
         const newClients = [...clients];
-        let lastClient;
-        let paidPeriods: any[] = [];
+        let lastClient: Client | undefined;
+        let paidPeriods: { period: string; amount: number }[] = [];
 
         selectedItems.forEach(key => {
-            const item = currentList.find(i => `${i.clientId}-${i.period}` === key);
-            if (!item) return;
-            const clientIdx = newClients.findIndex(c => c.id === item.clientId);
+            const resolved = getItemFromKey(key);
+            if (!resolved) return;
+            const { client, period, amount } = resolved;
+            
+            const clientIdx = newClients.findIndex(c => c.id === client.id);
             if (clientIdx === -1) return;
-            const history = [...newClients[clientIdx].declarations];
-            const declIdx = history.findIndex(d => d.period === item.period);
-            const entry = { period: item.period, status: DeclarationStatus.Pagada, paidAt: nowIso, transactionId, amount: item.amount, updatedAt: nowIso };
-            if (declIdx > -1) history[declIdx] = { ...history[declIdx], ...entry };
-            else history.push(entry as any);
-            newClients[clientIdx] = { ...newClients[clientIdx], declarations: history };
+
+            const history = [...(newClients[clientIdx].declarations || [])];
+            const declIdx = history.findIndex(d => arePeriodsEqual(d.period, period) || d.period === period);
+            const existingDecl = declIdx > -1 ? history[declIdx] : null;
+
+            const entry: any = {
+                ...(existingDecl || {}),
+                period,
+                status: DeclarationStatus.Pagada,
+                is_paid: true,
+                paidAt: nowIso,
+                transactionId,
+                amount,
+                updatedAt: nowIso
+            };
+
+            if (declIdx > -1) {
+                history[declIdx] = entry;
+            } else {
+                history.push(entry);
+            }
+
+            newClients[clientIdx] = { ...newClients[clientIdx], declarations: history, updatedAt: nowIso };
             lastClient = newClients[clientIdx];
-            paidPeriods.push({ period: item.period, amount: item.amount });
+            paidPeriods.push({ period, amount });
+
+            // Persistir cada cliente al store
+            store.updateClient(client.id, { declarations: history });
         });
 
-        setTimeout(() => {
+        setTimeout(async () => {
             setClients(newClients);
+            await db.setLocal('clients', newClients);
             setIsProcessing(false);
             setIsPaymentModalOpen(false);
             setSelectedItems(new Set());
-            if (lastClient) setReceiptData({ transactionId, clientName: lastClient.name, clientRuc: lastClient.ruc, client: lastClient, paymentDate: safeFormat(new Date(), 'PPpp'), paidPeriods, totalAmount: paidPeriods.reduce((s, p) => s + p.amount, 0) });
-            setIsReceiptOpen(true);
-            toast.success("Pago registrado");
-        }, 800);
+            if (lastClient) {
+                setReceiptData({
+                    transactionId,
+                    clientName: lastClient.name,
+                    clientRuc: lastClient.ruc,
+                    client: lastClient,
+                    paymentDate: safeFormat(new Date(), 'PPpp'),
+                    paidPeriods,
+                    totalAmount: paidPeriods.reduce((s, p) => s + p.amount, 0)
+                });
+                setIsReceiptOpen(true);
+            }
+            toast.success("Pago registrado exitosamente");
+        }, 500);
     };
 
     const handleSyncAllDeclaredAsPaid = () => {
@@ -1942,11 +2029,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                 {!isPaidP && (
                                                     <button
                                                         onClick={() => {
-                                                            setSelectedItems(new Set([`${selectedClientExpediente.client.id}-${p.period}`]));
+                                                            handlePaySinglePeriod(selectedClientExpediente.client, p.period, p.amount);
                                                             setSelectedClientExpediente(null);
-                                                            setIsPaymentModalOpen(true);
                                                         }}
                                                         className="px-3 py-1.5 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 text-[10px] font-bold uppercase transition-all cursor-pointer shadow-sm active:scale-95"
+                                                        title="Registrar pago inmediato de este período"
                                                     >
                                                         Pagar
                                                     </button>
@@ -2056,9 +2143,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         {selectedCellAction.status !== 'paid' && (
                             <button
                                 onClick={() => {
-                                    setSelectedItems(new Set([`${selectedCellAction.client.id}-${selectedCellAction.period}`]));
-                                    setSelectedCellAction(null);
-                                    setIsPaymentModalOpen(true);
+                                    handlePaySinglePeriod(selectedCellAction.client, selectedCellAction.period, selectedCellAction.amount);
                                 }}
                                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#00A896]/25 active:scale-95 border border-white/10"
                             >
@@ -2083,7 +2168,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             </div>
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Monto Total de Liquidación</p>
                             <p className="text-4xl sm:text-5xl font-black text-[#00A896] mb-3 tracking-tight">
-                                ${Array.from(selectedItems).reduce<number>((sum: number, key) => sum + (currentList.find(i => `${i.clientId}-${i.period}` === key)?.amount || 0), 0).toFixed(2)}
+                                ${selectedSummary.total.toFixed(2)}
                             </p>
                             <div className="flex items-center justify-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_8px_rgba(0,168,150,0.8)]"></div>
