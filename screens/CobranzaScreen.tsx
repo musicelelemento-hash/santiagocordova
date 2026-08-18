@@ -60,13 +60,15 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState<'receivable' | 'projected' | 'collected'>('receivable');
-    const [viewMode, setViewMode] = useState<'grid' | 'matrix' | 'list'>(() => {
-        return (localStorage.getItem('sc_cobranza_view_mode') as 'grid' | 'matrix' | 'list') || 'grid';
+    const [viewMode, setViewMode] = useState<'clients' | 'grid' | 'matrix' | 'list'>(() => {
+        return (localStorage.getItem('sc_cobranza_view_mode') as 'clients' | 'grid' | 'matrix' | 'list') || 'clients';
     });
 
     useEffect(() => {
         localStorage.setItem('sc_cobranza_view_mode', viewMode);
     }, [viewMode]);
+
+    const [selectedClientExpediente, setSelectedClientExpediente] = useState<any | null>(null);
 
     const [selectedCellAction, setSelectedCellAction] = useState<{
         client: Client;
@@ -658,6 +660,154 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         });
     }, [clients, serviceFees, matrixPeriods, searchTerm]);
 
+    // CARTERA CONSOLIDADA POR CLIENTE CON TIRA DE COMPROBANTES Y DECLARACIONES
+    const consolidatedClients = useMemo(() => {
+        const query = searchTerm.toLowerCase();
+        const now = new Date();
+        const list: any[] = [];
+
+        clients.forEach(client => {
+            if (client.isDeleted || client.isActive === false || isCourtesyClient(client)) return;
+            const fee = getClientServiceFee(client, serviceFees);
+            if (fee <= 0) return;
+
+            if (query) {
+                const match = client.name.toLowerCase().includes(query) || 
+                              (client.tradeName && client.tradeName.toLowerCase().includes(query)) || 
+                              client.ruc.includes(query);
+                if (!match) return;
+            }
+
+            const activePeriods = getActivePeriodsForClient(client, now);
+            const processedPeriods = new Set<string>();
+            const periodsList: any[] = [];
+            let totalDebt = 0;
+            let totalPaid = 0;
+            let pendingCount = 0;
+            let maxDaysOverdue = 0;
+
+            // 1. Declaraciones existentes
+            (client.declarations || []).forEach(decl => {
+                if (isPeriodBeforeClientStart(client, decl.period)) return;
+                processedPeriods.add(decl.period);
+                const amount = decl.amount || fee;
+                const dueDate = getDueDateForPeriod(client, decl.period) || now;
+                const diff = differenceInCalendarDays(now, dueDate);
+                const sriDoc = findSriInvoice(client.ruc, decl.period);
+
+                if (isPaid(decl, client)) {
+                    totalPaid += amount;
+                    periodsList.push({
+                        period: decl.period,
+                        label: formatPeriodForDisplay(decl.period),
+                        amount,
+                        status: 'paid',
+                        decl,
+                        dueDate,
+                        daysDiff: diff,
+                        sriDoc
+                    });
+                } else if (isDeclared(decl) || decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pendiente) {
+                    totalDebt += amount;
+                    pendingCount++;
+                    if (diff > maxDaysOverdue) maxDaysOverdue = diff;
+                    periodsList.push({
+                        period: decl.period,
+                        label: formatPeriodForDisplay(decl.period),
+                        amount,
+                        status: 'due_declared',
+                        decl,
+                        dueDate,
+                        daysDiff: diff,
+                        sriDoc
+                    });
+                }
+            });
+
+            // 2. Períodos activos proyectados o sin declarar
+            activePeriods.forEach(period => {
+                if (processedPeriods.has(period) || isPeriodBeforeClientStart(client, period)) return;
+                const dueDate = getDueDateForPeriod(client, period) || now;
+                const diff = differenceInCalendarDays(now, dueDate);
+                const sriDoc = findSriInvoice(client.ruc, period);
+
+                if (diff > 0) {
+                    totalDebt += fee;
+                    pendingCount++;
+                    if (diff > maxDaysOverdue) maxDaysOverdue = diff;
+                    periodsList.push({
+                        period,
+                        label: formatPeriodForDisplay(period),
+                        amount: fee,
+                        status: 'due_pending',
+                        dueDate,
+                        daysDiff: diff,
+                        sriDoc
+                    });
+                } else {
+                    periodsList.push({
+                        period,
+                        label: formatPeriodForDisplay(period),
+                        amount: fee,
+                        status: 'projected',
+                        dueDate,
+                        daysDiff: diff,
+                        sriDoc
+                    });
+                }
+            });
+
+            // Orden cronológico (más recientes primero)
+            periodsList.sort((a, b) => b.period.localeCompare(a.period));
+
+            // Filtro de mora
+            if (moraFilter === 'al_dia' && totalDebt > 0) return;
+            if (moraFilter === 'atrasado' && (maxDaysOverdue <= 0 || maxDaysOverdue > 30)) return;
+            if (moraFilter === 'mora_critica' && maxDaysOverdue <= 30) return;
+
+            // Filtro de pestaña activa
+            if (activeTab === 'receivable' && totalDebt === 0) return;
+            if (activeTab === 'collected' && totalPaid === 0) return;
+
+            list.push({
+                client,
+                fee,
+                totalDebt,
+                totalPaid,
+                pendingCount,
+                maxDaysOverdue,
+                periods: periodsList
+            });
+        });
+
+        return list.sort((a, b) => {
+            if (b.totalDebt !== a.totalDebt) return b.totalDebt - a.totalDebt;
+            if (b.maxDaysOverdue !== a.maxDaysOverdue) return b.maxDaysOverdue - a.maxDaysOverdue;
+            return a.client.name.localeCompare(b.client.name);
+        });
+    }, [clients, serviceFees, searchTerm, moraFilter, activeTab, isRecalculating]);
+
+    const generateClientWhatsAppCobroMsg = (profile: any) => {
+        const unpaidPeriods = profile.periods.filter((p: any) => p.status === 'due_declared' || p.status === 'due_pending');
+        const periodsBreakdown = unpaidPeriods.map((p: any) => 
+            `• *${p.label}*: $${p.amount.toFixed(2)} USD (${p.status === 'due_declared' ? 'Declaración SRI Realizada' : 'Pendiente SRI'})`
+        ).join('\n');
+
+        return `Estimado(a) *${profile.client.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que mantiene un saldo pendiente de honorarios contables por un valor total de *$${profile.totalDebt.toFixed(2)} USD* correspondiente a las siguientes obligaciones:\n\n${periodsBreakdown}\n\n🏛️ *Datos para transferencia bancaria:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante por este medio para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias por su confianza!`;
+    };
+
+    const handleLiquidateClientDebt = (profile: any) => {
+        const unpaidPeriods = profile.periods.filter((p: any) => p.status === 'due_declared' || p.status === 'due_pending');
+        if (unpaidPeriods.length === 0) {
+            toast.info("Este cliente no tiene obligaciones pendientes por liquidar.");
+            return;
+        }
+
+        const keys = unpaidPeriods.map((p: any) => `${profile.client.id}-${p.period}`);
+        setSelectedItems(new Set(keys));
+        setIsPaymentModalOpen(true);
+    };
+
     const selectedSummary = useMemo(() => {
         let total = 0;
         selectedItems.forEach(key => {
@@ -830,33 +980,33 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 <CampaignBanner campaign={campaignContext} compact />
             </div>
 
-            {/* ZENITH FINANCIAL STRIP - 3 Executive KPI Cards (Stitch Obsidian Luxury) */}
+            {/* ZENITH FINANCIAL STRIP - 3 Executive KPI Cards (Stitch Obsidian Luxury & Clean Light) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 font-mono">
-                <div className="p-5 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
+                <div className="p-5 rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 bg-rose-500/15 text-rose-400 rounded-2xl border border-rose-500/30">
+                        <div className="p-3 bg-rose-500/15 text-rose-500 dark:text-rose-400 rounded-2xl border border-rose-500/30">
                             <LucideIcons.AlertTriangle size={20} />
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Por Recaudar</p>
-                            <p className="text-2xl font-black text-rose-400 font-mono tracking-tight">
+                            <p className="text-[10px] font-bold text-rose-500 dark:text-rose-400 uppercase tracking-widest">Por Recaudar</p>
+                            <p className="text-2xl font-black text-rose-500 dark:text-rose-400 font-mono tracking-tight">
                                 ${financialData.receivable.reduce((s, i) => s + i.amount, 0).toFixed(2)}
                             </p>
                         </div>
                     </div>
-                    <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                    <span className="text-[10px] font-bold px-3 py-1 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/30">
                         {financialData.receivable.length} Pendientes
                     </span>
                 </div>
 
-                <div className="p-5 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
+                <div className="p-5 rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-[#00A896]/15 text-[#00A896] rounded-2xl border border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.3)]">
                             <LucideIcons.CheckCircle size={20} />
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-[#00A896] uppercase tracking-widest">Efectivo Cobrado</p>
-                            <p className="text-2xl font-black text-white font-mono tracking-tight">
+                            <p className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
                                 ${financialData.collected.reduce((s, i) => s + i.amount, 0).toFixed(2)}
                             </p>
                         </div>
@@ -866,19 +1016,19 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     </span>
                 </div>
 
-                <div className="p-5 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl flex items-center justify-between">
+                <div className="p-5 rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-lg dark:shadow-xl backdrop-blur-2xl flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="p-3 bg-[#2B6AFF]/15 text-[#2B6AFF] rounded-2xl border border-[#2B6AFF]/30">
                             <LucideIcons.Activity size={20} />
                         </div>
                         <div>
                             <p className="text-[10px] font-bold text-[#2B6AFF] uppercase tracking-widest">Cobertura Mensual</p>
-                            <p className="text-2xl font-black text-white font-mono tracking-tight">
+                            <p className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
                                 {Math.round((financialData.collected.reduce((s, i) => s + i.amount, 0) / (financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0) || 1)) * 100)}%
                             </p>
                         </div>
                     </div>
-                    <div className="w-20 h-2 bg-[#020b14] rounded-full overflow-hidden border border-white/10">
+                    <div className="w-20 h-2 bg-slate-200 dark:bg-[#020b14] rounded-full overflow-hidden border border-slate-300 dark:border-white/10">
                         <div 
                             className="h-full bg-gradient-to-r from-[#2B6AFF] to-[#00A896] transition-all duration-700 shadow-[0_0_8px_rgba(0,168,150,0.5)]" 
                             style={{ width: `${Math.round((financialData.collected.reduce((s, i) => s + i.amount, 0) / ((financialData.receivable.reduce((s, i) => s + i.amount, 0) + financialData.collected.reduce((s, i) => s + i.amount, 0)) || 1)) * 100)}%` }}
@@ -887,12 +1037,12 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 </div>
             </div>
 
-            {/* TACTICAL FILTERS & SEARCH (Stitch Obsidian Luxury) */}
-            <div className="p-3 rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl flex flex-col lg:flex-row gap-3 items-center font-mono">
-                <div className="flex p-1 bg-[#0b1326] rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar border border-white/10">
+            {/* TACTICAL FILTERS & SEARCH (Stitch Clean Light & Dark Elite) */}
+            <div className="p-3 rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-xl backdrop-blur-2xl flex flex-col lg:flex-row gap-3 items-center font-mono">
+                <div className="flex p-1 bg-slate-100 dark:bg-[#0b1326] rounded-2xl w-full lg:w-auto overflow-x-auto no-scrollbar border border-slate-200 dark:border-white/10">
                     {[
-                        { id: 'receivable', label: 'Pendientes', icon: LucideIcons.AlertTriangle, color: 'text-rose-400' },
-                        { id: 'projected', label: 'Proyectado', icon: LucideIcons.Timer, color: 'text-amber-400' },
+                        { id: 'receivable', label: 'Pendientes', icon: LucideIcons.AlertTriangle, color: 'text-rose-500 dark:text-rose-400' },
+                        { id: 'projected', label: 'Proyectado', icon: LucideIcons.Timer, color: 'text-amber-500 dark:text-amber-400' },
                         { id: 'collected', label: 'Efectivo', icon: LucideIcons.CheckCircle, color: 'text-[#00A896]' }
                     ].map(tab => (
                         <button 
@@ -900,13 +1050,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             onClick={() => setActiveTab(tab.id as any)} 
                             className={`flex flex-1 lg:flex-none items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 shrink-0 cursor-pointer
                                 ${activeTab === tab.id 
-                                    ? 'bg-white/15 text-white shadow-lg border border-white/20' 
-                                    : 'text-slate-400 hover:text-slate-200'}`}
+                                    ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-md border border-slate-200 dark:border-white/20' 
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'}`}
                         >
                             <tab.icon size={14} className={activeTab === tab.id ? tab.color : 'text-slate-400'} />
                             <span className="whitespace-nowrap">{tab.label}</span>
                             {tab.id === 'receivable' && financialData.receivable.length > 0 && (
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ml-1 ${activeTab === tab.id ? 'bg-rose-500 text-white shadow-md' : 'bg-white/10 text-slate-400'}`}>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ml-1 ${activeTab === tab.id ? 'bg-rose-500 text-white shadow-md' : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'}`}>
                                     {financialData.receivable.length}
                                 </span>
                             )}
@@ -920,20 +1070,32 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         placeholder="BUSCAR POR CLIENTE / RUC / PERÍODO..." 
                         value={searchTerm} 
                         onChange={e => setSearchTerm(e.target.value)} 
-                        className="w-full pl-12 pr-5 py-3 bg-[#0b1326]/90 border border-white/10 rounded-2xl text-xs font-mono font-medium text-white uppercase tracking-wider placeholder:text-slate-500 focus:outline-none focus:border-[#00A896]/50 transition-all" 
+                        className="w-full pl-12 pr-5 py-3 bg-slate-50 dark:bg-[#0b1326]/90 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-mono font-medium text-slate-900 dark:text-white uppercase tracking-wider placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[#00A896]/50 transition-all" 
                     />
                 </div>
                 <div className="flex items-center gap-2 px-1 w-full lg:w-auto">
-                    {/* View Mode Toggle: Grid vs Matrix vs List */}
-                    <div className="flex bg-[#0b1326] p-1 rounded-2xl border border-white/10 shrink-0">
+                    {/* View Mode Toggle: Clients vs Grid vs Matrix vs List */}
+                    <div className="flex bg-slate-100 dark:bg-[#0b1326] p-1 rounded-2xl border border-slate-200 dark:border-white/10 shrink-0">
+                        <button
+                            onClick={() => setViewMode('clients')}
+                            className={`p-2.5 rounded-xl transition-all duration-300 flex items-center gap-1 text-[10px] font-bold uppercase cursor-pointer ${
+                                viewMode === 'clients'
+                                    ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                            title="Vista Clientes Deudores con Tira de Declaraciones y Expediente Pro"
+                        >
+                            <LucideIcons.Users size={15} />
+                            <span className="hidden sm:inline">Clientes</span>
+                        </button>
                         <button
                             onClick={() => setViewMode('grid')}
                             className={`p-2.5 rounded-xl transition-all duration-300 flex items-center gap-1 text-[10px] font-bold uppercase cursor-pointer ${
                                 viewMode === 'grid'
                                     ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30'
-                                    : 'text-slate-400 hover:text-white'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
-                            title="Vista Cuadrícula de Tarjetas"
+                            title="Vista Cuadrícula de Tarjetas Individuales"
                         >
                             <LucideIcons.LayoutGrid size={15} />
                             <span className="hidden sm:inline">Tarjetas</span>
@@ -943,19 +1105,19 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             className={`p-2.5 rounded-xl transition-all duration-300 flex items-center gap-1 text-[10px] font-bold uppercase cursor-pointer ${
                                 viewMode === 'matrix'
                                     ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-black shadow-md shadow-amber-500/30'
-                                    : 'text-slate-400 hover:text-white'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
-                            title="Vista Matriz Fiscal por Períodos (Como Declaraciones)"
+                            title="Vista Matriz Fiscal por Períodos"
                         >
                             <LucideIcons.Table2 size={15} />
-                            <span className="hidden sm:inline">Matriz Fiscal</span>
+                            <span className="hidden sm:inline">Matriz</span>
                         </button>
                         <button
                             onClick={() => setViewMode('list')}
                             className={`p-2.5 rounded-xl transition-all duration-300 flex items-center gap-1 text-[10px] font-bold uppercase cursor-pointer ${
                                 viewMode === 'list'
-                                    ? 'bg-white/15 text-white shadow-md border border-white/20'
-                                    : 'text-slate-400 hover:text-white'
+                                    ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-md border border-slate-200 dark:border-white/20'
+                                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
                             title="Vista Lista Clásica"
                         >
@@ -966,7 +1128,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
                     <button 
                         onClick={() => setIsRecalculating(p => !p)} 
-                        className="flex items-center justify-center p-3 text-slate-300 hover:text-[#00A896] transition-all hover:rotate-180 duration-700 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 shadow-lg active:scale-90 cursor-pointer"
+                        className="flex items-center justify-center p-3 text-slate-600 dark:text-slate-300 hover:text-[#00A896] dark:hover:text-[#00A896] transition-all hover:rotate-180 duration-700 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm active:scale-90 cursor-pointer"
                         title="Recalcular Cartera de Clientes"
                     >
                         <LucideIcons.RefreshCw size={18} />
@@ -974,41 +1136,43 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 </div>
             </div>
 
-            {/* FULL WIDTH FINANCIAL GRID / MATRIX / LIST (Stitch Obsidian Luxury) */}
+            {/* FULL WIDTH FINANCIAL VIEWS (Clean Light & Obsidian Luxury) */}
             <div className="w-full font-mono">
-                <div className="rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl overflow-hidden flex flex-col relative group">
-                    <div className="relative z-10 p-4 sm:p-5 bg-[#0b1326]/80 border-b border-white/10 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 backdrop-blur-2xl">
+                <div className="rounded-[2.5rem] bg-white dark:bg-[#051424]/90 border border-slate-200 dark:border-white/10 shadow-2xl backdrop-blur-2xl overflow-hidden flex flex-col relative group">
+                    <div className="relative z-10 p-4 sm:p-5 bg-slate-50 dark:bg-[#0b1326]/80 border-b border-slate-200 dark:border-white/10 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 backdrop-blur-2xl">
                         <div className="flex flex-wrap items-center gap-2">
-                            <button 
-                                onClick={() => {
-                                    if (selectedItems.size === currentList.length) setSelectedItems(new Set());
-                                    else setSelectedItems(new Set(currentList.map(i => `${i.clientId}-${i.period}`)));
-                                }} 
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-all active:scale-95 border border-white/10 cursor-pointer"
-                            >
-                                {selectedItems.size === currentList.length && currentList.length > 0 ? <LucideIcons.CheckSquare size={16} className="text-[#00A896]" /> : <LucideIcons.Square size={16} />}
-                                <span>SELECCIONAR TODOS</span>
-                            </button>
+                            {viewMode !== 'clients' && (
+                                <button 
+                                    onClick={() => {
+                                        if (selectedItems.size === currentList.length) setSelectedItems(new Set());
+                                        else setSelectedItems(new Set(currentList.map(i => `${i.clientId}-${i.period}`)));
+                                    }} 
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 transition-all active:scale-95 border border-slate-200 dark:border-white/10 cursor-pointer shadow-sm"
+                                >
+                                    {selectedItems.size === currentList.length && currentList.length > 0 ? <LucideIcons.CheckSquare size={16} className="text-[#00A896]" /> : <LucideIcons.Square size={16} />}
+                                    <span>SELECCIONAR TODOS</span>
+                                </button>
+                            )}
 
                             {/* Sub-filtros de Mora */}
-                            <div className="flex items-center p-1 bg-[#020b14] rounded-xl border border-white/5 overflow-x-auto no-scrollbar">
+                            <div className="flex items-center p-1 bg-slate-200/70 dark:bg-[#020b14] rounded-xl border border-slate-300/50 dark:border-white/5 overflow-x-auto no-scrollbar">
                                 {[
                                     { id: 'all', label: 'Todos', count: moraCounts.all },
                                     { id: 'al_dia', label: 'Al Día', count: moraCounts.al_dia, color: 'text-[#00A896]' },
-                                    { id: 'atrasado', label: '1-30d', count: moraCounts.atrasado, color: 'text-amber-400' },
-                                    { id: 'mora_critica', label: '>30d Mora', count: moraCounts.mora_critica, color: 'text-rose-400' }
+                                    { id: 'atrasado', label: '1-30d', count: moraCounts.atrasado, color: 'text-amber-500' },
+                                    { id: 'mora_critica', label: '>30d Mora', count: moraCounts.mora_critica, color: 'text-rose-500' }
                                 ].map(filter => (
                                     <button
                                         key={filter.id}
                                         onClick={() => setMoraFilter(filter.id as any)}
                                         className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                                             moraFilter === filter.id
-                                                ? 'bg-white/15 text-white shadow-sm border border-white/20'
-                                                : 'text-slate-400 hover:text-slate-200'
+                                                ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-white/20'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                                         }`}
                                     >
                                         <span>{filter.label}</span>
-                                        <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${moraFilter === filter.id ? 'bg-[#00A896] text-white' : 'bg-white/5 text-slate-500'}`}>
+                                        <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${moraFilter === filter.id ? 'bg-[#00A896] text-white' : 'bg-slate-300 dark:bg-white/5 text-slate-600 dark:text-slate-500'}`}>
                                             {filter.count}
                                         </span>
                                     </button>
@@ -1019,7 +1183,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         <div className="flex items-center gap-2 justify-end">
                             <button
                                 onClick={handleExportCsv}
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold uppercase tracking-wider border border-white/10 transition-all cursor-pointer shadow-sm active:scale-95"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-bold uppercase tracking-wider border border-slate-200 dark:border-white/10 transition-all cursor-pointer shadow-sm active:scale-95"
                                 title="Exportar cartera actual a archivo CSV"
                             >
                                 <LucideIcons.Download size={14} className="text-[#00A896]" />
@@ -1028,13 +1192,208 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
                             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00A896]/15 border border-[#00A896]/30 shadow-inner">
                                 <LucideIcons.Layers size={14} className="text-[#00A896]" />
-                                <span className="text-xs font-bold text-[#00A896] uppercase tracking-wider">{currentList.length} OPERACIONES</span>
+                                <span className="text-xs font-bold text-[#00A896] uppercase tracking-wider">
+                                    {viewMode === 'clients' ? `${consolidatedClients.length} CLIENTES` : `${currentList.length} OPERACIONES`}
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* VISTA CUADRÍCULA (GRID MATRIX) */}
-                    {viewMode === 'grid' ? (
+                    {/* VISTA 1: POR CLIENTE (CARTERA CONSOLIDADA & TIRA DE PERÍODOS) */}
+                    {viewMode === 'clients' ? (
+                        <div className="relative z-10 p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[850px] overflow-y-auto no-scrollbar">
+                            {consolidatedClients.length === 0 ? (
+                                <div className="col-span-full py-24 flex flex-col items-center justify-center text-slate-500 font-mono">
+                                    <div className="p-6 rounded-3xl bg-slate-100 dark:bg-white/5 mb-4 border border-slate-200 dark:border-white/10">
+                                        <LucideIcons.ShieldCheck size={48} className="text-[#00A896]" />
+                                    </div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300">No se encontraron clientes en este estado de cartera</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">Todos los clientes evaluados están al día con sus obligaciones</p>
+                                </div>
+                            ) : (
+                                consolidatedClients.map(profile => {
+                                    const hasDebt = profile.totalDebt > 0;
+                                    const rawPhone = (profile.client.phones && profile.client.phones[0]) || '';
+                                    const isCriticalMora = profile.maxDaysOverdue > 30;
+
+                                    return (
+                                        <div
+                                            key={profile.client.id}
+                                            className={`group/client relative rounded-[2rem] p-5 sm:p-6 border transition-all duration-300 backdrop-blur-2xl flex flex-col justify-between shadow-lg hover:shadow-xl ${
+                                                hasDebt
+                                                    ? 'bg-white dark:bg-[#051424]/95 border-slate-200 dark:border-white/10 hover:border-[#00A896]/40'
+                                                    : 'bg-white dark:bg-[#051424]/80 border-slate-200 dark:border-white/5 opacity-90'
+                                            }`}
+                                        >
+                                            {/* Accent Top Strip */}
+                                            <div className={`absolute top-0 left-0 right-0 h-1.5 rounded-t-full ${
+                                                !hasDebt
+                                                    ? 'bg-gradient-to-r from-[#00A896] to-emerald-400'
+                                                    : isCriticalMora
+                                                    ? 'bg-gradient-to-r from-rose-500 via-red-500 to-amber-500'
+                                                    : 'bg-gradient-to-r from-amber-500 to-yellow-500'
+                                            }`} />
+
+                                            <div>
+                                                {/* Header del Cliente */}
+                                                <div className="flex items-start justify-between gap-3 mb-4">
+                                                    <div className="flex items-center gap-3.5 min-w-0">
+                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm font-display shrink-0 border shadow-sm ${
+                                                            hasDebt
+                                                                ? 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/30'
+                                                                : 'bg-[#00A896]/10 text-[#00A896] border-[#00A896]/30'
+                                                        }`}>
+                                                            {profile.client.name.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="font-bold text-sm text-slate-900 dark:text-white uppercase truncate font-display group-hover/client:text-[#00A896] transition-colors" title={profile.client.name}>
+                                                                    {profile.client.name}
+                                                                </h4>
+                                                            </div>
+                                                            <div className="flex items-center flex-wrap gap-1.5 mt-1 font-mono">
+                                                                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">{profile.client.ruc}</span>
+                                                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/5">
+                                                                    DÍG {profile.client.ruc[8] || '—'}
+                                                                </span>
+                                                                {profile.client.regime && (
+                                                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#00A896]/10 text-[#00A896] font-bold">
+                                                                        {profile.client.regime}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Status Badge */}
+                                                    <div className="shrink-0 text-right">
+                                                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border shadow-sm ${
+                                                            !hasDebt
+                                                                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                                                                : isCriticalMora
+                                                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30 animate-pulse'
+                                                                : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                                                        }`}>
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${!hasDebt ? 'bg-emerald-500' : isCriticalMora ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                                                            {!hasDebt ? 'AL DÍA' : `${profile.pendingCount} MES${profile.pendingCount > 1 ? 'ES' : ''} IMPAGO${profile.pendingCount > 1 ? 'S' : ''}`}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Resumen Financiero del Cliente */}
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-[#020b14]/90 border border-slate-200 dark:border-white/5 mb-4 font-mono">
+                                                    <div>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Deuda Acumulada</span>
+                                                        <span className={`text-xl font-black tracking-tight ${hasDebt ? 'text-rose-500 dark:text-rose-400' : 'text-emerald-500 dark:text-emerald-400'}`}>
+                                                            ${profile.totalDebt.toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Tarifa Mensual</span>
+                                                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                                            ${profile.fee.toFixed(2)}/mes
+                                                        </span>
+                                                    </div>
+                                                    <div className="col-span-2 sm:col-span-1">
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Días Máx Mora</span>
+                                                        <span className={`text-sm font-bold ${profile.maxDaysOverdue > 30 ? 'text-rose-500' : profile.maxDaysOverdue > 0 ? 'text-amber-500' : 'text-slate-400'}`}>
+                                                            {profile.maxDaysOverdue > 0 ? `${profile.maxDaysOverdue} días` : '0 días (Al Día)'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* TIRA DE PERÍODOS Y COMPROBANTES (COMO EN DECLARACIONES) */}
+                                                <div className="mb-4 space-y-1.5">
+                                                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+                                                        <span className="flex items-center gap-1.5">
+                                                            <LucideIcons.Calendar size={12} className="text-[#00A896]" />
+                                                            Tira de Períodos Fiscales ({profile.periods.length})
+                                                        </span>
+                                                        <span className="text-[9px] text-slate-500">Click en celda para accionar</span>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 pt-0.5">
+                                                        {profile.periods.slice(0, 6).map((p: any) => {
+                                                            const isPaidP = p.status === 'paid';
+                                                            const isDeclaredP = p.status === 'due_declared';
+                                                            const isPendingP = p.status === 'due_pending';
+
+                                                            return (
+                                                                <button
+                                                                    key={p.period}
+                                                                    onClick={() => setSelectedCellAction({
+                                                                        client: profile.client,
+                                                                        period: p.period,
+                                                                        amount: p.amount,
+                                                                        status: p.status,
+                                                                        decl: p.decl
+                                                                    })}
+                                                                    className={`px-2.5 py-1.5 rounded-xl text-[10px] font-mono font-bold uppercase transition-all duration-200 shrink-0 border flex flex-col items-center gap-0.5 cursor-pointer active:scale-95 shadow-sm ${
+                                                                        isPaidP
+                                                                            ? 'bg-[#00A896]/10 hover:bg-[#00A896]/20 text-[#00A896] border-[#00A896]/30'
+                                                                            : isDeclaredP
+                                                                            ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 border-rose-500/40 animate-pulse'
+                                                                            : isPendingP
+                                                                            ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                                                                            : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/10'
+                                                                    }`}
+                                                                    title={`${p.label}: $${p.amount.toFixed(2)} — ${isPaidP ? 'Pagado' : isDeclaredP ? 'Declarado SRI (Por Cobrar)' : 'Sin Declarar'}`}
+                                                                >
+                                                                    <div className="flex items-center gap-1">
+                                                                        <span className={`w-1.5 h-1.5 rounded-full ${isPaidP ? 'bg-[#00A896]' : isDeclaredP ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                                                                        <span>{p.label}</span>
+                                                                    </div>
+                                                                    <span className="text-[9px] font-black">${p.amount.toFixed(0)}</span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Footer con Acciones Ejecutivas */}
+                                            <div className="pt-3 border-t border-slate-200 dark:border-white/5 flex items-center gap-2">
+                                                {rawPhone && hasDebt && (
+                                                    <button
+                                                        onClick={() => {
+                                                            const cleanPhone = rawPhone.replace(/\D/g, '');
+                                                            const fullPhone = cleanPhone.startsWith('593') ? cleanPhone : ('593' + cleanPhone.replace(/^0/, ''));
+                                                            const msg = generateClientWhatsAppCobroMsg(profile);
+                                                            window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                                                        }}
+                                                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 rounded-xl text-xs font-bold uppercase transition-all shadow-sm cursor-pointer active:scale-95"
+                                                        title="Cobrar todas las obligaciones por WhatsApp con desglose de meses"
+                                                    >
+                                                        <LucideIcons.MessageSquare size={14} />
+                                                        <span>Cobrar WhatsApp</span>
+                                                    </button>
+                                                )}
+
+                                                {hasDebt && (
+                                                    <button
+                                                        onClick={() => handleLiquidateClientDebt(profile)}
+                                                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md shadow-[#00A896]/20 active:scale-95 cursor-pointer border border-white/10"
+                                                        title={`Liquidar toda la deuda acumulada de $${profile.totalDebt.toFixed(2)}`}
+                                                    >
+                                                        <LucideIcons.CheckCircle size={14} />
+                                                        <span>Liquidar (${profile.totalDebt.toFixed(0)})</span>
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    onClick={() => setSelectedClientExpediente(profile)}
+                                                    className="p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-xl transition-all border border-slate-200 dark:border-white/10 cursor-pointer"
+                                                    title="Ver Expediente de Cobranza Completo del Cliente"
+                                                >
+                                                    <LucideIcons.Eye size={15} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    ) : viewMode === 'grid' ? (
                         <div className="relative z-10 p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[850px] overflow-y-auto no-scrollbar">
                             {currentList.length === 0 ? (
                                 <div className="col-span-full py-24 flex flex-col items-center justify-center text-slate-500 font-mono">
@@ -1502,26 +1861,157 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 </div>
             </div>
 
+            {/* MODAL: EXPEDIENTE DE COBRANZA PRO DEL CLIENTE */}
+            <Modal
+                isOpen={!!selectedClientExpediente}
+                onClose={() => setSelectedClientExpediente(null)}
+                title="Expediente de Cartera & Cobranzas"
+            >
+                {selectedClientExpediente && (
+                    <div className="p-4 sm:p-6 space-y-6 font-mono text-slate-800 dark:text-white">
+                        {/* Header del Cliente */}
+                        <div className="p-5 rounded-2xl bg-slate-50 dark:bg-[#051424] border border-slate-200 dark:border-white/10 space-y-3">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Contribuyente</span>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white uppercase font-display">{selectedClientExpediente.client.name}</h3>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs font-bold text-[#00A896]">{selectedClientExpediente.client.ruc}</span>
+                                        <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400">
+                                            DÍGITO {selectedClientExpediente.client.ruc[8] || '—'}
+                                        </span>
+                                        {selectedClientExpediente.client.regime && (
+                                            <span className="text-[10px] px-2 py-0.5 rounded bg-[#00A896]/10 text-[#00A896] font-bold">
+                                                {selectedClientExpediente.client.regime}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="text-right">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Saldo Total Pendiente</span>
+                                    <span className="text-2xl font-black text-rose-500 dark:text-rose-400">
+                                        ${selectedClientExpediente.totalDebt.toFixed(2)} USD
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Desglose de Obligaciones y Períodos */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                <span>Períodos Fiscales ({selectedClientExpediente.periods.length})</span>
+                                <span>Estado & Acciones</span>
+                            </div>
+
+                            <div className="divide-y divide-slate-200 dark:divide-white/10 border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden max-h-[350px] overflow-y-auto no-scrollbar">
+                                {selectedClientExpediente.periods.map((p: any) => {
+                                    const isPaidP = p.status === 'paid';
+                                    const isDeclaredP = p.status === 'due_declared';
+                                    const isPendingP = p.status === 'due_pending';
+
+                                    return (
+                                        <div
+                                            key={p.period}
+                                            className="p-4 bg-white dark:bg-[#020b14]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs border ${
+                                                    isPaidP
+                                                        ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30'
+                                                        : isDeclaredP
+                                                        ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                                                        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                                }`}>
+                                                    {isPaidP ? <LucideIcons.Check size={14} /> : <LucideIcons.Clock size={14} />}
+                                                </div>
+
+                                                <div>
+                                                    <p className="text-xs font-bold text-slate-900 dark:text-white uppercase">{p.label}</p>
+                                                    <p className="text-[10px] text-slate-500">
+                                                        {isPaidP ? '✓ Declarado y Honorario Pagado' : isDeclaredP ? '🔴 Declarado en SRI - Honorario Impago' : '🟡 Período Sin Declarar'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 justify-end">
+                                                <span className="text-base font-black text-slate-900 dark:text-amber-300 font-mono">
+                                                    ${p.amount.toFixed(2)}
+                                                </span>
+
+                                                {!isPaidP && (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedItems(new Set([`${selectedClientExpediente.client.id}-${p.period}`]));
+                                                            setSelectedClientExpediente(null);
+                                                            setIsPaymentModalOpen(true);
+                                                        }}
+                                                        className="px-3 py-1.5 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 text-[10px] font-bold uppercase transition-all cursor-pointer shadow-sm active:scale-95"
+                                                    >
+                                                        Pagar
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Footer del Expediente */}
+                        <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                            {selectedClientExpediente.client.phones && selectedClientExpediente.client.phones[0] && selectedClientExpediente.totalDebt > 0 && (
+                                <button
+                                    onClick={() => {
+                                        const rawPhone = selectedClientExpediente.client.phones![0].replace(/\D/g, '');
+                                        const fullPhone = rawPhone.startsWith('593') ? rawPhone : ('593' + rawPhone.replace(/^0/, ''));
+                                        const msg = generateClientWhatsAppCobroMsg(selectedClientExpediente);
+                                        window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                                    }}
+                                    className="flex-1 py-3 px-4 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
+                                >
+                                    <LucideIcons.MessageSquare size={16} />
+                                    <span>Cobrar WhatsApp Todo</span>
+                                </button>
+                            )}
+
+                            {selectedClientExpediente.totalDebt > 0 && (
+                                <button
+                                    onClick={() => {
+                                        handleLiquidateClientDebt(selectedClientExpediente);
+                                        setSelectedClientExpediente(null);
+                                    }}
+                                    className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#00A896]/25 active:scale-95 border border-white/10"
+                                >
+                                    <LucideIcons.CheckCircle size={16} />
+                                    <span>Liquidar Toda la Deuda (${selectedClientExpediente.totalDebt.toFixed(2)})</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </Modal>
+
             {/* MODAL: ACCIÓN RÁPIDA DE CELDA MATRICIAL */}
             <Modal isOpen={!!selectedCellAction} onClose={() => setSelectedCellAction(null)} title="Operación Fiscal & Cobro">
                 {selectedCellAction && (
-                    <div className="p-4 sm:p-6 space-y-6 font-mono text-white">
-                        <div className="p-5 rounded-2xl bg-[#051424] border border-white/10 space-y-3">
+                    <div className="p-4 sm:p-6 space-y-6 font-mono text-slate-800 dark:text-white">
+                        <div className="p-5 rounded-2xl bg-slate-50 dark:bg-[#051424] border border-slate-200 dark:border-white/10 space-y-3">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Contribuyente</p>
-                                    <p className="text-base font-bold text-white uppercase font-display">{selectedCellAction.client.name}</p>
+                                    <p className="text-base font-bold text-slate-900 dark:text-white uppercase font-display">{selectedCellAction.client.name}</p>
                                     <p className="text-xs font-bold text-[#00A896] mt-0.5">{selectedCellAction.client.ruc}</p>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Período Fiscal</p>
-                                    <p className="text-sm font-bold text-teal-300 uppercase">{formatPeriodForDisplay(selectedCellAction.period)}</p>
+                                    <p className="text-sm font-bold text-teal-600 dark:text-teal-300 uppercase">{formatPeriodForDisplay(selectedCellAction.period)}</p>
                                 </div>
                             </div>
 
-                            <div className="pt-3 border-t border-white/10 flex justify-between items-center">
-                                <span className="text-xs text-slate-400 uppercase font-bold">Honorario Asignado</span>
-                                <span className="text-2xl font-black text-amber-300 font-mono">${selectedCellAction.amount.toFixed(2)} USD</span>
+                            <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex justify-between items-center">
+                                <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">Honorario Asignado</span>
+                                <span className="text-2xl font-black text-amber-500 dark:text-amber-300 font-mono">${selectedCellAction.amount.toFixed(2)} USD</span>
                             </div>
                         </div>
 
@@ -1534,7 +2024,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         const msg = `Estimado(a) *${selectedCellAction.client.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que sus honorarios contables del período *${formatPeriodForDisplay(selectedCellAction.period)}* por un valor de *$${selectedCellAction.amount.toFixed(2)} USD* se encuentran pendientes de cancelación.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias!`;
                                         window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
                                     }}
-                                    className="py-3 px-4 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                                    className="py-3 px-4 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
                                 >
                                     <LucideIcons.MessageSquare size={16} />
                                     <span>Cobrar WhatsApp</span>
