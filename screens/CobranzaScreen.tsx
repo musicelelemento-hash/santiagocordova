@@ -79,6 +79,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     } | null>(null);
 
     const [moraFilter, setMoraFilter] = useState<'all' | 'al_dia' | 'atrasado' | 'mora_critica'>('all');
+    const [matrixFrequency, setMatrixFrequency] = useState<'Mensual' | 'Semestral' | 'all'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -571,33 +572,70 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         });
     }, [financialData, activeTab, searchTerm, moraFilter]);
 
-    // 6 Últimos Períodos Fiscales para la Matriz de Cobranzas
+    // Helper: Determinar frecuencia de IVA del Contribuyente (Mensual, Semestral o Rimpe Popular)
+    const getClientIvaFrequency = (client: Client): 'Mensual' | 'Semestral' | 'Popular' => {
+        if (client.regime === TaxRegime.RimpeNegocioPopular) return 'Popular';
+        if (client.taxProfile?.ivaFrequency === 'Semestral' || client.regime === TaxRegime.RimpeEmprendedor) return 'Semestral';
+        return 'Mensual';
+    };
+
+    // Períodos Fiscales para la Matriz de Cobranzas (Mensuales o Semestrales)
     const matrixPeriods = useMemo(() => {
         const now = new Date();
-        const list: { key: string; label: string; shortLabel: string; monthName: string; year: number }[] = [];
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+
+        if (matrixFrequency === 'Semestral') {
+            // Generar los 6 últimos semestres fiscales (ej: 2025-2S, 2025-1S, 2024-2S, 2024-1S, 2023-2S, 2023-1S)
+            const list: { key: string; label: string; shortLabel: string; year: string; type: 'semestral' }[] = [];
+            let y = currentYear;
+            let s = currentMonth <= 6 ? 1 : 2;
+            
+            for (let i = 0; i < 6; i++) {
+                const key = `${y}-${s}S`;
+                const label = `${s}º Semestre ${y}`;
+                const shortLabel = `${s}S`;
+                list.push({ key, label, shortLabel, year: y.toString(), type: 'semestral' });
+                
+                s--;
+                if (s < 1) {
+                    s = 2;
+                    y--;
+                }
+            }
+            return list;
+        }
+
+        // Mensual o Consolidado
+        const list: { key: string; label: string; shortLabel: string; year: string; type: 'mensual' }[] = [];
         const monthNames = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
         
         for (let i = 5; i >= 0; i--) {
             const d = subMonths(now, i);
-            const yyyy = d.getFullYear();
+            const yyyy = d.getFullYear().toString();
             const mm = (d.getMonth() + 1).toString().padStart(2, '0');
             const key = `${yyyy}-${mm}`;
             list.push({
                 key,
                 label: `${monthNames[d.getMonth()]} ${yyyy}`,
                 shortLabel: monthNames[d.getMonth()],
-                monthName: monthNames[d.getMonth()],
-                year: yyyy
+                year: yyyy,
+                type: 'mensual'
             });
         }
         return list;
-    }, []);
+    }, [matrixFrequency]);
 
-    // Matriz de Clientes vs Períodos Fiscales de Cobro
+    // Matriz de Clientes vs Períodos Fiscales de Cobro (Mensual & Semestral)
     const matrixClientsData = useMemo(() => {
         const query = searchTerm.toLowerCase();
         const baseClients = clients.filter(c => {
             if (c.isDeleted || c.isActive === false || isCourtesyClient(c)) return false;
+            
+            const freq = getClientIvaFrequency(c);
+            if (matrixFrequency === 'Mensual' && freq === 'Semestral') return false;
+            if (matrixFrequency === 'Semestral' && freq === 'Mensual') return false;
+
             if (query) {
                 const match = c.name.toLowerCase().includes(query) || (c.tradeName && c.tradeName.toLowerCase().includes(query)) || c.ruc.includes(query);
                 if (!match) return false;
@@ -607,6 +645,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
         return baseClients.map(client => {
             const fee = getClientServiceFee(client, serviceFees);
+            const freq = getClientIvaFrequency(client);
             let totalUnpaidDebt = 0;
             let totalPaid = 0;
             let pendingDeclaredCount = 0;
@@ -617,7 +656,23 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     return { key: p.key, status: 'na', amount: 0, label: 'N/A' };
                 }
 
-                const decl = (client.declarations || []).find(d => arePeriodsEqual(d.period, p.key) || d.period === p.key);
+                // Si estamos en vista unificada mensual y el cliente es semestral, pero el mes no es un cierre semestral (-06 o -12)
+                if (matrixFrequency === 'all' && freq === 'Semestral' && !p.key.endsWith('-06') && !p.key.endsWith('-12')) {
+                    return { key: p.key, status: 'na', amount: 0, label: 'Semestral' };
+                }
+
+                // Buscar declaración exacta o equivalente semestral
+                let decl = (client.declarations || []).find(d => arePeriodsEqual(d.period, p.key) || d.period === p.key);
+                
+                // Si el cliente es semestral y p.key es un semestre ej: 2025-2S o 2025-1S
+                if (!decl && freq === 'Semestral') {
+                    if (p.key.includes('1S') || p.key.endsWith('-06')) {
+                        decl = (client.declarations || []).find(d => d.period.includes('1S') || d.period.includes('S1') || d.period.endsWith('-06'));
+                    } else if (p.key.includes('2S') || p.key.endsWith('-12')) {
+                        decl = (client.declarations || []).find(d => d.period.includes('2S') || d.period.includes('S2') || d.period.endsWith('-12'));
+                    }
+                }
+
                 const itemAmount = (decl && decl.amount) ? decl.amount : fee;
 
                 if (decl && isPaid(decl, client)) {
@@ -646,6 +701,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             return {
                 client,
                 fee,
+                freq,
                 totalUnpaidDebt,
                 totalPaid,
                 pendingDeclaredCount,
@@ -658,7 +714,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             }
             return a.client.name.localeCompare(b.client.name);
         });
-    }, [clients, serviceFees, matrixPeriods, searchTerm]);
+    }, [clients, serviceFees, matrixPeriods, matrixFrequency, searchTerm]);
 
     // CARTERA CONSOLIDADA POR CLIENTE CON TIRA DE COMPROBANTES Y DECLARACIONES
     const consolidatedClients = useMemo(() => {
@@ -912,6 +968,138 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         });
         setIsReceiptOpen(true);
         toast.success(`Pago de $${amount.toFixed(2)} registrado para ${client.name} (${formatPeriodForDisplay(period)})`);
+    };
+
+    // Revertir o Desmarcar Pago (Volver a Pendiente)
+    const handleUnmarkPaidPeriod = async (client: Client, period: string) => {
+        const nowIso = new Date().toISOString();
+        const history = [...(client.declarations || [])];
+        const declIdx = history.findIndex(d => arePeriodsEqual(d.period, period) || d.period === period);
+        
+        if (declIdx > -1) {
+            history[declIdx] = {
+                ...history[declIdx],
+                status: history[declIdx].proof_file ? DeclarationStatus.Enviada : DeclarationStatus.Pendiente,
+                is_paid: false,
+                paidAt: undefined,
+                updatedAt: nowIso
+            };
+        }
+
+        const updatedClient = { ...client, declarations: history, updatedAt: nowIso };
+        store.updateClient(client.id, { declarations: history });
+        const newClients = clients.map(c => c.id === client.id ? updatedClient : c);
+        setClients(newClients);
+        await db.setLocal('clients', newClients);
+
+        setSelectedCellAction(null);
+        toast.info(`Pago de ${formatPeriodForDisplay(period)} revertido a pendiente para ${client.name}`);
+    };
+
+    // Liquidar toda la deuda de un cliente en 1 Clic desde la fila de la Matriz
+    const handleLiquidateClientDirect = async (client: Client) => {
+        const nowIso = new Date().toISOString();
+        const transactionId = `PAY-${Date.now().toString().slice(-6)}`;
+        const fee = getClientServiceFee(client, serviceFees);
+        
+        const unpaidPeriods: { period: string; amount: number }[] = [];
+        let totalAmount = 0;
+        const history = [...(client.declarations || [])];
+
+        matrixPeriods.forEach(p => {
+            if (isPeriodBeforeClientStart(client, p.key)) return;
+            const decl = history.find(d => arePeriodsEqual(d.period, p.key) || d.period === p.key);
+            if (!decl || !isPaid(decl, client)) {
+                const itemAmount = decl?.amount || fee;
+                unpaidPeriods.push({ period: p.key, amount: itemAmount });
+                totalAmount += itemAmount;
+                
+                const declIdx = history.findIndex(d => arePeriodsEqual(d.period, p.key) || d.period === p.key);
+                const entry: any = {
+                    ...(decl || {}),
+                    period: p.key,
+                    status: DeclarationStatus.Pagada,
+                    is_paid: true,
+                    paidAt: nowIso,
+                    transactionId,
+                    amount: itemAmount,
+                    updatedAt: nowIso
+                };
+                if (declIdx > -1) history[declIdx] = entry;
+                else history.push(entry);
+            }
+        });
+
+        if (unpaidPeriods.length === 0) {
+            toast.info(`${client.name} ya está al día con todas sus obligaciones.`);
+            return;
+        }
+
+        const updatedClient = { ...client, declarations: history, updatedAt: nowIso };
+        store.updateClient(client.id, { declarations: history });
+        const newClients = clients.map(c => c.id === client.id ? updatedClient : c);
+        setClients(newClients);
+        await db.setLocal('clients', newClients);
+
+        setReceiptData({
+            transactionId,
+            clientName: client.name,
+            clientRuc: client.ruc,
+            client: updatedClient,
+            paymentDate: safeFormat(new Date(), 'PPpp'),
+            paidPeriods: unpaidPeriods,
+            totalAmount
+        });
+        setIsReceiptOpen(true);
+        toast.success(`¡Deuda de $${totalAmount.toFixed(2)} liquidada exitosamente para ${client.name}!`);
+    };
+
+    // Liquidar todos los cobros pendientes de un mes/período en toda la columna de la Matriz
+    const handleLiquidateColumnPeriod = async (periodKey: string, periodLabel: string) => {
+        const nowIso = new Date().toISOString();
+        const transactionId = `PAY-${Date.now().toString().slice(-6)}`;
+        let updatedCount = 0;
+        let totalAmount = 0;
+        const newClients = [...clients];
+
+        newClients.forEach((client, clientIdx) => {
+            if (isPeriodBeforeClientStart(client, periodKey) || isCourtesyClient(client)) return;
+            const fee = getClientServiceFee(client, serviceFees);
+            const history = [...(client.declarations || [])];
+            const declIdx = history.findIndex(d => arePeriodsEqual(d.period, periodKey) || d.period === periodKey);
+            const decl = declIdx > -1 ? history[declIdx] : null;
+
+            if (!decl || !isPaid(decl, client)) {
+                const itemAmount = decl?.amount || fee;
+                const entry: any = {
+                    ...(decl || {}),
+                    period: periodKey,
+                    status: DeclarationStatus.Pagada,
+                    is_paid: true,
+                    paidAt: nowIso,
+                    transactionId,
+                    amount: itemAmount,
+                    updatedAt: nowIso
+                };
+
+                if (declIdx > -1) history[declIdx] = entry;
+                else history.push(entry);
+
+                newClients[clientIdx] = { ...client, declarations: history, updatedAt: nowIso };
+                store.updateClient(client.id, { declarations: history });
+                updatedCount++;
+                totalAmount += itemAmount;
+            }
+        });
+
+        if (updatedCount === 0) {
+            toast.info(`Todos los clientes ya están cobrados en el período ${periodLabel}.`);
+            return;
+        }
+
+        setClients(newClients);
+        await db.setLocal('clients', newClients);
+        toast.success(`¡${updatedCount} cobros del período ${periodLabel} liquidados exitosamente ($${totalAmount.toFixed(2)})!`);
     };
 
     // Procesamiento en Lote de Pagos Seleccionados
@@ -1265,6 +1453,48 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     </button>
                                 ))}
                             </div>
+
+                            {/* Selector de Frecuencia Fiscal (Mensuales vs Semestrales) para la Matriz */}
+                            {viewMode === 'matrix' && (
+                                <div className="flex items-center p-1 bg-slate-200/70 dark:bg-[#020b14] rounded-xl border border-slate-300/50 dark:border-white/5 overflow-x-auto no-scrollbar">
+                                    <button
+                                        onClick={() => setMatrixFrequency('all')}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                                            matrixFrequency === 'all'
+                                                ? 'bg-[#00A896] text-white shadow-sm font-black'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                                        }`}
+                                        title="Ver todos los contribuyentes unificados"
+                                    >
+                                        <LucideIcons.Layers size={12} />
+                                        <span>Todos</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setMatrixFrequency('Mensual')}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                                            matrixFrequency === 'Mensual'
+                                                ? 'bg-blue-600 text-white shadow-sm font-black'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                                        }`}
+                                        title="Filtrar por contribuyentes de IVA Mensual"
+                                    >
+                                        <LucideIcons.Calendar size={12} />
+                                        <span>Mensuales ({clients.filter(c => getClientIvaFrequency(c) === 'Mensual').length})</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setMatrixFrequency('Semestral')}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                                            matrixFrequency === 'Semestral'
+                                                ? 'bg-purple-600 text-white shadow-sm font-black'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                                        }`}
+                                        title="Filtrar por contribuyentes Semestrales (RIMPE Emprendedor / IVA 0%)"
+                                    >
+                                        <LucideIcons.Clock size={12} />
+                                        <span>Semestrales ({clients.filter(c => getClientIvaFrequency(c) === 'Semestral').length})</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-2 justify-end">
@@ -1663,61 +1893,82 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             )}
                         </div>
                     ) : viewMode === 'matrix' ? (
-                        /* VISTA MATRIZ FISCAL MENSUALIZADA (Stitch Obsidian Matrix) */
+                        /* VISTA MATRIZ FISCAL MENSUALIZADA (Stitch Obsidian & Clean Light Matrix) */
                         <div className="relative z-10 overflow-x-auto max-h-[750px] no-scrollbar">
                             <table className="w-full text-left border-collapse font-mono text-xs">
                                 <thead>
-                                    <tr className="bg-[#020b14]/95 border-b border-white/10 text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 z-20 backdrop-blur-xl">
-                                        <th className="py-4 px-5 font-bold sticky left-0 z-30 bg-[#020b14] min-w-[240px] border-r border-white/10 shadow-lg">
+                                    <tr className="bg-slate-100 dark:bg-[#020b14]/95 border-b border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 z-20 backdrop-blur-xl">
+                                        <th className="py-4 px-5 font-bold sticky left-0 z-30 bg-slate-100 dark:bg-[#020b14] min-w-[240px] border-r border-slate-200 dark:border-white/10 shadow-md">
                                             Contribuyente / RUC
                                         </th>
-                                        <th className="py-4 px-3 text-center min-w-[90px] border-r border-white/5 font-bold">
+                                        <th className="py-4 px-3 text-center min-w-[90px] border-r border-slate-200 dark:border-white/5 font-bold">
                                             Honorario
                                         </th>
                                         {matrixPeriods.map(p => (
-                                            <th key={p.key} className="py-4 px-3 text-center min-w-[125px] border-r border-white/5">
-                                                <span className="text-white font-black block">{p.shortLabel}</span>
-                                                <span className="text-[9px] text-teal-400 font-bold">{p.year}</span>
+                                            <th key={p.key} className="py-3 px-2 text-center min-w-[130px] border-r border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-[#0b1326]/90">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-slate-900 dark:text-white font-black">{p.shortLabel}</span>
+                                                        <span className="text-[9px] text-teal-600 dark:text-teal-400 font-bold">{p.year}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleLiquidateColumnPeriod(p.key, p.shortLabel)}
+                                                        className="px-2 py-0.5 rounded bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 text-[8px] font-bold uppercase transition-all cursor-pointer shadow-sm active:scale-95 flex items-center gap-0.5"
+                                                        title={`Liquidar todos los cobros pendientes de ${p.label}`}
+                                                    >
+                                                        <LucideIcons.Zap size={8} />
+                                                        <span>{matrixFrequency === 'Semestral' ? 'Cobrar Sem.' : 'Cobrar Mes'}</span>
+                                                    </button>
+                                                </div>
                                             </th>
                                         ))}
-                                        <th className="py-4 px-4 text-center min-w-[130px] font-bold text-rose-400">
+                                        <th className="py-4 px-4 text-center min-w-[140px] font-bold text-rose-500 dark:text-rose-400 border-r border-slate-200 dark:border-white/5">
                                             Deuda Total
                                         </th>
-                                        <th className="py-4 px-3 text-center min-w-[90px] font-bold text-slate-300">
+                                        <th className="py-4 px-3 text-center min-w-[90px] font-bold text-slate-600 dark:text-slate-300">
                                             WhatsApp
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-white/5 text-slate-300">
+                                <tbody className="divide-y divide-slate-200 dark:divide-white/5 text-slate-800 dark:text-slate-300">
                                     {matrixClientsData.length === 0 ? (
                                         <tr>
                                             <td colSpan={matrixPeriods.length + 4} className="py-24 text-center text-slate-500">
-                                                <div className="p-6 rounded-3xl bg-white/5 mb-3 inline-block border border-white/10">
-                                                    <LucideIcons.ShieldCheck size={40} className="text-slate-600" />
+                                                <div className="p-6 rounded-3xl bg-slate-100 dark:bg-white/5 mb-3 inline-block border border-slate-200 dark:border-white/10">
+                                                    <LucideIcons.ShieldCheck size={40} className="text-[#00A896]" />
                                                 </div>
-                                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">No se encontraron clientes para mostrar</p>
+                                                <p className="text-xs font-bold uppercase tracking-widest text-slate-700 dark:text-slate-400">No se encontraron clientes para mostrar</p>
                                             </td>
                                         </tr>
                                     ) : (
-                                        matrixClientsData.map(({ client, fee, totalUnpaidDebt, periodsStatus }) => (
-                                            <tr key={client.id} className="hover:bg-white/5 transition-colors group/row">
+                                        matrixClientsData.map(({ client, fee, freq, totalUnpaidDebt, periodsStatus }) => (
+                                            <tr key={client.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group/row">
                                                 {/* Frozen Client Column */}
-                                                <td className="py-3 px-5 sticky left-0 z-10 bg-[#051424] group-hover/row:bg-[#081b2e] border-r border-white/10 shadow-md">
+                                                <td className="py-3 px-5 sticky left-0 z-10 bg-white dark:bg-[#051424] group-hover/row:bg-slate-50 dark:group-hover/row:bg-[#081b2e] border-r border-slate-200 dark:border-white/10 shadow-sm">
                                                     <div className="flex items-center gap-3">
                                                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 border ${
                                                             totalUnpaidDebt > 0 
-                                                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' 
-                                                                : 'bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/30'
+                                                                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-300 border-rose-500/30' 
+                                                                : 'bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30'
                                                         }`}>
                                                             {client.name.substring(0, 2).toUpperCase()}
                                                         </div>
                                                         <div className="min-w-0 max-w-[180px]">
-                                                            <p className="font-bold text-white uppercase truncate text-xs font-display group-hover/row:text-[#00A896] transition-colors" title={client.name}>
+                                                            <p className="font-bold text-slate-900 dark:text-white uppercase truncate text-xs font-display group-hover/row:text-[#00A896] transition-colors" title={client.name}>
                                                                 {client.name}
                                                             </p>
                                                             <div className="flex items-center gap-1.5 mt-0.5">
-                                                                <span className="text-[10px] text-slate-400 font-mono">{client.ruc}</span>
-                                                                <span className="text-[8px] px-1 rounded bg-white/5 text-slate-500 font-mono">
+                                                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{client.ruc}</span>
+                                                                <span className={`text-[8px] font-black px-1.5 py-0.2 rounded font-mono ${
+                                                                    freq === 'Semestral'
+                                                                        ? 'bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30'
+                                                                        : freq === 'Popular'
+                                                                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-300 border border-amber-500/30'
+                                                                        : 'bg-blue-500/15 text-blue-600 dark:text-blue-300 border border-blue-500/30'
+                                                                }`}>
+                                                                    {freq === 'Semestral' ? 'SEM' : freq === 'Popular' ? 'POP' : 'MEN'}
+                                                                </span>
+                                                                <span className="text-[8px] px-1 rounded bg-slate-100 dark:bg-white/5 text-slate-500 font-mono">
                                                                     DÍG {client.ruc[8] || '—'}
                                                                 </span>
                                                             </div>
@@ -1726,7 +1977,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                 </td>
 
                                                 {/* Base Fee */}
-                                                <td className="py-3 px-3 text-center border-r border-white/5 font-bold text-slate-200">
+                                                <td className="py-3 px-3 text-center border-r border-slate-200 dark:border-white/5 font-bold text-slate-700 dark:text-slate-200">
                                                     ${fee.toFixed(2)}
                                                 </td>
 
@@ -1738,9 +1989,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                     const isNa = pStatus.status === 'na';
 
                                                     return (
-                                                        <td key={pStatus.key} className="py-2 px-2 text-center border-r border-white/5">
+                                                        <td key={pStatus.key} className="py-2 px-2 text-center border-r border-slate-200 dark:border-white/5">
                                                             {isNa ? (
-                                                                <span className="text-slate-600 text-[10px] font-bold select-none">—</span>
+                                                                <span className="text-slate-400 dark:text-slate-600 text-[10px] font-bold select-none">—</span>
                                                             ) : (
                                                                 <button
                                                                     onClick={() => setSelectedCellAction({
@@ -1750,16 +2001,21 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                         status: pStatus.status,
                                                                         decl: pStatus.decl
                                                                     })}
-                                                                    className={`w-full py-1.5 px-2 rounded-xl text-[9px] font-bold uppercase transition-all duration-200 flex flex-col items-center justify-center gap-0.5 border cursor-pointer active:scale-95 shadow-sm ${
+                                                                    onDoubleClick={() => {
+                                                                        if (!isPaidStatus) {
+                                                                            handlePaySinglePeriod(client, pStatus.key, pStatus.amount);
+                                                                        }
+                                                                    }}
+                                                                    className={`w-full py-1.5 px-2 rounded-xl text-[9px] font-bold uppercase transition-all duration-200 flex flex-col items-center justify-center gap-0.5 border cursor-pointer active:scale-95 shadow-sm group/cell relative ${
                                                                         isPaidStatus
-                                                                            ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 hover:bg-[#00A896]/25'
+                                                                            ? 'bg-emerald-50 dark:bg-[#00A896]/15 text-emerald-700 dark:text-[#00A896] border-emerald-300 dark:border-[#00A896]/30 hover:bg-emerald-100 dark:hover:bg-[#00A896]/25'
                                                                             : isDeclaredDue
-                                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30 animate-pulse'
+                                                                            ? 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-500/40 hover:bg-rose-100 dark:hover:bg-rose-500/30 animate-pulse'
                                                                             : isUndeclaredDue
-                                                                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
-                                                                            : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-white'
+                                                                            ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/25'
+                                                                            : 'bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10'
                                                                     }`}
-                                                                    title={`Período ${pStatus.key}: ${pStatus.label} — Monto: $${pStatus.amount.toFixed(2)}`}
+                                                                    title={`Período ${pStatus.key}: ${pStatus.label} — Monto: $${pStatus.amount.toFixed(2)} (Click: Opciones • Doble Click: Pagar)`}
                                                                 >
                                                                     <span className="font-mono font-black">${pStatus.amount.toFixed(0)}</span>
                                                                     <span className="text-[8px] tracking-tight">{pStatus.label}</span>
@@ -1769,14 +2025,24 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                     );
                                                 })}
 
-                                                {/* Total Unpaid Debt */}
-                                                <td className="py-3 px-4 text-center">
+                                                {/* Total Unpaid Debt & 1-Click Liquidation */}
+                                                <td className="py-3 px-4 text-center border-r border-slate-200 dark:border-white/5">
                                                     {totalUnpaidDebt > 0 ? (
-                                                        <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-black font-mono shadow-sm">
-                                                            ${totalUnpaidDebt.toFixed(2)}
-                                                        </span>
+                                                        <div className="flex flex-col items-center gap-1">
+                                                            <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/30 text-[10px] font-black font-mono shadow-sm">
+                                                                ${totalUnpaidDebt.toFixed(2)}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => handleLiquidateClientDirect(client)}
+                                                                className="px-2 py-0.5 rounded-lg bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white text-[8px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-95 cursor-pointer flex items-center gap-0.5 border border-white/10"
+                                                                title={`Liquidar toda la deuda acumulada de $${totalUnpaidDebt.toFixed(2)} en 1 solo clic`}
+                                                            >
+                                                                <LucideIcons.Zap size={9} />
+                                                                <span>Pagar Todo</span>
+                                                            </button>
+                                                        </div>
                                                     ) : (
-                                                        <span className="px-2.5 py-1 rounded-full bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 text-[9px] font-bold">
+                                                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-[#00A896] border border-emerald-500/30 text-[9px] font-bold">
                                                             AL DÍA
                                                         </span>
                                                     )}
@@ -1792,13 +2058,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                 const msg = `Estimado(a) *${client.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que mantiene un saldo pendiente de honorarios contables por un valor total de *$${totalUnpaidDebt.toFixed(2)} USD* correspondiente a sus declaraciones tributarias.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias!`;
                                                                 window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
                                                             }}
-                                                            className="p-2 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 transition-all cursor-pointer shadow-sm"
+                                                            className="p-2 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 transition-all cursor-pointer shadow-sm active:scale-95"
                                                             title="Cobrar deuda acumulada por WhatsApp"
                                                         >
                                                             <LucideIcons.MessageSquare size={13} />
                                                         </button>
                                                     ) : (
-                                                        <span className="text-slate-600 text-xs">—</span>
+                                                        <span className="text-slate-400 dark:text-slate-600 text-xs">—</span>
                                                     )}
                                                 </td>
                                             </tr>
@@ -2140,7 +2406,28 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             </button>
                         </div>
 
-                        {selectedCellAction.status !== 'paid' && (
+                        {selectedCellAction.status === 'paid' ? (
+                            <div className="space-y-3">
+                                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-[#00A896]/15 border border-emerald-300 dark:border-[#00A896]/30 flex items-center justify-between text-emerald-700 dark:text-emerald-300">
+                                    <div className="flex items-center gap-2">
+                                        <LucideIcons.CheckCircle size={18} className="text-[#00A896]" />
+                                        <div>
+                                            <p className="text-xs font-black uppercase">Honorario Pagado y Registrado</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400">Este período se encuentra liquidado al 100%.</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-sm font-mono font-black">${selectedCellAction.amount.toFixed(2)}</span>
+                                </div>
+                                <button
+                                    onClick={() => handleUnmarkPaidPeriod(selectedCellAction.client, selectedCellAction.period)}
+                                    className="w-full py-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
+                                    title="Revertir el estado de este período a pendiente"
+                                >
+                                    <LucideIcons.RotateCcw size={14} />
+                                    <span>Revertir Pago a Pendiente</span>
+                                </button>
+                            </div>
+                        ) : (
                             <button
                                 onClick={() => {
                                     handlePaySinglePeriod(selectedCellAction.client, selectedCellAction.period, selectedCellAction.amount);
@@ -2148,7 +2435,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#00A896]/25 active:scale-95 border border-white/10"
                             >
                                 <LucideIcons.CheckCircle size={16} />
-                                <span>Registrar Pago (${selectedCellAction.amount.toFixed(2)})</span>
+                                <span>Registrar Pago Inmediato (${selectedCellAction.amount.toFixed(2)})</span>
                             </button>
                         )}
                     </div>
