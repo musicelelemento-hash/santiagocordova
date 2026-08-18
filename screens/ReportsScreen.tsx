@@ -6,7 +6,7 @@ import {
     Loader, AlertTriangle, TrendingUp, BarChart,
     DollarSign, Clock, Zap, Activity, Users, Shield,
     LineChart, Calendar, PieChart as PieChartIcon,
-    ChevronRight, TrendingDown, Target, Briefcase
+    ChevronRight, TrendingDown, Target, Briefcase, MessageSquare
 } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -432,28 +432,48 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                     </div>
 
                     <div className="space-y-3 font-mono">
-                        {metrics.topDebtors.length > 0 ? metrics.topDebtors.map((debtor, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-4 bg-[#020b14] rounded-2xl border border-white/10 hover:border-rose-500/40 transition-all">
-                                <div className="flex items-center gap-3 sm:gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center font-bold text-sm border border-rose-500/30 animate-pulse">
-                                        !
+                        {metrics.topDebtors.length > 0 ? metrics.topDebtors.map((debtor, idx) => {
+                            const clientObj = clients.find(c => c.id === debtor.id);
+                            const rawPhone = clientObj?.phones?.[0]?.replace(/\D/g, '');
+                            const fullPhone = rawPhone ? (rawPhone.startsWith('593') ? rawPhone : ('593' + rawPhone.replace(/^0/, ''))) : null;
+
+                            return (
+                                <div key={idx} className="flex items-center justify-between p-4 bg-[#020b14] rounded-2xl border border-white/10 hover:border-rose-500/40 transition-all">
+                                    <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                        <div className="w-10 h-10 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center font-bold text-sm border border-rose-500/30 animate-pulse shrink-0">
+                                            !
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="font-bold text-xs text-white uppercase truncate max-w-[130px] sm:max-w-xs">{debtor.name}</span>
+                                            <button 
+                                                onClick={() => navigate('clients', { clientIdToView: debtor.id })}
+                                                className="flex items-center gap-1 text-[10px] text-[#00A896] font-bold uppercase tracking-wider hover:underline cursor-pointer text-left"
+                                            >
+                                                Ver Expediente <ChevronRight size={11} />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col min-w-0">
-                                        <span className="font-bold text-xs text-white uppercase truncate max-w-[130px] sm:max-w-xs">{debtor.name}</span>
-                                        <button 
-                                            onClick={() => navigate('clients', { clientIdToView: debtor.id })}
-                                            className="flex items-center gap-1 text-[10px] text-[#00A896] font-bold uppercase tracking-wider hover:underline cursor-pointer text-left"
-                                        >
-                                            Ver Expediente <ChevronRight size={11} />
-                                        </button>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                        {fullPhone && (
+                                            <button
+                                                onClick={() => {
+                                                    const msg = `Estimado(a) *${debtor.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que mantiene un saldo pendiente de *$${debtor.amount.toFixed(2)} USD* por concepto de servicios contables y declaraciones SRI.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nAgradecemos remitir su comprobante por este medio. ¡Muchas gracias!`;
+                                                    window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                                                }}
+                                                className="p-2 bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white rounded-xl transition-all border border-[#00A896]/30 cursor-pointer shadow-sm"
+                                                title="Enviar recordatorio de cobro por WhatsApp"
+                                            >
+                                                <MessageSquare size={13} />
+                                            </button>
+                                        )}
+                                        <div className="text-right">
+                                            <span className="text-base font-bold text-rose-400 block font-mono">${debtor.amount.toFixed(2)}</span>
+                                            <span className="text-[9px] text-slate-400 uppercase">Pendiente</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="text-right shrink-0">
-                                    <span className="text-base font-bold text-rose-400 block font-mono">${debtor.amount.toFixed(2)}</span>
-                                    <span className="text-[9px] text-slate-400 uppercase">Pendiente</span>
-                                </div>
-                            </div>
-                        )) : (
+                            );
+                        }) : (
                             <div className="text-center py-12 flex flex-col items-center justify-center">
                                 <Shield size={36} className="text-[#00A896] mb-2" />
                                 <p className="text-xs font-bold text-[#00A896] uppercase tracking-wider">Cartera 100% al Día</p>

@@ -2,14 +2,17 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
     X, CheckCircle2, ShieldCheck, Zap, Key, FileText,
     ShoppingBag, Calendar, Lock, Camera, Upload, Search, UserPlus,
-    Printer, Download, UserCheck, RefreshCw, Check, Info, ArrowRight, User, FileCheck, Loader, Sparkles
+    Printer, Download, UserCheck, RefreshCw, Check, Info, ArrowRight, User, 
+    FileCheck, Loader, Sparkles, DollarSign, Wallet, Send, Share2, Copy,
+    TrendingUp, ExternalLink, HelpCircle, CheckSquare, Layers, Award
 } from 'lucide-react';
 import { extractDataFromSriPdf } from '../../services/pdfExtraction';
-import { Client, FacturadorConfig, StoredFile, TaxRegime } from '../../types';
+import { Client, FacturadorConfig, StoredFile, TaxRegime, BillingPlan } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { useToast } from '../../context/ToastContext';
 import { downloadEcuafactDocx, printEcuafactAuthorization, getFormattedCurrentDateSpanish } from '../../services/ecuafactDocxService';
 import { SupabaseService } from '../../services/supabaseClientService';
+import { db } from '../../services/db';
 import { v4 as uuidv4 } from 'uuid';
 
 interface SalesComboModalProps {
@@ -19,7 +22,8 @@ interface SalesComboModalProps {
     onEmitSriInvoice?: (client: Client, description: string, amount: number) => void;
 }
 
-type MainCategory = 'firma' | 'zifact' | 'ecuafact' | 'talonario';
+type MainCategory = 'ecuafact' | 'zifact' | 'firma' | 'sri_gratuito' | 'talonario';
+type PaymentMethod = 'transferencia_pichincha' | 'transferencia_guayaquil' | 'transferencia_bolivariano' | 'efectivo' | 'deuna_tarjeta';
 
 export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     isOpen,
@@ -30,13 +34,13 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     const { clients, updateClient, addClient, systemSettings } = useAppStore();
     const { toast } = useToast();
 
-    // Client Selection State
+    // ── 1. Client Selection State ──
     const [selectedClientId, setSelectedClientId] = useState<string>('');
     const [isChangingClient, setIsChangingClient] = useState(false);
     const [clientSearchQuery, setClientSearchQuery] = useState('');
     const [showQuickCreateClient, setShowQuickCreateClient] = useState(false);
 
-    // Quick Client Registration State (for Registered Accounting Clients)
+    // Quick Client Registration State
     const [newClientName, setNewClientName] = useState('');
     const [newClientRuc, setNewClientRuc] = useState('');
     const [newClientPhone, setNewClientPhone] = useState('');
@@ -55,7 +59,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     const [isAnalyzingParticular, setIsAnalyzingParticular] = useState(false);
     const particularRucInputRef = useRef<HTMLInputElement>(null);
 
-    // Category Tabs
+    // ── 2. Category Tabs & Presets ──
     const [activeCategory, setActiveCategory] = useState<MainCategory>('ecuafact');
 
     const getTodayIso = () => new Date().toISOString().split('T')[0];
@@ -65,10 +69,12 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         return d.toISOString().split('T')[0];
     };
 
-    // Selected Combo / Pricing State
+    // ── 3. Selected Combo / Pricing / Profit State ──
     const [programName, setProgramName] = useState('ECUAFACT 60 Docs + Firma Electrónica');
     const [documentCount, setDocumentCount] = useState<number | ''>(60);
     const [price, setPrice] = useState<number | ''>(55.00);
+    const [estimatedCost, setEstimatedCost] = useState<number>(20.00);
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('transferencia_pichincha');
     const [expirationYears, setExpirationYears] = useState<number>(1);
     const [saleDate, setSaleDate] = useState<string>(getTodayIso());
     const [customExpirationDate, setCustomExpirationDate] = useState<string>(() => {
@@ -82,6 +88,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [providerName, setProviderName] = useState('Santiago Córdova');
+    const [isExpressDelivery, setIsExpressDelivery] = useState<boolean>(false);
 
     // Auto-recalculate expiration date when saleDate or expirationYears changes
     useEffect(() => {
@@ -99,17 +106,19 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         }
     }, [saleDate, expirationYears]);
 
-    // Identity Documents
+    // ── 4. Identity Documents & Cloud Vault ──
     const [idCardFront, setIdCardFront] = useState<StoredFile | null>(null);
     const [idCardBack, setIdCardBack] = useState<StoredFile | null>(null);
     const [idCardSelfie, setIdCardSelfie] = useState<StoredFile | null>(null);
     const [rucPdf, setRucPdf] = useState<StoredFile | null>(null);
     const [ecuafactSignedRequest, setEcuafactSignedRequest] = useState<StoredFile | null>(null);
+    const [signatureFile, setSignatureFile] = useState<StoredFile | null>(null);
     const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
 
     // Generating State
     const [isGeneratingDocx, setIsGeneratingDocx] = useState(false);
 
+    // Initialize with target client
     useEffect(() => {
         if (initialClient) {
             setSelectedClientId(initialClient.id);
@@ -117,6 +126,10 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             setIsChangingClient(false);
             if (initialClient.clientType === 'solo_plan' || initialClient.requiresDeclarations === false) {
                 setBuyerType('particular');
+                setParticularName(initialClient.name);
+                setParticularRuc(initialClient.ruc);
+                setParticularPhone(initialClient.phones?.[0] || '');
+                setParticularEmail(initialClient.email || '');
             } else {
                 setBuyerType('cliente_registrado');
             }
@@ -143,16 +156,18 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             setIdCardSelfie(targetClient.idCardSelfie || null);
             setRucPdf(targetClient.rucPdf || null);
             setEcuafactSignedRequest(targetClient.ecuafactSignedRequest || null);
+            setSignatureFile(targetClient.signatureFile || null);
             
-            if (targetClient.facturadorConfig) {
-                setUsername(targetClient.facturadorConfig.username || targetClient.ruc);
-                setPassword(targetClient.facturadorConfig.password || targetClient.sriPassword);
-                setProgramName(targetClient.facturadorConfig.programName || programName);
-                if (targetClient.facturadorConfig.documentCount !== undefined) {
-                    setDocumentCount(targetClient.facturadorConfig.documentCount);
+            const conf = targetClient.billingPlan || targetClient.facturadorConfig;
+            if (conf) {
+                setUsername(conf.username || targetClient.ruc);
+                setPassword(conf.password || targetClient.sriPassword);
+                setProgramName(conf.programName || programName);
+                if (conf.documentCount !== undefined) {
+                    setDocumentCount(conf.documentCount);
                 }
-                if (targetClient.facturadorConfig.price !== undefined) {
-                    setPrice(targetClient.facturadorConfig.price);
+                if (conf.price !== undefined) {
+                    setPrice(conf.price);
                 }
             } else {
                 setUsername(targetClient.ruc || '');
@@ -164,6 +179,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             setIdCardSelfie(null);
             setRucPdf(null);
             setEcuafactSignedRequest(null);
+            setSignatureFile(null);
         }
     }, [selectedClientId, targetClient]);
 
@@ -211,6 +227,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         toast.success(`Cliente Contable ${created.name} creado y seleccionado.`);
     };
 
+    // Live OCR PDF RUC extraction
     const handleParticularRucUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
@@ -223,8 +240,14 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             const extracted = await extractDataFromSriPdf(file);
             setParticularName(extracted.apellidos_nombres);
             setParticularRuc(extracted.ruc);
+            if (extracted.contacto?.celular && !particularPhone) {
+                setParticularPhone(extracted.contacto.celular);
+            }
+            if (extracted.contacto?.email && !particularEmail) {
+                setParticularEmail(extracted.contacto.email);
+            }
             if (!username) setUsername(extracted.ruc);
-            toast.success("Datos extraídos del RUC correctamente.");
+            toast.success("✅ Datos del RUC extraídos y auto-rellenados con éxito.");
         } catch (error) {
             console.error(error);
             toast.error("Error al leer el PDF del RUC.");
@@ -234,34 +257,46 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         }
     };
 
-    // Category Change Handler
+    // Category Change Handler with Dynamic Profit Margin Calculation
     const handleCategoryChange = (cat: MainCategory) => {
         setActiveCategory(cat);
-        if (cat === 'firma') {
-            setProgramName('Firma Electrónica .p12 (1 Año + Soporte SRI)');
-            setDocumentCount('');
-            setPrice(35.00);
+        if (cat === 'ecuafact') {
+            setProgramName('ECUAFACT 60 Docs + Firma Electrónica');
+            setDocumentCount(60);
+            setPrice(55.00);
+            setEstimatedCost(22.00);
             setExpirationYears(1);
             setIncludesSignature(true);
-            setWebUrl('');
+            setWebUrl(systemSettings?.ecuafactUrl || 'https://app.ecuafact.com');
         } else if (cat === 'zifact') {
             setProgramName('ZIFAC 50 Docs + Firma Electrónica');
             setDocumentCount(50);
             setPrice(45.00);
+            setEstimatedCost(18.00);
             setExpirationYears(1);
             setIncludesSignature(true);
             setWebUrl(systemSettings?.zifactUrl || 'https://sistema.zifac.com');
-        } else if (cat === 'ecuafact') {
-            setProgramName('ECUAFACT 60 Docs + Firma Electrónica');
-            setDocumentCount(60);
-            setPrice(55.00);
+        } else if (cat === 'firma') {
+            setProgramName('Firma Electrónica .p12 (1 Año + Soporte SRI)');
+            setDocumentCount('');
+            setPrice(35.00);
+            setEstimatedCost(14.00);
             setExpirationYears(1);
             setIncludesSignature(true);
-            setWebUrl(systemSettings?.ecuafactUrl || 'https://app.ecuafact.com');
+            setWebUrl('');
+        } else if (cat === 'sri_gratuito') {
+            setProgramName('Asistencia Facturador SRI Gratuito + Firma .p12');
+            setDocumentCount(0); // Ilimitado en el SRI
+            setPrice(35.00);
+            setEstimatedCost(14.00);
+            setExpirationYears(1);
+            setIncludesSignature(true);
+            setWebUrl('https://srienlinea.sri.gob.ec');
         } else {
             setProgramName('Talonario Físico / Servicio Personalizado');
             setDocumentCount('');
             setPrice(25.00);
+            setEstimatedCost(10.00);
             setExpirationYears(1);
             setIncludesSignature(false);
             setWebUrl('');
@@ -274,10 +309,16 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         return d.toISOString().split('T')[0];
     };
 
+    // Calculate Profit & Net Margin
+    const numericPrice = typeof price === 'number' ? price : 0;
+    const finalPriceWithExpress = numericPrice + (isExpressDelivery ? 5 : 0);
+    const netProfit = Math.max(0, finalPriceWithExpress - estimatedCost);
+    const profitMarginPercent = finalPriceWithExpress > 0 ? Math.round((netProfit / finalPriceWithExpress) * 100) : 0;
+
     // Handle Upload for Identity Vault Slots with Supabase Cloud Storage
     const handleSlotFileUpload = async (file: File, slotId: string, setter: (f: StoredFile) => void) => {
         setUploadingSlot(slotId);
-        toast.info(`Cargando ${file.name}...`);
+        toast.info(`Cargando ${file.name} a la Bóveda Segura...`);
         
         try {
             const reader = new FileReader();
@@ -294,7 +335,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                     storageUrl = res.url;
                     storagePath = res.path;
                 } catch (e) {
-                    console.warn("Storage upload fallback to base64", e);
+                    console.warn("Storage upload fallback to local base64", e);
                 }
 
                 const stored: StoredFile = {
@@ -319,7 +360,37 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
         }
     };
 
-    const handleSingleSaveAction = () => {
+    // Copy formatted credentials for WhatsApp
+    const handleCopyWhatsAppWelcome = () => {
+        const clientName = targetClient?.name || particularName || 'Estimado(a) Cliente';
+        const clientRuc = targetClient?.ruc || particularRuc || 'RUC';
+        const expDate = customExpirationDate || calculateExpirationDate();
+
+        const message = `✨ *¡BIENVENIDO A SU FACTURACIÓN ELECTRÓNICA & FIRMA DIGITAL!* ✨
+Hola *${clientName}*, le saludamos de *Santiago Córdova - Asesoría Tributaria*.
+
+Su plan ha sido activado con éxito:
+━━━━━━━━━━━━━━━━━━━━
+📌 *PLAN:* ${programName}
+🏢 *RUC / CÉDULA:* ${clientRuc}
+🔑 *USUARIO:* ${username || clientRuc}
+🔒 *CLAVE INICIAL:* ${password || '12345678a'}
+📅 *VIGENCIA HASTA:* ${expDate}
+🌐 *ACCESO AL SISTEMA:* ${webUrl || 'https://srienlinea.sri.gob.ec'}
+━━━━━━━━━━━━━━━━━━━━
+💡 *BENEFICIOS INCLUIDOS:*
+✓ Emisión electrónica autorizada por el SRI.
+✓ Respaldo de firma .p12 en Bóveda Digital.
+✓ Soporte técnico directo y anulación de comprobantes.
+
+Cualquier duda o configuración adicional, estamos a su total disposición. ¡Muchas gracias por su confianza! 🚀`;
+
+        navigator.clipboard.writeText(message);
+        toast.success("📋 Mensaje de bienvenida y credenciales copiado para WhatsApp.");
+    };
+
+    // Single Save Action (Syncs Client, Cloud Vault, SaaS License, and SRI Invoice)
+    const handleSingleSaveAction = async () => {
         let clientToProcess = targetClient;
 
         if (buyerType === 'particular') {
@@ -336,7 +407,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                     id: uuidv4(),
                     name: particularName.trim().toUpperCase(),
                     ruc: cleanRuc,
-                    sriPassword: '12345678a',
+                    sriPassword: password || '12345678a',
                     phones: particularPhone.trim() ? [particularPhone.trim()] : [],
                     email: particularEmail.trim() || undefined,
                     regime: TaxRegime.General,
@@ -368,7 +439,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             startDate: saleDate,
             documentStatus: activeCategory === 'firma' ? `Firma ${expirationYears} Año(s)` : (documentCount ? `${documentCount} Docs / Anual` : 'Plan Ilimitado'),
             documentCount: typeof documentCount === 'number' ? documentCount : undefined,
-            price: typeof price === 'number' ? price : undefined,
+            price: finalPriceWithExpress,
             soldByMe: true,
             providerName: providerName || 'Santiago Córdova',
             freeSupportAndCancellation: true
@@ -380,8 +451,9 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             ...clientToProcess,
             facturadorConfig: newFacturadorConfig,
             billingPlan: newFacturadorConfig,
-            signatureExpirationDate: expDate,
-            signatureIssueDate: saleDate,
+            signatureExpirationDate: includesSignature ? expDate : clientToProcess.signatureExpirationDate,
+            signatureIssueDate: includesSignature ? saleDate : clientToProcess.signatureIssueDate,
+            signatureProvider: includesSignature ? (activeCategory === 'ecuafact' ? 'Uanataca / Ecuanexus' : 'Security Data') : clientToProcess.signatureProvider,
             clientType: isSoloPlan ? 'solo_plan' : 'completo',
             requiresDeclarations: !isSoloPlan,
             idCardFront: idCardFront || clientToProcess.idCardFront,
@@ -389,10 +461,37 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             idCardSelfie: idCardSelfie || clientToProcess.idCardSelfie,
             rucPdf: rucPdf || clientToProcess.rucPdf,
             ecuafactSignedRequest: ecuafactSignedRequest || clientToProcess.ecuafactSignedRequest,
-            facturadorActivationStatus: clientToProcess.facturadorActivationStatus || 'recursos_listos'
+            signatureFile: signatureFile || clientToProcess.signatureFile,
+            facturadorActivationStatus: 'activado'
         };
 
         updateClient(clientToProcess.id, updatedClient);
+
+        // Auto-register SaaS License in persistent memory
+        try {
+            const existingLicenses = (await db.getLocal('sc_licencias_history')) || [];
+            const serviceLabel = activeCategory === 'ecuafact' ? 'Facturador Ecuafact' :
+                                 activeCategory === 'zifact' ? 'Facturador Zifac' :
+                                 activeCategory === 'firma' ? 'Firma Electrónica .p12' : 'Software Personalizado';
+
+            const newLic = {
+                id: `LIC-${Date.now()}`,
+                licenseKey: `SC-LIC-2026-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+                clienteId: clientToProcess.id,
+                nombreCliente: clientToProcess.name,
+                rucCliente: clientToProcess.ruc,
+                tipoServicio: serviceLabel,
+                fechaActivacion: saleDate,
+                fechaExpiracion: expDate,
+                estado: 'Activa',
+                observaciones: `Venta registrada vía Menú Interno (${programName}) - Precio: $${finalPriceWithExpress}`
+            };
+
+            const updatedLicList = [newLic, ...existingLicenses.filter((l: any) => l.rucCliente !== clientToProcess?.ruc || l.tipoServicio !== serviceLabel)];
+            await db.setLocal('sc_licencias_history', updatedLicList);
+        } catch (e) {
+            console.warn("Licencias auto-sync error:", e);
+        }
 
         let description = `Venta de Plan ${programName}`;
         if (activeCategory === 'ecuafact') {
@@ -401,14 +500,14 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
             description = `Combo ZIFAC (${documentCount || 50} Comprobantes ${includesSignature ? '+ Firma Electrónica' : ''})`;
         } else if (activeCategory === 'firma') {
             description = `Firma Electrónica .p12 — ${expirationYears} Año(s)`;
+        } else if (activeCategory === 'sri_gratuito') {
+            description = `Asistencia Configuración Facturador SRI Gratuito + Firma .p12`;
         }
-
-        const finalPrice = typeof price === 'number' ? price : 35.00;
 
         onClose();
 
         if (shouldEmitSri && onEmitSriInvoice) {
-            onEmitSriInvoice(updatedClient, description, finalPrice);
+            onEmitSriInvoice(updatedClient, description, finalPriceWithExpress);
         } else {
             toast.success(`🎉 Plan y recursos guardados en la Bóveda de ${clientToProcess.name}`);
         }
@@ -447,46 +546,59 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-xl animate-in fade-in duration-200 overflow-y-auto">
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-xl animate-in fade-in duration-200 overflow-y-auto font-sans">
             {/* Backdrop Click */}
             <div className="fixed inset-0" onClick={onClose} />
 
-            {/* Centered Modal Container (Stitch Luxury #051424) */}
-            <div className="relative z-10 w-full max-w-4xl my-auto bg-[#051424] max-h-[92vh] flex flex-col shadow-[0_30px_90px_-15px_rgba(0,0,0,0.9)] rounded-[2.5rem] border border-white/[0.08] overflow-hidden animate-in zoom-in-95 duration-200 text-slate-100 font-body">
+            {/* Centered Modal Container (Obsidian & Emerald Luxury) */}
+            <div className="relative z-10 w-full max-w-5xl my-auto bg-[#051424] max-h-[94vh] flex flex-col shadow-[0_30px_90px_-15px_rgba(0,0,0,0.95)] rounded-[2.5rem] border border-white/[0.08] overflow-hidden animate-in zoom-in-95 duration-200 text-slate-100 font-body">
 
-                {/* ── HEADER LUXURY ── */}
-                <div className="px-6 py-5 bg-[#051424]/90 border-b border-white/10 flex items-center justify-between flex-shrink-0">
+                {/* ── 1. HEADER LUXURY ── */}
+                <div className="px-6 py-5 bg-[#051424]/95 border-b border-white/10 flex items-center justify-between flex-shrink-0">
                     <div className="flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#10b981] to-teal-700 text-white flex items-center justify-center font-bold shadow-lg shadow-[#10b981]/25">
-                            <ShoppingBag size={22} strokeWidth={2.2} />
+                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#10b981] via-teal-600 to-emerald-800 text-white flex items-center justify-center font-bold shadow-lg shadow-[#10b981]/25 border border-white/10">
+                            <ShoppingBag size={24} strokeWidth={2.2} />
                         </div>
                         <div>
                             <div className="flex items-center gap-2 mb-0.5">
-                                <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] font-mono text-[#10b981]">Nueva Luz 3.0 • Emisión SRI</span>
+                                <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse shadow-[0_0_10px_#10b981]" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.25em] font-mono text-[#10b981]">Terminal de Venta Directa • Nueva Luz 3.0</span>
                             </div>
-                            <h2 className="text-base sm:text-lg font-black text-white tracking-tight font-display">
-                                Venta de Plan & Firma Electrónica
+                            <h2 className="text-lg sm:text-xl font-black text-white tracking-tight font-display">
+                                Venta de Planes de Facturación & Firmas .p12
                             </h2>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all cursor-pointer"
-                    >
-                        <X size={20} />
-                    </button>
+
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handleCopyWhatsAppWelcome}
+                            className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 bg-[#10b981]/15 hover:bg-[#10b981]/25 text-[#10b981] border border-[#10b981]/30 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                            title="Copiar mensaje de bienvenida para WhatsApp"
+                        >
+                            <Share2 size={14} />
+                            <span>Copiar WhatsApp</span>
+                        </button>
+
+                        <button
+                            onClick={onClose}
+                            className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all cursor-pointer"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
 
-                {/* ── MODAL BODY ── */}
+                {/* ── 2. MODAL BODY ── */}
                 <div className="p-6 overflow-y-auto space-y-6 flex-1 text-left custom-scrollbar">
 
-                    {/* ── 1. SEGMENTED BUYER TYPE ── */}
-                    <div className="p-4 bg-slate-900/60 rounded-3xl border border-white/10 space-y-4">
+                    {/* ── SECCIÓN 1: SELECTOR TRI-MODAL DE COMPRADOR ── */}
+                    <div className="p-5 bg-slate-900/60 rounded-3xl border border-white/10 space-y-4">
                         <div className="flex items-center justify-between">
                             <label className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2 font-mono">
                                 <User size={15} className="text-[#10b981]" />
-                                Tipo de Comprador / Receptor
+                                1. Identificación del Comprador / Receptor
                             </label>
 
                             {buyerType === 'cliente_registrado' && (
@@ -509,7 +621,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                         className="text-xs font-bold text-[#10b981] hover:text-[#10b981]/80 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#10b981]/10 border border-[#10b981]/20 transition-all cursor-pointer"
                                     >
                                         <UserPlus size={14} />
-                                        {showQuickCreateClient ? 'Cancelar' : '+ Crear Cliente Contable'}
+                                        {showQuickCreateClient ? 'Cancelar' : '+ Registrar Rápido'}
                                     </button>
                                 </div>
                             )}
@@ -545,15 +657,15 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                             </button>
                         </div>
 
-                        {/* Particular / Walk-in Form */}
+                        {/* Particular / Walk-in Form with OCR RUC parser */}
                         {buyerType === 'particular' ? (
                             <div className="p-4 bg-slate-950/70 border border-[#10b981]/30 rounded-2xl space-y-3.5 animate-in fade-in duration-200">
                                 <div className="flex items-center justify-between">
                                     <h4 className="text-xs font-black text-[#10b981] uppercase tracking-wider flex items-center gap-2 font-mono">
-                                        <User size={14} /> Comprador Particular (Solo Plan)
+                                        <User size={14} /> Comprador Particular (Solo Facturación / Firma)
                                     </h4>
                                     <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-mono">
-                                        ⚡ Exento de Matriz de IVA
+                                        ⚡ Aislado de Obligaciones Tributarias
                                     </span>
                                 </div>
 
@@ -569,12 +681,12 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                     {isAnalyzingParticular ? (
                                         <>
                                             <Loader className="w-4 h-4 text-[#10b981] animate-spin" />
-                                            <span className="text-xs font-bold text-[#10b981]">Extrayendo datos de PDF SRI...</span>
+                                            <span className="text-xs font-bold text-[#10b981]">Extrayendo automáticamente datos desde el PDF del RUC...</span>
                                         </>
                                     ) : (
                                         <>
                                             <Upload className="w-4 h-4 text-[#10b981]" />
-                                            <span className="text-xs font-bold text-slate-300">Subir Certificado RUC en PDF para auto-completar</span>
+                                            <span className="text-xs font-bold text-slate-300">Subir Certificado RUC en PDF para auto-completar datos al instante</span>
                                         </>
                                     )}
                                 </div>
@@ -690,7 +802,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                                             <input
                                                 type="text"
-                                                placeholder="Buscar cliente por Nombre o RUC..."
+                                                placeholder="Buscar cliente por Nombre, RUC o Nombre Comercial..."
                                                 value={clientSearchQuery}
                                                 onChange={(e) => setClientSearchQuery(e.target.value)}
                                                 className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-white/10 rounded-xl text-xs font-medium outline-none focus:border-[#10b981]"
@@ -723,102 +835,113 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                         )}
                     </div>
 
-                    {/* ── 2. CATEGORÍAS DE PLANES & PRICING (STITCH GRID) ── */}
+                    {/* ── SECCIÓN 2: CATÁLOGO DE 5 CATEGORÍAS & PRESETS ── */}
                     <div className="space-y-3">
                         <label className="text-xs font-black text-slate-300 uppercase tracking-wider block font-mono">
-                            Seleccionar Categoría del Plan
+                            2. Seleccionar Plataforma & Paquete Comercial
                         </label>
 
                         {/* Category Tabs */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
                             {[
-                                { id: 'firma', title: 'Solo Firma (.p12)', icon: Key },
-                                { id: 'zifact', title: 'ZiFact (Software)', icon: Zap },
-                                { id: 'ecuafact', title: 'EcuaFact (Combo)', icon: ShieldCheck },
-                                { id: 'talonario', title: 'Talonario / Otros', icon: FileText },
+                                { id: 'ecuafact', title: 'EcuaFact (Combo)', icon: ShieldCheck, badge: 'Popular' },
+                                { id: 'zifact', title: 'ZiFact (Software)', icon: Zap, badge: 'POS' },
+                                { id: 'firma', title: 'Solo Firma (.p12)', icon: Key, badge: 'Multi-Año' },
+                                { id: 'sri_gratuito', title: 'SRI Asistido', icon: Layers, badge: 'Gratuito' },
+                                { id: 'talonario', title: 'Talonario / Otros', icon: FileText, badge: 'Custom' },
                             ].map(cat => (
                                 <button
                                     key={cat.id}
                                     type="button"
                                     onClick={() => handleCategoryChange(cat.id as MainCategory)}
-                                    className={`p-3.5 rounded-2xl border text-center transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
+                                    className={`p-3.5 rounded-2xl border text-center transition-all flex flex-col items-center gap-1.5 cursor-pointer relative overflow-hidden ${
                                         activeCategory === cat.id
                                             ? 'bg-[#10b981]/15 border-[#10b981] text-white shadow-lg shadow-[#10b981]/10 ring-1 ring-[#10b981]/30'
                                             : 'bg-slate-900/50 border-white/5 text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                                     }`}
                                 >
                                     <cat.icon size={18} className={activeCategory === cat.id ? 'text-[#10b981]' : 'text-slate-400'} />
-                                    <span className="text-xs font-bold uppercase tracking-tight">{cat.title}</span>
+                                    <span className="text-[11px] font-bold uppercase tracking-tight">{cat.title}</span>
+                                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded font-mono ${
+                                        activeCategory === cat.id ? 'bg-[#10b981] text-slate-950' : 'bg-white/10 text-slate-400'
+                                    }`}>
+                                        {cat.badge}
+                                    </span>
                                 </button>
                             ))}
                         </div>
 
-                        {/* CATEGORY 1: SOLO FIRMA ELECTRÓNICA */}
-                        {activeCategory === 'firma' && (
+                        {/* CATEGORY 1: ECUAFACT */}
+                        {activeCategory === 'ecuafact' && (
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 animate-in fade-in duration-200">
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        setProgramName('Firma Electrónica .p12 (1 Año + Soporte SRI)');
-                                        setPrice(35.00);
+                                        setProgramName('ECUAFACT 60 Docs + Firma Electrónica');
+                                        setDocumentCount(60);
+                                        setPrice(55.00);
+                                        setEstimatedCost(22.00);
                                         setExpirationYears(1);
-                                        setDocumentCount('');
                                     }}
                                     className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-                                        price === 35 && expirationYears === 1 && programName.includes('Soporte')
+                                        documentCount === 60 && price === 55
                                             ? 'border-[#10b981] bg-[#10b981]/15 ring-1 ring-[#10b981]/30'
                                             : 'bg-slate-900/60 border-white/5 hover:border-white/20'
                                     }`}
                                 >
                                     <div className="flex justify-between items-start mb-1">
-                                        <span className="text-xs font-bold text-white uppercase">1 Año + Soporte</span>
-                                        <span className="px-2 py-0.5 bg-[#10b981] text-slate-950 text-[8px] font-black uppercase rounded font-mono">Recomendado</span>
+                                        <span className="text-xs font-bold text-white uppercase">60 Docs + Firma</span>
+                                        <span className="px-2 py-0.5 bg-[#10b981] text-slate-950 text-[8px] font-black uppercase rounded font-mono">Popular</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 mb-2">Firma .p12 + Anulación SRI + Configuración en portal</p>
-                                    <p className="text-2xl font-black text-[#10b981] font-mono">$35.00</p>
+                                    <p className="text-[11px] text-slate-400 mb-2">60 Comprobantes anuales + Firma Electrónica .p12 Uanataca</p>
+                                    <p className="text-2xl font-black text-[#10b981] font-mono">$55.00</p>
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        setProgramName('Firma Electrónica .p12 (1 Año Solo Firma)');
-                                        setPrice(29.00);
+                                        setProgramName('ECUAFACT 200 Docs + Firma Electrónica');
+                                        setDocumentCount(200);
+                                        setPrice(75.00);
+                                        setEstimatedCost(30.00);
                                         setExpirationYears(1);
-                                        setDocumentCount('');
                                     }}
                                     className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-                                        price === 29 && expirationYears === 1
+                                        documentCount === 200 && price === 75
                                             ? 'border-[#10b981] bg-[#10b981]/15 ring-1 ring-[#10b981]/30'
                                             : 'bg-slate-900/60 border-white/5 hover:border-white/20'
                                     }`}
                                 >
                                     <div className="flex justify-between items-start mb-1">
-                                        <span className="text-xs font-bold text-white uppercase">1 Año Solo Firma</span>
+                                        <span className="text-xs font-bold text-white uppercase">200 Docs + Firma</span>
+                                        <span className="px-2 py-0.5 bg-teal-500/20 text-teal-300 text-[8px] font-black uppercase rounded font-mono">Negocio</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 mb-2">Archivo .p12 básico para emitir comprobantes</p>
-                                    <p className="text-2xl font-black text-white font-mono">$29.00</p>
+                                    <p className="text-[11px] text-slate-400 mb-2">200 Comprobantes anuales + Firma Electrónica .p12 incluida</p>
+                                    <p className="text-2xl font-black text-white font-mono">$75.00</p>
                                 </button>
 
-                                <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-2">
-                                    <span className="text-xs font-bold text-white uppercase block">Multiaños (Solo Firma)</span>
-                                    <select
-                                        value={expirationYears > 1 ? expirationYears : 2}
-                                        onChange={(e) => {
-                                            const yrs = parseInt(e.target.value);
-                                            setExpirationYears(yrs);
-                                            const feeMap: Record<number, number> = { 2: 49, 3: 65, 4: 79, 5: 89 };
-                                            setPrice(feeMap[yrs] || 49);
-                                            setProgramName(`Firma Electrónica .p12 (${yrs} Años)`);
-                                        }}
-                                        className="w-full px-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs font-bold text-white outline-none cursor-pointer"
-                                    >
-                                        <option value={2}>2 Años — $49.00</option>
-                                        <option value={3}>3 Años — $65.00</option>
-                                        <option value={4}>4 Años — $79.00</option>
-                                        <option value={5}>5 Años — $89.00</option>
-                                    </select>
-                                    <p className="text-[10px] text-[#10b981] font-mono font-bold">Vigencia: {expirationYears} Años</p>
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setProgramName('ECUAFACT Ilimitado + Firma Electrónica');
+                                        setDocumentCount(0);
+                                        setPrice(90.00);
+                                        setEstimatedCost(35.00);
+                                        setExpirationYears(1);
+                                    }}
+                                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                                        documentCount === 0 && price === 90
+                                            ? 'border-[#10b981] bg-[#10b981]/15 ring-1 ring-[#10b981]/30'
+                                            : 'bg-slate-900/60 border-white/5 hover:border-white/20'
+                                    }`}
+                                >
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="text-xs font-bold text-white uppercase">Ilimitado + Firma</span>
+                                        <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 text-[8px] font-black uppercase rounded font-mono">Empresas</span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 mb-2">Comprobantes ilimitados anuales + Firma Electrónica .p12</p>
+                                    <p className="text-2xl font-black text-white font-mono">$90.00</p>
+                                </button>
                             </div>
                         )}
 
@@ -835,13 +958,15 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                             onChange={(e) => {
                                                 const val = e.target.value === '' ? '' : parseInt(e.target.value);
                                                 setDocumentCount(val);
-                                                if (val === 50 && includesSignature) setPrice(45);
-                                                else if (val === 50 && !includesSignature) setPrice(25);
+                                                if (val === 50) { setPrice(includesSignature ? 45 : 25); setEstimatedCost(includesSignature ? 18 : 10); }
+                                                else if (val === 100) { setPrice(includesSignature ? 55 : 35); setEstimatedCost(includesSignature ? 22 : 14); }
+                                                else if (val === 200) { setPrice(includesSignature ? 65 : 45); setEstimatedCost(includesSignature ? 26 : 18); }
+                                                else if (val === 500) { setPrice(includesSignature ? 85 : 65); setEstimatedCost(includesSignature ? 32 : 24); }
+                                                else if (val === 0) { setPrice(includesSignature ? 110 : 80); setEstimatedCost(includesSignature ? 40 : 30); }
                                             }}
                                             className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs font-bold text-white outline-none cursor-pointer"
                                         >
                                             <option value={50}>50 Documentos (Popular)</option>
-                                            <option value={75}>75 Documentos</option>
                                             <option value={100}>100 Documentos</option>
                                             <option value={200}>200 Documentos</option>
                                             <option value={500}>500 Documentos</option>
@@ -851,7 +976,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
 
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">
-                                            ¿Incluye Firma Electrónica?
+                                            ¿Incluye Firma Electrónica .p12?
                                         </label>
                                         <select
                                             value={includesSignature ? 'yes' : 'no'}
@@ -860,9 +985,11 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                                 setIncludesSignature(inc);
                                                 if (inc) {
                                                     setPrice(45.00);
+                                                    setEstimatedCost(18.00);
                                                     setProgramName(`ZIFAC ${documentCount || 50} Docs + Firma Electrónica`);
                                                 } else {
                                                     setPrice(25.00);
+                                                    setEstimatedCost(10.00);
                                                     setProgramName(`ZIFAC ${documentCount || 50} Docs (Solo Software)`);
                                                 }
                                             }}
@@ -875,60 +1002,107 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                 </div>
 
                                 <div className="p-3 bg-[#10b981]/10 border border-[#10b981]/30 rounded-xl flex items-center justify-between">
-                                    <span className="text-xs font-bold text-[#10b981]">Plan: ZiFact {documentCount || 50} Docs {includesSignature ? '+ Firma' : '(Solo Software)'}</span>
+                                    <span className="text-xs font-bold text-[#10b981]">Plan Seleccionado: ZiFact {documentCount || 50} Docs {includesSignature ? '+ Firma' : '(Solo Software)'}</span>
                                     <span className="text-xl font-black text-white font-mono">${price}.00</span>
                                 </div>
                             </div>
                         )}
 
-                        {/* CATEGORY 3: ECUAFACT */}
-                        {activeCategory === 'ecuafact' && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 animate-in fade-in duration-200">
+                        {/* CATEGORY 3: SOLO FIRMA ELECTRÓNICA */}
+                        {activeCategory === 'firma' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 animate-in fade-in duration-200">
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        setProgramName('ECUAFACT 60 Docs + Firma Electrónica');
-                                        setDocumentCount(60);
-                                        setPrice(55.00);
+                                        setProgramName('Firma Electrónica .p12 (1 Año + Soporte SRI)');
+                                        setPrice(35.00);
+                                        setEstimatedCost(14.00);
+                                        setExpirationYears(1);
+                                        setDocumentCount('');
                                     }}
                                     className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-                                        documentCount === 60 && price === 55
+                                        price === 35 && expirationYears === 1 && programName.includes('Soporte')
                                             ? 'border-[#10b981] bg-[#10b981]/15 ring-1 ring-[#10b981]/30'
                                             : 'bg-slate-900/60 border-white/5 hover:border-white/20'
                                     }`}
                                 >
                                     <div className="flex justify-between items-start mb-1">
-                                        <span className="text-xs font-bold text-white uppercase">EcuaFact 60 Docs + Firma</span>
-                                        <span className="px-2 py-0.5 bg-[#10b981] text-slate-950 text-[8px] font-black uppercase rounded font-mono">Popular</span>
+                                        <span className="text-xs font-bold text-white uppercase">1 Año + Soporte SRI</span>
+                                        <span className="px-2 py-0.5 bg-[#10b981] text-slate-950 text-[8px] font-black uppercase rounded font-mono">Recomendado</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 mb-2">60 Comprobantes anuales + Firma Electrónica .p12 incluida</p>
-                                    <p className="text-2xl font-black text-[#10b981] font-mono">$55.00</p>
+                                    <p className="text-[11px] text-slate-400 mb-2">Firma .p12 + Anulación SRI + Configuración en portal</p>
+                                    <p className="text-2xl font-black text-[#10b981] font-mono">$35.00</p>
                                 </button>
 
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        setProgramName('ECUAFACT Ilimitado + Firma Electrónica');
-                                        setDocumentCount(0);
-                                        setPrice(90.00);
+                                        setProgramName('Firma Electrónica .p12 (1 Año Solo Firma)');
+                                        setPrice(29.00);
+                                        setEstimatedCost(14.00);
+                                        setExpirationYears(1);
+                                        setDocumentCount('');
                                     }}
                                     className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-                                        documentCount === 0 && price === 90
+                                        price === 29 && expirationYears === 1
                                             ? 'border-[#10b981] bg-[#10b981]/15 ring-1 ring-[#10b981]/30'
                                             : 'bg-slate-900/60 border-white/5 hover:border-white/20'
                                     }`}
                                 >
                                     <div className="flex justify-between items-start mb-1">
-                                        <span className="text-xs font-bold text-white uppercase">EcuaFact Ilimitado + Firma</span>
-                                        <span className="px-2 py-0.5 bg-[#10b981] text-slate-950 text-[8px] font-black uppercase rounded font-mono">Empresa</span>
+                                        <span className="text-xs font-bold text-white uppercase">1 Año Solo Firma</span>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 mb-2">Comprobantes ilimitados anuales + Firma Electrónica .p12 incluida</p>
-                                    <p className="text-2xl font-black text-[#10b981] font-mono">$90.00</p>
+                                    <p className="text-[11px] text-slate-400 mb-2">Archivo .p12 estándar para emitir comprobantes</p>
+                                    <p className="text-2xl font-black text-white font-mono">$29.00</p>
                                 </button>
+
+                                <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-2">
+                                    <span className="text-xs font-bold text-white uppercase block">Multiaños (Solo Firma)</span>
+                                    <select
+                                        value={expirationYears > 1 ? expirationYears : 2}
+                                        onChange={(e) => {
+                                            const yrs = parseInt(e.target.value);
+                                            setExpirationYears(yrs);
+                                            const feeMap: Record<number, { price: number; cost: number }> = {
+                                                2: { price: 49, cost: 22 },
+                                                3: { price: 65, cost: 30 },
+                                                4: { price: 79, cost: 38 },
+                                                5: { price: 89, cost: 45 }
+                                            };
+                                            const mapped = feeMap[yrs] || { price: 49, cost: 22 };
+                                            setPrice(mapped.price);
+                                            setEstimatedCost(mapped.cost);
+                                            setProgramName(`Firma Electrónica .p12 (${yrs} Años)`);
+                                        }}
+                                        className="w-full px-3 py-2 bg-slate-950 border border-white/10 rounded-xl text-xs font-bold text-white outline-none cursor-pointer"
+                                    >
+                                        <option value={2}>2 Años — $49.00</option>
+                                        <option value={3}>3 Años — $65.00</option>
+                                        <option value={4}>4 Años — $79.00</option>
+                                        <option value={5}>5 Años — $89.00</option>
+                                    </select>
+                                    <p className="text-[10px] text-[#10b981] font-mono font-bold">Vigencia: {expirationYears} Años</p>
+                                </div>
                             </div>
                         )}
 
-                        {/* CATEGORY 4: TALONARIO / OTROS */}
+                        {/* CATEGORY 4: SRI GRATUITO ASISTIDO */}
+                        {activeCategory === 'sri_gratuito' && (
+                            <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3 pt-1 animate-in fade-in duration-200">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="p-3 bg-slate-950 rounded-xl border border-white/10 space-y-1">
+                                        <span className="text-xs font-bold text-white uppercase">Servicio de Asistencia SRI</span>
+                                        <p className="text-[11px] text-slate-400">Configuración del portal SRI en Línea, subida de la firma electrónica .p12 y creación de catálogo de productos/servicios.</p>
+                                    </div>
+                                    <div className="p-3 bg-[#10b981]/10 border border-[#10b981]/30 rounded-xl flex flex-col justify-center">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Tarifa Integral</span>
+                                        <span className="text-2xl font-black text-[#10b981] font-mono">$35.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* CATEGORY 5: TALONARIO / OTROS */}
                         {activeCategory === 'talonario' && (
                             <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3 pt-1 animate-in fade-in duration-200">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -952,12 +1126,85 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                         )}
                     </div>
 
-                    {/* ── 3. CONTROL DE FECHAS: EMISIÓN & VENCIMIENTO ── */}
-                    <div className="p-4 bg-slate-900/60 rounded-3xl border border-white/10 space-y-3">
+                    {/* ── SECCIÓN 3: CALCULADORA DE RENTABILIDAD & FORMA DE PAGO ── */}
+                    <div className="p-5 bg-slate-900/80 rounded-3xl border border-white/10 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2 font-mono">
+                                <TrendingUp size={15} className="text-[#10b981]" />
+                                3. Desglose Financiero, Rentabilidad & Método de Pago
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={isExpressDelivery}
+                                    onChange={(e) => setIsExpressDelivery(e.target.checked)}
+                                    className="w-3.5 h-3.5 rounded bg-slate-950 border-white/20 text-[#10b981] focus:ring-[#10b981]"
+                                />
+                                <span className="text-[11px] font-bold text-amber-400 font-mono">⚡ Trámite Express (+ $5.00)</span>
+                            </label>
+                        </div>
+
+                        {/* Financial Cards Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono">
+                            <div className="p-4 rounded-2xl bg-slate-950 border border-white/10">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Precio al Cliente</span>
+                                <p className="text-2xl font-black text-white mt-1">${finalPriceWithExpress.toFixed(2)}</p>
+                                <span className="text-[9px] text-slate-500">Monto total facturado</span>
+                            </div>
+
+                            <div className="p-4 rounded-2xl bg-slate-950 border border-white/10">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Costo Proveedor Base</span>
+                                <p className="text-2xl font-black text-slate-400 mt-1">${estimatedCost.toFixed(2)}</p>
+                                <span className="text-[9px] text-slate-500">Costo de emisión / software</span>
+                            </div>
+
+                            <div className="p-4 rounded-2xl bg-[#10b981]/15 border border-[#10b981]/40">
+                                <span className="text-[10px] font-bold text-[#10b981] uppercase">Ganancia Neta Despacho</span>
+                                <p className="text-2xl font-black text-[#10b981] mt-1">${netProfit.toFixed(2)}</p>
+                                <span className="text-[9px] text-emerald-400 font-bold font-sans">Margen: {profitMarginPercent}% de rentabilidad</span>
+                            </div>
+                        </div>
+
+                        {/* Payment Method Selector */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-mono">
+                                    Método de Cobro Recibido
+                                </label>
+                                <select
+                                    value={paymentMethod}
+                                    onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs font-bold text-white outline-none cursor-pointer"
+                                >
+                                    <option value="transferencia_pichincha">🏦 Transferencia Banco Pichincha</option>
+                                    <option value="transferencia_guayaquil">🏦 Transferencia Banco Guayaquil</option>
+                                    <option value="transferencia_bolivariano">🏦 Transferencia Banco Bolivariano</option>
+                                    <option value="efectivo">💵 Efectivo Directo en Oficina</option>
+                                    <option value="deuna_tarjeta">💳 DeUna / Tarjeta Débito / Crédito</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 font-mono">
+                                    Canal & Responsable de Venta
+                                </label>
+                                <input
+                                    type="text"
+                                    value={providerName}
+                                    onChange={(e) => setProviderName(e.target.value)}
+                                    placeholder="Santiago Córdova"
+                                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-white/10 rounded-xl text-xs font-bold text-white outline-none focus:border-[#10b981]"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── SECCIÓN 4: CONTROL DE FECHAS DE EMISIÓN & VENCIMIENTO ── */}
+                    <div className="p-5 bg-slate-900/60 rounded-3xl border border-white/10 space-y-3">
                         <div className="flex items-center justify-between">
                             <label className="text-xs font-black text-slate-300 uppercase tracking-wider flex items-center gap-2 font-mono">
                                 <Calendar size={15} className="text-[#10b981]" />
-                                Fechas de Emisión & Caducidad
+                                4. Fechas de Emisión & Caducidad de Software / Firma
                             </label>
                             <span className="text-[10px] text-slate-400 font-mono">
                                 Control de Vigencia Exacta
@@ -1014,12 +1261,12 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                         </div>
                     </div>
 
-                    {/* ── 4. AUTORIZACIÓN ESPECIAL ECUAFACT (DOCX/PRINT) ── */}
+                    {/* ── SECCIÓN 5: PODER / AUTORIZACIÓN ESPECIAL ECUAFACT (DOCX/PRINT) ── */}
                     {activeCategory === 'ecuafact' && (
-                        <div className="p-4 bg-slate-900/80 border border-[#10b981]/30 rounded-3xl space-y-3 animate-in fade-in duration-300">
+                        <div className="p-5 bg-slate-900/80 border border-[#10b981]/30 rounded-3xl space-y-3 animate-in fade-in duration-300">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-black uppercase tracking-wider text-[#10b981] flex items-center gap-2 font-mono">
-                                    <FileCheck size={16} /> Documento de Autorización Especial EcuaFact
+                                    <FileCheck size={16} /> 5. Documento de Autorización Especial EcuaFact (Uanataca)
                                 </h4>
                                 {(targetClient || particularName) && (
                                     <span className="text-[9px] font-black text-[#10b981] uppercase px-2.5 py-0.5 bg-[#10b981]/20 rounded-full font-mono">
@@ -1029,7 +1276,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                             </div>
 
                             <p className="text-[11px] text-slate-300">
-                                Descarga o imprime la carta de autorización rellenada automáticamente con los datos de <strong>{targetClient?.name || particularName || 'el cliente'}</strong>.
+                                Descarga o imprime la carta de poder especial rellenada con los datos de <strong>{targetClient?.name || particularName || 'el cliente'}</strong> para el trámite de firma electrónica.
                             </p>
 
                             <div className="flex flex-wrap gap-2 pt-1">
@@ -1050,30 +1297,31 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                     className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                 >
                                     <Printer size={14} />
-                                    <span>Imprimir Carta</span>
+                                    <span>Imprimir Carta Directa</span>
                                 </button>
                             </div>
                         </div>
                     )}
 
-                    {/* ── 4. EXPEDIENTE & BÓVEDA DE IDENTIDAD (STITCH TACTICAL DROPZONE) ── */}
-                    <div className="p-4 bg-slate-900/40 rounded-3xl border border-white/5 space-y-3">
+                    {/* ── SECCIÓN 6: EXPEDIENTE DIGITAL & BÓVEDA DE IDENTIDAD (CLOUD STORAGE) ── */}
+                    <div className="p-5 bg-slate-900/60 rounded-3xl border border-white/10 space-y-3">
                         <div className="flex items-center justify-between">
                             <h4 className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-2 font-mono">
                                 <Camera size={14} className="text-[#10b981]" />
-                                Expediente & Recursos en Nube
+                                6. Expediente Digital & Bóveda de Identidad en la Nube
                             </h4>
                             <span className="text-[10px] text-slate-400 font-mono">
-                                Respaldado automáticamente
+                                Respaldado en Supabase Storage
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                             {([
                                 { id: 'idCardFront',  label: 'Cédula Anverso', icon: '🪪', state: idCardFront,  setter: setIdCardFront,  inputId: 'sales-id-front' },
                                 { id: 'idCardBack',   label: 'Cédula Reverso', icon: '🪪', state: idCardBack,   setter: setIdCardBack,   inputId: 'sales-id-back' },
-                                { id: 'idCardSelfie', label: 'Foto Selfie',     icon: '📸', state: idCardSelfie, setter: setIdCardSelfie, inputId: 'sales-id-selfie' },
+                                { id: 'idCardSelfie', label: 'Foto Selfie con Cédula', icon: '📸', state: idCardSelfie, setter: setIdCardSelfie, inputId: 'sales-id-selfie' },
                                 { id: 'rucPdf',       label: 'RUC Actual (PDF)', icon: '📄', state: rucPdf,      setter: setRucPdf,      inputId: 'sales-ruc-pdf' },
+                                { id: 'signatureFile', label: 'Firma .p12 (Opcional)', icon: '🔐', state: signatureFile, setter: setSignatureFile, inputId: 'sales-signature-file' },
                                 ...(activeCategory === 'ecuafact' ? [
                                     { id: 'ecuafactSignedRequest', label: 'Solicitud Firmada', icon: '✍️', state: ecuafactSignedRequest, setter: setEcuafactSignedRequest, inputId: 'sales-signed-req' }
                                 ] : [])
@@ -1082,7 +1330,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                     <input
                                         type="file"
                                         id={slot.inputId}
-                                        accept="image/*,application/pdf"
+                                        accept="image/*,application/pdf,.p12"
                                         className="hidden"
                                         onChange={(e) => {
                                             const file = e.target.files?.[0];
@@ -1094,21 +1342,21 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                                     <button
                                         type="button"
                                         onClick={() => document.getElementById(slot.inputId)?.click()}
-                                        className={`relative w-full py-2.5 px-3 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
+                                        className={`relative w-full py-3 px-3.5 rounded-2xl border flex items-center justify-between transition-all cursor-pointer ${
                                             slot.state
-                                                ? 'border-[#10b981] bg-[#10b981]/15 text-white'
+                                                ? 'border-[#10b981] bg-[#10b981]/15 text-white shadow-sm'
                                                 : 'border-white/10 bg-slate-950/80 hover:border-white/20 text-slate-400'
                                         }`}
                                     >
-                                        <span className="text-xs font-bold flex items-center gap-2">
+                                        <span className="text-xs font-bold flex items-center gap-2 truncate">
                                             <span>{slot.icon}</span> {slot.label}
                                         </span>
                                         {uploadingSlot === slot.id ? (
                                             <Loader size={14} className="animate-spin text-[#10b981]" />
                                         ) : slot.state ? (
-                                            <CheckCircle2 size={15} className="text-[#10b981]" />
+                                            <CheckCircle2 size={16} className="text-[#10b981] shrink-0" />
                                         ) : (
-                                            <Upload size={14} className="text-slate-500" />
+                                            <Upload size={14} className="text-slate-500 shrink-0" />
                                         )}
                                     </button>
                                 </div>
@@ -1118,18 +1366,18 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
 
                 </div>
 
-                {/* ── FOOTER CON ACCIÓN SRI DIRECTA ── */}
+                {/* ── 3. FOOTER CON ACCIÓN SRI DIRECTA & CIERRE MÁGICO ── */}
                 <div className="p-5 bg-[#051424]/95 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 flex-shrink-0">
                     <label className="flex items-center gap-3 cursor-pointer group select-none">
                         <input
                             type="checkbox"
                             checked={shouldEmitSri}
                             onChange={(e) => setShouldEmitSri(e.target.checked)}
-                            className="w-4 h-4 rounded-md bg-slate-950 border-white/20 text-[#10b981] focus:ring-[#10b981] cursor-pointer"
+                            className="w-4 h-4 rounded bg-slate-950 border-white/20 text-[#10b981] focus:ring-[#10b981] cursor-pointer"
                         />
                         <span className="text-xs text-slate-300 group-hover:text-white transition-colors font-bold font-mono flex items-center gap-1.5">
                             <Sparkles size={14} className="text-[#10b981]" />
-                            Emitir Factura SRI automáticamente al guardar (${price || 0})
+                            Emitir Factura Electrónica SRI al guardar (${finalPriceWithExpress.toFixed(2)})
                         </span>
                     </label>
 
@@ -1148,7 +1396,7 @@ export const SalesComboModal: React.FC<SalesComboModalProps> = ({
                             className="w-full sm:w-auto flex items-center justify-center gap-2 px-7 py-3 bg-gradient-to-r from-[#10b981] via-teal-500 to-emerald-600 hover:from-[#10b981]/90 hover:to-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl shadow-[#10b981]/25 active:scale-95 transition-all cursor-pointer"
                         >
                             <FileText size={16} />
-                            <span>Guardar Plan y Emitir Factura SRI</span>
+                            <span>Guardar Plan & Emitir Factura SRI</span>
                         </button>
                     </div>
                 </div>

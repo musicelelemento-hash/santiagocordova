@@ -9,24 +9,25 @@ interface Scroll3DCanvasProps {
     theme?: 'light' | 'dark';
 }
 
-// 1. High-Performance Holographic Particle Field
+// 1. High-Performance Holographic Particle Constellation
 const ParticlesField: React.FC<{ progress: number; theme?: 'light' | 'dark' }> = ({ progress, theme = 'dark' }) => {
-    const count = typeof window !== 'undefined' && window.innerWidth < 768 ? 70 : 130;
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const count = isMobile ? 80 : 160;
     const pointsRef = useRef<THREE.Points>(null);
 
     const [positions, colors] = useMemo(() => {
         const pos = new Float32Array(count * 3);
         const col = new Float32Array(count * 3);
-        const color1 = new THREE.Color(theme === 'dark' ? '#00A896' : '#0d9488');
-        const color2 = new THREE.Color(theme === 'dark' ? '#2B6AFF' : '#0284c7');
-        const color3 = new THREE.Color(theme === 'dark' ? '#C9A96E' : '#d97706');
+        const colorTeal = new THREE.Color(theme === 'dark' ? '#00A896' : '#0d9488');
+        const colorBlue = new THREE.Color(theme === 'dark' ? '#2B6AFF' : '#0284c7');
+        const colorGold = new THREE.Color(theme === 'dark' ? '#C9A96E' : '#d97706');
 
         for (let i = 0; i < count; i++) {
-            pos[i * 3] = (Math.random() - 0.5) * 18;
-            pos[i * 3 + 1] = (Math.random() - 0.5) * 18;
+            pos[i * 3] = (Math.random() - 0.5) * 20;
+            pos[i * 3 + 1] = (Math.random() - 0.5) * 20;
             pos[i * 3 + 2] = (Math.random() - 0.5) * 18;
 
-            const lerpColor = i % 3 === 0 ? color1 : i % 3 === 1 ? color2 : color3;
+            const lerpColor = i % 3 === 0 ? colorTeal : i % 3 === 1 ? colorGold : colorBlue;
             col[i * 3] = lerpColor.r;
             col[i * 3 + 1] = lerpColor.g;
             col[i * 3 + 2] = lerpColor.b;
@@ -36,8 +37,8 @@ const ParticlesField: React.FC<{ progress: number; theme?: 'light' | 'dark' }> =
 
     useFrame((state, delta) => {
         if (pointsRef.current) {
-            pointsRef.current.rotation.y += delta * 0.04 * (1 + progress * 1.5);
-            pointsRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.15) * 0.15 + progress * 0.4;
+            pointsRef.current.rotation.y += delta * 0.05 * (1 + progress * 1.8);
+            pointsRef.current.rotation.x = Math.sin(state.clock.getElapsedTime() * 0.18) * 0.18 + progress * 0.35;
         }
     });
 
@@ -54,10 +55,10 @@ const ParticlesField: React.FC<{ progress: number; theme?: 'light' | 'dark' }> =
                 />
             </bufferGeometry>
             <pointsMaterial
-                size={typeof window !== 'undefined' && window.innerWidth < 768 ? 0.06 : 0.045}
+                size={isMobile ? 0.065 : 0.05}
                 vertexColors
                 transparent
-                opacity={theme === 'dark' ? 0.7 : 0.5}
+                opacity={theme === 'dark' ? 0.75 : 0.55}
                 blending={THREE.AdditiveBlending}
                 depthWrite={false}
             />
@@ -81,10 +82,11 @@ const Alpha3DModel: React.FC<{ url: string; progress: number }> = ({ url, progre
     return <primitive ref={groupRef} object={scene} scale={1.5} />;
 };
 
-// 3. Pointer-Responsive Interactive 3D Crystal Sculpture
+// 3. Pointer-Responsive Interactive 3D Crystal & Gold Core
 const ScrollSculpture: React.FC<{ progress: number; theme?: 'light' | 'dark' }> = ({ progress, theme = 'dark' }) => {
     const meshRef = useRef<THREE.Mesh>(null);
-    const ringRef = useRef<THREE.Mesh>(null);
+    const ringGoldRef = useRef<THREE.Mesh>(null);
+    const ringTealRef = useRef<THREE.Mesh>(null);
     const innerCoreRef = useRef<THREE.Mesh>(null);
     const { pointer, viewport } = useThree();
 
@@ -99,40 +101,48 @@ const ScrollSculpture: React.FC<{ progress: number; theme?: 'light' | 'dark' }> 
         let targetX = 0;
         if (!isMobile) {
             targetX = progress < 0.25 
-                ? (pointer.x * viewport.width * 0.05) 
+                ? (pointer.x * viewport.width * 0.06) 
                 : progress < 0.5 
-                ? 1.8 - (progress - 0.25) * 7.0 
+                ? 1.9 - (progress - 0.25) * 7.5 
                 : progress < 0.75 
-                ? -1.8 + (progress - 0.5) * 7.0 
-                : (pointer.x * viewport.width * 0.05);
+                ? -1.9 + (progress - 0.5) * 7.5 
+                : (pointer.x * viewport.width * 0.06);
         } else {
             // Mobile centered with gentle breathing motion
-            targetX = (pointer.x * 0.3);
+            targetX = pointer.x * 0.35;
         }
 
-        const targetY = (isMobile ? -0.2 : 0) + (progress < 0.25 ? Math.sin(time * 1.2) * 0.15 : Math.sin(time * 1.5) * 0.2) + (pointer.y * 0.1);
-        const targetScale = (isMobile ? 0.85 : 1.1) + Math.sin(progress * Math.PI) * 0.2;
+        const targetY = (isMobile ? -0.15 : 0) + (progress < 0.25 ? Math.sin(time * 1.2) * 0.15 : Math.sin(time * 1.5) * 0.2) + (pointer.y * 0.12);
+        const targetScale = (isMobile ? 0.9 : 1.15) + Math.sin(progress * Math.PI) * 0.25;
 
         meshRef.current.position.x = THREE.MathUtils.lerp(meshRef.current.position.x, targetX, 0.06);
         meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, targetY, 0.06);
         meshRef.current.scale.setScalar(THREE.MathUtils.lerp(meshRef.current.scale.x, targetScale, 0.06));
 
         // Smooth rotation with pointer reaction
-        meshRef.current.rotation.x = time * 0.2 + progress * Math.PI * 1.5 + (pointer.y * 0.4);
-        meshRef.current.rotation.y = time * 0.28 + progress * Math.PI * 2 + (pointer.x * 0.4);
-        meshRef.current.rotation.z = Math.sin(time * 0.15) * 0.25;
+        meshRef.current.rotation.x = time * 0.22 + progress * Math.PI * 1.6 + (pointer.y * 0.45);
+        meshRef.current.rotation.y = time * 0.3 + progress * Math.PI * 2.2 + (pointer.x * 0.45);
+        meshRef.current.rotation.z = Math.sin(time * 0.18) * 0.3;
 
-        if (ringRef.current) {
-            ringRef.current.rotation.x = -time * 0.25 + progress * Math.PI * 2;
-            ringRef.current.rotation.y = time * 0.35;
-            ringRef.current.position.x = meshRef.current.position.x;
-            ringRef.current.position.y = meshRef.current.position.y;
-            ringRef.current.scale.setScalar(meshRef.current.scale.x * 1.15);
+        if (ringGoldRef.current) {
+            ringGoldRef.current.rotation.x = -time * 0.28 + progress * Math.PI * 2;
+            ringGoldRef.current.rotation.y = time * 0.38;
+            ringGoldRef.current.position.x = meshRef.current.position.x;
+            ringGoldRef.current.position.y = meshRef.current.position.y;
+            ringGoldRef.current.scale.setScalar(meshRef.current.scale.x * 1.2);
+        }
+
+        if (ringTealRef.current) {
+            ringTealRef.current.rotation.x = time * 0.32;
+            ringTealRef.current.rotation.z = -time * 0.25 + progress * Math.PI * 1.5;
+            ringTealRef.current.position.x = meshRef.current.position.x;
+            ringTealRef.current.position.y = meshRef.current.position.y;
+            ringTealRef.current.scale.setScalar(meshRef.current.scale.x * 1.35);
         }
 
         if (innerCoreRef.current) {
-            innerCoreRef.current.rotation.x = -time * 0.5;
-            innerCoreRef.current.rotation.y = -time * 0.6;
+            innerCoreRef.current.rotation.x = -time * 0.6;
+            innerCoreRef.current.rotation.y = -time * 0.7;
             innerCoreRef.current.position.x = meshRef.current.position.x;
             innerCoreRef.current.position.y = meshRef.current.position.y;
         }
@@ -142,49 +152,63 @@ const ScrollSculpture: React.FC<{ progress: number; theme?: 'light' | 'dark' }> 
 
     return (
         <group>
-            {/* Outer Quantum Torus Ring */}
-            <mesh ref={ringRef}>
-                <torusGeometry args={[isMobile ? 1.8 : 2.2, 0.025, 16, 64]} />
+            {/* Outer Liquid Gold Torus Ring */}
+            <mesh ref={ringGoldRef}>
+                <torusGeometry args={[isMobile ? 1.7 : 2.1, 0.02, 16, 64]} />
                 <meshStandardMaterial
-                    color={progress > 0.5 ? '#00A896' : (theme === 'dark' ? '#2B6AFF' : '#0284c7')}
-                    emissive={progress > 0.5 ? '#00A896' : (theme === 'dark' ? '#2B6AFF' : '#0284c7')}
-                    emissiveIntensity={theme === 'dark' ? 0.7 : 0.4}
+                    color="#C9A96E"
+                    emissive="#C9A96E"
+                    emissiveIntensity={theme === 'dark' ? 0.75 : 0.45}
+                    roughness={0.2}
+                    metalness={0.9}
                     wireframe
                 />
             </mesh>
 
-            {/* Glowing Inner Core */}
+            {/* Inner Emerald Quantum Ring */}
+            <mesh ref={ringTealRef}>
+                <torusGeometry args={[isMobile ? 1.9 : 2.4, 0.015, 16, 64]} />
+                <meshStandardMaterial
+                    color="#00A896"
+                    emissive="#00A896"
+                    emissiveIntensity={theme === 'dark' ? 0.8 : 0.5}
+                    wireframe
+                />
+            </mesh>
+
+            {/* Glowing Inner Core (Octahedron Gold & Teal Core) */}
             <mesh ref={innerCoreRef}>
-                <octahedronGeometry args={[isMobile ? 0.4 : 0.5, 0]} />
+                <octahedronGeometry args={[isMobile ? 0.45 : 0.55, 0]} />
                 <meshStandardMaterial
                     color={theme === 'dark' ? '#00A896' : '#0d9488'}
                     emissive={theme === 'dark' ? '#00A896' : '#0d9488'}
-                    emissiveIntensity={1.2}
-                    roughness={0.2}
+                    emissiveIntensity={1.4}
+                    roughness={0.15}
+                    metalness={0.8}
                 />
             </mesh>
 
             {/* Main Polyhedron / High-FPS Obsidian Glass Sculpture */}
-            <Float speed={1.8} rotationIntensity={0.6} floatIntensity={0.8}>
+            <Float speed={2.0} rotationIntensity={0.6} floatIntensity={0.85}>
                 <mesh ref={meshRef}>
-                    {geoStage === 0 && <icosahedronGeometry args={[1.3, 1]} />}
-                    {geoStage === 1 && <torusKnotGeometry args={[0.9, 0.3, 64, 16]} />}
-                    {geoStage === 2 && <dodecahedronGeometry args={[1.2, 0]} />}
-                    {geoStage >= 3 && <octahedronGeometry args={[1.3, 1]} />}
+                    {geoStage === 0 && <icosahedronGeometry args={[1.35, 1]} />}
+                    {geoStage === 1 && <torusKnotGeometry args={[0.95, 0.32, 64, 16]} />}
+                    {geoStage === 2 && <dodecahedronGeometry args={[1.25, 0]} />}
+                    {geoStage >= 3 && <octahedronGeometry args={[1.35, 1]} />}
 
                     <meshPhysicalMaterial
-                        color={theme === 'dark' ? (progress > 0.6 ? '#cffafe' : '#e0f2fe') : '#ffffff'}
+                        color={theme === 'dark' ? (progress > 0.5 ? '#e0f2fe' : '#fef08a') : '#ffffff'}
                         transmission={0.88}
-                        opacity={0.9}
+                        opacity={0.92}
                         transparent
-                        roughness={0.12}
-                        metalness={0.15}
+                        roughness={0.1}
+                        metalness={0.2}
                         clearcoat={1.0}
-                        clearcoatRoughness={0.1}
+                        clearcoatRoughness={0.08}
                         reflectivity={0.95}
-                        ior={1.5}
+                        ior={1.55}
                         attenuationColor={theme === 'dark' ? '#00A896' : '#0284c7'}
-                        attenuationDistance={1.2}
+                        attenuationDistance={1.3}
                     />
                 </mesh>
             </Float>
@@ -209,10 +233,10 @@ export const Scroll3DCanvas: React.FC<Scroll3DCanvasProps> = ({
                     depth: true
                 }}
             >
-                <ambientLight intensity={theme === 'dark' ? 0.9 : 1.4} />
-                <directionalLight position={[8, 8, 4]} intensity={1.8} color={theme === 'dark' ? '#2B6AFF' : '#0284c7'} />
-                <directionalLight position={[-8, -8, -4]} intensity={1.4} color="#00A896" />
-                <pointLight position={[0, 0, 3]} intensity={1.6} color={theme === 'dark' ? '#38bdf8' : '#0284c7'} />
+                <ambientLight intensity={theme === 'dark' ? 1.0 : 1.5} />
+                <directionalLight position={[8, 8, 4]} intensity={2.0} color={theme === 'dark' ? '#C9A96E' : '#0284c7'} />
+                <directionalLight position={[-8, -8, -4]} intensity={1.6} color="#00A896" />
+                <pointLight position={[0, 0, 3]} intensity={1.8} color={theme === 'dark' ? '#38bdf8' : '#0284c7'} />
 
                 <ParticlesField progress={scrollProgress} theme={theme} />
 

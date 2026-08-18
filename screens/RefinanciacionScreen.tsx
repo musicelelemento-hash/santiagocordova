@@ -44,8 +44,18 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
 
     const [planes, setPlanes] = useState<PlanRefinanciacion[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<'Todos' | 'Vigente' | 'Cancelado' | 'En Mora'>('Todos');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [selectedPlanDetail, setSelectedPlanDetail] = useState<PlanRefinanciacion | null>(null);
+
+    const filteredPlanes = useMemo(() => {
+        return planes.filter(p => {
+            const matchesStatus = statusFilter === 'Todos' || p.estado === statusFilter;
+            const q = searchTerm.toLowerCase().trim();
+            const matchesSearch = !q || p.nombreCliente.toLowerCase().includes(q) || p.rucCliente.includes(q) || p.codigoPlan.toLowerCase().includes(q);
+            return matchesStatus && matchesSearch;
+        });
+    }, [planes, statusFilter, searchTerm]);
 
     // Form States
     const [selectedClientId, setSelectedClientId] = useState('');
@@ -207,6 +217,47 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
                 </div>
             </div>
 
+            {/* ── METRICAS Y FILTROS ── */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 font-mono">
+                {/* Search Bar */}
+                <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Buscar por cliente, RUC o código de plan..."
+                        className="w-full pl-11 pr-4 py-3 bg-[#020b14] border border-white/10 rounded-2xl text-xs font-mono text-white placeholder-slate-500 outline-none focus:border-emerald-500/50 transition-all"
+                    />
+                </div>
+
+                {/* Filter Pills */}
+                <div className="inline-flex p-1.5 bg-[#0b1326] rounded-2xl border border-white/10 gap-1 shrink-0 overflow-x-auto no-scrollbar">
+                    {(['Todos', 'Vigente', 'Cancelado', 'En Mora'] as const).map((filter) => {
+                        const count = filter === 'Todos' ? planes.length : planes.filter(p => p.estado === filter).length;
+                        const isSelected = statusFilter === filter;
+                        return (
+                            <button
+                                key={filter}
+                                onClick={() => setStatusFilter(filter)}
+                                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap cursor-pointer ${
+                                    isSelected
+                                        ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20'
+                                        : 'text-slate-400 hover:text-white'
+                                }`}
+                            >
+                                <span>{filter === 'Todos' ? 'Todos los Planes' : filter}</span>
+                                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                                    isSelected ? 'bg-white/20 text-white' : 'bg-white/5 text-slate-400'
+                                }`}>
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
             {/* ── TABLA DE PLANES ── */}
             <div className="bg-slate-900/60 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-6 md:p-8 space-y-6">
                 <div className="overflow-x-auto rounded-3xl border border-white/5 bg-slate-950/40">
@@ -222,7 +273,14 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {planes.map((p) => (
+                            {filteredPlanes.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="py-12 text-center text-slate-400 font-mono text-xs">
+                                        No se encontraron planes de refinanciación con los filtros seleccionados.
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredPlanes.map((p) => (
                                 <tr key={p.id} className="hover:bg-white/[0.01] transition-colors">
                                     <td className="py-4 px-5 font-mono font-bold text-teal-400">{p.codigoPlan}</td>
                                     <td className="py-4 px-5">
@@ -252,7 +310,7 @@ export const RefinanciacionScreen: React.FC<RefinanciacionScreenProps> = ({ navi
                                         </button>
                                     </td>
                                 </tr>
-                            ))}
+                            )))}
                         </tbody>
                     </table>
                 </div>

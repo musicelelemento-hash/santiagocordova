@@ -148,6 +148,28 @@ const TimelineItem = ({ ob }: { ob: any }) => {
 const CredentialCard = ({ label, icon: Icon, value, hint }: { label: string; icon: any; value?: string; hint?: string }) => {
     const [visible, setVisible] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [countdown, setCountdown] = useState<number | null>(null);
+
+    React.useEffect(() => {
+        let timer: NodeJS.Timeout;
+        let interval: NodeJS.Timeout;
+        if (visible) {
+            setCountdown(12);
+            interval = setInterval(() => {
+                setCountdown(prev => (prev && prev > 1 ? prev - 1 : null));
+            }, 1000);
+            timer = setTimeout(() => {
+                setVisible(false);
+                setCountdown(null);
+            }, 12000);
+        } else {
+            setCountdown(null);
+        }
+        return () => {
+            clearTimeout(timer);
+            clearInterval(interval);
+        };
+    }, [visible]);
 
     const handleCopy = () => {
         if (value) {
@@ -163,7 +185,14 @@ const CredentialCard = ({ label, icon: Icon, value, hint }: { label: string; ico
                 <Icon size={20} />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+                <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+                    {countdown !== null && (
+                        <span className="text-[8px] font-bold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse">
+                            Auto-cierre: {countdown}s
+                        </span>
+                    )}
+                </div>
                 {value ? (
                     <p className="font-mono text-sm font-bold text-white truncate">
                         {visible ? value : '••••••••••••'}
@@ -177,7 +206,7 @@ const CredentialCard = ({ label, icon: Icon, value, hint }: { label: string; ico
                     <button
                         onClick={() => setVisible(v => !v)}
                         className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 flex items-center justify-center transition-all cursor-pointer border border-white/5"
-                        title="Mostrar / Ocultar"
+                        title={visible ? "Ocultar clave" : "Mostrar clave (12s)"}
                     >
                         {visible ? <LucideIcons.EyeOff size={14} /> : <LucideIcons.Eye size={14} />}
                     </button>

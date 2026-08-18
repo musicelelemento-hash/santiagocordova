@@ -821,13 +821,48 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                 </div>
                             </div>
 
-                            {/* ── ACTIONS ── */}
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto font-mono">
+                            {/* ── ACTIONS & QUICK DOCK ── */}
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto font-mono flex-wrap">
+                                <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-2xl border border-white/10 overflow-x-auto hide-scrollbar">
+                                    <button
+                                        onClick={() => navigate('clients')}
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap cursor-pointer"
+                                        title="Ir al Directorio de Clientes"
+                                    >
+                                        <Users size={14} className="text-[#00A896]" />
+                                        <span>Clientes</span>
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('cobranza')}
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap cursor-pointer"
+                                        title="Ir a Cartera y Cobranza"
+                                    >
+                                        <Wallet size={14} className="text-rose-400" />
+                                        <span>Cobranza</span>
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('firmas')}
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap cursor-pointer"
+                                        title="Ir al Gestor de Firmas Electrónicas"
+                                    >
+                                        <KeyRound size={14} className="text-[#C9A96E]" />
+                                        <span>Firmas .P12</span>
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('facturacion_sri')}
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap cursor-pointer"
+                                        title="Ir a Facturación Electrónica SRI"
+                                    >
+                                        <Zap size={14} className="text-[#00A896]" />
+                                        <span>Facturación SRI</span>
+                                    </button>
+                                </div>
+
                                 <div className="flex items-center gap-2 shrink-0">
                                     <input type="file" multiple accept=".pdf" ref={fileInputRef} onChange={handleBulkUpload} className="hidden" />
                                     <button
                                         onClick={() => setShowIntelligencePanels(p => !p)}
-                                        className={`p-3.5 rounded-2xl border transition-all duration-300 flex items-center justify-center shadow-sm shrink-0 cursor-pointer ${
+                                        className={`p-3 rounded-2xl border transition-all duration-300 flex items-center justify-center shadow-sm shrink-0 cursor-pointer ${
                                             showIntelligencePanels 
                                                 ? 'bg-[#00A896]/15 border-[#00A896]/30 text-[#00A896]' 
                                                 : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
@@ -839,14 +874,14 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                     <button
                                         onClick={() => setShowUploader(p => !p)}
                                         disabled={isProcessing}
-                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider hover:scale-[1.02] transition-all duration-300 shadow-xl disabled:opacity-50 group font-mono border border-white/10 cursor-pointer ${
+                                        className={`flex-1 sm:flex-none flex items-center justify-center gap-2.5 px-5 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider hover:scale-[1.02] transition-all duration-300 shadow-xl disabled:opacity-50 group font-mono border border-white/10 cursor-pointer ${
                                             showUploader 
                                                 ? 'bg-[#00A896] text-white shadow-[#00A896]/30' 
                                                 : 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-lg shadow-[#00A896]/20'
                                         }`}
                                     >
-                                        {isProcessing ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} className="group-hover:-translate-y-0.5 transition-transform" />}
-                                        <span className="hidden sm:inline">SUBIR PDFs / RUCs</span>
+                                        {isProcessing ? <Loader2 size={15} className="animate-spin" /> : <UploadCloud size={15} className="group-hover:-translate-y-0.5 transition-transform" />}
+                                        <span className="hidden sm:inline">SUBIR PDFs</span>
                                     </button>
                                 </div>
                             </div>

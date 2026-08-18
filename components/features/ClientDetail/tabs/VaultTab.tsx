@@ -331,6 +331,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     label="Clave SRI" 
                     isPassword 
                     value={editedClient.sriPassword} 
+                    ruc={editedClient.ruc}
                     isEditing={isVaultEditing || isEditing}
                     onChange={(val) => setEditedClient({ ...editedClient, sriPassword: val })}
                 />
@@ -340,6 +341,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
                     label="Clave Firma" 
                     isPassword 
                     value={editedClient.electronicSignaturePassword} 
+                    ruc={editedClient.ruc}
                     isEditing={isVaultEditing || isEditing}
                     onChange={(val) => setEditedClient({ ...editedClient, electronicSignaturePassword: val })}
                 />

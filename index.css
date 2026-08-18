@@ -1083,3 +1083,95 @@ h1, h2, h3, h4 {
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ── LUXURY PUBLIC LANDING & OBSIDIAN GOLD TOKENS ── */
+.text-gold-gradient {
+    background: linear-gradient(135deg, #F2D79E 0%, #C9A96E 50%, #8B6914 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.text-teal-gradient {
+    background: linear-gradient(135deg, #00A896 0%, #028090 50%, #2B6AFF 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.border-gold-glow {
+    border-color: rgba(201, 169, 110, 0.35);
+    box-shadow: 0 0 25px rgba(201, 169, 110, 0.15);
+}
+
+.border-teal-glow {
+    border-color: rgba(0, 168, 150, 0.35);
+    box-shadow: 0 0 25px rgba(0, 168, 150, 0.15);
+}
+
+@keyframes scanLine {
+    0% { transform: translateY(-100%); opacity: 0; }
+    50% { opacity: 0.8; }
+    100% { transform: translateY(1000%); opacity: 0; }
+}
+
+.animate-scan {
+    animation: scanLine 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+.animate-pulse-glow {
+    animation: pulseGlow 4s ease-in-out infinite;
+}
+
+.tactical-grid {
+    background-size: 40px 40px;
+    background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.light .tactical-grid {
+    background-image: 
+        linear-gradient(to right, rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+}
+
+.custom-cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 32px;
+    height: 32px;
+    border: 1.5px solid rgba(0, 168, 150, 0.6);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transition: width 0.2s, height 0.2s, border-color 0.2s, background-color 0.2s;
+    transform: translate3d(-50%, -50%, 0);
+}
+
+.custom-cursor-dot {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 6px;
+    background: #00A896;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10000;
+    transform: translate3d(-50%, -50%, 0);
+}
+
+.cursor-hovering {
+    width: 50px;
+    height: 50px;
+    border-color: rgba(201, 169, 110, 0.8);
+    background-color: rgba(0, 168, 150, 0.08);
+}
+
+

@@ -3,7 +3,9 @@ import {
     Search, Command, Globe, Users, 
     LayoutDashboard, Settings, LogOut, 
     ChevronRight, Zap, RefreshCw, PlusCircle,
-    Copy, User, FileText
+    Copy, User, FileText, KeyRound, Wallet,
+    Calendar, TrendingUp, ShieldCheck, FileSpreadsheet,
+    DollarSign, Briefcase, FileCheck, Layers, Award
 } from 'lucide-react';
 import { Client } from '../types';
 
@@ -26,8 +28,9 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     const placeholders = [
         "Buscar cliente por nombre o RUC...",
-        "Escribe 'Dashboard' para ver resumen...",
-        "Escribe 'Clientes' para gestionar lista...",
+        "Escribe 'Dashboard' o 'Inicio'...",
+        "Escribe 'Firmas' o 'Facturación'...",
+        "Escribe 'Cobranza' o 'Reportes'...",
         "Presiona 'Enter' para seleccionar...",
         "Pulsa 'Esc' para cerrar comando..."
     ];
@@ -44,45 +47,54 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         }
     }, [isOpen]);
 
+    const ALL_NAV_ITEMS = [
+        { id: 'nav-dash', type: 'nav', label: 'Dashboard Principal', screen: 'home', icon: <LayoutDashboard size={18} className="text-[#00A896]" /> },
+        { id: 'nav-clients', type: 'nav', label: 'Expedientes de Clientes', screen: 'clients', icon: <Users size={18} className="text-[#2B6AFF]" /> },
+        { id: 'nav-firmas', type: 'nav', label: 'Gestor de Firmas .P12', screen: 'firmas', icon: <KeyRound size={18} className="text-[#C9A96E]" /> },
+        { id: 'nav-facturacion', type: 'nav', label: 'Facturación SRI & Nueva Luz 3.0', screen: 'sri_facturacion', icon: <Zap size={18} className="text-[#00A896]" /> },
+        { id: 'nav-cobranza', type: 'nav', label: 'Cartera y Cobranzas', screen: 'cobranza', icon: <Wallet size={18} className="text-rose-400" /> },
+        { id: 'nav-tasks', type: 'nav', label: 'Tareas & Órdenes Tácticas', screen: 'tasks', icon: <Briefcase size={18} className="text-amber-400" /> },
+        { id: 'nav-reports', type: 'nav', label: 'Reportes & Analítica IA', screen: 'reports', icon: <TrendingUp size={18} className="text-teal-400" /> },
+        { id: 'nav-calendar', type: 'nav', label: 'Calendario Fiscal SRI', screen: 'calendar', icon: <Calendar size={18} className="text-indigo-400" /> },
+        { id: 'nav-facturadores', type: 'nav', label: 'Facturadores Electrónicos', screen: 'facturadores', icon: <FileSpreadsheet size={18} className="text-[#00A896]" /> },
+        { id: 'nav-cotizaciones', type: 'nav', label: 'Cotizaciones de Servicios', screen: 'cotizaciones', icon: <DollarSign size={18} className="text-emerald-400" /> },
+        { id: 'nav-crm', type: 'nav', label: 'Pipeline CRM de Clientes', screen: 'crm_pipeline', icon: <Layers size={18} className="text-[#2B6AFF]" /> },
+        { id: 'nav-audit', type: 'nav', label: 'Registro de Auditoría', screen: 'audit_log', icon: <ShieldCheck size={18} className="text-slate-400" /> },
+        { id: 'nav-settings', type: 'nav', label: 'Configuración del Sistema', screen: 'settings', icon: <Settings size={18} className="text-slate-300" /> },
+        { id: 'nav-services', type: 'nav', label: 'Catálogo de Servicios Web', screen: 'services', icon: <Globe size={18} className="text-[#00A896]" /> },
+    ];
+
     const results = useMemo(() => {
         const normalizedQuery = searchTerm.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
         const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+
         if (!terms.length) {
-            const navs = [
-                { id: 'nav-dash', type: 'nav', label: 'Ver Dashboard', screen: 'dashboard', icon: <LayoutDashboard size={18} /> },
-                { id: 'nav-clients', type: 'nav', label: 'Ver Clientes', screen: 'clients', icon: <Users size={18} /> },
-                { id: 'nav-services', type: 'nav', label: 'Ver Servicios', screen: 'services', icon: <Globe size={18} /> },
-                { id: 'nav-settings', type: 'nav', label: 'Configuración', screen: 'settings', icon: <Settings size={18} /> },
-            ];
+            const navs = ALL_NAV_ITEMS.slice(0, 6);
             const actions = [
-                { id: 'act-new', type: 'action', label: 'Nuevo Cliente', action: 'new_client', icon: <PlusCircle size={18} /> },
-                { id: 'act-sync', type: 'action', label: 'Sincronizar Datos', action: 'sync', icon: <RefreshCw size={18} /> },
+                { id: 'act-new', type: 'action', label: 'Nuevo Cliente', action: 'new_client', icon: <PlusCircle size={18} className="text-[#00A896]" /> },
+                { id: 'act-sync', type: 'action', label: 'Sincronizar Datos SRI', action: 'sync', icon: <RefreshCw size={18} className="text-[#2B6AFF]" /> },
             ];
-            const cls = clients.filter(c => !c.isDeleted && c.isActive).slice(0, 6).map(c => ({
+            const cls = clients.filter(c => !c.isDeleted && c.isActive).slice(0, 5).map(c => ({
                 id: `client-${c.id}`,
                 type: 'client',
                 label: c.name,
-                subLabel: c.ruc,
+                subLabel: `${c.ruc} · ${c.regime || 'General'}`,
                 client: c,
-                icon: <User size={18} />
+                icon: <User size={18} className="text-[#C9A96E]" />
             }));
             return [...navs, ...actions, ...cls];
         }
 
-        const navigationResults = [
-            { id: 'nav-dash', type: 'nav', label: 'Ver Dashboard', screen: 'dashboard', icon: <LayoutDashboard size={18} /> },
-            { id: 'nav-clients', type: 'nav', label: 'Ver Clientes', screen: 'clients', icon: <Users size={18} /> },
-            { id: 'nav-services', type: 'nav', label: 'Ver Servicios', screen: 'services', icon: <Globe size={18} /> },
-            { id: 'nav-settings', type: 'nav', label: 'Configuración', screen: 'settings', icon: <Settings size={18} /> },
-        ].filter(item => {
+        const navigationResults = ALL_NAV_ITEMS.filter(item => {
             const labelNorm = item.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-            return terms.every(t => labelNorm.includes(t));
+            const screenNorm = item.screen.toLowerCase();
+            return terms.every(t => labelNorm.includes(t) || screenNorm.includes(t));
         });
 
         const actionResults = [
-            { id: 'act-new', type: 'action', label: 'Nuevo Cliente', action: 'new_client', icon: <PlusCircle size={18} /> },
-            { id: 'act-sync', type: 'action', label: 'Sincronizar Datos', action: 'sync', icon: <RefreshCw size={18} /> },
-            { id: 'act-logout', type: 'action', label: 'Cerrar Sesión', action: 'logout', icon: <LogOut size={18} /> },
+            { id: 'act-new', type: 'action', label: 'Nuevo Cliente', action: 'new_client', icon: <PlusCircle size={18} className="text-[#00A896]" /> },
+            { id: 'act-sync', type: 'action', label: 'Sincronizar Datos SRI', action: 'sync', icon: <RefreshCw size={18} className="text-[#2B6AFF]" /> },
+            { id: 'act-logout', type: 'action', label: 'Cerrar Sesión', action: 'logout', icon: <LogOut size={18} className="text-rose-400" /> },
         ].filter(item => {
             const labelNorm = item.label.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
             return terms.every(t => labelNorm.includes(t));
@@ -104,7 +116,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                 label: c.name,
                 subLabel: `${c.ruc} · ${c.regime || 'General'}`,
                 client: c,
-                icon: <User size={18} />
+                icon: <User size={18} className="text-[#C9A96E]" />
             }));
 
         return [...navigationResults, ...actionResults, ...clientResults];
@@ -118,27 +130,28 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setSelectedIndex(prev => (prev + 1) % results.length);
+            setSelectedIndex(prev => (prev < results.length - 1 ? prev + 1 : 0));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setSelectedIndex(prev => (prev - 1 + results.length) % results.length);
+            setSelectedIndex(prev => (prev > 0 ? prev - 1 : results.length - 1));
         } else if (e.key === 'Enter') {
-            const selected = results[selectedIndex];
-            if (selected) {
-                handleSelection(selected);
+            e.preventDefault();
+            if (results[selectedIndex]) {
+                handleSelect(results[selectedIndex]);
             }
         } else if (e.key === 'Escape') {
             onClose();
         }
     };
 
-    const handleSelection = (item: any) => {
+    const handleSelect = (item: any) => {
         if (item.type === 'nav') {
             onNavigate(item.screen);
         } else if (item.type === 'action') {
             onAction(item.action);
         } else if (item.type === 'client') {
-            onAction('view_client', item.client);
+            onNavigate('clients');
+            onAction('view_client', item.client.id);
         }
         onClose();
     };
@@ -146,111 +159,85 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div 
-            className="fixed inset-0 z-[9999] flex items-start justify-center pt-[15vh] px-4 animate-in fade-in duration-500"
-            style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
-            onClick={onClose}
-        >
-            <div 
-                className="w-full max-w-2xl bg-surface-lowest rounded-[2.5rem] overflow-hidden shadow-architect border border-surface-low animate-in slide-in-from-top-6 duration-700 hover:scale-[1.01] transition-transform"
-                onClick={e => e.stopPropagation()}
-                onKeyDown={handleKeyDown}
-            >
-                {/* Search Header */}
-                <div className="flex items-center p-8 gap-5 border-b border-surface-low bg-surface relative overflow-hidden">
-                    {/* Architectural Accent */}
-                    <div className="absolute top-0 left-0 w-2 h-full bg-primary/20"></div>
-                    
-                    <div className="w-12 h-12 rounded-2xl bg-primary/5 flex items-center justify-center text-primary shadow-architect-low">
-                        <Search size={22} className="animate-pulse" />
-                    </div>
-                    
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 px-4">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity" onClick={onClose} />
+
+            <div className="relative w-full max-w-2xl bg-[#051424]/95 border border-white/15 border-t-white/30 rounded-[2rem] shadow-[0_25px_70px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col backdrop-blur-2xl font-mono text-white animate-in zoom-in-95 duration-200">
+                {/* Search Bar Input */}
+                <div className="flex items-center px-6 py-4 border-b border-white/10 relative">
+                    <Search className="text-[#00A896] mr-4 shrink-0" size={20} />
                     <input
                         ref={inputRef}
                         type="text"
                         value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         placeholder={placeholders[placeholderIndex]}
-                        className="flex-1 bg-transparent border-none outline-none text-on-surface text-2xl font-extrabold placeholder:text-on-surface-variant/20 tracking-tight font-premium"
+                        className="w-full bg-transparent text-sm font-mono text-white placeholder-slate-500 focus:outline-none uppercase tracking-wider"
                     />
-                    
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-low text-on-surface-variant/40 text-[10px] font-black uppercase tracking-[0.25em] border border-surface-low font-premium">
-                        <Command size={12} />
-                        <span>K</span>
-                    </div>
-                </div>
-
-                {/* Results List */}
-                <div 
-                    ref={listRef}
-                    className="max-h-[55vh] overflow-y-auto p-4 scroll-smooth no-scrollbar space-y-2"
-                >
-                    {results.length > 0 ? (
-                        <div className="space-y-2">
-                            {results.map((item, idx) => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => handleSelection(item)}
-                                    onMouseEnter={() => setSelectedIndex(idx)}
-                                    className={`
-                                        w-full flex items-center gap-5 p-5 rounded-[1.5rem] transition-all duration-500 text-left group/item
-                                        ${idx === selectedIndex ? 'bg-surface-low shadow-architect-low scale-[1.02]' : 'hover:bg-surface-low/50'}
-                                    `}
-                                >
-                                    <div className={`
-                                        w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-700
-                                        ${idx === selectedIndex ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-110' : 'bg-surface text-on-surface-variant/40 group-hover/item:text-primary/60'}
-                                    `}>
-                                        {item.icon}
-                                    </div>
-                                    <div className="flex-1 overflow-hidden">
-                                        <div className={`text-lg font-extrabold transition-colors tracking-tight uppercase font-premium ${idx === selectedIndex ? 'text-on-surface' : 'text-on-surface-variant/60 group-hover/item:text-on-surface'}`}>
-                                            {item.label}
-                                        </div>
-                                        {(item as any).subLabel && (
-                                            <div className={`text-[10px] font-black uppercase tracking-[0.15em] mt-1 font-premium transition-colors ${idx === selectedIndex ? 'text-on-surface-variant' : 'text-on-surface-variant/30'}`}>
-                                                {(item as any).subLabel}
-                                            </div>
-                                        )}
-                                    </div>
-                                    {idx === selectedIndex && (
-                                        <div className="flex items-center gap-3 text-primary animate-in fade-in slide-in-from-right-4 duration-500">
-                                            <span className="text-[10px] font-black uppercase tracking-[0.25em] font-premium">EJECUTAR</span>
-                                            <ChevronRight size={16} />
-                                        </div>
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="p-20 text-center space-y-6 group/empty">
-                            <div className="w-20 h-20 bg-surface rounded-full flex items-center justify-center mx-auto shadow-inner group-hover/empty:scale-110 transition-transform duration-700">
-                                <Search className="text-on-surface-variant/10" size={40} />
-                            </div>
-                            <div className="text-on-surface-variant/40 text-[10px] uppercase font-black tracking-[0.3em] font-premium">Sin coincidencias para el protocolo actual</div>
-                        </div>
+                    {searchTerm && (
+                        <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-white p-1">
+                            <span className="text-xs">✕</span>
+                        </button>
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="p-6 bg-surface border-t border-surface-low flex items-center justify-between text-[9px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 font-premium">
-                    <div className="flex gap-8">
-                        <span className="flex items-center gap-3 group/nav">
-                            <span className="bg-surface-low px-2 py-1 rounded border border-surface-low text-on-surface shadow-sm font-premium">↑↓</span> 
-                            <span className="group-hover/nav:text-primary transition-colors">NAVEGAR</span>
-                        </span>
-                        <span className="flex items-center gap-3 group/sel">
-                            <span className="bg-surface-low px-2 py-1 rounded border border-surface-low text-on-surface shadow-sm font-premium">↵</span> 
-                            <span className="group-hover/sel:text-primary transition-colors">SELECCIONAR</span>
-                        </span>
+                {/* Results List */}
+                <div ref={listRef} className="max-h-96 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                    {results.length === 0 ? (
+                        <div className="py-12 text-center text-slate-500">
+                            <Command size={36} className="mx-auto mb-3 opacity-30 text-[#00A896]" />
+                            <p className="text-xs font-bold uppercase tracking-wider">No se encontraron resultados para "{searchTerm}"</p>
+                        </div>
+                    ) : (
+                        results.map((item, index) => {
+                            const isSelected = selectedIndex === index;
+                            return (
+                                <div
+                                    key={item.id}
+                                    onClick={() => handleSelect(item)}
+                                    onMouseEnter={() => setSelectedIndex(index)}
+                                    className={`flex items-center justify-between px-4 py-3 rounded-2xl cursor-pointer transition-all duration-150 ${
+                                        isSelected 
+                                            ? 'bg-gradient-to-r from-[#00A896]/25 to-[#2B6AFF]/15 text-white border border-[#00A896]/40 shadow-lg' 
+                                            : 'hover:bg-white/5 text-slate-300 border border-transparent'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-3.5 min-w-0">
+                                        <div className={`p-2 rounded-xl border ${
+                                            isSelected ? 'bg-[#00A896]/20 border-[#00A896]/40' : 'bg-white/5 border-white/10'
+                                        }`}>
+                                            {item.icon}
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-xs font-bold uppercase tracking-wider truncate text-white">{item.label}</span>
+                                            {item.subLabel && (
+                                                <span className="text-[10px] text-slate-400 font-mono truncate">{item.subLabel}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400">
+                                            {item.type === 'nav' ? 'Módulo' : item.type === 'action' ? 'Acción' : 'Cliente'}
+                                        </span>
+                                        <ChevronRight size={14} className={isSelected ? 'text-[#00A896]' : 'text-slate-600'} />
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+
+                {/* Footer Hotkeys Guide */}
+                <div className="px-6 py-3 border-t border-white/10 bg-[#020b14]/80 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                    <div className="flex items-center gap-4">
+                        <span>↑↓ Navegar</span>
+                        <span>↵ Seleccionar</span>
+                        <span>ESC Cerrar</span>
                     </div>
-                    <div className="flex items-center gap-3 opacity-60">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-                        CENTRO DE CONTROL ESTRATÉGICO
-                    </div>
+                    <span className="text-[#00A896] font-bold">Santiago Córdova PRO</span>
                 </div>
             </div>
         </div>
     );
 };
-

@@ -439,12 +439,20 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
                                     <span className="ml-1.5">Declarar SRI</span>
                                 </button>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); onUploadReceipt?.(client, currentPeriod); }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (activeDecl?.proof_file && onPreview) {
+                                            onPreview(client, activeDecl);
+                                        } else {
+                                            onUploadReceipt?.(client, currentPeriod);
+                                        }
+                                    }}
                                     className={`flex items-center justify-center h-10 w-12 sm:w-auto sm:px-4 rounded-xl border transition-all font-mono font-bold text-[10px] uppercase tracking-wider ${
                                         activeDecl?.proof_file 
-                                        ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 hover:bg-[#00A896]/25' 
+                                        ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 hover:bg-[#00A896]/25 shadow-sm' 
                                         : 'bg-slate-100 dark:bg-white/5 text-[#2B6AFF] dark:text-[#bfc6e0] border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10'
-                                    } active:scale-95`}
+                                    } active:scale-95 cursor-pointer`}
+                                    title={activeDecl?.proof_file ? "Visualizar comprobante PDF de la declaración" : "Subir comprobante PDF"}
                                 >
                                     {activeDecl?.proof_file ? <LucideIcons.FileCheck size={16} /> : <LucideIcons.UploadCloud size={16} />}
                                     <span className="hidden sm:inline ml-1.5">{activeDecl?.proof_file ? 'VER COMP.' : 'SUBIR PDF'}</span>

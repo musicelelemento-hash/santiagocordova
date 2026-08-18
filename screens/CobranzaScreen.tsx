@@ -59,6 +59,15 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState<'receivable' | 'projected' | 'collected'>('receivable');
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+        return (localStorage.getItem('sc_cobranza_view_mode') as 'grid' | 'list') || 'grid';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('sc_cobranza_view_mode', viewMode);
+    }, [viewMode]);
+
+    const [moraFilter, setMoraFilter] = useState<'all' | 'al_dia' | 'atrasado' | 'mora_critica'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [isRecalculating, setIsRecalculating] = useState(false);
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -500,6 +509,25 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         return { receivable, projected, collected };
     }, [clients, serviceFees, isRecalculating]);
 
+    const moraCounts = useMemo(() => {
+        const baseList = activeTab === 'receivable' ? financialData.receivable
+            : activeTab === 'projected' ? financialData.projected
+            : financialData.collected;
+
+        let filtered = baseList;
+        if (searchTerm) {
+            const lower = searchTerm.toLowerCase();
+            filtered = filtered.filter(i => i.clientName.toLowerCase().includes(lower) || i.ruc.includes(lower) || i.period.toLowerCase().includes(lower));
+        }
+
+        return {
+            all: filtered.length,
+            al_dia: filtered.filter(i => (i.daysDiff || 0) <= 0).length,
+            atrasado: filtered.filter(i => (i.daysDiff || 0) > 0 && (i.daysDiff || 0) <= 30).length,
+            mora_critica: filtered.filter(i => (i.daysDiff || 0) > 30).length
+        };
+    }, [financialData, activeTab, searchTerm]);
+
     const currentList = useMemo(() => {
         let list = activeTab === 'receivable' ? [...financialData.receivable]
             : activeTab === 'projected' ? [...financialData.projected]
@@ -507,7 +535,17 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 
         if (searchTerm) {
             const lower = searchTerm.toLowerCase();
-            list = list.filter(i => i.clientName.toLowerCase().includes(lower) || i.ruc.includes(lower));
+            list = list.filter(i => i.clientName.toLowerCase().includes(lower) || i.ruc.includes(lower) || i.period.toLowerCase().includes(lower));
+        }
+
+        if (moraFilter !== 'all') {
+            list = list.filter(i => {
+                const diff = i.daysDiff || 0;
+                if (moraFilter === 'al_dia') return diff <= 0;
+                if (moraFilter === 'atrasado') return diff > 0 && diff <= 30;
+                if (moraFilter === 'mora_critica') return diff > 30;
+                return true;
+            });
         }
         
         // Auto-Ordenamiento Lógico
@@ -520,7 +558,47 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 return (b.daysDiff || 0) - (a.daysDiff || 0);
             }
         });
-    }, [financialData, activeTab, searchTerm]);
+    }, [financialData, activeTab, searchTerm, moraFilter]);
+
+    const selectedSummary = useMemo(() => {
+        let total = 0;
+        selectedItems.forEach(key => {
+            const item = currentList.find(i => `${i.clientId}-${i.period}` === key);
+            if (item) total += item.amount;
+        });
+        return { count: selectedItems.size, total };
+    }, [selectedItems, currentList]);
+
+    const handleExportCsv = () => {
+        if (currentList.length === 0) {
+            toast.info("No hay datos para exportar en la vista actual.");
+            return;
+        }
+
+        const headers = ["Cliente", "RUC", "Periodo", "Tipo", "Monto", "Estado", "Dias_Mora", "Telefono"];
+        const rows = currentList.map(item => [
+            `"${item.clientName.replace(/"/g, '""')}"`,
+            `"${item.ruc}"`,
+            `"${item.period}"`,
+            `"${item.type}"`,
+            item.amount.toFixed(2),
+            `"${item.status}"`,
+            item.daysDiff ?? 0,
+            `"${(item.phones && item.phones[0]) || ''}"`
+        ]);
+
+        const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Cobranzas_SantiagoCordova_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success("Reporte CSV de cobranzas descargado exitosamente.");
+    };
 
     const chartData = [
         { name: 'Cobrable', value: financialData.receivable.reduce((s, i) => s + i.amount, 0), color: '#ef4444' },
@@ -748,9 +826,37 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     />
                 </div>
                 <div className="flex items-center gap-2 px-1 w-full lg:w-auto">
+                    {/* View Mode Toggle: Grid vs List */}
+                    <div className="flex bg-[#0b1326] p-1 rounded-2xl border border-white/10 shrink-0">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-2.5 rounded-xl transition-all duration-300 flex items-center gap-1 text-[10px] font-bold uppercase cursor-pointer ${
+                                viewMode === 'grid'
+                                    ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Vista Cuadrícula / Matriz"
+                        >
+                            <LucideIcons.LayoutGrid size={15} />
+                            <span className="hidden sm:inline">Cuadrícula</span>
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-2.5 rounded-xl transition-all duration-300 flex items-center gap-1 text-[10px] font-bold uppercase cursor-pointer ${
+                                viewMode === 'list'
+                                    ? 'bg-white/15 text-white shadow-md border border-white/20'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Vista Lista Clásica"
+                        >
+                            <LucideIcons.LayoutList size={15} />
+                            <span className="hidden sm:inline">Lista</span>
+                        </button>
+                    </div>
+
                     <button 
                         onClick={() => setIsRecalculating(p => !p)} 
-                        className="flex-1 lg:flex-none flex items-center justify-center p-3 text-slate-300 hover:text-[#00A896] transition-all hover:rotate-180 duration-700 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 shadow-lg active:scale-90 cursor-pointer"
+                        className="flex items-center justify-center p-3 text-slate-300 hover:text-[#00A896] transition-all hover:rotate-180 duration-700 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 shadow-lg active:scale-90 cursor-pointer"
                         title="Recalcular Cartera de Clientes"
                     >
                         <LucideIcons.RefreshCw size={18} />
@@ -758,146 +864,386 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 </div>
             </div>
 
-            {/* FULL WIDTH FINANCIAL GRID (Stitch Obsidian Luxury) */}
+            {/* FULL WIDTH FINANCIAL GRID / LIST (Stitch Obsidian Luxury) */}
             <div className="w-full font-mono">
                 <div className="rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl overflow-hidden flex flex-col relative group">
-                    <div className="relative z-10 p-5 bg-[#0b1326]/80 border-b border-white/10 flex justify-between items-center backdrop-blur-2xl">
-                        <button 
-                            onClick={() => {
-                                if (selectedItems.size === currentList.length) setSelectedItems(new Set());
-                                else setSelectedItems(new Set(currentList.map(i => `${i.clientId}-${i.period}`)));
-                            }} 
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-all active:scale-95 border border-white/10 cursor-pointer"
-                        >
-                            {selectedItems.size === currentList.length ? <LucideIcons.CheckSquare size={16} className="text-[#00A896]" /> : <LucideIcons.Square size={16} />}
-                            <span>SELECCIONAR TODOS</span>
-                        </button>
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00A896]/15 border border-[#00A896]/30 shadow-inner">
-                            <LucideIcons.Layers size={14} className="text-[#00A896]" />
-                            <span className="text-xs font-bold text-[#00A896] uppercase tracking-wider">{currentList.length} OPERACIONES</span>
+                    <div className="relative z-10 p-4 sm:p-5 bg-[#0b1326]/80 border-b border-white/10 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 backdrop-blur-2xl">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button 
+                                onClick={() => {
+                                    if (selectedItems.size === currentList.length) setSelectedItems(new Set());
+                                    else setSelectedItems(new Set(currentList.map(i => `${i.clientId}-${i.period}`)));
+                                }} 
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-all active:scale-95 border border-white/10 cursor-pointer"
+                            >
+                                {selectedItems.size === currentList.length && currentList.length > 0 ? <LucideIcons.CheckSquare size={16} className="text-[#00A896]" /> : <LucideIcons.Square size={16} />}
+                                <span>SELECCIONAR TODOS</span>
+                            </button>
+
+                            {/* Sub-filtros de Mora */}
+                            <div className="flex items-center p-1 bg-[#020b14] rounded-xl border border-white/5 overflow-x-auto no-scrollbar">
+                                {[
+                                    { id: 'all', label: 'Todos', count: moraCounts.all },
+                                    { id: 'al_dia', label: 'Al Día', count: moraCounts.al_dia, color: 'text-[#00A896]' },
+                                    { id: 'atrasado', label: '1-30d', count: moraCounts.atrasado, color: 'text-amber-400' },
+                                    { id: 'mora_critica', label: '>30d Mora', count: moraCounts.mora_critica, color: 'text-rose-400' }
+                                ].map(filter => (
+                                    <button
+                                        key={filter.id}
+                                        onClick={() => setMoraFilter(filter.id as any)}
+                                        className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                                            moraFilter === filter.id
+                                                ? 'bg-white/15 text-white shadow-sm border border-white/20'
+                                                : 'text-slate-400 hover:text-slate-200'
+                                        }`}
+                                    >
+                                        <span>{filter.label}</span>
+                                        <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${moraFilter === filter.id ? 'bg-[#00A896] text-white' : 'bg-white/5 text-slate-500'}`}>
+                                            {filter.count}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 justify-end">
+                            <button
+                                onClick={handleExportCsv}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs font-bold uppercase tracking-wider border border-white/10 transition-all cursor-pointer shadow-sm active:scale-95"
+                                title="Exportar cartera actual a archivo CSV"
+                            >
+                                <LucideIcons.Download size={14} className="text-[#00A896]" />
+                                <span className="hidden sm:inline">Exportar CSV</span>
+                            </button>
+
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#00A896]/15 border border-[#00A896]/30 shadow-inner">
+                                <LucideIcons.Layers size={14} className="text-[#00A896]" />
+                                <span className="text-xs font-bold text-[#00A896] uppercase tracking-wider">{currentList.length} OPERACIONES</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="relative z-10 divide-y divide-white/5 max-h-[700px] overflow-y-auto no-scrollbar p-2 sm:p-0">
-                        {currentList.length === 0 ? (
-                            <div className="py-28 flex flex-col items-center justify-center text-slate-500">
-                                <div className="p-6 rounded-full bg-white/5 mb-4 border border-white/10">
-                                    <LucideIcons.ShieldCheck size={48} className="text-slate-600" />
+                    {/* VISTA CUADRÍCULA (GRID MATRIX) */}
+                    {viewMode === 'grid' ? (
+                        <div className="relative z-10 p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-h-[850px] overflow-y-auto no-scrollbar">
+                            {currentList.length === 0 ? (
+                                <div className="col-span-full py-24 flex flex-col items-center justify-center text-slate-500 font-mono">
+                                    <div className="p-6 rounded-3xl bg-white/5 mb-4 border border-white/10">
+                                        <LucideIcons.ShieldCheck size={48} className="text-slate-600" />
+                                    </div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">No se encontraron operaciones en este estado</p>
                                 </div>
-                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">No se encontraron operaciones en este estado</p>
-                            </div>
-                        ) : (
-                            currentList.map(item => {
-                                const key = `${item.clientId}-${item.period}`;
-                                const isSelected = selectedItems.has(key);
-                                return (
-                                    <div 
-                                        key={key} 
-                                        onClick={() => activeTab !== 'collected' && (isSelected ? setSelectedItems(s => { const n = new Set(s); n.delete(key); return n; }) : setSelectedItems(s => new Set(s).add(key)))} 
-                                        className={`group relative p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between transition-all duration-300 cursor-pointer overflow-hidden border-b border-white/5 last:border-0
-                                            ${isSelected 
-                                                ? 'bg-[#00A896]/10 shadow-inner' 
-                                                : 'hover:bg-white/5'}`}
-                                    >
-                                        <div className="flex items-center gap-5 relative z-10">
-                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 border
-                                                ${isSelected 
-                                                    ? 'bg-[#00A896] border-[#00A896] shadow-[0_0_15px_rgba(0,168,150,0.5)] text-white' 
-                                                    : 'bg-[#0b1326] border-white/10 text-slate-400 group-hover:border-[#00A896]/40 group-hover:text-[#00A896]'}`}>
-                                                {item.type === 'mensual' ? <LucideIcons.Calendar size={20} /> : <LucideIcons.Zap size={20} />}
-                                            </div>
-                                            <div className="flex-grow min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <p className="font-bold text-sm text-white uppercase tracking-tight truncate max-w-[200px] sm:max-w-none font-display">{item.clientName}</p>
-                                                    {item.daysDiff && item.daysDiff > 0 && (
-                                                        <div className="px-2 py-0.5 rounded-md bg-rose-500/20 border border-rose-500/30">
-                                                            <span className="text-[9px] font-bold text-rose-300 uppercase tracking-widest">ATRASADO</span>
+                            ) : (
+                                currentList.map(item => {
+                                    const key = `${item.clientId}-${item.period}`;
+                                    const isSelected = selectedItems.has(key);
+                                    const sriDoc = findSriInvoice(item.ruc, item.period);
+
+                                    return (
+                                        <div
+                                            key={key}
+                                            onClick={() => activeTab !== 'collected' && (isSelected ? setSelectedItems(s => { const n = new Set(s); n.delete(key); return n; }) : setSelectedItems(s => new Set(s).add(key)))}
+                                            className={`group/card relative rounded-[2rem] p-5 sm:p-6 border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col justify-between backdrop-blur-2xl ${
+                                                isSelected
+                                                    ? 'bg-[#051c2e] border-[#00A896] shadow-[0_0_20px_rgba(0,168,150,0.3)] ring-1 ring-[#00A896]'
+                                                    : 'bg-[#051424]/95 border-white/10 hover:border-white/20 hover:-translate-y-1 shadow-xl'
+                                            }`}
+                                        >
+                                            {/* Top Accent Strip */}
+                                            <div className={`absolute top-0 left-0 right-0 h-1 ${
+                                                item.status === 'Pagada'
+                                                    ? 'bg-gradient-to-r from-[#00A896] to-emerald-400'
+                                                    : item.daysDiff && item.daysDiff > 0
+                                                    ? 'bg-gradient-to-r from-rose-500 to-amber-500'
+                                                    : 'bg-gradient-to-r from-[#2B6AFF] to-teal-400'
+                                            }`} />
+
+                                            {/* Header */}
+                                            <div>
+                                                <div className="flex items-start justify-between gap-3 mb-3">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center font-black text-sm font-display transition-transform group-hover/card:scale-105 border ${
+                                                            isSelected
+                                                                ? 'bg-[#00A896] text-white border-[#00A896] shadow-md shadow-[#00A896]/30'
+                                                                : item.status === 'Pagada'
+                                                                ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30'
+                                                                : item.daysDiff && item.daysDiff > 0
+                                                                ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                                                                : 'bg-[#2B6AFF]/15 text-[#2B6AFF] border-[#2B6AFF]/30'
+                                                        }`}>
+                                                            {item.clientName.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <h4 className="font-bold text-sm text-white uppercase truncate font-display group-hover/card:text-[#00A896] transition-colors" title={item.clientName}>
+                                                                {item.clientName}
+                                                            </h4>
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                <span className="text-[10px] font-bold text-slate-400 font-mono">{item.ruc}</span>
+                                                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5 font-mono">
+                                                                    DÍG {item.ruc[8] || '—'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {activeTab !== 'collected' && (
+                                                        <div className={`w-6 h-6 rounded-xl border flex items-center justify-center transition-all shrink-0 ${
+                                                            isSelected
+                                                                ? 'bg-[#00A896] border-[#00A896] text-white shadow-md shadow-[#00A896]/40'
+                                                                : 'bg-white/5 border-white/10 text-transparent hover:border-white/30'
+                                                        }`}>
+                                                            <LucideIcons.Check size={12} strokeWidth={3} />
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-xs">
-                                                    <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-white/5 border border-white/5">
-                                                        <LucideIcons.Activity size={10} className="text-[#00A896]" />
-                                                        <span className="text-[10px] font-bold text-slate-300 font-mono tracking-wider">{item.ruc}</span>
-                                                    </div>
-                                                    <span className="text-slate-600">•</span>
-                                                    <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-wider">{formatPeriodForDisplay(item.period)}</span>
-                                                </div>
-                                            </div>
-                                        </div>
 
-                                        <div className="mt-4 sm:mt-0 flex sm:flex-col justify-between items-end sm:items-end relative z-10 w-full sm:w-auto bg-white/5 sm:bg-transparent p-3 sm:p-0 rounded-2xl border border-white/5 sm:border-transparent">
-                                            <div className="flex flex-col sm:items-end">
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 sm:hidden">Total a Cobrar</span>
-                                                <p className={`text-xl font-black font-mono tracking-tight transition-colors duration-300 ${isSelected ? 'text-[#00A896]' : 'text-white'}`}>
-                                                    ${item.amount.toFixed(2)}
-                                                </p>
-                                            </div>
-                                            <div className="mt-1.5 flex items-center gap-2">
-                                                <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider
-                                                    ${item.status === 'Pagada' 
-                                                        ? 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/40 shadow-[0_0_6px_rgba(0,168,150,0.3)]' 
-                                                        : item.daysDiff && item.daysDiff > 0 
-                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
-                                                            : 'bg-white/10 text-slate-400 border-white/10'}`}>
-                                                    <span>{item.status === 'Pagada' ? 'COBRADO' : item.daysDiff && item.daysDiff > 0 ? `ATRASADO ${item.daysDiff}D` : 'PENDIENTE'}</span>
+                                                {/* Period and Amount Box */}
+                                                <div className="my-4 p-4 rounded-2xl bg-[#020b14]/90 border border-white/5 flex items-center justify-between">
+                                                    <div>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Período</span>
+                                                        <span className="text-xs font-bold text-teal-300 uppercase tracking-wide">
+                                                            {formatPeriodForDisplay(item.period)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Honorario</span>
+                                                        <span className={`text-2xl font-black font-mono tracking-tight ${
+                                                            item.status === 'Pagada' ? 'text-[#00A896]' : isSelected ? 'text-white' : 'text-amber-300'
+                                                        }`}>
+                                                            ${item.amount.toFixed(2)}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                {(() => {
-                                                    const sriDoc = findSriInvoice(item.ruc, item.period);
-                                                    return sriDoc ? (
-                                                        <div
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (navigate) navigate('sri_facturacion');
-                                                            }}
-                                                            className="px-2.5 py-1 rounded-xl bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] text-[10px] font-bold font-mono flex items-center gap-1 cursor-pointer hover:bg-[#00A896]/25 transition-all shadow-sm"
-                                                            title={`Factura SRI Autorizada #${sriDoc.secuencial} — Clave: ${sriDoc.claveAcceso}`}
-                                                        >
-                                                            <LucideIcons.CheckCircle size={10} />
-                                                            <span>SRI #{sriDoc.secuencial}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex items-center gap-1.5">
+
+                                                {/* Status Semaphore Pill */}
+                                                <div className="mb-4 flex items-center justify-between">
+                                                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-bold uppercase tracking-wider ${
+                                                        item.status === 'Pagada'
+                                                            ? 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/40 shadow-[0_0_8px_rgba(0,168,150,0.2)]'
+                                                            : item.daysDiff && item.daysDiff > 0
+                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
+                                                            : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                                    }`}>
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${
+                                                            item.status === 'Pagada' ? 'bg-[#00A896]' : item.daysDiff && item.daysDiff > 0 ? 'bg-rose-400' : 'bg-amber-400'
+                                                        }`} />
+                                                        <span>{item.status === 'Pagada' ? 'COBRADO' : item.daysDiff && item.daysDiff > 0 ? `ATRASADO ${item.daysDiff}D` : 'PENDIENTE'}</span>
+                                                    </div>
+
+                                                    {sriDoc && (
+                                                        <span className="text-[9px] font-bold text-[#00A896] font-mono bg-[#00A896]/10 px-2 py-0.5 rounded-lg border border-[#00A896]/20">
+                                                            SRI #{sriDoc.secuencial}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Card Footer Actions */}
+                                            <div className="pt-3 border-t border-white/5 flex items-center gap-2">
+                                                {sriDoc ? (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (navigate) navigate('sri_facturacion');
+                                                        }}
+                                                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-[#00A896]/15 hover:bg-[#00A896]/25 border border-[#00A896]/30 text-[#00A896] rounded-xl text-[10px] font-bold uppercase transition-all shadow-sm cursor-pointer"
+                                                        title={`Ver Factura Autorizada #${sriDoc.secuencial}`}
+                                                    >
+                                                        <LucideIcons.CheckCircle size={12} />
+                                                        <span>Ver Factura</span>
+                                                    </button>
+                                                ) : (
+                                                    <>
+                                                        {item.phones && item.phones.length > 0 && item.phones[0] && (
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    handleEmitFastInvoice(item);
+                                                                    const rawPhone = item.phones[0].replace(/\D/g, '');
+                                                                    const fullPhone = rawPhone.startsWith('593') ? rawPhone : ('593' + rawPhone.replace(/^0/, ''));
+                                                                    const msg = `Estimado(a) *${item.clientName}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que sus honorarios contables del período *${formatPeriodForDisplay(item.period)}* por un valor de *$${item.amount.toFixed(2)} USD* se encuentran pendientes de cancelación.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias!`;
+                                                                    window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
                                                                 }}
-                                                                className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-[10px] font-bold rounded-xl transition-all shadow-md flex items-center gap-1 cursor-pointer border border-white/10"
-                                                                title="Emisión rápida de Factura SRI con firma .p12"
+                                                                className="p-2.5 bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white rounded-xl transition-all border border-[#00A896]/30 cursor-pointer shadow-sm"
+                                                                title="Cobrar por WhatsApp con datos bancarios"
                                                             >
-                                                                <LucideIcons.Zap size={11} />
-                                                                <span>Facturar SRI</span>
+                                                                <LucideIcons.MessageSquare size={13} />
                                                             </button>
-                                                            {navigate && (
+                                                        )}
+
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEmitFastInvoice(item);
+                                                            }}
+                                                            className="flex-1 flex items-center justify-center gap-1 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-950 font-black rounded-xl text-[10px] uppercase tracking-wider transition-all shadow-md active:scale-95 border border-white/10 cursor-pointer"
+                                                            title="Emisión rápida de Factura SRI con firma .p12"
+                                                        >
+                                                            <LucideIcons.Zap size={12} />
+                                                            <span>Facturar</span>
+                                                        </button>
+
+                                                        {navigate && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    navigate('sri_facturacion', {
+                                                                        clientId: item.clientId,
+                                                                        amount: item.amount,
+                                                                        description: `Honorarios Profesionales - Período ${item.period}`
+                                                                    });
+                                                                }}
+                                                                className="p-2.5 bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 cursor-pointer"
+                                                                title="Abrir en Módulo de Facturación SRI"
+                                                            >
+                                                                <LucideIcons.ExternalLink size={13} />
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    ) : (
+                        /* VISTA LISTA CLÁSICA */
+                        <div className="relative z-10 divide-y divide-white/5 max-h-[700px] overflow-y-auto no-scrollbar p-2 sm:p-0">
+                            {currentList.length === 0 ? (
+                                <div className="py-28 flex flex-col items-center justify-center text-slate-500">
+                                    <div className="p-6 rounded-full bg-white/5 mb-4 border border-white/10">
+                                        <LucideIcons.ShieldCheck size={48} className="text-slate-600" />
+                                    </div>
+                                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">No se encontraron operaciones en este estado</p>
+                                </div>
+                            ) : (
+                                currentList.map(item => {
+                                    const key = `${item.clientId}-${item.period}`;
+                                    const isSelected = selectedItems.has(key);
+                                    return (
+                                        <div 
+                                            key={key} 
+                                            onClick={() => activeTab !== 'collected' && (isSelected ? setSelectedItems(s => { const n = new Set(s); n.delete(key); return n; }) : setSelectedItems(s => new Set(s).add(key)))} 
+                                            className={`group relative p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between transition-all duration-300 cursor-pointer overflow-hidden border-b border-white/5 last:border-0
+                                                ${isSelected 
+                                                    ? 'bg-[#00A896]/10 shadow-inner' 
+                                                    : 'hover:bg-white/5'}`}
+                                        >
+                                            <div className="flex items-center gap-5 relative z-10">
+                                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 border
+                                                    ${isSelected 
+                                                        ? 'bg-[#00A896] border-[#00A896] shadow-[0_0_15px_rgba(0,168,150,0.5)] text-white' 
+                                                        : 'bg-[#0b1326] border-white/10 text-slate-400 group-hover:border-[#00A896]/40 group-hover:text-[#00A896]'}`}>
+                                                    {item.type === 'mensual' ? <LucideIcons.Calendar size={20} /> : <LucideIcons.Zap size={20} />}
+                                                </div>
+                                                <div className="flex-grow min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <p className="font-bold text-sm text-white uppercase tracking-tight truncate max-w-[200px] sm:max-w-none font-display">{item.clientName}</p>
+                                                        {item.daysDiff && item.daysDiff > 0 && (
+                                                            <div className="px-2 py-0.5 rounded-md bg-rose-500/20 border border-rose-500/30">
+                                                                <span className="text-[9px] font-bold text-rose-300 uppercase tracking-widest">ATRASADO</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-xs">
+                                                        <div className="flex items-center gap-1.5 py-0.5 px-2 rounded-md bg-white/5 border border-white/5">
+                                                            <LucideIcons.Activity size={10} className="text-[#00A896]" />
+                                                            <span className="text-[10px] font-bold text-slate-300 font-mono tracking-wider">{item.ruc}</span>
+                                                        </div>
+                                                        <span className="text-slate-600">•</span>
+                                                        <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-wider">{formatPeriodForDisplay(item.period)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 sm:mt-0 flex sm:flex-col justify-between items-end sm:items-end relative z-10 w-full sm:w-auto bg-white/5 sm:bg-transparent p-3 sm:p-0 rounded-2xl border border-white/5 sm:border-transparent">
+                                                <div className="flex flex-col sm:items-end">
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 sm:hidden">Total a Cobrar</span>
+                                                    <p className={`text-xl font-black font-mono tracking-tight transition-colors duration-300 ${isSelected ? 'text-[#00A896]' : 'text-white'}`}>
+                                                        ${item.amount.toFixed(2)}
+                                                    </p>
+                                                </div>
+                                                <div className="mt-1.5 flex items-center gap-2">
+                                                    <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider
+                                                        ${item.status === 'Pagada' 
+                                                            ? 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/40 shadow-[0_0_6px_rgba(0,168,150,0.3)]' 
+                                                            : item.daysDiff && item.daysDiff > 0 
+                                                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' 
+                                                                : 'bg-white/10 text-slate-400 border-white/10'}`}>
+                                                        <span>{item.status === 'Pagada' ? 'COBRADO' : item.daysDiff && item.daysDiff > 0 ? `ATRASADO ${item.daysDiff}D` : 'PENDIENTE'}</span>
+                                                    </div>
+                                                    {(() => {
+                                                        const sriDoc = findSriInvoice(item.ruc, item.period);
+                                                        return sriDoc ? (
+                                                            <div
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    if (navigate) navigate('sri_facturacion');
+                                                                }}
+                                                                className="px-2.5 py-1 rounded-xl bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] text-[10px] font-bold font-mono flex items-center gap-1 cursor-pointer hover:bg-[#00A896]/25 transition-all shadow-sm"
+                                                                title={`Factura SRI Autorizada #${sriDoc.secuencial} — Clave: ${sriDoc.claveAcceso}`}
+                                                            >
+                                                                <LucideIcons.CheckCircle size={10} />
+                                                                <span>SRI #{sriDoc.secuencial}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-1.5">
+                                                                {item.phones && item.phones.length > 0 && item.phones[0] && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const rawPhone = item.phones[0].replace(/\D/g, '');
+                                                                            const fullPhone = rawPhone.startsWith('593') ? rawPhone : ('593' + rawPhone.replace(/^0/, ''));
+                                                                            const msg = `Estimado(a) *${item.clientName}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que sus honorarios contables del período *${formatPeriodForDisplay(item.period)}* por un valor de *$${item.amount.toFixed(2)} USD* se encuentran pendientes de cancelación.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias!`;
+                                                                            window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                                                                        }}
+                                                                        className="p-1.5 bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white rounded-xl transition-all border border-[#00A896]/30 cursor-pointer shadow-sm"
+                                                                        title="Enviar recordatorio de cobro por WhatsApp"
+                                                                    >
+                                                                        <LucideIcons.MessageSquare size={12} />
+                                                                    </button>
+                                                                )}
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        navigate('sri_facturacion', {
-                                                                            clientId: item.clientId,
-                                                                            amount: item.amount,
-                                                                            description: `Honorarios Profesionales - Período ${item.period}`
-                                                                        });
+                                                                        handleEmitFastInvoice(item);
                                                                     }}
-                                                                    className="p-1.5 bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 cursor-pointer"
-                                                                    title="Abrir en Módulo de Facturación SRI"
+                                                                    className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-[10px] font-bold rounded-xl transition-all shadow-md flex items-center gap-1 cursor-pointer border border-white/10"
+                                                                    title="Emisión rápida de Factura SRI con firma .p12"
                                                                 >
-                                                                    <LucideIcons.ExternalLink size={11} />
+                                                                    <LucideIcons.Zap size={11} />
+                                                                    <span>Facturar SRI</span>
                                                                 </button>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })()}
+                                                                {navigate && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            navigate('sri_facturacion', {
+                                                                                clientId: item.clientId,
+                                                                                amount: item.amount,
+                                                                                description: `Honorarios Profesionales - Período ${item.period}`
+                                                                            });
+                                                                        }}
+                                                                        className="p-1.5 bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 cursor-pointer"
+                                                                        title="Abrir en Módulo de Facturación SRI"
+                                                                    >
+                                                                        <LucideIcons.ExternalLink size={11} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
                                             </div>
+                                            {isSelected && (
+                                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#00A896] shadow-[2px_0_10px_rgba(0,168,150,0.8)]"></div>
+                                            )}
                                         </div>
-                                        {isSelected && (
-                                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#00A896] shadow-[2px_0_10px_rgba(0,168,150,0.8)]"></div>
-                                        )}
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -1170,6 +1516,44 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     </div>
                 )}
             </Modal>
+
+            {/* BARRA FLOTANTE FIJA PARA LIQUIDACIÓN EN LOTE (Stitch Obsidian Luxury Sticky Bar) */}
+            {selectedItems.size > 0 && (
+                <div className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-8 z-50 animate-in slide-in-from-bottom-5 duration-300">
+                    <div className="bg-[#051424]/95 border border-[#00A896]/50 shadow-[0_10px_35px_rgba(0,0,0,0.8)] rounded-3xl p-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-2xl font-mono text-white max-w-2xl">
+                        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                            <div className="p-3 rounded-2xl bg-[#00A896]/20 border border-[#00A896]/40 text-[#00A896] shadow-[0_0_12px_rgba(0,168,150,0.3)]">
+                                <LucideIcons.DollarSign size={20} />
+                            </div>
+                            <div className="flex flex-col text-left">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                    {selectedSummary.count} {selectedSummary.count === 1 ? 'Operación Seleccionada' : 'Operaciones Seleccionadas'}
+                                </span>
+                                <span className="text-2xl font-black text-[#00A896] tracking-tight">
+                                    ${selectedSummary.total.toFixed(2)} USD
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <button
+                                onClick={() => setSelectedItems(new Set())}
+                                className="flex-1 sm:flex-none px-4 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                            >
+                                Desmarcar
+                            </button>
+
+                            <button
+                                onClick={() => setIsPaymentModalOpen(true)}
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-[#00A896]/30 active:scale-95 border border-white/20 cursor-pointer"
+                            >
+                                <LucideIcons.ShieldCheck size={16} />
+                                <span>Liquidar (${selectedSummary.total.toFixed(2)})</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
