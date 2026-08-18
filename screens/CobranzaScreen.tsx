@@ -3,12 +3,13 @@ import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, R
 import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, safeFormat } from '../services/sri';
 import { getClientServiceFee, isCourtesyClient } from '../services/clientService';
 import { isPeriodBeforeClientStart, isDeclared, isPaid, getActivePeriodsForClient, getClientDebtSummary } from '../services/complianceEngine';
+import { arePeriodsEqual } from '../components/features/TaxComplianceMatrix';
 import { differenceInCalendarDays, isSameMonth, parseISO, isValid, subMonths } from 'date-fns';
 import {
     AlertTriangle, CheckCircle, MessageSquare, DollarSign,
     Printer, Search, Loader, RefreshCw, CheckSquare, Square, Layers,
     Shield, ExternalLink, ChevronDown, BarChart3, Timer, ShieldAlert,
-    ShieldCheck, Calendar, Zap, Activity
+    ShieldCheck, Calendar, Zap, Activity, Table2
 } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { useToast } from '../context/ToastContext';
@@ -59,13 +60,21 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState<'receivable' | 'projected' | 'collected'>('receivable');
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
-        return (localStorage.getItem('sc_cobranza_view_mode') as 'grid' | 'list') || 'grid';
+    const [viewMode, setViewMode] = useState<'grid' | 'matrix' | 'list'>(() => {
+        return (localStorage.getItem('sc_cobranza_view_mode') as 'grid' | 'matrix' | 'list') || 'grid';
     });
 
     useEffect(() => {
         localStorage.setItem('sc_cobranza_view_mode', viewMode);
     }, [viewMode]);
+
+    const [selectedCellAction, setSelectedCellAction] = useState<{
+        client: Client;
+        period: string;
+        amount: number;
+        status: string;
+        decl?: any;
+    } | null>(null);
 
     const [moraFilter, setMoraFilter] = useState<'all' | 'al_dia' | 'atrasado' | 'mora_critica'>('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -560,6 +569,95 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         });
     }, [financialData, activeTab, searchTerm, moraFilter]);
 
+    // 6 Últimos Períodos Fiscales para la Matriz de Cobranzas
+    const matrixPeriods = useMemo(() => {
+        const now = new Date();
+        const list: { key: string; label: string; shortLabel: string; monthName: string; year: number }[] = [];
+        const monthNames = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+        
+        for (let i = 5; i >= 0; i--) {
+            const d = subMonths(now, i);
+            const yyyy = d.getFullYear();
+            const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+            const key = `${yyyy}-${mm}`;
+            list.push({
+                key,
+                label: `${monthNames[d.getMonth()]} ${yyyy}`,
+                shortLabel: monthNames[d.getMonth()],
+                monthName: monthNames[d.getMonth()],
+                year: yyyy
+            });
+        }
+        return list;
+    }, []);
+
+    // Matriz de Clientes vs Períodos Fiscales de Cobro
+    const matrixClientsData = useMemo(() => {
+        const query = searchTerm.toLowerCase();
+        const baseClients = clients.filter(c => {
+            if (c.isDeleted || c.isActive === false || isCourtesyClient(c)) return false;
+            if (query) {
+                const match = c.name.toLowerCase().includes(query) || (c.tradeName && c.tradeName.toLowerCase().includes(query)) || c.ruc.includes(query);
+                if (!match) return false;
+            }
+            return true;
+        });
+
+        return baseClients.map(client => {
+            const fee = getClientServiceFee(client, serviceFees);
+            let totalUnpaidDebt = 0;
+            let totalPaid = 0;
+            let pendingDeclaredCount = 0;
+
+            const periodsStatus = matrixPeriods.map(p => {
+                const isBefore = isPeriodBeforeClientStart(client, p.key);
+                if (isBefore) {
+                    return { key: p.key, status: 'na', amount: 0, label: 'N/A' };
+                }
+
+                const decl = (client.declarations || []).find(d => arePeriodsEqual(d.period, p.key) || d.period === p.key);
+                const itemAmount = (decl && decl.amount) ? decl.amount : fee;
+
+                if (decl && isPaid(decl, client)) {
+                    totalPaid += itemAmount;
+                    return { key: p.key, status: 'paid', amount: itemAmount, label: 'Cobrado', decl };
+                }
+
+                if (decl && (isDeclared(decl) || decl.status === DeclarationStatus.Enviada || decl.status === DeclarationStatus.Pendiente)) {
+                    totalUnpaidDebt += itemAmount;
+                    pendingDeclaredCount++;
+                    return { key: p.key, status: 'due_declared', amount: itemAmount, label: 'Por Cobrar', decl };
+                }
+
+                // Si no hay declaración o está sin declarar
+                const dueDate = getDueDateForPeriod(client, p.key);
+                const diff = dueDate ? differenceInCalendarDays(new Date(), dueDate) : 0;
+
+                if (diff > 0) {
+                    totalUnpaidDebt += itemAmount;
+                    return { key: p.key, status: 'due_undeclared', amount: itemAmount, label: 'Atrasado', daysDiff: diff, decl };
+                } else {
+                    return { key: p.key, status: 'projected', amount: itemAmount, label: 'Proyectado', decl };
+                }
+            });
+
+            return {
+                client,
+                fee,
+                totalUnpaidDebt,
+                totalPaid,
+                pendingDeclaredCount,
+                periodsStatus
+            };
+        }).sort((a, b) => {
+            // Sort by highest unpaid debt first
+            if (b.totalUnpaidDebt !== a.totalUnpaidDebt) {
+                return b.totalUnpaidDebt - a.totalUnpaidDebt;
+            }
+            return a.client.name.localeCompare(b.client.name);
+        });
+    }, [clients, serviceFees, matrixPeriods, searchTerm]);
+
     const selectedSummary = useMemo(() => {
         let total = 0;
         selectedItems.forEach(key => {
@@ -826,7 +924,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     />
                 </div>
                 <div className="flex items-center gap-2 px-1 w-full lg:w-auto">
-                    {/* View Mode Toggle: Grid vs List */}
+                    {/* View Mode Toggle: Grid vs Matrix vs List */}
                     <div className="flex bg-[#0b1326] p-1 rounded-2xl border border-white/10 shrink-0">
                         <button
                             onClick={() => setViewMode('grid')}
@@ -835,10 +933,22 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30'
                                     : 'text-slate-400 hover:text-white'
                             }`}
-                            title="Vista Cuadrícula / Matriz"
+                            title="Vista Cuadrícula de Tarjetas"
                         >
                             <LucideIcons.LayoutGrid size={15} />
-                            <span className="hidden sm:inline">Cuadrícula</span>
+                            <span className="hidden sm:inline">Tarjetas</span>
+                        </button>
+                        <button
+                            onClick={() => setViewMode('matrix')}
+                            className={`p-2.5 rounded-xl transition-all duration-300 flex items-center gap-1 text-[10px] font-bold uppercase cursor-pointer ${
+                                viewMode === 'matrix'
+                                    ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-black shadow-md shadow-amber-500/30'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Vista Matriz Fiscal por Períodos (Como Declaraciones)"
+                        >
+                            <LucideIcons.Table2 size={15} />
+                            <span className="hidden sm:inline">Matriz Fiscal</span>
                         </button>
                         <button
                             onClick={() => setViewMode('list')}
@@ -864,7 +974,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 </div>
             </div>
 
-            {/* FULL WIDTH FINANCIAL GRID / LIST (Stitch Obsidian Luxury) */}
+            {/* FULL WIDTH FINANCIAL GRID / MATRIX / LIST (Stitch Obsidian Luxury) */}
             <div className="w-full font-mono">
                 <div className="rounded-[2.5rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-2xl backdrop-blur-2xl overflow-hidden flex flex-col relative group">
                     <div className="relative z-10 p-4 sm:p-5 bg-[#0b1326]/80 border-b border-white/10 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 backdrop-blur-2xl">
@@ -1106,6 +1216,151 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 })
                             )}
                         </div>
+                    ) : viewMode === 'matrix' ? (
+                        /* VISTA MATRIZ FISCAL MENSUALIZADA (Stitch Obsidian Matrix) */
+                        <div className="relative z-10 overflow-x-auto max-h-[750px] no-scrollbar">
+                            <table className="w-full text-left border-collapse font-mono text-xs">
+                                <thead>
+                                    <tr className="bg-[#020b14]/95 border-b border-white/10 text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 z-20 backdrop-blur-xl">
+                                        <th className="py-4 px-5 font-bold sticky left-0 z-30 bg-[#020b14] min-w-[240px] border-r border-white/10 shadow-lg">
+                                            Contribuyente / RUC
+                                        </th>
+                                        <th className="py-4 px-3 text-center min-w-[90px] border-r border-white/5 font-bold">
+                                            Honorario
+                                        </th>
+                                        {matrixPeriods.map(p => (
+                                            <th key={p.key} className="py-4 px-3 text-center min-w-[125px] border-r border-white/5">
+                                                <span className="text-white font-black block">{p.shortLabel}</span>
+                                                <span className="text-[9px] text-teal-400 font-bold">{p.year}</span>
+                                            </th>
+                                        ))}
+                                        <th className="py-4 px-4 text-center min-w-[130px] font-bold text-rose-400">
+                                            Deuda Total
+                                        </th>
+                                        <th className="py-4 px-3 text-center min-w-[90px] font-bold text-slate-300">
+                                            WhatsApp
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5 text-slate-300">
+                                    {matrixClientsData.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={matrixPeriods.length + 4} className="py-24 text-center text-slate-500">
+                                                <div className="p-6 rounded-3xl bg-white/5 mb-3 inline-block border border-white/10">
+                                                    <LucideIcons.ShieldCheck size={40} className="text-slate-600" />
+                                                </div>
+                                                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">No se encontraron clientes para mostrar</p>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        matrixClientsData.map(({ client, fee, totalUnpaidDebt, periodsStatus }) => (
+                                            <tr key={client.id} className="hover:bg-white/5 transition-colors group/row">
+                                                {/* Frozen Client Column */}
+                                                <td className="py-3 px-5 sticky left-0 z-10 bg-[#051424] group-hover/row:bg-[#081b2e] border-r border-white/10 shadow-md">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 border ${
+                                                            totalUnpaidDebt > 0 
+                                                                ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' 
+                                                                : 'bg-[#00A896]/20 text-[#00A896] border border-[#00A896]/30'
+                                                        }`}>
+                                                            {client.name.substring(0, 2).toUpperCase()}
+                                                        </div>
+                                                        <div className="min-w-0 max-w-[180px]">
+                                                            <p className="font-bold text-white uppercase truncate text-xs font-display group-hover/row:text-[#00A896] transition-colors" title={client.name}>
+                                                                {client.name}
+                                                            </p>
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                <span className="text-[10px] text-slate-400 font-mono">{client.ruc}</span>
+                                                                <span className="text-[8px] px-1 rounded bg-white/5 text-slate-500 font-mono">
+                                                                    DÍG {client.ruc[8] || '—'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                {/* Base Fee */}
+                                                <td className="py-3 px-3 text-center border-r border-white/5 font-bold text-slate-200">
+                                                    ${fee.toFixed(2)}
+                                                </td>
+
+                                                {/* Monthly Matrix Status Cells */}
+                                                {periodsStatus.map(pStatus => {
+                                                    const isPaidStatus = pStatus.status === 'paid';
+                                                    const isDeclaredDue = pStatus.status === 'due_declared';
+                                                    const isUndeclaredDue = pStatus.status === 'due_undeclared';
+                                                    const isNa = pStatus.status === 'na';
+
+                                                    return (
+                                                        <td key={pStatus.key} className="py-2 px-2 text-center border-r border-white/5">
+                                                            {isNa ? (
+                                                                <span className="text-slate-600 text-[10px] font-bold select-none">—</span>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => setSelectedCellAction({
+                                                                        client,
+                                                                        period: pStatus.key,
+                                                                        amount: pStatus.amount,
+                                                                        status: pStatus.status,
+                                                                        decl: pStatus.decl
+                                                                    })}
+                                                                    className={`w-full py-1.5 px-2 rounded-xl text-[9px] font-bold uppercase transition-all duration-200 flex flex-col items-center justify-center gap-0.5 border cursor-pointer active:scale-95 shadow-sm ${
+                                                                        isPaidStatus
+                                                                            ? 'bg-[#00A896]/15 text-[#00A896] border-[#00A896]/30 hover:bg-[#00A896]/25'
+                                                                            : isDeclaredDue
+                                                                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30 animate-pulse'
+                                                                            : isUndeclaredDue
+                                                                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
+                                                                            : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-white'
+                                                                    }`}
+                                                                    title={`Período ${pStatus.key}: ${pStatus.label} — Monto: $${pStatus.amount.toFixed(2)}`}
+                                                                >
+                                                                    <span className="font-mono font-black">${pStatus.amount.toFixed(0)}</span>
+                                                                    <span className="text-[8px] tracking-tight">{pStatus.label}</span>
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    );
+                                                })}
+
+                                                {/* Total Unpaid Debt */}
+                                                <td className="py-3 px-4 text-center">
+                                                    {totalUnpaidDebt > 0 ? (
+                                                        <span className="px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-black font-mono shadow-sm">
+                                                            ${totalUnpaidDebt.toFixed(2)}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="px-2.5 py-1 rounded-full bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 text-[9px] font-bold">
+                                                            AL DÍA
+                                                        </span>
+                                                    )}
+                                                </td>
+
+                                                {/* Quick WhatsApp */}
+                                                <td className="py-3 px-3 text-center">
+                                                    {client.phones && client.phones.length > 0 && client.phones[0] && totalUnpaidDebt > 0 ? (
+                                                        <button
+                                                            onClick={() => {
+                                                                const rawPhone = client.phones![0].replace(/\D/g, '');
+                                                                const fullPhone = rawPhone.startsWith('593') ? rawPhone : ('593' + rawPhone.replace(/^0/, ''));
+                                                                const msg = `Estimado(a) *${client.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que mantiene un saldo pendiente de honorarios contables por un valor total de *$${totalUnpaidDebt.toFixed(2)} USD* correspondiente a sus declaraciones tributarias.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias!`;
+                                                                window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                                                            }}
+                                                            className="p-2 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 transition-all cursor-pointer shadow-sm"
+                                                            title="Cobrar deuda acumulada por WhatsApp"
+                                                        >
+                                                            <LucideIcons.MessageSquare size={13} />
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-slate-600 text-xs">—</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     ) : (
                         /* VISTA LISTA CLÁSICA */
                         <div className="relative z-10 divide-y divide-white/5 max-h-[700px] overflow-y-auto no-scrollbar p-2 sm:p-0">
@@ -1246,6 +1501,84 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* MODAL: ACCIÓN RÁPIDA DE CELDA MATRICIAL */}
+            <Modal isOpen={!!selectedCellAction} onClose={() => setSelectedCellAction(null)} title="Operación Fiscal & Cobro">
+                {selectedCellAction && (
+                    <div className="p-4 sm:p-6 space-y-6 font-mono text-white">
+                        <div className="p-5 rounded-2xl bg-[#051424] border border-white/10 space-y-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Contribuyente</p>
+                                    <p className="text-base font-bold text-white uppercase font-display">{selectedCellAction.client.name}</p>
+                                    <p className="text-xs font-bold text-[#00A896] mt-0.5">{selectedCellAction.client.ruc}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Período Fiscal</p>
+                                    <p className="text-sm font-bold text-teal-300 uppercase">{formatPeriodForDisplay(selectedCellAction.period)}</p>
+                                </div>
+                            </div>
+
+                            <div className="pt-3 border-t border-white/10 flex justify-between items-center">
+                                <span className="text-xs text-slate-400 uppercase font-bold">Honorario Asignado</span>
+                                <span className="text-2xl font-black text-amber-300 font-mono">${selectedCellAction.amount.toFixed(2)} USD</span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {selectedCellAction.client.phones && selectedCellAction.client.phones[0] && (
+                                <button
+                                    onClick={() => {
+                                        const rawPhone = selectedCellAction.client.phones![0].replace(/\D/g, '');
+                                        const fullPhone = rawPhone.startsWith('593') ? rawPhone : ('593' + rawPhone.replace(/^0/, ''));
+                                        const msg = `Estimado(a) *${selectedCellAction.client.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que sus honorarios contables del período *${formatPeriodForDisplay(selectedCellAction.period)}* por un valor de *$${selectedCellAction.amount.toFixed(2)} USD* se encuentran pendientes de cancelación.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias!`;
+                                        window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+                                    }}
+                                    className="py-3 px-4 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                                >
+                                    <LucideIcons.MessageSquare size={16} />
+                                    <span>Cobrar WhatsApp</span>
+                                </button>
+                            )}
+
+                            <button
+                                onClick={() => {
+                                    handleEmitFastInvoice({
+                                        clientId: selectedCellAction.client.id,
+                                        clientName: selectedCellAction.client.name,
+                                        ruc: selectedCellAction.client.ruc,
+                                        period: selectedCellAction.period,
+                                        amount: selectedCellAction.amount,
+                                        status: DeclarationStatus.Pendiente,
+                                        type: 'mensual',
+                                        dateReference: new Date(),
+                                        phones: selectedCellAction.client.phones || []
+                                    });
+                                    setSelectedCellAction(null);
+                                }}
+                                className="py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-950 font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-95"
+                            >
+                                <LucideIcons.Zap size={16} />
+                                <span>Facturar SRI</span>
+                            </button>
+                        </div>
+
+                        {selectedCellAction.status !== 'paid' && (
+                            <button
+                                onClick={() => {
+                                    setSelectedItems(new Set([`${selectedCellAction.client.id}-${selectedCellAction.period}`]));
+                                    setSelectedCellAction(null);
+                                    setIsPaymentModalOpen(true);
+                                }}
+                                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#00A896]/25 active:scale-95 border border-white/10"
+                            >
+                                <LucideIcons.CheckCircle size={16} />
+                                <span>Registrar Pago (${selectedCellAction.amount.toFixed(2)})</span>
+                            </button>
+                        )}
+                    </div>
+                )}
+            </Modal>
 
             {/* MODAL 1: LIQUIDAR TRANSACCIÓN FINANCIERA (Stitch Obsidian Luxury) */}
             <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Autorizar Transacción Financiera">
