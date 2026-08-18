@@ -130,6 +130,15 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [isWorkspaceMode, setIsWorkspaceMode] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [densityMode, setDensityMode] = useState<'compact' | 'detailed'>(() => {
+        return (localStorage.getItem('sc_matrix_density') as 'compact' | 'detailed') || 'compact';
+    });
+
+    const handleToggleDensity = (mode: 'compact' | 'detailed') => {
+        setDensityMode(mode);
+        localStorage.setItem('sc_matrix_density', mode);
+    };
+
     const [highlightedRuc, setHighlightedRuc] = useState<string | null>(() => {
         return sessionStorage.getItem('matrix_highlight_ruc') || null;
     });
@@ -1347,6 +1356,73 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
             </div>
 
+            {/* 🎯 RUC 9th DIGIT QUICK JUMP STRIP (Calendario Oficial SRI) */}
+            <div className="flex items-center gap-2 p-3 bg-[#051424]/90 backdrop-blur-2xl rounded-[2rem] border border-white/10 border-t-white/20 overflow-x-auto no-scrollbar font-mono text-xs shadow-xl no-print">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-bold uppercase tracking-wider shrink-0 text-[10px]">
+                    <LucideIcons.CalendarClock size={14} className="text-[#00A896]" />
+                    <span>Dígito RUC:</span>
+                </div>
+
+                <button
+                    onClick={() => setSelectedDigitFilter(null)}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                        selectedDigitFilter === null
+                            ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-md shadow-[#00A896]/30 font-black border border-white/20 scale-[1.02]'
+                            : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 border border-white/5'
+                    }`}
+                >
+                    <LucideIcons.Layers size={12} />
+                    <span>Todos</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/20 text-white font-mono">
+                        {clients.filter(c => c.requiresDeclarations !== false && c.clientType !== 'solo_plan' && (!c.isDeleted && c.isActive)).length}
+                    </span>
+                </button>
+
+                {[
+                    { digit: 1, day: 10 },
+                    { digit: 2, day: 12 },
+                    { digit: 3, day: 14 },
+                    { digit: 4, day: 16 },
+                    { digit: 5, day: 18 },
+                    { digit: 6, day: 20 },
+                    { digit: 7, day: 22 },
+                    { digit: 8, day: 24 },
+                    { digit: 9, day: 26 },
+                    { digit: 0, day: 28 },
+                ].map(({ digit, day }) => {
+                    const count = clients.filter(c => 
+                        c.requiresDeclarations !== false && 
+                        c.clientType !== 'solo_plan' && 
+                        !c.isDeleted && 
+                        c.isActive && 
+                        parseInt(c.ruc[8], 10) === digit
+                    ).length;
+
+                    const isSelected = selectedDigitFilter === digit;
+
+                    return (
+                        <button
+                            key={digit}
+                            onClick={() => setSelectedDigitFilter(isSelected ? null : digit)}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                                isSelected
+                                    ? 'bg-gradient-to-r from-[#2B6AFF] to-indigo-600 text-white shadow-lg shadow-[#2B6AFF]/30 font-black scale-105 border border-white/20'
+                                    : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 border border-white/5'
+                            }`}
+                            title={`Filtrar contribuyentes con 9no dígito ${digit} — Vencimiento SRI: Día ${day} de cada mes`}
+                        >
+                            <span>Díg. <strong className="text-white font-black">{digit}</strong></span>
+                            <span className="text-[8px] opacity-70">({day}d)</span>
+                            <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-mono ${
+                                isSelected ? 'bg-white/20 text-white font-black' : 'bg-black/20 text-slate-400'
+                            }`}>
+                                {count}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+
             {/* Header / Controls (Stitch Nueva Luz 3.0) */}
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-[#051424]/90 backdrop-blur-2xl p-6 rounded-[2.5rem] border border-white/10 border-t-white/20 shadow-2xl relative overflow-hidden transition-all duration-500 font-sans">
                 <div className="flex items-center gap-4">
@@ -1415,6 +1491,34 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         >
                             <LucideIcons.Search size={13} />
                             <span>🔍 Solo PDFs</span>
+                        </button>
+                    </div>
+
+                    {/* Selector de Densidad (Compacto vs Detallado) */}
+                    <div className="flex items-center p-1 bg-[#020b14]/60 rounded-2xl border border-white/10">
+                        <button
+                            onClick={() => handleToggleDensity('compact')}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                                densityMode === 'compact'
+                                    ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30 font-black'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Vista compacta de alta densidad (15+ clientes por pantalla)"
+                        >
+                            <LucideIcons.LayoutList size={12} />
+                            <span>Compacto</span>
+                        </button>
+                        <button
+                            onClick={() => handleToggleDensity('detailed')}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                                densityMode === 'detailed'
+                                    ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30 font-black'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Vista detallada con tarjetas expandidas"
+                        >
+                            <LucideIcons.LayoutGrid size={12} />
+                            <span>Detallado</span>
                         </button>
                     </div>
 
@@ -1699,7 +1803,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             </div>
 
             {/* Matrix Table */}
-            <div className="rounded-[2.5rem] shadow-2xl overflow-hidden overflow-x-auto custom-scrollbar border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl font-sans">
+            <div className="rounded-[2.5rem] shadow-2xl overflow-hidden overflow-x-auto custom-scrollbar border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl font-sans mb-28">
                 <table className="w-full min-w-[800px] text-left border-collapse">
                     <thead>
                         <tr className="bg-[#0b1326]/90 border-b border-white/10 font-mono">
@@ -1980,148 +2084,239 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                             });
 
                                             return (
-                                                <td key={p} className={`px-2 py-3 border-r border-white/5 last:border-r-0 transition-colors ${allObligationsDone ? 'bg-[#00A896]/[0.03]' : ''}`}>
-                                                    <div className="flex flex-wrap justify-center gap-2 min-w-[70px]">
-                                                        {obligations.map(ob => {
-                                                            const d = findDeclarationForOb(declarations, p, ob.type);
-                                                            const hasProof = !!d?.proof_file;
-                                                            const isDone = hasProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
-                                                            const isManualDone = false;
-                                                            const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
-                                                            const isTrulyInvoiced = !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
+                                                <td key={p} className={`px-2 py-2 border-r border-white/5 last:border-r-0 transition-colors ${allObligationsDone ? 'bg-[#00A896]/[0.03]' : ''}`}>
+                                                    {densityMode === 'compact' ? (
+                                                        /* ⚡ MODO COMPACTO DE ALTA DENSIDAD (Sleek High Density Capsule) */
+                                                        <div className="flex flex-col items-center justify-center gap-1 min-w-[90px] max-w-[125px] mx-auto py-0.5">
+                                                            {obligations.map(ob => {
+                                                                const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                const hasProof = !!d?.proof_file;
+                                                                const isDone = hasProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                                                                const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
+                                                                const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
 
-                                                            return (
-                                                                <div 
-                                                                    key={`${p}-${ob.type}`}
-                                                                    className={`group/ob relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl cursor-pointer transition-all duration-300 border ${
-                                                                        isDone ? 'bg-gradient-to-br from-[#00A896]/30 to-teal-600/30 text-white border-[#00A896]/50 shadow-md shadow-[#00A896]/15 hover:scale-105 hover:border-[#00A896] hover:shadow-lg hover:shadow-[#00A896]/25 z-10' : 
-                                                                        isManualDone ? 'bg-gradient-to-br from-amber-400/20 to-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/15 hover:scale-105 hover:shadow-lg z-10 animate-pulse' :
-                                                                        d?.isPriority ? 'bg-gradient-to-br from-orange-500/20 to-rose-500/20 text-orange-300 border-orange-500/50 shadow-md shadow-orange-500/15 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/25 z-10 animate-pulse' :
-                                                                        isOverdue ? 'bg-rose-500/15 text-rose-400 border-rose-500/30 hover:bg-rose-500/25 hover:scale-105' :
-                                                                        'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white hover:scale-105'
-                                                                    }`}
-                                                                    title={isDone ? `Ver Comprobante & Facturación de ${ob.label}` : isManualDone ? `Atención: Sin PDF de ${ob.label}. Haz click para subirlo.` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        if (hasProof) {
-                                                                            setActiveCellModal({
-                                                                                client,
-                                                                                period: p,
-                                                                                declaration: d!,
-                                                                                obType: ob.type as any,
-                                                                                realInvoice: findRealInvoice(client.ruc, d, p)
-                                                                            });
-                                                                        } else {
-                                                                            onUploadReceipt(client, p, ob.type as any);
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 font-mono ${isDone || isManualDone || d?.isPriority ? 'opacity-95 text-[#00A896]' : 'opacity-60'}`}>{ob.type}</span>
-                                                                    
-                                                                    {isDone ? (
-                                                                        <LucideIcons.ShieldCheck size={14} strokeWidth={3} className="text-[#00A896] drop-shadow-[0_0_6px_rgba(0,168,150,0.6)]" />
-                                                                    ) : isManualDone ? (
-                                                                        <LucideIcons.AlertTriangle size={14} strokeWidth={3} className="text-amber-400 drop-shadow-sm" />
-                                                                    ) : d?.isPriority ? (
-                                                                        <LucideIcons.Pin size={12} strokeWidth={2.5} className="text-orange-400 rotate-45" />
-                                                                    ) : isOverdue ? (
-                                                                        <LucideIcons.AlertCircle size={14} strokeWidth={2.5} className="text-rose-400" />
-                                                                    ) : (
-                                                                        <LucideIcons.Upload size={12} strokeWidth={2} className="opacity-40 group-hover/ob:opacity-100 group-hover/ob:scale-110 transition-all text-slate-300" />
-                                                                    )}
+                                                                return (
+                                                                    <div
+                                                                        key={`${p}-${ob.type}`}
+                                                                        className={`group/ob relative flex items-center justify-between w-full px-2 py-1 rounded-xl cursor-pointer transition-all duration-200 border text-[10px] font-mono select-none shadow-sm ${
+                                                                            isDone
+                                                                                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25 hover:border-emerald-400'
+                                                                                : isOverdue
+                                                                                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30 hover:bg-rose-500/25 animate-pulse'
+                                                                                : d?.isPriority
+                                                                                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
+                                                                                : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-white'
+                                                                        }`}
+                                                                        title={isDone ? `Declaración ${ob.label} lista con comprobante` : isOverdue ? `Urgente: Declaración ${ob.label} vencida` : `Subir o declarar ${ob.label}`}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            if (hasProof) {
+                                                                                setActiveCellModal({
+                                                                                    client,
+                                                                                    period: p,
+                                                                                    declaration: d!,
+                                                                                    obType: ob.type as any,
+                                                                                    realInvoice: findRealInvoice(client.ruc, d, p)
+                                                                                });
+                                                                            } else {
+                                                                                onUploadReceipt(client, p, ob.type as any);
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <div className="flex items-center gap-1">
+                                                                            {isDone ? (
+                                                                                <LucideIcons.ShieldCheck size={12} className="text-emerald-400 shrink-0" />
+                                                                            ) : isOverdue ? (
+                                                                                <LucideIcons.AlertCircle size={12} className="text-rose-400 shrink-0" />
+                                                                            ) : d?.isPriority ? (
+                                                                                <LucideIcons.Pin size={12} className="text-amber-400 shrink-0 rotate-45" />
+                                                                            ) : (
+                                                                                <LucideIcons.Upload size={11} className="text-slate-400 group-hover/ob:text-white shrink-0" />
+                                                                            )}
+                                                                            <span className="font-black text-[9px] uppercase tracking-wider">{ob.type}</span>
+                                                                        </div>
 
-                                                                    {isTrulyInvoiced && (
-                                                                        <span className="px-1 py-[1.5px] bg-[#020b14]/90 text-[#00A896] border border-[#00A896]/50 rounded text-[6px] font-black uppercase tracking-wider font-mono shadow-sm mt-0.5 leading-none">
-                                                                            FACTURADO
-                                                                        </span>
-                                                                    )}
-
-                                                                    {isDone ? (
-                                                                        <>
-                                                                        {hasProof && (
+                                                                        <div className="flex items-center gap-1">
+                                                                            {hasProof && (
+                                                                                <button
+                                                                                    onClick={async (e) => {
+                                                                                        e.stopPropagation();
+                                                                                        if (d?.proof_file) {
+                                                                                            await downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
+                                                                                        }
+                                                                                    }}
+                                                                                    className="p-0.5 rounded text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                                                                                    title="Descargar PDF"
+                                                                                >
+                                                                                    <LucideIcons.Download size={10} />
+                                                                                </button>
+                                                                            )}
                                                                             <button
-                                                                                onClick={async (e) => {
+                                                                                onClick={(e) => {
                                                                                     e.stopPropagation();
-                                                                                    if (d?.proof_file) {
-                                                                                        await downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
-                                                                                    }
+                                                                                    if (onTogglePayment) onTogglePayment(client, p, [ob.type as any], !isPaid);
                                                                                 }}
-                                                                                className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-[#051424] hover:bg-[#0b1326] text-[#00A896] border border-[#00A896]/50 opacity-90 group-hover/ob:opacity-100 scale-100 hover:scale-110 flex items-center justify-center shadow-[0_0_8px_rgba(0,168,150,0.4)]"
-                                                                                title="Descargar PDF"
+                                                                                className={`px-1.5 py-0.2 rounded text-[8px] font-black uppercase transition-all ${
+                                                                                    isPaid
+                                                                                        ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40'
+                                                                                        : 'bg-white/10 text-slate-400 hover:text-white hover:bg-white/20'
+                                                                                }`}
+                                                                                title={isPaid ? "Honorario Cobrado (Clic para desmarcar)" : "Honorario Pendiente (Clic para marcar cobrado)"}
                                                                             >
-                                                                                <LucideIcons.Download size={10} strokeWidth={3} />
+                                                                                {isPaid ? '$OK' : 'COB'}
                                                                             </button>
-                                                                        )}
-                                                                        </>
-                                                                    ) : (
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                            {obligations.length === 0 && <span className="text-slate-600 font-mono text-[9px]">—</span>}
+                                                        </div>
+                                                    ) : (
+                                                        /* 📑 MODO DETALLADO (Expanded Executive Cards) */
+                                                        <>
+                                                            <div className="flex flex-wrap justify-center gap-2 min-w-[70px]">
+                                                                {obligations.map(ob => {
+                                                                    const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                    const hasProof = !!d?.proof_file;
+                                                                    const isDone = hasProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                                                                    const isManualDone = false;
+                                                                    const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
+                                                                    const isTrulyInvoiced = !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
+
+                                                                    return (
+                                                                        <div 
+                                                                            key={`${p}-${ob.type}`}
+                                                                            className={`group/ob relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl cursor-pointer transition-all duration-300 border ${
+                                                                                isDone ? 'bg-gradient-to-br from-[#00A896]/30 to-teal-600/30 text-white border-[#00A896]/50 shadow-md shadow-[#00A896]/15 hover:scale-105 hover:border-[#00A896] hover:shadow-lg hover:shadow-[#00A896]/25 z-10' : 
+                                                                                isManualDone ? 'bg-gradient-to-br from-amber-400/20 to-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/15 hover:scale-105 hover:shadow-lg z-10 animate-pulse' :
+                                                                                d?.isPriority ? 'bg-gradient-to-br from-orange-500/20 to-rose-500/20 text-orange-300 border-orange-500/50 shadow-md shadow-orange-500/15 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/25 z-10 animate-pulse' :
+                                                                                isOverdue ? 'bg-rose-500/15 text-rose-400 border-rose-500/30 hover:bg-rose-500/25 hover:scale-105' :
+                                                                                'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white hover:scale-105'
+                                                                            }`}
+                                                                            title={isDone ? `Ver Comprobante & Facturación de ${ob.label}` : isManualDone ? `Atención: Sin PDF de ${ob.label}. Haz click para subirlo.` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                if (hasProof) {
+                                                                                    setActiveCellModal({
+                                                                                        client,
+                                                                                        period: p,
+                                                                                        declaration: d!,
+                                                                                        obType: ob.type as any,
+                                                                                        realInvoice: findRealInvoice(client.ruc, d, p)
+                                                                                    });
+                                                                                } else {
+                                                                                    onUploadReceipt(client, p, ob.type as any);
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 font-mono ${isDone || isManualDone || d?.isPriority ? 'opacity-95 text-[#00A896]' : 'opacity-60'}`}>{ob.type}</span>
+                                                                            
+                                                                            {isDone ? (
+                                                                                <LucideIcons.ShieldCheck size={14} strokeWidth={3} className="text-[#00A896] drop-shadow-[0_0_6px_rgba(0,168,150,0.6)]" />
+                                                                            ) : isManualDone ? (
+                                                                                <LucideIcons.AlertTriangle size={14} strokeWidth={3} className="text-amber-400 drop-shadow-sm" />
+                                                                            ) : d?.isPriority ? (
+                                                                                <LucideIcons.Pin size={12} strokeWidth={2.5} className="text-orange-400 rotate-45" />
+                                                                            ) : isOverdue ? (
+                                                                                <LucideIcons.AlertCircle size={14} strokeWidth={2.5} className="text-rose-400" />
+                                                                            ) : (
+                                                                                <LucideIcons.Upload size={12} strokeWidth={2} className="opacity-40 group-hover/ob:opacity-100 group-hover/ob:scale-110 transition-all text-slate-300" />
+                                                                            )}
+
+                                                                            {isTrulyInvoiced && (
+                                                                                <span className="px-1 py-[1.5px] bg-[#020b14]/90 text-[#00A896] border border-[#00A896]/50 rounded text-[6px] font-black uppercase tracking-wider font-mono shadow-sm mt-0.5 leading-none">
+                                                                                    FACTURADO
+                                                                                </span>
+                                                                            )}
+
+                                                                            {isDone ? (
+                                                                                <>
+                                                                                {hasProof && (
+                                                                                    <button
+                                                                                        onClick={async (e) => {
+                                                                                            e.stopPropagation();
+                                                                                            if (d?.proof_file) {
+                                                                                                await downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
+                                                                                            }
+                                                                                        }}
+                                                                                        className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-[#051424] hover:bg-[#0b1326] text-[#00A896] border border-[#00A896]/50 opacity-90 group-hover/ob:opacity-100 scale-100 hover:scale-110 flex items-center justify-center shadow-[0_0_8px_rgba(0,168,150,0.4)]"
+                                                                                        title="Descargar PDF"
+                                                                                    >
+                                                                                        <LucideIcons.Download size={10} strokeWidth={3} />
+                                                                                    </button>
+                                                                                )}
+                                                                                </>
+                                                                            ) : (
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        if (onTogglePriority) onTogglePriority(client, p, ob.type as any, !d?.isPriority);
+                                                                                    }}
+                                                                                    className={`absolute -top-1.5 -right-1.5 rounded-full p-0.5 shadow-sm transition-all z-20 ${
+                                                                                        d?.isPriority 
+                                                                                            ? 'bg-amber-500 text-white shadow-amber-500/20 scale-100' 
+                                                                                            : 'bg-white/10 hover:bg-white/20 text-slate-400 border border-white/10 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110'
+                                                                                    }`}
+                                                                                    title={d?.isPriority ? "Quitar Prioridad" : "Marcar como Prioridad"}
+                                                                                >
+                                                                                    <LucideIcons.Pin size={8} strokeWidth={4} className={d?.isPriority ? 'rotate-45' : ''} />
+                                                                                </button>
+                                                                            )}
+                                                                            {!hasProof && isOverdue && (
+                                                                                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse border border-slate-900" />
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                                {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-white/10 my-6 mx-auto" />}
+                                                            </div>
+                                                            {obligations.length > 0 && (() => {
+                                                                const allPaid = obligations.every(ob => {
+                                                                    const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                    return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+                                                                });
+                                                                const isCellTrulyInvoiced = obligations.some(ob => {
+                                                                    const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                    return !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
+                                                                });
+                                                                const obTypes = obligations.map(ob => ob.type);
+
+                                                                return (
+                                                                    <div className="mt-2 flex justify-center font-mono">
                                                                         <button
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
-                                                                                if (onTogglePriority) onTogglePriority(client, p, ob.type as any, !d?.isPriority);
+                                                                                if (onTogglePayment) onTogglePayment(client, p, obTypes as any, !allPaid);
                                                                             }}
-                                                                            className={`absolute -top-1.5 -right-1.5 rounded-full p-0.5 shadow-sm transition-all z-20 ${
-                                                                                d?.isPriority 
-                                                                                    ? 'bg-amber-500 text-white shadow-amber-500/20 scale-100' 
-                                                                                    : 'bg-white/10 hover:bg-white/20 text-slate-400 border border-white/10 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110'
+                                                                            className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-xl text-[9px] font-bold uppercase tracking-wider border transition-all duration-300 active:scale-95 ${
+                                                                                allPaid && isCellTrulyInvoiced
+                                                                                    ? 'bg-gradient-to-r from-[#2B6AFF] via-indigo-600 to-[#2B6AFF] hover:from-blue-500 hover:to-indigo-500 text-white border-blue-400/50 shadow-md shadow-[#2B6AFF]/25'
+                                                                                    : allPaid
+                                                                                        ? 'bg-[#00A896]/20 hover:bg-[#00A896]/30 border-[#00A896]/40 text-[#00A896] shadow-sm'
+                                                                                        : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-white/10'
                                                                             }`}
-                                                                            title={d?.isPriority ? "Quitar Prioridad" : "Marcar como Prioridad"}
                                                                         >
-                                                                            <LucideIcons.Pin size={8} strokeWidth={4} className={d?.isPriority ? 'rotate-45' : ''} />
+                                                                            {allPaid && isCellTrulyInvoiced ? (
+                                                                                <>
+                                                                                    <LucideIcons.ShieldCheck size={11} strokeWidth={2.5} className="text-blue-200" />
+                                                                                    <span className="flex items-center gap-1">
+                                                                                        <span className="font-bold text-white">COBRADO</span>
+                                                                                        <span className="text-blue-200/80 font-bold">|</span>
+                                                                                        <span className="font-bold text-blue-100">FACTURADO</span>
+                                                                                    </span>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <LucideIcons.Coins size={11} strokeWidth={2.5} />
+                                                                                    <span>{allPaid ? 'COBRADO' : `COBRO COMPLETO`}</span>
+                                                                                </>
+                                                                            )}
                                                                         </button>
-                                                                    )}
-                                                                    {!hasProof && isOverdue && (
-                                                                        <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse border border-slate-900" />
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                        {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-white/10 my-6 mx-auto" />}
-                                                    </div>
-                                                    {obligations.length > 0 && (() => {
-                                                         const allPaid = obligations.every(ob => {
-                                                             const d = findDeclarationForOb(declarations, p, ob.type);
-                                                             return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
-                                                         });
-                                                         const isCellTrulyInvoiced = obligations.some(ob => {
-                                                             const d = findDeclarationForOb(declarations, p, ob.type);
-                                                             return !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
-                                                         });
-                                                         const obTypes = obligations.map(ob => ob.type);
-
-                                                         return (
-                                                             <div className="mt-2 flex justify-center font-mono">
-                                                                 <button
-                                                                     onClick={(e) => {
-                                                                         e.stopPropagation();
-                                                                         if (onTogglePayment) onTogglePayment(client, p, obTypes as any, !allPaid);
-                                                                     }}
-                                                                     className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-xl text-[9px] font-bold uppercase tracking-wider border transition-all duration-300 active:scale-95 ${
-                                                                         allPaid && isCellTrulyInvoiced
-                                                                             ? 'bg-gradient-to-r from-[#2B6AFF] via-indigo-600 to-[#2B6AFF] hover:from-blue-500 hover:to-indigo-500 text-white border-blue-400/50 shadow-md shadow-[#2B6AFF]/25'
-                                                                             : allPaid
-                                                                                 ? 'bg-[#00A896]/20 hover:bg-[#00A896]/30 border-[#00A896]/40 text-[#00A896] shadow-sm'
-                                                                                 : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-white/10'
-                                                                     }`}
-                                                                 >
-                                                                     {allPaid && isCellTrulyInvoiced ? (
-                                                                         <>
-                                                                             <LucideIcons.ShieldCheck size={11} strokeWidth={2.5} className="text-blue-200" />
-                                                                             <span className="flex items-center gap-1">
-                                                                                 <span className="font-bold text-white">COBRADO</span>
-                                                                                 <span className="text-blue-200/80 font-bold">|</span>
-                                                                                 <span className="font-bold text-blue-100">FACTURADO</span>
-                                                                             </span>
-                                                                         </>
-                                                                     ) : (
-                                                                         <>
-                                                                             <LucideIcons.Coins size={11} strokeWidth={2.5} />
-                                                                             <span>{allPaid ? 'COBRADO' : `COBRO COMPLETO`}</span>
-                                                                         </>
-                                                                     )}
-                                                                 </button>
-                                                             </div>
-                                                         );
-                                                     })()}
+                                                                    </div>
+                                                                );
+                                                            })()}
+                                                        </>
+                                                    )}
                                                 </td>
                                             );
                                         })}
