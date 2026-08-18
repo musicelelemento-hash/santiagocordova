@@ -621,6 +621,11 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                                         ].filter(Boolean).length;
                                         const isComplete = presentCount === totalRequired;
 
+                                        const totalVaultFiles = [
+                                            client.signatureFile, client.idCardFront, client.idCardBack, client.idCardSelfie, client.rucPdf, client.ecuafactSignedRequest,
+                                            ...(client.vault || [])
+                                        ].filter(Boolean).length;
+
                                         return (
                                             <tr key={client.id} className={`hover:bg-white/[0.02] transition-colors ${isSelected ? 'bg-[#00A896]/10' : ''} ${isPlanExpiringSoon || isSigExpiringSoon ? 'bg-amber-500/[0.02]' : ''}`}>
                                                 <td className="py-4 px-4 text-center">
