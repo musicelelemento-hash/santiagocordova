@@ -14,6 +14,7 @@ import { PublicUser } from '../types';
 import { useAppStore } from '../store/useAppStore';
 import { validarIdentificacionEcuatoriana } from '../utils/sriCalculators';
 import { Scroll3DCanvas } from '../components/3d/Scroll3DCanvas';
+import { TaxShieldHero3D } from '../components/3d/TaxShieldHero3D';
 
 interface LandingPageProps {
     onAdminAccess: () => void;
@@ -265,6 +266,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
     const [scrollProgress, setScrollProgress] = useState(0);
     const [showBiometric, setShowBiometric] = useState(false);
     const [isAssistantOpen, setIsAssistantOpen] = useState(false);
+    const [heroRightTab, setHeroRightTab] = useState<'shield3d' | 'telemetry'>('shield3d');
     const phoneNumber = "593978980722";
 
     const { serviceFees } = useAppStore();
@@ -981,71 +983,133 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             </Reveal>
                         </div>
 
-                        {/* Right Column: Live Telemetry Fiscal Cockpit */}
+                        {/* Right Column: Interactive 3D Tax Shield & Telemetry Cockpit */}
                         <div className="lg:col-span-5">
                             <Reveal delay={150}>
-                                <SpotlightCard theme={theme} className="p-8 relative">
-                                    {/* Continuous Laser Scanning Line */}
-                                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#00A896] to-transparent animate-scan pointer-events-none z-20" />
-
-                                    <div className="flex items-center justify-between pb-5 border-b border-white/10">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-3 h-3 rounded-full bg-[#00A896] animate-ping" />
-                                            <span className="text-xs font-bold font-mono tracking-wider text-[#00A896] uppercase">CENTRO DE TELEMETRÍA FISCAL</span>
-                                        </div>
-                                        <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 font-bold">
-                                            SRI 2026 ACTIVO
-                                        </span>
-                                    </div>
-
-                                    <div className="py-6 space-y-5 font-mono text-left">
-                                        <div>
-                                            <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1 font-sans">Declaraciones Procesadas con Éxito</div>
-                                            <div className={`text-3xl font-bold tracking-tight flex items-center justify-between font-display ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
-                                                <span>12,548+</span>
-                                                <span className="text-xs text-[#00A896] font-semibold flex items-center gap-1 font-mono">
-                                                    <TrendingUp size={14} /> +18.4% este mes
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4 pt-3 border-t border-white/5">
-                                            <div>
-                                                <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1 font-sans">Precisión Algorítmica</div>
-                                                <div className="text-2xl font-bold text-[#00A896] font-display">99.9%</div>
-                                            </div>
-                                            <div>
-                                                <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1 font-sans">Ahorro Generado</div>
-                                                <div className="text-2xl font-bold text-[#C9A96E] font-display">$1.2M+</div>
-                                            </div>
-                                        </div>
-
-                                        <div className={`p-4 rounded-2xl border space-y-2 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
-                                            <div className="flex justify-between items-center text-xs">
-                                                <span className="text-slate-400 font-sans">Motor Nueva Luz 3.0:</span>
-                                                <span className="text-[#00A896] font-bold">SINCRONIZADO</span>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-black/20 rounded-full overflow-hidden">
-                                                <div className="h-full bg-gradient-to-r from-[#00A896] via-[#2B6AFF] to-[#C9A96E] w-[98%] rounded-full animate-pulse" />
-                                            </div>
-                                            <div className="text-[9px] text-slate-400 font-sans">Conexión directa con SRI Ecuador, cálculo automático en casilleros 615/617.</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <button 
-                                            onClick={() => scrollToSection('fases')}
-                                            className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 border font-mono ${
-                                                theme === 'dark' 
-                                                    ? 'bg-white/10 hover:bg-[#00A896] hover:text-white text-white border-white/10' 
-                                                    : 'bg-slate-900 hover:bg-[#00A896] text-white border-slate-900'
+                                <div className="space-y-3">
+                                    {/* Segmented View Switcher */}
+                                    <div className="flex items-center justify-between p-1.5 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-xl">
+                                        <button
+                                            onClick={() => setHeroRightTab('shield3d')}
+                                            className={`flex-1 py-2 px-3 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all ${
+                                                heroRightTab === 'shield3d'
+                                                    ? 'bg-gradient-to-r from-[#00A896] to-[#028090] text-white shadow-lg shadow-[#00A896]/30'
+                                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
                                             }`}
                                         >
-                                            <span>Conocer las 4 Fases de Blindaje</span>
-                                            <ArrowUpRight size={16} />
+                                            <Shield size={14} className={heroRightTab === 'shield3d' ? 'animate-pulse' : ''} />
+                                            <span>Escudo 3D Blindaje</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => setHeroRightTab('telemetry')}
+                                            className={`flex-1 py-2 px-3 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all ${
+                                                heroRightTab === 'telemetry'
+                                                    ? 'bg-gradient-to-r from-[#C9A96E] to-[#b45309] text-white shadow-lg shadow-[#C9A96E]/30'
+                                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                            }`}
+                                        >
+                                            <BarChart3 size={14} className={heroRightTab === 'telemetry' ? 'animate-pulse' : ''} />
+                                            <span>Telemetría Fiscal</span>
                                         </button>
                                     </div>
-                                </SpotlightCard>
+
+                                    {/* Tab 1: 3D Shield Hero Experience */}
+                                    <AnimatePresence mode="wait">
+                                        {heroRightTab === 'shield3d' ? (
+                                            <motion.div
+                                                key="shield3d"
+                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                                                className={`relative rounded-[2.5rem] border overflow-hidden backdrop-blur-2xl shadow-2xl ${
+                                                    theme === 'dark'
+                                                        ? 'bg-[#051424]/85 border-white/15 shadow-[#00A896]/10'
+                                                        : 'bg-white/95 border-slate-200 shadow-xl'
+                                                }`}
+                                            >
+                                                <TaxShieldHero3D 
+                                                    theme={theme}
+                                                    onActivateShield={() => {
+                                                        // Smoothly notify user
+                                                    }}
+                                                />
+                                            </motion.div>
+                                        ) : (
+                                            <motion.div
+                                                key="telemetry"
+                                                initial={{ opacity: 0, scale: 0.95 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                                            >
+                                                <SpotlightCard theme={theme} className="p-8 relative">
+                                                    {/* Continuous Laser Scanning Line */}
+                                                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#00A896] to-transparent animate-scan pointer-events-none z-20" />
+
+                                                    <div className="flex items-center justify-between pb-5 border-b border-white/10">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-3 h-3 rounded-full bg-[#00A896] animate-ping" />
+                                                            <span className="text-xs font-bold font-mono tracking-wider text-[#00A896] uppercase">CENTRO DE TELEMETRÍA FISCAL</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 font-bold">
+                                                            SRI 2026 ACTIVO
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="py-6 space-y-5 font-mono text-left">
+                                                        <div>
+                                                            <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1 font-sans">Declaraciones Procesadas con Éxito</div>
+                                                            <div className={`text-3xl font-bold tracking-tight flex items-center justify-between font-display ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                                                <span>12,548+</span>
+                                                                <span className="text-xs text-[#00A896] font-semibold flex items-center gap-1 font-mono">
+                                                                    <TrendingUp size={14} /> +18.4% este mes
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4 pt-3 border-t border-white/5">
+                                                            <div>
+                                                                <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1 font-sans">Precisión Algorítmica</div>
+                                                                <div className="text-2xl font-bold text-[#00A896] font-display">99.9%</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1 font-sans">Ahorro Generado</div>
+                                                                <div className="text-2xl font-bold text-[#C9A96E] font-display">$1.2M+</div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className={`p-4 rounded-2xl border space-y-2 ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                                                            <div className="flex justify-between items-center text-xs">
+                                                                <span className="text-slate-400 font-sans">Motor Nueva Luz 3.0:</span>
+                                                                <span className="text-[#00A896] font-bold">SINCRONIZADO</span>
+                                                            </div>
+                                                            <div className="w-full h-1.5 bg-black/20 rounded-full overflow-hidden">
+                                                                <div className="h-full bg-gradient-to-r from-[#00A896] via-[#2B6AFF] to-[#C9A96E] w-[98%] rounded-full animate-pulse" />
+                                                            </div>
+                                                            <div className="text-[9px] text-slate-400 font-sans">Conexión directa con SRI Ecuador, cálculo automático en casilleros 615/617.</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-2">
+                                                        <button 
+                                                            onClick={() => scrollToSection('fases')}
+                                                            className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 border font-mono ${
+                                                                theme === 'dark' 
+                                                                    ? 'bg-white/10 hover:bg-[#00A896] hover:text-white text-white border-white/10' 
+                                                                    : 'bg-slate-900 hover:bg-[#00A896] text-white border-slate-900'
+                                                            }`}
+                                                        >
+                                                            <span>Conocer las 4 Fases de Blindaje</span>
+                                                            <ArrowUpRight size={16} />
+                                                        </button>
+                                                    </div>
+                                                </SpotlightCard>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
                             </Reveal>
                         </div>
                     </div>
