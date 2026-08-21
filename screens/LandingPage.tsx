@@ -15,6 +15,8 @@ import { useAppStore } from '../store/useAppStore';
 import { validarIdentificacionEcuatoriana } from '../utils/sriCalculators';
 import { Scroll3DCanvas } from '../components/3d/Scroll3DCanvas';
 import { TaxShieldHero3D } from '../components/3d/TaxShieldHero3D';
+import { useSmoothScroll } from '../hooks/useSmoothScroll';
+import { CinematicIntro } from '../components/hero/CinematicIntro';
 
 interface LandingPageProps {
     onAdminAccess: () => void;
@@ -261,6 +263,7 @@ const PROVINCES_MAP: Record<string, string> = {
 // MAIN COMPONENT: LANDING PAGE (Luxury Tier 2026)
 // ═══════════════════════════════════════════════════════════════════════════════
 export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavigateToServices, theme = 'dark', toggleTheme }) => {
+    useSmoothScroll();
     const [scrolled, setScrolled] = useState(false);
     const [activeSection, setActiveSection] = useState<'top' | 'fases' | 'simulador' | 'multas-sri' | 'calendario-ruc' | 'servicios' | 'faq'>('top');
     const [scrollProgress, setScrollProgress] = useState(0);
@@ -890,11 +893,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             </div>
 
             {/* ════════════════════════════════════════════════════════════════
-                HERO SECTION (Luxury Tier with Dynamic 3D WebGL)
+                APERTURA CINEMATOGRÁFICA (tipografía cinética pineada por scroll)
             ════════════════════════════════════════════════════════════════ */}
-            <section id="top" className={`relative min-h-screen flex items-center justify-center overflow-hidden pt-32 pb-20 md:pt-36 md:pb-24 ${theme === 'dark' ? 'bg-[#0b1326]' : 'bg-gradient-to-b from-white via-slate-50 to-slate-100'}`}>
-                {/* High-FPS 3D Background */}
-                <div className="absolute inset-0 pointer-events-none z-0 opacity-75">
+            <CinematicIntro theme={theme} phoneNumber={phoneNumber} scrollToSection={scrollToSection} />
+
+            {/* ════════════════════════════════════════════════════════════════
+                HERO DETALLE (3D ahora es fondo ambiental, no protagonista)
+            ════════════════════════════════════════════════════════════════ */}
+            <section className={`relative min-h-screen flex items-center justify-center overflow-hidden pt-32 pb-20 md:pt-36 md:pb-24 ${theme === 'dark' ? 'bg-[#0b1326]' : 'bg-gradient-to-b from-white via-slate-50 to-slate-100'}`}>
+                {/* Fondo 3D ambiental de baja intensidad */}
+                <div className="absolute inset-0 pointer-events-none z-0 opacity-30">
                     <Scroll3DCanvas scrollProgress={scrollProgress / 100} theme={theme} />
                 </div>
 
@@ -904,7 +912,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                 <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center text-left">
                         
-                        {/* Left Column: Headlines, Slogans & Pillars */}
+                        {/* Left Column: Slogan & Pillars (marca ya presentada en la apertura cinematográfica) */}
                         <div className="lg:col-span-7 space-y-6">
                             {/* Badges row */}
                             <Reveal delay={0}>
@@ -917,18 +925,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                         <ShieldCheck size={13} className="text-[#C9A96E]" /> SRI 2026 SINCRONIZADO
                                     </div>
                                 </div>
-                            </Reveal>
-
-                            {/* Main Headline with Liquid Gold Surname */}
-                            <Reveal delay={60}>
-                                <h1 className="text-[2.6rem] sm:text-[4rem] md:text-[4.8rem] lg:text-[5.2rem] font-display tracking-tight leading-[0.95] font-extrabold">
-                                    <span className={`block ${theme === 'dark' ? 'text-white' : 'text-slate-950'}`}>SANTIAGO</span>
-                                    <span className="relative inline-block mt-1">
-                                        <span className="text-gold-gradient drop-shadow-[0_0_35px_rgba(201,169,110,0.35)]">
-                                            CÓRDOVA
-                                        </span>
-                                    </span>
-                                </h1>
                             </Reveal>
 
                             {/* Brand Slogan / Value Promise */}
