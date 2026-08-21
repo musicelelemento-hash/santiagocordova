@@ -41,14 +41,26 @@ export default defineConfig(({ mode }) => {
               if (id.includes('three') || id.includes('@react-three')) {
                 return 'vendor-three';
               }
-              if (id.includes('pdfjs-dist') || id.includes('html2pdf.js') || id.includes('xlsx') || id.includes('docxtemplater') || id.includes('pizzip') || id.includes('jszip') || id.includes('node-forge') || id.includes('crypto-js')) {
-                return 'vendor-office';
+              if (id.includes('pdfjs-dist') || id.includes('html2pdf.js')) {
+                return 'vendor-pdf';
+              }
+              if (id.includes('xlsx')) {
+                return 'vendor-excel';
+              }
+              if (id.includes('docxtemplater') || id.includes('pizzip') || id.includes('jszip')) {
+                return 'vendor-docx';
+              }
+              if (id.includes('node-forge') || id.includes('crypto-js')) {
+                return 'vendor-crypto';
               }
               if (id.includes('recharts')) {
                 return 'vendor-recharts';
               }
-              if (id.includes('firebase') || id.includes('@supabase')) {
-                return 'vendor-db';
+              if (id.includes('@supabase')) {
+                return 'vendor-supabase';
+              }
+              if (id.includes('firebase')) {
+                return 'vendor-firebase';
               }
               if (id.includes('framer-motion') || id.includes('gsap')) {
                 return 'vendor-animation';
