@@ -3,7 +3,7 @@ import {
   Home, Users, LayoutGrid, Kanban, Box, KeyRound, ShoppingBag,
   FileSpreadsheet, Key, Coins, Wallet, BarChart, FileText, CheckCircle,
   CalendarDays, ShoppingCart, Globe, Settings, History, ArrowRightLeft,
-  Search, Sun, Moon, Zap, X, ArrowRight
+  Search, Sun, Moon, Zap, X, ArrowRight, Menu, TrendingUp
 } from 'lucide-react';
 import { LandingPage } from './screens/LandingPage';
 import { Logo } from './Logo';
@@ -11,6 +11,7 @@ import { Clock } from './components/ui/Clock';
 import { NotificationBell } from './components/layout/NotificationBell';
 import { Sidebar } from './components/layout/Sidebar';
 import { MobileNavBar } from './components/layout/MobileNavBar';
+import { MobileDrawer } from './components/layout/MobileDrawer';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Client, Task, Screen, Theme, ClientFilter, PublicUser, TaxRegime, Declaration, DeclarationStatus } from './types';
 import { loadDataFromSheet, syncDataToSheet } from './services/sheetApi';
@@ -19,6 +20,9 @@ import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useAppStore } from './store/useAppStore';
 import { getClientUndeclaredSummary } from './services/complianceEngine';
+
+// Pantallas internas válidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
+const VALID_SCREENS: Screen[] = ['home', 'clients', 'declaraciones', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'services', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
 
 // Lazy-loaded heavy modules & admin screens
 const AdminDashboardScreen = React.lazy(() => import('./screens/AdminDashboardScreen').then(m => ({ default: m.AdminDashboardScreen })));
@@ -88,6 +92,15 @@ const App: React.FC = () => {
     return 'landing';
   });
 
+  const [activeScreen, setActiveScreen] = useState<Screen>(() => {
+    const p = window.location.pathname;
+    if (p !== '/dashboard' && p !== '/admin') return 'home';
+    const s = new URLSearchParams(window.location.search).get('screen') as Screen | null;
+    return s && VALID_SCREENS.includes(s) ? s : 'home';
+  });
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
   // Sincronizar appState con la URL del navegador
   useEffect(() => {
     const path = window.location.pathname;
@@ -95,15 +108,15 @@ const App: React.FC = () => {
 
     if (appState === 'landing') targetPath = '/';
     else if (appState === 'login') targetPath = '/dashboard';
-    else if (appState === 'dashboard') targetPath = '/dashboard';
+    else if (appState === 'dashboard') targetPath = `/dashboard?screen=${activeScreen}`;
     else if (appState === 'services') targetPath = '/services';
     else if (appState === 'client_portal') targetPath = '/portal';
     else if (appState === 'music') targetPath = '/musica';
 
-    if (path !== targetPath) {
+    if (path + window.location.search !== targetPath) {
       window.history.pushState({ appState }, '', targetPath);
     }
-  }, [appState]);
+  }, [appState, activeScreen]);
 
   // Manejar navegación atrás/adelante del navegador
   useEffect(() => {
@@ -115,6 +128,10 @@ const App: React.FC = () => {
         setAppState('landing');
       } else if (path === '/admin' || path === '/dashboard' || path === '/login') {
         setAppState(isAdminLoggedIn ? 'dashboard' : 'login');
+        if (isAdminLoggedIn) {
+          const s = new URLSearchParams(window.location.search).get('screen') as Screen | null;
+          setActiveScreen(s && VALID_SCREENS.includes(s) ? s : 'home');
+        }
       } else if (path === '/services') {
         setAppState('services');
       } else if (path === '/musica' || path === '/music') {
@@ -133,8 +150,6 @@ const App: React.FC = () => {
   const [publicUser, setPublicUser] = useState<PublicUser | null>(null);
   const [loggedClient, setLoggedClient] = useState<Client | null>(null);
   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'dark');
-  const [activeScreen, setActiveScreen] = useState<Screen>('home');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [previousScreen, setPreviousScreen] = useState<Screen | null>(null);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [isGlobalDropdownOpen, setIsGlobalDropdownOpen] = useState(false);
@@ -396,7 +411,7 @@ const App: React.FC = () => {
           source: 'SC_PRO_DASHBOARD',
           type: 'SRI_FULL_MATRIX_DATA',
           data: clients
-        }, "*");
+        }, window.location.origin);
       } catch (e) {
         console.warn("Error transmitiendo matriz:", e);
       }
@@ -600,9 +615,16 @@ const App: React.FC = () => {
     }
   };
 
+  // Badge real de mora: total de períodos vencidos sin declarar/pagar entre clientes activos
+  const pendingDeclarationsCount = useMemo(() => {
+    return clients
+      .filter(c => !c.isDeleted && (c.isActive ?? true))
+      .reduce((acc, c) => acc + getClientUndeclaredSummary(c).overduePeriodsCount, 0);
+  }, [clients]);
+
   const navItems = ([
     { screen: 'home', icon: Home, label: 'Dashboard' },
-    { screen: 'declaraciones', icon: LayoutGrid, label: 'Declaraciones SRI', count: clients.filter(c => !c.isDeleted && (c.isActive ?? true)).length },
+    { screen: 'declaraciones', icon: LayoutGrid, label: 'Declaraciones SRI', count: pendingDeclarationsCount },
     { screen: 'clients', icon: Users, label: 'Directorio Clientes' },
     { screen: 'firmas', icon: KeyRound, label: 'Firmas Electrónicas' },
     { screen: 'crm_pipeline', icon: Kanban, label: 'CRM Embudo' },
@@ -613,6 +635,7 @@ const App: React.FC = () => {
     { screen: 'refinanciacion', icon: Coins, label: 'Refinanciación' },
     { screen: 'caja_chica', icon: Wallet, label: 'Caja Chica TPV' },
     { screen: 'cobranza', icon: BarChart, label: 'Cobranza' },
+    { screen: 'reports', icon: TrendingUp, label: 'Reportes IA' },
     { screen: 'sri_facturacion', icon: FileText, label: 'Facturador' },
     { screen: 'tasks', icon: CheckCircle, label: 'Tareas' },
     { screen: 'calendar', icon: CalendarDays, label: 'Agenda' },
@@ -703,11 +726,36 @@ const App: React.FC = () => {
           isCollapsed={isSidebarCollapsed || !!clientToView}
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
         />
+
+        {/* Mobile Top Bar + Drawer (acceso a los 21 módulos en móvil) */}
+        <div className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4 bg-[#051424]/95 backdrop-blur-2xl border-b border-white/10 no-print">
+          <button
+            onClick={() => setIsMobileDrawerOpen(true)}
+            aria-label="Abrir menú de módulos"
+            className="w-10 h-10 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:text-white hover:border-[#00A896]/40 transition-all active:scale-95"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="font-display font-bold text-white text-sm tracking-wide truncate max-w-[55%] text-center">
+            {activeScreen === 'home' ? 'Centro de Control' : (navItems.find(i => i.screen === activeScreen)?.label ?? '')}
+          </span>
+          <div className="w-10" />
+        </div>
+        <MobileDrawer
+          isOpen={isMobileDrawerOpen}
+          onClose={() => setIsMobileDrawerOpen(false)}
+          navItems={navItems}
+          activeScreen={activeScreen}
+          onNavigate={(s) => {
+            setIsMobileDrawerOpen(false);
+            navigate(s as Screen);
+          }}
+        />
         <div className={`flex-1 flex flex-col min-w-0 relative z-10 transition-all duration-500 ${(isSidebarCollapsed || !!clientToView) ? 'md:pl-[84px]' : 'md:pl-[280px]'}`}>
           <header className="hidden md:flex items-center justify-between p-5 px-10 bg-white/90 dark:bg-[#051424]/90 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/10 relative z-30 transition-all duration-500 no-print">
             <div className="flex items-center gap-4">
               <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white capitalize font-display">
-                {activeScreen === 'home' ? 'Centro de Control' : activeScreen.replace('_', ' ')}
+                {activeScreen === 'home' ? 'Centro de Control' : (navItems.find(i => i.screen === activeScreen)?.label ?? activeScreen.replace('_', ' '))}
               </h1>
             </div>
 

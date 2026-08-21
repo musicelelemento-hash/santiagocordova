@@ -5,7 +5,8 @@ import {
     ChevronRight, Zap, RefreshCw, PlusCircle,
     Copy, User, FileText, KeyRound, Wallet,
     Calendar, TrendingUp, ShieldCheck, FileSpreadsheet,
-    DollarSign, Briefcase, FileCheck, Layers, Award
+    DollarSign, Briefcase, FileCheck, Layers, Award,
+    LayoutGrid, Box, Coins, PiggyBank, ShoppingCart, ArrowRightLeft
 } from 'lucide-react';
 import { Client } from '../types';
 
@@ -49,19 +50,26 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
     const ALL_NAV_ITEMS = [
         { id: 'nav-dash', type: 'nav', label: 'Dashboard Principal', screen: 'home', icon: <LayoutDashboard size={18} className="text-[#00A896]" /> },
+        { id: 'nav-declaraciones', type: 'nav', label: 'Declaraciones SRI (Matriz Fiscal)', screen: 'declaraciones', icon: <LayoutGrid size={18} className="text-[#00A896]" /> },
         { id: 'nav-clients', type: 'nav', label: 'Expedientes de Clientes', screen: 'clients', icon: <Users size={18} className="text-[#2B6AFF]" /> },
         { id: 'nav-firmas', type: 'nav', label: 'Gestor de Firmas .P12', screen: 'firmas', icon: <KeyRound size={18} className="text-[#C9A96E]" /> },
         { id: 'nav-facturacion', type: 'nav', label: 'Facturación SRI & Nueva Luz 3.0', screen: 'sri_facturacion', icon: <Zap size={18} className="text-[#00A896]" /> },
         { id: 'nav-cobranza', type: 'nav', label: 'Cartera y Cobranzas', screen: 'cobranza', icon: <Wallet size={18} className="text-rose-400" /> },
-        { id: 'nav-tasks', type: 'nav', label: 'Tareas & Órdenes Tácticas', screen: 'tasks', icon: <Briefcase size={18} className="text-amber-400" /> },
-        { id: 'nav-reports', type: 'nav', label: 'Reportes & Analítica IA', screen: 'reports', icon: <TrendingUp size={18} className="text-teal-400" /> },
-        { id: 'nav-calendar', type: 'nav', label: 'Calendario Fiscal SRI', screen: 'calendar', icon: <Calendar size={18} className="text-indigo-400" /> },
         { id: 'nav-facturadores', type: 'nav', label: 'Facturadores Electrónicos', screen: 'facturadores', icon: <FileSpreadsheet size={18} className="text-[#00A896]" /> },
-        { id: 'nav-cotizaciones', type: 'nav', label: 'Cotizaciones de Servicios', screen: 'cotizaciones', icon: <DollarSign size={18} className="text-emerald-400" /> },
+        { id: 'nav-tasks', type: 'nav', label: 'Tareas & Órdenes Tácticas', screen: 'tasks', icon: <Briefcase size={18} className="text-amber-400" /> },
+        { id: 'nav-calendar', type: 'nav', label: 'Calendario Fiscal SRI', screen: 'calendar', icon: <Calendar size={18} className="text-indigo-400" /> },
         { id: 'nav-crm', type: 'nav', label: 'Pipeline CRM de Clientes', screen: 'crm_pipeline', icon: <Layers size={18} className="text-[#2B6AFF]" /> },
-        { id: 'nav-audit', type: 'nav', label: 'Registro de Auditoría', screen: 'audit_log', icon: <ShieldCheck size={18} className="text-slate-400" /> },
-        { id: 'nav-settings', type: 'nav', label: 'Configuración del Sistema', screen: 'settings', icon: <Settings size={18} className="text-slate-300" /> },
+        { id: 'nav-cotizaciones', type: 'nav', label: 'Cotizaciones de Servicios', screen: 'cotizaciones', icon: <DollarSign size={18} className="text-emerald-400" /> },
+        { id: 'nav-reports', type: 'nav', label: 'Reportes & Analítica IA', screen: 'reports', icon: <TrendingUp size={18} className="text-teal-400" /> },
+        { id: 'nav-caja-chica', type: 'nav', label: 'Caja Chica TPV', screen: 'caja_chica', icon: <PiggyBank size={18} className="text-emerald-400" /> },
+        { id: 'nav-refinanciacion', type: 'nav', label: 'Refinanciación', screen: 'refinanciacion', icon: <Coins size={18} className="text-amber-400" /> },
+        { id: 'nav-licencias', type: 'nav', label: 'Licencias SaaS', screen: 'licencias', icon: <Award size={18} className="text-[#C9A96E]" /> },
+        { id: 'nav-web-orders', type: 'nav', label: 'Tienda Web & Órdenes', screen: 'web_orders', icon: <ShoppingCart size={18} className="text-[#2B6AFF]" /> },
+        { id: 'nav-3d-studio', type: 'nav', label: 'Studio 3D Alpha3D', screen: '3d-studio', icon: <Box size={18} className="text-indigo-400" /> },
+        { id: 'nav-migracion-zifact', type: 'nav', label: 'Migración a Zifact', screen: 'migracion_zifact', icon: <ArrowRightLeft size={18} className="text-[#2B6AFF]" /> },
         { id: 'nav-services', type: 'nav', label: 'Catálogo de Servicios Web', screen: 'services', icon: <Globe size={18} className="text-[#00A896]" /> },
+        { id: 'nav-settings', type: 'nav', label: 'Configuración del Sistema', screen: 'settings', icon: <Settings size={18} className="text-slate-300" /> },
+        { id: 'nav-audit', type: 'nav', label: 'Registro de Auditoría', screen: 'audit_log', icon: <ShieldCheck size={18} className="text-slate-400" /> },
     ];
 
     const results = useMemo(() => {
