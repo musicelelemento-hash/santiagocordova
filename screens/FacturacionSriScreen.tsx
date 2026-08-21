@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   FileText, Plus, Trash2, Settings, CheckCircle2, XCircle, Info, Search, 
@@ -14,6 +14,7 @@ import { getClientServiceFee } from '../services/clientService';
 import { formatPeriodForDisplay } from '../services/sri';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
+import { FACTURACION_API_TOKEN } from '../services/facturacionApi';
 import { SalesComboModal } from '../components/features/SalesComboModal';
 import { VentaOcasionalForm } from '../components/features/VentaOcasionalForm';
 import { useToast } from '../context/ToastContext';
@@ -101,7 +102,7 @@ const mapDescriptionToProduct = (desc: string) => {
     formattedDesc = `Decl RETENCIONES${periodPart}`;
   } else if (cleanDesc.includes('HONORARIOS') || cleanDesc.includes('ASESOR') || cleanDesc.includes('SERVICIOS') || cleanDesc.includes('COBRO')) {
     code = '001';
-    formattedDesc = `Servicios Contables y Asesoría Tributaria${periodPart}`;
+    formattedDesc = `Servicios Contables y AsesorÃ­a Tributaria${periodPart}`;
   }
 
   return { code, description: formattedDesc };
@@ -154,7 +155,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   }, [initialClientId]);
 
 
-  // API connection settings — uses VITE_FACTURACION_API_URL for production (set in Netlify/Vercel env vars)
+  // API connection settings â€” uses VITE_FACTURACION_API_URL for production (set in Netlify/Vercel env vars)
   const DEFAULT_API_URL = import.meta.env.VITE_FACTURACION_API_URL || 'https://facturador-sri-api.onrender.com';
   const [apiUrl, setApiUrl] = useState(() => {
     const stored = localStorage.getItem('sc_facturacion_api_url');
@@ -178,7 +179,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     }
     return stored;
   }); // 0 = General, 3 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
-  const [ambiente, setAmbienteState] = useState<'1' | '2'>(() => (localStorage.getItem('sc_emisor_ambiente') as '1' | '2') || '2'); // Default a 2 (Producción) si el usuario ya está facturando
+  const [ambiente, setAmbienteState] = useState<'1' | '2'>(() => (localStorage.getItem('sc_emisor_ambiente') as '1' | '2') || '2'); // Default a 2 (ProducciÃ³n) si el usuario ya estÃ¡ facturando
 
   const setAmbiente = (newAmbiente: '1' | '2') => {
     setAmbienteState(newAmbiente);
@@ -193,7 +194,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [p12SubjectName, setP12SubjectName] = useState('');
   const [p12OwnerName, setP12OwnerName] = useState('');
 
-  // Función helper para guardar la configuración del emisor y firma electrónica en Supabase y local
+  // FunciÃ³n helper para guardar la configuraciÃ³n del emisor y firma electrÃ³nica en Supabase y local
   const saveEmisorConfigToSupabase = async (overrides?: any) => {
     try {
       const payload = {
@@ -217,10 +218,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     }
   };
 
-  // Carga asíncrona de firma electrónica y emisor desde Supabase con respaldo en IndexedDB / localStorage
+  // Carga asÃ­ncrona de firma electrÃ³nica y emisor desde Supabase con respaldo en IndexedDB / localStorage
   useEffect(() => {
     const loadSignatureAndEmisor = async () => {
-      // 1. Intentar cargar desde Supabase (sincronización en la nube)
+      // 1. Intentar cargar desde Supabase (sincronizaciÃ³n en la nube)
       try {
         const remote = await SupabaseService.getEmisorConfig();
         if (remote) {
@@ -255,7 +256,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         console.warn('[Supabase] No se pudo obtener emisor_settings desde la nube, probando local:', err);
       }
 
-      // 2. Fallback local si la nube aún no tenía la firma guardada
+      // 2. Fallback local si la nube aÃºn no tenÃ­a la firma guardada
       try {
         const base64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
         const name = (await db.getLocal('sc_sri_p12_filename')) || localStorage.getItem('sc_sri_p12_filename') || '';
@@ -350,7 +351,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             localStorage.setItem('sc_sri_p12_expiry', formattedExpiry);
 
             // Extract owner name from binary text candidates if found
-            const printableMatches = binaryStr.match(/[A-ZÁÉÍÓÚÑ]{3,}\s+[A-ZÁÉÍÓÚÑ]{3,}(\s+[A-ZÁÉÍÓÚÑ]{3,})*/g);
+            const printableMatches = binaryStr.match(/[A-ZÃÃ‰ÃÃ“ÃšÃ‘]{3,}\s+[A-ZÃÃ‰ÃÃ“ÃšÃ‘]{3,}(\s+[A-ZÃÃ‰ÃÃ“ÃšÃ‘]{3,})*/g);
             if (printableMatches && printableMatches.length > 0) {
               const candidate = printableMatches.find(m => 
                 m.length >= 10 && 
@@ -366,7 +367,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             }
 
             const daysLeft = Math.floor((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-            const subjectNote = daysLeft < 0 ? '⚠️ CERTIFICADO VENCIDO' : daysLeft < 60 ? `⚠️ Vence en ${daysLeft} días` : `✓ Válido (${daysLeft} días restantes)`;
+            const subjectNote = daysLeft < 0 ? 'âš ï¸ CERTIFICADO VENCIDO' : daysLeft < 60 ? `âš ï¸ Vence en ${daysLeft} dÃ­as` : `âœ“ VÃ¡lido (${daysLeft} dÃ­as restantes)`;
             setP12SubjectName(subjectNote);
             await db.setLocal('sc_sri_p12_subject', subjectNote);
             localStorage.setItem('sc_sri_p12_subject', subjectNote);
@@ -413,7 +414,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
   const [buyerAddress, setBuyerAddress] = useState('');
-  const [buyerIdType, setBuyerIdType] = useState('05'); // 04 = RUC, 05 = Cédula, 06 = Pasaporte
+  const [buyerIdType, setBuyerIdType] = useState('05'); // 04 = RUC, 05 = CÃ©dula, 06 = Pasaporte
 
   // Invoice specifics
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>(() => {
@@ -484,8 +485,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
   const [billingMode, setBillingMode] = useState<'detallado' | 'consolidado'>('detallado');
   const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
-  // Inicializar desde localStorage sincrónicamente para evitar el flash que pedía
-  // re-configurar la firma en cada sesión. Si ya existe la firma guardada → false.
+  // Inicializar desde localStorage sincrÃ³nicamente para evitar el flash que pedÃ­a
+  // re-configurar la firma en cada sesiÃ³n. Si ya existe la firma guardada â†’ false.
   const [isEditingSignature, setIsEditingSignature] = useState<boolean>(
     () => !localStorage.getItem('sc_sri_p12_base64')
   );
@@ -493,7 +494,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [showP12Password, setShowP12Password] = useState(false);
   const [emisorLogo, setEmisorLogo] = useState(() => localStorage.getItem('sc_emisor_logo') || '');
 
-  // Último secuencial usado por tipo — persiste entre sesiones sin depender del historial async.
+  // Ãšltimo secuencial usado por tipo â€” persiste entre sesiones sin depender del historial async.
   // Clave: 'sc_sri_last_seq_factura' y 'sc_sri_last_seq_retencion'
   const [lastSeqFactura, setLastSeqFactura] = useState<number>(
     () => Number(localStorage.getItem('sc_sri_last_seq_factura')) || 12
@@ -637,7 +638,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
  
     if (billingMode === 'detallado') {
       const newItems: InvoiceItem[] = checkedObs.map((ob, idx) => {
-        const desc = `Declaración de ${ob.label} - Período ${formatPeriodForDisplay(ob.period)}`;
+        const desc = `DeclaraciÃ³n de ${ob.label} - PerÃ­odo ${formatPeriodForDisplay(ob.period)}`;
         const sub = ob.amount;
         const tax = Number((sub * currentIvaRate).toFixed(2));
         return {
@@ -696,7 +697,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  // Check connection status to Laravel backend usando el endpoint público /ping
+  // Check connection status to Laravel backend usando el endpoint pÃºblico /ping
   const checkBackendConnection = async (urlToCheck = apiUrl) => {
     setConnectionStatus('checking');
     try {
@@ -704,7 +705,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         method: 'GET', 
         mode: 'cors',
         headers: {
-          'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+          'Authorization': FACTURACION_API_TOKEN
         }
       });
       if (response.ok) {
@@ -727,7 +728,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+          'Authorization': FACTURACION_API_TOKEN
         },
         body: JSON.stringify({
           certificado_p12_base64: storedBase64,
@@ -768,7 +769,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               localStorage.setItem('sc_sri_p12_expiry', formattedExpiry);
               
               const daysLeft = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-              const subjectNote = daysLeft < 0 ? '⚠️ CERTIFICADO VENCIDO' : daysLeft < 60 ? `⚠️ Vence en ${daysLeft} días` : `✓ Válido (${daysLeft} días restantes)`;
+              const subjectNote = daysLeft < 0 ? 'âš ï¸ CERTIFICADO VENCIDO' : daysLeft < 60 ? `âš ï¸ Vence en ${daysLeft} dÃ­as` : `âœ“ VÃ¡lido (${daysLeft} dÃ­as restantes)`;
               setP12SubjectName(subjectNote);
               await db.setLocal('sc_sri_p12_subject', subjectNote);
               localStorage.setItem('sc_sri_p12_subject', subjectNote);
@@ -789,30 +790,30 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     runChecks();
   }, []);
 
-  // ─── Wake-up al montar: despierta el servidor nada más entrar al menú ────────
-  // Se dispara una vez al cargar la pantalla de Facturación SRI, así el servidor
-  // de Render ya está activo cuando el usuario presione "Emitir Factura".
+  // â”€â”€â”€ Wake-up al montar: despierta el servidor nada mÃ¡s entrar al menÃº â”€â”€â”€â”€â”€â”€â”€â”€
+  // Se dispara una vez al cargar la pantalla de FacturaciÃ³n SRI, asÃ­ el servidor
+  // de Render ya estÃ¡ activo cuando el usuario presione "Emitir Factura".
   useEffect(() => {
     fetch(`${DEFAULT_API_URL}/api/v1/ping`, {
       method: 'GET',
       mode: 'cors',
-      headers: { 'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir' }
-    }).catch(() => {}); // silencioso — solo para despertar
+      headers: { 'Authorization': FACTURACION_API_TOKEN }
+    }).catch(() => {}); // silencioso â€” solo para despertar
   }, []); // [] = solo al montar, una vez
 
   // Warm-up: despierta el backend de Render (free tier se duerme tras 15 min)
-  // Se dispara cuando el usuario entra a la pestaña de Factura o Retención,
-  // antes de que presione cualquier botón — así ya está despierto cuando lo necesita.
+  // Se dispara cuando el usuario entra a la pestaÃ±a de Factura o RetenciÃ³n,
+  // antes de que presione cualquier botÃ³n â€” asÃ­ ya estÃ¡ despierto cuando lo necesita.
   useEffect(() => {
     if (activeTab === 'factura' || activeTab === 'retencion') {
       fetch(`${apiUrl}${apiPrefix}/ping`, { 
         method: 'GET', 
         mode: 'cors',
         headers: {
-          'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+          'Authorization': FACTURACION_API_TOKEN
         }
       })
-      .catch(() => {}); // silencioso — solo para despertar el servidor
+      .catch(() => {}); // silencioso â€” solo para despertar el servidor
     }
   }, [activeTab]);
 
@@ -834,7 +835,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   // Load history from Supabase (with IndexedDB fallback)
   useEffect(() => {
     const syncLastSeqFromHistory = (records: HistoricComprobante[]) => {
-      // Encuentra el máximo secuencial de facturas y retenciones en el historial
+      // Encuentra el mÃ¡ximo secuencial de facturas y retenciones en el historial
       // y actualiza localStorage si el valor persistido es menor.
       const maxFact = records
         .filter(r => r.tipo === 'factura' && r.secuencial)
@@ -1007,21 +1008,21 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   // Standard withholding codes for Ecuador
   const withholdingCodes = {
     renta: [
-      { code: '312', label: 'Servicios en relación de dependencia o generales (1.75%)', rate: 1.75 },
+      { code: '312', label: 'Servicios en relaciÃ³n de dependencia o generales (1.75%)', rate: 1.75 },
       { code: '343', label: 'Servicios profesionales de personas naturales (10.0%)', rate: 10.0 },
       { code: '307', label: 'Servicios de docencia/comisiones a profesionales (10.0%)', rate: 10.0 },
       { code: '332', label: 'Otras compras de bienes y servicios (1.75%)', rate: 1.75 },
       { code: '310', label: 'Servicio de transporte de carga (1.0%)', rate: 1.0 },
       { code: '320', label: 'Arrendamiento de bienes inmuebles (8.0%)', rate: 8.0 },
-      { code: '344A', label: 'Régimen RIMPE Emprendedor (1.0%)', rate: 1.0 }
+      { code: '344A', label: 'RÃ©gimen RIMPE Emprendedor (1.0%)', rate: 1.0 }
     ],
     iva: [
-      { code: '1', label: 'Retención de IVA del 10% (Bienes a entes especiales)', rate: 10.0 },
-      { code: '2', label: 'Retención de IVA del 20% (Servicios a entes especiales)', rate: 20.0 },
-      { code: '3', label: 'Retención de IVA del 30% (Bienes generales)', rate: 30.0 },
-      { code: '5', label: 'Retención de IVA del 50% (Servicios profesionales/Arriendos)', rate: 50.0 },
-      { code: '7', label: 'Retención de IVA del 70% (Servicios generales)', rate: 70.0 },
-      { code: '10', label: 'Retención de IVA del 100% (Importación de servicios / liquidaciones)', rate: 10.0 }
+      { code: '1', label: 'RetenciÃ³n de IVA del 10% (Bienes a entes especiales)', rate: 10.0 },
+      { code: '2', label: 'RetenciÃ³n de IVA del 20% (Servicios a entes especiales)', rate: 20.0 },
+      { code: '3', label: 'RetenciÃ³n de IVA del 30% (Bienes generales)', rate: 30.0 },
+      { code: '5', label: 'RetenciÃ³n de IVA del 50% (Servicios profesionales/Arriendos)', rate: 50.0 },
+      { code: '7', label: 'RetenciÃ³n de IVA del 70% (Servicios generales)', rate: 70.0 },
+      { code: '10', label: 'RetenciÃ³n de IVA del 100% (ImportaciÃ³n de servicios / liquidaciones)', rate: 10.0 }
     ]
   };
 
@@ -1105,7 +1106,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       {
         id: 'mock-1',
         codigoPrincipal: '004',
-        descripcion: 'Honorarios por Auditoría Externa y Estados Financieros',
+        descripcion: 'Honorarios por AuditorÃ­a Externa y Estados Financieros',
         cantidad: 1,
         precioUnitario: 350.00,
         ivaRate: initialIva,
@@ -1116,7 +1117,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       {
         id: 'mock-2',
         codigoPrincipal: '001',
-        descripcion: 'Servicios de Consultoría y Planificación Tributaria Anual',
+        descripcion: 'Servicios de ConsultorÃ­a y PlanificaciÃ³n Tributaria Anual',
         cantidad: 2,
         precioUnitario: 80.00,
         ivaRate: initialIva,
@@ -1226,10 +1227,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   // Log message helper
   const addLog = (msg: string, type: 'info' | 'success' | 'warn' | 'error' = 'info') => {
     const timestamp = new Date().toLocaleTimeString();
-    let prefix = 'ℹ️';
-    if (type === 'success') prefix = '✅';
-    if (type === 'warn') prefix = '⚠️';
-    if (type === 'error') prefix = '❌';
+    let prefix = 'â„¹ï¸';
+    if (type === 'success') prefix = 'âœ…';
+    if (type === 'warn') prefix = 'âš ï¸';
+    if (type === 'error') prefix = 'âŒ';
     setConsoleLogs(prev => [...prev, `[${timestamp}] ${prefix} ${msg}`]);
   };
 
@@ -1245,11 +1246,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     codNumerico = '12345678',
     tipoEmi = '1'
   ) => {
-    const cleanFecha = fecha.replace(/-/g, ''); // "20260716" → YYYYMMDD
+    const cleanFecha = fecha.replace(/-/g, ''); // "20260716" â†’ YYYYMMDD
     const d = cleanFecha.substring(6, 8) + cleanFecha.substring(4, 6) + cleanFecha.substring(0, 4); // DD+MM+YYYY = "16072026"
     
     // access key construction:
-    // Fecha (8) + TipoComp (2) + RUC (13) + Ambiente (1) + Serie (6) + Secuencial (9) + Código Numérico (8) + Tipo Emision (1) = 48 digits
+    // Fecha (8) + TipoComp (2) + RUC (13) + Ambiente (1) + Serie (6) + Secuencial (9) + CÃ³digo NumÃ©rico (8) + Tipo Emision (1) = 48 digits
     const baseKey = d + tipoComp + ruc + amb + estab + pto + sec.padStart(9, '0') + codNumerico.padStart(8, '0') + tipoEmi;
     
     // Modulo 11 check digit
@@ -1269,14 +1270,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   // Run the full invoicing workflow (Generate, Sign, Send, Authorize)
   const handleProcessDocument = async () => {
-    // Calcular siguiente secuencial robusto usando base de datos atómicamente:
+    // Calcular siguiente secuencial robusto usando base de datos atÃ³micamente:
     let nextNum = 0;
     try {
       nextNum = await SupabaseService.getNextSriSecuencial(docType);
     } catch (err: any) {
       setProcessStatus('failed');
-      setProcessErrorMessage(err.message || 'Error obteniendo el siguiente secuencial. Verifica tu conexión y que el script SQL esté aplicado.');
-      addLog(`❌ ${err.message || 'Error obteniendo secuencial'}`, 'error');
+      setProcessErrorMessage(err.message || 'Error obteniendo el siguiente secuencial. Verifica tu conexiÃ³n y que el script SQL estÃ© aplicado.');
+      addLog(`âŒ ${err.message || 'Error obteniendo secuencial'}`, 'error');
       return;
     }
     
@@ -1329,7 +1330,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
           try {
             await updateClient(selectedClient, { declarations: updatedDeclarations });
-            addLog(`Se actualizaron las obligaciones del cliente en la base de datos (${selectedPeriods.length} períodos marcados como pagados).`, 'success');
+            addLog(`Se actualizaron las obligaciones del cliente en la base de datos (${selectedPeriods.length} perÃ­odos marcados como pagados).`, 'success');
           } catch (err) {
             console.error("Failed to update client declarations:", err);
           }
@@ -1345,8 +1346,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
     const isMock = connectionStatus !== 'connected';
     
-    addLog(`Iniciando proceso de emisión de ${docType === 'factura' ? 'Factura' : 'Retención'}...`);
-    addLog(`Ambiente: ${ambiente === '1' ? '1 (PRUEBAS)' : '2 (PRODUCCIÓN)'}. Modo: ${isMock ? 'SIMULACIÓN DEMO' : 'API LARAVEL CONECTADA'}`);
+    addLog(`Iniciando proceso de emisiÃ³n de ${docType === 'factura' ? 'Factura' : 'RetenciÃ³n'}...`);
+    addLog(`Ambiente: ${ambiente === '1' ? '1 (PRUEBAS)' : '2 (PRODUCCIÃ“N)'}. Modo: ${isMock ? 'SIMULACIÃ“N DEMO' : 'API LARAVEL CONECTADA'}`);
 
     // Formulate payload (usando fecha local de Ecuador America/Guayaquil)
     const secuencial = String(nextNum).padStart(9, '0');
@@ -1473,7 +1474,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     <secuencial>${secuencial}</secuencial>
     <dirMatriz>${emisorDirMatriz}</dirMatriz>
   </infoTributaria>
-  <!-- Información del comprobante y detalles del receptor -->
+  <!-- InformaciÃ³n del comprobante y detalles del receptor -->
   <!-- Detalles del producto y tributos -->
 </${docType}>`;
         setGeneratedXml(currentXml);
@@ -1483,7 +1484,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+            'Authorization': FACTURACION_API_TOKEN
           },
           body: JSON.stringify(payload)
         });
@@ -1491,7 +1492,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         const data = await response.json();
         // Controller returns: { status: true, data: { xml: '...', xml_base64: '...' } }
         currentXml = data.data?.xml || data.xml;
-        if (!currentXml) throw new Error('La API no devolvió el XML generado. Revise los logs del servidor.');
+        if (!currentXml) throw new Error('La API no devolviÃ³ el XML generado. Revise los logs del servidor.');
         setGeneratedXml(currentXml);
         addLog(`XML generado correctamente en el backend (${currentXml.length} bytes)`, 'success');
       }
@@ -1503,7 +1504,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       addLog(`Cargando archivo de firma P12...`);
 
       if (isMock) {
-        currentXml = currentXml.replace('</infoTributaria>', `</infoTributaria>\n  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">\n    <SignedInfo>\n      <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>\n      <!-- Simulación de firma XAdES-BES digital -->\n      <SignatureValue>MIIEuwYJKoZIhvcNAQcCoIIErDCC...</SignatureValue>\n    </SignedInfo>\n  </Signature>`);
+        currentXml = currentXml.replace('</infoTributaria>', `</infoTributaria>\n  <Signature xmlns="http://www.w3.org/2000/09/xmldsig#">\n    <SignedInfo>\n      <SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>\n      <!-- SimulaciÃ³n de firma XAdES-BES digital -->\n      <SignatureValue>MIIEuwYJKoZIhvcNAQcCoIIErDCC...</SignatureValue>\n    </SignedInfo>\n  </Signature>`);
         setGeneratedXml(currentXml);
         addLog(`Firma digital XAdES-BES realizada exitosamente (SIMULADA)`, 'success');
       } else {
@@ -1512,14 +1513,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         const activePassword = p12Password || (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'Santiago2026';
         
         if (!activeBase64) {
-          throw new Error('No se encontró el archivo de Firma Electrónica (.p12). Vaya a Configuración de API & Emisor y vuelva a subir su archivo de firma .p12.');
+          throw new Error('No se encontrÃ³ el archivo de Firma ElectrÃ³nica (.p12). Vaya a ConfiguraciÃ³n de API & Emisor y vuelva a subir su archivo de firma .p12.');
         }
 
         const signResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/firmar`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+            'Authorization': FACTURACION_API_TOKEN
           },
           body: JSON.stringify({
             tipo: docType,
@@ -1541,48 +1542,48 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             }
           }
           if (!errDetail) {
-            errDetail = signResponse.statusText || `Código de error HTTP ${signResponse.status}`;
+            errDetail = signResponse.statusText || `CÃ³digo de error HTTP ${signResponse.status}`;
           }
-          throw new Error(`Error en API al firmar: ${errDetail}. Verifique que la contraseña de su archivo de firma (.p12) sea la correcta.`);
+          throw new Error(`Error en API al firmar: ${errDetail}. Verifique que la contraseÃ±a de su archivo de firma (.p12) sea la correcta.`);
         }
 
         currentXml = signData?.data?.xml || signData?.xml_firmado || signData?.xml || signData?.data?.xml_firmado;
         if (!currentXml) {
-          const detail = signData?.message || signData?.error || 'La API no devolvió la etiqueta XML firmada.';
-          throw new Error(`Error al firmar: ${detail} Verifique la contraseña de su archivo de firma (.p12).`);
+          const detail = signData?.message || signData?.error || 'La API no devolviÃ³ la etiqueta XML firmada.';
+          throw new Error(`Error al firmar: ${detail} Verifique la contraseÃ±a de su archivo de firma (.p12).`);
         }
         setGeneratedXml(currentXml);
-        addLog(`Firma digital realizada con éxito por el backend`, 'success');
+        addLog(`Firma digital realizada con Ã©xito por el backend`, 'success');
       }
 
       // Step 3: Send to SRI
       setCurrentStep(3);
       await new Promise(r => setTimeout(r, 1200));
-      addLog(`Conectándose con el Web Service del SRI (${ambiente === '1' ? 'PRUEBAS: celcer.sri.gob.ec' : 'PRODUCCIÓN: cel.sri.gob.ec'})...`);
-      addLog(`Enviando XML firmado a recepción...`);
+      addLog(`ConectÃ¡ndose con el Web Service del SRI (${ambiente === '1' ? 'PRUEBAS: celcer.sri.gob.ec' : 'PRODUCCIÃ“N: cel.sri.gob.ec'})...`);
+      addLog(`Enviando XML firmado a recepciÃ³n...`);
 
       if (isMock) {
-        addLog(`Respuesta del SRI Recepción: RECIBIDA`, 'success');
-        addLog(`Estado de recepción: DEVUELTA / RECIBIDO`);
+        addLog(`Respuesta del SRI RecepciÃ³n: RECIBIDA`, 'success');
+        addLog(`Estado de recepciÃ³n: DEVUELTA / RECIBIDO`);
       } else {
         const sendResponse = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/enviar`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+            'Authorization': FACTURACION_API_TOKEN
           },
           body: JSON.stringify({
             xml: currentXml,
             ambiente
           })
         });
-        if (!sendResponse.ok) throw new Error(`Fallo de conexión al SRI: ${sendResponse.statusText}`);
+        if (!sendResponse.ok) throw new Error(`Fallo de conexiÃ³n al SRI: ${sendResponse.statusText}`);
         const sendData = await sendResponse.json();
-        addLog(`Respuesta Recepción SRI: ${JSON.stringify(sendData.data || sendData.respuesta || sendData)}`, 'success');
+        addLog(`Respuesta RecepciÃ³n SRI: ${JSON.stringify(sendData.data || sendData.respuesta || sendData)}`, 'success');
         
         const sendResultStr = JSON.stringify(sendData).toUpperCase();
         if (sendResultStr.includes('"ESTADO":"DEVUELTA"') || sendResultStr.includes('ESTADO:DEVUELTA')) {
-          let errMsg = 'Rechazo en Recepción SRI: ';
+          let errMsg = 'Rechazo en RecepciÃ³n SRI: ';
           try {
             const sendObj = typeof sendData.data === 'string' ? JSON.parse(sendData.data) : (sendData.data || sendData);
             const comprobante = sendObj?.RespuestaRecepcionComprobante?.comprobantes?.comprobante || sendObj?.comprobantes?.comprobante;
@@ -1603,11 +1604,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       // Step 4: Authorize
       setCurrentStep(4);
       await new Promise(r => setTimeout(r, 1500));
-      addLog(`Solicitando autorización de comprobante para clave de acceso: ${key}...`);
+      addLog(`Solicitando autorizaciÃ³n de comprobante para clave de acceso: ${key}...`);
 
       if (isMock) {
         addLog(`Comprobante AUTORIZADO por el SRI el ${new Date().toLocaleString()}`, 'success');
-        addLog(`Número de autorización: ${key}`);
+        addLog(`NÃºmero de autorizaciÃ³n: ${key}`);
         setProcessStatus('success');
         setShowWhatsAppModal(true);
 
@@ -1633,9 +1634,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         let authData: any = null;
         let errorMsg = '';
 
-        // Reintento automático de consulta de autorización (3 intentos espaciados 3 segundos)
+        // Reintento automÃ¡tico de consulta de autorizaciÃ³n (3 intentos espaciados 3 segundos)
         for (let attempt = 1; attempt <= 3; attempt++) {
-          addLog(`Solicitando autorización de comprobante para clave de acceso (Intento ${attempt}/3): ${key}...`);
+          addLog(`Solicitando autorizaciÃ³n de comprobante para clave de acceso (Intento ${attempt}/3): ${key}...`);
           await new Promise(r => setTimeout(r, attempt === 1 ? 2500 : 3000));
 
           try {
@@ -1643,7 +1644,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir'
+                'Authorization': FACTURACION_API_TOKEN
               },
               body: JSON.stringify({
                 clave_acceso: key,
@@ -1653,26 +1654,26 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
             if (authResponse.ok) {
               authData = await authResponse.json();
-              addLog(`Respuesta Autorización SRI (Intento ${attempt}): ${JSON.stringify(authData.data || authData.respuesta || authData)}`, 'info');
+              addLog(`Respuesta AutorizaciÃ³n SRI (Intento ${attempt}): ${JSON.stringify(authData.data || authData.respuesta || authData)}`, 'info');
               
               const rawDataStr = typeof authData.data === 'string' ? authData.data : JSON.stringify(authData.data || {});
               const uppercaseData = rawDataStr.toUpperCase().replace(/[\s\\"]/g, '');
 
               if (authData.status && uppercaseData.includes('ESTADO:AUTORIZADO')) {
                 isAuthorized = true;
-                addLog(`✅ Comprobante AUTORIZADO con éxito por el SRI el ${new Date().toLocaleString()}`, 'success');
+                addLog(`âœ… Comprobante AUTORIZADO con Ã©xito por el SRI el ${new Date().toLocaleString()}`, 'success');
                 break;
               } else if (uppercaseData.includes('PROCESO') || uppercaseData.includes('ENPROCESO')) {
-                addLog(`⌛ SRI procesando comprobante... Reintentando en 3s (Intento ${attempt}/3)...`, 'warn');
+                addLog(`âŒ› SRI procesando comprobante... Reintentando en 3s (Intento ${attempt}/3)...`, 'warn');
               } else {
                 // If SRI gave a definitive rejection error, don't wait further
                 break;
               }
             } else {
-              addLog(`⚠️ Respuesta HTTP ${authResponse.status} consultando autorización SRI (Intento ${attempt}/3)`, 'warn');
+              addLog(`âš ï¸ Respuesta HTTP ${authResponse.status} consultando autorizaciÃ³n SRI (Intento ${attempt}/3)`, 'warn');
             }
           } catch (e: any) {
-            addLog(`⚠️ Conexión temporal reintentando consulta SRI (Intento ${attempt}/3): ${e.message}`, 'warn');
+            addLog(`âš ï¸ ConexiÃ³n temporal reintentando consulta SRI (Intento ${attempt}/3): ${e.message}`, 'warn');
           }
         }
 
@@ -1693,7 +1694,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             errorMsg = JSON.stringify(authData?.data || authData || 'No autorizado por el SRI');
           }
           if (!errorMsg) {
-            errorMsg = 'No autorizado por el SRI (El comprobante aún se encuentra en proceso o fue devuelto)';
+            errorMsg = 'No autorizado por el SRI (El comprobante aÃºn se encuentra en proceso o fue devuelto)';
           }
           setProcessErrorMessage(errorMsg);
         }
@@ -1731,9 +1732,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           setLastSeqRetencion(nextAvailable);
           localStorage.setItem('sc_sri_last_seq_retencion', String(nextAvailable));
         }
-        const autoAdvanceMsg = `${errMsg} | ⚠️ El secuencial ${secuencial} ya estaba registrado en el SRI. Se ha avanzado automáticamente la numeración a ${String(nextAvailable + 1).padStart(9, '0')} para su próximo intento.`;
+        const autoAdvanceMsg = `${errMsg} | âš ï¸ El secuencial ${secuencial} ya estaba registrado en el SRI. Se ha avanzado automÃ¡ticamente la numeraciÃ³n a ${String(nextAvailable + 1).padStart(9, '0')} para su prÃ³ximo intento.`;
         setProcessErrorMessage(autoAdvanceMsg);
-        addLog(`⚠️ El secuencial ${secuencial} ya fue registrado previamente en el SRI. La numeración fue avanzada automáticamente a ${String(nextAvailable + 1).padStart(9, '0')}.`, 'warn');
+        addLog(`âš ï¸ El secuencial ${secuencial} ya fue registrado previamente en el SRI. La numeraciÃ³n fue avanzada automÃ¡ticamente a ${String(nextAvailable + 1).padStart(9, '0')}.`, 'warn');
       } else {
         setProcessErrorMessage(errMsg);
       }
@@ -1773,7 +1774,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         tested: true,
         valid: false,
         type: 'Error de longitud',
-        details: ['La identificación ecuatoriana debe tener 10 dígitos (Cédula) o 13 dígitos (RUC).']
+        details: ['La identificaciÃ³n ecuatoriana debe tener 10 dÃ­gitos (CÃ©dula) o 13 dÃ­gitos (RUC).']
       });
       return;
     }
@@ -1782,25 +1783,25 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       setValidationResult({
         tested: true,
         valid: false,
-        type: 'Formato no numérico',
-        details: ['La identificación debe contener únicamente números del 0 al 9.']
+        type: 'Formato no numÃ©rico',
+        details: ['La identificaciÃ³n debe contener Ãºnicamente nÃºmeros del 0 al 9.']
       });
       return;
     }
 
     const provCode = parseInt(value.substring(0, 2), 10);
     if (provCode < 1 || (provCode > 24 && provCode !== 30)) {
-      details.push(`Código de provincia inicial '${provCode}' es inválido (Debe estar entre 01 y 24, o 30 para el extranjero).`);
+      details.push(`CÃ³digo de provincia inicial '${provCode}' es invÃ¡lido (Debe estar entre 01 y 24, o 30 para el extranjero).`);
     } else {
-      details.push(`Código de provincia '${provCode}' es válido.`);
+      details.push(`CÃ³digo de provincia '${provCode}' es vÃ¡lido.`);
     }
 
     const thirdDigit = parseInt(value[2], 10);
-    details.push(`Tercer dígito es '${thirdDigit}'.`);
+    details.push(`Tercer dÃ­gito es '${thirdDigit}'.`);
 
     if (thirdDigit < 6) {
-      typeText = value.length === 13 ? 'RUC Persona Natural' : 'Cédula de Identidad';
-      details.push(`Tipo de entidad: Persona Natural o Cédula (Módulo 10).`);
+      typeText = value.length === 13 ? 'RUC Persona Natural' : 'CÃ©dula de Identidad';
+      details.push(`Tipo de entidad: Persona Natural o CÃ©dula (MÃ³dulo 10).`);
       
       const coefficients = [2, 1, 2, 1, 2, 1, 2, 1, 2];
       let total = 0;
@@ -1813,11 +1814,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       const computed = (10 - (total % 10)) % 10;
       isValid = checkDigit === computed;
       
-      details.push(`Suma acumulada del módulo 10: ${total}.`);
-      details.push(`Dígito verificador esperado: ${computed}. Dígito provisto: ${checkDigit}.`);
+      details.push(`Suma acumulada del mÃ³dulo 10: ${total}.`);
+      details.push(`DÃ­gito verificador esperado: ${computed}. DÃ­gito provisto: ${checkDigit}.`);
     } else if (thirdDigit === 6) {
-      typeText = 'RUC Institución Pública';
-      details.push(`Tipo de entidad: Institución Pública (Módulo 11).`);
+      typeText = 'RUC InstituciÃ³n PÃºblica';
+      details.push(`Tipo de entidad: InstituciÃ³n PÃºblica (MÃ³dulo 11).`);
       
       const coefficients = [3, 2, 7, 6, 5, 4, 3, 2];
       let total = 0;
@@ -1828,11 +1829,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       const computed = (11 - (total % 11)) % 11;
       isValid = checkDigit === computed;
       
-      details.push(`Suma acumulada del módulo 11 (Pública): ${total}.`);
-      details.push(`Dígito verificador esperado: ${computed}. Dígito provisto: ${checkDigit}.`);
+      details.push(`Suma acumulada del mÃ³dulo 11 (PÃºblica): ${total}.`);
+      details.push(`DÃ­gito verificador esperado: ${computed}. DÃ­gito provisto: ${checkDigit}.`);
     } else if (thirdDigit === 9) {
       typeText = 'RUC Sociedad Privada';
-      details.push(`Tipo de entidad: Sociedad Privada o Extranjero (Módulo 11).`);
+      details.push(`Tipo de entidad: Sociedad Privada o Extranjero (MÃ³dulo 11).`);
       
       const coefficients = [4, 3, 2, 7, 6, 5, 4, 3, 2];
       let total = 0;
@@ -1843,8 +1844,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       const computed = (11 - (total % 11)) % 11;
       isValid = checkDigit === computed;
       
-      details.push(`Suma acumulada del módulo 11 (Sociedad): ${total}.`);
-      details.push(`Dígito verificador esperado: ${computed}. Dígito provisto: ${checkDigit}.`);
+      details.push(`Suma acumulada del mÃ³dulo 11 (Sociedad): ${total}.`);
+      details.push(`DÃ­gito verificador esperado: ${computed}. DÃ­gito provisto: ${checkDigit}.`);
     }
 
     if (value.length === 13 && !value.endsWith('001')) {
@@ -1943,7 +1944,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       ptoEmi: emisorPtoEmi,
       secuencial: comprobante.secuencial,
       claveAcceso: comprobante.claveAcceso,
-      ambiente: comprobante.ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS',
+      ambiente: comprobante.ambiente === '2' ? 'PRODUCCIÃ“N' : 'PRUEBAS',
       regimen: emisorRegimen
     };
 
@@ -2084,7 +2085,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       (comprobante as any).period
     );
 
-    let regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE</div>';
+    let regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">CONTRIBUYENTE NEGOCIO POPULAR - RÃ‰GIMEN RIMPE</div>';
 
     const logoHtml = emisorLogo 
       ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 
@@ -2127,15 +2128,15 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         ${logoHtml}
         <div class="emisor-name">${emisor.razonSocial}</div>
         <div style="color: #475569; font-weight: 700; font-size: 10px; text-transform: uppercase;">${emisor.nombreComercial}</div>
-        <div style="margin-top: 4px; font-size: 9px; color: #475569;"><strong>Dirección Matriz:</strong> ${emisor.dirMatriz}</div>
+        <div style="margin-top: 4px; font-size: 9px; color: #475569;"><strong>DirecciÃ³n Matriz:</strong> ${emisor.dirMatriz}</div>
         <div style="font-size: 9px; color: #475569;"><strong>OBLIGADO A LLEVAR CONTABILIDAD:</strong> NO</div>
         ${regimeLabel}
       </div>
       <div class="auth-box">
         <div class="auth-title">R.U.C.: <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;">${emisor.ruc}</span></div>
-        <div class="auth-doc-type">${comprobante.tipo === 'factura' ? 'FACTURA' : 'COMPROBANTE DE RETENCIÓN'}</div>
+        <div class="auth-doc-type">${comprobante.tipo === 'factura' ? 'FACTURA' : 'COMPROBANTE DE RETENCIÃ“N'}</div>
         <div class="auth-secuencial">No. ${emisor.estab}-${emisor.ptoEmi}-${comprobante.secuencial}</div>
-        <div style="font-size: 8.5px; margin-bottom: 6px;"><strong>AUTORIZACIÓN:</strong> <br/><span style="font-family: monospace; font-size: 8px;">${comprobante.claveAcceso}</span></div>
+        <div style="font-size: 8.5px; margin-bottom: 6px;"><strong>AUTORIZACIÃ“N:</strong> <br/><span style="font-family: monospace; font-size: 8px;">${comprobante.claveAcceso}</span></div>
         <div style="font-size: 8.5px;"><strong>FECHA/HORA:</strong> ${authDateStr}</div>
         <div style="font-size: 8.5px;"><strong>AMBIENTE:</strong> <span style="color: #2b6aff; font-weight: 800;">${emisor.ambiente}</span></div>
         <div class="barcode-container">
@@ -2147,23 +2148,23 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
     <div class="receptor-box">
       <div>
-        <strong style="color: #64748b; font-size: 8px;">RAZÓN SOCIAL / CLIENTE:</strong>
+        <strong style="color: #64748b; font-size: 8px;">RAZÃ“N SOCIAL / CLIENTE:</strong>
         <div class="receptor-val">${receptor.razonSocial}</div>
       </div>
       <div>
-        <strong style="color: #64748b; font-size: 8px;">RUC / CÉDULA:</strong>
+        <strong style="color: #64748b; font-size: 8px;">RUC / CÃ‰DULA:</strong>
         <div class="receptor-val" style="font-family: 'JetBrains Mono', monospace;">${receptor.identificacion}</div>
       </div>
       <div style="margin-top: 4px;">
-        <strong style="color: #64748b; font-size: 8px;">FECHA EMISIÓN:</strong>
+        <strong style="color: #64748b; font-size: 8px;">FECHA EMISIÃ“N:</strong>
         <div style="font-weight: 700; color: #0f172a;">${receptor.fechaEmision}</div>
       </div>
       <div style="margin-top: 4px;">
-        <strong style="color: #64748b; font-size: 8px;">GUÍA DE REMISIÓN:</strong>
+        <strong style="color: #64748b; font-size: 8px;">GUÃA DE REMISIÃ“N:</strong>
         <div style="font-weight: 700; color: #0f172a;">S/N</div>
       </div>
       <div style="grid-column: span 2; border-top: 1px dashed #cbd5e1; padding-top: 6px; margin-top: 2px;">
-        <strong style="color: #64748b; font-size: 8px;">DIRECCIÓN DEL COMPRADOR:</strong>
+        <strong style="color: #64748b; font-size: 8px;">DIRECCIÃ“N DEL COMPRADOR:</strong>
         <div style="font-weight: 700; color: #0f172a; text-transform: uppercase;">${receptor.direccion}</div>
       </div>
     </div>
@@ -2173,7 +2174,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         <tr>
           <th style="width: 90px;">Cod. Principal</th>
           <th style="width: 55px; text-align: center;">Cant.</th>
-          <th>Descripción / Detalle del Servicio</th>
+          <th>DescripciÃ³n / Detalle del Servicio</th>
           <th style="width: 110px; text-align: right;">P. Unitario</th>
           <th style="width: 110px; text-align: right;">Subtotal</th>
         </tr>
@@ -2186,10 +2187,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     <div class="bottom-grid">
       <div>
         <div class="info-box">
-          <div class="box-title">Información Adicional</div>
+          <div class="box-title">InformaciÃ³n Adicional</div>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="width: 90px; font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Dirección:</td>
+              <td style="width: 90px; font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">DirecciÃ³n:</td>
               <td style="color: #0f172a; font-weight: 700; text-transform: uppercase; font-size: 9px;">${receptor.direccion}</td>
             </tr>
             <tr>
@@ -2197,7 +2198,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               <td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.identificacion === buyerRuc ? buyerEmail || 'cliente@example.com' : 'cliente@example.com'}</td>
             </tr>
             <tr>
-              <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">Teléfono:</td>
+              <td style="font-weight: 700; padding: 3px 0; color: #64748b; font-size: 8px; text-transform: uppercase;">TelÃ©fono:</td>
               <td style="color: #0f172a; font-weight: 700; font-size: 9px;">${receptor.identificacion === buyerRuc ? buyerPhone || '0999999999' : '0999999999'}</td>
             </tr>
             <tr>
@@ -2399,14 +2400,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           <div className="space-y-1.5 relative z-10 font-mono">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-[#00A896]/15 text-[#00A896] text-[9px] font-bold uppercase tracking-widest border border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.3)]">
-                Emisor SRI • Modo Producción
+                Emisor SRI â€¢ Modo ProducciÃ³n
               </span>
             </div>
             <h3 className="text-xl font-black uppercase tracking-tight text-white font-display">
               {emisorRazonSocial || 'Emisor No Configurado'}
             </h3>
             <p className="text-xs text-slate-400 font-medium tracking-wide">
-              RUC: <span className="font-mono text-white font-bold">{emisorRuc || '0705787745001'}</span> — <span className="text-[#2B6AFF] font-bold">{emisorNombreComercial || 'SOLUCIONES TRIBUTARIAS'}</span>
+              RUC: <span className="font-mono text-white font-bold">{emisorRuc || '0705787745001'}</span> â€” <span className="text-[#2B6AFF] font-bold">{emisorNombreComercial || 'SOLUCIONES TRIBUTARIAS'}</span>
             </p>
           </div>
           
@@ -2417,7 +2418,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-rose-500/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <HeartHandshake size={14} />
-              <span>👴 Devolución IVA</span>
+              <span>ðŸ‘´ DevoluciÃ³n IVA</span>
             </button>
             <button
               type="button"
@@ -2425,7 +2426,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#2B6AFF]/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <Zap size={14} />
-              <span>🚀 Facturación Masiva</span>
+              <span>ðŸš€ FacturaciÃ³n Masiva</span>
             </button>
             <button
               type="button"
@@ -2433,7 +2434,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-[#00A896] to-teal-600 hover:from-teal-600 hover:to-emerald-600 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-[#00A896]/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <Store size={14} />
-              <span>⚡ Caja TPV POS</span>
+              <span>âš¡ Caja TPV POS</span>
             </button>
             <button
               type="button"
@@ -2441,7 +2442,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer"
             >
               <ShoppingBag size={14} />
-              <span>💳 Venta de Plan</span>
+              <span>ðŸ’³ Venta de Plan</span>
             </button>
             <button
               type="button"
@@ -2531,20 +2532,20 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h4 className="text-xs font-bold uppercase tracking-widest text-slate-300 flex items-center gap-2">
                 <FileText size={14} className="text-[#00A896]" />
-                <span>Comprobantes Electrónicos Recientes</span>
+                <span>Comprobantes ElectrÃ³nicos Recientes</span>
               </h4>
               <button 
                 onClick={() => setActiveTab('historial')} 
                 className="text-[10px] font-bold text-[#2B6AFF] hover:underline uppercase tracking-wider cursor-pointer"
               >
-                Ver Historial Completo →
+                Ver Historial Completo â†’
               </button>
             </div>
             
             {latestDocs.length === 0 ? (
               <div className="h-48 flex flex-col items-center justify-center text-xs font-bold text-slate-500 uppercase italic">
                 <FileText size={28} className="mb-2 opacity-30 text-slate-400" />
-                Aún no hay comprobantes emitidos en este período.
+                AÃºn no hay comprobantes emitidos en este perÃ­odo.
               </div>
             ) : (
               <div className="overflow-x-auto no-scrollbar">
@@ -2568,7 +2569,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       >
                         <td className="py-3 font-semibold pr-2">
                           <span className="uppercase text-[10px] font-black text-white block">
-                            {doc.tipo === 'factura' ? 'Factura' : 'Retención'}
+                            {doc.tipo === 'factura' ? 'Factura' : 'RetenciÃ³n'}
                           </span>
                           <span className="text-[9px] font-mono text-slate-400">{doc.secuencial}</span>
                         </td>
@@ -2642,7 +2643,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 </div>
                 <div className="flex flex-col text-left">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-white">
-                    {connectionStatus === 'connected' ? 'Laravel Conectado' : 'Modo Simulación'}
+                    {connectionStatus === 'connected' ? 'Laravel Conectado' : 'Modo SimulaciÃ³n'}
                   </span>
                   <span className="text-[9px] font-mono text-slate-400 truncate max-w-[150px]">{apiUrl}</span>
                 </div>
@@ -2651,7 +2652,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
             {/* Signature expiry warning */}
             <div className="p-5 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl space-y-3">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Vigencia Firma Electrónica (.p12)</span>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Vigencia Firma ElectrÃ³nica (.p12)</span>
               {p12FileBase64 ? (
                 (() => {
                   const daysLeft = p12ExpiryDate ? Math.max(0, Math.ceil((new Date(p12ExpiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))) : 365;
@@ -2674,7 +2675,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           </div>
                         </div>
                         <span className={`text-[10px] font-black font-mono px-2.5 py-1 rounded-full border ${isExpired ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' : 'bg-[#00A896]/20 text-[#00A896] border-[#00A896]/30'}`}>
-                          {daysLeft} Días
+                          {daysLeft} DÃ­as
                         </span>
                       </div>
                       
@@ -2715,7 +2716,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     onClick={() => setActiveTab('configuracion')}
                     className="text-[9px] font-bold uppercase tracking-wider text-[#2B6AFF] hover:underline cursor-pointer"
                   >
-                    Configurar Ahora →
+                    Configurar Ahora â†’
                   </button>
                 </div>
               )}
@@ -2723,7 +2724,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
             {/* Protocolo de Conectividad & Enlaces widget */}
             <div className="p-5 rounded-[2rem] bg-[#051424]/90 border border-white/10 border-t-white/20 shadow-xl backdrop-blur-2xl space-y-3.5">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Guía & Portales SRI</span>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">GuÃ­a & Portales SRI</span>
               
               {/* Quick links */}
               <div className="space-y-1.5">
@@ -2743,7 +2744,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   rel="noopener noreferrer"
                   className="w-full flex items-center justify-between px-3.5 py-2 bg-white/5 hover:bg-white/10 text-slate-200 rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all border border-white/5"
                 >
-                  <span>SRI en Línea (Pruebas)</span>
+                  <span>SRI en LÃ­nea (Pruebas)</span>
                   <ExternalLink size={10} className="text-[#2B6AFF]" />
                 </a>
               </div>
@@ -2766,14 +2767,14 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             {title}
           </h3>
           <span className="px-2 py-0.5 bg-primary/15 border border-primary/25 text-primary rounded-lg text-[9px] font-black uppercase tracking-widest block w-fit mx-auto font-sans">
-            Próximamente en Frontend
+            PrÃ³ximamente en Frontend
           </span>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed max-w-sm pt-2">
             {desc}
           </p>
         </div>
         <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl text-[10px] text-slate-500 font-mono border border-slate-200 dark:border-white/5 max-w-sm">
-          El backend en Laravel ya tiene implementada la firma XAdES-BES y la generación de este documento. La interfaz gráfica se habilitará en la siguiente actualización.
+          El backend en Laravel ya tiene implementada la firma XAdES-BES y la generaciÃ³n de este documento. La interfaz grÃ¡fica se habilitarÃ¡ en la siguiente actualizaciÃ³n.
         </div>
       </div>
     );
@@ -2790,10 +2791,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
             <div className="text-left">
               <h3 className="text-base font-black uppercase tracking-widest text-slate-800 dark:text-white flex items-center gap-2">
-                Gestión de Firma Electrónica (.p12)
+                GestiÃ³n de Firma ElectrÃ³nica (.p12)
               </h3>
               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-sans">
-                Configuración, Validación de Clave y Estado del Certificado Digital XAdES-BES
+                ConfiguraciÃ³n, ValidaciÃ³n de Clave y Estado del Certificado Digital XAdES-BES
               </span>
             </div>
           </div>
@@ -2833,7 +2834,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     p12OwnerName
                   });
                   setIsEditingSignature(false);
-                  alert(`✅ Firma electrónica (.p12) y clave ("${p12Password}") guardadas y sincronizadas en la Nube. Estarán disponibles automáticamente en todas tus computadoras.`);
+                  alert(`âœ… Firma electrÃ³nica (.p12) y clave ("${p12Password}") guardadas y sincronizadas en la Nube. EstarÃ¡n disponibles automÃ¡ticamente en todas tus computadoras.`);
                 }}
                 className="flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md shadow-emerald-600/20 active:scale-95"
               >
@@ -2844,7 +2845,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           </div>
         </div>
 
-        {/* Guía Visual de Pasos */}
+        {/* GuÃ­a Visual de Pasos */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className={`p-4 rounded-2xl border transition-all ${p12FileBase64 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-primary/5 border-primary/20 text-primary'}`}>
             <span className="text-[9px] font-black uppercase tracking-widest block opacity-75 mb-1 font-sans">Paso 1</span>
@@ -2860,11 +2861,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           <div className={`p-4 rounded-2xl border transition-all ${p12Password ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-400'}`}>
             <span className="text-[9px] font-black uppercase tracking-widest block opacity-75 mb-1 font-sans">Paso 2</span>
             <div className="flex items-center justify-between font-premium">
-              <span className="text-xs font-black uppercase tracking-wider">Contraseña</span>
+              <span className="text-xs font-black uppercase tracking-wider">ContraseÃ±a</span>
               {p12Password ? <CheckCircle2 size={16} /> : <Lock size={16} />}
             </div>
             <span className="text-[9px] block opacity-80 mt-1 font-mono">
-              {p12Password ? '••••••••' : 'Ingresar contraseña'}
+              {p12Password ? 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢' : 'Ingresar contraseÃ±a'}
             </span>
           </div>
 
@@ -2885,7 +2886,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           <div className="space-y-6 bg-slate-50/50 dark:bg-white/5 p-6 rounded-3xl border border-slate-200 dark:border-white/10">
             <h4 className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 flex items-center gap-2">
               <Edit3 size={14} className="text-primary" />
-              Formulario de Edición de Firma
+              Formulario de EdiciÃ³n de Firma
             </h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2919,11 +2920,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 </div>
               </div>
 
-              {/* Contraseña */}
+              {/* ContraseÃ±a */}
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500">
-                    2. Contraseña del Archivo .p12
+                    2. ContraseÃ±a del Archivo .p12
                   </label>
                   <div className="relative">
                     <input
@@ -2947,7 +2948,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   type="button"
                   onClick={() => {
                     fetchSignatureVigencia();
-                    alert('🔍 Verificando contraseña con la API del servidor...');
+                    alert('ðŸ” Verificando contraseÃ±a con la API del servidor...');
                   }}
                   className="w-full flex items-center justify-center gap-2 py-3 bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all"
                 >
@@ -2972,11 +2973,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   localStorage.setItem('sc_sri_p12_filename', p12FileName);
                   localStorage.setItem('sc_sri_p12_password', p12Password);
                   setIsEditingSignature(false);
-                  alert('✅ Firma electrónica guardada y lista para facturación.');
+                  alert('âœ… Firma electrÃ³nica guardada y lista para facturaciÃ³n.');
                 }}
                 className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider font-premium transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
               >
-                💾 Guardar y Bloquear Firma
+                ðŸ’¾ Guardar y Bloquear Firma
               </button>
             </div>
           </div>
@@ -2987,10 +2988,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
                 <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 size={18} />
-                  <span className="text-xs font-black uppercase tracking-wider font-premium">Firma Electrónica Activa y Protegida</span>
+                  <span className="text-xs font-black uppercase tracking-wider font-premium">Firma ElectrÃ³nica Activa y Protegida</span>
                 </div>
                 <span className="px-3 py-1 bg-emerald-500 text-white text-[9px] font-black rounded-full uppercase tracking-wider w-fit">
-                  🔒 Configurada
+                  ðŸ”’ Configurada
                 </span>
               </div>
 
@@ -2998,21 +2999,21 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 <div className="space-y-1 bg-white/60 dark:bg-slate-900/50 p-3 rounded-2xl border border-emerald-500/10">
                   <span className="text-[9px] font-sans font-bold uppercase tracking-wider text-slate-400 block">Propietario / Titular</span>
                   <span className="font-bold text-slate-900 dark:text-white uppercase truncate block">
-                    👤 {p12OwnerName || emisorRazonSocial}
+                    ðŸ‘¤ {p12OwnerName || emisorRazonSocial}
                   </span>
                 </div>
 
                 <div className="space-y-1 bg-white/60 dark:bg-slate-900/50 p-3 rounded-2xl border border-emerald-500/10">
-                  <span className="text-[9px] font-sans font-bold uppercase tracking-wider text-slate-400 block">Fecha de Inicio / Emisión</span>
+                  <span className="text-[9px] font-sans font-bold uppercase tracking-wider text-slate-400 block">Fecha de Inicio / EmisiÃ³n</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200 block">
-                    📅 {p12StartDate || 'Vigente'}
+                    ðŸ“… {p12StartDate || 'Vigente'}
                   </span>
                 </div>
 
                 <div className="space-y-1 bg-white/60 dark:bg-slate-900/50 p-3 rounded-2xl border border-emerald-500/10">
                   <span className="text-[9px] font-sans font-bold uppercase tracking-wider text-slate-400 block">Fecha de Vencimiento</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400 block">
-                    ⏰ {p12ExpiryDate || 'N/A'}
+                    â° {p12ExpiryDate || 'N/A'}
                   </span>
                 </div>
               </div>
@@ -3060,11 +3061,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   SRI Ecosistema v4.0
                 </span>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  • {ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}
+                  â€¢ {ambiente === '2' ? 'PRODUCCIÃ“N' : 'PRUEBAS'}
                 </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-display font-semibold text-slate-900 dark:text-white tracking-tight">
-                Facturación <span className="text-brand-teal">Electrónica SRI</span>
+                FacturaciÃ³n <span className="text-brand-teal">ElectrÃ³nica SRI</span>
               </h2>
             </div>
           </div>
@@ -3111,7 +3112,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             }`}
           >
             <Zap size={14} className={['factura', 'retencion', 'nota_credito', 'nota_debito', 'guia', 'liquidacion'].includes(activeTab) ? 'text-brand-teal' : ''} />
-            <span>Emisor Electrónico</span>
+            <span>Emisor ElectrÃ³nico</span>
           </button>
 
           <button
@@ -3124,7 +3125,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             }`}
           >
             <Database size={14} className={activeTab === 'historial' ? 'text-brand-teal' : ''} />
-            <span>Bóveda Histórica</span>
+            <span>BÃ³veda HistÃ³rica</span>
           </button>
 
           <button
@@ -3145,11 +3146,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         {['factura', 'retencion', 'nota_credito', 'nota_debito', 'guia', 'liquidacion'].includes(activeTab) && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar pt-2 border-t border-slate-200 dark:border-slate-800">
             {[
-              { id: 'factura', label: '📄 Factura' },
-              { id: 'retencion', label: '🛡️ Retención Renta/IVA' },
-              { id: 'nota_credito', label: '📝 Nota de Crédito' },
-              { id: 'nota_debito', label: '📋 Nota de Débito' },
-              { id: 'guia', label: '🚛 Guía de Remisión' }
+              { id: 'factura', label: 'ðŸ“„ Factura' },
+              { id: 'retencion', label: 'ðŸ›¡ï¸ RetenciÃ³n Renta/IVA' },
+              { id: 'nota_credito', label: 'ðŸ“ Nota de CrÃ©dito' },
+              { id: 'nota_debito', label: 'ðŸ“‹ Nota de DÃ©bito' },
+              { id: 'guia', label: 'ðŸš› GuÃ­a de RemisiÃ³n' }
             ].map(sub => (
               <button
                 key={sub.id}
@@ -3170,9 +3171,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         {['firma', 'configuracion', 'validador'].includes(activeTab) && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar pt-2 border-t border-slate-200 dark:border-slate-800">
             {[
-              { id: 'configuracion', label: '⚙️ Ajustes Emisor & API' },
-              { id: 'firma', label: '🔑 Firma Electrónica (.P12)' },
-              { id: 'validador', label: '🛡️ Validar Cédula / RUC' }
+              { id: 'configuracion', label: 'âš™ï¸ Ajustes Emisor & API' },
+              { id: 'firma', label: 'ðŸ”‘ Firma ElectrÃ³nica (.P12)' },
+              { id: 'validador', label: 'ðŸ›¡ï¸ Validar CÃ©dula / RUC' }
             ].map(sub => (
               <button
                 key={sub.id}
@@ -3203,7 +3204,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               </div>
               <div className="flex flex-col text-left font-premium">
                 <h2 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-white">
-                  {activeTab === 'factura' ? 'Nueva Factura Electrónica' : activeTab === 'retencion' ? 'Comprobante de Retención' : activeTab === 'validador' ? 'Validador SRI' : activeTab === 'configuracion' ? 'Ajustes del Emisor' : activeTab === 'firma' ? 'Gestión de Firma Electrónica (.p12)' : 'Historial Comprobantes'}
+                  {activeTab === 'factura' ? 'Nueva Factura ElectrÃ³nica' : activeTab === 'retencion' ? 'Comprobante de RetenciÃ³n' : activeTab === 'validador' ? 'Validador SRI' : activeTab === 'configuracion' ? 'Ajustes del Emisor' : activeTab === 'firma' ? 'GestiÃ³n de Firma ElectrÃ³nica (.p12)' : 'Historial Comprobantes'}
                 </h2>
                 <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5 font-sans">
                   Emisor: {emisorRazonSocial || 'No configurado'}
@@ -3271,10 +3272,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     ? 'bg-[#04B17B]/15 border-[#04B17B]/40 text-[#04B17B] dark:text-emerald-400'
                     : 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400'
                 }`}
-                title="Haz clic aquí para cambiar al instante entre Ambiente 1 (Pruebas) y Ambiente 2 (Producción)"
+                title="Haz clic aquÃ­ para cambiar al instante entre Ambiente 1 (Pruebas) y Ambiente 2 (ProducciÃ³n)"
               >
                 <span className={`w-2 h-2 rounded-full ${ambiente === '2' ? 'bg-[#04B17B] animate-pulse' : 'bg-amber-500'}`} />
-                Ambiente: {ambiente === '1' ? '1 (PRUEBAS)' : '2 (PRODUCCIÓN)'}
+                Ambiente: {ambiente === '1' ? '1 (PRUEBAS)' : '2 (PRODUCCIÃ“N)'}
               </button>
             </div>
           </div>
@@ -3288,9 +3289,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 <AlertTriangle size={16} />
               </div>
               <div>
-                <strong className="block text-[11px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">Modo Simulación Activo</strong>
+                <strong className="block text-[11px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">Modo SimulaciÃ³n Activo</strong>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                  El facturador no está conectado a la API ({apiUrl}). Los comprobantes no se transmitirán al SRI real.
+                  El facturador no estÃ¡ conectado a la API ({apiUrl}). Los comprobantes no se transmitirÃ¡n al SRI real.
                 </span>
               </div>
             </div>
@@ -3322,17 +3323,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         {activeTab === 'dashboard' && renderDashboard()}
         {activeTab === 'firma' && renderSignatureManager()}
         
-        {activeTab === 'nota_credito' && renderUpcomingDocument('Nota de Crédito Electrónica', 'Permite anular o aplicar descuentos/modificaciones a facturas emitidas y autorizadas previamente en el SRI.')}
-        {activeTab === 'nota_debito' && renderUpcomingDocument('Nota de Débito Electrónica', 'Permite cobrar intereses, multas o cargos adicionales que aumenten el valor original de una factura.')}
-        {activeTab === 'guia' && renderUpcomingDocument('Guía de Remisión Electrónica', 'Soporte oficial del SRI para el traslado de mercaderías por vía terrestre dentro del territorio nacional.')}
-        {activeTab === 'liquidacion' && renderUpcomingDocument('Liquidación de Compra', 'Comprobante emitido a proveedores que por su nivel cultural o rusticidad no pueden emitir facturas.')}
+        {activeTab === 'nota_credito' && renderUpcomingDocument('Nota de CrÃ©dito ElectrÃ³nica', 'Permite anular o aplicar descuentos/modificaciones a facturas emitidas y autorizadas previamente en el SRI.')}
+        {activeTab === 'nota_debito' && renderUpcomingDocument('Nota de DÃ©bito ElectrÃ³nica', 'Permite cobrar intereses, multas o cargos adicionales que aumenten el valor original de una factura.')}
+        {activeTab === 'guia' && renderUpcomingDocument('GuÃ­a de RemisiÃ³n ElectrÃ³nica', 'Soporte oficial del SRI para el traslado de mercaderÃ­as por vÃ­a terrestre dentro del territorio nacional.')}
+        {activeTab === 'liquidacion' && renderUpcomingDocument('LiquidaciÃ³n de Compra', 'Comprobante emitido a proveedores que por su nivel cultural o rusticidad no pueden emitir facturas.')}
 
         {activeTab === 'configuracion' && (
           <div className="glass-card-premium p-6 space-y-6 animate-fade-in relative z-20">
             <div className="flex justify-between items-center border-b border-slate-200 dark:border-white/10 pb-3 font-premium">
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:white flex items-center gap-2">
                 <Settings size={14} className="text-primary animate-pulse" />
-                Configuración de API & Emisor
+                ConfiguraciÃ³n de API & Emisor
               </h3>
               <button
                 type="button"
@@ -3346,11 +3347,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-7 space-y-4">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Datos de Facturación del Emisor (Compañía)</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Datos de FacturaciÃ³n del Emisor (CompaÃ±Ã­a)</h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Razón Social</label>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">RazÃ³n Social</label>
                     <input
                       type="text"
                       value={emisorRazonSocial}
@@ -3380,7 +3381,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Dirección Matriz</label>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">DirecciÃ³n Matriz</label>
                     <input
                       type="text"
                       value={emisorDirMatriz}
@@ -3390,7 +3391,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Cód. Establecimiento</label>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">CÃ³d. Establecimiento</label>
                     <input
                       type="text"
                       value={emisorEstab}
@@ -3400,7 +3401,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Cód. Punto Emisión</label>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">CÃ³d. Punto EmisiÃ³n</label>
                     <input
                       type="text"
                       value={emisorPtoEmi}
@@ -3410,13 +3411,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Régimen SRI</label>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">RÃ©gimen SRI</label>
                     <select
                       value={emisorRegimen}
                       onChange={(e) => setEmisorRegimen(e.target.value)}
                       className="w-full px-3 py-2 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-semibold outline-none text-slate-800 dark:text-slate-100"
                     >
-                      <option value="0">RÉGIMEN GENERAL</option>
+                      <option value="0">RÃ‰GIMEN GENERAL</option>
                       <option value="3">RIMPE NEGOCIO POPULAR</option>
                       <option value="2">RIMPE EMPRENDEDOR</option>
                     </select>
@@ -3430,12 +3431,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       onChange={(e) => setAmbiente(e.target.value as '1' | '2')}
                     >
                       <option value="1">1 - PRUEBAS</option>
-                      <option value="2">2 - PRODUCCIÓN</option>
+                      <option value="2">2 - PRODUCCIÃ“N</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Logo del Emisor (Impresión RIDE)</label>
+                    <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1">Logo del Emisor (ImpresiÃ³n RIDE)</label>
                     <div className="flex items-center gap-3">
                       <input
                         type="file"
@@ -3490,7 +3491,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   <div>
                     <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1">
                       <Sliders size={10} className="text-primary" />
-                      Servidor de Firmador & Autorización (SRI API)
+                      Servidor de Firmador & AutorizaciÃ³n (SRI API)
                     </label>
                     <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl mb-2.5">
                       <button
@@ -3565,17 +3566,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
                     >
                       <RefreshCw size={12} className={connectionStatus === 'checking' ? 'animate-spin' : ''} />
-                      Verificar Conexión
+                      Verificar ConexiÃ³n
                     </button>
                   </div>
                 </div>
 
-                {/* Firma Electrónica (.p12) */}
+                {/* Firma ElectrÃ³nica (.p12) */}
                 <div className="pt-6 border-t border-slate-200 dark:border-white/5 space-y-4 font-premium">
                   <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-white/5">
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                       <Key size={12} className="text-primary animate-pulse" />
-                      Firma Electrónica (.p12)
+                      Firma ElectrÃ³nica (.p12)
                     </h4>
                     {p12FileBase64 ? (
                       <span className="px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-[8px] font-black uppercase tracking-wider flex items-center gap-1">
@@ -3614,10 +3615,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       </div>
                     </div>
 
-                    {/* Contraseña de la Firma */}
+                    {/* ContraseÃ±a de la Firma */}
                     <div>
                       <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                        Contraseña de la Firma
+                        ContraseÃ±a de la Firma
                       </label>
                       <div className="relative">
                         <input
@@ -3663,7 +3664,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                             p12OwnerName
                           });
                           setIsEditingSignature(false);
-                          alert(`✅ Firma electrónica (.p12) y clave ("${p12Password}") guardadas y sincronizadas en la Nube. Estarán disponibles automáticamente en todas tus computadoras.`);
+                          alert(`âœ… Firma electrÃ³nica (.p12) y clave ("${p12Password}") guardadas y sincronizadas en la Nube. EstarÃ¡n disponibles automÃ¡ticamente en todas tus computadoras.`);
                         }}
                         className="w-full mt-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2 font-premium"
                       >
@@ -3672,12 +3673,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       </button>
                     </div>
 
-                    {/* Tarjeta Detallada de Estado de Firma Electrónica */}
+                    {/* Tarjeta Detallada de Estado de Firma ElectrÃ³nica */}
                     <div className="flex flex-col gap-2 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-premium">
                       <div className="flex items-center justify-between">
                         <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                           <CheckCircle2 size={14} className="text-emerald-500" />
-                          Firma Electrónica VIGENTE
+                          Firma ElectrÃ³nica VIGENTE
                         </span>
                         <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500 text-white uppercase tracking-wider">
                           VIGENTE
@@ -3685,12 +3686,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       </div>
                       
                       <div className="text-xs font-black uppercase tracking-wide text-slate-800 dark:text-white pt-1">
-                        👤 {p12OwnerName || emisorRazonSocial}
+                        ðŸ‘¤ {p12OwnerName || emisorRazonSocial}
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-[10px] pt-1 font-mono text-slate-600 dark:text-slate-300 border-t border-emerald-500/15">
                         <div>
-                          <span className="text-slate-400 font-sans block text-[9px] uppercase font-bold">Inicio / Emisión</span>
+                          <span className="text-slate-400 font-sans block text-[9px] uppercase font-bold">Inicio / EmisiÃ³n</span>
                           <span className="font-bold text-slate-700 dark:text-slate-200">{p12StartDate || 'Vigente'}</span>
                         </div>
                         <div>
@@ -3710,32 +3711,32 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               </div>
             </div>
 
-            {/* Guía rápida de facturación real */}
+            {/* GuÃ­a rÃ¡pida de facturaciÃ³n real */}
             <div className="border-t border-slate-200 dark:border-white/10 pt-6 mt-6">
               <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-2xl p-5 space-y-3">
                 <h4 className="text-xs font-black uppercase tracking-wider text-primary flex items-center gap-1.5 font-premium">
                   <Info size={14} />
-                  Guía Rápida para Facturación Real en Ecuador (SRI)
+                  GuÃ­a RÃ¡pida para FacturaciÃ³n Real en Ecuador (SRI)
                 </h4>
                 <p className="text-[11px] text-slate-600 dark:text-slate-300 font-semibold leading-relaxed">
-                  Para emitir comprobantes electrónicos que tengan validez legal y aparezcan en el SRI de producción:
+                  Para emitir comprobantes electrÃ³nicos que tengan validez legal y aparezcan en el SRI de producciÃ³n:
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-[10px] leading-relaxed text-slate-600 dark:text-slate-400">
                   <div className="space-y-1 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-slate-150 dark:border-white/5">
-                    <strong className="text-slate-800 dark:text-white block font-bold">1. Conexión Laravel API</strong>
-                    <span>El indicador superior izquierdo debe decir <strong className="text-emerald-500">Laravel Online</strong>. Si dice Offline, la API local no está respondiendo y el sistema simulará los datos.</span>
+                    <strong className="text-slate-800 dark:text-white block font-bold">1. ConexiÃ³n Laravel API</strong>
+                    <span>El indicador superior izquierdo debe decir <strong className="text-emerald-500">Laravel Online</strong>. Si dice Offline, la API local no estÃ¡ respondiendo y el sistema simularÃ¡ los datos.</span>
                   </div>
                   <div className="space-y-1 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-slate-150 dark:border-white/5">
-                    <strong className="text-slate-800 dark:text-white block font-bold">2. Firma Electrónica</strong>
-                    <span>Sube tu archivo de firma <strong className="text-mono">.p12</strong> real y escribe su contraseña correcta. Esto se guardará localmente en tu navegador.</span>
+                    <strong className="text-slate-800 dark:text-white block font-bold">2. Firma ElectrÃ³nica</strong>
+                    <span>Sube tu archivo de firma <strong className="text-mono">.p12</strong> real y escribe su contraseÃ±a correcta. Esto se guardarÃ¡ localmente en tu navegador.</span>
                   </div>
                   <div className="space-y-1 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-slate-150 dark:border-white/5">
-                    <strong className="text-slate-800 dark:text-white block font-bold">3. Ambiente Producción</strong>
-                    <span>Cambia el <strong>Ambiente de Trabajo</strong> a <strong className="text-slate-800 dark:text-white">2 - PRODUCCIÓN</strong> en los campos de arriba y haz clic en Guardar Ajustes.</span>
+                    <strong className="text-slate-800 dark:text-white block font-bold">3. Ambiente ProducciÃ³n</strong>
+                    <span>Cambia el <strong>Ambiente de Trabajo</strong> a <strong className="text-slate-800 dark:text-white">2 - PRODUCCIÃ“N</strong> en los campos de arriba y haz clic en Guardar Ajustes.</span>
                   </div>
                   <div className="space-y-1 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-slate-150 dark:border-white/5">
                     <strong className="text-slate-800 dark:text-white block font-bold">4. Validar en SRI</strong>
-                    <span>Tus facturas ahora viajarán al SRI real. Las podrás consultar inmediatamente en el portal oficial de comprobantes electrónicos del SRI.</span>
+                    <span>Tus facturas ahora viajarÃ¡n al SRI real. Las podrÃ¡s consultar inmediatamente en el portal oficial de comprobantes electrÃ³nicos del SRI.</span>
                   </div>
                 </div>
               </div>
@@ -3748,7 +3749,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           
           {/* Left panel - Form */}
           <div className="lg:col-span-7 space-y-6">
-                        {/* PANEL DE CONTROL DE EMISIÓN (SUPERIOR) */}
+                        {/* PANEL DE CONTROL DE EMISIÃ“N (SUPERIOR) */}
             <div className="glass-card-premium p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t-4 border-t-primary relative overflow-hidden bg-slate-900/40 dark:bg-white/5">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl -mr-6 -mt-6"></div>
               
@@ -3758,11 +3759,11 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 </div>
                 <div className="text-left">
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
-                    Control de Emisión
+                    Control de EmisiÃ³n
                   </h3>
                   <div className="flex flex-wrap items-center gap-[6px] mt-1">
                     <span className="text-[9px] text-slate-400 font-bold uppercase">
-                      Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'Retención'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÓN' : 'PRUEBAS'}</span> | Último Secuencial Emitido: <span className="text-emerald-500 font-mono font-bold">{String(docType === 'factura' ? lastSeqFactura : lastSeqRetencion).padStart(9, '0')}</span>
+                      Modo: <span className="text-primary font-bold">{docType === 'factura' ? 'Factura' : 'RetenciÃ³n'}</span> | Ambiente: <span className="text-primary font-bold">{ambiente === '2' ? 'PRODUCCIÃ“N' : 'PRUEBAS'}</span> | Ãšltimo Secuencial Emitido: <span className="text-emerald-500 font-mono font-bold">{String(docType === 'factura' ? lastSeqFactura : lastSeqRetencion).padStart(9, '0')}</span>
                     </span>
                   </div>
                 </div>
@@ -3843,7 +3844,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               </div>
             </div>
 
-            {/* SECCIÓN 1: DATOS DEL CLIENTE / RECEPTOR */}
+            {/* SECCIÃ“N 1: DATOS DEL CLIENTE / RECEPTOR */}
             <div className="glass-card-premium p-6 space-y-6 border-t-4 border-t-primary relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl -mr-6 -mt-6"></div>
               
@@ -3855,7 +3856,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
                     1. Datos del Cliente / Receptor
                   </h3>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Búsqueda y datos del receptor</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">BÃºsqueda y datos del receptor</p>
                 </div>
               </div>
 
@@ -3873,7 +3874,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       }}
                       className="text-[9px] text-rose-500 hover:text-rose-600 font-bold uppercase tracking-wider transition-colors"
                     >
-                      Limpiar Selección
+                      Limpiar SelecciÃ³n
                     </button>
                   )}
                 </label>
@@ -3983,10 +3984,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     </div>
                   </div>
                   <p className="text-[9px] text-slate-400 font-semibold leading-relaxed uppercase tracking-wider">
-                    Marque los meses para auto-generar la factura. El detalle se calculará con su tarifa respectiva.
+                    Marque los meses para auto-generar la factura. El detalle se calcularÃ¡ con su tarifa respectiva.
                     {selectedPeriods.length > 0 && (
                       <span className="ml-2 text-primary font-black">
-                        ({selectedPeriods.length} seleccionados — ${pendingObligations
+                        ({selectedPeriods.length} seleccionados â€” ${pendingObligations
                           .filter(o => selectedPeriods.includes(o.id))
                           .reduce((s, o) => s + o.amount, 0)
                           .toFixed(2)})
@@ -4023,7 +4024,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                               {ob.label}
                             </p>
                             <p className="text-[9px] font-bold text-slate-400 tracking-wider uppercase mt-0.5">
-                              Período: {formatPeriodForDisplay(ob.period).replace('IVA ', '')}
+                              PerÃ­odo: {formatPeriodForDisplay(ob.period).replace('IVA ', '')}
                             </p>
                           </div>
                           <span className="text-xs font-black text-primary font-mono shrink-0">
@@ -4036,7 +4037,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 </div>
               )}
 
-              {/* Módulo Ecuafact / Venta Ocasional Auto-Registro */}
+              {/* MÃ³dulo Ecuafact / Venta Ocasional Auto-Registro */}
               {!selectedClient && (
                 <VentaOcasionalForm
                   buyerName={buyerName}
@@ -4054,32 +4055,32 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
               {/* Formulario de Campos Manuales del Receptor */}
               <div className="space-y-4 pt-6 mt-6 border-t border-slate-200 dark:border-white/5">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Detalles de Identificación y Contacto</h4>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Detalles de IdentificaciÃ³n y Contacto</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Razón Social</label>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">RazÃ³n Social</label>
                     <input
                       type="text"
                       value={buyerName}
                       onChange={(e) => setBuyerName(e.target.value)}
                       className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
-                      placeholder="Nombres completos o Razón Social"
+                      placeholder="Nombres completos o RazÃ³n Social"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Identificación</label>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">IdentificaciÃ³n</label>
                     <input
                       type="text"
                       value={buyerRuc}
                       onChange={(e) => setBuyerRuc(e.target.value)}
                       className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-mono font-semibold"
-                      placeholder="Cédula o RUC"
+                      placeholder="CÃ©dula o RUC"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Tipo Identificación</label>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Tipo IdentificaciÃ³n</label>
                     <select
                       value={buyerIdType}
                       onChange={(e) => {
@@ -4095,7 +4096,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       }}
                       className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold text-slate-800 dark:text-slate-100"
                     >
-                      <option value="05">05 - CÉDULA</option>
+                      <option value="05">05 - CÃ‰DULA</option>
                       <option value="04">04 - RUC</option>
                       <option value="06">06 - PASAPORTE</option>
                       <option value="07">07 - CONSUMIDOR FINAL</option>
@@ -4114,7 +4115,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Teléfono</label>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">TelÃ©fono</label>
                     <input
                       type="text"
                       value={buyerPhone}
@@ -4125,20 +4126,20 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Dirección</label>
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">DirecciÃ³n</label>
                     <input
                       type="text"
                       value={buyerAddress}
                       onChange={(e) => setBuyerAddress(e.target.value)}
                       className="w-full px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-semibold"
-                      placeholder="Dirección del receptor"
+                      placeholder="DirecciÃ³n del receptor"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* SECCIÓN 2: DETALLES DE PRODUCTOS / SERVICIOS */}
+            {/* SECCIÃ“N 2: DETALLES DE PRODUCTOS / SERVICIOS */}
             {docType === 'factura' && (
               <div className="glass-card-premium p-6 space-y-6 border-t-4 border-t-primary relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl -mr-6 -mt-6"></div>
@@ -4152,7 +4153,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
                         2. Detalles de Productos y Servicios
                       </h3>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Grilla de ítems facturados</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Grilla de Ã­tems facturados</p>
                     </div>
                   </div>
                   
@@ -4162,7 +4163,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-gradient-azure text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98]"
                   >
                     <Plus size={12} />
-                    Agregar Ítem
+                    Agregar Ãtem
                   </button>
                 </div>
 
@@ -4182,7 +4183,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pr-6">
                         <div className="md:col-span-3">
-                          <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500">Cód. Producto/Servicio</label>
+                          <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500">CÃ³d. Producto/Servicio</label>
                           <input
                             type="text"
                             inputMode="numeric"
@@ -4194,7 +4195,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           />
                         </div>
                         <div className="md:col-span-9">
-                          <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500">Descripción del Artículo / Servicio</label>
+                          <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500">DescripciÃ³n del ArtÃ­culo / Servicio</label>
                           <textarea
                             value={item.descripcion}
                             onChange={(e) => updateInvoiceItem(item.id, 'descripcion', e.target.value)}
@@ -4247,7 +4248,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                           </select>
                         </div>
                         <div className="col-span-3 md:col-span-1">
-                          <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500">Total Ítem</label>
+                          <label className="block text-[9px] font-black uppercase tracking-wider text-slate-500">Total Ãtem</label>
                           <div className="w-full px-3 py-2 mt-1 bg-slate-200/40 dark:bg-slate-900/40 rounded-xl text-xs font-mono font-black text-right text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-white/5">
                             ${item.total.toFixed(2)}
                           </div>
@@ -4259,7 +4260,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               </div>
             )}
 
-            {/* SECCIÓN 3: FORMA DE PAGO Y RESUMEN DE TOTALES */}
+            {/* SECCIÃ“N 3: FORMA DE PAGO Y RESUMEN DE TOTALES */}
             {docType === 'factura' && (
               <div className="glass-card-premium p-6 space-y-6 border-t-4 border-t-primary relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl -mr-6 -mt-6"></div>
@@ -4272,7 +4273,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 dark:text-white font-premium">
                       3. Forma de Pago & Totales
                     </h3>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">Método de cobro y totales de factura</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">MÃ©todo de cobro y totales de factura</p>
                   </div>
                 </div>
 
@@ -4282,10 +4283,10 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Seleccione la Forma de Pago</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {[
-                        { value: '01', label: 'Efectivo', icon: '💵', sub: 'Sin sistema financiero' },
-                        { value: '20', label: 'Transferencia', icon: '🏦', sub: 'Sistema financiero' },
-                        { value: '19', label: 'Tarjeta', icon: '💳', sub: 'Crédito / Débito' },
-                        { value: '17', label: 'Digital', icon: '📱', sub: 'Dinero electrónico' }
+                        { value: '01', label: 'Efectivo', icon: 'ðŸ’µ', sub: 'Sin sistema financiero' },
+                        { value: '20', label: 'Transferencia', icon: 'ðŸ¦', sub: 'Sistema financiero' },
+                        { value: '19', label: 'Tarjeta', icon: 'ðŸ’³', sub: 'CrÃ©dito / DÃ©bito' },
+                        { value: '17', label: 'Digital', icon: 'ðŸ“±', sub: 'Dinero electrÃ³nico' }
                       ].map(opt => (
                         <button
                           key={opt.value}
@@ -4338,13 +4339,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
             {/* Workflow Control steps */}
             <div className="glass-card-premium p-6 space-y-4">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Ciclo de Emisión SRI</h3>
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Ciclo de EmisiÃ³n SRI</h3>
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                 {[
                   { step: 1, label: 'XML Generado', desc: 'Estructura' },
                   { step: 2, label: 'Firmado', desc: 'XAdES-BES' },
-                  { step: 3, label: 'Enviado SRI', desc: 'Recepción' },
+                  { step: 3, label: 'Enviado SRI', desc: 'RecepciÃ³n' },
                   { step: 4, label: 'Autorizado', desc: 'SRI Offline/Online' }
                 ].map(s => (
                   <div key={s.step} className={`p-2.5 rounded-xl border flex flex-col justify-center items-center transition-all ${
@@ -4365,7 +4366,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
               <div className="pt-2 text-center">
                 <span className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-wider block">
-                  Use el botón azul "PROCESAR Y AUTORIZAR" en la barra inferior para transmitir
+                  Use el botÃ³n azul "PROCESAR Y AUTORIZAR" en la barra inferior para transmitir
                 </span>
               </div>
             </div>
@@ -4474,7 +4475,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       `Hola *${buyerName}*,\nLe comparto el detalle de su factura emitida en el SRI por Servicios Contables.\n\n` +
                       `*Total:* $${invoiceTotals.total.toFixed(2)}\n` +
                       `*Clave de Acceso:* ${generatedAccessKey}\n\n` +
-                      `¡Muchas gracias por su confianza!\n_Santiago Córdova - Soluciones Tributarias_`
+                      `Â¡Muchas gracias por su confianza!\n_Santiago CÃ³rdova - Soluciones Tributarias_`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -4501,7 +4502,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     className="col-span-3 flex items-center justify-center gap-1.5 py-2 bg-gradient-azure text-white rounded-xl text-[10px] font-black uppercase tracking-wider font-premium transition-all active:scale-[0.98] shadow-md shadow-primary/20"
                   >
                     <Plus size={12} />
-                    Emitir Siguiente Factura (Flujo Rápido PC)
+                    Emitir Siguiente Factura (Flujo RÃ¡pido PC)
                   </button>
                 </div>
               </div>
@@ -4510,7 +4511,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 <div className="px-4 py-2 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900 flex justify-between items-center">
                   <div className="flex items-center gap-2 text-slate-400">
                     <Activity size={12} className="text-primary animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-widest font-premium">Consola de Transmisión SRI</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest font-premium">Consola de TransmisiÃ³n SRI</span>
                   </div>
                   <button 
                     onClick={() => setConsoleLogs([])}
@@ -4522,7 +4523,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
                 <div className="flex-1 p-4 overflow-y-auto font-mono text-[10px] space-y-1.5 no-scrollbar select-text text-slate-700 dark:text-slate-300">
                   {consoleLogs.length === 0 ? (
-                    <div className="text-slate-400 dark:text-slate-600 italic">Esperando inicio de proceso de transmisión...</div>
+                    <div className="text-slate-400 dark:text-slate-600 italic">Esperando inicio de proceso de transmisiÃ³n...</div>
                   ) : (
                     consoleLogs.map((log, index) => (
                       <div key={index} className="leading-relaxed border-l border-slate-200 dark:border-white/5 pl-2">
@@ -4582,7 +4583,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 ) : (
                   <div className="text-slate-400 dark:text-slate-600 italic flex flex-col justify-center items-center h-full pt-16">
                     <Database size={24} className="mb-2 opacity-35" />
-                    El código XML se mostrará aquí una vez generado.
+                    El cÃ³digo XML se mostrarÃ¡ aquÃ­ una vez generado.
                   </div>
                 )}
               </div>
@@ -4644,7 +4645,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             <div className="text-center py-16 bg-slate-50 dark:bg-white/5 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 text-slate-400">
               <FileText size={32} className="mx-auto mb-3 opacity-30 text-primary" />
               <p className="text-xs font-black uppercase tracking-wider font-premium">No se encontraron comprobantes</p>
-              <p className="text-[10px] opacity-75 mt-1">Intente emitir un nuevo comprobante en la primera pestaña.</p>
+              <p className="text-[10px] opacity-75 mt-1">Intente emitir un nuevo comprobante en la primera pestaÃ±a.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -4654,7 +4655,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                     <th className="py-3 px-4">Tipo</th>
                     <th className="py-3 px-4">Secuencial</th>
                     <th className="py-3 px-4">Cliente / Receptor</th>
-                    <th className="py-3 px-4">Fecha Emisión</th>
+                    <th className="py-3 px-4">Fecha EmisiÃ³n</th>
                     <th className="py-3 px-4 text-right">Monto</th>
                     <th className="py-3 px-4 text-center">Ambiente</th>
                     <th className="py-3 px-4 text-center">Estado SRI</th>
@@ -4668,7 +4669,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                         {row.tipo === 'factura' ? (
                           <span className="text-sky-500">Factura</span>
                         ) : (
-                          <span className="text-amber-500">Retención</span>
+                          <span className="text-amber-500">RetenciÃ³n</span>
                         )}
                       </td>
                       <td className="py-3.5 px-4 font-mono font-bold text-slate-600 dark:text-slate-300">
@@ -4776,7 +4777,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
           <div className="lg:col-span-6 space-y-6">
             
             <div className="glass-card-premium p-6 space-y-4">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Verificador Algorítmico SRI</h3>
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Verificador AlgorÃ­tmico SRI</h3>
               
               <div className="flex gap-2">
                 <input
@@ -4784,7 +4785,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   maxLength={13}
                   value={validationInput}
                   onChange={(e) => setValidationInput(e.target.value)}
-                  placeholder="Ingrese RUC (13 dígitos) o Cédula (10 dígitos)"
+                  placeholder="Ingrese RUC (13 dÃ­gitos) o CÃ©dula (10 dÃ­gitos)"
                   className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-xs outline-none focus:border-primary font-mono font-semibold"
                 />
                 <button
@@ -4796,7 +4797,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 </button>
               </div>
               <p className="text-[10px] text-slate-500">
-                Esta herramienta ejecuta el algoritmo matemático oficial de dígito verificador del SRI Ecuador (Módulo 10 para cédulas/personas naturales y Módulo 11 para sociedades y entidades públicas).
+                Esta herramienta ejecuta el algoritmo matemÃ¡tico oficial de dÃ­gito verificador del SRI Ecuador (MÃ³dulo 10 para cÃ©dulas/personas naturales y MÃ³dulo 11 para sociedades y entidades pÃºblicas).
               </p>
             </div>
             
@@ -4804,12 +4805,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
           <div className="lg:col-span-6">
             <div className="glass-card-premium p-6 space-y-4 h-full">
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Resultado de la Validación</h3>
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Resultado de la ValidaciÃ³n</h3>
 
               {!validationResult ? (
                 <div className="flex flex-col justify-center items-center h-48 text-slate-400 italic">
                   <CheckCircle2 size={24} className="mb-2 opacity-35" />
-                  Ingrese una identificación y presione Validar.
+                  Ingrese una identificaciÃ³n y presione Validar.
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -4830,7 +4831,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                       <div className={`text-[10px] font-black uppercase tracking-wider ${
                         validationResult.valid ? 'text-emerald-500' : 'text-rose-500'
                       }`}>
-                        {validationResult.valid ? 'Estructura Correcta' : 'Inválido / Error de Dígito'}
+                        {validationResult.valid ? 'Estructura Correcta' : 'InvÃ¡lido / Error de DÃ­gito'}
                       </div>
                     </div>
                   </div>
@@ -4838,7 +4839,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   <div className="h-px bg-slate-200 dark:bg-white/10"></div>
 
                   <div className="space-y-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Logs de Validación:</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Logs de ValidaciÃ³n:</span>
                     <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl font-mono text-[10px] text-slate-700 dark:text-slate-300 space-y-1.5 max-h-[200px] overflow-y-auto no-scrollbar border border-slate-200 dark:border-white/5">
                       {validationResult.details.map((detail, idx) => (
                         <div key={idx} className="border-l border-slate-200 dark:border-white/5 pl-2">{detail}</div>
@@ -4873,9 +4874,9 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               <div className="h-8 w-px bg-white/10 shrink-0" />
 
               <div className="flex flex-col text-left">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Ítems</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Ãtems</span>
                 <span className="text-[11px] font-bold text-[#00A896] mt-0.5">
-                  {docType === 'factura' ? invoiceItems.length : withholdings.length} línea{((docType === 'factura' ? invoiceItems.length : withholdings.length) !== 1) ? 's' : ''}
+                  {docType === 'factura' ? invoiceItems.length : withholdings.length} lÃ­nea{((docType === 'factura' ? invoiceItems.length : withholdings.length) !== 1) ? 's' : ''}
                 </span>
               </div>
  
@@ -4905,17 +4906,17 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
               <div className="flex flex-col text-right justify-center">
                 {(!buyerName.trim() || !buyerRuc.trim()) && !selectedClient && (
                   <span className="text-[8px] text-rose-400 font-bold uppercase tracking-wider mb-1 animate-pulse">
-                    ⚠️ Falta Comprador (RUC/Nombre)
+                    âš ï¸ Falta Comprador (RUC/Nombre)
                   </span>
                 )}
                 {docType === 'factura' && invoiceItems.length === 0 && (
                   <span className="text-[8px] text-rose-400 font-bold uppercase tracking-wider mb-1 animate-pulse">
-                    ⚠️ Agregue al menos un Ítem
+                    âš ï¸ Agregue al menos un Ãtem
                   </span>
                 )}
                 {docType === 'retencion' && withholdings.length === 0 && (
                   <span className="text-[8px] text-rose-400 font-bold uppercase tracking-wider mb-1 animate-pulse">
-                    ⚠️ Agregue una Retención
+                    âš ï¸ Agregue una RetenciÃ³n
                   </span>
                 )}
                 <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none">Total a Facturar</span>
@@ -4963,7 +4964,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 <CheckCircle2 size={26} />
               </div>
               <h3 className="text-lg font-black uppercase tracking-wider text-white font-display">
-                ¡Comprobante Autorizado!
+                Â¡Comprobante Autorizado!
               </h3>
               <p className="text-xs text-slate-300 font-medium leading-relaxed font-sans">
                 El comprobante para <strong className="text-white">{buyerName}</strong> por un valor total de <strong className="text-[#00A896] font-mono">${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}</strong> ha sido firmado y autorizado por el SRI.
@@ -4971,8 +4972,8 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
 
             <div className="bg-[#0b1326]/80 border border-white/10 rounded-2xl p-4 space-y-2 text-[10px] text-slate-300 font-medium font-mono leading-relaxed">
-              <div><strong className="text-slate-400 uppercase tracking-wider text-[8px] block">Razón Social:</strong> {buyerName}</div>
-              <div><strong className="text-slate-400 uppercase tracking-wider text-[8px] block">Identificación:</strong> {buyerRuc}</div>
+              <div><strong className="text-slate-400 uppercase tracking-wider text-[8px] block">RazÃ³n Social:</strong> {buyerName}</div>
+              <div><strong className="text-slate-400 uppercase tracking-wider text-[8px] block">IdentificaciÃ³n:</strong> {buyerRuc}</div>
               <div className="truncate"><strong className="text-slate-400 uppercase tracking-wider text-[8px] block">Clave de Acceso SRI:</strong> {generatedAccessKey}</div>
             </div>
 
@@ -5041,7 +5042,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                   `Hola *${buyerName}*,\nLe comparto el detail de su factura emitida en el SRI por Servicios Contables.\n\n` +
                   `*Total:* $${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}\n` +
                   `*Clave de Acceso:* ${generatedAccessKey}\n\n` +
-                  `¡Muchas gracias por su confianza!\n_Santiago Córdova - Soluciones Tributarias_`
+                  `Â¡Muchas gracias por su confianza!\n_Santiago CÃ³rdova - Soluciones Tributarias_`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -5054,16 +5055,16 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
               {/* Button 4: Correo */}
               <a
-                href={`mailto:${buyerEmail}?subject=${encodeURIComponent(`Comprobante Electrónico SRI Autorizado - ${emisorNombreComercial}`)}&body=${encodeURIComponent(
+                href={`mailto:${buyerEmail}?subject=${encodeURIComponent(`Comprobante ElectrÃ³nico SRI Autorizado - ${emisorNombreComercial}`)}&body=${encodeURIComponent(
                   `Estimado/a ${buyerName},\n\n` +
-                  `Le informamos que se ha emitido y autorizado su comprobante electrónico en el SRI.\n\n` +
+                  `Le informamos que se ha emitido y autorizado su comprobante electrÃ³nico en el SRI.\n\n` +
                   `Detalle del Comprobante:\n` +
                   `- Emisor: ${emisorRazonSocial}\n` +
                   `- RUC Emisor: ${emisorRuc}\n` +
                   `- Secuencial: ${generatedAccessKey ? generatedAccessKey.substring(30, 39) : ''}\n` +
                   `- Clave de Acceso: ${generatedAccessKey}\n` +
                   `- Total: $${(docType === 'factura' ? invoiceTotals.total : withholdingTotal).toFixed(2)}\n\n` +
-                  `Puede descargar su RIDE o XML desde el portal de facturación o consultar con su clave de acceso en el SRI.\n\n` +
+                  `Puede descargar su RIDE o XML desde el portal de facturaciÃ³n o consultar con su clave de acceso en el SRI.\n\n` +
                   `Atentamente,\n` +
                   `${emisorNombreComercial}`
                 )}`}
@@ -5103,19 +5104,19 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <h3 className="text-sm font-black uppercase tracking-widest text-white font-display">Transmisión SRI Activa</h3>
+              <h3 className="text-sm font-black uppercase tracking-widest text-white font-display">TransmisiÃ³n SRI Activa</h3>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                Procesando comprobante electrónico...
+                Procesando comprobante electrÃ³nico...
               </p>
             </div>
 
             {/* Step Progress indicators */}
             <div className="space-y-3 pt-2 text-left">
               {[
-                { step: 1, label: 'Generación de XML' },
+                { step: 1, label: 'GeneraciÃ³n de XML' },
                 { step: 2, label: 'Firma Digital XAdES-BES' },
-                { step: 3, label: 'Recepción y Validación SRI' },
-                { step: 4, label: 'Consulta de Autorización' }
+                { step: 3, label: 'RecepciÃ³n y ValidaciÃ³n SRI' },
+                { step: 4, label: 'Consulta de AutorizaciÃ³n' }
               ].map(s => {
                 const isActive = currentStep === s.step;
                 const isDone = currentStep > s.step;
@@ -5161,7 +5162,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
             <div className="space-y-1.5">
               <h3 className="text-lg font-black uppercase tracking-wider text-white font-display">
-                ⚠️ Error de Transmisión SRI
+                âš ï¸ Error de TransmisiÃ³n SRI
               </h3>
               <p className="text-xs text-rose-400 font-bold uppercase tracking-wider">
                 El comprobante fue devuelto o rechazado
@@ -5189,7 +5190,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
                 onClick={() => setProcessErrorMessage(null)}
                 className="w-full py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-2xl text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-rose-600/20 transition-all border border-white/10 cursor-pointer active:scale-[0.98]"
               >
-                Cerrar Diálogo
+                Cerrar DiÃ¡logo
               </button>
             </div>
           </div>
@@ -5231,19 +5232,19 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         }}
       />
 
-      {/* MODAL FUSIÓN TPV POS (BOTICA, GIMNASIO, RESTAURANTE, MINIMARKET) */}
+      {/* MODAL FUSIÃ“N TPV POS (BOTICA, GIMNASIO, RESTAURANTE, MINIMARKET) */}
       <SriPosTerminalModal
         isOpen={isPosModalOpen}
         onClose={() => setIsPosModalOpen(false)}
       />
 
-      {/* MODAL FACTURACIÓN MASIVA DE HONORARIOS Y DIAGNÓSTICO SRI MÓDULO 11 */}
+      {/* MODAL FACTURACIÃ“N MASIVA DE HONORARIOS Y DIAGNÃ“STICO SRI MÃ“DULO 11 */}
       <SriAccountingBatchModal
         isOpen={isBatchModalOpen}
         onClose={() => setIsBatchModalOpen(false)}
       />
 
-      {/* MODAL DEVOLUCIÓN IVA TERCERA EDAD Y DISCAPACIDAD */}
+      {/* MODAL DEVOLUCIÃ“N IVA TERCERA EDAD Y DISCAPACIDAD */}
       <DevolucionIvaModal
         isOpen={isDevolucionModalOpen}
         onClose={() => setIsDevolucionModalOpen(false)}

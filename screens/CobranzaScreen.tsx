@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+﻿import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, ReminderConfig, BusinessProfile, FinancialItem } from '../types';
 import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, safeFormat } from '../services/sri';
 import { getClientServiceFee, isCourtesyClient } from '../services/clientService';
@@ -22,6 +22,7 @@ import { useCampaignContext } from '../hooks/useCampaignContext';
 import { CampaignBanner } from '../components/ui/CampaignBanner';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
+import { FACTURACION_API_TOKEN } from '../services/facturacionApi';
 
 interface CobranzaScreenProps {
     reminderConfigProp?: ReminderConfig;
@@ -110,16 +111,16 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             setFastBillingLogs(prev => [...prev, `[${time}] ${msg}`]);
         };
 
-        addLog(`Iniciando emisión rápida de Factura SRI para ${item.clientName}...`);
+        addLog(`Iniciando emisiÃ³n rÃ¡pida de Factura SRI para ${item.clientName}...`);
 
         try {
-            // 1. Obtener firma electrónica y clave desde IndexedDB
-            addLog("Cargando firma electrónica (.p12) desde almacenamiento seguro local...");
+            // 1. Obtener firma electrÃ³nica y clave desde IndexedDB
+            addLog("Cargando firma electrÃ³nica (.p12) desde almacenamiento seguro local...");
             const p12Base64 = await db.getLocal('sc_sri_p12_base64');
             const p12Password = await db.getLocal('sc_sri_p12_password');
 
             if (!p12Base64 || !p12Password) {
-                throw new Error("No se encontró una firma electrónica (.p12) cargada en el sistema o su clave. Por favor, ve al módulo de Facturación SRI y carga tu firma en Configuración primero.");
+                throw new Error("No se encontrÃ³ una firma electrÃ³nica (.p12) cargada en el sistema o su clave. Por favor, ve al mÃ³dulo de FacturaciÃ³n SRI y carga tu firma en ConfiguraciÃ³n primero.");
             }
 
             // 2. Obtener configuraciones del emisor y API
@@ -137,14 +138,14 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             // Validar que la API responda / ping
             addLog(`Verificando conectividad con servidor de firmas: ${apiUrl}...`);
             const pingRes = await fetch(`${apiUrl}${apiPrefix}/ping`, {
-                headers: { 'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir' }
+                headers: { 'Authorization': FACTURACION_API_TOKEN }
             }).catch(() => null);
 
             const isMock = !pingRes || !pingRes.ok;
             if (isMock) {
                 addLog("Servidor de firmas no disponible en Render, ejecutando en Modo Simulado (Sandbox)...");
             } else {
-                addLog("Conexión con servidor de firmas establecida con éxito.");
+                addLog("ConexiÃ³n con servidor de firmas establecida con Ã©xito.");
             }
 
             // 3. Generar secuencial y clave de acceso
@@ -241,7 +242,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     detalles: [
                         {
                             codigoPrincipal: '001',
-                            descripcion: `Servicios Contables y Asesoría Tributaria - Período ${item.period}`,
+                            descripcion: `Servicios Contables y AsesorÃ­a Tributaria - PerÃ­odo ${item.period}`,
                             cantidad: '1.00',
                             precioUnitario: subtotalVal.toFixed(2),
                             descuento: '0.00',
@@ -276,7 +277,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             } else {
                 const response = await fetch(`${apiUrl}${apiPrefix}/facturacion/xml`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': FACTURACION_API_TOKEN },
                     body: JSON.stringify(payload)
                 });
                 if (!response.ok) throw new Error("Error en API al generar XML.");
@@ -298,12 +299,12 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 const activePassword = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'ClaveFirma123';
                 
                 if (!activeBase64) {
-                    throw new Error("No se encontró el archivo de Firma Electrónica (.p12). Configúralo en Facturación SRI.");
+                    throw new Error("No se encontrÃ³ el archivo de Firma ElectrÃ³nica (.p12). ConfigÃºralo en FacturaciÃ³n SRI.");
                 }
 
                 const signRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/firmar`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': FACTURACION_API_TOKEN },
                     body: JSON.stringify({
                         tipo: 'factura',
                         xml: currentXml,
@@ -325,40 +326,40 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 const signData = await signRes.json();
                 currentXml = signData.data?.xml || signData.xml_firmado || signData.xml;
                 setFastBillingXml(currentXml);
-                addLog("XML firmado digitalmente con éxito.");
+                addLog("XML firmado digitalmente con Ã©xito.");
             }
 
             // 7. Paso 3: Enviar al SRI
             setFastBillingStep('sending');
-            addLog("Conectando con el Web Service de Recepción del SRI...");
+            addLog("Conectando con el Web Service de RecepciÃ³n del SRI...");
             if (isMock) {
-                addLog("SRI Recepción: RECIBIDO / DEVUELTA (SIMULADO).");
+                addLog("SRI RecepciÃ³n: RECIBIDO / DEVUELTA (SIMULADO).");
             } else {
                 const sendRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/enviar`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': FACTURACION_API_TOKEN },
                     body: JSON.stringify({ xml: currentXml, ambiente })
                 });
-                if (!sendRes.ok) throw new Error("Fallo de conexión al SRI Recepción.");
-                addLog(`SRI Recepción Respuesta: RECIBIDO.`);
+                if (!sendRes.ok) throw new Error("Fallo de conexiÃ³n al SRI RecepciÃ³n.");
+                addLog(`SRI RecepciÃ³n Respuesta: RECIBIDO.`);
             }
 
             // 8. Paso 4: Autorizar
             setFastBillingStep('authorizing');
-            addLog("Solicitando autorización de comprobante al SRI...");
+            addLog("Solicitando autorizaciÃ³n de comprobante al SRI...");
             let isAuthorized = false;
             let errorMsg = '';
 
             if (isMock) {
                 isAuthorized = true;
-                addLog("SRI Autorización: AUTORIZADO (SIMULADO).");
+                addLog("SRI AutorizaciÃ³n: AUTORIZADO (SIMULADO).");
             } else {
                 const authRes = await fetch(`${apiUrl}${apiPrefix}/facturacion/sri/autorizar`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir' },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': FACTURACION_API_TOKEN },
                     body: JSON.stringify({ clave_acceso: key, ambiente })
                 });
-                if (!authRes.ok) throw new Error("Fallo consulta de autorización.");
+                if (!authRes.ok) throw new Error("Fallo consulta de autorizaciÃ³n.");
                 const authData = await authRes.json();
                 const rawDataStr = typeof authData.data === 'string' ? authData.data : JSON.stringify(authData.data || {});
                 const uppercaseData = rawDataStr.toUpperCase().replace(/[\s\\"]/g, '');
@@ -366,9 +367,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
 
                 if (!isAuthorized) {
                     errorMsg = 'No autorizado por el SRI (Estado no AUTORIZADO)';
-                    addLog("SRI Autorización: RECHAZADO / ERROR.");
+                    addLog("SRI AutorizaciÃ³n: RECHAZADO / ERROR.");
                 } else {
-                    addLog("SRI Autorización: AUTORIZADO.");
+                    addLog("SRI AutorizaciÃ³n: AUTORIZADO.");
                 }
             }
 
@@ -413,7 +414,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             });
 
             setFastBillingStep('success');
-            addLog("¡Factura emitida, firmada y autorizada por el SRI exitosamente! (Éxito)");
+            addLog("Â¡Factura emitida, firmada y autorizada por el SRI exitosamente! (Ã‰xito)");
             toast.success("Factura SRI emitida y autorizada correctamente.");
 
         } catch (err: any) {
@@ -427,7 +428,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     // Fiscal Context
     const campaignContext = useCampaignContext();
 
-    // Referencia para impresión
+    // Referencia para impresiÃ³n
     const receiptRef = useRef<HTMLDivElement>(null);
 
     const [sriHistory, setSriHistory] = useState<any[]>([]);
@@ -447,11 +448,34 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     const findSriInvoice = (clientRuc: string, period?: string) => {
         if (!sriHistory || sriHistory.length === 0) return null;
         const cleanRuc = clientRuc.replace(/\D/g, '');
-        return sriHistory.find(h => 
-            h.estado === 'Autorizado' && 
-            h.tipo === 'factura' && 
+        const candidates = sriHistory.filter(h =>
+            h.estado === 'Autorizado' &&
+            h.tipo === 'factura' &&
             (h.rucReceptor?.replace(/\D/g, '') === cleanRuc)
-        ) || null;
+        );
+        if (candidates.length === 0) return null;
+
+        // Priorizar la factura emitida en la ventana del período cobrado (mes del período o el inmediatamente siguiente)
+        if (period) {
+            const ymMatch = period.match(/(\d{4})-(\d{2})/);
+            if (ymMatch) {
+                const y = ymMatch[1];
+                const m = parseInt(ymMatch[2], 10);
+                if (m >= 1 && m <= 12) {
+                    const pm = String(m).padStart(2, '0');
+                    const nm = m === 12 ? '01' : String(m + 1).padStart(2, '0');
+                    const ny = m === 12 ? String(parseInt(y, 10) + 1) : y;
+                    const inWindow = candidates.find(h =>
+                        typeof h.fechaEmision === 'string' && (
+                            h.fechaEmision.startsWith(`${y}-${pm}`) ||
+                            h.fechaEmision.startsWith(`${ny}-${nm}`)
+                        )
+                    );
+                    if (inWindow) return inWindow;
+                }
+            }
+        }
+        return candidates[0];
     };
 
     const financialData = useMemo(() => {
@@ -560,13 +584,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             });
         }
         
-        // Auto-Ordenamiento Lógico
+        // Auto-Ordenamiento LÃ³gico
         return list.sort((a, b) => {
             if (activeTab === 'collected') {
-                // Más recientes primero
+                // MÃ¡s recientes primero
                 return b.dateReference.getTime() - a.dateReference.getTime();
             } else {
-                // Urgencia (los que tienen daysDiff más alto están más vencidos)
+                // Urgencia (los que tienen daysDiff mÃ¡s alto estÃ¡n mÃ¡s vencidos)
                 return (b.daysDiff || 0) - (a.daysDiff || 0);
             }
         });
@@ -579,21 +603,21 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         return 'Mensual';
     };
 
-    // Períodos Fiscales para la Matriz de Cobranzas (Mensuales o Semestrales)
+    // PerÃ­odos Fiscales para la Matriz de Cobranzas (Mensuales o Semestrales)
     const matrixPeriods = useMemo(() => {
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth() + 1;
 
         if (matrixFrequency === 'Semestral') {
-            // Generar los 6 últimos semestres fiscales (ej: 2025-2S, 2025-1S, 2024-2S, 2024-1S, 2023-2S, 2023-1S)
+            // Generar los 6 Ãºltimos semestres fiscales (ej: 2025-2S, 2025-1S, 2024-2S, 2024-1S, 2023-2S, 2023-1S)
             const list: { key: string; label: string; shortLabel: string; year: string; type: 'semestral' }[] = [];
             let y = currentYear;
             let s = currentMonth <= 6 ? 1 : 2;
             
             for (let i = 0; i < 6; i++) {
                 const key = `${y}-${s}S`;
-                const label = `${s}º Semestre ${y}`;
+                const label = `${s}Âº Semestre ${y}`;
                 const shortLabel = `${s}S`;
                 list.push({ key, label, shortLabel, year: y.toString(), type: 'semestral' });
                 
@@ -626,7 +650,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         return list;
     }, [matrixFrequency]);
 
-    // Matriz de Clientes vs Períodos Fiscales de Cobro (Mensual & Semestral)
+    // Matriz de Clientes vs PerÃ­odos Fiscales de Cobro (Mensual & Semestral)
     const matrixClientsData = useMemo(() => {
         const query = searchTerm.toLowerCase();
         const baseClients = clients.filter(c => {
@@ -661,7 +685,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     return { key: p.key, status: 'na', amount: 0, label: 'Semestral' };
                 }
 
-                // Buscar declaración exacta o equivalente semestral
+                // Buscar declaraciÃ³n exacta o equivalente semestral
                 let decl = (client.declarations || []).find(d => arePeriodsEqual(d.period, p.key) || d.period === p.key);
                 
                 // Si el cliente es semestral y p.key es un semestre ej: 2025-2S o 2025-1S
@@ -686,7 +710,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     return { key: p.key, status: 'due_declared', amount: itemAmount, label: 'Por Cobrar', decl };
                 }
 
-                // Si no hay declaración o está sin declarar
+                // Si no hay declaraciÃ³n o estÃ¡ sin declarar
                 const dueDate = getDueDateForPeriod(client, p.key);
                 const diff = dueDate ? differenceInCalendarDays(new Date(), dueDate) : 0;
 
@@ -780,7 +804,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 }
             });
 
-            // 2. Períodos activos proyectados o sin declarar
+            // 2. PerÃ­odos activos proyectados o sin declarar
             activePeriods.forEach(period => {
                 if (processedPeriods.has(period) || isPeriodBeforeClientStart(client, period)) return;
                 const dueDate = getDueDateForPeriod(client, period) || now;
@@ -813,7 +837,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 }
             });
 
-            // Orden cronológico (más recientes primero)
+            // Orden cronolÃ³gico (mÃ¡s recientes primero)
             periodsList.sort((a, b) => b.period.localeCompare(a.period));
 
             // Filtro de mora
@@ -821,7 +845,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             if (moraFilter === 'atrasado' && (maxDaysOverdue <= 0 || maxDaysOverdue > 30)) return;
             if (moraFilter === 'mora_critica' && maxDaysOverdue <= 30) return;
 
-            // Filtro de pestaña activa
+            // Filtro de pestaÃ±a activa
             if (activeTab === 'receivable' && totalDebt === 0) return;
             if (activeTab === 'collected' && totalPaid === 0) return;
 
@@ -846,10 +870,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
     const generateClientWhatsAppCobroMsg = (profile: any) => {
         const unpaidPeriods = profile.periods.filter((p: any) => p.status === 'due_declared' || p.status === 'due_pending');
         const periodsBreakdown = unpaidPeriods.map((p: any) => 
-            `• *${p.label}*: $${p.amount.toFixed(2)} USD (${p.status === 'due_declared' ? 'Declaración SRI Realizada' : 'Pendiente SRI'})`
+            `â€¢ *${p.label}*: $${p.amount.toFixed(2)} USD (${p.status === 'due_declared' ? 'DeclaraciÃ³n SRI Realizada' : 'Pendiente SRI'})`
         ).join('\n');
 
-        return `Estimado(a) *${profile.client.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que mantiene un saldo pendiente de honorarios contables por un valor total de *$${profile.totalDebt.toFixed(2)} USD* correspondiente a las siguientes obligaciones:\n\n${periodsBreakdown}\n\n🏛️ *Datos para transferencia bancaria:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante por este medio para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias por su confianza!`;
+        return `Estimado(a) *${profile.client.name}*, le saluda Santiago CÃ³rdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que mantiene un saldo pendiente de honorarios contables por un valor total de *$${profile.totalDebt.toFixed(2)} USD* correspondiente a las siguientes obligaciones:\n\n${periodsBreakdown}\n\nðŸ›ï¸ *Datos para transferencia bancaria:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago CÃ³rdova RamÃ­rez\nRUC: 0705787745001\n\nPor favor remÃ­tanos su comprobante por este medio para emitir su respectiva factura electrÃ³nica autorizada por el SRI. Â¡Muchas gracias por su confianza!`;
     };
 
     const handleLiquidateClientDebt = (profile: any) => {
@@ -864,7 +888,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         setIsPaymentModalOpen(true);
     };
 
-    // Resolver información completa de cliente, período y monto desde una key 'clientId-period'
+    // Resolver informaciÃ³n completa de cliente, perÃ­odo y monto desde una key 'clientId-period'
     const getItemFromKey = useCallback((key: string) => {
         const client = clients.find(c => key.startsWith(c.id));
         if (!client) return null;
@@ -923,7 +947,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         { name: 'Recaudado', value: financialData.collected.reduce((s, i) => s + i.amount, 0), color: '#10b981' }
     ].filter(d => d.value > 0);
 
-    // Registro de Pago Directo de 1 Solo Período (Matriz / Expediente / Celda)
+    // Registro de Pago Directo de 1 Solo PerÃ­odo (Matriz / Expediente / Celda)
     const handlePaySinglePeriod = async (client: Client, period: string, amount: number) => {
         const nowIso = new Date().toISOString();
         const transactionId = `PAY-${Date.now().toString().slice(-6)}`;
@@ -1031,7 +1055,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         });
 
         if (unpaidPeriods.length === 0) {
-            toast.info(`${client.name} ya está al día con todas sus obligaciones.`);
+            toast.info(`${client.name} ya estÃ¡ al dÃ­a con todas sus obligaciones.`);
             return;
         }
 
@@ -1051,10 +1075,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
             totalAmount
         });
         setIsReceiptOpen(true);
-        toast.success(`¡Deuda de $${totalAmount.toFixed(2)} liquidada exitosamente para ${client.name}!`);
+        toast.success(`Â¡Deuda de $${totalAmount.toFixed(2)} liquidada exitosamente para ${client.name}!`);
     };
 
-    // Liquidar todos los cobros pendientes de un mes/período en toda la columna de la Matriz
+    // Liquidar todos los cobros pendientes de un mes/perÃ­odo en toda la columna de la Matriz
     const handleLiquidateColumnPeriod = async (periodKey: string, periodLabel: string) => {
         const nowIso = new Date().toISOString();
         const transactionId = `PAY-${Date.now().toString().slice(-6)}`;
@@ -1093,13 +1117,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         });
 
         if (updatedCount === 0) {
-            toast.info(`Todos los clientes ya están cobrados en el período ${periodLabel}.`);
+            toast.info(`Todos los clientes ya estÃ¡n cobrados en el perÃ­odo ${periodLabel}.`);
             return;
         }
 
         setClients(newClients);
         await db.setLocal('clients', newClients);
-        toast.success(`¡${updatedCount} cobros del período ${periodLabel} liquidados exitosamente ($${totalAmount.toFixed(2)})!`);
+        toast.success(`Â¡${updatedCount} cobros del perÃ­odo ${periodLabel} liquidados exitosamente ($${totalAmount.toFixed(2)})!`);
     };
 
     // Procesamiento en Lote de Pagos Seleccionados
@@ -1200,9 +1224,9 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         });
 
         if (count > 0) {
-            toast.success(`¡${count} cobros sincronizados y marcados como PAGADOS exitosamente!`);
+            toast.success(`Â¡${count} cobros sincronizados y marcados como PAGADOS exitosamente!`);
         } else {
-            toast.info("Cobranza ya se encuentra 100% sincronizada y al día con la Matriz.");
+            toast.info("Cobranza ya se encuentra 100% sincronizada y al dÃ­a con la Matriz.");
         }
     };
 
@@ -1214,7 +1238,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     <div className="flex items-center gap-2">
                         <span className="px-3 py-1 rounded-full bg-[#00A896]/15 text-[#00A896] text-[9px] font-bold uppercase tracking-widest border border-[#00A896]/30 shadow-[0_0_8px_rgba(0,168,150,0.3)] flex items-center gap-1.5 font-mono">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#00A896] animate-pulse"></span>
-                            Financial Grid Alpha • Santiago Cordova Protocol
+                            Financial Grid Alpha â€¢ Santiago Cordova Protocol
                         </span>
                     </div>
                     <h2 className="text-3xl sm:text-4xl font-black text-white leading-tight tracking-tight font-display">
@@ -1222,7 +1246,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     </h2>
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider font-mono">
                         <LucideIcons.ShieldCheck size={14} className="text-[#00A896]" />
-                        <span>Gestión de Cobranzas y Cuentas por Cobrar de Alto Nivel</span>
+                        <span>GestiÃ³n de Cobranzas y Cuentas por Cobrar de Alto Nivel</span>
                     </div>
                 </div>
 
@@ -1230,10 +1254,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     <button 
                         onClick={handleSyncAllDeclaredAsPaid}
                         className="flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 active:scale-95 border border-white/10 cursor-pointer w-full sm:w-auto"
-                        title="Marcar como pagados en lote todos los cobros cuyas declaraciones ya están enviadas en la Matriz"
+                        title="Marcar como pagados en lote todos los cobros cuyas declaraciones ya estÃ¡n enviadas en la Matriz"
                     >
                         <LucideIcons.RefreshCw size={14} />
-                        <span>⚡ Sincronizar con Matriz</span>
+                        <span>âš¡ Sincronizar con Matriz</span>
                     </button>
 
                     <button 
@@ -1245,7 +1269,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 : 'bg-white/5 text-slate-500 cursor-not-allowed border-white/5'}`}
                     >
                         <LucideIcons.DollarSign size={16} className={selectedItems.size > 0 ? "text-white" : "text-slate-600"} />
-                        <span>LIQUIDAR SELECCIÓN ({selectedItems.size})</span>
+                        <span>LIQUIDAR SELECCIÃ“N ({selectedItems.size})</span>
                     </button>
                 </div>
             </div>
@@ -1342,7 +1366,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                     <LucideIcons.Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                     <input 
                         type="text" 
-                        placeholder="BUSCAR POR CLIENTE / RUC / PERÍODO..." 
+                        placeholder="BUSCAR POR CLIENTE / RUC / PERÃODO..." 
                         value={searchTerm} 
                         onChange={e => setSearchTerm(e.target.value)} 
                         className="w-full pl-12 pr-5 py-3 bg-slate-50 dark:bg-[#0b1326]/90 border border-slate-200 dark:border-white/10 rounded-2xl text-xs font-mono font-medium text-slate-900 dark:text-white uppercase tracking-wider placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-[#00A896]/50 transition-all" 
@@ -1370,7 +1394,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     ? 'bg-[#00A896] text-white shadow-md shadow-[#00A896]/30'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
-                            title="Vista Cuadrícula de Tarjetas Individuales"
+                            title="Vista CuadrÃ­cula de Tarjetas Individuales"
                         >
                             <LucideIcons.LayoutGrid size={15} />
                             <span className="hidden sm:inline">Tarjetas</span>
@@ -1382,7 +1406,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-950 font-black shadow-md shadow-amber-500/30'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
-                            title="Vista Matriz Fiscal por Períodos"
+                            title="Vista Matriz Fiscal por PerÃ­odos"
                         >
                             <LucideIcons.Table2 size={15} />
                             <span className="hidden sm:inline">Matriz</span>
@@ -1394,7 +1418,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     ? 'bg-white dark:bg-white/15 text-slate-900 dark:text-white shadow-md border border-slate-200 dark:border-white/20'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                             }`}
-                            title="Vista Lista Clásica"
+                            title="Vista Lista ClÃ¡sica"
                         >
                             <LucideIcons.LayoutList size={15} />
                             <span className="hidden sm:inline">Lista</span>
@@ -1433,7 +1457,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             <div className="flex items-center p-1 bg-slate-200/70 dark:bg-[#020b14] rounded-xl border border-slate-300/50 dark:border-white/5 overflow-x-auto no-scrollbar">
                                 {[
                                     { id: 'all', label: 'Todos', count: moraCounts.all },
-                                    { id: 'al_dia', label: 'Al Día', count: moraCounts.al_dia, color: 'text-[#00A896]' },
+                                    { id: 'al_dia', label: 'Al DÃ­a', count: moraCounts.al_dia, color: 'text-[#00A896]' },
                                     { id: 'atrasado', label: '1-30d', count: moraCounts.atrasado, color: 'text-amber-500' },
                                     { id: 'mora_critica', label: '>30d Mora', count: moraCounts.mora_critica, color: 'text-rose-500' }
                                 ].map(filter => (
@@ -1516,7 +1540,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         </div>
                     </div>
 
-                    {/* VISTA 1: POR CLIENTE (CARTERA CONSOLIDADA & TIRA DE PERÍODOS) */}
+                    {/* VISTA 1: POR CLIENTE (CARTERA CONSOLIDADA & TIRA DE PERÃODOS) */}
                     {viewMode === 'clients' ? (
                         <div className="relative z-10 p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-[850px] overflow-y-auto no-scrollbar">
                             {consolidatedClients.length === 0 ? (
@@ -1525,7 +1549,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         <LucideIcons.ShieldCheck size={48} className="text-[#00A896]" />
                                     </div>
                                     <p className="text-xs font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300">No se encontraron clientes en este estado de cartera</p>
-                                    <p className="text-[10px] text-slate-400 mt-1">Todos los clientes evaluados están al día con sus obligaciones</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">Todos los clientes evaluados estÃ¡n al dÃ­a con sus obligaciones</p>
                                 </div>
                             ) : (
                                 consolidatedClients.map(profile => {
@@ -1571,7 +1595,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                             <div className="flex items-center flex-wrap gap-1.5 mt-1 font-mono">
                                                                 <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">{profile.client.ruc}</span>
                                                                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/5">
-                                                                    DÍG {profile.client.ruc[8] || '—'}
+                                                                    DÃG {profile.client.ruc[8] || 'â€”'}
                                                                 </span>
                                                                 {profile.client.regime && (
                                                                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#00A896]/10 text-[#00A896] font-bold">
@@ -1592,7 +1616,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                 : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
                                                         }`}>
                                                             <span className={`w-1.5 h-1.5 rounded-full ${!hasDebt ? 'bg-emerald-500' : isCriticalMora ? 'bg-rose-500' : 'bg-amber-500'}`} />
-                                                            {!hasDebt ? 'AL DÍA' : `${profile.pendingCount} MES${profile.pendingCount > 1 ? 'ES' : ''} IMPAGO${profile.pendingCount > 1 ? 'S' : ''}`}
+                                                            {!hasDebt ? 'AL DÃA' : `${profile.pendingCount} MES${profile.pendingCount > 1 ? 'ES' : ''} IMPAGO${profile.pendingCount > 1 ? 'S' : ''}`}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -1612,19 +1636,19 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                         </span>
                                                     </div>
                                                     <div className="col-span-2 sm:col-span-1">
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Días Máx Mora</span>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">DÃ­as MÃ¡x Mora</span>
                                                         <span className={`text-sm font-bold ${profile.maxDaysOverdue > 30 ? 'text-rose-500' : profile.maxDaysOverdue > 0 ? 'text-amber-500' : 'text-slate-400'}`}>
-                                                            {profile.maxDaysOverdue > 0 ? `${profile.maxDaysOverdue} días` : '0 días (Al Día)'}
+                                                            {profile.maxDaysOverdue > 0 ? `${profile.maxDaysOverdue} dÃ­as` : '0 dÃ­as (Al DÃ­a)'}
                                                         </span>
                                                     </div>
                                                 </div>
 
-                                                {/* TIRA DE PERÍODOS Y COMPROBANTES (COMO EN DECLARACIONES) */}
+                                                {/* TIRA DE PERÃODOS Y COMPROBANTES (COMO EN DECLARACIONES) */}
                                                 <div className="mb-4 space-y-1.5">
                                                     <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
                                                         <span className="flex items-center gap-1.5">
                                                             <LucideIcons.Calendar size={12} className="text-[#00A896]" />
-                                                            Tira de Períodos Fiscales ({profile.periods.length})
+                                                            Tira de PerÃ­odos Fiscales ({profile.periods.length})
                                                         </span>
                                                         <span className="text-[9px] text-slate-500">Click en celda para accionar</span>
                                                     </div>
@@ -1654,7 +1678,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                             ? 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 border-amber-500/30'
                                                                             : 'bg-slate-100 dark:bg-white/5 text-slate-500 border-slate-200 dark:border-white/10'
                                                                     }`}
-                                                                    title={`${p.label}: $${p.amount.toFixed(2)} — ${isPaidP ? 'Pagado' : isDeclaredP ? 'Declarado SRI (Por Cobrar)' : 'Sin Declarar'}`}
+                                                                    title={`${p.label}: $${p.amount.toFixed(2)} â€” ${isPaidP ? 'Pagado' : isDeclaredP ? 'Declarado SRI (Por Cobrar)' : 'Sin Declarar'}`}
                                                                 >
                                                                     <div className="flex items-center gap-1">
                                                                         <span className={`w-1.5 h-1.5 rounded-full ${isPaidP ? 'bg-[#00A896]' : isDeclaredP ? 'bg-rose-500' : 'bg-amber-500'}`} />
@@ -1766,7 +1790,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                             <div className="flex items-center gap-1.5 mt-0.5">
                                                                 <span className="text-[10px] font-bold text-slate-400 font-mono">{item.ruc}</span>
                                                                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-white/5 text-slate-500 border border-white/5 font-mono">
-                                                                    DÍG {item.ruc[8] || '—'}
+                                                                    DÃG {item.ruc[8] || 'â€”'}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -1786,7 +1810,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                 {/* Period and Amount Box */}
                                                 <div className="my-4 p-4 rounded-2xl bg-[#020b14]/90 border border-white/5 flex items-center justify-between">
                                                     <div>
-                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Período</span>
+                                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">PerÃ­odo</span>
                                                         <span className="text-xs font-bold text-teal-300 uppercase tracking-wide">
                                                             {formatPeriodForDisplay(item.period)}
                                                         </span>
@@ -1846,7 +1870,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                     e.stopPropagation();
                                                                     const rawPhone = item.phones[0].replace(/\D/g, '');
                                                                     const fullPhone = rawPhone.startsWith('593') ? rawPhone : ('593' + rawPhone.replace(/^0/, ''));
-                                                                    const msg = `Estimado(a) *${item.clientName}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que sus honorarios contables del período *${formatPeriodForDisplay(item.period)}* por un valor de *$${item.amount.toFixed(2)} USD* se encuentran pendientes de cancelación.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias!`;
+                                                                    const msg = `Estimado(a) *${item.clientName}*, le saluda Santiago CÃ³rdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que sus honorarios contables del perÃ­odo *${formatPeriodForDisplay(item.period)}* por un valor de *$${item.amount.toFixed(2)} USD* se encuentran pendientes de cancelaciÃ³n.\n\nðŸ›ï¸ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago CÃ³rdova RamÃ­rez\nRUC: 0705787745001\n\nPor favor remÃ­tanos su comprobante para emitir su respectiva factura electrÃ³nica autorizada por el SRI. Â¡Muchas gracias!`;
                                                                     window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
                                                                 }}
                                                                 className="p-2.5 bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white rounded-xl transition-all border border-[#00A896]/30 cursor-pointer shadow-sm"
@@ -1862,7 +1886,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                 handleEmitFastInvoice(item);
                                                             }}
                                                             className="flex-1 flex items-center justify-center gap-1 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-950 font-black rounded-xl text-[10px] uppercase tracking-wider transition-all shadow-md active:scale-95 border border-white/10 cursor-pointer"
-                                                            title="Emisión rápida de Factura SRI con firma .p12"
+                                                            title="EmisiÃ³n rÃ¡pida de Factura SRI con firma .p12"
                                                         >
                                                             <LucideIcons.Zap size={12} />
                                                             <span>Facturar</span>
@@ -1875,11 +1899,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                     navigate('sri_facturacion', {
                                                                         clientId: item.clientId,
                                                                         amount: item.amount,
-                                                                        description: `Honorarios Profesionales - Período ${item.period}`
+                                                                        description: `Honorarios Profesionales - PerÃ­odo ${item.period}`
                                                                     });
                                                                 }}
                                                                 className="p-2.5 bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 cursor-pointer"
-                                                                title="Abrir en Módulo de Facturación SRI"
+                                                                title="Abrir en MÃ³dulo de FacturaciÃ³n SRI"
                                                             >
                                                                 <LucideIcons.ExternalLink size={13} />
                                                             </button>
@@ -1969,7 +1993,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                     {freq === 'Semestral' ? 'SEM' : freq === 'Popular' ? 'POP' : 'MEN'}
                                                                 </span>
                                                                 <span className="text-[8px] px-1 rounded bg-slate-100 dark:bg-white/5 text-slate-500 font-mono">
-                                                                    DÍG {client.ruc[8] || '—'}
+                                                                    DÃG {client.ruc[8] || 'â€”'}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -1991,7 +2015,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                     return (
                                                         <td key={pStatus.key} className="py-2 px-2 text-center border-r border-slate-200 dark:border-white/5">
                                                             {isNa ? (
-                                                                <span className="text-slate-400 dark:text-slate-600 text-[10px] font-bold select-none">—</span>
+                                                                <span className="text-slate-400 dark:text-slate-600 text-[10px] font-bold select-none">â€”</span>
                                                             ) : (
                                                                 <button
                                                                     onClick={() => setSelectedCellAction({
@@ -2015,7 +2039,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                             ? 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-500/30 hover:bg-amber-100 dark:hover:bg-amber-500/25'
                                                                             : 'bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10'
                                                                     }`}
-                                                                    title={`Período ${pStatus.key}: ${pStatus.label} — Monto: $${pStatus.amount.toFixed(2)} (Click: Opciones • Doble Click: Pagar)`}
+                                                                    title={`PerÃ­odo ${pStatus.key}: ${pStatus.label} â€” Monto: $${pStatus.amount.toFixed(2)} (Click: Opciones â€¢ Doble Click: Pagar)`}
                                                                 >
                                                                     <span className="font-mono font-black">${pStatus.amount.toFixed(0)}</span>
                                                                     <span className="text-[8px] tracking-tight">{pStatus.label}</span>
@@ -2043,7 +2067,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                         </div>
                                                     ) : (
                                                         <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-[#00A896] border border-emerald-500/30 text-[9px] font-bold">
-                                                            AL DÍA
+                                                            AL DÃA
                                                         </span>
                                                     )}
                                                 </td>
@@ -2055,7 +2079,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                             onClick={() => {
                                                                 const rawPhone = client.phones![0].replace(/\D/g, '');
                                                                 const fullPhone = rawPhone.startsWith('593') ? rawPhone : ('593' + rawPhone.replace(/^0/, ''));
-                                                                const msg = `Estimado(a) *${client.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que mantiene un saldo pendiente de honorarios contables por un valor total de *$${totalUnpaidDebt.toFixed(2)} USD* correspondiente a sus declaraciones tributarias.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias!`;
+                                                                const msg = `Estimado(a) *${client.name}*, le saluda Santiago CÃ³rdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que mantiene un saldo pendiente de honorarios contables por un valor total de *$${totalUnpaidDebt.toFixed(2)} USD* correspondiente a sus declaraciones tributarias.\n\nðŸ›ï¸ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago CÃ³rdova RamÃ­rez\nRUC: 0705787745001\n\nPor favor remÃ­tanos su comprobante para emitir su respectiva factura electrÃ³nica autorizada por el SRI. Â¡Muchas gracias!`;
                                                                 window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
                                                             }}
                                                             className="p-2 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 transition-all cursor-pointer shadow-sm active:scale-95"
@@ -2064,7 +2088,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                             <LucideIcons.MessageSquare size={13} />
                                                         </button>
                                                     ) : (
-                                                        <span className="text-slate-400 dark:text-slate-600 text-xs">—</span>
+                                                        <span className="text-slate-400 dark:text-slate-600 text-xs">â€”</span>
                                                     )}
                                                 </td>
                                             </tr>
@@ -2074,7 +2098,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             </table>
                         </div>
                     ) : (
-                        /* VISTA LISTA CLÁSICA */
+                        /* VISTA LISTA CLÃSICA */
                         <div className="relative z-10 divide-y divide-white/5 max-h-[700px] overflow-y-auto no-scrollbar p-2 sm:p-0">
                             {currentList.length === 0 ? (
                                 <div className="py-28 flex flex-col items-center justify-center text-slate-500">
@@ -2117,7 +2141,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                             <LucideIcons.Activity size={10} className="text-[#00A896]" />
                                                             <span className="text-[10px] font-bold text-slate-300 font-mono tracking-wider">{item.ruc}</span>
                                                         </div>
-                                                        <span className="text-slate-600">•</span>
+                                                        <span className="text-slate-600">â€¢</span>
                                                         <span className="text-[10px] font-bold text-[#00A896] uppercase tracking-wider">{formatPeriodForDisplay(item.period)}</span>
                                                     </div>
                                                 </div>
@@ -2148,7 +2172,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                     if (navigate) navigate('sri_facturacion');
                                                                 }}
                                                                 className="px-2.5 py-1 rounded-xl bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] text-[10px] font-bold font-mono flex items-center gap-1 cursor-pointer hover:bg-[#00A896]/25 transition-all shadow-sm"
-                                                                title={`Factura SRI Autorizada #${sriDoc.secuencial} — Clave: ${sriDoc.claveAcceso}`}
+                                                                title={`Factura SRI Autorizada #${sriDoc.secuencial} â€” Clave: ${sriDoc.claveAcceso}`}
                                                             >
                                                                 <LucideIcons.CheckCircle size={10} />
                                                                 <span>SRI #{sriDoc.secuencial}</span>
@@ -2161,7 +2185,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                             e.stopPropagation();
                                                                             const rawPhone = item.phones[0].replace(/\D/g, '');
                                                                             const fullPhone = rawPhone.startsWith('593') ? rawPhone : ('593' + rawPhone.replace(/^0/, ''));
-                                                                            const msg = `Estimado(a) *${item.clientName}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que sus honorarios contables del período *${formatPeriodForDisplay(item.period)}* por un valor de *$${item.amount.toFixed(2)} USD* se encuentran pendientes de cancelación.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias!`;
+                                                                            const msg = `Estimado(a) *${item.clientName}*, le saluda Santiago CÃ³rdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que sus honorarios contables del perÃ­odo *${formatPeriodForDisplay(item.period)}* por un valor de *$${item.amount.toFixed(2)} USD* se encuentran pendientes de cancelaciÃ³n.\n\nðŸ›ï¸ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago CÃ³rdova RamÃ­rez\nRUC: 0705787745001\n\nPor favor remÃ­tanos su comprobante para emitir su respectiva factura electrÃ³nica autorizada por el SRI. Â¡Muchas gracias!`;
                                                                             window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
                                                                         }}
                                                                         className="p-1.5 bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white rounded-xl transition-all border border-[#00A896]/30 cursor-pointer shadow-sm"
@@ -2176,7 +2200,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                         handleEmitFastInvoice(item);
                                                                     }}
                                                                     className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white text-[10px] font-bold rounded-xl transition-all shadow-md flex items-center gap-1 cursor-pointer border border-white/10"
-                                                                    title="Emisión rápida de Factura SRI con firma .p12"
+                                                                    title="EmisiÃ³n rÃ¡pida de Factura SRI con firma .p12"
                                                                 >
                                                                     <LucideIcons.Zap size={11} />
                                                                     <span>Facturar SRI</span>
@@ -2188,11 +2212,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                                             navigate('sri_facturacion', {
                                                                                 clientId: item.clientId,
                                                                                 amount: item.amount,
-                                                                                description: `Honorarios Profesionales - Período ${item.period}`
+                                                                                description: `Honorarios Profesionales - PerÃ­odo ${item.period}`
                                                                             });
                                                                         }}
                                                                         className="p-1.5 bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white rounded-xl transition-all border border-white/10 cursor-pointer"
-                                                                        title="Abrir en Módulo de Facturación SRI"
+                                                                        title="Abrir en MÃ³dulo de FacturaciÃ³n SRI"
                                                                     >
                                                                         <LucideIcons.ExternalLink size={11} />
                                                                     </button>
@@ -2231,7 +2255,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="text-xs font-bold text-[#00A896]">{selectedClientExpediente.client.ruc}</span>
                                         <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400">
-                                            DÍGITO {selectedClientExpediente.client.ruc[8] || '—'}
+                                            DÃGITO {selectedClientExpediente.client.ruc[8] || 'â€”'}
                                         </span>
                                         {selectedClientExpediente.client.regime && (
                                             <span className="text-[10px] px-2 py-0.5 rounded bg-[#00A896]/10 text-[#00A896] font-bold">
@@ -2250,10 +2274,10 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             </div>
                         </div>
 
-                        {/* Desglose de Obligaciones y Períodos */}
+                        {/* Desglose de Obligaciones y PerÃ­odos */}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                <span>Períodos Fiscales ({selectedClientExpediente.periods.length})</span>
+                                <span>PerÃ­odos Fiscales ({selectedClientExpediente.periods.length})</span>
                                 <span>Estado & Acciones</span>
                             </div>
 
@@ -2282,7 +2306,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                 <div>
                                                     <p className="text-xs font-bold text-slate-900 dark:text-white uppercase">{p.label}</p>
                                                     <p className="text-[10px] text-slate-500">
-                                                        {isPaidP ? '✓ Declarado y Honorario Pagado' : isDeclaredP ? '🔴 Declarado en SRI - Honorario Impago' : '🟡 Período Sin Declarar'}
+                                                        {isPaidP ? 'âœ“ Declarado y Honorario Pagado' : isDeclaredP ? 'ðŸ”´ Declarado en SRI - Honorario Impago' : 'ðŸŸ¡ PerÃ­odo Sin Declarar'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -2299,7 +2323,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                                             setSelectedClientExpediente(null);
                                                         }}
                                                         className="px-3 py-1.5 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 text-[10px] font-bold uppercase transition-all cursor-pointer shadow-sm active:scale-95"
-                                                        title="Registrar pago inmediato de este período"
+                                                        title="Registrar pago inmediato de este perÃ­odo"
                                                     >
                                                         Pagar
                                                     </button>
@@ -2345,8 +2369,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 )}
             </Modal>
 
-            {/* MODAL: ACCIÓN RÁPIDA DE CELDA MATRICIAL */}
-            <Modal isOpen={!!selectedCellAction} onClose={() => setSelectedCellAction(null)} title="Operación Fiscal & Cobro">
+            {/* MODAL: ACCIÃ“N RÃPIDA DE CELDA MATRICIAL */}
+            <Modal isOpen={!!selectedCellAction} onClose={() => setSelectedCellAction(null)} title="OperaciÃ³n Fiscal & Cobro">
                 {selectedCellAction && (
                     <div className="p-4 sm:p-6 space-y-6 font-mono text-slate-800 dark:text-white">
                         <div className="p-5 rounded-2xl bg-slate-50 dark:bg-[#051424] border border-slate-200 dark:border-white/10 space-y-3">
@@ -2357,7 +2381,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     <p className="text-xs font-bold text-[#00A896] mt-0.5">{selectedCellAction.client.ruc}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Período Fiscal</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">PerÃ­odo Fiscal</p>
                                     <p className="text-sm font-bold text-teal-600 dark:text-teal-300 uppercase">{formatPeriodForDisplay(selectedCellAction.period)}</p>
                                 </div>
                             </div>
@@ -2374,7 +2398,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     onClick={() => {
                                         const rawPhone = selectedCellAction.client.phones![0].replace(/\D/g, '');
                                         const fullPhone = rawPhone.startsWith('593') ? rawPhone : ('593' + rawPhone.replace(/^0/, ''));
-                                        const msg = `Estimado(a) *${selectedCellAction.client.name}*, le saluda Santiago Córdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que sus honorarios contables del período *${formatPeriodForDisplay(selectedCellAction.period)}* por un valor de *$${selectedCellAction.amount.toFixed(2)} USD* se encuentran pendientes de cancelación.\n\n🏛️ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago Córdova Ramírez\nRUC: 0705787745001\n\nPor favor remítanos su comprobante para emitir su respectiva factura electrónica autorizada por el SRI. ¡Muchas gracias!`;
+                                        const msg = `Estimado(a) *${selectedCellAction.client.name}*, le saluda Santiago CÃ³rdova - Soluciones Tributarias PRO.\n\nLe recordamos cordialmente que sus honorarios contables del perÃ­odo *${formatPeriodForDisplay(selectedCellAction.period)}* por un valor de *$${selectedCellAction.amount.toFixed(2)} USD* se encuentran pendientes de cancelaciÃ³n.\n\nðŸ›ï¸ *Datos para transferencia:*\nBanco Pichincha - Cta Ahorros\nTitular: Roberto Santiago CÃ³rdova RamÃ­rez\nRUC: 0705787745001\n\nPor favor remÃ­tanos su comprobante para emitir su respectiva factura electrÃ³nica autorizada por el SRI. Â¡Muchas gracias!`;
                                         window.open(`https://wa.me/${fullPhone}?text=${encodeURIComponent(msg)}`, '_blank');
                                     }}
                                     className="py-3 px-4 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
@@ -2413,7 +2437,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         <LucideIcons.CheckCircle size={18} className="text-[#00A896]" />
                                         <div>
                                             <p className="text-xs font-black uppercase">Honorario Pagado y Registrado</p>
-                                            <p className="text-[10px] text-slate-500 dark:text-slate-400">Este período se encuentra liquidado al 100%.</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400">Este perÃ­odo se encuentra liquidado al 100%.</p>
                                         </div>
                                     </div>
                                     <span className="text-sm font-mono font-black">${selectedCellAction.amount.toFixed(2)}</span>
@@ -2421,7 +2445,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 <button
                                     onClick={() => handleUnmarkPaidPeriod(selectedCellAction.client, selectedCellAction.period)}
                                     className="w-full py-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
-                                    title="Revertir el estado de este período a pendiente"
+                                    title="Revertir el estado de este perÃ­odo a pendiente"
                                 >
                                     <LucideIcons.RotateCcw size={14} />
                                     <span>Revertir Pago a Pendiente</span>
@@ -2442,8 +2466,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 )}
             </Modal>
 
-            {/* MODAL 1: LIQUIDAR TRANSACCIÓN FINANCIERA (Stitch Obsidian Luxury) */}
-            <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Autorizar Transacción Financiera">
+            {/* MODAL 1: LIQUIDAR TRANSACCIÃ“N FINANCIERA (Stitch Obsidian Luxury) */}
+            <Modal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} title="Autorizar TransacciÃ³n Financiera">
                 <div className="p-4 sm:p-8 space-y-8 font-mono text-white">
                     <div className="relative group">
                         <div className="absolute -inset-2 bg-gradient-to-r from-[#00A896] to-[#2B6AFF] rounded-[2.5rem] blur-2xl opacity-20 group-hover:opacity-40 transition duration-1000"></div>
@@ -2453,7 +2477,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     <LucideIcons.ShieldCheck size={32} />
                                 </div>
                             </div>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Monto Total de Liquidación</p>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Monto Total de LiquidaciÃ³n</p>
                             <p className="text-4xl sm:text-5xl font-black text-[#00A896] mb-3 tracking-tight">
                                 ${selectedSummary.total.toFixed(2)}
                             </p>
@@ -2472,18 +2496,18 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                         >
                             <span className="relative z-10 flex items-center justify-center gap-2">
                                 {isProcessing ? <LucideIcons.RefreshCw className="animate-spin text-white" size={18} /> : <LucideIcons.ShieldAlert size={18} className="text-white" />}
-                                <span>{isProcessing ? 'AUTORIZANDO COBRO...' : 'CONFIRMAR OPERACIÓN Y REGISTRAR PAGO'}</span>
+                                <span>{isProcessing ? 'AUTORIZANDO COBRO...' : 'CONFIRMAR OPERACIÃ“N Y REGISTRAR PAGO'}</span>
                             </span>
                         </button>
                         <p className="text-center text-[10px] font-medium text-slate-400 uppercase tracking-wider leading-relaxed">
-                            Al confirmar, se generará el recibo contable digital y se actualizará el historial del cliente en la base de datos.
+                            Al confirmar, se generarÃ¡ el recibo contable digital y se actualizarÃ¡ el historial del cliente en la base de datos.
                         </p>
                     </div>
                 </div>
             </Modal>
 
-            {/* MODAL 2: PROTOCOLO DE EJECUCIÓN EXITOSA (RECIBO DIGITAL) (Stitch Obsidian Luxury) */}
-            <Modal isOpen={isReceiptOpen} onClose={() => setIsReceiptOpen(false)} title="Protocolo de Ejecución Exitosa">
+            {/* MODAL 2: PROTOCOLO DE EJECUCIÃ“N EXITOSA (RECIBO DIGITAL) (Stitch Obsidian Luxury) */}
+            <Modal isOpen={isReceiptOpen} onClose={() => setIsReceiptOpen(false)} title="Protocolo de EjecuciÃ³n Exitosa">
                 {receiptData && (
                     <div className="p-4 sm:p-8 space-y-8 font-mono text-white">
                         <div className="relative group">
@@ -2508,11 +2532,11 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         <span className="text-right font-bold uppercase text-white tracking-tight">{receiptData.clientName}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 uppercase font-bold text-[10px] tracking-wider">Identificación</span>
+                                        <span className="text-slate-400 uppercase font-bold text-[10px] tracking-wider">IdentificaciÃ³n</span>
                                         <span className="text-right font-bold text-[#00A896]">{receiptData.clientRuc}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-slate-400 uppercase font-bold text-[10px] tracking-wider">Fecha de Emisión</span>
+                                        <span className="text-slate-400 uppercase font-bold text-[10px] tracking-wider">Fecha de EmisiÃ³n</span>
                                         <span className="text-right font-medium text-slate-300">{receiptData.paymentDate}</span>
                                     </div>
                                 </div>
@@ -2545,7 +2569,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                 className="flex-1 py-3.5 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all border border-white/10 cursor-pointer"
                             >
                                 <LucideIcons.Printer size={16} className="text-[#00A896]" />
-                                <span>Ticket Físico</span>
+                                <span>Ticket FÃ­sico</span>
                             </button>
                             {navigate && (
                                 <>
@@ -2568,7 +2592,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                         className="flex-1 py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white rounded-2xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all border border-white/10 cursor-pointer"
                                     >
                                         <LucideIcons.Zap size={16} className="text-white" />
-                                        <span>Factura SRI Rápida</span>
+                                        <span>Factura SRI RÃ¡pida</span>
                                     </button>
                                     <button 
                                         onClick={() => {
@@ -2597,8 +2621,8 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 )}
             </Modal>
 
-            {/* MODAL 3: EMISIÓN DE FACTURA SRI RÁPIDA (Stitch Obsidian Luxury) */}
-            <Modal isOpen={isFastBillingOpen} onClose={() => setIsFastBillingOpen(false)} title="Emisión de Factura SRI Rápida">
+            {/* MODAL 3: EMISIÃ“N DE FACTURA SRI RÃPIDA (Stitch Obsidian Luxury) */}
+            <Modal isOpen={isFastBillingOpen} onClose={() => setIsFastBillingOpen(false)} title="EmisiÃ³n de Factura SRI RÃ¡pida">
                 {fastBillingItem && (
                     <div className="p-4 sm:p-6 space-y-6 font-mono text-white">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-[#0b1326]/90 border border-white/10">
@@ -2610,13 +2634,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             <div className="text-left md:text-right">
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Monto de Honorarios</p>
                                 <p className="text-2xl font-black text-[#00A896]">${fastBillingItem.amount.toFixed(2)}</p>
-                                <p className="text-xs text-slate-400 font-bold uppercase">Período: {formatPeriodForDisplay(fastBillingItem.period)}</p>
+                                <p className="text-xs text-slate-400 font-bold uppercase">PerÃ­odo: {formatPeriodForDisplay(fastBillingItem.period)}</p>
                             </div>
                         </div>
 
                         {/* Progreso del Flujo */}
                         <div className="space-y-3">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado de Transmisión Electrónica</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estado de TransmisiÃ³n ElectrÃ³nica</p>
                             
                             <div className="grid grid-cols-4 gap-2">
                                 {[
@@ -2653,7 +2677,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Detalle del Proceso (Logs)</p>
                             <div className="p-4 rounded-xl bg-[#020b14] text-slate-300 font-mono text-[10px] space-y-1.5 max-h-[160px] overflow-y-auto no-scrollbar border border-white/10 shadow-inner">
                                 {fastBillingLogs.map((log, idx) => (
-                                    <div key={idx} className={log.includes('✅') || log.includes('éxito') || log.includes('AUTORIZADO') ? 'text-[#00A896] font-bold' : log.includes('❌') || log.includes('Error') ? 'text-rose-400 font-bold' : ''}>
+                                    <div key={idx} className={log.includes('âœ…') || log.includes('Ã©xito') || log.includes('AUTORIZADO') ? 'text-[#00A896] font-bold' : log.includes('âŒ') || log.includes('Error') ? 'text-rose-400 font-bold' : ''}>
                                         {log}
                                     </div>
                                 ))}
@@ -2694,7 +2718,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                                     className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-amber-500/20"
                                 >
                                     <LucideIcons.RefreshCw size={14} />
-                                    <span>Reintentar Emisión</span>
+                                    <span>Reintentar EmisiÃ³n</span>
                                 </button>
                             )}
 
@@ -2712,7 +2736,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 )}
             </Modal>
 
-            {/* BARRA FLOTANTE FIJA PARA LIQUIDACIÓN EN LOTE (Stitch Obsidian Luxury Sticky Bar) */}
+            {/* BARRA FLOTANTE FIJA PARA LIQUIDACIÃ“N EN LOTE (Stitch Obsidian Luxury Sticky Bar) */}
             {selectedItems.size > 0 && (
                 <div className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-8 z-50 animate-in slide-in-from-bottom-5 duration-300">
                     <div className="bg-[#051424]/95 border border-[#00A896]/50 shadow-[0_10px_35px_rgba(0,0,0,0.8)] rounded-3xl p-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-2xl font-mono text-white max-w-2xl">
@@ -2722,7 +2746,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                             </div>
                             <div className="flex flex-col text-left">
                                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                    {selectedSummary.count} {selectedSummary.count === 1 ? 'Operación Seleccionada' : 'Operaciones Seleccionadas'}
+                                    {selectedSummary.count} {selectedSummary.count === 1 ? 'OperaciÃ³n Seleccionada' : 'Operaciones Seleccionadas'}
                                 </span>
                                 <span className="text-2xl font-black text-[#00A896] tracking-tight">
                                     ${selectedSummary.total.toFixed(2)} USD

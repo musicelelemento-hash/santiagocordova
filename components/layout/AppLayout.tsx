@@ -1,4 +1,4 @@
-import React, { Suspense, useState, useRef, useEffect } from 'react';
+﻿import React, { Suspense, useState, useRef, useEffect } from 'react';
 import { Search, X, User, LayoutGrid, Command, Sparkles, Building2, ShoppingBag } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
@@ -7,6 +7,7 @@ import { Clock } from '../ui/Clock';
 import { NotificationBell } from './NotificationBell';
 import { SalesComboModal } from '../features/SalesComboModal';
 import { Screen, Theme, Client } from '../../types';
+import { FACTURACION_API_TOKEN } from '../../services/facturacionApi';
 
 interface AppLayoutProps {
     onLogout: () => void;
@@ -44,17 +45,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
     const activeScreen = getScreenFromPath(location.pathname);
 
-    // 🔥 Wake-up al navegar a Facturación SRI (web y móvil comparten este layout)
-    // Se dispara cuando el usuario presiona "Facturación SRI" en el menú,
-    // así el servidor de Render ya lleva ~30s despertando cuando lleguen al botón de emitir.
+    // ðŸ”¥ Wake-up al navegar a FacturaciÃ³n SRI (web y mÃ³vil comparten este layout)
+    // Se dispara cuando el usuario presiona "FacturaciÃ³n SRI" en el menÃº,
+    // asÃ­ el servidor de Render ya lleva ~30s despertando cuando lleguen al botÃ³n de emitir.
     useEffect(() => {
         if (location.pathname.includes('/facturacion')) {
             const API_URL = (import.meta as any).env?.VITE_FACTURACION_API_URL || 'https://facturador-sri-api.onrender.com';
             fetch(`${API_URL}/api/v1/ping`, {
                 method: 'GET',
                 mode: 'cors',
-                headers: { 'Authorization': '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir' }
-            }).catch(() => {}); // silencioso — solo para despertar
+                headers: { 'Authorization': FACTURACION_API_TOKEN }
+            }).catch(() => {}); // silencioso â€” solo para despertar
         }
     }, [location.pathname]);
 
@@ -151,7 +152,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
     const navItems = [
         { screen: 'clients' as Screen, icon: () => null, label: 'Clientes & Matriz' },
-        { screen: 'sri_facturacion' as Screen, icon: () => null, label: 'Facturación SRI' },
+        { screen: 'sri_facturacion' as Screen, icon: () => null, label: 'FacturaciÃ³n SRI' },
         { screen: 'cobranza' as Screen, icon: () => null, label: 'Cobranzas' },
         { screen: 'tasks' as Screen, icon: () => null, label: 'Tareas' },
         { screen: 'calendar' as Screen, icon: () => null, label: 'Calendario' },
@@ -279,7 +280,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-premium flex items-center gap-1.5">
                                         <Sparkles size={12} className="text-primary" /> Coincidencias ({searchResults.length})
                                     </span>
-                                    <span className="text-[9px] text-slate-500 font-mono">Selecciona una acción</span>
+                                    <span className="text-[9px] text-slate-500 font-mono">Selecciona una acciÃ³n</span>
                                 </div>
 
                                 {searchResults.length === 0 ? (
@@ -304,7 +305,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                                                         </p>
                                                         <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
                                                             <span>{client.ruc}</span>
-                                                            <span className="text-slate-600">•</span>
+                                                            <span className="text-slate-600">â€¢</span>
                                                             <span className="text-purple-400 font-sans font-semibold">{client.regime || 'General'}</span>
                                                         </div>
                                                     </div>
@@ -322,7 +323,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                                                     <button
                                                         onClick={() => handleSelectProfileMatch(client)}
                                                         className="px-3 py-1.5 rounded-xl bg-primary/20 hover:bg-primary text-primary hover:text-white border border-primary/30 text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shadow-sm"
-                                                        title="Abrir Expediente 360° en Modal"
+                                                        title="Abrir Expediente 360Â° en Modal"
                                                     >
                                                         <User size={11} />
                                                         <span>Expediente</span>
@@ -341,11 +342,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                         <button
                             onClick={() => setIsSalesModalOpen(true)}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md active:scale-95 shrink-0"
-                            title="Registrar Venta de Plan o Firma Electrónica"
+                            title="Registrar Venta de Plan o Firma ElectrÃ³nica"
                         >
                             <ShoppingBag size={13} />
-                            <span className="hidden sm:inline">💳 Vender Plan / Firma</span>
-                            <span className="sm:hidden">💳 Venta</span>
+                            <span className="hidden sm:inline">ðŸ’³ Vender Plan / Firma</span>
+                            <span className="sm:hidden">ðŸ’³ Venta</span>
                         </button>
 
                         <NotificationBell
@@ -370,7 +371,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 animate-in fade-in duration-300">
                             <div className="w-12 h-12 border-3 border-primary border-t-transparent rounded-full animate-spin shadow-lg shadow-primary/20" />
                             <span className="text-xs font-black uppercase tracking-widest text-slate-400 font-premium">
-                                Cargando Módulo...
+                                Cargando MÃ³dulo...
                             </span>
                         </div>
                     }>

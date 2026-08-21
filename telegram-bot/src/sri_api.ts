@@ -3,7 +3,7 @@ import axios, { AxiosError } from 'axios';
 
 const DEFAULT_API_URL = process.env.VITE_FACTURACION_API_URL || 'https://facturador-sri-api.onrender.com';
 const API_PREFIX = '/api/v1';
-const API_KEY = process.env.FACTURACION_API_KEY || '0HXtqJOyU1JFsIIaF6kOls3uPKbXe3ir';
+const API_KEY = process.env.FACTURACION_API_KEY || '';
 
 // ─── Retry helper para manejar cold-starts de Render (502/503/504) ────────────
 async function withRetry<T>(
