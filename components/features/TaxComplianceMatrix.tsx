@@ -33,7 +33,7 @@ export function getP12RemainingDays(client: Client): number | null {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime, TaxObligationType } from '../../types';
@@ -158,8 +158,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         checkHighlight();
     }, []);
 
-    // Floating Command Dock Scroll & Opacity Tracking
-    const [scrollY, setScrollY] = useState(0);
+    // Floating Command Dock Scroll & Opacity Tracking (imperativo vía ref: evita re-renderizar la matriz completa en cada scroll)
+    const commandDockRef = useRef<HTMLDivElement>(null);
+    const [isDockPastHeader, setIsDockPastHeader] = useState(false);
 
     // ELITE RPA: Escuchar sincronización de declaraciones en bucle
     React.useEffect(() => {
@@ -185,7 +186,18 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 document.documentElement?.scrollTop || 0,
                 mainEl ? mainEl.scrollTop : 0
             );
-            setScrollY(currentScroll);
+            setIsDockPastHeader(currentScroll >= 100);
+            const dockEl = commandDockRef.current;
+            if (dockEl) {
+                let nextOpacity = 0;
+                if (currentScroll >= 360) {
+                    nextOpacity = 1;
+                } else if (currentScroll >= 100) {
+                    // Entre encabezado y fila 3/4 (100px a 360px)
+                    nextOpacity = 0.15 + ((currentScroll - 100) / 260) * 0.85;
+                }
+                dockEl.style.opacity = String(nextOpacity);
+            }
         };
 
         window.addEventListener('scroll', handleScroll, { passive: true });
@@ -775,7 +787,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         });
     };
 
-    const today = new Date();
+    // Estable entre renders: sin esto, los useMemo de periods/filteredClients se recalculan en cada render
+    const today = useMemo(() => new Date(), []);
 
     // Generar periodos a mostrar
     const periods = useMemo(() => {
@@ -2832,29 +2845,15 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
             )}
 
-            {/* Command Dock Flotante de Matriz via Portal (Adapta opacidad según Scroll & Integración Visual) */}
+            {/* Command Dock Flotante de Matriz via Portal (Opacidad gestionada imperativamente por el listener de scroll) */}
             {createPortal(
-                (() => {
-                    const isHeader = scrollY < 100;
-                    let calculatedOpacity = 0;
-                    if (!isHeader) {
-                        if (scrollY >= 360) {
-                            calculatedOpacity = 1;
-                        } else {
-                            // Entre encabezado y fila 3/4 (100px a 360px)
-                            calculatedOpacity = 0.15 + ((scrollY - 100) / 260) * 0.85;
-                        }
-                    }
-
-                    return (
-                        <div 
-                            className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] max-w-[95vw] md:max-w-2xl w-auto no-print transition-all duration-500 group ${
-                                isHeader ? 'pointer-events-none translate-y-8 scale-95 opacity-0' : 'pointer-events-auto translate-y-0 scale-100'
-                            }`}
-                            style={{
-                                opacity: isHeader ? 0 : calculatedOpacity
-                            }}
-                        >
+                <div
+                    ref={commandDockRef}
+                    className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] max-w-[95vw] md:max-w-2xl w-auto no-print transition-all duration-500 group ${
+                        isDockPastHeader ? 'pointer-events-auto translate-y-0 scale-100' : 'pointer-events-none translate-y-8 scale-95'
+                    }`}
+                    style={{ opacity: 0 }}
+                >
                             <div className="backdrop-blur-2xl bg-[#051424]/95 border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.6),0_0_20px_rgba(0,168,150,0.2)] group-hover:!opacity-100 rounded-full px-4 py-2.5 flex items-center gap-2 sm:gap-3 text-white transition-all duration-300 font-mono">
                                 
                                 {/* Selector de Modo (Mensual / Semestral / Renta) */}
@@ -2941,9 +2940,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                     {filteredClients.length}
                                 </span>
                             </div>
-                        </div>
-                    );
-                })(),
+                </div>,
                 document.body
             )}
 
