@@ -345,7 +345,7 @@ const App: React.FC = () => {
             facturadorConfig: updatedFacturador
           });
 
-          console.log(`🎉 [Extension Auto-Sync] Cliente ${targetClient.name} actualizado con nueva clave SRI/Ecuafact: ${newPassword}`);
+          console.log(`🎉 [Extension Auto-Sync] Cliente ${targetClient.name} actualizado con nueva clave SRI/Ecuafact.`);
         }
       }
 
@@ -698,7 +698,7 @@ const App: React.FC = () => {
           onManualSave={handleManualSave}
           userName="Santiago Cordova"
           role="ADMINISTRADOR"
-          sessionCode="AQ.Ab8RN"
+          sessionCode="SC-PRO-SESSION"
           theme={theme}
           isCollapsed={isSidebarCollapsed || !!clientToView}
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}

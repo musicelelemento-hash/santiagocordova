@@ -134,6 +134,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
     
     // ─── Estado local: Configuración de Sistema (Combos & Huella) ────────────
     const [localSystemSettings, setLocalSystemSettings] = useState<SystemSettings>(systemSettings);
+    const [editingCombo, setEditingCombo] = useState<SystemComboConfig | null>(null);
     const [isEditingCombos, setIsEditingCombos] = useState(false);
     const [settingsTab, setSettingsTab] = useState<'all' | 'cloud' | 'fees' | 'reminders' | 'combos' | 'backup'>('all');
     const [isSavingSystem, setIsSavingSystem] = useState(false);

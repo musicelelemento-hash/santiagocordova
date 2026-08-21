@@ -1,7 +1,6 @@
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
-import { safeFormat } from './sri';
 
 export interface EcuafactData {
     nombres: string;

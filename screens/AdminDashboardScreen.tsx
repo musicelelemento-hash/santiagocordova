@@ -849,7 +849,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
                                         <span>Firmas .P12</span>
                                     </button>
                                     <button
-                                        onClick={() => navigate('facturacion_sri')}
+                                        onClick={() => navigate('sri_facturacion')}
                                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white hover:bg-white/10 transition-all whitespace-nowrap cursor-pointer"
                                         title="Ir a Facturación Electrónica SRI"
                                     >

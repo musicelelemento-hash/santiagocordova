@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Client } from '../../../types';
+import { Client, TaxRegime } from '../../../types';
 import { formatPeriodForDisplay } from '../../../services/sri';
 import {
     BarChart3, ShoppingCart, ShoppingBag, Coins, TrendingUp, TrendingDown,
@@ -78,7 +78,7 @@ export const FinancialMetricsOverview: React.FC<FinancialMetricsOverviewProps> =
         return taxBrackets.find(b => ytdSales <= b.limit) || taxBrackets[taxBrackets.length - 1];
     }, [ytdSales]);
 
-    const isGeneralRegime = client.regime === 'General' || !client.regime?.toLowerCase().includes('rimpe');
+    const isGeneralRegime = client.regime === TaxRegime.General || !client.regime?.toLowerCase().includes('rimpe');
 
     // 2. Mapear datos mensuales históricos para la gráfica comparativa (últimos 6 meses)
     const historyData = useMemo(() => {

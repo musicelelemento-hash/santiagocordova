@@ -4,7 +4,8 @@ import {
   FileText, Plus, Trash2, Settings, CheckCircle2, XCircle, Info, Search, 
   Download, RefreshCw, Check, AlertTriangle, Globe, Activity, Wifi, WifiOff, 
   Copy, ExternalLink, Eye, EyeOff, ChevronRight, Play, Zap, Database, CreditCard, User, AlertCircle,
-  Lock, Key, Edit3, Save, Home, ChevronDown, ChevronUp, Sliders, Building2, Mail, ShoppingBag
+  Lock, Key, Edit3, Save, Home, ChevronDown, ChevronUp, Sliders, Building2, Mail, ShoppingBag,
+  DollarSign, Receipt
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { Client, TaxRegime, DeclarationStatus } from '../types';
@@ -13,7 +14,6 @@ import { getClientServiceFee } from '../services/clientService';
 import { formatPeriodForDisplay } from '../services/sri';
 import { db } from '../services/db';
 import { SupabaseService } from '../services/supabaseClientService';
-import { ClientSearchDropdown } from '../components/features/ClientSearchDropdown';
 import { SalesComboModal } from '../components/features/SalesComboModal';
 import { VentaOcasionalForm } from '../components/features/VentaOcasionalForm';
 import { useToast } from '../context/ToastContext';

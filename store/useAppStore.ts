@@ -882,9 +882,14 @@ export const useAppStore = create<AppState>((set, get) => ({
                 if (!d || !d.period) return;
                 const key = `${d.type || 'IVA'}_${d.period}`;
                 const existing = declMap.get(key);
+                // ELITE FIX: Proteger proof_file local si:
+                // 1. La declaración no existe en la nube, o
+                // 2. La nube tiene proof_file null/vacío pero local tiene url o content real
+                const localHasRealProof = d.proof_file && (d.proof_file.url || (typeof d.proof_file.content === 'string' && d.proof_file.content.length > 100));
+                const cloudMissingProof = !existing?.proof_file || (!existing.proof_file.url && !existing.proof_file.content);
                 if (!existing) {
                   declMap.set(key, d);
-                } else if (d.proof_file && !existing.proof_file) {
+                } else if (localHasRealProof && cloudMissingProof) {
                   declMap.set(key, { ...existing, proof_file: d.proof_file, status: d.status || existing.status });
                 }
               });

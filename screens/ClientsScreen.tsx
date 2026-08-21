@@ -772,9 +772,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 }
             );
 
+            // ELITE FIX: Solo nullear content si ya hay URL en la nube.
+            // Si el upload falló y solo tenemos base64, preservarlo como fallback.
             const proofFileObj: StoredFile = {
                 ...uploadedStoredFile,
-                content: null // 💡 Cero base64 en base de datos = Cero perdida por split o límite
+                content: uploadedStoredFile.url ? null : uploadedStoredFile.content
             };
 
             const history = [...(freshClient.declarations || [])];

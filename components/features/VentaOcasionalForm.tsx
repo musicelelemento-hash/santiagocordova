@@ -29,9 +29,9 @@ export const VentaOcasionalForm: React.FC<{
         onBuyerDataExtracted(
           extracted.apellidos_nombres, 
           extracted.ruc, 
-          extracted.email || '', 
-          extracted.telefono || '', 
-          extracted.direccion_corta || ''
+          extracted.contacto?.email || '', 
+          extracted.contacto?.celular || '', 
+          extracted.direccion || ''
         );
         toast.success(`Datos de ${extracted.apellidos_nombres} extraídos correctamente.`);
       } else {
@@ -66,18 +66,23 @@ export const VentaOcasionalForm: React.FC<{
         name: buyerName,
         tradeName: buyerName,
         ruc: buyerRuc,
+        sriPassword: '',
         email: '',
-        phone: '',
+        phones: [],
         regime: TaxRegime.General, // Valor por defecto
         taxProfile: {
           ivaFrequency: 'Ninguno',
-          requiresAnnualRenta: false
+          requiresAnnualRenta: false,
+          requiresAnexosGastos: false,
+          hasActiveDevolucionIva: false,
+          hasActiveElderlyDevolucionIva: false,
+          requiresIce: false,
+          requiresAnexoPvp: false
         },
         requiresDeclarations: false,
         clientType: 'solo_plan',
         isActive: true,
         declarations: [],
-        history: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };

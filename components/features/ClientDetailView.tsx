@@ -21,7 +21,7 @@ import { useToast } from '../../context/ToastContext';
 import { sendToSRIExtension } from '../../services/extensionBridge';
 import { v4 as uuidv4 } from 'uuid';
 
-// Modular Sub-components
+import { arePeriodsEqual } from './TaxComplianceMatrix';
 import { ClientHeader } from './ClientDetail/ClientHeader';
 import { CopyButton } from './ClientDetail/CopyButton';
 import { VaultCard } from './ClientDetail/VaultCard';

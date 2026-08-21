@@ -2154,7 +2154,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                             <button
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
-                                                                                    if (onTogglePayment) onTogglePayment(client, p, [ob.type as any], !isPaid);
+                                                                                    if (onTogglePayment) onTogglePayment(client, p, ob.type as TaxObligationType, !isPaid);
                                                                                 }}
                                                                                 className={`px-1.5 py-0.2 rounded text-[8px] font-black uppercase transition-all ${
                                                                                     isPaid

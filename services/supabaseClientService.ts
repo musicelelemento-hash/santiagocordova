@@ -38,24 +38,34 @@ export const SupabaseService = {
 
     // Sincronizar array 'declarations' hacia la tabla relacional sri_declaraciones
     if (client.declarations && client.declarations.length > 0) {
-        const recordsToUpsert = client.declarations.map(dec => {
+        // ELITE FIX: Upsert individual por declaración para evitar fallos silenciosos de bulk
+        for (const dec of client.declarations) {
+            if (!dec || !dec.period) continue;
+
+            const decType = dec.type || (dec.period?.includes('ANEXO') ? 'ANEXO' : (dec.period?.length === 7 ? 'IVA' : 'RENTA'));
+
+            // CRITICAL FIX: Solo crear sanitizedProofFile si tiene url o content REAL
             let sanitizedProofFile = null;
             if (dec.proof_file) {
-                sanitizedProofFile = {
-                    name: dec.proof_file.name || 'comprobante.pdf',
-                    type: dec.proof_file.type || 'pdf',
-                    size: dec.proof_file.size || 0,
-                    lastModified: dec.proof_file.lastModified || Date.now(),
-                    url: dec.proof_file.url || (typeof dec.proof_file.content === 'string' && dec.proof_file.content.startsWith('http') ? dec.proof_file.content : null),
-                    content: dec.proof_file.url ? null : dec.proof_file.content,
-                    metadata: dec.proof_file.metadata || {}
-                };
+                const hasUrl = !!dec.proof_file.url;
+                const hasContent = typeof dec.proof_file.content === 'string' && dec.proof_file.content.length > 100;
+                if (hasUrl || hasContent) {
+                    sanitizedProofFile = {
+                        name: dec.proof_file.name || `declaracion_${decType}_${dec.period}.pdf`,
+                        type: dec.proof_file.type || 'pdf',
+                        size: dec.proof_file.size || 0,
+                        lastModified: dec.proof_file.lastModified || Date.now(),
+                        url: dec.proof_file.url || (hasContent && dec.proof_file.content!.startsWith('http') ? dec.proof_file.content : null),
+                        content: hasUrl ? null : (hasContent ? dec.proof_file.content : null),
+                        metadata: dec.proof_file.metadata || {}
+                    };
+                }
             }
 
-            return {
+            const record = {
                 client_id: client.id,
-                type: dec.type || (dec.period?.includes('ANEXO') ? 'ANEXO' : (dec.period?.length === 7 ? 'IVA' : 'RENTA')),
-                period: dec.period || 'UNK',
+                type: decType,
+                period: dec.period,
                 status: dec.status || 'Pendiente',
                 is_paid: !!dec.is_paid,
                 paid_at: dec.paidAt || null,
@@ -65,22 +75,45 @@ export const SupabaseService = {
                 created_at: dec.declaredAt || new Date().toISOString(),
                 updated_at: dec.updatedAt || new Date().toISOString()
             };
-        });
 
-        try {
-            const { error: decError } = await supabase
-                .from('sri_declaraciones')
-                .upsert(recordsToUpsert, { onConflict: 'client_id,type,period' });
-            
-            if (decError) {
-                console.warn(`[Supabase Warning] primary upsert onConflict (client_id,type,period) failed:`, decError);
-                // Fallback con onConflict client_id,period
-                await supabase
+            try {
+                // Intento 1: upsert con constraint (client_id, type, period)
+                const { error: e1 } = await supabase
                     .from('sri_declaraciones')
-                    .upsert(recordsToUpsert, { onConflict: 'client_id,period' });
+                    .upsert(record, { onConflict: 'client_id,type,period' });
+
+                if (e1) {
+                    console.warn(`[sri_declaraciones] upsert (3-col) failed for ${dec.period}/${decType}:`, e1.message);
+                    // Intento 2: upsert con constraint (client_id, period)
+                    const { error: e2 } = await supabase
+                        .from('sri_declaraciones')
+                        .upsert(record, { onConflict: 'client_id,period' });
+
+                    if (e2) {
+                        console.warn(`[sri_declaraciones] upsert (2-col) failed for ${dec.period}:`, e2.message);
+                        // Intento 3: SELECT + UPDATE manual (máxima compatibilidad)
+                        const { data: existing } = await supabase
+                            .from('sri_declaraciones')
+                            .select('id')
+                            .eq('client_id', client.id)
+                            .eq('period', dec.period)
+                            .eq('type', decType)
+                            .maybeSingle();
+
+                        if (existing?.id) {
+                            // Preservar proof_file existente si el nuevo es null
+                            const updatePayload = sanitizedProofFile
+                                ? record
+                                : { ...record, proof_file: undefined };
+                            await supabase.from('sri_declaraciones').update(updatePayload).eq('id', existing.id);
+                        } else {
+                            await supabase.from('sri_declaraciones').insert(record);
+                        }
+                    }
+                }
+            } catch (decErr) {
+                console.error(`[sri_declaraciones] Error crítico sincronizando ${dec.period}/${decType}:`, decErr);
             }
-        } catch (decCatchErr) {
-            console.warn(`[Supabase Warning] sri_declaraciones upsert caught:`, decCatchErr);
         }
     }
 

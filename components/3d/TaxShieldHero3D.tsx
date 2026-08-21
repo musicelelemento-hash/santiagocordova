@@ -11,7 +11,7 @@ interface TaxShieldHero3DProps {
 
 // ─── PROCEDURAL SHIELD GEOMETRY CREATOR ────────────────────────────────────────
 function createShieldShape() {
-    const shape = new THREE.Shape();
+    const shape = new (THREE as any).Shape();
     // Start top-center
     shape.moveTo(0, 1.4);
     // Top-right corner

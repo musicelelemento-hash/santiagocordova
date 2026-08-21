@@ -44,23 +44,24 @@ CREATE TABLE IF NOT EXISTS public.emisor_settings (
 ALTER TABLE public.sri_comprobantes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.emisor_settings ENABLE ROW LEVEL SECURITY;
 
--- Políticas de acceso para anon y authenticated
+-- Políticas de acceso blindadas con RLS (Requiere usuario autenticado)
 DROP POLICY IF EXISTS "Permitir lectura general" ON public.sri_comprobantes;
 DROP POLICY IF EXISTS "Permitir inserción general" ON public.sri_comprobantes;
 DROP POLICY IF EXISTS "Permitir actualización general" ON public.sri_comprobantes;
 
-CREATE POLICY "Permitir lectura general" 
-ON public.sri_comprobantes FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Permitir lectura autenticada" 
+ON public.sri_comprobantes FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY "Permitir inserción general" 
-ON public.sri_comprobantes FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Permitir inserción autenticada" 
+ON public.sri_comprobantes FOR INSERT TO authenticated WITH CHECK (true);
 
-CREATE POLICY "Permitir actualización general" 
-ON public.sri_comprobantes FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Permitir actualización autenticada" 
+ON public.sri_comprobantes FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Permitir acceso a emisor_settings" ON public.emisor_settings;
-CREATE POLICY "Permitir acceso a emisor_settings" 
-ON public.emisor_settings FOR ALL TO anon, authenticated USING (true) WITH CHECK (true);
+-- La tabla emisor_settings almacena certificados p12 y claves de firma: SOLO para usuarios autenticados / service role
+CREATE POLICY "Permitir acceso seguro a emisor_settings" 
+ON public.emisor_settings FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- RPC for atomic sequence increment
 CREATE OR REPLACE FUNCTION get_next_sri_secuencial(p_tipo VARCHAR)

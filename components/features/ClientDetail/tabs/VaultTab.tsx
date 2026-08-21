@@ -48,6 +48,37 @@ export const VaultTab: React.FC<VaultTabProps> = ({
     const [isSalesModalOpen, setIsSalesModalOpen] = React.useState(false);
     const { toast } = useToast();
 
+    // Estado para calculadora de facturación gestionada por despacho
+    const [managedInvoicesCount, setManagedInvoicesCount] = React.useState<number>(0);
+    const [managedAnulationsCount, setManagedAnulationsCount] = React.useState<number>(0);
+
+    const calculatedEmissionFee = React.useMemo(() => {
+        if (managedInvoicesCount === 0 && managedAnulationsCount === 0) return 0;
+        let fee = 0;
+        if (managedInvoicesCount === 1) fee += 2;
+        else if (managedInvoicesCount >= 2 && managedInvoicesCount <= 5) fee += 5;
+        else if (managedInvoicesCount >= 6 && managedInvoicesCount <= 15) fee += 10;
+        else if (managedInvoicesCount > 15) fee += 20;
+        fee += managedAnulationsCount * 1.5;
+        return fee;
+    }, [managedInvoicesCount, managedAnulationsCount]);
+
+    const handleSendInvoicingWhatsApp = () => {
+        const phone = client.phones?.[0] || '';
+        const cleanPhone = phone.replace(/\D/g, '');
+        const text = encodeURIComponent(`Hola ${client.name}, le saludamos de Soluciones Contables Pro. Le informamos el detalle de emisión de facturación de este período: ${managedInvoicesCount} facturas y ${managedAnulationsCount} anulaciones emitidas por un valor de $${calculatedEmissionFee.toFixed(2)}. Saludos cordiales.`);
+        window.open(`https://wa.me/${cleanPhone.startsWith('593') ? cleanPhone : '593' + cleanPhone.replace(/^0/, '')}?text=${text}`, '_blank');
+    };
+
+    const handleSaveManagedInvoicing = async () => {
+        if (onUpdateClientDirect) {
+            await onUpdateClientDirect({
+                notes: `${client.notes || ''}\n[${new Date().toISOString().substring(0, 10)}] Gestión Facturación: ${managedInvoicesCount} facturas, ${managedAnulationsCount} anulaciones ($${calculatedEmissionFee.toFixed(2)})`
+            }, true);
+            toast.success('Registro de facturación guardado exitosamente');
+        }
+    };
+
     // Estado para metadatos de firma .p12 decodificada en tiempo real
     const [p12Meta, setP12Meta] = React.useState<any>(null);
     const [p12Error, setP12Error] = React.useState<string>('');
@@ -109,7 +140,7 @@ export const VaultTab: React.FC<VaultTabProps> = ({
         const file = acceptedFiles[0];
         if (!file || !onUpdateClientDirect) return;
 
-        toast.info(`Subiendo ${file.name} a la bóveda...`, { id: 'vault-upload' });
+        toast.info(`Subiendo ${file.name} a la bóveda...`);
 
         try {
             const fileDataUrl = await new Promise<string>((resolve, reject) => {
@@ -148,11 +179,11 @@ export const VaultTab: React.FC<VaultTabProps> = ({
             
             setEditedClient({ ...editedClient, declarations: updatedDeclarations });
             await onUpdateClientDirect({ declarations: updatedDeclarations }, false);
-            toast.success('Archivo subido al repositorio exitosamente', { id: 'vault-upload' });
+            toast.success('Archivo subido al repositorio exitosamente');
             
         } catch (error) {
             console.error("Upload error:", error);
-            toast.error("Error al subir archivo", { id: 'vault-upload' });
+            toast.error("Error al subir archivo");
         }
     }, [client.id, editedClient, onUpdateClientDirect, setEditedClient]);
 

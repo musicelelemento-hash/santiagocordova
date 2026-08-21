@@ -52,3 +52,6 @@ SRI_RUC_El_Oro.csv
 *.png
 Contraseñas de Chrome.csv
 respaldos_locales/
+*.sqlite*
+*.db*
+*.csv

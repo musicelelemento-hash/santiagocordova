@@ -22,7 +22,7 @@ export const UnifiedStorageService = {
     async uploadFile(
         fileData: File | Blob | string,
         fileName: string,
-        category: 'declaraciones' | 'firmas' | 'cedulas' | 'rucs' | 'comprobantes' = 'comprobantes',
+        category: 'declaraciones' | 'firmas' | 'cedulas' | 'rucs' | 'comprobantes' | 'documentos' = 'comprobantes',
         metadata?: StoredFile['metadata']
     ): Promise<StoredFile> {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');

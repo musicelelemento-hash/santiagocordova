@@ -20,7 +20,7 @@ export enum TaxRegime {
     RimpeEmprendedor = 'RIMPE Emprendedor',
 }
 
-export type TaxObligationType = 'IVA' | 'RENTA' | 'ICE' | 'PVP' | 'ISD' | 'RET' | 'ANEXO' | 'DEVOLUCION';
+export type TaxObligationType = 'IVA' | 'RENTA' | 'ICE' | 'PVP' | 'ISD' | 'RET' | 'ANEXO' | 'DEVOLUCION' | 'ANEXO_ICE' | 'ANEXO_PVP' | 'ANEXO_GASTOS';
 
 // ClientCategory removed - all logic now relies on Regime and TaxProfile
 
@@ -60,6 +60,12 @@ export interface StoredFile {
         sriId?: string;
         uploadedAt?: string;
         previewText?: string;
+        slot?: string;
+        ventas15?: number;
+        ventas0?: number;
+        compras15?: number;
+        retIva?: number;
+        [key: string]: any;
     };
 }
 
@@ -130,6 +136,7 @@ export interface BillingPlan {
     url?: string;
     username?: string;
     password?: string;
+    startDate?: string;
     expirationDate?: string;
     documentStatus?: string;
     documentCount?: number;
@@ -140,6 +147,8 @@ export interface BillingPlan {
     createdAt?: string;
     updatedAt?: string;
 }
+
+export type FacturadorConfig = BillingPlan;
 
 export interface Client {
     id: string;
@@ -177,6 +186,9 @@ export interface Client {
     sharedAccessKey?: string;
     iessPassword?: string;
     vault?: StoredFile[];
+    vaultFiles?: StoredFile[];
+    isSignatureOnly?: boolean;
+    isPriority?: boolean;
     needsVerification?: boolean;
     verificationReason?: string;
     structuredNotes?: ClientNote[];

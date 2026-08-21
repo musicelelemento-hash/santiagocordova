@@ -30,9 +30,9 @@ class Alpha3DService {
 
     constructor() {
         // Priority: LocalStorage overrides, fallback to environment variables
-        this.apiKey = localStorage.getItem('ALPHA3D_API_KEY') || import.meta.env.VITE_ALPHA3D_API_KEY || 'ak_live_843156848cb7b72427fd6975dbe8b880f5a57c4b98e720ff5d1be35e71677d8c';
+        this.apiKey = localStorage.getItem('ALPHA3D_API_KEY') || import.meta.env.VITE_ALPHA3D_API_KEY || null;
         this.mcpEndpoint = localStorage.getItem('ALPHA3D_MCP_ENDPOINT') || null;
-        this.webhookSecret = import.meta.env.VITE_ALPHA3D_WEBHOOK_SECRET || 'whsec_12ea2c35b5b9d1165a2a74736c809dd83f8f6b981bbc9340';
+        this.webhookSecret = import.meta.env.VITE_ALPHA3D_WEBHOOK_SECRET || null;
         this.apiUrl = import.meta.env.VITE_ALPHA3D_API_URL || 'https://api.alpha3d.io/v1';
     }
 

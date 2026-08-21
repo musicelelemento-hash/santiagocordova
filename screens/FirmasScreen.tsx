@@ -374,7 +374,7 @@ export const FirmasScreen: React.FC<FirmasScreenProps> = ({ navigate }) => {
                     </div>
 
                     {/* SELECTOR DE MODO DE VISTA */}
-                    {(tab !== 'respaldos-externos' && tab !== 'facturadores') && (
+                    {(tab !== 'respaldos-externos') && (
                         <div className="flex items-center gap-1 bg-[#0b1326] p-1 rounded-2xl border border-white/10">
                             <button
                                 onClick={() => setViewMode('lineal')}

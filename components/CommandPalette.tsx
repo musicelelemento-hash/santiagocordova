@@ -211,8 +211,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                                         </div>
                                         <div className="flex flex-col min-w-0">
                                             <span className="text-xs font-bold uppercase tracking-wider truncate text-white">{item.label}</span>
-                                            {item.subLabel && (
-                                                <span className="text-[10px] text-slate-400 font-mono truncate">{item.subLabel}</span>
+                                            {'subLabel' in item && Boolean((item as any).subLabel) && (
+                                                <span className="text-[10px] text-slate-400 font-mono truncate">{(item as any).subLabel}</span>
                                             )}
                                         </div>
                                     </div>

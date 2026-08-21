@@ -45,9 +45,9 @@ export const HistoryTab: React.FC<HistoryTabProps> = ({
             {/* KPI Strip (Stitch Telemetry Cards) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 font-mono">
                 {[
-                    { label: 'Declaradas', value: totalDeclared, icon: LucideIcons.Send, color: 'text-[#2B6AFF]', bg: 'bg-[#2B6AFF]/10 border-[#2B6AFF]/25', glow: 'shadow-[#2B6AFF]/15' },
-                    { label: 'Pagadas', value: totalPaid, icon: LucideIcons.CheckCircle2, color: 'text-[#00A896]', bg: 'bg-[#00A896]/10 border-[#00A896]/25', glow: 'shadow-[#00A896]/15' },
-                    { label: 'Pendientes', value: totalPending, icon: LucideIcons.Clock, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/25', glow: 'shadow-amber-500/15' },
+                    { label: 'Declaradas', value: totalDeclared, icon: LucideIcons.Send, color: 'text-[#2B6AFF]', bg: 'bg-[#2B6AFF]/10', border: 'border-[#2B6AFF]/25', glow: 'shadow-[#2B6AFF]/15' },
+                    { label: 'Pagadas', value: totalPaid, icon: LucideIcons.CheckCircle2, color: 'text-[#00A896]', bg: 'bg-[#00A896]/10', border: 'border-[#00A896]/25', glow: 'shadow-[#00A896]/15' },
+                    { label: 'Pendientes', value: totalPending, icon: LucideIcons.Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/25', glow: 'shadow-amber-500/15' },
                 ].map((kpi) => (
                     <div key={kpi.label} className={`bg-[#051424]/90 backdrop-blur-2xl ${kpi.border} border border-t-white/20 rounded-3xl p-6 flex items-center gap-5 transition-all hover:scale-[1.02] shadow-xl ${kpi.glow}`}>
                         <div className={`p-3.5 rounded-2xl ${kpi.bg} border ${kpi.border} ${kpi.color} shadow-sm`}>

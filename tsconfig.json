@@ -43,6 +43,9 @@
     "hooks",
     "store",
     "context",
-    "constants"
+    "constants",
+    "types",
+    "utils",
+    "workers"
   ]
 }

@@ -18,6 +18,7 @@ export interface ServiceFeesConfig {
     devolucionIva: number;
     devolucionRenta: number;
     anexoGastosPersonales: number;
+    firmaElectronica?: number;
     rentaButtonsStartMonth?: number;
     customPunctualServices?: Array<{ id: string; name: string; price: number }>;
     serviceBundles?: Array<{
