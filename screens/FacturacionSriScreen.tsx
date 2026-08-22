@@ -188,7 +188,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const [p12FileBase64, setP12FileBase64] = useState('');
   const [p12FileName, setP12FileName] = useState('');
-  const [p12Password, setP12Password] = useState(() => localStorage.getItem('sc_sri_p12_password') || 'Santiago2026');
+  const [p12Password, setP12Password] = useState(() => localStorage.getItem('sc_sri_p12_password') || '');
   const [p12StartDate, setP12StartDate] = useState('');
   const [p12ExpiryDate, setP12ExpiryDate] = useState('');
   const [p12SubjectName, setP12SubjectName] = useState('');
@@ -260,7 +260,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       try {
         const base64 = (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
         const name = (await db.getLocal('sc_sri_p12_filename')) || localStorage.getItem('sc_sri_p12_filename') || '';
-        const password = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'Santiago2026';
+        const password = (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || '';
         const start = (await db.getLocal('sc_sri_p12_start')) || localStorage.getItem('sc_sri_p12_start') || '';
         const expiry = (await db.getLocal('sc_sri_p12_expiry')) || localStorage.getItem('sc_sri_p12_expiry') || '';
         const subject = (await db.getLocal('sc_sri_p12_subject')) || localStorage.getItem('sc_sri_p12_subject') || '';
@@ -1510,7 +1510,7 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       } else {
         // Sign endpoint - Obtener firma y clave desde estado, IndexedDB o localStorage
         const activeBase64 = p12FileBase64 || (await db.getLocal('sc_sri_p12_base64')) || localStorage.getItem('sc_sri_p12_base64') || '';
-        const activePassword = p12Password || (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || 'Santiago2026';
+        const activePassword = p12Password || (await db.getLocal('sc_sri_p12_password')) || localStorage.getItem('sc_sri_p12_password') || '';
         
         if (!activeBase64) {
           throw new Error('No se encontrÃ³ el archivo de Firma ElectrÃ³nica (.p12). Vaya a ConfiguraciÃ³n de API & Emisor y vuelva a subir su archivo de firma .p12.');

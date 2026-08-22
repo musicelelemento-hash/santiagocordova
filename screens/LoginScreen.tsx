@@ -81,7 +81,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
         setTimeout(() => {
             if (loginType === 'admin') {
                 const ADMIN_USER = (import.meta as any).env?.VITE_ADMIN_USER || '@Santiago';
-                const ADMIN_PASS = (import.meta as any).env?.VITE_ADMIN_PASS || 'Santiago2026';
+                const ADMIN_PASS = (import.meta as any).env?.VITE_ADMIN_PASS || '';
 
                 if (cleanIdentifier === ADMIN_USER && cleanPassword === ADMIN_PASS) {
                     localStorage.setItem(RATE_KEY, '0');
