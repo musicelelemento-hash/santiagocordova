@@ -16,7 +16,6 @@ import { validarIdentificacionEcuatoriana } from '../utils/sriCalculators';
 import { Scroll3DCanvas } from '../components/3d/Scroll3DCanvas';
 import { TaxShieldHero3D } from '../components/3d/TaxShieldHero3D';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
-import { CinematicIntro } from '../components/hero/CinematicIntro';
 
 interface LandingPageProps {
     onAdminAccess: () => void;
@@ -893,48 +892,48 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             </div>
 
             {/* ════════════════════════════════════════════════════════════════
-                APERTURA CINEMATOGRÁFICA (tipografía cinética pineada por scroll)
+                HERO PRINCIPAL DE ÉLITE — ALTA DENSIDAD VISUAL & 3D INTERACTIVO
             ════════════════════════════════════════════════════════════════ */}
-            <CinematicIntro theme={theme} phoneNumber={phoneNumber} scrollToSection={scrollToSection} />
-
-            {/* ════════════════════════════════════════════════════════════════
-                HERO DETALLE (3D ahora es fondo ambiental, no protagonista)
-            ════════════════════════════════════════════════════════════════ */}
-            <section className={`relative min-h-screen flex items-center justify-center overflow-hidden pt-32 pb-20 md:pt-36 md:pb-24 ${theme === 'dark' ? 'bg-[#0b1326]' : 'bg-gradient-to-b from-white via-slate-50 to-slate-100'}`}>
-                {/* Fondo 3D ambiental de baja intensidad */}
-                <div className="absolute inset-0 pointer-events-none z-0 opacity-30">
+            <section id="top" className={`relative min-h-[92vh] flex items-center justify-center overflow-hidden pt-28 pb-16 md:pt-32 md:pb-20 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-gradient-to-b from-white via-slate-50 to-slate-100'}`}>
+                {/* Fondo 3D ambiental reactivo */}
+                <div className="absolute inset-0 pointer-events-none z-0 opacity-40">
                     <Scroll3DCanvas scrollProgress={scrollProgress / 100} theme={theme} />
                 </div>
 
                 <AuroraBackground theme={theme} />
-                <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none" />
+                <div className="absolute inset-0 tactical-grid opacity-30 pointer-events-none" />
 
                 <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center text-left">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center text-left">
                         
-                        {/* Left Column: Slogan & Pillars (marca ya presentada en la apertura cinematográfica) */}
+                        {/* Left Column: Maximum Executive Authority */}
                         <div className="lg:col-span-7 space-y-6">
                             {/* Badges row */}
                             <Reveal delay={0}>
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-[#00A896]/30 bg-[#00A896]/10 backdrop-blur-md">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_10px_#00A896]" />
-                                        <span className="text-[11px] font-bold text-[#00A896] uppercase tracking-[0.25em] font-mono">INGENIERÍA TRIBUTARIA DE ALTO NIVEL</span>
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#00A896]/40 bg-[#00A896]/15 backdrop-blur-xl">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_12px_#00A896]" />
+                                        <span className="text-[11px] font-bold text-[#4edea3] uppercase tracking-[0.2em] font-mono">INGENIERÍA TRIBUTARIA DE ÉLITE</span>
                                     </div>
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C9A96E]/30 bg-[#C9A96E]/10 backdrop-blur-md text-[10px] font-bold text-[#C9A96E] uppercase tracking-widest font-mono">
-                                        <ShieldCheck size={13} className="text-[#C9A96E]" /> SRI 2026 SINCRONIZADO
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C9A96E]/40 bg-[#C9A96E]/15 backdrop-blur-xl text-[10px] font-bold text-[#ffb95f] uppercase tracking-widest font-mono">
+                                        <ShieldCheck size={13} className="text-[#ffb95f]" /> SRI 2026 SINCRONIZADO
                                     </div>
                                 </div>
                             </Reveal>
 
-                            {/* Brand Slogan / Value Promise */}
-                            <Reveal delay={120}>
-                                <div className="space-y-3 max-w-2xl">
-                                    <p className="text-xl md:text-2xl font-bold text-teal-gradient font-display">
-                                        "Tu tranquilidad fiscal, nuestro compromiso de élite."
-                                    </p>
-                                    <p className={`text-base md:text-lg font-light leading-relaxed ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}`}>
-                                        La certeza de tener tu contabilidad, declaraciones del SRI y retenciones <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>100% blindadas</span> con automatización de software de precisión en Pasaje, El Oro y todo el Ecuador.
+                            {/* Main Title & Editorial Positioning */}
+                            <Reveal delay={80}>
+                                <div className="space-y-2">
+                                    <h1 className="font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl tracking-tight text-white leading-[1.05]">
+                                        SANTIAGO <span className="text-gradient-gold">CÓRDOVA</span>
+                                    </h1>
+                                    <div className="text-lg sm:text-xl font-bold font-display text-[#4edea3] flex items-center gap-2">
+                                        <span>Soluciones Tributarias PRO</span>
+                                        <span className="text-slate-500 font-normal">·</span>
+                                        <span className="text-slate-300 font-medium text-sm font-mono">Ecuador</span>
+                                    </div>
+                                    <p className={`text-base md:text-lg font-light leading-relaxed pt-2 ${theme === 'dark' ? 'text-slate-300' : 'text-slate-600'} max-w-2xl`}>
+                                        Control absoluto de tu contabilidad, declaraciones del SRI y retenciones <span className="font-semibold text-white">100% blindadas</span> con automatización de software de precisión en Pasaje, El Oro y todo el país.
                                     </p>
                                 </div>
                             </Reveal>
