@@ -75,7 +75,20 @@ export const UnifiedStorageService = {
                 });
             }
 
-            const supabaseResult = await SupabaseService.uploadFileToStorage(category, path, dataUrl);
+            // El bucket real en Supabase es 'clients-vault' (con 'sri_proofs' como fallback)
+            const targetBucket = 'clients-vault';
+            let supabaseResult: { url: string; path: string } | null = null;
+            try {
+                supabaseResult = await SupabaseService.uploadFileToStorage(targetBucket, path, dataUrl);
+            } catch (vaultErr) {
+                console.warn(`[Unified Storage] Upload to '${targetBucket}' failed, trying 'sri_proofs':`, vaultErr);
+                try {
+                    supabaseResult = await SupabaseService.uploadFileToStorage('sri_proofs', path, dataUrl);
+                } catch (proofsErr) {
+                    console.error('[Unified Storage] Fallback upload to sri_proofs also failed:', proofsErr);
+                }
+            }
+
             if (supabaseResult && supabaseResult.url) {
                 console.log(`✅ [Unified Storage] File uploaded to Supabase Storage: ${supabaseResult.url}`);
                 return {

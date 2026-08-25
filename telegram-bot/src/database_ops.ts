@@ -1531,7 +1531,10 @@ export async function markDeclaration(
         // Sort history by period for sanity
         history.sort((a: any, b: any) => a.period.localeCompare(b.period));
 
-        const { error: updErr } = await supabase.from('sri_declaraciones').upsert(history, updated_at: new Date().toISOString().map((d: any) => ({ ...d, client_id: client.id })), { onConflict: 'client_id,type,period' });
+        const { error: updErr } = await supabase.from('sri_declaraciones').upsert(
+            history.map((d: any) => ({ ...d, client_id: client.id, updated_at: new Date().toISOString() })),
+            { onConflict: 'client_id,type,period' }
+        );
         if (updErr) throw updErr;
 
         await logAuditAction('Declaración Registrada (Bot)', `${type} ${period} (${method}) - RUC: ${client.ruc}`, 'sri', 'info');

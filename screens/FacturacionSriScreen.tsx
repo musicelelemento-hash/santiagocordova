@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   FileText, Plus, Trash2, Settings, CheckCircle2, XCircle, Info, Search, 
@@ -697,25 +697,45 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
 
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  // Check connection status to Laravel backend usando el endpoint pÃºblico /ping
+  // Check connection status to backend usando el endpoint público /ping con resiliencia ante Cold Start
   const checkBackendConnection = async (urlToCheck = apiUrl) => {
     setConnectionStatus('checking');
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       const response = await fetch(`${urlToCheck}${apiPrefix}/ping`, { 
         method: 'GET', 
         mode: 'cors',
         headers: {
           'Authorization': FACTURACION_API_TOKEN
-        }
+        },
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         setConnectionStatus('connected');
-      } else {
-        setConnectionStatus('disconnected');
+        return;
       }
     } catch (e) {
-      setConnectionStatus('disconnected');
+      // Si falló y es Render, intentar 1 reintento suave para tolerar el arranque en frío (Cold Start)
+      if (urlToCheck.includes('onrender.com')) {
+        try {
+          await new Promise(r => setTimeout(r, 3500));
+          const retryRes = await fetch(`${urlToCheck}${apiPrefix}/ping`, {
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Authorization': FACTURACION_API_TOKEN }
+          });
+          if (retryRes.ok) {
+            setConnectionStatus('connected');
+            return;
+          }
+        } catch (_) {}
+      }
     }
+    setConnectionStatus('disconnected');
   };
 
   const fetchSignatureVigencia = async () => {
