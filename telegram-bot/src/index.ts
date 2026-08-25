@@ -1,4 +1,4 @@
-﻿import { Bot, InlineKeyboard, InputFile } from 'grammy';
+import { Bot, InlineKeyboard, InputFile } from 'grammy';
 require('dotenv').config();
 import { processChatWithAgentLoop, BOT_NAME, STATUS_ICON } from './agent';
 import { clearChatHistory, saveMessage } from './database';
@@ -2045,4 +2045,48 @@ bot.on('message:document', async (ctx) => {
         console.error('Error al procesar documento enviado:', err);
         await ctx.reply('❌ Error al procesar el archivo: ' + err.message);
     }
+});
+
+// ==========================================
+// 🚀 HTTP SERVER (Health Checks for Render) & BOT STARTUP
+// ==========================================
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.json());
+
+// Health check endpoint for Render
+app.get('/', (req, res) => {
+    res.json({
+        status: 'online',
+        service: 'Baku Telegram Bot',
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).send('OK');
+});
+
+// Start Express HTTP Server (prevents Render "No open ports detected" shutdown)
+app.listen(PORT, () => {
+    console.log(`🌐 Web server listening on port ${PORT} for Render health checks.`);
+});
+
+// Start Cron Jobs
+try {
+    startCronJobs(bot);
+    console.log('⏰ Cron jobs initialized.');
+} catch (cronErr) {
+    console.error('⚠️ Error starting cron jobs:', cronErr);
+}
+
+// Start Telegram Bot Long Polling
+console.log('🚀 Starting Telegram Bot (Baku)...');
+bot.start({
+    onStart: (botInfo) => {
+        console.log(`🤖 Bot @${botInfo.username} is running and ready!`);
+    }
+}).catch((err) => {
+    console.error('❌ Failed to start Telegram bot:', err);
 });
