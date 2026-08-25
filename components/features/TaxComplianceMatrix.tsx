@@ -244,7 +244,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
         try {
             const periodStr = activeCellModal.period;
-            const mainObType = activeCellModal.declaration?.type || (matrixMode === 'RENTA' ? 'RENTA' : 'IVA');
+            const mainObType = (activeCellModal.obType || activeCellModal.declaration?.type || (periodStr.includes('ANEXO') ? 'ANEXO' : (periodStr.length === 4 ? 'RENTA' : 'IVA'))).toUpperCase();
             const fileName = `Declaracion_${mainObType}_${activeCellModal.client.ruc}_${periodStr}.pdf`;
 
             // Subir directamente a la nube (R2 / Supabase Storage bucket)
@@ -265,7 +265,10 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             };
 
             const existingDecls = activeCellModal.client.declarations || [];
-            const declIndex = existingDecls.findIndex(d => arePeriodsEqual(d.period, periodStr) && (d.type === mainObType || !d.type));
+            const declIndex = existingDecls.findIndex(d => 
+                arePeriodsEqual(d.period, periodStr) && 
+                ((d.type || '').toUpperCase() === mainObType || (!d.type && (mainObType === 'IVA' || mainObType === 'RENTA' || mainObType === 'ANEXO')))
+            );
 
             let updatedDecls: Declaration[];
             if (declIndex >= 0) {
@@ -273,6 +276,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     if (idx === declIndex) {
                         return {
                             ...d,
+                            type: mainObType as TaxObligationType,
                             status: DeclarationStatus.Enviada,
                             proof_file: cloudStoredFile,
                             declaredAt: d.declaredAt || new Date().toISOString(),
@@ -299,7 +303,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             await useAppStore.getState().updateClient(activeCellModal.client.id, { declarations: updatedDecls });
 
             // Actualizar modal activo
-            const updatedDecl = updatedDecls.find(d => arePeriodsEqual(d.period, periodStr))!;
+            const updatedDecl = updatedDecls.find(d => 
+                arePeriodsEqual(d.period, periodStr) && 
+                ((d.type || '').toUpperCase() === mainObType || !d.type)
+            ) || updatedDecls[0];
+
             setActiveCellModal({
                 ...activeCellModal,
                 declaration: updatedDecl

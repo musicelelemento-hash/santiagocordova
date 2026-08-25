@@ -786,20 +786,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const t0 = performance.now();
 
-      const selfHealChavez = (clientsList: Client[]) => {
-        const idx = clientsList.findIndex(c => c.ruc === '0702706813002' || c.ruc === '0702706821001' || (c.ruc === '0706482023001' && !c.clientStartPeriod));
-        if (idx !== -1) {
-          const client = clientsList[idx];
-          console.log("🛠️ selfHealChavez: Corrigiendo datos de Chavez...");
-          setTimeout(() => {
-            get().updateClient(client.id, { 
-              ruc: '0706482023001', 
-              clientStartPeriod: '2026-05' 
-            });
-          }, 500);
-        }
-      };
-
       // ── FASE 1: Carga local instantánea (IndexedDB) ──────────
       // Prioridad: mostrar la UI lo antes posible con datos locales
       const [localClients, tasks, webOrders, sriCredentials, serviceFees, reminderConfig, systemSettings] = await Promise.all([
@@ -829,7 +815,6 @@ export const useAppStore = create<AppState>((set, get) => ({
         });
         sendFullClientsMatrixToExtension(localData);
         console.log(`⚡ Fase 1 (Local): ${localData.length} clientes en ${(performance.now() - t0).toFixed(0)}ms`);
-        selfHealChavez(localData);
       }
 
       // ── FASE 2: Sincronización con la nube (background) ──────
@@ -865,6 +850,11 @@ export const useAppStore = create<AppState>((set, get) => ({
             const cloudClients = sanitizeClients(mergedCloudClients);
             const currentClients = get().clients;
             
+            const getDeclKey = (d: any) => {
+              const type = (d.type || (d.period?.includes('ANEXO') ? 'ANEXO' : (d.period?.length === 7 ? 'IVA' : 'RENTA'))).toUpperCase();
+              return `${type}_${d.period.toUpperCase().trim()}`;
+            };
+
             // Smart Merge con clientes locales para proteger comprobantes y anexos recién subidos
             const protectedClients = cloudClients.map(cloudClient => {
               const localMatch = currentClients.find(c => c.id === cloudClient.id || (c.ruc && c.ruc === cloudClient.ruc));
@@ -875,16 +865,13 @@ export const useAppStore = create<AppState>((set, get) => ({
               
               const declMap = new Map<string, Declaration>();
               cloudDecls.forEach(d => {
-                if (d && d.period) declMap.set(`${d.type || 'IVA'}_${d.period}`, d);
+                if (d && d.period) declMap.set(getDeclKey(d), d);
               });
 
               localDecls.forEach(d => {
                 if (!d || !d.period) return;
-                const key = `${d.type || 'IVA'}_${d.period}`;
+                const key = getDeclKey(d);
                 const existing = declMap.get(key);
-                // ELITE FIX: Proteger proof_file local si:
-                // 1. La declaración no existe en la nube, o
-                // 2. La nube tiene proof_file null/vacío pero local tiene url o content real
                 const localHasRealProof = d.proof_file && (d.proof_file.url || (typeof d.proof_file.content === 'string' && d.proof_file.content.length > 100));
                 const cloudMissingProof = !existing?.proof_file || (!existing.proof_file.url && !existing.proof_file.content);
                 if (!existing) {

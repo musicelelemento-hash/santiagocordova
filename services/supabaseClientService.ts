@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Client, TaxRegime, RentaCategory } from '../types/client';
+import { Client, TaxRegime, RentaCategory, DeclarationStatus } from '../types/client';
 import { Task, TaskStatus } from '../types/task';
 import { AuditLog } from '../types';
 
@@ -153,11 +153,20 @@ export const SupabaseService = {
   },
 
   async deleteClient(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('clients')
-      .delete()
-      .eq('id', id);
-    if (error) throw error;
+    console.log(`[Supabase] Eliminando cliente y registros dependientes: ${id}...`);
+    try {
+      await supabase.from('sri_declaraciones').delete().eq('client_id', id);
+      await supabase.from('billing_plans').delete().eq('client_id', id);
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      console.log(`✅ [Supabase] Cliente ${id} eliminado permanentemente.`);
+    } catch (err) {
+      console.error(`[Supabase Error] Error al eliminar cliente ${id}:`, err);
+      throw err;
+    }
   },
 
   // --- Tasks ---
@@ -370,8 +379,8 @@ export const SupabaseService = {
       is_vip: true, // Decisión de negocio: todos los clientes son VIP (campo legacy)
       renta_category: client.rentaCategory,
       economic_activity: client.economicActivity,
-      is_active: client.isActive,
-      is_deleted: client.isDeleted,
+      is_active: typeof client.isActive === 'boolean' ? client.isActive : true,
+      is_deleted: !!client.isDeleted,
       client_type: clientType,
       requires_declarations: requiresDeclarations,
       facturador_config: facturadorConfigObj,
@@ -481,16 +490,41 @@ export const SupabaseService = {
     const jsonDeclarations = Array.isArray(db.declaration_history) ? db.declaration_history : [];
 
     const declMap = new Map<string, any>();
+    // Procesar primero jsonDeclarations y luego relDeclarations (la tabla relacional manda)
     [...jsonDeclarations, ...relDeclarations].forEach((d: any) => {
       if (!d || !d.period) return;
-      const key = `${d.type || 'IVA'}_${d.period}`;
+      const decType = (d.type || (d.period?.toString().includes('ANEXO') ? 'ANEXO' : (d.period?.toString().length === 7 ? 'IVA' : 'RENTA'))).toUpperCase();
+      const cleanPeriod = d.period.toString().toUpperCase().trim();
+      const key = `${decType}_${cleanPeriod}`;
       const existing = declMap.get(key);
-      if (!existing || (d.proof_file && !existing.proof_file)) {
+
+      const dHasUrl = !!d.proof_file?.url || (typeof d.proof_file?.content === 'string' && d.proof_file.content.length > 50);
+      const existingHasUrl = !!existing?.proof_file?.url || (typeof existing?.proof_file?.content === 'string' && existing.proof_file.content.length > 50);
+      const isPaid = typeof d.is_paid === 'boolean' ? d.is_paid : (d.status === 'Pagada' || d.status === DeclarationStatus.Pagada);
+
+      if (!existing) {
+        declMap.set(key, {
+          ...d,
+          type: decType,
+          period: d.period,
+          is_paid: isPaid,
+          isNotifiedWhatsApp: d.is_notified_whatsapp ?? d.isNotifiedWhatsApp ?? false,
+          notifiedWhatsAppAt: d.notified_whatsapp_at ?? d.notifiedWhatsAppAt ?? null
+        });
+      } else {
+        const finalProof = (dHasUrl || !existingHasUrl) ? (d.proof_file || existing.proof_file) : existing.proof_file;
+        const finalStatus = (d.status === 'Enviada' || d.status === 'Pagada' || !existing.status) ? d.status : existing.status;
+        
         declMap.set(key, {
           ...existing,
           ...d,
-          isNotifiedWhatsApp: d.is_notified_whatsapp ?? existing?.isNotifiedWhatsApp,
-          notifiedWhatsAppAt: d.notified_whatsapp_at ?? existing?.notifiedWhatsAppAt
+          type: decType,
+          period: d.period || existing.period,
+          status: finalStatus,
+          proof_file: finalProof,
+          is_paid: isPaid || existing.is_paid,
+          isNotifiedWhatsApp: d.is_notified_whatsapp ?? d.isNotifiedWhatsApp ?? existing.isNotifiedWhatsApp,
+          notifiedWhatsAppAt: d.notified_whatsapp_at ?? d.notifiedWhatsAppAt ?? existing.notifiedWhatsAppAt
         });
       }
     });

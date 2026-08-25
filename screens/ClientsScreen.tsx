@@ -512,12 +512,11 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             let targetPeriod = period;
             if (t === 'ICE' && !period.includes(':ICE')) targetPeriod = `${period}:ICE`;
             else if (t === 'PVP' && !period.includes(':PVP')) targetPeriod = `${period}:PVP`;
-            else if (t === 'ANEXO' && !period.includes(':ANEXO') && !period.includes(':GAP')) targetPeriod = `${period}:ANEXO_ICE`;
             else if (t === 'DEVOLUCION' && !period.includes(':DEV')) targetPeriod = `${period}:DEV`;
 
             const idx = updatedHistory.findIndex(d => {
                 const matchPeriod = d.period === targetPeriod || d.period === period || arePeriodsEqual(d.period, targetPeriod) || arePeriodsEqual(d.period, period);
-                const matchType = d.type === t || (!d.type && (t === 'IVA' || t === 'RENTA'));
+                const matchType = (d.type || '').toUpperCase() === t.toUpperCase() || (!d.type && (t === 'IVA' || t === 'RENTA' || t === 'ANEXO'));
                 return matchPeriod && matchType;
             });
 
