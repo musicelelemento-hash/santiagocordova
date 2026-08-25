@@ -10,8 +10,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        'display': ['Montserrat', 'sans-serif'],
-        'body': ['Inter', 'sans-serif'],
+        'display': ['Manrope', 'Montserrat', 'sans-serif'],
+        'body': ['Inter', 'Hanken Grotesk', 'sans-serif'],
+        'mono': ['JetBrains Mono', 'monospace'],
         'luxury': ['"Cormorant Garamond"', 'Cormorant', 'Georgia', 'serif'],
       },
       colors: {

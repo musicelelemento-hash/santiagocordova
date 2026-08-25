@@ -1174,4 +1174,70 @@ h1, h2, h3, h4 {
     background-color: rgba(0, 168, 150, 0.08);
 }
 
+/* ============================================================
+   STITCH NUEVA LUZ 3.0 — $20K LUXURY DIGITAL COCKPIT TOKENS
+   ============================================================ */
+
+.glass-luxury {
+    background: rgba(5, 20, 36, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.20);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-luxury-emerald {
+    background: rgba(5, 20, 36, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(0, 168, 150, 0.25);
+    border-top: 1px solid rgba(78, 222, 163, 0.5);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 168, 150, 0.15), inset 0 1px 0 rgba(78, 222, 163, 0.2);
+}
+
+.glass-luxury-gold {
+    background: rgba(5, 20, 36, 0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-top: 1px solid rgba(255, 185, 95, 0.5);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(245, 158, 11, 0.15), inset 0 1px 0 rgba(255, 185, 95, 0.2);
+}
+
+.glow-emerald {
+    box-shadow: 0 0 25px -5px rgba(0, 168, 150, 0.45);
+}
+
+.glow-gold {
+    box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.45);
+}
+
+.glow-indigo {
+    box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.45);
+}
+
+.text-gradient-gold {
+    background: linear-gradient(135deg, #FFE088 0%, #D4AF37 50%, #C9A96E 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-emerald {
+    background: linear-gradient(135deg, #6FFBBE 0%, #00A896 50%, #10B981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.silk-border {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.hologram-line {
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 168, 150, 0.8) 50%, transparent 100%);
+    height: 1px;
+}
+
+
 
