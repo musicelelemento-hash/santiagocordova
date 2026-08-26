@@ -629,7 +629,7 @@ const App: React.FC = () => {
     { screen: 'firmas', icon: KeyRound, label: 'Firmas Electrónicas' },
     { screen: 'crm_pipeline', icon: Kanban, label: 'CRM Embudo' },
     { screen: '3d-studio', icon: Box, label: 'Studio 3D Alpha3D' },
-    { screen: 'facturadores', icon: ShoppingBag, label: 'Facturadores y Planes' },
+    { screen: 'facturadores', icon: ShoppingBag, label: 'Facturadores & Llenado' },
     { screen: 'cotizaciones', icon: FileSpreadsheet, label: 'Cotizaciones' },
     { screen: 'licencias', icon: Key, label: 'Licencias SaaS' },
     { screen: 'refinanciacion', icon: Coins, label: 'Refinanciación' },

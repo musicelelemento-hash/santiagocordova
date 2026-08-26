@@ -129,6 +129,27 @@ export interface TaxProfile {
     requiresAnexoPvp: boolean;
 }
 
+export type BillingPlanType = 'por_factura' | 'plan_mensual' | 'paquete_docs' | 'sri_gratuito';
+
+export interface MonthlyInvoicingRecord {
+    period: string; // e.g. "2026-08"
+    count: number;
+    feePerInvoice?: number;
+    monthlyPlanFee?: number;
+    totalFee: number;
+    isPaid?: boolean;
+    paidAt?: string;
+    notes?: string;
+    invoices?: Array<{
+        id: string;
+        date: string;
+        secuencial?: string;
+        amount?: number;
+        clientRecipient?: string;
+        file?: StoredFile;
+    }>;
+}
+
 export interface BillingPlan {
     id?: string;
     client_id?: string;
@@ -136,6 +157,10 @@ export interface BillingPlan {
     url?: string;
     username?: string;
     password?: string;
+    planType?: BillingPlanType;
+    feePerInvoice?: number; // Tarifa por factura emitida
+    monthlyFee?: number;    // Tarifa plana mensual
+    includedInvoices?: number; // Facturas incluidas en plan mensual
     startDate?: string;
     expirationDate?: string;
     documentStatus?: string;
@@ -144,6 +169,7 @@ export interface BillingPlan {
     soldByMe?: boolean;
     providerName?: string;
     freeSupportAndCancellation?: boolean;
+    monthlyRecords?: Record<string, MonthlyInvoicingRecord>;
     createdAt?: string;
     updatedAt?: string;
 }

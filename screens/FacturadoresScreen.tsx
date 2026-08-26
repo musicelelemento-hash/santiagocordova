@@ -7,16 +7,18 @@ import {
     FolderDown, ClipboardCopy, Key, Shield, Plus, FileCode, Upload, User,
     Trash2, CheckSquare, Square, AlertOctagon, X, Sliders
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subMonths, addMonths, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppStore } from '../store/useAppStore';
-import { Client, StoredFile } from '../types';
+import { Client, StoredFile, BillingPlan, MonthlyInvoicingRecord } from '../types';
 import { useToast } from '../context/ToastContext';
 import { Modal } from '../components/ui/Modal';
 import { downloadStoredFile } from '../services/fileService';
 import { SalesComboModal } from '../components/features/SalesComboModal';
 import { QuickPlanRegistrationModal } from '../components/features/QuickPlanRegistrationModal';
+import { FacturadorEditModal } from '../components/features/FacturadorEditModal';
+import { FacturaRegistroModal } from '../components/features/FacturaRegistroModal';
 import { SupabaseService } from '../services/supabaseClientService';
 
 interface FacturadoresScreenProps {
@@ -29,8 +31,15 @@ export const FacturadoresScreen: React.FC<FacturadoresScreenProps> = ({ navigate
     const { toast } = useToast();
     
     const [searchTerm, setSearchTerm] = useState<string>(initialSearchTerm);
+    const [viewMode, setViewMode] = useState<'filling_center' | 'software_admin'>('filling_center');
+    const [selectedPeriod, setSelectedPeriod] = useState<string>(() => format(new Date(), 'yyyy-MM'));
+    const [editingFacturadorClient, setEditingFacturadorClient] = useState<Client | null>(null);
+    const [recordingInvoiceClient, setRecordingInvoiceClient] = useState<Client | null>(null);
+    
     const [whatsAppPrompt, setWhatsAppPrompt] = useState<{ clientName: string; phone: string; message: string } | null>(null);
     const [visiblePasswords, setVisiblePasswords] = useState<{ [id: string]: boolean }>({});
+    const [visibleSriPasswords, setVisibleSriPasswords] = useState<{ [id: string]: boolean }>({});
+    const [visibleSigPasswords, setVisibleSigPasswords] = useState<{ [id: string]: boolean }>({});
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [filterStatus, setFilterStatus] = useState<'todos' | 'planes_pago' | 'sri_gratuito' | 'solo_firma' | 'particulares' | 'clientes' | 'recursos_listos' | 'activado' | 'sin_firma'>('todos');
     const [selectedVaultClient, setSelectedVaultClient] = useState<Client | null>(null);
@@ -321,6 +330,180 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
         setBulkConfirmText('');
     };
 
+    const formatPeriodMonth = (periodStr: string) => {
+        try {
+            const [year, monthNum] = periodStr.split('-');
+            const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const mIdx = parseInt(monthNum, 10) - 1;
+            return `${months[mIdx] || monthNum} ${year}`;
+        } catch {
+            return periodStr;
+        }
+    };
+
+    const handlePrevMonth = () => {
+        const current = parseISO(`${selectedPeriod}-01`);
+        setSelectedPeriod(format(subMonths(current, 1), 'yyyy-MM'));
+    };
+
+    const handleNextMonth = () => {
+        const current = parseISO(`${selectedPeriod}-01`);
+        setSelectedPeriod(format(addMonths(current, 1), 'yyyy-MM'));
+    };
+
+    const getMonthlyRecord = (client: Client, period: string): MonthlyInvoicingRecord => {
+        const plan = client.billingPlan || client.facturadorConfig;
+        const records = plan?.monthlyRecords || {};
+        if (records[period]) return records[period];
+        
+        const planType = plan?.planType || 'por_factura';
+        const feePerInvoice = plan?.feePerInvoice ?? 1.00;
+        const monthlyFee = plan?.monthlyFee ?? 20.00;
+        return {
+            period,
+            count: 0,
+            feePerInvoice,
+            monthlyPlanFee: monthlyFee,
+            totalFee: planType === 'plan_mensual' ? monthlyFee : 0,
+            invoices: []
+        };
+    };
+
+    const handleQuickIncrementInvoice = async (client: Client) => {
+        const plan = client.billingPlan || client.facturadorConfig || {};
+        const planType = plan.planType || 'por_factura';
+        const records = { ...(plan.monthlyRecords || {}) };
+        const currentRec = records[selectedPeriod] || {
+            period: selectedPeriod,
+            count: 0,
+            feePerInvoice: plan.feePerInvoice ?? 1.00,
+            monthlyPlanFee: plan.monthlyFee ?? 20.00,
+            totalFee: 0,
+            invoices: []
+        };
+
+        const newCount = (currentRec.count || 0) + 1;
+        let newTotalFee = 0;
+        if (planType === 'por_factura') {
+            newTotalFee = newCount * (currentRec.feePerInvoice ?? 1.00);
+        } else if (planType === 'plan_mensual') {
+            newTotalFee = currentRec.monthlyPlanFee ?? 20.00;
+        } else {
+            newTotalFee = (plan.price ?? 0);
+        }
+
+        records[selectedPeriod] = {
+            ...currentRec,
+            count: newCount,
+            totalFee: newTotalFee,
+            invoices: [
+                ...(currentRec.invoices || []),
+                {
+                    id: uuidv4(),
+                    date: new Date().toISOString().split('T')[0],
+                    amount: 0
+                }
+            ]
+        };
+
+        const updatedPlan: BillingPlan = {
+            ...plan,
+            monthlyRecords: records,
+            updatedAt: new Date().toISOString()
+        };
+
+        updateClient(client.id, {
+            billingPlan: updatedPlan,
+            facturadorConfig: updatedPlan
+        });
+
+        toast.success(`⚡ +1 Factura registrada para ${client.tradeName || client.name}. Total: ${newCount} facturas ($${newTotalFee.toFixed(2)})`);
+    };
+
+    const handleSaveDetailedInvoice = async (clientId: string, invoiceData: any) => {
+        const client = storeClients.find(c => c.id === clientId);
+        if (!client) return;
+
+        const plan = client.billingPlan || client.facturadorConfig || {};
+        const planType = plan.planType || 'por_factura';
+        const records = { ...(plan.monthlyRecords || {}) };
+        const currentRec = records[invoiceData.period] || {
+            period: invoiceData.period,
+            count: 0,
+            feePerInvoice: plan.feePerInvoice ?? 1.00,
+            monthlyPlanFee: plan.monthlyFee ?? 20.00,
+            totalFee: 0,
+            invoices: []
+        };
+
+        const newCount = (currentRec.count || 0) + 1;
+        let newTotalFee = 0;
+        if (planType === 'por_factura') {
+            newTotalFee = newCount * (currentRec.feePerInvoice ?? 1.00);
+        } else if (planType === 'plan_mensual') {
+            newTotalFee = currentRec.monthlyPlanFee ?? 20.00;
+        } else {
+            newTotalFee = (plan.price ?? 0);
+        }
+
+        const newInvoice = {
+            id: uuidv4(),
+            date: invoiceData.date,
+            secuencial: invoiceData.secuencial,
+            amount: invoiceData.amount,
+            clientRecipient: invoiceData.clientRecipient,
+            file: invoiceData.file
+        };
+
+        records[invoiceData.period] = {
+            ...currentRec,
+            count: newCount,
+            totalFee: newTotalFee,
+            invoices: [...(currentRec.invoices || []), newInvoice]
+        };
+
+        const updatedPlan: BillingPlan = {
+            ...plan,
+            monthlyRecords: records,
+            updatedAt: new Date().toISOString()
+        };
+
+        updateClient(client.id, {
+            billingPlan: updatedPlan,
+            facturadorConfig: updatedPlan
+        });
+    };
+
+    const handleSaveFacturadorConfig = async (clientId: string, updatedPlan: Partial<BillingPlan>, clientUpdates?: Partial<Client>) => {
+        updateClient(clientId, {
+            billingPlan: updatedPlan,
+            facturadorConfig: updatedPlan,
+            ...(clientUpdates || {})
+        });
+    };
+
+    const handleSendWhatsAppBillingNotice = (client: Client, period: string) => {
+        const plan = client.billingPlan || client.facturadorConfig;
+        const record = getMonthlyRecord(client, period);
+        const count = record.count || 0;
+        const total = record.totalFee || 0;
+        const portalUrl = `https://santiagocordova.com/portal?ruc=${client.ruc}`;
+
+        const monthTitle = formatPeriodMonth(period);
+
+        const message = `Estimado(a) *${client.tradeName || client.name}* 👋, le saludamos de Soluciones Contables Pro.\n\n` +
+                        `Le presentamos el resumen de emisión de facturas electrónicas correspondiente al período *${monthTitle}*:\n\n` +
+                        `📄 *Facturas Llenadas / Emitidas:* ${count} comprobante(s)\n` +
+                        `💼 *Modalidad:* ${plan?.planType === 'plan_mensual' ? 'Plan Mensual Fijo' : 'Pago por Factura Emitida'}\n` +
+                        `💰 *Total Honorarios por Facturación:* $${total.toFixed(2)}\n\n` +
+                        `🔗 Puede consultar el detalle en su Portal de Cliente:\n${portalUrl}\n\n` +
+                        `Agradecemos coordinar la cancelación a nuestras cuentas registradas. Saludos cordiales, *Ing. Santiago Córdova*.`;
+
+        const pObj = client.phones?.[0];
+        const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
+        setWhatsAppPrompt({ clientName: client.name, phone, message });
+    };
+
     return (
         <div className="space-y-6 pb-24 animate-in fade-in duration-300 relative font-sans min-h-screen">
             {/* ── TOP EXECUTIVE STRIPE ── */}
@@ -489,6 +672,59 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                 </div>
             )}
 
+            {/* ── SELECTOR PRINCIPAL: CENTRO DE LLENADO VS ADMINISTRACIÓN ── */}
+            <div className="px-4 sm:px-0">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-[#051424]/90 p-4 rounded-[2rem] border border-white/10 backdrop-blur-2xl shadow-xl font-mono">
+                    <div className="flex items-center gap-2 w-full md:w-auto">
+                        <button
+                            onClick={() => setViewMode('filling_center')}
+                            className={`flex-1 md:flex-none px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                viewMode === 'filling_center'
+                                    ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-lg shadow-[#00A896]/25 border border-white/20 scale-[1.02]'
+                                    : 'bg-[#020b14] border border-white/10 text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            <ShoppingBag size={15} />
+                            <span>⚡ Centro de Llenado de Facturas</span>
+                        </button>
+                        <button
+                            onClick={() => setViewMode('software_admin')}
+                            className={`flex-1 md:flex-none px-6 py-3 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                viewMode === 'software_admin'
+                                    ? 'bg-gradient-to-r from-[#2B6AFF] to-indigo-600 text-white shadow-lg shadow-[#2B6AFF]/25 border border-white/20 scale-[1.02]'
+                                    : 'bg-[#020b14] border border-white/10 text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            <Sliders size={15} />
+                            <span>📋 Directorio & Trámites</span>
+                        </button>
+                    </div>
+
+                    {/* Month Navigator */}
+                    {viewMode === 'filling_center' && (
+                        <div className="flex items-center gap-2 bg-[#020b14] border border-white/10 rounded-2xl p-1.5 w-full md:w-auto justify-between">
+                            <button
+                                onClick={handlePrevMonth}
+                                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all cursor-pointer font-bold"
+                                title="Mes Anterior"
+                            >
+                                ◀
+                            </button>
+                            <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest px-4 font-mono">
+                                📅 {formatPeriodMonth(selectedPeriod)}
+                            </span>
+                            <button
+                                onClick={handleNextMonth}
+                                className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all cursor-pointer font-bold"
+                                title="Mes Siguiente"
+                            >
+                                ▶
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* ── BARRA DE BÚSQUEDA Y FILTRADO SEGMENTADO ── */}
             <div className="px-4 sm:px-0">
                 <div className="flex flex-col lg:flex-row items-center gap-4 justify-between bg-[#051424]/90 p-4 rounded-[2rem] border border-white/10 backdrop-blur-2xl shadow-xl font-mono">
@@ -538,386 +774,673 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                 </div>
             </div>
 
-            {/* ── TABLA DE FACTURADORES ── */}
-            <div className="px-4 sm:px-0">
-                <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 border-t-white/20 shadow-2xl p-6 sm:p-8 space-y-6">
-                    <div className="flex items-center justify-between font-mono">
-                        <div>
-                            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                                Registro de Trámites y Activaciones de Facturadores
-                            </h3>
-                            <p className="text-xs text-slate-400 font-sans mt-0.5">
-                                Descarga los recursos recopilados en 1-clic o inspecciona y sube directamente a la Bóveda del Cliente.
-                            </p>
-                        </div>
-                    </div>
-
+            {/* ── CONTENIDO PRINCIPAL: VISTA DE TARJETAS ZENITH O TABLA DE TRÁMITES ── */}
+            {viewMode === 'filling_center' ? (
+                <div className="px-4 sm:px-0 space-y-4">
                     {displayClients.length === 0 ? (
-                        <div className="p-12 text-center border border-dashed border-white/10 rounded-3xl text-slate-400 space-y-2 font-mono">
-                            <div className="text-xs font-bold text-slate-300 uppercase">No se encontraron registros de planes</div>
+                        <div className="p-12 text-center border border-dashed border-white/10 rounded-3xl text-slate-400 space-y-2 font-mono bg-[#051424]/60">
+                            <div className="text-xs font-bold text-slate-300 uppercase">No se encontraron clientes para facturación</div>
                             <p className="text-xs text-slate-500 max-w-md mx-auto font-sans">
-                                No hay clientes con planes de facturación que coincidan con los filtros activos. Usa el botón "Vender Plan / Combo" para registrar uno nuevo.
+                                Ajusta los filtros de búsqueda o registra un nuevo plan de software para empezar a emitir facturas.
                             </p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto rounded-3xl border border-white/10 bg-[#020b14]">
-                            <table className="w-full text-left border-collapse text-xs">
-                                <thead>
-                                    <tr className="border-b border-white/10 bg-[#0b1326] text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-                                        <th className="py-4 px-4 w-10 text-center">
-                                            <button
-                                                onClick={handleToggleSelectAll}
-                                                className="p-1 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
-                                                title={selectedClientIds.length === displayClients.length ? "Deseleccionar todos" : "Seleccionar todos"}
-                                            >
-                                                {displayClients.length > 0 && selectedClientIds.length === displayClients.length ? (
-                                                    <CheckSquare size={16} className="text-[#00A896]" />
-                                                ) : (
-                                                    <Square size={16} />
-                                                )}
-                                            </button>
-                                        </th>
-                                        <th className="py-4 px-5">Cliente</th>
-                                        <th className="py-4 px-5">Plan & Vencimiento Software</th>
-                                        <th className="py-4 px-5">Firma .p12 & Caducidad</th>
-                                        <th className="py-4 px-5">Expediente en Bóveda</th>
-                                        <th className="py-4 px-5">Estado de Trámite</th>
-                                        <th className="py-4 px-5">Credenciales Facturador</th>
-                                        <th className="py-4 px-5 text-right">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5 font-mono">
-                                    {displayClients.map((client) => {
-                                        if (!client) return null;
-                                        const config = client.billingPlan || client.facturadorConfig || {
-                                            programName: client.signatureFile ? 'Emisión SRI Gratuito' : 'Plan Particular',
-                                            documentStatus: 'Registrado',
-                                            username: client.ruc,
-                                            password: client.sriPassword
-                                        };
-                                        const pwdVisible = visiblePasswords[client.id] || false;
-                                        const isCopied = copiedId === client.id;
-                                        const isSelected = selectedClientIds.includes(client.id);
-                                        const providerUrl = config.url || (config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' : 'https://app.ecuafact.com');
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                            {displayClients.map(client => {
+                                if (!client) return null;
+                                const config = client.billingPlan || client.facturadorConfig || {
+                                    programName: client.signatureFile ? 'Emisión SRI Gratuito' : 'Plan Particular',
+                                    documentStatus: 'Registrado',
+                                    username: client.ruc,
+                                    password: client.sriPassword
+                                };
+                                const record = getMonthlyRecord(client, selectedPeriod);
+                                const pwdVisible = visiblePasswords[client.id] || false;
+                                const sriPwdVisible = visibleSriPasswords[client.id] || false;
+                                const sigPwdVisible = visibleSigPasswords[client.id] || false;
+                                
+                                const providerUrl = config.url || (
+                                    config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' :
+                                    config.programName?.toLowerCase().includes('sri') ? 'https://srienlinea.sri.gob.ec' :
+                                    config.programName?.toLowerCase().includes('siigo') || config.programName?.toLowerCase().includes('contifico') ? 'https://login.contifico.com' :
+                                    config.programName?.toLowerCase().includes('datil') ? 'https://app.datil.co' :
+                                    config.programName?.toLowerCase().includes('facturito') ? 'https://facturito.ec' :
+                                    'https://app.ecuafact.com'
+                                );
 
-                                        // Cálculos de Vencimiento de Plan
-                                        const planExpDays = config.expirationDate ? Math.ceil((new Date(config.expirationDate).getTime() - Date.now()) / (1000 * 3600 * 24)) : null;
-                                        const isPlanExpiringSoon = planExpDays !== null && planExpDays <= 30 && planExpDays >= 0;
-                                        const isPlanExpired = planExpDays !== null && planExpDays < 0;
+                                const planTypeLabel = 
+                                    config.planType === 'plan_mensual' ? `Plan $${(config.monthlyFee ?? 20).toFixed(2)}/mes` :
+                                    config.planType === 'paquete_docs' ? `Paquete (${config.documentCount ?? 0} docs)` :
+                                    config.planType === 'sri_gratuito' ? 'SRI Gratuito' :
+                                    `$${(config.feePerInvoice ?? 1.00).toFixed(2)} c/u`;
 
-                                        // Cálculos de Vencimiento de Firma .p12
-                                        const sigExpDays = client.signatureExpirationDate ? Math.ceil((new Date(client.signatureExpirationDate).getTime() - Date.now()) / (1000 * 3600 * 24)) : null;
-                                        const isSigExpiringSoon = sigExpDays !== null && sigExpDays <= 30 && sigExpDays >= 0;
-                                        const isSigExpired = sigExpDays !== null && sigExpDays < 0;
-
-                                        const hasRuc = client.ruc && client.ruc.length === 13 && client.ruc.endsWith('001');
-
-                                        // Contar archivos presentes vs totales
-                                        const isEcuafact = config.programName?.toLowerCase().includes('ecuafact');
-                                        const totalRequired = isEcuafact ? 6 : 5;
-                                        const presentCount = [
-                                            client.idCardFront, client.idCardBack, client.idCardSelfie, client.rucPdf, client.signatureFile,
-                                            ...(isEcuafact ? [client.ecuafactSignedRequest] : [])
-                                        ].filter(Boolean).length;
-                                        const isComplete = presentCount === totalRequired;
-
-                                        const totalVaultFiles = [
-                                            client.signatureFile, client.idCardFront, client.idCardBack, client.idCardSelfie, client.rucPdf, client.ecuafactSignedRequest,
-                                            ...(client.vault || [])
-                                        ].filter(Boolean).length;
-
-                                        return (
-                                            <tr key={client.id} className={`hover:bg-white/[0.02] transition-colors ${isSelected ? 'bg-[#00A896]/10' : ''} ${isPlanExpiringSoon || isSigExpiringSoon ? 'bg-amber-500/[0.02]' : ''}`}>
-                                                <td className="py-4 px-4 text-center">
-                                                    <button
-                                                        onClick={() => handleToggleSelectClient(client.id)}
-                                                        className="p-1 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
-                                                    >
-                                                        {isSelected ? (
-                                                            <CheckSquare size={16} className="text-[#00A896]" />
-                                                        ) : (
-                                                            <Square size={16} />
-                                                        )}
-                                                    </button>
-                                                </td>
-                                                <td className="py-4 px-5">
-                                                    <p className="font-bold text-white uppercase text-xs">{client.tradeName || client.name}</p>
-                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                        <span className="text-[10px] text-slate-400 font-mono">{client.ruc}</span>
-                                                        <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider ${
-                                                            hasRuc ? 'bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                                                        }`}>
-                                                            {hasRuc ? '🏢 RUC Emisor' : '👤 Persona Natural'}
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                                {/* Columna Plan & Vencimiento Software */}
-                                                <td className="py-4 px-5">
-                                                    <p className="font-bold text-[#00A896] text-xs">{config.programName || 'Emisión SRI'}</p>
-                                                    <div className="mt-1">
-                                                        {config.expirationDate ? (
-                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold ${
-                                                                isPlanExpired 
-                                                                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
-                                                                    : isPlanExpiringSoon 
-                                                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' 
-                                                                    : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                                                            }`}>
-                                                                📅 {new Date(config.expirationDate).toLocaleDateString('es-EC')}
-                                                                <span className="opacity-80">({isPlanExpired ? 'Vencido' : `${planExpDays}d rest.`})</span>
+                                return (
+                                    <div 
+                                        key={client.id}
+                                        className="bg-[#051424]/90 border border-white/10 hover:border-[#00A896]/40 rounded-[2rem] p-6 shadow-xl backdrop-blur-xl flex flex-col justify-between transition-all duration-300 group hover:shadow-2xl hover:shadow-[#00A896]/5 font-mono"
+                                    >
+                                        <div className="space-y-4">
+                                            {/* Header: Client Name, RUC, Software badge & Open button */}
+                                            <div>
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="min-w-0">
+                                                        <h4 className="text-sm font-black text-white uppercase truncate tracking-tight">
+                                                            {client.tradeName || client.name}
+                                                        </h4>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <span className="text-[10px] text-slate-400 font-mono">{client.ruc}</span>
+                                                            <span className="text-[9px] font-bold text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                                                                {client.regime || 'Régimen General'}
                                                             </span>
-                                                        ) : (
-                                                            <span className="text-[10px] text-slate-400">Sin caducidad de software</span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                {/* Columna Firma .p12 & Caducidad */}
-                                                <td className="py-4 px-5">
-                                                    {client.signatureFile ? (
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="text-xs font-bold text-white">🔑 {client.signatureProvider || 'Firma .p12'}</span>
-                                                            </div>
-                                                            {client.signatureExpirationDate ? (
-                                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold ${
-                                                                    isSigExpired 
-                                                                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
-                                                                        : isSigExpiringSoon 
-                                                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' 
-                                                                        : 'bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30'
-                                                                }`}>
-                                                                    🔐 {new Date(client.signatureExpirationDate).toLocaleDateString('es-EC')}
-                                                                    <span className="opacity-80">({isSigExpired ? 'Caducada' : `${sigExpDays}d rest.`})</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-[9px] text-slate-500">Sin fecha de firma</span>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <span className="px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[9px]">⚠️ Sin Firma .p12</span>
-                                                    )}
-                                                </td>
-                                                <td className="py-4 px-5 space-y-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                                                            isComplete ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                                                        }`}>
-                                                            {presentCount}/{totalRequired} Recursos
-                                                        </span>
-                                                        {presentCount > 0 && (
-                                                            <button
-                                                                onClick={() => handleDownloadAllResources(client)}
-                                                                className="px-2.5 py-1 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 font-bold border border-indigo-500/30 flex items-center gap-1 text-[9px] uppercase tracking-wider transition-all cursor-pointer"
-                                                                title="Descargar todos los archivos del expediente en 1 clic"
-                                                            >
-                                                                <FolderDown size={11} /> Paquete Trámite
-                                                            </button>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex flex-wrap gap-1.5">
-                                                        {/* Firma Electrónica .p12 */}
-                                                        {client.signatureFile ? (
-                                                            <button
-                                                                onClick={() => downloadStoredFile(client.signatureFile)}
-                                                                className="px-2 py-0.5 rounded-lg bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] font-bold border border-[#00A896]/30 flex items-center gap-1 text-[9px] cursor-pointer"
-                                                                title={`Descargar Firma .p12 (${client.signatureProvider || 'SRI'}) - Vence: ${client.signatureExpirationDate || 'Sin fecha'}`}
-                                                            >
-                                                                <Download size={9} /> 🔑 Firma .p12
-                                                            </button>
-                                                        ) : (
-                                                            <span className="px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[9px]" title="Falta Firma Electrónica .p12 en Bóveda">⚠️ Sin Firma .p12</span>
-                                                        )}
-
-                                                        {client.idCardFront ? (
-                                                            <button
-                                                                onClick={() => downloadStoredFile(client.idCardFront)}
-                                                                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
-                                                                title="Descargar Cédula Frontal"
-                                                            >
-                                                                <Download size={9} /> 🪪 Frente
-                                                            </button>
-                                                        ) : (
-                                                            <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Frontal">⚠️ Frente</span>
-                                                        )}
-
-                                                        {client.idCardBack ? (
-                                                            <button
-                                                                onClick={() => downloadStoredFile(client.idCardBack)}
-                                                                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
-                                                                title="Descargar Cédula Reverso"
-                                                            >
-                                                                <Download size={9} /> 🪪 Reverso
-                                                            </button>
-                                                        ) : (
-                                                            <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Reverso">⚠️ Reverso</span>
-                                                        )}
-
-                                                        {client.idCardSelfie ? (
-                                                            <button
-                                                                onClick={() => downloadStoredFile(client.idCardSelfie)}
-                                                                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
-                                                                title="Descargar Foto Selfie"
-                                                            >
-                                                                <Download size={9} /> 📸 Selfie
-                                                            </button>
-                                                        ) : (
-                                                            <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Selfie">⚠️ Selfie</span>
-                                                        )}
-
-                                                        {client.rucPdf ? (
-                                                            <button
-                                                                onClick={() => downloadStoredFile(client.rucPdf)}
-                                                                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
-                                                                title="Descargar RUC Actualizado"
-                                                            >
-                                                                <Download size={9} /> 📄 RUC
-                                                            </button>
-                                                        ) : (
-                                                            <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta RUC Actualizado">⚠️ RUC</span>
-                                                        )}
-
-                                                        {isEcuafact && (
-                                                            client.ecuafactSignedRequest ? (
-                                                                <button
-                                                                    onClick={() => downloadStoredFile(client.ecuafactSignedRequest)}
-                                                                    className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
-                                                                    title="Descargar Solicitud de Terceros Firmada"
-                                                                >
-                                                                    <Download size={9} /> ✍️ Solicitud
-                                                                </button>
-                                                            ) : (
-                                                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Solicitud Firmada">⚠️ Solicitud</span>
-                                                            )
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="py-4 px-5">
-                                                    <select
-                                                        value={client.facturadorActivationStatus || 'recursos_listos'}
-                                                        onChange={(e) => {
-                                                         const newStatus = e.target.value as any;
-                                                         updateClient(client.id, { facturadorActivationStatus: newStatus });
-                                                         toast.success(`Trámite de ${client.name} marcado como: ${
-                                                             newStatus === 'recursos_listos' ? 'Recursos Listos' :
-                                                             newStatus === 'subido_plataforma' ? 'Subido a Plataforma' : 'Activado y Listo'
-                                                         }`);
-                                                        }}
-                                                        className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold outline-none cursor-pointer bg-[#020b14] ${
-                                                            (client.facturadorActivationStatus === 'activado') ? 'border-emerald-500/30 text-emerald-400' :
-                                                            (client.facturadorActivationStatus === 'subido_plataforma') ? 'border-amber-500/30 text-amber-400' :
-                                                            'border-rose-500/30 text-rose-400'
-                                                        }`}
-                                                    >
-                                                        <option value="recursos_listos">🔴 Recursos Listos</option>
-                                                        <option value="subido_plataforma">🟡 Subido a Plataforma</option>
-                                                        <option value="activado">🟢 Activado y Listo</option>
-                                                    </select>
-                                                </td>
-                                                <td className="py-4 px-5">
-                                                    <div className="space-y-1">
-                                                        <div className="flex items-center gap-1 text-[11px] text-slate-300 font-mono">
-                                                            <span className="text-slate-500">U:</span> {config.username || client.ruc}
-                                                        </div>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-slate-500 font-mono text-[11px]">C:</span>
-                                                            <div className="inline-flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
-                                                                <span className="font-bold text-slate-300 min-w-[60px] text-[10px] font-mono">
-                                                                    {pwdVisible ? (config.password || client.sriPassword) : '••••••••'}
-                                                                </span>
-                                                                <button
-                                                                    onClick={() => togglePasswordVisibility(client.id)}
-                                                                    className="p-0.5 hover:text-white text-slate-400 transition-colors cursor-pointer"
-                                                                    title="Ver / Ocultar"
-                                                                >
-                                                                    {pwdVisible ? <EyeOff size={10} /> : <Eye size={10} />}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleCopyPassword(client.id, config.password || client.sriPassword)}
-                                                                    className="p-0.5 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
-                                                                    title="Copiar clave"
-                                                                >
-                                                                    {isCopied ? <Check size={10} className="text-[#00A896]" /> : <Copy size={10} />}
-                                                                </button>
-                                                            </div>
                                                         </div>
                                                     </div>
-                                                </td>
-                                                <td className="py-4 px-5 text-right space-x-1.5 whitespace-nowrap">
-                                                    <button
-                                                        onClick={() => setSelectedVaultClient(client)}
-                                                        className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-indigo-500/30 text-[10px] cursor-pointer"
-                                                        title="Inspeccionar o subir archivos a la Bóveda del Cliente"
-                                                    >
-                                                        <Lock size={11} /> Bóveda ({totalVaultFiles})
-                                                    </button>
 
                                                     <button
-                                                        onClick={() => handleCopyClientSummary(client)}
-                                                        className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-white/10 text-[10px] cursor-pointer"
-                                                        title="Copiar texto con datos de cliente para registro en plataforma"
+                                                        onClick={() => window.open(providerUrl, '_blank')}
+                                                        className="px-3 py-1.5 bg-[#00A896]/15 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/30 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-md shadow-[#00A896]/10"
+                                                        title="Abrir facturador en nueva pestaña"
                                                     >
-                                                        <ClipboardCopy size={11} /> Ficha
+                                                        <span>Abrir</span>
+                                                        <ExternalLink size={12} />
                                                     </button>
+                                                </div>
 
-                                                    {/* Botón Prioritario de Renovación si el Plan o la Firma están por vencer */}
-                                                    {(isPlanExpiringSoon || isSigExpiringSoon || isPlanExpired || isSigExpired) && (
+                                                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5">
+                                                    <span className="text-[10px] font-bold text-[#00A896] uppercase flex items-center gap-1">
+                                                        🌐 {config.programName || 'Facturador Web'}
+                                                    </span>
+                                                    <span className="text-[9px] text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                                                        {planTypeLabel}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {/* Credenciales de 1 toque */}
+                                            <div className="p-3 bg-[#020b14] border border-white/10 rounded-2xl space-y-2 text-[10px]">
+                                                {/* Usuario Facturador */}
+                                                <div className="flex items-center justify-between gap-1">
+                                                    <span className="text-slate-400">👤 User:</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-white font-mono truncate max-w-[140px]">{config.username || client.ruc}</span>
                                                         <button
                                                             onClick={() => {
-                                                                const reason = (isSigExpired || isSigExpiringSoon)
-                                                                    ? `su *Firma Electrónica .p12* ${isSigExpired ? 'ha CADUCADO' : `está por vencer el ${new Date(client.signatureExpirationDate!).toLocaleDateString('es-EC')} (en ${sigExpDays} días)`}`
-                                                                    : `su plan de facturación *${config.programName}* ${isPlanExpired ? 'ha CADUCADO' : `está por vencer el ${new Date(config.expirationDate!).toLocaleDateString('es-EC')} (en ${planExpDays} días)`}`;
-                                                                const message = `Estimado(a) *${client.name}* 👋, le saludamos de SantiagoCordova.com.\n\nLe recordamos que ${reason}. Para evitar la suspensión de la emisión de comprobantes electrónicos en el SRI, le sugerimos realizar la renovación con anticipación.\n\n¿Desea que gestionemos la renovación de inmediato?`;
+                                                                navigator.clipboard.writeText(config.username || client.ruc);
+                                                                toast.success("Usuario copiado al portapapeles");
+                                                            }}
+                                                            className="p-1 hover:text-[#00A896] text-slate-500 transition-colors cursor-pointer"
+                                                            title="Copiar usuario"
+                                                        >
+                                                            <Copy size={11} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Clave Facturador */}
+                                                <div className="flex items-center justify-between gap-1">
+                                                    <span className="text-slate-400">🔑 Clave Fact.:</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-slate-200 font-mono">
+                                                            {pwdVisible ? (config.password || client.sriPassword) : '••••••••'}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => togglePasswordVisibility(client.id)}
+                                                            className="p-1 hover:text-white text-slate-500 transition-colors cursor-pointer"
+                                                        >
+                                                            {pwdVisible ? <EyeOff size={11} /> : <Eye size={11} />}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(config.password || client.sriPassword);
+                                                                toast.success("Clave Facturador copiada");
+                                                            }}
+                                                            className="p-1 hover:text-[#00A896] text-slate-500 transition-colors cursor-pointer"
+                                                            title="Copiar clave facturador"
+                                                        >
+                                                            <Copy size={11} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Clave SRI Oficial */}
+                                                {client.sriPassword && (
+                                                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-white/5">
+                                                        <span className="text-slate-500">🏛️ Clave SRI:</span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-slate-300 font-mono">
+                                                                {sriPwdVisible ? client.sriPassword : '••••••••'}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => setVisibleSriPasswords(p => ({ ...p, [client.id]: !p[client.id] }))}
+                                                                className="p-1 hover:text-white text-slate-500 transition-colors cursor-pointer"
+                                                            >
+                                                                {sriPwdVisible ? <EyeOff size={11} /> : <Eye size={11} />}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(client.sriPassword);
+                                                                    toast.success("Clave SRI copiada");
+                                                                }}
+                                                                className="p-1 hover:text-[#00A896] text-slate-500 transition-colors cursor-pointer"
+                                                                title="Copiar clave SRI"
+                                                            >
+                                                                <Copy size={11} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Clave Firma .p12 */}
+                                                {client.electronicSignaturePassword && (
+                                                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-white/5">
+                                                        <span className="text-slate-500">🔐 Firma .p12:</span>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-slate-300 font-mono">
+                                                                {sigPwdVisible ? client.electronicSignaturePassword : '••••••••'}
+                                                            </span>
+                                                            <button
+                                                                onClick={() => setVisibleSigPasswords(p => ({ ...p, [client.id]: !p[client.id] }))}
+                                                                className="p-1 hover:text-white text-slate-500 transition-colors cursor-pointer"
+                                                            >
+                                                                {sigPwdVisible ? <EyeOff size={11} /> : <Eye size={11} />}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(client.electronicSignaturePassword || '');
+                                                                    toast.success("Clave de Firma copiada");
+                                                                }}
+                                                                className="p-1 hover:text-[#00A896] text-slate-500 transition-colors cursor-pointer"
+                                                                title="Copiar clave de firma"
+                                                            >
+                                                                <Copy size={11} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Widget Métrico del Mes Actual */}
+                                            <div className="p-4 bg-gradient-to-br from-[#020b14] to-[#051424] border border-white/10 rounded-2xl space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                                        Facturas en {formatPeriodMonth(selectedPeriod)}
+                                                    </span>
+                                                    <span className="text-xl font-black text-white font-mono">
+                                                        {record.count} <span className="text-xs text-slate-500 font-normal">emitidas</span>
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex items-center justify-between pt-2 border-t border-white/5 text-xs">
+                                                    <span className="text-slate-400 font-sans">Total Honorarios:</span>
+                                                    <span className="text-base font-black text-emerald-400 font-mono">
+                                                        ${record.totalFee.toFixed(2)} USD
+                                                    </span>
+                                                </div>
+
+                                                {/* Resumen de Facturas con PDF si hay */}
+                                                {record.invoices && record.invoices.length > 0 && (
+                                                    <div className="pt-2 border-t border-white/5 space-y-1">
+                                                        <div className="text-[9px] text-slate-500 uppercase font-bold">Comprobantes Recientes:</div>
+                                                        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto custom-scrollbar">
+                                                            {record.invoices.slice(-3).reverse().map((inv, idx) => (
+                                                                <div key={inv.id || idx} className="bg-white/5 border border-white/5 px-2 py-0.5 rounded text-[9px] text-slate-300 flex items-center gap-1.5">
+                                                                    <span>#{inv.secuencial || `${record.count - idx}`}</span>
+                                                                    {inv.amount ? <span className="text-emerald-400 font-bold">${inv.amount.toFixed(2)}</span> : null}
+                                                                    {inv.file && (
+                                                                        <button 
+                                                                            onClick={() => downloadStoredFile(inv.file!)}
+                                                                            className="text-[#00A896] hover:underline"
+                                                                            title="Descargar PDF"
+                                                                        >
+                                                                            📄
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Botonera de Acciones Rápidas */}
+                                        <div className="mt-5 pt-4 border-t border-white/10 space-y-2">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    onClick={() => handleQuickIncrementInvoice(client)}
+                                                    className="px-3 py-2.5 bg-[#00A896]/20 hover:bg-[#00A896] text-[#00A896] hover:text-white border border-[#00A896]/40 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md shadow-[#00A896]/15 hover:scale-[1.02] active:scale-[0.98]"
+                                                    title="Registrar +1 Factura Realizada"
+                                                >
+                                                    <Plus size={14} />
+                                                    <span>+1 Factura</span>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => setRecordingInvoiceClient(client)}
+                                                    className="px-3 py-2.5 bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:scale-[1.02]"
+                                                    title="Registrar con No. Secuencial, Monto o PDF"
+                                                >
+                                                    <FileText size={14} className="text-[#00A896]" />
+                                                    <span>Detalle / PDF</span>
+                                                </button>
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleSendWhatsAppBillingNotice(client, selectedPeriod)}
+                                                    className="flex-1 px-3 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                                                    title="Generar mensaje de liquidación y cobro por WhatsApp"
+                                                >
+                                                    <PhoneCall size={12} />
+                                                    <span>Cobro WhatsApp</span>
+                                                </button>
+
+                                                <button
+                                                    onClick={() => setEditingFacturadorClient(client)}
+                                                    className="px-3 py-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                                    title="Configurar o Editar Facturador, Credenciales y Plan"
+                                                >
+                                                    <Sliders size={12} />
+                                                    <span>Editar</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            ) : (
+                /* ── TABLA DE FACTURADORES (VISTA DE GESTIÓN & TRÁMITES) ── */
+                <div className="px-4 sm:px-0">
+                    <div className="bg-[#051424]/90 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 border-t-white/20 shadow-2xl p-6 sm:p-8 space-y-6">
+                        <div className="flex items-center justify-between font-mono">
+                            <div>
+                                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                                    Registro de Trámites y Activaciones de Facturadores
+                                </h3>
+                                <p className="text-xs text-slate-400 font-sans mt-0.5">
+                                    Descarga los recursos recopilados en 1-clic o inspecciona y sube directamente a la Bóveda del Cliente.
+                                </p>
+                            </div>
+                        </div>
+
+                        {displayClients.length === 0 ? (
+                            <div className="p-12 text-center border border-dashed border-white/10 rounded-3xl text-slate-400 space-y-2 font-mono">
+                                <div className="text-xs font-bold text-slate-300 uppercase">No se encontraron registros de planes</div>
+                                <p className="text-xs text-slate-500 max-w-md mx-auto font-sans">
+                                    No hay clientes con planes de facturación que coincidan con los filtros activos. Usa el botón "Vender Plan / Combo" para registrar uno nuevo.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto rounded-3xl border border-white/10 bg-[#020b14]">
+                                <table className="w-full text-left border-collapse text-xs">
+                                    <thead>
+                                        <tr className="border-b border-white/10 bg-[#0b1326] text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+                                            <th className="py-4 px-4 w-10 text-center">
+                                                <button
+                                                    onClick={handleToggleSelectAll}
+                                                    className="p-1 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
+                                                    title={selectedClientIds.length === displayClients.length ? "Deseleccionar todos" : "Seleccionar todos"}
+                                                >
+                                                    {displayClients.length > 0 && selectedClientIds.length === displayClients.length ? (
+                                                        <CheckSquare size={16} className="text-[#00A896]" />
+                                                    ) : (
+                                                        <Square size={16} />
+                                                    )}
+                                                </button>
+                                            </th>
+                                            <th className="py-4 px-5">Cliente</th>
+                                            <th className="py-4 px-5">Plan & Vencimiento Software</th>
+                                            <th className="py-4 px-5">Firma .p12 & Caducidad</th>
+                                            <th className="py-4 px-5">Expediente en Bóveda</th>
+                                            <th className="py-4 px-5">Estado de Trámite</th>
+                                            <th className="py-4 px-5">Credenciales Facturador</th>
+                                            <th className="py-4 px-5 text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5 font-mono">
+                                        {displayClients.map((client) => {
+                                            if (!client) return null;
+                                            const config = client.billingPlan || client.facturadorConfig || {
+                                                programName: client.signatureFile ? 'Emisión SRI Gratuito' : 'Plan Particular',
+                                                documentStatus: 'Registrado',
+                                                username: client.ruc,
+                                                password: client.sriPassword
+                                            };
+                                            const pwdVisible = visiblePasswords[client.id] || false;
+                                            const isCopied = copiedId === client.id;
+                                            const isSelected = selectedClientIds.includes(client.id);
+                                            const providerUrl = config.url || (config.programName?.toLowerCase().includes('zifac') ? 'https://sistema.zifac.com' : 'https://app.ecuafact.com');
+
+                                            // Cálculos de Vencimiento de Plan
+                                            const planExpDays = config.expirationDate ? Math.ceil((new Date(config.expirationDate).getTime() - Date.now()) / (1000 * 3600 * 24)) : null;
+                                            const isPlanExpiringSoon = planExpDays !== null && planExpDays <= 30 && planExpDays >= 0;
+                                            const isPlanExpired = planExpDays !== null && planExpDays < 0;
+
+                                            // Cálculos de Vencimiento de Firma .p12
+                                            const sigExpDays = client.signatureExpirationDate ? Math.ceil((new Date(client.signatureExpirationDate).getTime() - Date.now()) / (1000 * 3600 * 24)) : null;
+                                            const isSigExpiringSoon = sigExpDays !== null && sigExpDays <= 30 && sigExpDays >= 0;
+                                            const isSigExpired = sigExpDays !== null && sigExpDays < 0;
+
+                                            const hasRuc = client.ruc && client.ruc.length === 13 && client.ruc.endsWith('001');
+
+                                            // Contar archivos presentes vs totales
+                                            const isEcuafact = config.programName?.toLowerCase().includes('ecuafact');
+                                            const totalRequired = isEcuafact ? 6 : 5;
+                                            const presentCount = [
+                                                client.idCardFront, client.idCardBack, client.idCardSelfie, client.rucPdf, client.signatureFile,
+                                                ...(isEcuafact ? [client.ecuafactSignedRequest] : [])
+                                            ].filter(Boolean).length;
+                                            const isComplete = presentCount === totalRequired;
+
+                                            const totalVaultFiles = [
+                                                client.signatureFile, client.idCardFront, client.idCardBack, client.idCardSelfie, client.rucPdf, client.ecuafactSignedRequest,
+                                                ...(client.vault || [])
+                                            ].filter(Boolean).length;
+
+                                            return (
+                                                <tr key={client.id} className={`hover:bg-white/[0.02] transition-colors ${isSelected ? 'bg-[#00A896]/10' : ''} ${isPlanExpiringSoon || isSigExpiringSoon ? 'bg-amber-500/[0.02]' : ''}`}>
+                                                    <td className="py-4 px-4 text-center">
+                                                        <button
+                                                            onClick={() => handleToggleSelectClient(client.id)}
+                                                            className="p-1 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
+                                                        >
+                                                            {isSelected ? (
+                                                                <CheckSquare size={16} className="text-[#00A896]" />
+                                                            ) : (
+                                                                <Square size={16} />
+                                                            )}
+                                                        </button>
+                                                    </td>
+                                                    <td className="py-4 px-5">
+                                                        <p className="font-bold text-white uppercase text-xs">{client.tradeName || client.name}</p>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-[10px] text-slate-400 font-mono">{client.ruc}</span>
+                                                            <span className={`px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider ${
+                                                                hasRuc ? 'bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30' : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                                            }`}>
+                                                                {hasRuc ? '🏢 RUC Emisor' : '👤 Persona Natural'}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    {/* Columna Plan & Vencimiento Software */}
+                                                    <td className="py-4 px-5">
+                                                        <p className="font-bold text-[#00A896] text-xs">{config.programName || 'Emisión SRI'}</p>
+                                                        <div className="mt-1">
+                                                            {config.expirationDate ? (
+                                                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold ${
+                                                                    isPlanExpired 
+                                                                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
+                                                                        : isPlanExpiringSoon 
+                                                                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' 
+                                                                        : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                                                }`}>
+                                                                    📅 {new Date(config.expirationDate).toLocaleDateString('es-EC')}
+                                                                    <span className="opacity-80">({isPlanExpired ? 'Vencido' : `${planExpDays}d rest.`})</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[10px] text-slate-400">Sin caducidad de software</span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    {/* Columna Firma .p12 & Caducidad */}
+                                                    <td className="py-4 px-5">
+                                                        {client.signatureFile ? (
+                                                            <div className="space-y-1">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-xs font-bold text-white">🔑 {client.signatureProvider || 'Firma .p12'}</span>
+                                                                </div>
+                                                                {client.signatureExpirationDate ? (
+                                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-bold ${
+                                                                        isSigExpired 
+                                                                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
+                                                                            : isSigExpiringSoon 
+                                                                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' 
+                                                                            : 'bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30'
+                                                                    }`}>
+                                                                        🔐 {new Date(client.signatureExpirationDate).toLocaleDateString('es-EC')}
+                                                                        <span className="opacity-80">({isSigExpired ? 'Caducada' : `${sigExpDays}d rest.`})</span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-[9px] text-slate-500">Sin fecha de firma</span>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[9px]">⚠️ Sin Firma .p12</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-4 px-5 space-y-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                                                                isComplete ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                                                            }`}>
+                                                                {presentCount}/{totalRequired} Recursos
+                                                            </span>
+                                                            {presentCount > 0 && (
+                                                                <button
+                                                                    onClick={() => handleDownloadAllResources(client)}
+                                                                    className="px-2.5 py-1 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 font-bold border border-indigo-500/30 flex items-center gap-1 text-[9px] uppercase tracking-wider transition-all cursor-pointer"
+                                                                    title="Descargar todos los archivos del expediente en 1 clic"
+                                                                >
+                                                                    <FolderDown size={11} /> Paquete Trámite
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {/* Firma Electrónica .p12 */}
+                                                            {client.signatureFile ? (
+                                                                <button
+                                                                    onClick={() => downloadStoredFile(client.signatureFile)}
+                                                                    className="px-2 py-0.5 rounded-lg bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] font-bold border border-[#00A896]/30 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    title={`Descargar Firma .p12 (${client.signatureProvider || 'SRI'}) - Vence: ${client.signatureExpirationDate || 'Sin fecha'}`}
+                                                                >
+                                                                    <Download size={9} /> 🔑 Firma .p12
+                                                                </button>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[9px]" title="Falta Firma Electrónica .p12 en Bóveda">⚠️ Sin Firma .p12</span>
+                                                            )}
+
+                                                            {client.idCardFront ? (
+                                                                <button
+                                                                    onClick={() => downloadStoredFile(client.idCardFront)}
+                                                                    className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    title="Descargar Cédula Frontal"
+                                                                >
+                                                                    <Download size={9} /> 🪪 Frente
+                                                                </button>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Frontal">⚠️ Frente</span>
+                                                            )}
+
+                                                            {client.idCardBack ? (
+                                                                <button
+                                                                    onClick={() => downloadStoredFile(client.idCardBack)}
+                                                                    className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    title="Descargar Cédula Reverso"
+                                                                >
+                                                                    <Download size={9} /> 🪪 Reverso
+                                                                </button>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Cédula Reverso">⚠️ Reverso</span>
+                                                            )}
+
+                                                            {client.idCardSelfie ? (
+                                                                <button
+                                                                    onClick={() => downloadStoredFile(client.idCardSelfie)}
+                                                                    className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    title="Descargar Foto Selfie"
+                                                                >
+                                                                    <Download size={9} /> 🤳 Selfie
+                                                                </button>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta Foto Selfie">⚠️ Selfie</span>
+                                                            )}
+
+                                                            {client.rucPdf ? (
+                                                                <button
+                                                                    onClick={() => downloadStoredFile(client.rucPdf)}
+                                                                    className="px-2 py-0.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                    title="Descargar RUC PDF"
+                                                                >
+                                                                    <Download size={9} /> 📄 RUC
+                                                                </button>
+                                                            ) : (
+                                                                <span className="px-2 py-0.5 rounded-lg bg-white/5 text-slate-500 border border-white/5 text-[9px]" title="Falta RUC PDF">⚠️ RUC</span>
+                                                            )}
+
+                                                            {isEcuafact && (
+                                                                client.ecuafactSignedRequest ? (
+                                                                    <button
+                                                                        onClick={() => downloadStoredFile(client.ecuafactSignedRequest)}
+                                                                        className="px-2 py-0.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 font-bold border border-purple-500/20 flex items-center gap-1 text-[9px] cursor-pointer"
+                                                                        title="Descargar Solicitud Firmada de Ecuafact"
+                                                                    >
+                                                                        <Download size={9} /> ✍️ Solicitud
+                                                                    </button>
+                                                                ) : (
+                                                                    <span className="px-2 py-0.5 rounded-lg bg-purple-500/15 text-purple-400 border border-purple-500/30 text-[9px]" title="Falta Solicitud Ecuafact Firmada">⚠️ Solicitud</span>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-5">
+                                                        <select
+                                                            value={client.facturadorActivationStatus || 'recursos_listos'}
+                                                            onChange={(e) => {
+                                                             const newStatus = e.target.value as any;
+                                                             updateClient(client.id, { facturadorActivationStatus: newStatus });
+                                                             toast.success(`Trámite de ${client.name} marcado como: ${
+                                                                 newStatus === 'recursos_listos' ? 'Recursos Listos' :
+                                                                 newStatus === 'subido_plataforma' ? 'Subido a Plataforma' : 'Activado y Listo'
+                                                             }`);
+                                                            }}
+                                                            className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold outline-none cursor-pointer bg-[#020b14] ${
+                                                                (client.facturadorActivationStatus === 'activado') ? 'border-emerald-500/30 text-emerald-400' :
+                                                                (client.facturadorActivationStatus === 'subido_plataforma') ? 'border-amber-500/30 text-amber-400' :
+                                                                'border-rose-500/30 text-rose-400'
+                                                            }`}
+                                                        >
+                                                            <option value="recursos_listos">🔴 Recursos Listos</option>
+                                                            <option value="subido_plataforma">🟡 Subido a Plataforma</option>
+                                                            <option value="activado">🟢 Activado y Listo</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="py-4 px-5">
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center gap-1 text-[11px] text-slate-300 font-mono">
+                                                                <span className="text-slate-500">U:</span> {config.username || client.ruc}
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-slate-500 font-mono text-[11px]">C:</span>
+                                                                <div className="inline-flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
+                                                                    <span className="font-bold text-slate-300 min-w-[60px] text-[10px] font-mono">
+                                                                        {pwdVisible ? (config.password || client.sriPassword) : '••••••••'}
+                                                                    </span>
+                                                                    <button
+                                                                        onClick={() => togglePasswordVisibility(client.id)}
+                                                                        className="p-0.5 hover:text-white text-slate-400 transition-colors cursor-pointer"
+                                                                        title="Ver / Ocultar"
+                                                                    >
+                                                                        {pwdVisible ? <EyeOff size={10} /> : <Eye size={10} />}
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleCopyPassword(client.id, config.password || client.sriPassword)}
+                                                                        className="p-0.5 hover:text-[#00A896] text-slate-400 transition-colors cursor-pointer"
+                                                                        title="Copiar clave"
+                                                                    >
+                                                                        {isCopied ? <Check size={10} className="text-[#00A896]" /> : <Copy size={10} />}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-5 text-right space-x-1.5 whitespace-nowrap">
+                                                        {/* ✏️ Botón Editar Facturador */}
+                                                        <button
+                                                            onClick={() => setEditingFacturadorClient(client)}
+                                                            className="px-2.5 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-teal-500/30 text-[10px] cursor-pointer"
+                                                            title="Editar detalles y plan del facturador"
+                                                        >
+                                                            <Sliders size={11} /> Editar
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => setSelectedVaultClient(client)}
+                                                            className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-indigo-500/30 text-[10px] cursor-pointer"
+                                                            title="Inspeccionar o subir archivos a la Bóveda del Cliente"
+                                                        >
+                                                            <Lock size={11} /> Bóveda ({totalVaultFiles})
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => handleCopyClientSummary(client)}
+                                                            className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-white/10 text-[10px] cursor-pointer"
+                                                            title="Copiar texto con datos de cliente para registro en plataforma"
+                                                        >
+                                                            <ClipboardCopy size={11} /> Ficha
+                                                        </button>
+
+                                                        {/* Botón Prioritario de Renovación si el Plan o la Firma están por vencer */}
+                                                        {(isPlanExpiringSoon || isSigExpiringSoon || isPlanExpired || isSigExpired) && (
+                                                            <button
+                                                                onClick={() => {
+                                                                    const reason = (isSigExpired || isSigExpiringSoon)
+                                                                        ? `su *Firma Electrónica .p12* ${isSigExpired ? 'ha CADUCADO' : `está por vencer el ${new Date(client.signatureExpirationDate!).toLocaleDateString('es-EC')} (en ${sigExpDays} días)`}`
+                                                                        : `su plan de facturación *${config.programName}* ${isPlanExpired ? 'ha CADUCADO' : `está por vencer el ${new Date(config.expirationDate!).toLocaleDateString('es-EC')} (en ${planExpDays} días)`}`;
+                                                                    const message = `Estimado(a) *${client.name}* 👋, le saludamos de SantiagoCordova.com.\n\nLe recordamos que ${reason}. Para evitar la suspensión de la emisión de comprobantes electrónicos en el SRI, le sugerimos realizar la renovación con anticipación.\n\n¿Desea que gestionemos la renovación de inmediato?`;
+                                                                    const pObj = client.phones?.[0];
+                                                                    const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
+                                                                    setWhatsAppPrompt({ clientName: client.name, phone, message });
+                                                                }}
+                                                                className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-amber-500/40 text-[10px] cursor-pointer animate-pulse"
+                                                                title="Enviar alerta de renovación por WhatsApp"
+                                                            >
+                                                                <PhoneCall size={11} /> Renovar
+                                                            </button>
+                                                        )}
+
+                                                        <button
+                                                            onClick={() => {
+                                                                const message = `Estimado(a) *${client.name}*, le saludamos de SantiagoCórdova.com. Le informamos que su facturador electrónico *${config.programName}* ha sido activado con éxito.\n\n*Plataforma:* ${providerUrl}\n*Usuario:* ${config.username || client.ruc}\n*Clave:* ${config.password || client.sriPassword}\n\nYa puede emitir sus facturas electrónicas normalmente.`;
                                                                 const pObj = client.phones?.[0];
                                                                 const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
                                                                 setWhatsAppPrompt({ clientName: client.name, phone, message });
                                                             }}
-                                                            className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold uppercase transition-all inline-flex items-center gap-1 border border-amber-500/40 text-[10px] cursor-pointer animate-pulse"
-                                                            title="Enviar alerta de renovación por WhatsApp"
+                                                            className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold uppercase transition-all inline-flex items-center gap-1 border border-emerald-500/20 text-[10px] cursor-pointer"
+                                                            title="Enviar credenciales de facturación por WhatsApp"
                                                         >
-                                                            <PhoneCall size={11} /> Renovar
+                                                            <PhoneCall size={11} /> WhatsApp
                                                         </button>
-                                                    )}
 
-                                                    <button
-                                                        onClick={() => {
-                                                            const message = `Estimado(a) *${client.name}*, le saludamos de SantiagoCórdova.com. Le informamos que su facturador electrónico *${config.programName}* ha sido activado con éxito.\n\n*Plataforma:* ${providerUrl}\n*Usuario:* ${config.username || client.ruc}\n*Clave:* ${config.password || client.sriPassword}\n\nYa puede emitir sus facturas electrónicas normalmente.`;
-                                                            const pObj = client.phones?.[0];
-                                                            const phone = typeof pObj === 'object' ? (pObj as any).number || '' : (pObj || '');
-                                                            setWhatsAppPrompt({ clientName: client.name, phone, message });
-                                                        }}
-                                                        className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 font-bold uppercase transition-all inline-flex items-center gap-1 border border-emerald-500/20 text-[10px] cursor-pointer"
-                                                        title="Enviar credenciales de facturación por WhatsApp"
-                                                    >
-                                                        <PhoneCall size={11} /> WhatsApp
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => window.open(providerUrl, '_blank')}
-                                                        className="px-2.5 py-1.5 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] font-bold uppercase transition-all inline-flex items-center gap-1 border border-[#00A896]/20 text-[10px] cursor-pointer"
-                                                        title="Visitar plataforma del Facturador"
-                                                    >
-                                                        <Globe size={11} /> Abrir
-                                                    </button>
-                                                    
-                                                    {/* 🛡️ Botón Táctico de Depuración / Eliminación */}
-                                                    <button
-                                                        onClick={() => setDepurationTargetClient(client)}
-                                                        className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold uppercase transition-all inline-flex items-center gap-1 border border-rose-500/20 text-[10px] cursor-pointer"
-                                                        title="Depurar / Desvincular Plan o Eliminar Cliente"
-                                                    >
-                                                        <Trash2 size={11} /> Depurar
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
+                                                        <button
+                                                            onClick={() => window.open(providerUrl, '_blank')}
+                                                            className="px-2.5 py-1.5 rounded-xl bg-[#00A896]/15 hover:bg-[#00A896]/25 text-[#00A896] font-bold uppercase transition-all inline-flex items-center gap-1 border border-[#00A896]/20 text-[10px] cursor-pointer"
+                                                            title="Visitar plataforma del Facturador"
+                                                        >
+                                                            <Globe size={11} /> Abrir
+                                                        </button>
+                                                        
+                                                        {/* 🛡️ Botón Táctico de Depuración / Eliminación */}
+                                                        <button
+                                                            onClick={() => setDepurationTargetClient(client)}
+                                                            className="px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold uppercase transition-all inline-flex items-center gap-1 border border-rose-500/20 text-[10px] cursor-pointer"
+                                                            title="Depurar / Desvincular Plan o Eliminar Cliente"
+                                                        >
+                                                            <Trash2 size={11} /> Depurar
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* ── BARRA FLOTANTE DE ACCIONES EN LOTE (BATCH DEPURATION) ── */}
             {selectedClientIds.length > 0 && (
@@ -1267,6 +1790,27 @@ Expiración Firma: ${client.signatureExpirationDate || '—'}`;
                     toast.success("Expediente Express completado.");
                 }}
             />
+
+            {/* ── MODAL DETALLADO DE CONFIGURACIÓN DE FACTURADOR & PLANES ── */}
+            {editingFacturadorClient && (
+                <FacturadorEditModal
+                    isOpen={!!editingFacturadorClient}
+                    onClose={() => setEditingFacturadorClient(null)}
+                    client={editingFacturadorClient}
+                    onSave={handleSaveFacturadorConfig}
+                />
+            )}
+
+            {/* ── MODAL REGISTRO DE FACTURA EMITIDA (+1 CON DETALLES / PDF) ── */}
+            {recordingInvoiceClient && (
+                <FacturaRegistroModal
+                    isOpen={!!recordingInvoiceClient}
+                    onClose={() => setRecordingInvoiceClient(null)}
+                    client={recordingInvoiceClient}
+                    currentPeriod={selectedPeriod}
+                    onSaveInvoice={handleSaveDetailedInvoice}
+                />
+            )}
         </div>
     );
 };
