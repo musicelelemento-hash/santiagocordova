@@ -79,10 +79,19 @@ export function getVoiceStatus() {
     };
 }
 
+export function sanitizeTextForSpeech(text: string): string {
+    return text
+        .replace(/\[AUDIO\]/gi, '')
+        .replace(/<[^>]*>/g, '') // Eliminar HTML tags
+        .replace(/[*_~`#|]/g, '') // Eliminar markdown
+        .replace(/https?:\/\/\S+/g, 'enlace web')
+        .replace(/[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '') // Quitar emojis
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 export async function textToSpeech(text: string): Promise<InputFile> {
-    
-    // REGRESIÓN: El bot a veces envía "[AUDIO]" como texto a leer. Lo limpiamos.
-    const cleanText = text.replace(/\[AUDIO\]/g, '').trim();
+    const cleanText = sanitizeTextForSpeech(text);
 
     // Try ElevenLabs first if key is present
     if (ELEVENLABS_API_KEY) {
@@ -125,3 +134,4 @@ export async function textToSpeech(text: string): Promise<InputFile> {
         throw e;
     }
 }
+

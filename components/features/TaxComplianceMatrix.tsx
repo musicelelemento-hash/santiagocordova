@@ -134,6 +134,21 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         return (localStorage.getItem('sc_matrix_density') as 'compact' | 'detailed') || 'compact';
     });
 
+    const [viewLayout, setViewLayout] = useState<'cards' | 'matrix'>(() => {
+        if (typeof window !== 'undefined' && window.innerWidth < 1024) return 'cards';
+        return (localStorage.getItem('sc_matrix_layout') as 'cards' | 'matrix') || 'matrix';
+    });
+
+    React.useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 1024) {
+                setViewLayout('cards');
+            }
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const handleToggleDensity = (mode: 'compact' | 'detailed') => {
         setDensityMode(mode);
         localStorage.setItem('sc_matrix_density', mode);
@@ -1515,6 +1530,40 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                         </button>
                     </div>
 
+                    {/* Selector de Modo de Vista (Tarjetas Móvil vs Matriz Tabla) */}
+                    <div className="flex items-center p-1 bg-[#020b14]/60 rounded-2xl border border-white/10">
+                        <button
+                            onClick={() => {
+                                setViewLayout('cards');
+                                localStorage.setItem('sc_matrix_layout', 'cards');
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                                viewLayout === 'cards'
+                                    ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-md shadow-[#00A896]/30 font-black'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Vista Tarjetas Móviles (Zenith Mobile Cards)"
+                        >
+                            <LucideIcons.Smartphone size={12} />
+                            <span>Tarjetas</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                setViewLayout('matrix');
+                                localStorage.setItem('sc_matrix_layout', 'matrix');
+                            }}
+                            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                                viewLayout === 'matrix'
+                                    ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white shadow-md shadow-[#00A896]/30 font-black'
+                                    : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Vista Matriz Completa (Tabla de Períodos)"
+                        >
+                            <LucideIcons.Table size={12} />
+                            <span>Matriz</span>
+                        </button>
+                    </div>
+
                     {/* Selector de Densidad (Compacto vs Detallado) */}
                     <div className="flex items-center p-1 bg-[#020b14]/60 rounded-2xl border border-white/10">
                         <button
@@ -1823,312 +1872,549 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 </div>
             </div>
 
-            {/* Matrix Table */}
-            <div className="rounded-[2.5rem] shadow-2xl overflow-hidden overflow-x-auto custom-scrollbar border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl font-sans mb-28">
-                <table className="w-full min-w-[800px] text-left border-collapse">
-                    <thead>
-                        <tr className="bg-[#0b1326]/90 border-b border-white/10 font-mono">
-                            <th className="px-3 py-4 sticky left-0 bg-[#0b1326] z-30 w-10 text-center border-r border-white/10">
-                                <input
-                                    type="checkbox"
-                                    checked={isAllSelected}
-                                    onChange={handleToggleSelectAll}
-                                    className="rounded accent-[#00A896] cursor-pointer w-3.5 h-3.5"
-                                    title="Seleccionar Todos"
-                                />
-                            </th>
-                            <th className="px-6 py-4 text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] sticky left-10 bg-[#0b1326] z-20 w-64 border-r border-white/10">Cliente</th>
-                            {periods.map(p => (
-                                <th 
-                                    key={p} 
-                                    className="px-4 py-4 text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em] text-center border-r border-white/10 last:border-r-0 cursor-pointer hover:bg-[#051424] transition-colors select-none group/th"
-                                    onClick={() => handleSortByPeriod(p)}
-                                    title="Clic para agrupar (Faltantes / Listos)"
-                                >
-                                    <div className="flex items-center justify-center gap-1.5 relative">
-                                        <span>{formatPeriodForDisplay(p).replace('IVA ', '')}</span>
-                                        <div className={`transition-all duration-200 ${sortPeriod === p ? 'opacity-100' : 'opacity-0 group-hover/th:opacity-30'}`}>
-                                            <LucideIcons.ArrowDownUp 
-                                                size={12} 
-                                                className={sortPeriod === p ? (sortDirection === 'missing_first' ? 'text-rose-500' : 'text-[#00A896]') : 'text-slate-400'} 
-                                            />
-                                        </div>
-                                    </div>
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5 font-sans">
-                        {filteredClients.map((client, index) => {
-                            const currentDigit = parseInt(client.ruc[8], 10);
-                            const prevDigit = index > 0 ? parseInt(filteredClients[index - 1].ruc[8], 10) : null;
-                            const showDivider = sortOption === '9th_digit' && !isWorkspaceMode && (currentDigit !== prevDigit) && (!searchTerm.trim() || matrixMode !== 'IVA');
+            {/* Mobile Cards vs Matrix Table View */}
+            {viewLayout === 'cards' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 font-sans mb-28">
+                    {filteredClients.map((client) => {
+                        const currentDigit = parseInt(client.ruc[8], 10);
+                        const p12Days = getP12RemainingDays(client);
+                        const isSelected = selectedClientIds.includes(client.id);
+                        const declarations = client.declarations || [];
+                        const activePeriod = periods[0];
+                        const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
+                        const mainDecl = findDeclarationForOb(declarations, activePeriod, mainObType);
+                        const isNotified = !!mainDecl?.isNotifiedWhatsApp;
+                        const hasProof = !!mainDecl?.proof_file || mainDecl?.status === DeclarationStatus.Enviada || mainDecl?.status === DeclarationStatus.Pagada;
+                        const isPaid = mainDecl?.status === DeclarationStatus.Pagada || !!mainDecl?.is_paid || client.isCourtesy;
 
-                            const getFreq = (c: Client) => c.taxProfile?.ivaFrequency || (c.regime === TaxRegime.RimpeEmprendedor ? 'Semestral' : c.regime === TaxRegime.RimpeNegocioPopular ? 'Ninguno' : 'Mensual');
-                            const currentFreq = getFreq(client);
-                            const prevFreq = index > 0 ? getFreq(filteredClients[index - 1]) : null;
-                            const isSearchMode = searchTerm.trim().length > 0 && matrixMode === 'IVA';
-                            const showFreqDivider = isSearchMode && (currentFreq !== prevFreq);
-
-                            return (
-                                <React.Fragment key={client.id}>
-                                    {showFreqDivider && (
-                                        <tr className="bg-[#2B6AFF]/10 border-t border-b border-[#2B6AFF]/20 font-mono">
-                                            <td colSpan={periods.length + 2} className="px-6 py-3">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="p-1.5 rounded-lg bg-[#2B6AFF] text-white shadow-lg shadow-[#2B6AFF]/30 animate-pulse">
-                                                            {currentFreq === 'Semestral' ? <LucideIcons.CalendarRange size={14} /> : <LucideIcons.Calendar size={14} />}
-                                                        </div>
-                                                        <span className="text-[11px] font-bold text-[#2B6AFF] uppercase tracking-[0.2em]">
-                                                            Clientes {currentFreq}es
-                                                        </span>
-                                                        <span className="text-white/20 mx-1">|</span>
-                                                        <span className="text-[10px] text-slate-400 font-semibold tracking-wider">
-                                                            Resultados de Búsqueda
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                    {showDivider && (
-                                        <tr className="bg-[#0b1326]/80 border-t border-b border-white/10 font-mono">
-                                            <td colSpan={periods.length + 2} className="px-6 py-2.5">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_8px_rgba(0,168,150,0.8)]"></div>
-                                                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.15em]">
-                                                            Dígito RUC <span className="font-mono text-[#00A896] font-black">{currentDigit}</span>
-                                                        </span>
-                                                        <span className="text-white/10 mx-1">|</span>
-                                                        <span className="text-[9px] text-slate-400 font-mono tracking-wider">
-                                                            Vence: Día {currentDigit === 1 ? '10' : currentDigit === 2 ? '12' : currentDigit === 3 ? '14' : currentDigit === 4 ? '16' : currentDigit === 5 ? '18' : currentDigit === 6 ? '20' : currentDigit === 7 ? '22' : currentDigit === 8 ? '24' : currentDigit === 9 ? '26' : '28'} de cada mes
-                                                        </span>
-                                                    </div>
-                                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest no-print">
-                                                        {filteredClients.filter(c => parseInt(c.ruc[8], 10) === currentDigit).length} Clientes
-                                                    </span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                    <tr className={`transition-all duration-300 group/row border-b border-white/5 ${
-    client.ruc === highlightedRuc
-        ? 'bg-[#00A896]/15 ring-2 ring-[#00A896] border-[#00A896] shadow-[0_0_30px_rgba(0,168,150,0.4)] z-20 relative animate-pulse'
-        : 'hover:bg-white/[0.03]'
-}`}>
-                                        <td 
-                                            className="px-3 py-4 sticky left-0 bg-[#051424]/95 backdrop-blur-md z-20 border-r border-white/10 text-center"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedClientIds.includes(client.id)}
-                                                onChange={() => handleToggleSelectClient(client.id)}
-                                                className="rounded accent-[#00A896] cursor-pointer w-3.5 h-3.5"
-                                            />
-                                        </td>
-                                        <td 
-                                            className="px-6 py-4 sticky left-10 bg-[#051424]/95 backdrop-blur-md z-10 border-r border-white/10 group-hover/row:bg-[#0b1326]/95 transition-colors shadow-[4px_0_16px_rgba(0,0,0,0.5)]"
-                                            onClick={() => onViewClient(client)}
-                                        >
-                                            <div className="flex items-center gap-3 cursor-pointer">
-                                                <div className="w-8 h-8 rounded-xl bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] flex items-center justify-center font-bold text-xs font-mono group-hover/row:scale-105 transition-transform shadow-sm">
-                                                    {client.ruc[8]}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <h4 className="font-bold text-xs text-white truncate max-w-[170px] group-hover/row:text-[#00A896] transition-colors">
-                                                            {client.tradeName || client.name}
-                                                        </h4>
-                                                        {client.isPriority && (
-                                                            <LucideIcons.Star size={10} className="text-amber-400 fill-amber-400 shrink-0 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex items-center gap-2 mt-0.5 font-mono">
-                                                        {(() => {
-                                                            const p12Days = getP12RemainingDays(client);
-                                                            if (p12Days === null) {
-                                                                return (
-                                                                    <span className="text-[8px] font-bold text-slate-500 flex items-center gap-0.5">
-                                                                        <LucideIcons.ShieldAlert size={8} /> Sin P12
-                                                                    </span>
-                                                                );
-                                                            }
-                                                            if (p12Days <= 0) {
-                                                                return (
-                                                                    <span className="text-[8px] font-bold text-rose-400 flex items-center gap-0.5 animate-pulse">
-                                                                        <LucideIcons.AlertTriangle size={8} /> P12 Vencido
-                                                                    </span>
-                                                                );
-                                                            }
-                                                            if (p12Days <= 30) {
-                                                                return (
-                                                                    <span className="text-[8px] font-bold text-amber-400 flex items-center gap-0.5">
-                                                                        <LucideIcons.Clock size={8} /> P12: {p12Days}d
-                                                                    </span>
-                                                                );
-                                                            }
-                                                            return (
-                                                                <span className="text-[8px] font-bold text-[#00A896] flex items-center gap-0.5">
-                                                                    <LucideIcons.ShieldCheck size={8} /> P12: {p12Days}d
-                                                                </span>
-                                                            );
-                                                        })()}
-
-                                                        {client.sriPassword ? (
-                                                            <span className="text-[8px] font-bold text-emerald-400 flex items-center gap-0.5">
-                                                                <LucideIcons.Key size={8} /> SRI Clave
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-[8px] font-bold text-amber-400 flex items-center gap-0.5">
-                                                                <LucideIcons.Lock size={8} /> Sin Clave
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex items-center gap-1.5 mt-1 no-print font-mono">
-                                                        <span className="text-[9px] font-mono font-bold text-slate-400 tracking-wider">
-                                                            {client.ruc}
-                                                        </span>
-                                                        
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); handleCopyRuc(client.ruc, client.name); }}
-                                                            className={`p-1 rounded-lg transition-all border ${
-                                                                copiedRuc === client.ruc
-                                                                    ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896]'
-                                                                    : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:border-white/20'
-                                                            }`}
-                                                            title={copiedRuc === client.ruc ? "RUC Copiado" : "Copiar RUC"}
-                                                        >
-                                                            {copiedRuc === client.ruc ? <LucideIcons.Check size={8} className="text-[#00A896]" strokeWidth={3} /> : <LucideIcons.Copy size={8} />}
-                                                        </button>
-
-                                                        {client.sriPassword && (
-                                                            <button
-                                                                onClick={(e) => { 
-                                                                    e.stopPropagation(); 
-                                                                    handleCopyKey(client.sriPassword!, client.id, client.name);
-                                                                }}
-                                                                className={`p-1 rounded-lg transition-all border ${
-                                                                    copiedKey === client.id
-                                                                        ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896]'
-                                                                    : 'bg-white/5 border-white/10 text-slate-400 hover:text-[#00A896] hover:border-[#00A896]/30'
-                                                                }`}
-                                                                title={copiedKey === client.id ? "Clave Copiada" : `Copiar Clave SRI`}
-                                                            >
-                                                                {copiedKey === client.id ? <LucideIcons.Check size={8} className="text-[#00A896]" strokeWidth={3} /> : <LucideIcons.Key size={8} />}
-                                                            </button>
-                                                        )}
-
-                                                        <button
-                                                            onClick={(e) => handleOpenSriPortal(client, e)}
-                                                            className="p-1 rounded-lg border bg-white/5 border-white/10 text-slate-400 hover:text-amber-400 hover:border-amber-400/30 transition-all flex items-center justify-center"
-                                                            title="Abrir SRI en Línea y Cargar Credenciales del Cliente"
-                                                        >
-                                                            <LucideIcons.ExternalLink size={8} />
-                                                        </button>
-
-                                                        {(() => {
-                                                            const activePeriod = periods[0];
-                                                            const clientDecls = client.declarations || [];
-                                                            const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
-                                                            const mainDecl = findDeclarationForOb(clientDecls, activePeriod, mainObType);
-                                                            
-                                                            const hasProof = !!mainDecl?.proof_file || mainDecl?.status === DeclarationStatus.Enviada || mainDecl?.status === DeclarationStatus.Pagada;
-                                                            const isPaid = mainDecl?.status === DeclarationStatus.Pagada || !!mainDecl?.is_paid || client.isCourtesy;
-                                                            
-                                                            if (!hasProof || isPaid) return null;
-
-                                                            const isNotified = !!mainDecl?.isNotifiedWhatsApp;
-
-                                                            return (
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleSendWhatsAppNotification(client, activePeriod, mainObType, mainDecl);
-                                                                    }}
-                                                                    onContextMenu={(e) => {
-                                                                        e.preventDefault();
-                                                                        e.stopPropagation();
-                                                                        handleToggleWhatsAppNotification(client, activePeriod, mainObType, mainDecl);
-                                                                    }}
-                                                                    className={`p-1 rounded-lg transition-all border flex items-center justify-center ${
-                                                                        isNotified
-                                                                            ? 'bg-[#00A896]/15 border-[#00A896]/30 text-[#00A896] hover:bg-[#00A896]/25'
-                                                                            : 'bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30 animate-pulse shadow-sm shadow-amber-500/20'
-                                                                    }`}
-                                                                    title={
-                                                                        isNotified
-                                                                            ? `Notificado por WhatsApp - Esperando comprobante de pago (Clic: reenviar | Clic derecho: alternar)`
-                                                                            : `⚠️ Comprobante listo - FALTANTE DE AVISAR AL CLIENTE (Clic: enviar WhatsApp con saludo ${getTimeBasedGreeting()} | Clic derecho: marcar)`
-                                                                    }
-                                                                >
-                                                                    {isNotified ? (
-                                                                        <LucideIcons.CheckCheck size={10} strokeWidth={2.5} />
-                                                                    ) : (
-                                                                        <LucideIcons.BellRing size={10} strokeWidth={2.5} />
-                                                                    )}
-                                                                </button>
-                                                            );
-                                                        })()}
-                                                    </div>
-                                                </div>
+                        return (
+                            <div
+                                key={client.id}
+                                className={`relative rounded-3xl p-5 bg-[#051424]/90 backdrop-blur-2xl border transition-all duration-300 shadow-xl flex flex-col justify-between group ${
+                                    client.ruc === highlightedRuc
+                                        ? 'border-[#00A896] ring-2 ring-[#00A896]/60 shadow-[0_0_25px_rgba(0,168,150,0.3)]'
+                                        : 'border-white/10 hover:border-white/20'
+                                }`}
+                            >
+                                <div>
+                                    {/* Top Row: 9th Digit Badge + Client Name & Priority Star */}
+                                    <div className="flex items-start justify-between gap-3 mb-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#00A896]/20 to-teal-500/10 border border-[#00A896]/30 text-[#00A896] flex flex-col items-center justify-center font-mono shrink-0 shadow-sm">
+                                                <span className="text-[8px] uppercase tracking-tighter opacity-70">Díg</span>
+                                                <span className="text-sm font-black leading-none">{client.ruc[8]}</span>
                                             </div>
-                                        </td>
-                                        {periods.map(p => {
-                                            const isBeforeStart = isPeriodBeforeClientStart(client, p);
-                                            if (isBeforeStart) {
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <h4 
+                                                        onClick={() => onViewClient(client)}
+                                                        className="font-bold text-sm text-white truncate hover:text-[#00A896] cursor-pointer transition-colors"
+                                                        title="Ver Expediente Completo"
+                                                    >
+                                                        {client.tradeName || client.name}
+                                                    </h4>
+                                                    {client.isPriority && (
+                                                        <LucideIcons.Star size={12} className="text-amber-400 fill-amber-400 shrink-0 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] font-mono text-slate-400 truncate mt-0.5">
+                                                    RUC: <code className="text-slate-300">{client.ruc}</code>
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Checkbox for bulk actions */}
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={() => handleToggleSelectClient(client.id)}
+                                            className="rounded accent-[#00A896] cursor-pointer w-4 h-4 mt-1 shrink-0"
+                                            title="Seleccionar para lote"
+                                        />
+                                    </div>
+
+                                    {/* Badges: Régimen & Firma P12 */}
+                                    <div className="flex flex-wrap items-center gap-1.5 mb-3 font-mono">
+                                        <span className="px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-slate-300">
+                                            {client.regime || 'Régimen General'}
+                                        </span>
+
+                                        {(() => {
+                                            if (p12Days === null) {
                                                 return (
-                                                    <td key={p} className="px-2 py-3 border-r border-white/5 bg-[#020b14]/40 opacity-70">
-                                                        <div className="flex flex-col items-center justify-center p-2 rounded-2xl border border-white/5 text-[9px] font-mono text-slate-500 text-center gap-0.5" title={`Obligaciones iniciaron en ${client.clientStartPeriod}`}>
-                                                            <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider text-slate-400">
-                                                                <LucideIcons.MinusCircle size={10} />
-                                                                No Aplica
-                                                            </span>
-                                                            <span className="text-[7px] font-medium text-slate-500 font-mono">
-                                                                Inicio {client.clientStartPeriod}
-                                                            </span>
-                                                        </div>
-                                                    </td>
+                                                    <span className="px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-slate-800/80 text-slate-400 border border-white/5 flex items-center gap-1">
+                                                        <LucideIcons.ShieldAlert size={9} /> Sin P12
+                                                    </span>
                                                 );
                                             }
-
-                                            const obligations = getObligationsForPeriod(client, p);
-                                            const declarations = client.declarations || [];
-                                            
-                                            const allObligationsDone = obligations.length > 0 && obligations.every(ob => {
-                                                const d = findDeclarationForOb(declarations, p, ob.type);
-                                                return d && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada || !!d.proof_file);
-                                            });
-
+                                            if (p12Days <= 0) {
+                                                return (
+                                                    <span className="px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1 animate-pulse">
+                                                        <LucideIcons.AlertTriangle size={9} /> P12 Vencido
+                                                    </span>
+                                                );
+                                            }
+                                            if (p12Days <= 30) {
+                                                return (
+                                                    <span className="px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                                                        <LucideIcons.Clock size={9} /> P12: {p12Days}d
+                                                    </span>
+                                                );
+                                            }
                                             return (
-                                                <td key={p} className={`px-2 py-2 border-r border-white/5 last:border-r-0 transition-colors ${allObligationsDone ? 'bg-[#00A896]/[0.03]' : ''}`}>
-                                                    {densityMode === 'compact' ? (
-                                                        /* ⚡ MODO COMPACTO DE ALTA DENSIDAD (Sleek High Density Capsule) */
-                                                        <div className="flex flex-col items-center justify-center gap-1 min-w-[90px] max-w-[125px] mx-auto py-0.5">
+                                                <span className="px-2 py-0.5 rounded-lg text-[8px] font-bold uppercase tracking-wider bg-[#00A896]/15 text-[#00A896] border border-[#00A896]/30 flex items-center gap-1">
+                                                    <LucideIcons.ShieldCheck size={9} /> P12: {p12Days}d
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
+
+                                    {/* Quick 1-Tap Action Chips */}
+                                    <div className="flex items-center gap-1.5 mb-4 p-2 bg-[#020b14]/70 rounded-2xl border border-white/5 font-mono text-[9px]">
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(client.ruc);
+                                                setCopiedRuc(client.ruc);
+                                                toast.success(`RUC copiado: ${client.ruc}`);
+                                                setTimeout(() => setCopiedRuc(null), 2000);
+                                            }}
+                                            className={`flex-1 py-1.5 px-2 rounded-xl transition-all flex items-center justify-center gap-1 border ${
+                                                copiedRuc === client.ruc
+                                                    ? 'bg-[#00A896]/20 border-[#00A896]/50 text-[#00A896]'
+                                                    : 'bg-white/5 border-white/10 text-slate-300 hover:text-white hover:bg-white/10'
+                                            }`}
+                                            title="Copiar RUC"
+                                        >
+                                            {copiedRuc === client.ruc ? <LucideIcons.Check size={10} className="text-[#00A896]" /> : <LucideIcons.Copy size={10} />}
+                                            <span>RUC</span>
+                                        </button>
+
+                                        {client.sriPassword && (
+                                            <button
+                                                onClick={() => handleCopyKey(client.sriPassword!, client.id, client.name)}
+                                                className={`flex-1 py-1.5 px-2 rounded-xl transition-all flex items-center justify-center gap-1 border ${
+                                                    copiedKey === client.id
+                                                        ? 'bg-[#00A896]/20 border-[#00A896]/50 text-[#00A896]'
+                                                        : 'bg-white/5 border-white/10 text-slate-300 hover:text-amber-400 hover:border-amber-400/30'
+                                                }`}
+                                                title="Copiar Clave SRI"
+                                            >
+                                                {copiedKey === client.id ? <LucideIcons.Check size={10} className="text-[#00A896]" /> : <LucideIcons.Key size={10} />}
+                                                <span>Clave</span>
+                                            </button>
+                                        )}
+
+                                        <button
+                                            onClick={(e) => handleOpenSriPortal(client, e)}
+                                            className="py-1.5 px-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-1"
+                                            title="Abrir SRI en Línea"
+                                        >
+                                            <LucideIcons.ExternalLink size={10} />
+                                            <span>SRI</span>
+                                        </button>
+
+                                        {hasProof && !isPaid && (
+                                            <button
+                                                onClick={() => handleSendWhatsAppNotification(client, activePeriod, mainObType, mainDecl)}
+                                                className={`py-1.5 px-2.5 rounded-xl transition-all flex items-center justify-center gap-1 border ${
+                                                    isNotified
+                                                        ? 'bg-[#00A896]/15 border-[#00A896]/30 text-[#00A896]'
+                                                        : 'bg-amber-500/20 border-amber-500/40 text-amber-300 animate-pulse'
+                                                }`}
+                                                title="Enviar WhatsApp con recordatorio"
+                                            >
+                                                <LucideIcons.MessageSquare size={10} />
+                                                <span>WhatsApp</span>
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Horizontal Timeline: Periods Scroller */}
+                                    <div className="mb-4">
+                                        <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 mb-1.5 px-1">
+                                            <span className="uppercase font-bold tracking-wider">Períodos Fiscales ({periods.length})</span>
+                                            <span className="text-[8px] text-slate-500">Toca para gestionar</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                                            {periods.map(p => {
+                                                const isBeforeStart = isPeriodBeforeClientStart(client, p);
+                                                if (isBeforeStart) {
+                                                    return (
+                                                        <div
+                                                            key={p}
+                                                            className="px-2 py-1.5 rounded-xl bg-white/[0.02] border border-white/5 text-[8px] font-mono text-slate-500 shrink-0 opacity-50 text-center"
+                                                            title="No Aplica (Previo a Inicio)"
+                                                        >
+                                                            <span>{formatPeriodForDisplay(p).replace('IVA ', '')}</span>
+                                                            <div className="text-[7px] text-slate-600">N/A</div>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                const obligations = getObligationsForPeriod(client, p);
+                                                if (obligations.length === 0) {
+                                                    return (
+                                                        <div
+                                                            key={p}
+                                                            className="px-2 py-1.5 rounded-xl bg-white/[0.02] border border-white/5 text-[8px] font-mono text-slate-500 shrink-0 opacity-50 text-center"
+                                                        >
+                                                            <span>{formatPeriodForDisplay(p).replace('IVA ', '')}</span>
+                                                            <div className="text-[7px] text-slate-600">—</div>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                const ob = obligations[0];
+                                                const d = findDeclarationForOb(declarations, p, ob.type);
+                                                const hasCellProof = !!d?.proof_file;
+                                                const isDone = hasCellProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                                                const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
+                                                const isCellPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+
+                                                return (
+                                                    <button
+                                                        key={p}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (hasCellProof) {
+                                                                setActiveCellModal({
+                                                                    client,
+                                                                    period: p,
+                                                                    declaration: d!,
+                                                                    obType: ob.type as any,
+                                                                    realInvoice: findRealInvoice(client.ruc, d, p)
+                                                                });
+                                                            } else {
+                                                                onUploadReceipt(client, p, ob.type as any);
+                                                            }
+                                                        }}
+                                                        className={`px-2.5 py-1.5 rounded-xl border text-[9px] font-mono shrink-0 transition-all flex flex-col items-center gap-0.5 cursor-pointer active:scale-95 ${
+                                                            isDone && isCellPaid
+                                                                ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896] hover:bg-[#00A896]/30'
+                                                                : isDone && !isCellPaid
+                                                                ? 'bg-orange-500/20 border-orange-500/40 text-orange-300 hover:bg-orange-500/30 animate-pulse'
+                                                                : isOverdue
+                                                                ? 'bg-rose-500/20 border-rose-500/40 text-rose-300 hover:bg-rose-500/30'
+                                                                : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
+                                                        }`}
+                                                        title={`${formatPeriodForDisplay(p)}: ${isDone ? (isCellPaid ? 'Declarado y Pagado' : 'Declarado, Falta Cobrar') : (isOverdue ? 'Vencido' : 'Pendiente')}`}
+                                                    >
+                                                        <span className="font-bold text-[9px] uppercase">{formatPeriodForDisplay(p).replace('IVA ', '')}</span>
+                                                        <div className="flex items-center gap-1">
+                                                            {isDone ? (
+                                                                <LucideIcons.ShieldCheck size={11} strokeWidth={3} className={isCellPaid ? 'text-[#00A896]' : 'text-orange-400'} />
+                                                            ) : isOverdue ? (
+                                                                <LucideIcons.AlertCircle size={11} strokeWidth={3} className="text-rose-400" />
+                                                            ) : (
+                                                                <LucideIcons.Upload size={10} className="text-slate-400" />
+                                                            )}
+                                                            <span className="text-[7px] opacity-80 uppercase">{ob.type}</span>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Card Footer: Quick Actions */}
+                                <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2 font-mono">
+                                    <button
+                                        onClick={() => {
+                                            const fee = getClientServiceFee(client, serviceFees);
+                                            if (onNavigateToBilling) {
+                                                onNavigateToBilling(client.ruc, activePeriod, `HONORARIOS CONTABLES DECLARACION ${activePeriod}`);
+                                            }
+                                        }}
+                                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#2B6AFF] to-indigo-600 hover:from-blue-600 hover:to-indigo-500 text-white text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-blue-500/20 active:scale-95 transition-all"
+                                        title="Generar Factura de Honorarios SRI"
+                                    >
+                                        <LucideIcons.Receipt size={11} />
+                                        <span>Facturar</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => onViewClient(client)}
+                                        className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95"
+                                    >
+                                        <LucideIcons.Eye size={11} />
+                                        <span>Expediente</span>
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                /* Matrix Table */
+                <div className="rounded-[2.5rem] shadow-2xl overflow-hidden overflow-x-auto custom-scrollbar border border-white/10 border-t-white/20 bg-[#051424]/90 backdrop-blur-2xl font-sans mb-28">
+                    <table className="w-full min-w-[800px] text-left border-collapse">
+                        <thead>
+                            <tr className="bg-[#0b1326]/90 border-b border-white/10 font-mono">
+                                <th className="px-3 py-4 sticky left-0 bg-[#0b1326] z-30 w-10 text-center border-r border-white/10">
+                                    <input
+                                        type="checkbox"
+                                        checked={isAllSelected}
+                                        onChange={handleToggleSelectAll}
+                                        className="rounded accent-[#00A896] cursor-pointer w-3.5 h-3.5"
+                                        title="Seleccionar Todos"
+                                    />
+                                </th>
+                                <th className="px-6 py-4 text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] sticky left-10 bg-[#0b1326] z-20 w-64 border-r border-white/10">Cliente</th>
+                                {periods.map(p => (
+                                    <th 
+                                        key={p} 
+                                        className="px-4 py-4 text-[9px] font-bold text-slate-400 uppercase tracking-[0.15em] text-center border-r border-white/10 last:border-r-0 cursor-pointer hover:bg-[#051424] transition-colors select-none group/th"
+                                        onClick={() => handleSortByPeriod(p)}
+                                        title="Clic para agrupar (Faltantes / Listos)"
+                                    >
+                                        <div className="flex items-center justify-center gap-1.5 relative">
+                                            <span>{formatPeriodForDisplay(p).replace('IVA ', '')}</span>
+                                            <div className={`transition-all duration-200 ${sortPeriod === p ? 'opacity-100' : 'opacity-0 group-hover/th:opacity-30'}`}>
+                                                <LucideIcons.ArrowDownUp 
+                                                    size={12} 
+                                                    className={sortPeriod === p ? (sortDirection === 'missing_first' ? 'text-rose-500' : 'text-[#00A896]') : 'text-slate-400'} 
+                                                />
+                                            </div>
+                                        </div>
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5 font-mono text-xs">
+                            {filteredClients.map((client, idx) => {
+                                const currentDigit = parseInt(client.ruc[8], 10);
+                                const prevClient = idx > 0 ? filteredClients[idx - 1] : null;
+                                const prevDigit = prevClient ? parseInt(prevClient.ruc[8], 10) : null;
+                                const isNewDigitGroup = sortOption === '9th_digit' && (idx === 0 || currentDigit !== prevDigit);
+
+                                return (
+                                    <React.Fragment key={client.id}>
+                                        {isNewDigitGroup && (
+                                            <tr className="bg-[#020b14]/90 border-y border-white/10 font-mono no-print">
+                                                <td colSpan={periods.length + 2} className="px-6 py-2.5">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-[#00A896] animate-pulse shadow-[0_0_8px_rgba(0,168,150,0.8)]"></div>
+                                                            <span className="text-[9px] font-bold text-slate-300 uppercase tracking-[0.15em]">
+                                                                Dígito RUC <span className="font-mono text-[#00A896] font-black">{currentDigit}</span>
+                                                            </span>
+                                                            <span className="text-white/10 mx-1">|</span>
+                                                            <span className="text-[9px] text-slate-400 font-mono tracking-wider">
+                                                                Vence: Día {currentDigit === 1 ? '10' : currentDigit === 2 ? '12' : currentDigit === 3 ? '14' : currentDigit === 4 ? '16' : currentDigit === 5 ? '18' : currentDigit === 6 ? '20' : currentDigit === 7 ? '22' : currentDigit === 8 ? '24' : currentDigit === 9 ? '26' : '28'} de cada mes
+                                                            </span>
+                                                        </div>
+                                                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest no-print">
+                                                            {filteredClients.filter(c => parseInt(c.ruc[8], 10) === currentDigit).length} Clientes
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                        <tr className={`transition-all duration-300 group/row border-b border-white/5 ${
+        client.ruc === highlightedRuc
+            ? 'bg-[#00A896]/15 ring-2 ring-[#00A896] border-[#00A896] shadow-[0_0_30px_rgba(0,168,150,0.4)] z-20 relative animate-pulse'
+            : 'hover:bg-white/[0.03]'
+    }`}>
+                                            <td 
+                                                className="px-3 py-4 sticky left-0 bg-[#051424]/95 backdrop-blur-md z-20 border-r border-white/10 text-center"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedClientIds.includes(client.id)}
+                                                    onChange={() => handleToggleSelectClient(client.id)}
+                                                    className="rounded accent-[#00A896] cursor-pointer w-3.5 h-3.5"
+                                                />
+                                            </td>
+                                            <td 
+                                                className="px-6 py-4 sticky left-10 bg-[#051424]/95 backdrop-blur-md z-10 border-r border-white/10 group-hover/row:bg-[#0b1326]/95 transition-colors shadow-[4px_0_16px_rgba(0,0,0,0.5)]"
+                                                onClick={() => onViewClient(client)}
+                                            >
+                                                <div className="flex items-center gap-3 cursor-pointer">
+                                                    <div className="w-8 h-8 rounded-xl bg-[#00A896]/15 border border-[#00A896]/30 text-[#00A896] flex items-center justify-center font-bold text-xs font-mono group-hover/row:scale-105 transition-transform shadow-sm">
+                                                        {client.ruc[8]}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <h4 className="font-bold text-xs text-white truncate max-w-[170px] group-hover/row:text-[#00A896] transition-colors">
+                                                                {client.tradeName || client.name}
+                                                            </h4>
+                                                            {client.isPriority && (
+                                                                <LucideIcons.Star size={10} className="text-amber-400 fill-amber-400 shrink-0 drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 mt-0.5 font-mono">
+                                                            {(() => {
+                                                                const p12Days = getP12RemainingDays(client);
+                                                                if (p12Days === null) {
+                                                                    return (
+                                                                        <span className="text-[8px] font-bold text-slate-500 flex items-center gap-0.5">
+                                                                            <LucideIcons.ShieldAlert size={8} /> Sin P12
+                                                                        </span>
+                                                                    );
+                                                                }
+                                                                if (p12Days <= 0) {
+                                                                    return (
+                                                                        <span className="text-[8px] font-bold text-rose-400 flex items-center gap-0.5 animate-pulse">
+                                                                            <LucideIcons.AlertTriangle size={8} /> P12 Vencido
+                                                                        </span>
+                                                                    );
+                                                                }
+                                                                if (p12Days <= 30) {
+                                                                    return (
+                                                                        <span className="text-[8px] font-bold text-amber-400 flex items-center gap-0.5">
+                                                                            <LucideIcons.Clock size={8} /> P12: {p12Days}d
+                                                                        </span>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <span className="text-[8px] font-bold text-[#00A896] flex items-center gap-0.5">
+                                                                        <LucideIcons.ShieldCheck size={8} /> P12: {p12Days}d
+                                                                    </span>
+                                                                );
+                                                            })()}
+
+                                                            <span className="text-[8px] text-slate-500 truncate max-w-[90px]">
+                                                                {client.regime ? (client.regime.includes('Emprendedor') ? 'Emprendedor' : client.regime.includes('Popular') ? 'Popular' : 'General') : 'General'}
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    navigator.clipboard.writeText(client.ruc);
+                                                                    setCopiedRuc(client.ruc);
+                                                                    toast.success(`RUC copiado: ${client.ruc}`);
+                                                                    setTimeout(() => setCopiedRuc(null), 2000);
+                                                                }}
+                                                                className={`p-1 rounded-lg transition-all border ${
+                                                                    copiedRuc === client.ruc
+                                                                        ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896]'
+                                                                        : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                                                                }`}
+                                                                title={copiedRuc === client.ruc ? "RUC Copiado" : "Copiar RUC"}
+                                                            >
+                                                                {copiedRuc === client.ruc ? <LucideIcons.Check size={8} className="text-[#00A896]" strokeWidth={3} /> : <LucideIcons.Copy size={8} />}
+                                                            </button>
+
+                                                            {client.sriPassword && (
+                                                                <button
+                                                                    onClick={(e) => { 
+                                                                        e.stopPropagation(); 
+                                                                        handleCopyKey(client.sriPassword!, client.id, client.name);
+                                                                    }}
+                                                                    className={`p-1 rounded-lg transition-all border ${
+                                                                        copiedKey === client.id
+                                                                            ? 'bg-[#00A896]/20 border-[#00A896]/40 text-[#00A896]'
+                                                                        : 'bg-white/5 border-white/10 text-slate-400 hover:text-[#00A896] hover:border-[#00A896]/30'
+                                                                    }`}
+                                                                    title={copiedKey === client.id ? "Clave Copiada" : `Copiar Clave SRI`}
+                                                                >
+                                                                    {copiedKey === client.id ? <LucideIcons.Check size={8} className="text-[#00A896]" strokeWidth={3} /> : <LucideIcons.Key size={8} />}
+                                                                </button>
+                                                            )}
+
+                                                            <button
+                                                                onClick={(e) => handleOpenSriPortal(client, e)}
+                                                                className="p-1 rounded-lg border bg-white/5 border-white/10 text-slate-400 hover:text-amber-400 hover:border-amber-400/30 transition-all flex items-center justify-center"
+                                                                title="Abrir SRI en Línea y Cargar Credenciales del Cliente"
+                                                            >
+                                                                <LucideIcons.ExternalLink size={8} />
+                                                            </button>
+
+                                                            {(() => {
+                                                                const activePeriod = periods[0];
+                                                                const clientDecls = client.declarations || [];
+                                                                const mainObType = matrixMode === 'RENTA' ? 'RENTA' : 'IVA';
+                                                                const mainDecl = findDeclarationForOb(clientDecls, activePeriod, mainObType);
+                                                                
+                                                                const hasProof = !!mainDecl?.proof_file || mainDecl?.status === DeclarationStatus.Enviada || mainDecl?.status === DeclarationStatus.Pagada;
+                                                                const isPaid = mainDecl?.status === DeclarationStatus.Pagada || !!mainDecl?.is_paid || client.isCourtesy;
+                                                                
+                                                                if (!hasProof || isPaid) return null;
+
+                                                                const isNotified = !!mainDecl?.isNotifiedWhatsApp;
+
+                                                                return (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleSendWhatsAppNotification(client, activePeriod, mainObType, mainDecl);
+                                                                        }}
+                                                                        onContextMenu={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            handleToggleWhatsAppNotification(client, activePeriod, mainObType, mainDecl);
+                                                                        }}
+                                                                        className={`p-1 rounded-lg transition-all border flex items-center justify-center ${
+                                                                            isNotified
+                                                                                ? 'bg-[#00A896]/15 border-[#00A896]/30 text-[#00A896] hover:bg-[#00A896]/25'
+                                                                                : 'bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30 animate-pulse shadow-sm shadow-amber-500/20'
+                                                                        }`}
+                                                                        title={
+                                                                            isNotified
+                                                                                ? `Notificado por WhatsApp - Esperando comprobante de pago (Clic: reenviar | Clic derecho: alternar)`
+                                                                                : `⚠️ Comprobante listo - FALTANTE DE AVISAR AL CLIENTE (Clic: enviar WhatsApp con saludo ${getTimeBasedGreeting()} | Clic derecho: marcar)`
+                                                                        }
+                                                                    >
+                                                                        {isNotified ? (
+                                                                            <LucideIcons.CheckCheck size={10} strokeWidth={2.5} />
+                                                                        ) : (
+                                                                            <LucideIcons.BellRing size={10} strokeWidth={2.5} />
+                                                                        )}
+                                                                    </button>
+                                                                );
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            {periods.map(p => {
+                                                const isBeforeStart = isPeriodBeforeClientStart(client, p);
+                                                if (isBeforeStart) {
+                                                    return (
+                                                        <td key={p} className="px-2 py-3 border-r border-white/5 bg-[#020b14]/40 opacity-70">
+                                                            <div className="flex flex-col items-center justify-center p-2 rounded-2xl border border-white/5 text-[9px] font-mono text-slate-500 text-center gap-0.5" title={`Obligaciones iniciaron en ${client.clientStartPeriod}`}>
+                                                                <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider text-slate-400">
+                                                                    <LucideIcons.MinusCircle size={10} />
+                                                                    No Aplica
+                                                                </span>
+                                                                <span className="text-[7px] font-medium text-slate-500 font-mono">
+                                                                    Inicio {client.clientStartPeriod}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                    );
+                                                }
+
+                                                const obligations = getObligationsForPeriod(client, p);
+                                                const declarations = client.declarations || [];
+
+                                                return (
+                                                    <td key={p} className="px-2 py-3 border-r border-white/5 group-hover/row:bg-white/[0.01] transition-colors">
+                                                        <div className="flex flex-wrap gap-1.5 items-center justify-center">
                                                             {obligations.map(ob => {
                                                                 const d = findDeclarationForOb(declarations, p, ob.type);
                                                                 const hasProof = !!d?.proof_file;
                                                                 const isDone = hasProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
+                                                                const isManualDone = false;
                                                                 const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
-                                                                const isPaid = d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+                                                                const isTrulyInvoiced = !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
 
                                                                 return (
-                                                                    <div
+                                                                    <div 
                                                                         key={`${p}-${ob.type}`}
-                                                                        className={`group/ob relative flex items-center justify-between w-full px-2 py-1 rounded-xl cursor-pointer transition-all duration-200 border text-[10px] font-mono select-none shadow-sm ${
-                                                                            isDone
-                                                                                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25 hover:border-emerald-400'
-                                                                                : isOverdue
-                                                                                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30 hover:bg-rose-500/25 animate-pulse'
-                                                                                : d?.isPriority
-                                                                                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
-                                                                                : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-white'
+                                                                        className={`group/ob relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl cursor-pointer transition-all duration-300 border ${
+                                                                            isDone ? 'bg-gradient-to-br from-[#00A896]/30 to-teal-600/30 text-white border-[#00A896]/50 shadow-md shadow-[#00A896]/15 hover:scale-105 hover:border-[#00A896] hover:shadow-lg hover:shadow-[#00A896]/25 z-10' : 
+                                                                            isManualDone ? 'bg-gradient-to-br from-amber-400/20 to-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/15 hover:scale-105 hover:shadow-lg z-10 animate-pulse' :
+                                                                            d?.isPriority ? 'bg-gradient-to-br from-orange-500/20 to-rose-500/20 text-orange-300 border-orange-500/50 shadow-md shadow-orange-500/15 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/25 z-10 animate-pulse' :
+                                                                            isOverdue ? 'bg-rose-500/15 text-rose-400 border-rose-500/30 hover:bg-rose-500/25 hover:scale-105' :
+                                                                            'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white hover:scale-105'
                                                                         }`}
-                                                                        title={isDone ? `Declaración ${ob.label} lista con comprobante` : isOverdue ? `Urgente: Declaración ${ob.label} vencida` : `Subir o declarar ${ob.label}`}
+                                                                        title={isDone ? `Ver Comprobante & Facturación de ${ob.label}` : isManualDone ? `Atención: Sin PDF de ${ob.label}. Haz click para subirlo.` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             if (hasProof) {
@@ -2144,20 +2430,28 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                             }
                                                                         }}
                                                                     >
-                                                                        <div className="flex items-center gap-1">
-                                                                            {isDone ? (
-                                                                                <LucideIcons.ShieldCheck size={12} className="text-emerald-400 shrink-0" />
-                                                                            ) : isOverdue ? (
-                                                                                <LucideIcons.AlertCircle size={12} className="text-rose-400 shrink-0" />
-                                                                            ) : d?.isPriority ? (
-                                                                                <LucideIcons.Pin size={12} className="text-amber-400 shrink-0 rotate-45" />
-                                                                            ) : (
-                                                                                <LucideIcons.Upload size={11} className="text-slate-400 group-hover/ob:text-white shrink-0" />
-                                                                            )}
-                                                                            <span className="font-black text-[9px] uppercase tracking-wider">{ob.type}</span>
-                                                                        </div>
+                                                                        <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 font-mono ${isDone || isManualDone || d?.isPriority ? 'opacity-95 text-[#00A896]' : 'opacity-60'}`}>{ob.type}</span>
+                                                                        
+                                                                        {isDone ? (
+                                                                            <LucideIcons.ShieldCheck size={14} strokeWidth={3} className="text-[#00A896] drop-shadow-[0_0_6px_rgba(0,168,150,0.6)]" />
+                                                                        ) : isManualDone ? (
+                                                                            <LucideIcons.AlertTriangle size={14} strokeWidth={3} className="text-amber-400 drop-shadow-sm" />
+                                                                        ) : d?.isPriority ? (
+                                                                            <LucideIcons.Pin size={12} strokeWidth={2.5} className="text-orange-400 rotate-45" />
+                                                                        ) : isOverdue ? (
+                                                                            <LucideIcons.AlertCircle size={14} strokeWidth={2.5} className="text-rose-400" />
+                                                                        ) : (
+                                                                            <LucideIcons.Upload size={12} strokeWidth={2} className="opacity-40 group-hover/ob:opacity-100 group-hover/ob:scale-110 transition-all text-slate-300" />
+                                                                        )}
 
-                                                                        <div className="flex items-center gap-1">
+                                                                        {isTrulyInvoiced && (
+                                                                            <span className="px-1 py-[1.5px] bg-[#020b14]/90 text-[#00A896] border border-[#00A896]/50 rounded text-[6px] font-black uppercase tracking-wider font-mono shadow-sm mt-0.5 leading-none">
+                                                                                FACTURADO
+                                                                            </span>
+                                                                        )}
+
+                                                                        {isDone ? (
+                                                                            <>
                                                                             {hasProof && (
                                                                                 <button
                                                                                     onClick={async (e) => {
@@ -2166,194 +2460,101 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                                                                                             await downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
                                                                                         }
                                                                                     }}
-                                                                                    className="p-0.5 rounded text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                                                                                    className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-[#051424] hover:bg-[#0b1326] text-[#00A896] border border-[#00A896]/50 opacity-90 group-hover/ob:opacity-100 scale-100 hover:scale-110 flex items-center justify-center shadow-[0_0_8px_rgba(0,168,150,0.4)]"
                                                                                     title="Descargar PDF"
                                                                                 >
-                                                                                    <LucideIcons.Download size={10} />
+                                                                                    <LucideIcons.Download size={10} strokeWidth={3} />
                                                                                 </button>
                                                                             )}
+                                                                            </>
+                                                                        ) : (
                                                                             <button
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
-                                                                                    if (onTogglePayment) onTogglePayment(client, p, ob.type as TaxObligationType, !isPaid);
+                                                                                    if (onTogglePriority) onTogglePriority(client, p, ob.type as any, !d?.isPriority);
                                                                                 }}
-                                                                                className={`px-1.5 py-0.2 rounded text-[8px] font-black uppercase transition-all ${
-                                                                                    isPaid
-                                                                                        ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40'
-                                                                                        : 'bg-white/10 text-slate-400 hover:text-white hover:bg-white/20'
+                                                                                className={`absolute -top-1.5 -right-1.5 rounded-full p-0.5 shadow-sm transition-all z-20 ${
+                                                                                    d?.isPriority 
+                                                                                        ? 'bg-amber-500 text-white shadow-amber-500/20 scale-100' 
+                                                                                        : 'bg-white/10 hover:bg-white/20 text-slate-400 border border-white/10 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110'
                                                                                 }`}
-                                                                                title={isPaid ? "Honorario Cobrado (Clic para desmarcar)" : "Honorario Pendiente (Clic para marcar cobrado)"}
+                                                                                title={d?.isPriority ? "Quitar Prioridad" : "Marcar como Prioridad"}
                                                                             >
-                                                                                {isPaid ? '$OK' : 'COB'}
+                                                                                <LucideIcons.Pin size={8} strokeWidth={4} className={d?.isPriority ? 'rotate-45' : ''} />
                                                                             </button>
-                                                                        </div>
+                                                                        )}
+                                                                        {!hasProof && isOverdue && (
+                                                                            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse border border-slate-900" />
+                                                                        )}
                                                                     </div>
                                                                 );
                                                             })}
-                                                            {obligations.length === 0 && <span className="text-slate-600 font-mono text-[9px]">—</span>}
+                                                            {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-white/10 my-6 mx-auto" />}
                                                         </div>
-                                                    ) : (
-                                                        /* 📑 MODO DETALLADO (Expanded Executive Cards) */
-                                                        <>
-                                                            <div className="flex flex-wrap justify-center gap-2 min-w-[70px]">
-                                                                {obligations.map(ob => {
-                                                                    const d = findDeclarationForOb(declarations, p, ob.type);
-                                                                    const hasProof = !!d?.proof_file;
-                                                                    const isDone = hasProof || d?.status === DeclarationStatus.Pagada || d?.status === DeclarationStatus.Enviada || !!d?.is_paid;
-                                                                    const isManualDone = false;
-                                                                    const isOverdue = isPast(getDueDateForPeriod(client, p) || new Date()) && !isDone;
-                                                                    const isTrulyInvoiced = !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
+                                                        {obligations.length > 0 && (() => {
+                                                            const allPaid = obligations.every(ob => {
+                                                                const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
+                                                            });
+                                                            const isCellTrulyInvoiced = obligations.some(ob => {
+                                                                const d = findDeclarationForOb(declarations, p, ob.type);
+                                                                return !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
+                                                            });
 
-                                                                    return (
-                                                                        <div 
-                                                                            key={`${p}-${ob.type}`}
-                                                                            className={`group/ob relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl cursor-pointer transition-all duration-300 border ${
-                                                                                isDone ? 'bg-gradient-to-br from-[#00A896]/30 to-teal-600/30 text-white border-[#00A896]/50 shadow-md shadow-[#00A896]/15 hover:scale-105 hover:border-[#00A896] hover:shadow-lg hover:shadow-[#00A896]/25 z-10' : 
-                                                                                isManualDone ? 'bg-gradient-to-br from-amber-400/20 to-amber-500/20 text-amber-300 border-amber-500/50 shadow-md shadow-amber-500/15 hover:scale-105 hover:shadow-lg z-10 animate-pulse' :
-                                                                                d?.isPriority ? 'bg-gradient-to-br from-orange-500/20 to-rose-500/20 text-orange-300 border-orange-500/50 shadow-md shadow-orange-500/15 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/25 z-10 animate-pulse' :
-                                                                                isOverdue ? 'bg-rose-500/15 text-rose-400 border-rose-500/30 hover:bg-rose-500/25 hover:scale-105' :
-                                                                                'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:border-white/20 hover:text-white hover:scale-105'
-                                                                            }`}
-                                                                            title={isDone ? `Ver Comprobante & Facturación de ${ob.label}` : isManualDone ? `Atención: Sin PDF de ${ob.label}. Haz click para subirlo.` : d?.isPriority ? `Prioridad Alta: Subir PDF para ${ob.label}` : `Subir PDF para ${ob.label}`}
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                if (hasProof) {
-                                                                                    setActiveCellModal({
-                                                                                        client,
-                                                                                        period: p,
-                                                                                        declaration: d!,
-                                                                                        obType: ob.type as any,
-                                                                                        realInvoice: findRealInvoice(client.ruc, d, p)
-                                                                                    });
-                                                                                } else {
-                                                                                    onUploadReceipt(client, p, ob.type as any);
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <span className={`text-[7px] font-black tracking-widest uppercase mb-0.5 font-mono ${isDone || isManualDone || d?.isPriority ? 'opacity-95 text-[#00A896]' : 'opacity-60'}`}>{ob.type}</span>
-                                                                            
-                                                                            {isDone ? (
-                                                                                <LucideIcons.ShieldCheck size={14} strokeWidth={3} className="text-[#00A896] drop-shadow-[0_0_6px_rgba(0,168,150,0.6)]" />
-                                                                            ) : isManualDone ? (
-                                                                                <LucideIcons.AlertTriangle size={14} strokeWidth={3} className="text-amber-400 drop-shadow-sm" />
-                                                                            ) : d?.isPriority ? (
-                                                                                <LucideIcons.Pin size={12} strokeWidth={2.5} className="text-orange-400 rotate-45" />
-                                                                            ) : isOverdue ? (
-                                                                                <LucideIcons.AlertCircle size={14} strokeWidth={2.5} className="text-rose-400" />
-                                                                            ) : (
-                                                                                <LucideIcons.Upload size={12} strokeWidth={2} className="opacity-40 group-hover/ob:opacity-100 group-hover/ob:scale-110 transition-all text-slate-300" />
-                                                                            )}
-
-                                                                            {isTrulyInvoiced && (
-                                                                                <span className="px-1 py-[1.5px] bg-[#020b14]/90 text-[#00A896] border border-[#00A896]/50 rounded text-[6px] font-black uppercase tracking-wider font-mono shadow-sm mt-0.5 leading-none">
-                                                                                    FACTURADO
+                                                            return (
+                                                                <div className="mt-1.5 flex justify-center">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            if (onTogglePayment) {
+                                                                                obligations.forEach(ob => {
+                                                                                    onTogglePayment(client, p, ob.type as any, !allPaid);
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        className={`w-full py-0.5 px-1.5 rounded-lg text-[7px] font-black uppercase tracking-wider font-mono transition-all flex items-center justify-center gap-1 border ${
+                                                                            allPaid
+                                                                                ? 'bg-gradient-to-r from-[#00A896] to-teal-600 text-white border-[#00A896]/40 shadow-sm'
+                                                                                : 'bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
+                                                                        }`}
+                                                                        title={allPaid ? "Marcar como Pendiente de Cobro" : "Marcar como Pagado (Honorario)"}
+                                                                    >
+                                                                        {allPaid && isCellTrulyInvoiced ? (
+                                                                            <>
+                                                                                <LucideIcons.ShieldCheck size={11} strokeWidth={2.5} className="text-blue-200" />
+                                                                                <span className="flex items-center gap-1">
+                                                                                    <span className="font-bold text-white">COBRADO</span>
+                                                                                    <span className="text-blue-200/80 font-bold">|</span>
+                                                                                    <span className="font-bold text-blue-100">FACTURADO</span>
                                                                                 </span>
-                                                                            )}
-
-                                                                            {isDone ? (
-                                                                                <>
-                                                                                {hasProof && (
-                                                                                    <button
-                                                                                        onClick={async (e) => {
-                                                                                            e.stopPropagation();
-                                                                                            if (d?.proof_file) {
-                                                                                                await downloadStoredFile(d.proof_file, `comprobante_${client.name}_${p}.pdf`);
-                                                                                            }
-                                                                                        }}
-                                                                                        className="absolute -bottom-1.5 -left-1.5 rounded-full p-1 shadow-md transition-all z-20 bg-[#051424] hover:bg-[#0b1326] text-[#00A896] border border-[#00A896]/50 opacity-90 group-hover/ob:opacity-100 scale-100 hover:scale-110 flex items-center justify-center shadow-[0_0_8px_rgba(0,168,150,0.4)]"
-                                                                                        title="Descargar PDF"
-                                                                                    >
-                                                                                        <LucideIcons.Download size={10} strokeWidth={3} />
-                                                                                    </button>
-                                                                                )}
-                                                                                </>
-                                                                            ) : (
-                                                                                <button
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        if (onTogglePriority) onTogglePriority(client, p, ob.type as any, !d?.isPriority);
-                                                                                    }}
-                                                                                    className={`absolute -top-1.5 -right-1.5 rounded-full p-0.5 shadow-sm transition-all z-20 ${
-                                                                                        d?.isPriority 
-                                                                                            ? 'bg-amber-500 text-white shadow-amber-500/20 scale-100' 
-                                                                                            : 'bg-white/10 hover:bg-white/20 text-slate-400 border border-white/10 opacity-0 group-hover/ob:opacity-100 scale-90 hover:scale-110'
-                                                                                    }`}
-                                                                                    title={d?.isPriority ? "Quitar Prioridad" : "Marcar como Prioridad"}
-                                                                                >
-                                                                                    <LucideIcons.Pin size={8} strokeWidth={4} className={d?.isPriority ? 'rotate-45' : ''} />
-                                                                                </button>
-                                                                            )}
-                                                                            {!hasProof && isOverdue && (
-                                                                                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse border border-slate-900" />
-                                                                            )}
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                                {obligations.length === 0 && <div className="w-1.5 h-1.5 rounded-full bg-white/10 my-6 mx-auto" />}
-                                                            </div>
-                                                            {obligations.length > 0 && (() => {
-                                                                const allPaid = obligations.every(ob => {
-                                                                    const d = findDeclarationForOb(declarations, p, ob.type);
-                                                                    return d?.status === DeclarationStatus.Pagada || !!d?.is_paid || client.isCourtesy;
-                                                                });
-                                                                const isCellTrulyInvoiced = obligations.some(ob => {
-                                                                    const d = findDeclarationForOb(declarations, p, ob.type);
-                                                                    return !!findRealInvoice(client.ruc, d, p) || !!(d as any)?.invoice_secuencial;
-                                                                });
-                                                                const obTypes = obligations.map(ob => ob.type);
-
-                                                                return (
-                                                                    <div className="mt-2 flex justify-center font-mono">
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                if (onTogglePayment) onTogglePayment(client, p, obTypes as any, !allPaid);
-                                                                            }}
-                                                                            className={`flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-xl text-[9px] font-bold uppercase tracking-wider border transition-all duration-300 active:scale-95 ${
-                                                                                allPaid && isCellTrulyInvoiced
-                                                                                    ? 'bg-gradient-to-r from-[#2B6AFF] via-indigo-600 to-[#2B6AFF] hover:from-blue-500 hover:to-indigo-500 text-white border-blue-400/50 shadow-md shadow-[#2B6AFF]/25'
-                                                                                    : allPaid
-                                                                                        ? 'bg-[#00A896]/20 hover:bg-[#00A896]/30 border-[#00A896]/40 text-[#00A896] shadow-sm'
-                                                                                        : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-white/10'
-                                                                            }`}
-                                                                        >
-                                                                            {allPaid && isCellTrulyInvoiced ? (
-                                                                                <>
-                                                                                    <LucideIcons.ShieldCheck size={11} strokeWidth={2.5} className="text-blue-200" />
-                                                                                    <span className="flex items-center gap-1">
-                                                                                        <span className="font-bold text-white">COBRADO</span>
-                                                                                        <span className="text-blue-200/80 font-bold">|</span>
-                                                                                        <span className="font-bold text-blue-100">FACTURADO</span>
-                                                                                    </span>
-                                                                                </>
-                                                                            ) : (
-                                                                                <>
-                                                                                    <LucideIcons.Coins size={11} strokeWidth={2.5} />
-                                                                                    <span>{allPaid ? 'COBRADO' : `COBRO COMPLETO`}</span>
-                                                                                </>
-                                                                            )}
-                                                                        </button>
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                        </>
-                                                    )}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                </React.Fragment>
-                            );
-                        })}
-                    </tbody>
-                </table>
-                {filteredClients.length === 0 && (
-                    <div className="py-20 text-center font-mono">
-                        <LucideIcons.Inbox size={32} className="mx-auto text-slate-600 mb-3" />
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No hay clientes para este criterio</p>
-                    </div>
-                )}
-            </div>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <LucideIcons.Coins size={11} strokeWidth={2.5} />
+                                                                                <span>{allPaid ? 'COBRADO' : `COBRO COMPLETO`}</span>
+                                                                            </>
+                                                                        )}
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                    {filteredClients.length === 0 && (
+                        <div className="py-20 text-center font-mono">
+                            <LucideIcons.Inbox size={32} className="mx-auto text-slate-600 mb-3" />
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No hay clientes para este criterio</p>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Legend (Stitch Obsidian Luxury) */}
             <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4 bg-[#051424]/90 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-xl no-print font-mono">
