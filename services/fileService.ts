@@ -84,6 +84,9 @@ export async function downloadStoredFile(file: StoredFile | null | undefined): P
       // Buckets privados: firmar la URL pública antes de descargar
       const resolvedUrl = await signPublicStorageUrl(fileToDownload.url);
       const response = await fetch(resolvedUrl);
+      if (!response.ok) {
+        throw new Error(`No se pudo descargar el archivo (HTTP ${response.status})`);
+      }
       const blob = await response.blob();
       downloadUrl = URL.createObjectURL(blob);
       isBlobCreated = true;

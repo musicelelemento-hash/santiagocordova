@@ -21,6 +21,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^3.3.1",
     "docxtemplater": "^3.69.3",
+    "dompurify": "^3.4.14",
     "file-saver": "^2.0.5",
     "firebase": "^12.10.0",
     "framer-motion": "^12.38.0",

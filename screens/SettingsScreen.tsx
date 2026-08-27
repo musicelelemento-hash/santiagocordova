@@ -418,7 +418,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigate }) => {
             try {
                 const extracted = await extractDataFromSriPdf(file);
                 if (extracted && extracted.ruc) {
-                    const exists = clients.some(c => c.ruc === extracted.ruc);
+                    const exists = clients.some(c => c.ruc === extracted.ruc) ||
+                        newlyCreatedClients.some(nc => nc.ruc === extracted.ruc);
                     if (!exists) {
                         let ivaFrequency: 'Mensual' | 'Semestral' | 'Ninguno' = 'Mensual';
                         const requiresAnnualRenta = true; // Por defecto casi todos hacen renta

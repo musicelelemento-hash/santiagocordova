@@ -111,17 +111,9 @@ export const analyzeClientPhoto = async (base64Data: string, mimeType: string): 
       };
     }
 
-    // MOCK FALLBACK
-    console.warn("Usando Mock de Datos (Falta API Key)");
-    return {
-      ruc: "1790085783001",
-      name: "EMPRESA DE PRUEBA S.A. (MOCK)",
-      regime: TaxRegime.General,
-      email: "facturacion@empresa.mock",
-      address: "Av. Amazonas y Naciones Unidas, Quito",
-      phones: ["0991234567"],
-      notes: "Obligaciones: Declaración de IVA MENSUAL."
-    };
+    // MOCK FALLBACK: NO devolver datos falsos de demostración — eso creaba clientes inventados.
+    // Mejor lanzar un error claro para que el usuario sepa que falta configurar la IA.
+    throw new Error("IA de análisis no configurada. Configura el proxy de Gemini (VITE_GEMINI_PROXY_URL) o VITE_GEMINI_API_KEY.");
 
   } catch (error) {
     console.error("Gemini Document Error:", error);

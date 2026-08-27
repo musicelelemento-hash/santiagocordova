@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Client, Task, Screen, DeclarationStatus, TaskStatus } from '../types';
-import { getDueDateForPeriod, formatPeriodForDisplay, safeFormat } from '../services/sri';
+import { getDueDateForPeriod, getNinthDigit, formatPeriodForDisplay, safeFormat } from '../services/sri';
 import {
   startOfMonth,
   endOfMonth,
@@ -70,7 +70,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
               title: formatPeriodForDisplay(dec.period),
               clientName: client.name,
               details: dec.status,
-              ninthDigit: parseInt(client.ruc[8] || '0')
+              ninthDigit: getNinthDigit(client.ruc)
             };
             if (!events.has(dateKey)) {
               events.set(dateKey, []);

@@ -234,12 +234,12 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
             const client = clients.find(c => c.id === uploadingTask.clientId);
             if (!client) throw new Error("Cliente no encontrado");
 
-            // Extract period from auto-decl-clientId-period ID
-            const parts = uploadingTask.id.split('-');
             // ID format: auto-decl-[clientId]-[period(can contain dashes)]
-            // A simpler way: we know the period from the task title OR we can just use data.period if it's reliable
-            // Since data.period comes from PDF, let's use it, but verify it matches the client's pending
-            const targetPeriod = data.period || uploadingTask.id.substring(uploadingTask.id.lastIndexOf('-') + 1); // rough fallback
+            // data.period viene del PDF (confiable). El fallback anterior con lastIndexOf('-')
+            // rompia el período "2026-07" -> solo dejaba "07". Extraemos el período con regex
+            // tomando el sufijo final del ID, que es el período de la declaración.
+            const periodMatch = uploadingTask.id.match(/(20\d{2}-S[12]|20\d{2}(?:-\d{2})?)(?::[A-Z]+)?$/i);
+            const targetPeriod = data.period || (periodMatch ? periodMatch[1] : '');
 
             const updatedHistory = [...(client.declarations || [])];
             const idx = updatedHistory.findIndex(d => d.period === data.period || d.period === targetPeriod);

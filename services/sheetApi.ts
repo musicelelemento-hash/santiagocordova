@@ -20,6 +20,22 @@ export const getBackendUrl = () => {
 };
 
 // --- SANITIZATION LAYER ---
+const REGIME_ALIASES: [RegExp, TaxRegime][] = [
+    [/general/i, TaxRegime.General],
+    [/rimpe\s*negocio|negocio\s*popular/i, TaxRegime.RimpeNegocioPopular],
+    [/rimpe\s*emprendedor|emprendedor/i, TaxRegime.RimpeEmprendedor],
+];
+
+const normalizeRegime = (value: any): TaxRegime => {
+    if (value == null) return TaxRegime.General;
+    if (Object.values(TaxRegime).includes(value)) return value as TaxRegime;
+    const str = String(value).trim();
+    for (const [re, regime] of REGIME_ALIASES) {
+        if (re.test(str)) return regime;
+    }
+    return TaxRegime.General;
+};
+
 const sanitizeClients = (rawClients: any[]): Client[] => {
     if (!Array.isArray(rawClients)) return [];
     return rawClients.map(c => ({
@@ -33,7 +49,7 @@ const sanitizeClients = (rawClients: any[]): Client[] => {
         economicActivity: c.economicActivity || '',
         phones: Array.isArray(c.phones) ? c.phones : [''],
         notes: c.notes || '',
-        regime: Object.values(TaxRegime).includes(c.regime) ? c.regime : TaxRegime.General,
+        regime: normalizeRegime(c.regime),
         declarations: Array.isArray(c.declarations) ? c.declarations : [],
         taxProfile: c.taxProfile || {
             ivaFrequency: 'Mensual',

@@ -173,12 +173,13 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
   const [emisorPtoEmi, setEmisorPtoEmi] = useState(() => localStorage.getItem('sc_emisor_pto') || '001');
   const [emisorRegimen, setEmisorRegimen] = useState(() => {
     const stored = localStorage.getItem('sc_emisor_regimen');
-    if (!stored || stored === '0' || stored === '1') {
-      localStorage.setItem('sc_emisor_regimen', '3');
-      return '3';
-    }
-    return stored;
-  }); // 0 = General, 3 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
+    // Catálogo: 0 = General, 3 = RIMPE Negocio Popular, 2 = RIMPE Emprendedor
+    // Fix: antes se migraba silenciosamente '0' (General, IVA 15%) a '3'
+    // (RIMPE Negocio Popular, IVA 0%), cambiando el IVA de TODAS las facturas
+    // sin aviso. Ahora solo se asigna el default si no hay valor previo válido.
+    if (stored === '2' || stored === '3') return stored;
+    return '0'; // General (valor por defecto seguro, IVA 15%)
+  });
   const [ambiente, setAmbienteState] = useState<'1' | '2'>(() => (localStorage.getItem('sc_emisor_ambiente') as '1' | '2') || '2'); // Default a 2 (ProducciÃ³n) si el usuario ya estÃ¡ facturando
 
   const setAmbiente = (newAmbiente: '1' | '2') => {
@@ -1022,6 +1023,23 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
         }
         return item;
       }));
+    } else {
+      // Al volver a Régimen General, restaurar el IVA 15% en los items que
+      // quedaron forzados a 0% por el régimen anterior.
+      setInvoiceItems(prev => prev.map(item => {
+        if (item.ivaRate === 0.00 && item.iva === 0.00) {
+          const sub = item.cantidad * item.precioUnitario;
+          const iva = sub * 0.15;
+          return {
+            ...item,
+            ivaRate: 0.15,
+            subtotal: Number(sub.toFixed(2)),
+            iva: Number(iva.toFixed(2)),
+            total: Number((sub + iva).toFixed(2))
+          };
+        }
+        return item;
+      }));
     }
   }, [emisorRegimen]);
 
@@ -1365,6 +1383,15 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
     setCurrentStep(1);
 
     const isMock = connectionStatus !== 'connected';
+
+    // SEGURIDAD LEGAL: si el backend de facturación (SRI) no está conectado,
+    // bloqueamos la emisión. Antes, el modo simulación registraba el comprobante
+    // como "Autorizado" y marcaba las obligaciones como pagadas sin haber emitido
+    // nada real al SRI, generando comprobantes inválidos y deuda mal conciliada.
+    if (isMock) {
+      addLog('BLOQUEADO: El backend de facturación (SRI) no está conectado. No se puede generar un comprobante válido.', 'error');
+      throw new Error('No se puede emitir el comprobante: el sistema de facturación (backend SRI) no está conectado. Revise VITE_FACTURACION_API_URL y la conexión a la API, luego reintente.');
+    }
     
     addLog(`Iniciando proceso de emisiÃ³n de ${docType === 'factura' ? 'Factura' : 'RetenciÃ³n'}...`);
     addLog(`Ambiente: ${ambiente === '1' ? '1 (PRUEBAS)' : '2 (PRODUCCIÃ“N)'}. Modo: ${isMock ? 'SIMULACIÃ“N DEMO' : 'API LARAVEL CONECTADA'}`);
@@ -2105,7 +2132,12 @@ export const FacturacionSriScreen: React.FC<FacturacionSriScreenProps> = ({
       (comprobante as any).period
     );
 
-    let regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">CONTRIBUYENTE NEGOCIO POPULAR - RÃ‰GIMEN RIMPE</div>';
+    const regimeLabels: Record<string, string> = {
+      '0': 'CONTRIBUYENTE RÉGIMEN GENERAL',
+      '2': 'CONTRIBUYENTE RÉGIMEN RIMPE - EMPRENDEDOR',
+      '3': 'CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE',
+    };
+    const regimeLabel = '<div style="font-size: 8.5px; font-weight: 800; color: #1e293b; text-transform: uppercase; margin-top: 6px; padding: 4px 8px; background: #f1f5f9; border-left: 3px solid #04b17b; border-radius: 4px; display: inline-block;">' + (regimeLabels[emisorRegimen] || 'CONTRIBUYENTE RÉGIMEN GENERAL') + '</div>';
 
     const logoHtml = emisorLogo 
       ? "<img src='" + emisorLogo + "' class='logo-img' alt='Logo Emisor' />" 

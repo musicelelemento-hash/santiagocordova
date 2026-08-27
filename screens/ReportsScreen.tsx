@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Screen, DeclarationStatus, TaskStatus, AnalysisType, TaxRegime, Client, Task, ServiceFeesConfig, FinancialItem } from '../types';
 import { getClientServiceFee } from '../services/clientService';
 import { runStrategicAnalysis } from '../services/geminiService';
+import DOMPurify from 'dompurify';
 import {
     Loader, AlertTriangle, TrendingUp, BarChart,
     DollarSign, Clock, Zap, Activity, Users, Shield,
@@ -157,9 +158,10 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
 
             clients.forEach(c => {
                 (c.declarations ?? []).forEach(d => {
-                    if (d.status === DeclarationStatus.Pagada && d.paidAt) {
-                        if (isSameMonth(parseISO(d.paidAt), monthDate)) {
-                            monthIncome += (d.amount || getClientServiceFee(c, serviceFees, d.period));
+                    if (d.status === DeclarationStatus.Pagada) {
+                        const dateToCheck = d.paidAt || d.updatedAt;
+                        if (isSameMonth(parseISO(dateToCheck), monthDate)) {
+                            monthIncome += (d.amount ?? getClientServiceFee(c, serviceFees, d.period));
                         }
                     }
                 });
@@ -507,7 +509,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
                         )}
                         {analysisResult && (
                             <div className="prose prose-sm prose-invert max-w-none">
-                                <div className="p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm text-xs leading-relaxed text-slate-300 font-sans" dangerouslySetInnerHTML={{ __html: analysisResult }} />
+                                <div className="p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm text-xs leading-relaxed text-slate-300 font-sans" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(analysisResult, { USE_PROFILES: { html: true } }) }} />
                                 <div className="mt-6 flex justify-end">
                                     <button 
                                         onClick={() => setIsAnalysisModalOpen(false)}

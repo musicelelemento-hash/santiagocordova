@@ -8,6 +8,7 @@ import {
     Activity, ArrowRight
 } from 'lucide-react';
 import { safeFormat, getWhatsAppUrl } from '../services/sri';
+import { addDays } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppStore } from '../store/useAppStore';
 
@@ -36,7 +37,7 @@ export const WebOrdersScreen: React.FC<WebOrdersScreenProps> = ({ navigate }) =>
             id: uuidv4(),
             title: `Pedido Web: ${order.clientName}`,
             description: description,
-            dueDate: new Date().toISOString(),
+            dueDate: addDays(new Date(), 3).toISOString(),
             status: TaskStatus.Pendiente,
             cost: order.total,
             advancePayment: 0,
