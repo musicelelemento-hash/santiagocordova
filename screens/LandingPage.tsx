@@ -15,6 +15,7 @@ import { useAppStore } from '../store/useAppStore';
 import { validarIdentificacionEcuatoriana } from '../utils/sriCalculators';
 import { Scroll3DCanvas } from '../components/3d/Scroll3DCanvas';
 import { TaxShieldHero3D } from '../components/3d/TaxShieldHero3D';
+import { CinematicIntro } from '../components/hero/CinematicIntro';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
 
 interface LandingPageProps {
@@ -264,7 +265,7 @@ const PROVINCES_MAP: Record<string, string> = {
 export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavigateToServices, theme = 'dark', toggleTheme }) => {
     useSmoothScroll();
     const [scrolled, setScrolled] = useState(false);
-    const [activeSection, setActiveSection] = useState<'top' | 'fases' | 'simulador' | 'multas-sri' | 'calendario-ruc' | 'servicios' | 'faq'>('top');
+    const [activeSection, setActiveSection] = useState<'top' | 'blindaje' | 'fases' | 'simulador' | 'multas-sri' | 'calendario-ruc' | 'servicios' | 'faq'>('top');
     const [scrollProgress, setScrollProgress] = useState(0);
     const [showBiometric, setShowBiometric] = useState(false);
     const [isAssistantOpen, setIsAssistantOpen] = useState(false);
@@ -351,8 +352,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
         let isScrolledVal = false;
         let ticking = false;
 
-        const sections: { id: 'top' | 'fases' | 'simulador' | 'multas-sri' | 'calendario-ruc' | 'servicios' | 'faq'; el: HTMLElement | null }[] = [
+        const sections: { id: 'top' | 'blindaje' | 'fases' | 'simulador' | 'multas-sri' | 'calendario-ruc' | 'servicios' | 'faq'; el: HTMLElement | null }[] = [
             { id: 'top', el: document.getElementById('top') },
+            { id: 'blindaje', el: document.getElementById('blindaje') },
             { id: 'fases', el: document.getElementById('fases') },
             { id: 'simulador', el: document.getElementById('simulador') },
             { id: 'multas-sri', el: document.getElementById('multas-sri') },
@@ -786,6 +788,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <div className="hidden lg:flex items-center gap-1 bg-black/20 rounded-full p-1 border border-white/5 font-sans relative">
                         {[
                             { label: 'Inicio', target: 'top' },
+                            { label: 'Blindaje', target: 'blindaje' },
                             { label: '4 Fases', target: 'fases' },
                             { label: 'Simulador RIMPE', target: 'simulador' },
                             { label: 'Calculadora Multas', target: 'multas-sri' },
@@ -892,9 +895,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
             </div>
 
             {/* ════════════════════════════════════════════════════════════════
-                HERO PRINCIPAL DE ÉLITE — ALTA DENSIDAD VISUAL & 3D INTERACTIVO
+                APERTURA CINEMATOGRÁFICA (Scroll-Pinned) — Problema → Solución → Marca
             ════════════════════════════════════════════════════════════════ */}
-            <section id="top" className={`relative min-h-[92vh] flex items-center justify-center overflow-hidden pt-28 pb-16 md:pt-32 md:pb-20 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-gradient-to-b from-white via-slate-50 to-slate-100'}`}>
+            <CinematicIntro theme={theme} phoneNumber={phoneNumber} scrollToSection={scrollToSection} />
+
+            {/* ════════════════════════════════════════════════════════════════
+                HERÓE 3D BLINDAJE — ALTA DENSIDAD VISUAL & 3D INTERACTIVO
+            ════════════════════════════════════════════════════════════════ */}
+            <section id="blindaje" className={`relative min-h-[92vh] flex items-center justify-center overflow-hidden pt-28 pb-16 md:pt-32 md:pb-20 ${theme === 'dark' ? 'bg-[#051424]' : 'bg-gradient-to-b from-white via-slate-50 to-slate-100'}`}>
                 {/* Fondo 3D ambiental reactivo */}
                 <div className="absolute inset-0 pointer-events-none z-0 opacity-40">
                     <Scroll3DCanvas scrollProgress={scrollProgress / 100} theme={theme} />
