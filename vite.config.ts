@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      chunkSizeWarningLimit: 1200,
+      chunkSizeWarningLimit: 1500,
       rollupOptions: {
         output: {
           // Nombres con hash de contenido (cacheable) en lugar de Date.now()

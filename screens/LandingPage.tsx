@@ -8,7 +8,7 @@ import {
     Search, Shield, ShieldAlert, ShieldCheck, Sparkles, Star, Store, Sun,
     TrendingUp, User, UserCheck, Users, X, Zap
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useInView, useScroll, useTransform } from 'framer-motion';
 import { Logo } from '../components/ui/Logo';
 import { PublicUser } from '../types';
 import { useAppStore } from '../store/useAppStore';
@@ -151,6 +151,43 @@ const Reveal = ({ children, className = "", delay = 0, yOffset = 20 }: { childre
             }}
             className={className}
         >
+            {children}
+        </motion.div>
+    );
+};
+
+// ─── COUNT-UP ANIMATED NUMBER (empieza a contar al entrar en pantalla) ──────
+const CountUp = ({ to, prefix = "", suffix = "", duration = 1900 }: {
+    to: number; prefix?: string; suffix?: string; duration?: number;
+}) => {
+    const ref = React.useRef<HTMLSpanElement>(null);
+    const inView = useInView(ref, { once: true, margin: "-40px" });
+    const [val, setVal] = React.useState(0);
+    React.useEffect(() => {
+        if (!inView) return;
+        let raf = 0;
+        const start = performance.now();
+        const tick = (now: number) => {
+            const p = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            setVal(Math.round(eased * to));
+            if (p < 1) raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf);
+    }, [inView, to, duration]);
+    return <span ref={ref}>{prefix}{val.toLocaleString('es-EC')}{suffix}</span>;
+};
+
+// ─── SUBTLE PARALLAX (bloques se mueven a velocidad distinta del scroll) ─────
+const Parallax = ({ children, className = "", strength = 28 }: {
+    children: React.ReactNode; className?: string; strength?: number;
+}) => {
+    const ref = React.useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+    const y = useTransform(scrollYProgress, [0, 1], [strength, -strength]);
+    return (
+        <motion.div ref={ref} style={{ y }} className={className}>
             {children}
         </motion.div>
     );
@@ -932,8 +969,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             {/* Main Title & Editorial Positioning */}
                             <Reveal delay={80}>
                                 <div className="space-y-2">
-                                    <h1 className="font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl tracking-tight text-white leading-[1.05]">
-                                        SANTIAGO <span className="text-gradient-gold">CÓRDOVA</span>
+                                    <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-7xl tracking-tight leading-[0.95] liquid-gold-text">
+                                        SANTIAGO CÓRDOVA
                                     </h1>
                                     <div className="text-lg sm:text-xl font-bold font-display text-[#4edea3] flex items-center gap-2">
                                         <span>Soluciones Tributarias PRO</span>
@@ -1180,6 +1217,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         {/* Connecting Trace Beam for Desktop */}
                         <div className="hidden lg:block absolute top-1/2 left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-[#00A896]/40 to-transparent -translate-y-12 z-0 pointer-events-none" />
 
+                        <Parallax strength={22}>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
                             {[
                                 {
@@ -1234,6 +1272,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                                 </Reveal>
                             ))}
                         </div>
+                        </Parallax>
                     </div>
                 </div>
             </section>
@@ -1606,7 +1645,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
                         {eliteServices.map((service, idx) => (
                             <Reveal key={service.id} delay={idx * 60}>
-                                <SpotlightCard theme={theme} className="p-8 h-full flex flex-col justify-between group">
+                                <SpotlightCard theme={theme} className="p-8 h-full flex flex-col justify-between group service-card-shine">
                                     <div>
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="w-12 h-12 rounded-2xl bg-[#00A896]/15 border border-[#00A896]/30 flex items-center justify-center text-[#00A896] group-hover:scale-110 transition-transform">
@@ -1712,7 +1751,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
 
                         {/* Soluciones Tributarias PRO Box */}
                         <Reveal delay={200}>
-                            <SpotlightCard theme={theme} className="p-8 border-[#00A896]/40 h-full space-y-6">
+                            <SpotlightCard theme={theme} className="p-8 border-[#00A896]/40 h-full space-y-6 service-card-shine">
                                 <div className="flex items-center gap-3 text-[#00A896]">
                                     <ShieldCheck size={24} />
                                     <h3 className={`text-xl font-bold font-display ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Soluciones Tributarias PRO</h3>
@@ -1775,6 +1814,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                         ))}
                     </div>
 
+                    <Parallax strength={30}>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
                         {filteredTestimonials.map((t, idx) => (
                             <Reveal key={t.name} delay={idx * 80}>
@@ -1810,6 +1850,45 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAdminAccess, onNavig
                             </Reveal>
                         ))}
                     </div>
+                    </Parallax>
+                </div>
+            </section>
+
+            {/* ════════════════════════════════════════════════════════════════
+                MÉTRICAS DE CONFIANZA (CONTADORES ANIMADOS)
+            ════════════════════════════════════════════════════════════════ */}
+            <section className={`py-16 relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#0b1326]' : 'bg-white'}`}>
+                <div className="max-w-6xl mx-auto px-6">
+                    <Parallax strength={16}>
+                        <div className={`grid grid-cols-2 md:grid-cols-4 gap-8 text-center rounded-[2rem] px-6 sm:px-8 py-10 border ${
+                            theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'
+                        }`}>
+                            <div>
+                                <div className={`font-mono text-4xl md:text-5xl font-extrabold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                    <CountUp to={15} suffix="+" />
+                                </div>
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono mt-2">Años de Experiencia</div>
+                            </div>
+                            <div>
+                                <div className={`font-mono text-4xl md:text-5xl font-extrabold ${theme === 'dark' ? 'text-[#00A896]' : 'text-[#00A896]'}`}>
+                                    <CountUp to={500} suffix="+" />
+                                </div>
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono mt-2">Empresas Blindadas</div>
+                            </div>
+                            <div>
+                                <div className={`font-mono text-4xl md:text-5xl font-extrabold ${theme === 'dark' ? 'text-[#C9A96E]' : 'text-[#B8860B]'}`}>
+                                    <CountUp to={100} suffix="%" />
+                                </div>
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono mt-2">Cero Multas SRI</div>
+                            </div>
+                            <div>
+                                <div className={`font-mono text-4xl md:text-5xl font-extrabold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                                    <CountUp to={98} suffix="%" />
+                                </div>
+                                <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono mt-2">Clientes Satisfechos</div>
+                            </div>
+                        </div>
+                    </Parallax>
                 </div>
             </section>
 

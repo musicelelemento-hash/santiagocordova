@@ -103,21 +103,23 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ theme = 'dark', 
         <div
             id="top"
             ref={rootRef}
-            className={`relative h-screen w-full overflow-hidden ${theme === 'dark' ? 'bg-[#020617]' : 'bg-[#0b1326]'}`}
+            className={`relative h-screen w-full overflow-hidden ${theme === 'dark' ? 'bg-[#020617]' : 'bg-[#eef2f7]'}`}
         >
             {/* Fondo generativo GLSL — muta de color con la narrativa del scroll, sin figuras 3D protagonistas */}
             <ShaderBackdrop progressRef={shaderProgressRef} />
-            <div className="absolute inset-0 tactical-grid opacity-40" />
+            <div className={`absolute inset-0 tactical-grid ${theme === 'dark' ? 'opacity-40' : 'opacity-20'}`} />
+            {/* En modo claro, suaviza el fondo GLSL para mantener legibilidad */}
+            {theme !== 'dark' && <div className="absolute inset-0 bg-white/70" />}
 
             {/* Escena 1 — El Problema */}
             <div ref={scene1Ref} className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
                 <span className="io-sub text-[11px] font-bold text-red-400/80 uppercase tracking-[0.35em] font-mono mb-5">
                     Cada mes, en Ecuador
                 </span>
-                <h1 ref={h1Ref} className="font-display font-extrabold leading-[0.95] text-[clamp(2.3rem,7.5vw,6rem)] text-white max-w-5xl">
+                <h1 ref={h1Ref} className={`font-display font-extrabold leading-[0.95] text-[clamp(2.3rem,7.5vw,6rem)] max-w-5xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                     UN ERROR EN EL SRI CUESTA CARO
                 </h1>
-                <p className="io-sub mt-6 text-base md:text-xl text-slate-400 max-w-xl font-light">
+                <p className={`io-sub mt-6 text-base md:text-xl max-w-xl font-light ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                     Un casillero mal declarado. Una fecha vencida. Una notificación que nadie quiere recibir.
                 </p>
             </div>
@@ -127,10 +129,10 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ theme = 'dark', 
                 <span className="io-sub text-[11px] font-bold text-[#00A896] uppercase tracking-[0.35em] font-mono mb-5">
                     Ingeniería tributaria de precisión
                 </span>
-                <h1 ref={h2Ref} className="font-display font-extrabold leading-[0.95] text-[clamp(2.3rem,7.5vw,6rem)] text-[#00A896] max-w-5xl">
+                <h1 ref={h2Ref} className={`font-display font-extrabold leading-[0.95] text-[clamp(2.3rem,7.5vw,6rem)] max-w-5xl text-[#00A896]`}>
                     NOSOTROS BLINDAMOS TU EMPRESA
                 </h1>
-                <p className="io-sub mt-6 text-base md:text-xl text-slate-400 max-w-xl font-light">
+                <p className={`io-sub mt-6 text-base md:text-xl max-w-xl font-light ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                     Automatización algorítmica + revisión humana experta. Cero errores en los casilleros 615 y 617.
                 </p>
             </div>
@@ -143,24 +145,24 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ theme = 'dark', 
                 <h1 ref={h3Ref} className="font-display font-extrabold leading-[0.95] text-[clamp(2.6rem,9vw,7rem)] text-[#C9A96E] max-w-5xl">
                     SANTIAGO CÓRDOVA
                 </h1>
-                <p className="io-sub mt-5 text-base md:text-xl text-slate-300 max-w-xl font-light">
+                <p className={`io-sub mt-5 text-base md:text-xl max-w-xl font-light ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                     Tu tranquilidad fiscal, nuestro compromiso de élite.
                 </p>
 
                 <div className="io-sub flex items-center gap-8 md:gap-14 mt-9">
                     <div className="text-center">
-                        <div className="font-mono font-extrabold text-2xl md:text-4xl text-white"><span ref={yearsRef}>0+</span></div>
-                        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono mt-1">Años</div>
+                        <div className={`font-mono font-extrabold text-2xl md:text-4xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}><span ref={yearsRef}>0+</span></div>
+                        <div className={`text-[10px] uppercase tracking-widest font-mono mt-1 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'}`}>Años</div>
                     </div>
-                    <div className="w-px h-8 bg-white/10" />
+                    <div className={`w-px h-8 ${theme === 'dark' ? 'bg-white/10' : 'bg-slate-300'}`} />
                     <div className="text-center">
-                        <div className="font-mono font-extrabold text-2xl md:text-4xl text-white"><span ref={clientsRef}>0+</span></div>
-                        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono mt-1">Empresas</div>
+                        <div className={`font-mono font-extrabold text-2xl md:text-4xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}><span ref={clientsRef}>0+</span></div>
+                        <div className={`text-[10px] uppercase tracking-widest font-mono mt-1 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'}`}>Empresas</div>
                     </div>
-                    <div className="w-px h-8 bg-white/10" />
+                    <div className={`w-px h-8 ${theme === 'dark' ? 'bg-white/10' : 'bg-slate-300'}`} />
                     <div className="text-center">
-                        <div className="font-mono font-extrabold text-2xl md:text-4xl text-white">100%</div>
-                        <div className="text-[10px] uppercase tracking-widest text-slate-500 font-mono mt-1">Cero Multas</div>
+                        <div className={`font-mono font-extrabold text-2xl md:text-4xl ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>100%</div>
+                        <div className={`text-[10px] uppercase tracking-widest font-mono mt-1 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'}`}>Cero Multas</div>
                     </div>
                 </div>
 
@@ -177,7 +179,11 @@ export const CinematicIntro: React.FC<CinematicIntroProps> = ({ theme = 'dark', 
                         href={`https://wa.me/${phoneNumber}?text=Hola%20Santiago%20C%C3%B3rdova,%20quisiera%20agendar%20una%20consulta%20tributaria%20gratuita.`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="h-14 px-7 rounded-2xl border border-white/10 hover:border-[#00A896]/40 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 flex items-center justify-center gap-3 transition-all active:scale-95 font-mono text-xs font-bold uppercase tracking-widest"
+                        className={`h-14 px-7 rounded-2xl border flex items-center justify-center gap-3 transition-all active:scale-95 font-mono text-xs font-bold uppercase tracking-widest ${
+                            theme === 'dark'
+                                ? 'border-white/10 hover:border-[#00A896]/40 text-slate-300 hover:text-white bg-white/5 hover:bg-white/10'
+                                : 'border-slate-300 bg-white text-slate-700 hover:text-slate-900 hover:border-[#00A896] hover:bg-slate-50'
+                        }`}
                     >
                         <MessageCircle size={16} />
                         WhatsApp VIP
