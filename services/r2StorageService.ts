@@ -28,7 +28,7 @@ function getR2Config(): R2Config | null {
         accessKeyId,
         secretAccessKey,
         bucketName,
-        publicUrl: publicUrl || `https://${bucketName}.${accountId}.r2.cloudflarestorage.com`
+        publicUrl: publicUrl || `https://${accountId}.r2.cloudflarestorage.com/${bucketName}`
     };
 }
 

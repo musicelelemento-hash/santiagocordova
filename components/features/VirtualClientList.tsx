@@ -8,7 +8,7 @@ interface VirtualClientListProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
+    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
     onUploadReceipt?: (client: Client, period?: string) => void;
     onPreview?: (client: Client, declaration: Declaration) => void;
     variant?: 'tactical' | 'zen';
@@ -24,7 +24,7 @@ interface ClientRowProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
+    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
     onUploadReceipt?: (client: Client, period?: string) => void;
     onPreview?: (client: Client, declaration: Declaration) => void;
     variant?: 'tactical' | 'zen';
@@ -39,8 +39,8 @@ const ClientRow = memo(({ index, style, clients, serviceFees, onView, onQuickAct
 
     const itemStyle = {
         ...style,
-        top: (style.top as number) + 12,
-        height: (style.height as number) - 24,
+        top: (style?.top as number) + 12,
+        height: (style?.height as number) - 24,
         paddingLeft: '1.5rem',
         paddingRight: '1.5rem',
     };

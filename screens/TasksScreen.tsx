@@ -120,7 +120,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
         const today = new Date();
 
         clients.filter(c => !c.isDeleted && (!taskFilter?.clientId || c.id === taskFilter.clientId)).forEach(client => {
-            client.declarations.forEach(decl => {
+            (client.declarations ?? []).forEach(decl => {
                 if (decl.is_paid && !decl.proof_file) {
                     const dueDate = getDueDateForPeriod(client, decl.period);
                     autoTasks.push({
@@ -159,7 +159,7 @@ export const TasksScreen: React.FC<TasksScreenProps> = ({ navigate, taskFilter, 
         const today = new Date();
         const autoCount = clients.reduce((acc, client) => {
             if (client.isDeleted) return acc;
-            const pendingCount = client.declarations.filter(d => d.is_paid && !d.proof_file).length;
+            const pendingCount = (client.declarations ?? []).filter(d => d.is_paid && !d.proof_file).length;
             return acc + pendingCount;
         }, 0);
         const urgentCount = tasks.filter(t => {

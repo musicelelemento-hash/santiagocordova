@@ -396,7 +396,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ clients: newClients });
 
     // SYNC
-    db.updateRecord('sc_pro_clients', newClient.id, newClient);
+    db.updateRecord('sc_pro_clients', newClient.id, newClient)
+      .catch(e => console.error("Cloud sync failed for new client:", e));
     db.setLocal('clients', newClients);
 
     get().addAuditLog({
@@ -734,7 +735,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             ...incomingClient,
             id: existingClient.id, // Mantener ID original
             declarations: mergedHistory,
-            vault: existingClient.vault?.length > 0 ? existingClient.vault : incomingClient.vault,
+            vault: (existingClient.vault ?? []).length > 0 ? existingClient.vault : incomingClient.vault,
             signatureFile: existingClient.signatureFile || incomingClient.signatureFile,
             rucPdf: existingClient.rucPdf || incomingClient.rucPdf,
             rucCertificate: existingClient.rucCertificate || incomingClient.rucCertificate,
@@ -884,7 +885,7 @@ export const useAppStore = create<AppState>((set, get) => ({
               return {
                 ...cloudClient,
                 declarations: Array.from(declMap.values()),
-                vault: localMatch.vault?.length > 0 && (!cloudClient.vault || cloudClient.vault.length === 0) 
+                vault: (localMatch.vault ?? []).length > 0 && (!cloudClient.vault || cloudClient.vault.length === 0) 
                   ? localMatch.vault 
                   : (cloudClient.vault || localMatch.vault || [])
               };
@@ -892,14 +893,22 @@ export const useAppStore = create<AppState>((set, get) => ({
 
             // Solo actualizar si la nube tiene datos o para refrescar
             if (protectedClients.length >= currentClients.length || currentClients.length === 0) {
+              // MERGE de tasks: combinar la nube con las locales, priorizando las más recientes,
+              // para no perder tasks recién creadas localmente que aún no se sincronizaron
+              const localTasks = get().tasks || [];
+              const cloudTaskMap = new Map<string, Task>();
+              (cloudTasks || []).forEach((t: Task) => { if (t && t.id) cloudTaskMap.set(t.id, t); });
+              localTasks.forEach(t => { if (t && t.id && !cloudTaskMap.has(t.id)) cloudTaskMap.set(t.id, t); });
+              const mergedTasks = Array.from(cloudTaskMap.values());
+
               set({ 
                 clients: protectedClients, 
                 auditLogs: cloudAuditLogs || [],
-                ...(cloudTasks && cloudTasks.length > 0 ? { tasks: cloudTasks } : {})
+                ...(mergedTasks.length > 0 ? { tasks: mergedTasks } : {})
               });
               db.setLocal('clients', protectedClients);
               sendFullClientsMatrixToExtension(protectedClients);
-              if (cloudTasks && cloudTasks.length > 0) db.setLocal('tasks', cloudTasks);
+              if (mergedTasks.length > 0) db.setLocal('tasks', mergedTasks);
               console.log(`☁️ Fase 2 (Nube): ${protectedClients.length} clientes protegidos y sincronizados en ${(performance.now() - t1).toFixed(0)}ms`);
             } else {
               set({ auditLogs: cloudAuditLogs || [] });

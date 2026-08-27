@@ -49,6 +49,24 @@ Para que la sincronización en la nube funcione, debes configurar el script de G
 6. Quién tiene acceso: **Cualquiera** (Importante para que la App pueda conectarse).
 7. Copia la URL generada y pégala en los Ajustes de la App.
 
+## 🔐 IA (Gemini) — No exponer la API key en el bundle
+
+La app usa Gemini (asistente, análisis de RUC, resúmenes). Para producción se
+recomienda usar el **proxy serverless** incluido, que guarda la key como secreto:
+
+1. Instala la [Supabase CLI](https://supabase.com/docs/guides/cli).
+2. Desde la raíz del proyecto: `supabase login` y `supabase link --project-ref <TU_PROJECT_REF>`.
+3. `supabase secrets set GEMINI_API_KEY=<tu_key>`
+4. `supabase functions deploy gemini-proxy --no-verify-jwt`
+5. En el frontend define `VITE_GEMINI_PROXY_URL=https://<ref>.supabase.co/functions/v1/gemini-proxy`
+   y **no** definas `VITE_GEMINI_API_KEY` en el build de producción.
+6. (Opcional) `supabase secrets set GEMINI_PROXY_ACCESS_KEY=<token>` y en el frontend
+   `VITE_GEMINI_PROXY_ACCESS_KEY=<token>` para proteger el endpoint.
+
+Si no configuras el proxy, la app cae en modo legado con `VITE_GEMINI_API_KEY`
+(solo para desarrollo local). Ver `SECURITY.md` para el endurecimiento de RLS
+(`database/fix_sri_vault_rls.sql` y `database/harden_clients_rls.sql`).
+
 ## 📦 Despliegue en Vercel
 
 1. Importa este repositorio en Vercel.

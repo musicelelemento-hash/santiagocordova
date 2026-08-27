@@ -848,7 +848,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
         const name = client.name.split(' ')[0];
         const formattedPeriod = formatPeriodForDisplay(period);
         const message = `${greeting} ${name} 👋. Le saludo de SantiagoCordova.com. Le informo que su obligación de ${type} correspondiente a ${formattedPeriod} ya ha sido procesada con éxito en el SRI.\n\nEl valor total de honorarios es de $${fee.toFixed(2)}. Puede realizar el pago por transferencia o depósito.\n\n¡Muchas gracias!`;
-        window.open(getWhatsAppUrl(client.phones[0], message), "_blank");
+        window.open(getWhatsAppUrl(client.phones?.[0] ?? '', message), "_blank");
     };
 
     const renderProfileTab = () => (
@@ -857,7 +857,7 @@ export const ClientDetailView: React.FC<ClientDetailViewProps> = memo(({ client,
             editedClient={editedClient}
             setEditedClient={setEditedClient}
             isEditing={isEditing}
-            isFullyAlDia={isFullyAlDia}
+            isFullyAlDia={isFullyAlDia ?? false}
             complianceStats={complianceStats}
             serviceFees={serviceFees}
             setConfirmation={setConfirmation}

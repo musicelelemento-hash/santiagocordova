@@ -13,6 +13,7 @@ import { Client, DeclarationStatus, StoredFile, TaxObligationType, TaxRegime, De
 import { useToast } from '../../context/ToastContext';
 import { arePeriodsEqual } from './TaxComplianceMatrix';
 import { formatPeriodForDisplay } from '../../services/sri';
+import { signPublicStorageUrl } from '../../services/fileService';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface UploadItemResult {
@@ -866,9 +867,13 @@ export const GlobalUploadModal: React.FC<GlobalUploadModalProps> = ({ isOpen, on
 
                                             {res.proof_file?.url && (
                                                 <a
-                                                    href={res.proof_file.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        signPublicStorageUrl(res.proof_file!.url!).then((u) => {
+                                                            window.open(u, '_blank', 'noopener');
+                                                        });
+                                                    }}
                                                     className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all cursor-pointer"
                                                     title="Abrir PDF en la nube"
                                                 >

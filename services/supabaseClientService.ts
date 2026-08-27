@@ -22,10 +22,6 @@ export const SupabaseService = {
 
   async upsertClient(client: Client): Promise<void> {
     const mappedClient = this.mapClientToDb(client);
-    
-    // Diagnostic: Log size of the payload for PDF debugging
-    const payloadSize = JSON.stringify(mappedClient).length;
-    console.log(`[Supabase] Upserting client ${client.ruc}. Payload size: ${(payloadSize / 1024).toFixed(2)} KB`);
 
     const { error } = await supabase
       .from('clients')
@@ -270,8 +266,29 @@ export const SupabaseService = {
   async getFacturadoresPaginated(page: number, limit: number, search: string, filterCategory: string): Promise<{clients: Client[], count: number}> {
     let query = supabase
       .from('clients')
-      .select('*, billing_plans(*)', { count: 'exact' })
+      .select('*, billing_plans(*), sri_declaraciones(*)', { count: 'exact' })
       .eq('is_deleted', false);
+
+    // Aplicar el filtro de categoría a nivel SQL para que la paginación y el count sean correctos
+    const cat = (filterCategory || '').toLowerCase();
+    let catFilter: string | null = null;
+    if (cat === 'particulares') {
+      catFilter = '(client_type.eq.solo_plan,requires_declarations.eq.false)';
+    } else if (cat === 'clientes') {
+      catFilter = '(and(client_type.neq.solo_plan,requires_declarations.neq.false,facturador_config.not.isnull))';
+    } else if (cat === 'recursos_listos') {
+      catFilter = '(facturador_config.not.isnull,and(facturador_activation_status.is.null,facturador_activation_status.eq.recursos_listos))';
+    } else if (cat === 'subido_plataforma') {
+      catFilter = 'facturador_activation_status.eq.subido_plataforma';
+    } else if (cat === 'activado') {
+      catFilter = 'facturador_activation_status.eq.activado';
+    } else if (cat === 'sin_firma') {
+      catFilter = '(and(facturador_config.not.isnull,signature_file.is.null))';
+    }
+
+    if (catFilter) {
+      query = query.or(catFilter);
+    }
 
     if (search) {
       query = query.or(`name.ilike.%${search}%,trade_name.ilike.%${search}%,ruc.ilike.%${search}%`);
@@ -290,22 +307,7 @@ export const SupabaseService = {
       throw error;
     }
 
-    let mappedClients = (data || []).map(d => this.mapClientFromDb(d));
-
-    // Client-side category filtering for robust resilience
-    if (filterCategory === 'particulares' || filterCategory === 'Particulares') {
-      mappedClients = mappedClients.filter(c => c.clientType === 'solo_plan' || c.requiresDeclarations === false);
-    } else if (filterCategory === 'clientes' || filterCategory === 'Clientes') {
-      mappedClients = mappedClients.filter(c => c.clientType !== 'solo_plan' && c.requiresDeclarations !== false && (c.billingPlan || c.facturadorConfig));
-    } else if (filterCategory === 'recursos_listos') {
-      mappedClients = mappedClients.filter(c => (c.billingPlan || c.facturadorConfig) && (!c.facturadorActivationStatus || c.facturadorActivationStatus === 'recursos_listos'));
-    } else if (filterCategory === 'subido_plataforma') {
-      mappedClients = mappedClients.filter(c => c.facturadorActivationStatus === 'subido_plataforma');
-    } else if (filterCategory === 'activado') {
-      mappedClients = mappedClients.filter(c => c.facturadorActivationStatus === 'activado');
-    } else if (filterCategory === 'sin_firma') {
-      mappedClients = mappedClients.filter(c => (c.billingPlan || c.facturadorConfig) && !c.signatureFile);
-    }
+    const mappedClients = (data || []).map(d => this.mapClientFromDb(d));
 
     return {
       clients: mappedClients,
@@ -407,7 +409,6 @@ export const SupabaseService = {
       iess_password: client.iessPassword,
       signature_expiration: client.signatureExpirationDate,
       advance_credits: client.advanceCredits,
-      sri_declaraciones: (client.declarations || []).map(d => d?.proof_file?.url ? { ...d, proof_file: { ...d.proof_file, content: null } } : d),
       declaration_history: (client.declarations || []).map(d => d?.proof_file?.url ? { ...d, proof_file: { ...d.proof_file, content: null } } : d),
       vault: (client.vault || []).map(f => f?.url ? { ...f, content: null } : f),
       structured_notes: client.structuredNotes,

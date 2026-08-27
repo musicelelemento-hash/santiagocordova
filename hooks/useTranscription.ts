@@ -11,9 +11,6 @@ export function useTranscription() {
         setTranscription('');
         setError(null);
         setIsRecording(true);
-        
-        // Mock behavior
-        console.log("Transcription started (Mock)");
     }, []);
 
     const stopTranscription = useCallback(async () => {

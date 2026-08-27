@@ -33,11 +33,12 @@ export function getP12RemainingDays(client: Client): number | null {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import * as LucideIcons from 'lucide-react';
 import { Client, DeclarationStatus, IvaFrequency, Declaration, TaxRegime, TaxObligationType } from '../../types';
 import { formatPeriodForDisplay, getPeriod, getDueDateForPeriod, downloadStoredFile, isSriPasswordUpdated } from '../../services/sri';
+import { signPublicStorageUrl } from '../../services/fileService';
 import { format, subMonths, startOfMonth, endOfMonth, isPast, subYears } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getClientCompliance, getObligationsForPeriod, isPeriodBeforeClientStart } from '../../services/complianceEngine';
@@ -245,6 +246,20 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         obType: TaxObligationType;
         realInvoice: any | null;
     } | null>(null);
+
+    // URL firmada de la vista previa (bucket privado → createSignedUrl)
+    const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+    useEffect(() => {
+        let active = true;
+        const file = activeCellModal?.declaration?.proof_file;
+        if (file?.url) {
+            setPreviewPdfUrl(null);
+            signPublicStorageUrl(file.url).then((u) => { if (active) setPreviewPdfUrl(u); });
+        } else {
+            setPreviewPdfUrl(null);
+        }
+        return () => { active = false; };
+    }, [activeCellModal]);
 
     const handleUploadProofPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -1068,7 +1083,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
         );
     };
 
-    const handleBulkPrint = () => {
+    const handleBulkPrint = async () => {
         const selectedClientsList = clients.filter(c => selectedClientIds.includes(c.id));
         if (selectedClientsList.length === 0) {
             toast.info("Seleccione al menos un cliente para imprimir.");
@@ -1104,6 +1119,11 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
             return;
         }
 
+        // Buckets privados: firmar las URLs públicas antes de imprimir
+        const resolvedProofs = await Promise.all(proofList.map(async (item) =>
+            item.url ? { ...item, url: await signPublicStorageUrl(item.url) } : item
+        ));
+
         printWin.document.write(`
             <!DOCTYPE html>
             <html lang="es">
@@ -1129,7 +1149,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                 <div class="header no-print">
                     <div>
                         <div class="title">🖨️ Lote de Impresión - Comprobantes SRI</div>
-                        <div class="subtitle">${proofList.length} Comprobantes Listos de Supabase Storage</div>
+                        <div class="subtitle">${resolvedProofs.length} Comprobantes Listos de Supabase Storage</div>
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button onclick="window.print()" class="btn btn-green">🖨️ Imprimir Todo</button>
@@ -1137,7 +1157,7 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     </div>
                 </div>
                 <div class="grid">
-                    ${proofList.map(item => `
+                    ${resolvedProofs.map(item => `
                         <div class="card">
                             <div>
                                 <div class="client-name">${item.clientName}</div>
@@ -1738,8 +1758,8 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
                     const totalClientsCount = clientsWithObligations.length;
                     const denominator = totalClientsCount > 0 ? totalClientsCount : totalClients;
                     
-                    const declaredCount = filteredClients.filter(c => c.declarations?.some(d => d.period === lastPeriod && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada))).length;
-                    const pdfCount = filteredClients.filter(c => c.declarations?.some(d => d.period === lastPeriod && d.proof_file)).length;
+                    const declaredCount = filteredClients.filter(c => c.declarations?.some(d => arePeriodsEqual(d.period, lastPeriod) && (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada))).length;
+                    const pdfCount = filteredClients.filter(c => c.declarations?.some(d => arePeriodsEqual(d.period, lastPeriod) && d.proof_file)).length;
                     
                     const efficiencyPercent = Math.round((pdfCount / Math.max(1, denominator)) * 100);
 
@@ -2734,9 +2754,9 @@ export const TaxComplianceMatrix: React.FC<TaxComplianceMatrixProps> = ({
 
                                         {activeCellModal.declaration.proof_file?.url ? (
                                             <div className="rounded-xl overflow-hidden border border-white/10 bg-[#020b14] max-h-48 relative group">
-                                                <iframe src={activeCellModal.declaration.proof_file.url} className="w-full h-44 border-none" title="Vista Previa SRI" />
+                                                <iframe src={previewPdfUrl || undefined} className="w-full h-44 border-none" title="Vista Previa SRI" />
                                                 <a 
-                                                    href={activeCellModal.declaration.proof_file.url} 
+                                                    href={previewPdfUrl || undefined} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
                                                     className="absolute top-2 right-2 p-1.5 bg-[#051424]/90 hover:bg-[#051424] border border-white/20 rounded-lg text-slate-300 hover:text-white transition-all shadow-md"

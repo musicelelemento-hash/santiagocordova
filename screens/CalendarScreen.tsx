@@ -59,7 +59,7 @@ export const CalendarScreen: React.FC<CalendarScreenProps> = ({ navigate }) => {
     // Process client declaration deadlines
     clients.forEach(client => {
       if (!(client.isActive ?? true)) return;
-      client.declarations.forEach(dec => {
+      (client.declarations ?? []).forEach(dec => {
         if (dec.status === DeclarationStatus.Pendiente || dec.status === DeclarationStatus.Enviada) {
           const dueDate = getDueDateForPeriod(client, dec.period);
           if (dueDate) {

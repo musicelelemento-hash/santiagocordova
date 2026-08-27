@@ -169,7 +169,7 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                                     {overdueStatus ? 'Subir Comprobante (Vencido)' : 'Subir Comprobante'}
                                 </button>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); onDeclare(); }}
+                                    onClick={(e) => { e.stopPropagation(); onDeclare?.(); }}
                                     title="Registrar declaración manualmente sin PDF (emergencia)"
                                     className="p-2.5 rounded-xl border border-slate-200 dark:border-white/10 text-slate-400 hover:text-[#00A896] hover:border-[#00A896]/30 transition-all active:scale-90 flex-shrink-0"
                                 >
@@ -178,7 +178,7 @@ export const TaxObligationCard: React.FC<TaxObligationCardProps> = ({
                             </>
                         ) : (
                             <button
-                                onClick={(e) => { e.stopPropagation(); onDeclare(); }}
+                                onClick={(e) => { e.stopPropagation(); onDeclare?.(); }}
                                 className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95 border border-white/10 ${
                                     overdueStatus
                                         ? 'bg-rose-600 text-white hover:bg-rose-700 shadow-lg shadow-rose-500/20'

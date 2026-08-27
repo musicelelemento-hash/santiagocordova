@@ -7,6 +7,7 @@ import {
     Eye, EyeOff, HelpCircle, Loader, Lock, ShieldCheck, User
 } from 'lucide-react';
 import { Client } from '../types';
+import { authService } from '../services/authService';
 
 interface LoginScreenProps {
     onSuccess: (role: 'admin' | 'client', clientData?: Client) => void;
@@ -48,7 +49,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
         if (saved) setIdentifier(saved);
     }, []);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const cleanIdentifier = identifier.trim();
@@ -78,52 +79,48 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
             localStorage.removeItem('login_remember_id');
         }
 
-        setTimeout(() => {
-            if (loginType === 'admin') {
-                const ADMIN_USER = (import.meta as any).env?.VITE_ADMIN_USER || '@Santiago';
-                const ADMIN_PASS = (import.meta as any).env?.VITE_ADMIN_PASS || '';
-
-                if (cleanIdentifier === ADMIN_USER && cleanPassword === ADMIN_PASS) {
-                    localStorage.setItem(RATE_KEY, '0');
-                    localStorage.removeItem(RATE_TS_KEY);
-                    setPassword('');
-                    onSuccess('admin');
+        if (loginType === 'admin') {
+            // 🔐 Autenticación REAL contra Supabase Auth (reemplaza el flag falso)
+            const { error } = await authService.signIn(cleanIdentifier, cleanPassword);
+            if (!error) {
+                localStorage.setItem(RATE_KEY, '0');
+                localStorage.removeItem(RATE_TS_KEY);
+                setPassword('');
+                onSuccess('admin');
+            } else {
+                const newAttempts = attempts + 1;
+                localStorage.setItem(RATE_KEY, String(newAttempts));
+                if (newAttempts >= 5) {
+                    const unblockAt = Date.now() + 30_000;
+                    localStorage.setItem(RATE_TS_KEY, String(unblockAt));
+                    setRateError('5 intentos fallidos. Acceso bloqueado por 30 segundos.');
                 } else {
-                    const newAttempts = attempts + 1;
-                    localStorage.setItem(RATE_KEY, String(newAttempts));
-                    if (newAttempts >= 5) {
-                        const unblockAt = Date.now() + 30_000;
-                        localStorage.setItem(RATE_TS_KEY, String(unblockAt));
-                        setRateError('5 intentos fallidos. Acceso bloqueado por 30 segundos.');
-                    } else {
-                        setError(`Credenciales administrativas incorrectas. (Intento ${newAttempts}/5)`);
-                    }
-                    setIsSubmitting(false);
+                    setError(`Credenciales incorrectas. Verifique su correo y contraseña. (Intento ${newAttempts}/5)`);
+                }
+            }
+        } else {
+            const foundClient = clients.find(c => c.ruc === cleanIdentifier && c.sriPassword === cleanPassword);
+            if (foundClient) {
+                if (foundClient.isActive === false) {
+                    setError('Su cuenta se encuentra inactiva. Contacte a soporte.');
+                } else {
+                    localStorage.setItem(RATE_KEY, '0');
+                    setPassword('');
+                    onSuccess('client', foundClient);
                 }
             } else {
-                const foundClient = clients.find(c => c.ruc === cleanIdentifier && c.sriPassword === cleanPassword);
-                if (foundClient) {
-                    if (foundClient.isActive === false) {
-                        setError('Su cuenta se encuentra inactiva. Contacte a soporte.');
-                    } else {
-                        localStorage.setItem(RATE_KEY, '0');
-                        setPassword('');
-                        onSuccess('client', foundClient);
-                    }
+                const newAttempts = attempts + 1;
+                localStorage.setItem(RATE_KEY, String(newAttempts));
+                if (newAttempts >= 5) {
+                    const unblockAt = Date.now() + 30_000;
+                    localStorage.setItem(RATE_TS_KEY, String(unblockAt));
+                    setRateError('5 intentos fallidos. Acceso bloqueado por 30 segundos.');
                 } else {
-                    const newAttempts = attempts + 1;
-                    localStorage.setItem(RATE_KEY, String(newAttempts));
-                    if (newAttempts >= 5) {
-                        const unblockAt = Date.now() + 30_000;
-                        localStorage.setItem(RATE_TS_KEY, String(unblockAt));
-                        setRateError('5 intentos fallidos. Acceso bloqueado por 30 segundos.');
-                    } else {
-                        setError(`RUC o Clave SRI incorrectos. (Intento ${newAttempts}/5)`);
-                    }
+                    setError(`RUC o Clave SRI incorrectos. (Intento ${newAttempts}/5)`);
                 }
-                setIsSubmitting(false);
             }
-        }, 1000);
+        }
+        setIsSubmitting(false);
     };
 
     return (
@@ -263,7 +260,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                             {/* Identifier Input Field (h-14 alto y espacioso) */}
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-slate-300 uppercase tracking-wider ml-1 block">
-                                    {loginType === 'client' ? 'RUC o Identificación SRI' : 'Usuario Admin'}
+                                    {loginType === 'client' ? 'RUC o Identificación SRI' : 'Correo del Administrador'}
                                 </label>
                                 <div className="relative group">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-teal transition-colors">
@@ -274,7 +271,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onSuccess, onBack, cli
                                         value={identifier}
                                         onChange={(e) => { setIdentifier(e.target.value); setError(''); }}
                                         className="w-full h-14 bg-slate-900/90 border border-slate-800 rounded-2xl pl-12 pr-4 text-sm font-mono font-bold text-white placeholder-slate-500 focus:outline-none focus:border-brand-teal/60 focus:ring-4 focus:ring-brand-teal/15 transition-all shadow-inner"
-                                        placeholder={loginType === 'client' ? "Ingrese su RUC o Cédula" : "Ingrese su usuario"}
+                                        placeholder={loginType === 'client' ? "Ingrese su RUC o Cédula" : "Ingrese su correo electrónico"}
                                         autoComplete="username"
                                         name="username"
                                         autoFocus

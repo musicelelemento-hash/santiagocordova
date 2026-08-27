@@ -333,10 +333,12 @@ export const db = {
         let sbLoaded = false;
 
         // 1. Try Supabase first (Primary Source of Truth)
-        if (USE_SUPABASE && collectionName === 'sc_pro_clients') {
+        if (USE_SUPABASE && (collectionName === 'sc_pro_clients' || collectionName === 'sc_pro_tasks')) {
             try {
                 // Timeout promise to not wait forever for Supabase
-                const sbPromise = SupabaseService.getClients();
+                const sbPromise = collectionName === 'sc_pro_tasks'
+                    ? SupabaseService.getTasks()
+                    : SupabaseService.getClients();
                 sbResults = await sbPromise;
                 sbLoaded = true;
                 console.log(`📡 Supabase Loaded: ${sbResults.length} records.`);
@@ -348,7 +350,7 @@ export const db = {
         // 2. Fetch from Firestore only if Supabase failed or as a background safety check
         // If we already have results from Supabase, we can fetch from Firestore in the background
         // to check for missing records, but for initial load speed, we prioritize Supabase.
-        if (!sbLoaded || collectionName !== 'sc_pro_clients') {
+        if (!sbLoaded || (collectionName !== 'sc_pro_clients' && collectionName !== 'sc_pro_tasks')) {
             try {
                 const colRef = collection(firestoreDb, collectionName);
                 const snapshot = await getDocs(colRef);

@@ -17,8 +17,9 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     define: {
-      'process.env.API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.VITE_GOOGLE_API_KEY || env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.VITE_GOOGLE_API_KEY || env.GEMINI_API_KEY),
+      // Nota: las claves de API (Gemini) ya NO se inyectan aquí para evitar
+      // exponerlas en el bundle. Usa el proxy serverless (supabase/functions/
+      // gemini-proxy) o VITE_GEMINI_API_KEY solo para desarrollo local.
       'process.env.GOOGLE_SHEET_SCRIPT_URL': JSON.stringify(env.VITE_GOOGLE_SCRIPT_URL || env.GOOGLE_SHEET_SCRIPT_URL),
       'process.env.VITE_APP_VERSION': JSON.stringify(BUILD_TIMESTAMP)
     },
@@ -33,9 +34,11 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 1200,
       rollupOptions: {
         output: {
-          entryFileNames: `assets/[name].${Date.now()}.js`,
-          chunkFileNames: `assets/[name].${Date.now()}.js`,
-          assetFileNames: `assets/[name].${Date.now()}.[ext]`,
+          // Nombres con hash de contenido (cacheable) en lugar de Date.now()
+          // que invalidaba toda la caché del navegador en cada build.
+          entryFileNames: 'assets/[name].[hash].js',
+          chunkFileNames: 'assets/[name].[hash].js',
+          assetFileNames: 'assets/[name].[hash].[ext]',
           manualChunks(id) {
             if (id.includes('node_modules')) {
               if (id.includes('three') || id.includes('@react-three')) {
@@ -64,6 +67,9 @@ export default defineConfig(({ mode }) => {
               }
               if (id.includes('framer-motion') || id.includes('gsap')) {
                 return 'vendor-animation';
+              }
+              if (id.includes('date-fns') || id.includes('lucide-react')) {
+                return 'vendor-ui';
               }
             }
           }

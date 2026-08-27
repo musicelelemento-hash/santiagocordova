@@ -1,11 +1,35 @@
 import { StoredFile } from '../types/client';
 import { db } from './db';
+import { supabase } from './supabase';
 
 const notify = {
   info: (msg: string, toast?: any) => { toast?.info ? toast.info(msg) : console.log(`[INFO] ${msg}`); },
   error: (msg: string, toast?: any) => { toast?.error ? toast.error(msg) : console.error(`[ERROR] ${msg}`); },
   success: (msg: string, toast?: any) => { toast?.success ? toast.success(msg) : console.log(`[SUCCESS] ${msg}`); }
 };
+
+const SUPABASE_PUBLIC_URL_RE = /\/storage\/v1\/object\/public\/([^/?]+)\/(.+)$/;
+
+/**
+ * Convierte una URL pública de Supabase Storage en una URL FIRMADA
+ * (necesaria cuando el bucket es privado). Si la URL no es de Supabase
+ * o no se puede firmar, devuelve la URL original.
+ */
+export async function signPublicStorageUrl(url: string): Promise<string> {
+  if (!url || !url.includes('/storage/v1/object/public/')) return url;
+  const m = url.match(SUPABASE_PUBLIC_URL_RE);
+  if (!m) return url;
+  const bucket = m[1];
+  const path = m[2];
+  try {
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+    if (error) throw error;
+    return data?.signedUrl || url;
+  } catch (err) {
+    console.warn('[Storage] No se pudo generar URL firmada, usando la original:', err);
+    return url;
+  }
+}
 
 /**
  * Resolves a StoredFile, checking if its content is split (__SPLIT__:)
@@ -57,8 +81,9 @@ export async function downloadStoredFile(file: StoredFile | null | undefined): P
       : 'application/pdf';
 
     if (fileToDownload.url) {
-      // Fetch URL to create local blob for forced cross-origin download
-      const response = await fetch(fileToDownload.url);
+      // Buckets privados: firmar la URL pública antes de descargar
+      const resolvedUrl = await signPublicStorageUrl(fileToDownload.url);
+      const response = await fetch(resolvedUrl);
       const blob = await response.blob();
       downloadUrl = URL.createObjectURL(blob);
       isBlobCreated = true;
@@ -134,7 +159,8 @@ export async function openStoredFileInNewTab(file: StoredFile | null | undefined
   try {
     let openUrl = '';
     if (fileToOpen.url) {
-      openUrl = fileToOpen.url;
+      // Buckets privados: firmar la URL pública antes de abrir
+      openUrl = await signPublicStorageUrl(fileToOpen.url);
     } else {
       openUrl = fileToOpen.content || '';
       if (openUrl.startsWith('data:')) {

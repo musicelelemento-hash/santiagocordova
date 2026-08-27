@@ -123,7 +123,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
                             />
                             <TaxProfileField 
                                 label="Correo Electrónico" 
-                                value={editedClient.email} 
+                                value={editedClient.email ?? ''} 
                                 icon={LucideIcons.Mail} 
                                 isEditing={isEditing} 
                                 onStartEdit={onStartEdit}

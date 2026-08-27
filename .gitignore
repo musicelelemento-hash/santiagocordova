@@ -34,6 +34,10 @@ secrets.txt
 .firebase
 .vercel
 .netlify
+# Supabase CLI local artifacts
+supabase/.temp
+supabase/.branches
+.tmp-npm-cache
 
 # Debug and Logs
 *-error.txt

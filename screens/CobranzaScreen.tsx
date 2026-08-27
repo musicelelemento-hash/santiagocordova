@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { Client, DeclarationStatus, ReceiptData, TaxRegime, ServiceFeesConfig, ReminderConfig, BusinessProfile, FinancialItem } from '../types';
 import { getDueDateForPeriod, formatPeriodForDisplay, getPeriod, safeFormat } from '../services/sri';
 import { getClientServiceFee, isCourtesyClient } from '../services/clientService';
@@ -403,7 +403,7 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 const newClients = [...prev];
                 const clientIdx = newClients.findIndex(c => c.id === item.clientId);
                 if (clientIdx > -1) {
-                    const decls = [...newClients[clientIdx].declarations];
+                    const decls = [...(newClients[clientIdx].declarations ?? [])];
                     const declIdx = decls.findIndex(d => d.period === item.period);
                     const entry = { period: item.period, status: DeclarationStatus.Pagada, paidAt: new Date().toISOString(), transactionId: `PAY-${key.slice(-6)}`, amount: item.amount, updatedAt: new Date().toISOString() };
                     if (declIdx > -1) decls[declIdx] = { ...decls[declIdx], ...entry };
@@ -610,13 +610,13 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
         const currentMonth = now.getMonth() + 1;
 
         if (matrixFrequency === 'Semestral') {
-            // Generar los 6 Ãºltimos semestres fiscales (ej: 2025-2S, 2025-1S, 2024-2S, 2024-1S, 2023-2S, 2023-1S)
+            // Generar los 6 Ãºltimos semestres fiscales con formato canónico (ej: 2025-S2, 2025-S1, 2024-S2, 2024-S1, 2023-S2, 2023-S1)
             const list: { key: string; label: string; shortLabel: string; year: string; type: 'semestral' }[] = [];
             let y = currentYear;
             let s = currentMonth <= 6 ? 1 : 2;
             
             for (let i = 0; i < 6; i++) {
-                const key = `${y}-${s}S`;
+                const key = `${y}-S${s}`;
                 const label = `${s}Âº Semestre ${y}`;
                 const shortLabel = `${s}S`;
                 list.push({ key, label, shortLabel, year: y.toString(), type: 'semestral' });
@@ -688,12 +688,12 @@ export const CobranzaScreen: React.FC<CobranzaScreenProps> = ({
                 // Buscar declaraciÃ³n exacta o equivalente semestral
                 let decl = (client.declarations || []).find(d => arePeriodsEqual(d.period, p.key) || d.period === p.key);
                 
-                // Si el cliente es semestral y p.key es un semestre ej: 2025-2S o 2025-1S
+                // Si el cliente es semestral y p.key es un semestre ej: 2025-S2 o 2025-S1
                 if (!decl && freq === 'Semestral') {
-                    if (p.key.includes('1S') || p.key.endsWith('-06')) {
-                        decl = (client.declarations || []).find(d => d.period.includes('1S') || d.period.includes('S1') || d.period.endsWith('-06'));
-                    } else if (p.key.includes('2S') || p.key.endsWith('-12')) {
-                        decl = (client.declarations || []).find(d => d.period.includes('2S') || d.period.includes('S2') || d.period.endsWith('-12'));
+                    if (p.key.includes('-S1') || p.key.endsWith('-06')) {
+                        decl = (client.declarations || []).find(d => d.period.includes('S1') || d.period.includes('1S') || d.period.endsWith('-06'));
+                    } else if (p.key.includes('-S2') || p.key.endsWith('-12')) {
+                        decl = (client.declarations || []).find(d => d.period.includes('S2') || d.period.includes('2S') || d.period.endsWith('-12'));
                     }
                 }
 

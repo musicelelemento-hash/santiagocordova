@@ -566,7 +566,7 @@ export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ navi
             return;
         }
 
-        const updatedHistory = [...client.declarations];
+        const updatedHistory = [...(client.declarations ?? [])];
         const idx = updatedHistory.findIndex(d => d.period === period);
         
         let newStatus: DeclarationStatus;

@@ -87,13 +87,13 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
             if (client.isActive === false) return;
 
             const paidPeriods = new Set<string>();
-            client.declarations.forEach(d => {
+            (client.declarations ?? []).forEach(d => {
                 if (d.status === DeclarationStatus.Pagada) {
                     paidPeriods.add(d.period);
                 }
             });
 
-            client.declarations.forEach(d => {
+            (client.declarations ?? []).forEach(d => {
                 const fee = d.amount ?? getClientServiceFee(client, serviceFees, d.period);
                 if (d.status === DeclarationStatus.Pagada) {
                     const dateToCheck = d.paidAt || d.updatedAt;
@@ -156,7 +156,7 @@ export const ReportsScreen: React.FC<ReportsScreenProps> = ({ navigate }) => {
             let monthIncome = 0;
 
             clients.forEach(c => {
-                c.declarations.forEach(d => {
+                (c.declarations ?? []).forEach(d => {
                     if (d.status === DeclarationStatus.Pagada && d.paidAt) {
                         if (isSameMonth(parseISO(d.paidAt), monthDate)) {
                             monthIncome += (d.amount || getClientServiceFee(c, serviceFees, d.period));

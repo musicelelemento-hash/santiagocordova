@@ -333,7 +333,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
 
                         <div className="p-3.5 bg-slate-100/70 dark:bg-[#0b1326]/60 rounded-2xl text-center border border-slate-200/60 dark:border-white/5">
                             <p className="text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest">Días Restantes</p>
-                            <p className={`text-xs font-mono font-black mt-1 ${nextDeadline && getDaysUntilDue(nextDeadline) < 5 ? 'text-rose-500 font-bold' : 'text-slate-900 dark:text-white'}`}>
+                            <p className={`text-xs font-mono font-black mt-1 ${nextDeadline && getDaysUntilDue(nextDeadline)! < 5 ? 'text-rose-500 font-bold' : 'text-slate-900 dark:text-white'}`}>
                                 {nextDeadline ? `${getDaysUntilDue(nextDeadline)}d` : '—'}
                             </p>
                         </div>

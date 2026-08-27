@@ -3,7 +3,7 @@ import * as LucideIcons from 'lucide-react';
 import { Client, DeclarationStatus, ServiceFeesConfig, TaxObligationType, Declaration, StoredFile } from '../types';
 import { formatPeriodForDisplay, safeFormat } from '../services/sri';
 import { getClientServiceFee } from '../services/clientService';
-import { getClientCompliance, COMPLIANCE_COLORS } from '../services/complianceEngine';
+import { getClientCompliance, COMPLIANCE_COLORS, ComplianceColor, ObligationStatus } from '../services/complianceEngine';
 import { Logo } from '../components/ui/Logo';
 import { downloadStoredFile, openStoredFileInNewTab } from '../services/fileService';
 import { FinancialMetricsOverview } from '../components/features/ClientDetail/FinancialMetricsOverview';
@@ -12,8 +12,8 @@ import { FinancialMetricsOverview } from '../components/features/ClientDetail/Fi
 // UI SUB-COMPONENTS (Stitch Obsidian Luxury)
 // ─────────────────────────────────────────────────────────
 
-const HealthGauge = ({ score, color }: { score: number, color: string }) => {
-    const config = COMPLIANCE_COLORS[color as any] || COMPLIANCE_COLORS.gray;
+const HealthGauge = ({ score, color }: { score: number, color: ComplianceColor }) => {
+    const config = COMPLIANCE_COLORS[color] || COMPLIANCE_COLORS.gray;
     return (
         <div className="relative w-32 h-32 flex items-center justify-center font-mono">
             <svg className="w-full h-full transform -rotate-90">
@@ -103,7 +103,7 @@ const BankCardPremium = ({ clientName }: { clientName: string }) => {
     );
 };
 
-const TimelineItem = ({ ob }: { ob: any }) => {
+const TimelineItem = ({ ob }: { ob: ObligationStatus }) => {
     const config = COMPLIANCE_COLORS[ob.color] || COMPLIANCE_COLORS.gray;
     const isDeclared = ob.isDeclared;
 

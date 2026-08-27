@@ -16,7 +16,7 @@ interface VipClientCardProps {
 export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, serviceFees, onClick, onQuickAction }) => {
     const [copied, setCopied] = React.useState(false);
     const currentPeriod = getPeriod(client, new Date());
-    const declaration = client.declarations.find(d => d.period === currentPeriod);
+    const declaration = (client.declarations ?? []).find(d => d.period === currentPeriod);
     const fee = getClientServiceFee(client, serviceFees);
 
     // Determine Status Logic
@@ -26,7 +26,7 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
     const currentYear = getYear(new Date());
     const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
     const rentaPeriod = (currentYear - 1).toString();
-    const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+    const rentaDecl = (client.declarations ?? []).find(d => d.period === rentaPeriod);
     const isRentaDeclared = !!rentaDecl?.proof_file || rentaDecl?.status === DeclarationStatus.Enviada;
     const isRentaPaid = !!rentaDecl?.is_paid;
     const isRentaFullyDone = isRentaDeclared && isRentaPaid;
@@ -34,8 +34,8 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
     // ICE & PVP Logic
     const icePeriod = `${currentPeriod}:ICE`;
     const iceAnexoPeriod = `${currentPeriod}:ANEXO_ICE`;
-    const iceDecl = client.declarations.find(d => d.period === icePeriod);
-    const iceAnexoDecl = client.declarations.find(d => d.period === iceAnexoPeriod);
+    const iceDecl = (client.declarations ?? []).find(d => d.period === icePeriod);
+    const iceAnexoDecl = (client.declarations ?? []).find(d => d.period === iceAnexoPeriod);
     const isIceDeclared = !!iceDecl?.proof_file || iceDecl?.status === DeclarationStatus.Enviada;
     const isIcePaid = !!iceDecl?.is_paid;
     const isIceAnexoDone = !!iceAnexoDecl?.proof_file || iceAnexoDecl?.status === DeclarationStatus.Enviada;
@@ -162,8 +162,8 @@ export const VipClientCard: React.FC<VipClientCardProps> = memo(({ client, servi
                             {client.taxProfile?.ivaFrequency === 'Semestral' ? (
                                 <div className="flex gap-3">
                                     {[
-                                        { label: 'ENE-JUN', status: client.declarations.find(d => d.period.endsWith('-S1')) },
-                                        { label: 'JUL-DIC', status: client.declarations.find(d => d.period.endsWith('-S2')) }
+                                        { label: 'ENE-JUN', status: (client.declarations ?? []).find(d => d.period.endsWith('-S1')) },
+                                        { label: 'JUL-DIC', status: (client.declarations ?? []).find(d => d.period.endsWith('-S2')) }
                                     ].map((sem, i) => (
                                         <div key={i} className="flex flex-col items-center gap-1 px-3 py-2 bg-surface-lowest rounded-xl shadow-sm min-w-[80px]">
                                             <span className="text-[9px] font-bold text-on-surface-variant">{sem.label}</span>

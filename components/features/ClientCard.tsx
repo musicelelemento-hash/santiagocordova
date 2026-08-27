@@ -11,7 +11,7 @@ interface ClientCardProps {
     client: Client;
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
+    onQuickAction?: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', period?: string) => void;
     onUploadReceipt?: (client: Client, period?: string) => void;
     onPreview?: (client: Client, declaration: Declaration) => void;
     compact?: boolean;
@@ -30,7 +30,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     const today = new Date();
     const compliance = getClientCompliance(client, today, frequency);
     const currentPeriod = customPeriod || getPeriod(client, today, frequency);
-    const activeDecl = client.declarations.find(d => d.period === currentPeriod);
+    const activeDecl = (client.declarations ?? []).find(d => d.period === currentPeriod);
 
     // ── MODO CAMPAÑA vs MODO GLOBAL ──────────────────────────────────
     // Si se especifica un `frequency` (Mensual/Semestral), evaluamos SOLO el periodo
@@ -66,7 +66,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
     const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
     const currentYear = today.getFullYear();
     const rentaPeriod = (currentYear - 1).toString();
-    const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+    const rentaDecl = (client.declarations ?? []).find(d => d.period === rentaPeriod);
     const isRentaDeclared = !!rentaDecl?.proof_file || rentaDecl?.status === DeclarationStatus.Enviada;
     const isRentaPaid = !!rentaDecl?.is_paid;
     const isRentaFullyDone = isRentaDeclared && isRentaPaid;
@@ -116,7 +116,7 @@ export const ClientCard: React.FC<ClientCardProps> = memo(({ client, serviceFees
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleAction = (e: React.MouseEvent, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'restore' | 'purge', customPeriod?: string) => {
+    const handleAction = (e: React.MouseEvent, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge', customPeriod?: string) => {
         e.stopPropagation();
         if (onQuickAction) onQuickAction(client, action, customPeriod);
     };

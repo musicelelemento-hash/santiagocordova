@@ -1,12 +1,26 @@
 
 import { GoogleGenAI } from "@google/genai";
+import { getProxyClient, isProxyConfigured, GeminiProxyRequest, GeminiProxyResponse } from "./geminiProxyClient";
 import { Client, Task, AnalysisType, TaxRegime, Message } from "../types";
 
+/**
+ * Interfaz común para ambos backends de IA:
+ *  - Proxy serverless (recomendado): la API key vive en el backend, nunca en el bundle.
+ *  - SDK directo con VITE_GEMINI_API_KEY: modo legado/desarrollo local.
+ */
+type AIClientLike = {
+  models: {
+    generateContent: (req: GeminiProxyRequest) => Promise<GeminiProxyResponse>;
+  };
+};
+
 // Inicialización del cliente AI
-const getAIClient = () => {
-  const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
+const getAIClient = (): AIClientLike | null => {
+  // Si hay proxy configurado, la API key NO viaja al navegador.
+  if (isProxyConfigured()) return getProxyClient();
+  const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (import.meta as any).env?.GEMINI_API_KEY;
   if (!apiKey) return null;
-  return new GoogleGenAI(apiKey);
+  return new GoogleGenAI(apiKey) as unknown as AIClientLike;
 };
 
 export const summarizeTextWithGemini = async (text: string): Promise<string> => {
@@ -280,7 +294,7 @@ export const getAssistantResponse = async (messages: Message[], clients: Client[
             history.push(response.candidates?.[0]?.content);
 
             const toolResults = await Promise.all(response.functionCalls.map(async (call) => {
-                const fn = functions[call.name];
+                const fn = call.name ? functions[call.name] : undefined;
                 const result = fn ? fn(call.args) : { error: "Function not found" };
                 
                 return {

@@ -228,7 +228,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular);
             const currentYear = today.getFullYear();
             const rentaPeriod = (currentYear - 1).toString();
-            const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+            const rentaDecl = (client.declarations ?? []).find(d => d.period === rentaPeriod);
             const isRentaPaid = !!rentaDecl?.is_paid;
             const isRentaDeclared = !!rentaDecl?.proof_file || rentaDecl?.status === DeclarationStatus.Enviada;
 
@@ -339,7 +339,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                 const needsRenta = client.taxProfile?.requiresAnnualRenta ?? isEmpOrPop;
                 const currentYear = today.getFullYear();
                 const rentaPeriod = (currentYear - 1).toString();
-                const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+                const rentaDecl = (client.declarations ?? []).find(d => d.period === rentaPeriod);
                 const isRentaPaid = !needsRenta || !!rentaDecl?.is_paid;
                 const isRentaDeclared = !needsRenta || !!rentaDecl?.proof_file || rentaDecl?.status === DeclarationStatus.Enviada;
 
@@ -408,7 +408,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
 
             // FILTRO DE AUDITORÍA DE BÓVEDA (Missing PDFs)
             if (initialFilter?.hasMissingPdf) {
-                const missingPdf = client.declarations.some(d => 
+                const missingPdf = (client.declarations ?? []).some(d => 
                     (d.status === DeclarationStatus.Enviada || d.status === DeclarationStatus.Pagada) && !d.proof_file
                 );
                 if (!missingPdf) return false;
@@ -423,7 +423,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         const getPendingStatus = (client: Client) => {
             const today = new Date();
             const period = getPeriod(client, today);
-            const decl = client.declarations.find(d => d.period === period);
+            const decl = (client.declarations ?? []).find(d => d.period === period);
             
             const isIvaDeclared = !!decl?.proof_file;
             const isIvaPaid = !!decl?.is_paid;
@@ -431,7 +431,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
             const currentYear = today.getFullYear();
             const rentaPeriod = (currentYear - 1).toString();
             const needsRenta = client.taxProfile?.requiresAnnualRenta ?? (client.regime === TaxRegime.RimpeEmprendedor || client.regime === TaxRegime.RimpeNegocioPopular || client.regime === TaxRegime.General);
-            const rentaDecl = client.declarations.find(d => d.period === rentaPeriod);
+            const rentaDecl = (client.declarations ?? []).find(d => d.period === rentaPeriod);
             const isRentaDeclared = !!rentaDecl?.proof_file || false;
             const isRentaPaid = !!rentaDecl?.is_paid || false;
 
@@ -591,7 +591,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
         toast.success(`📋 ${targetList.length} RUCs copiados al portapapeles`);
     };
 
-    const handleOpenClientDetails = (client: Client, tab?: 'profile' | 'history' | 'vault' | 'settings') => {
+    const handleOpenClientDetails = (client: Client, tab?: string) => {
         setSelectedClient(client);
         const targetTab = tab || initialTab || 'profile';
         (window as any).__TEMP_INITIAL_TAB__ = targetTab;
@@ -892,8 +892,13 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                             email: targetClient.email || data.contacto.email,
                             address: targetClient.address || data.direccion,
                             taxProfile: {
-                                ...targetClient.taxProfile,
                                 ivaFrequency: targetClient.taxProfile?.ivaFrequency || (data.obligaciones_tributarias === 'semestral' ? 'Semestral' : 'Mensual'),
+                                requiresAnnualRenta: targetClient.taxProfile?.requiresAnnualRenta ?? false,
+                                requiresAnexosGastos: targetClient.taxProfile?.requiresAnexosGastos ?? false,
+                                hasActiveDevolucionIva: targetClient.taxProfile?.hasActiveDevolucionIva ?? false,
+                                hasActiveElderlyDevolucionIva: targetClient.taxProfile?.hasActiveElderlyDevolucionIva ?? false,
+                                requiresIce: targetClient.taxProfile?.requiresIce ?? false,
+                                requiresAnexoPvp: targetClient.taxProfile?.requiresAnexoPvp ?? false,
                             }
                         });
 
@@ -1435,7 +1440,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                 <div className="flex items-center justify-between mb-3">
                                     <span className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">Ritmo de Gestión Tributaria • {safeFormat(new Date(), 'MMMM')}</span>
                                     <span className="text-xs font-bold text-primary">{sortedClients.filter(c => {
-                                        const d = c.declarations.find(dh => dh.period === getPeriod(c, new Date()));
+                                        const d = (c.declarations ?? []).find(dh => dh.period === getPeriod(c, new Date()));
                                         return !!d?.proof_file || d?.status === DeclarationStatus.Enviada;
                                     }).length} / {sortedClients.length}</span>
                                 </div>
@@ -1444,7 +1449,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                         className="h-full bg-primary transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(134,167,137,0.4)]"
                                         style={{
                                             width: `${(sortedClients.filter(c => {
-                                                const d = c.declarations.find(dh => dh.period === getPeriod(c, new Date()));
+                                                const d = (c.declarations ?? []).find(dh => dh.period === getPeriod(c, new Date()));
                                                 return !!d?.proof_file || d?.status === DeclarationStatus.Enviada;
                                             }).length / (sortedClients.length || 1)) * 100}%`
                                         }}
@@ -1620,7 +1625,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     {sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
+                                        const decl = (c.declarations ?? []).find(d => d.period === period);
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         return isDeclared && !decl?.is_paid;
                                     }).length} PENDIENTES
@@ -1632,7 +1637,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
+                                        const decl = (c.declarations ?? []).find(d => d.period === period);
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         return isDeclared && !decl?.is_paid;
                                     })}
@@ -1648,7 +1653,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
+                                        const decl = (c.declarations ?? []).find(d => d.period === period);
                                         const isDeclared = !!decl?.proof_file || decl?.status === DeclarationStatus.Enviada;
                                         return isDeclared && !decl?.is_paid;
                                     })}
@@ -1684,7 +1689,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
+                                        const decl = (c.declarations ?? []).find(d => d.period === period);
                                         return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
                                     })}
                                     serviceFees={serviceFees}
@@ -1699,7 +1704,7 @@ export const ClientsScreen: React.FC<ClientsScreenProps> = ({
                                     clients={sortedClients.filter(c => {
                                         const today = new Date();
                                         const period = getPeriod(c, today, frequencyForList);
-                                        const decl = c.declarations.find(d => d.period === period);
+                                        const decl = (c.declarations ?? []).find(d => d.period === period);
                                         return !!decl?.is_paid && (!!decl?.proof_file || decl?.status === DeclarationStatus.Enviada);
                                     })}
                                     serviceFees={serviceFees}

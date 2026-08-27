@@ -12,7 +12,7 @@ interface VirtualClientTableProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate' | 'restore' | 'purge') => void;
+    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge') => void;
     onUploadReceipt: (client: Client, period?: string) => void;
     frequency?: TaxFrequency | 'all';
     isTrashView?: boolean;
@@ -25,7 +25,7 @@ interface TableRowProps {
     clients: Client[];
     serviceFees: ServiceFeesConfig;
     onView: (client: Client, tab?: string) => void;
-    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'cancel' | 'revert' | 'deactivate' | 'restore' | 'purge') => void;
+    onQuickAction: (client: Client, action: 'declare' | 'pay' | 'deactivate' | 'restore' | 'purge') => void;
     onUploadReceipt: (client: Client, period?: string) => void;
     frequency?: TaxFrequency | 'all';
     isTrashView?: boolean;

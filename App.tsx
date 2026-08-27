@@ -20,6 +20,8 @@ import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { useAppStore } from './store/useAppStore';
 import { getClientUndeclaredSummary } from './services/complianceEngine';
+import { authService } from './services/authService';
+import type { Session } from '@supabase/supabase-js';
 
 // Pantallas internas válidas para deep-linking (?screen=). 'scanner' se excluye por no tener renderer propio.
 const VALID_SCREENS: Screen[] = ['home', 'clients', 'declaraciones', 'tasks', 'reports', 'settings', 'cobranza', 'calendar', 'web_orders', 'audit_log', 'sri_facturacion', 'migracion_zifact', 'services', 'firmas', 'facturadores', 'cotizaciones', 'licencias', 'refinanciacion', 'caja_chica', 'crm_pipeline', '3d-studio'];
@@ -82,15 +84,33 @@ const App: React.FC = () => {
     // Prioridad Absoluta: El acceso al raíz (/) siempre muestra la página pública
     if (path === '/' || path === '' || path === '/index.html') return 'landing';
 
-    const isAdminLoggedIn = localStorage.getItem('sc_pro_admin_session') === 'true';
-    if (path === '/admin' || path === '/dashboard' || path === '/login') {
-      return isAdminLoggedIn ? 'dashboard' : 'login';
-    }
+    // Las rutas privadas arrancan en 'login'; la sesión real se restaura
+    // de forma asíncrona en el effect de autenticación.
+    if (path === '/admin' || path === '/dashboard' || path === '/login') return 'login';
     if (path === '/services') return 'services';
     if (path === '/musica' || path === '/music') return 'music';
     if (path === '/portal') return 'login';
     return 'landing';
   });
+
+  // ── Sesión real de Supabase Auth (reemplaza el flag falso de localStorage) ──
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    authService.getSession().then((s) => {
+      if (!active) return;
+      setSession(s);
+      const path = window.location.pathname;
+      if (path === '/admin' || path === '/dashboard' || path === '/login') {
+        setAppState(s ? 'dashboard' : 'login');
+      }
+    });
+    const sub = authService.onAuthStateChange((s) => {
+      if (active) setSession(s);
+    });
+    return () => { active = false; sub.unsubscribe(); };
+  }, []);
 
   const [activeScreen, setActiveScreen] = useState<Screen>(() => {
     const p = window.location.pathname;
@@ -122,13 +142,12 @@ const App: React.FC = () => {
   useEffect(() => {
     const handlePopState = (event: PopStateEvent) => {
       const path = window.location.pathname;
-      const isAdminLoggedIn = localStorage.getItem('sc_pro_admin_session') === 'true';
 
       if (path === '/' || path === '' || path === '/index.html') {
         setAppState('landing');
       } else if (path === '/admin' || path === '/dashboard' || path === '/login') {
-        setAppState(isAdminLoggedIn ? 'dashboard' : 'login');
-        if (isAdminLoggedIn) {
+        setAppState(session ? 'dashboard' : 'login');
+        if (session) {
           const s = new URLSearchParams(window.location.search).get('screen') as Screen | null;
           setActiveScreen(s && VALID_SCREENS.includes(s) ? s : 'home');
         }
@@ -145,7 +164,7 @@ const App: React.FC = () => {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+  }, [session]);
 
   const [publicUser, setPublicUser] = useState<PublicUser | null>(null);
   const [loggedClient, setLoggedClient] = useState<Client | null>(null);
@@ -371,7 +390,11 @@ const App: React.FC = () => {
         const cleanRuc = ruc.replace(/\D/g, '');
         const targetClient = clients.find(c => c.ruc.replace(/\D/g, '') === cleanRuc);
         if (targetClient) {
-          const targetPeriod = (period && period !== 'AUTO') ? period : '2026-07';
+          // Derivar el período por defecto del mes anterior (evita hardcodear un mes concreto)
+          const now = new Date();
+          const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const defaultPeriod = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+          const targetPeriod = (period && period !== 'AUTO') ? period : defaultPeriod;
           const existingHistory = Array.isArray(targetClient.declarations) ? targetClient.declarations : [];
           
           const newDecl: Declaration = {
@@ -521,6 +544,7 @@ const App: React.FC = () => {
   };
 
   const handleLogoutConfirm = () => {
+    authService.signOut().catch(() => {});
     localStorage.removeItem('sc_pro_admin_session');
     setAppState('landing');
     setShowLogoutConfirm(false);
@@ -529,7 +553,7 @@ const App: React.FC = () => {
 
   const handleLoginSuccess = (role: 'admin' | 'client', clientData?: Client) => {
     if (role === 'admin') {
-      localStorage.setItem('sc_pro_admin_session', 'true');
+      // La sesión real ya quedó establecida por Supabase Auth (onAuthStateChange)
       setAppState('dashboard');
       setShowSplash(true);
     } else if (role === 'client' && clientData) {
@@ -686,7 +710,8 @@ const App: React.FC = () => {
         serviceFees={serviceFees}
         onUpdateClient={(updatedClient) => {
           setLoggedClient(updatedClient);
-          setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+          // Persistir el cambio a la nube además de actualizar el estado local
+          updateClient(updatedClient.id, updatedClient);
         }}
       />
     </Suspense>

@@ -1670,6 +1670,20 @@ export async function getClientDeclarationProofsList(ruc: string): Promise<strin
     }
 }
 
+/** Firma una URL pública de Supabase Storage (bucket privado) usando el cliente del bot. */
+async function signStorageUrl(url: string): Promise<string> {
+    if (!url || !url.includes('/storage/v1/object/public/')) return url;
+    const m = url.match(/\/storage\/v1\/object\/public\/([^/?]+)\/(.+)$/);
+    if (!m) return url;
+    try {
+        const { data, error } = await supabase.storage.from(m[1]).createSignedUrl(m[2], 3600);
+        if (error) return url;
+        return data?.signedUrl || url;
+    } catch {
+        return url;
+    }
+}
+
 export async function downloadClientProofFile(
     ruc: string, 
     period: string, 
@@ -1696,12 +1710,13 @@ export async function downloadClientProofFile(
         let base64 = entry.proof_file.content;
         
         if (base64 && base64.startsWith('__SPLIT__:STORAGE:')) {
-            const url = base64.replace('__SPLIT__:STORAGE:', '');
+            const url = await signStorageUrl(base64.replace('__SPLIT__:STORAGE:', ''));
             const res = await fetch(url);
             const arrayBuffer = await res.arrayBuffer();
             base64 = Buffer.from(arrayBuffer).toString('base64');
         } else if (!base64 && entry.proof_file.url) {
-            const res = await fetch(entry.proof_file.url);
+            const url = await signStorageUrl(entry.proof_file.url);
+            const res = await fetch(url);
             const arrayBuffer = await res.arrayBuffer();
             base64 = Buffer.from(arrayBuffer).toString('base64');
         } else if (base64 && base64.includes(';base64,')) {

@@ -113,10 +113,11 @@ CREATE TABLE IF NOT EXISTS public.sri_vault (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- RLS: SIN políticas para `anon`/`authenticated`. Esta tabla guarda claves
+-- SRI en texto plano, así que solo el rol `service_role` (que omite RLS y lo
+-- usan el bot de Telegram y los scripts de importación) debe poder leerla.
+-- La llave pública `anon` NO debe tener acceso.
 ALTER TABLE public.sri_vault ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "anon_read" ON public.sri_vault FOR SELECT USING (true);
-CREATE POLICY "anon_write" ON public.sri_vault FOR INSERT WITH CHECK (true);
-CREATE POLICY "anon_update" ON public.sri_vault FOR UPDATE USING (true);
                 `);
                 process.exit(1);
             }

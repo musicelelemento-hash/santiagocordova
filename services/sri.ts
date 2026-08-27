@@ -4,6 +4,7 @@ import { Client, TaxRegime, Declaration, DeclarationStatus } from '../types';
 import { format, differenceInCalendarDays, subMonths, subYears, getYear, getMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { db } from './db';
+import { signPublicStorageUrl } from './fileService';
 
 interface ValidationResult {
     isValid: boolean;
@@ -253,6 +254,8 @@ export const getDaysUntilDue = (dueDate: Date | null): number | null => {
 
 export const formatPeriodForDisplay = (period: string): string => {
     if (!period) return 'N/A';
+    // Normalizar formato semestral alternativo (2025-2S -> 2025-S2) para compatibilidad con datos históricos
+    period = period.replace(/(20\d{2})-([12])S/i, '$1-S$2');
     if (period.length === 4) { // Annual
         return `Renta ${period}`;
     }
@@ -307,6 +310,8 @@ export const safeFormat = (dateInput: any, formatStr: string, options?: any): st
 
 export const getNextPeriod = (period: string): string => {
     if (!period) return '';
+    // Normalizar formato semestral alternativo (2025-2S -> 2025-S2)
+    period = period.replace(/(20\d{2})-([12])S/i, '$1-S$2');
     if (period.includes('-S')) {
         const [yearStr, semester] = period.split('-S');
         const year = parseInt(yearStr, 10);
@@ -338,6 +343,9 @@ export const getNextPeriod = (period: string): string => {
 export const getDueDateForPeriod = (client: Client, period: string): Date | null => {
     if (!period) return null;
     
+    // Normalizar formato semestral alternativo (2025-2S -> 2025-S2)
+    period = period.replace(/(20\d{2})-([12])S/i, '$1-S$2');
+
     // Anexo PVP: Always Jan 1st - 5th
     if (period.includes(':PVP')) {
         const year = parseInt(period.split(':')[0], 10);
@@ -371,6 +379,8 @@ export const getDueDateForPeriod = (client: Client, period: string): Date | null
 }
 
 export const getPeriodEndDate = (period: string): Date | null => {
+    // Normalizar formato semestral alternativo (2025-2S -> 2025-S2)
+    period = period.replace(/(20\d{2})-([12])S/i, '$1-S$2');
     if (period.includes('-S')) {
         const [yearStr, semester] = period.split('-S');
         const year = parseInt(yearStr, 10);
@@ -511,6 +521,11 @@ export const downloadStoredFile = async (fileObj: any, defaultName: string = 'co
         if (!content || typeof content !== 'string' || content.startsWith('__SPLIT__:')) {
             console.error("Contenido de archivo no disponible o corrupto");
             return false;
+        }
+
+        // Buckets privados: firmar URLs públicas de Supabase antes de descargar
+        if (content.startsWith('http') && content.includes('/storage/v1/object/public/')) {
+            content = await signPublicStorageUrl(content);
         }
 
         // Caso 1: Es una URL HTTP, HTTPS o Blob directamente

@@ -203,7 +203,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
                 } else if (extracted.regimen === TaxRegime.RimpeEmprendedor || extracted.obligaciones_tributarias === 'semestral') {
                     setIvaFrequency('Semestral');
                     setRequiresAnnualRenta(true);
-                    if (!exists || !exists.fee_structure?.semestral) setMonthlyFee("10");
+                    setMonthlyFee("10");
                 } else {
                     setIvaFrequency('Mensual');
                     setRequiresAnnualRenta(true);
@@ -246,8 +246,8 @@ export const ClientForm: React.FC<ClientFormProps> = ({ initialData, onSubmit, o
         let finalRequiresAnnualRenta = requiresAnnualRenta;
 
         const finalClient: Client = {
-            id: clientData.id || uuidv4(),
             ...clientData as Client,
+            id: clientData.id || uuidv4(),
             requiresDeclarations,
             clientType: requiresDeclarations ? 'completo' : 'solo_plan',
             phones: (clientData.phones || []).filter(p => p.trim() !== ''),

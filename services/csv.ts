@@ -9,7 +9,7 @@ export const exportClientsToCSV = (clients: Client[], serviceFees: ServiceFeesCo
   const headers = ['ID', 'RUC', 'Nombre', 'Clave SRI', 'Régimen', 'Categoría Renta', 'Teléfono', 'Email', 'Estado Declaración Actual', 'Tarifa Servicio', 'Estado Cliente', 'Notas'];
   const rows = clients.map(client => {
     const currentPeriod = getPeriod(client, new Date());
-    const currentDeclaration = client.declarations.find(d => d.period === currentPeriod);
+    const currentDeclaration = (client.declarations ?? []).find(d => d.period === currentPeriod);
     const status = currentDeclaration ? currentDeclaration.status : DeclarationStatus.Pendiente;
     const fee = getClientServiceFee(client, serviceFees);
     const clientStatus = client.isActive ?? true ? 'Activo' : 'Inactivo';

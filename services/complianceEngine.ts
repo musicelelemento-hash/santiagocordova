@@ -1,8 +1,21 @@
 import { Client, Declaration, DeclarationStatus, TaxRegime, TaxObligationType, InternalStatus } from '../types';
 import { getPeriod, getDueDateForPeriod, getNinthDigit, getDaysUntilDue, requiresIva } from './sri';
 import { SRI_DUE_DATES } from '../constants';
-import { subMonths, format, getYear, getMonth } from 'date-fns';
+import { subMonths, format, getYear } from 'date-fns';
 import { isCourtesyClient } from './clientService';
+
+// Normaliza el formato semestral alternativo histórico (2026-2S -> 2026-S2)
+// para que todo el motor trate ambos formatos por igual.
+const normalizeSemester = (p: string): string => p.replace(/(20\d{2})-([12])S/i, '$1-S$2');
+
+// Compara dos períodos tolerando el formato semestral alternativo histórico.
+const periodsMatch = (a?: string, b?: string): boolean => {
+    if (!a || !b) return false;
+    if (a === b) return true;
+    const na = normalizeSemester(a);
+    const nb = normalizeSemester(b);
+    return na === nb;
+};
 
 // ─────────────────────────────────────────────────────────
 // TYPES
@@ -77,11 +90,11 @@ const getColor = (daysRemaining: number | null, declared: boolean, paid: boolean
 
 export const isPeriodBeforeClientStart = (client: Client, period: string): boolean => {
     if (!client.clientStartPeriod) return false;
-    const start = client.clientStartPeriod.trim();
-    if (!start) return false;
 
     // Remove any suffix like :ICE, :DEV, etc.
-    const cleanPeriod = period.split(':')[0];
+    let cleanPeriod = normalizeSemester(period.split(':')[0]);
+    let start = normalizeSemester(client.clientStartPeriod.trim());
+    if (!start) return false;
 
     // Case 1: Semestral Period (e.g. '2026-S1')
     if (cleanPeriod.includes('-S')) {
@@ -147,7 +160,7 @@ export const isPeriodBeforeClientStart = (client: Client, period: string): boole
 };
 
 export const getClientFloors = (client: Client): { monthly: string; semestral: string; annual: string } => {
-    const clientStartPeriod = client.clientStartPeriod || null;
+    const clientStartPeriod = client.clientStartPeriod ? normalizeSemester(client.clientStartPeriod.trim()) : null;
 
     const fallbackMonthly = '2025-01';
     const fallbackSemestral = '2025-S1';
@@ -205,7 +218,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
 
     if (requiresIva(client) && shouldIncludeIva) {
         const ivaPeriod = getPeriod(client, date);
-        const ivaDecl = declarations.find(d => d.period === ivaPeriod);
+        const ivaDecl = declarations.find(d => periodsMatch(d.period, ivaPeriod));
         const ivaDue = getDueDateForPeriod(client, ivaPeriod);
         const ivaDays = ivaDue ? getDaysUntilDue(ivaDue) : null;
         const ivaDeclared = isDeclared(ivaDecl);
@@ -234,27 +247,23 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
 
     if (needsRenta && shouldIncludeRenta) {
 
-        const rentaDecl = declarations.find(d => d.period === rentaPeriod);
+        const rentaDecl = declarations.find(d => periodsMatch(d.period, rentaPeriod));
         const rentaDue = getDueDateForPeriod(client, rentaPeriod);
         const rentaDays = rentaDue ? getDaysUntilDue(rentaDue) : null;
         const rentaDeclared = isDeclared(rentaDecl);
         const rentaPaidStatus = isPaid(rentaDecl, client);
 
-        // Solo mostrar si estamos en temporada (después de enero) o si está vencida
-        const month = getMonth(date);
-        if (month >= 0) { // Mostrar siempre — si no aplica el motor lo grays out
-            obligations.push({
-                type: 'RENTA',
-                period: rentaPeriod,
-                label: 'Renta Anual',
-                color: getColor(rentaDays, rentaDeclared, rentaPaidStatus, rentaDecl?.internalStatus),
-                daysRemaining: rentaDays,
-                dueDate: rentaDue,
-                declaration: rentaDecl || null,
-                isDeclared: rentaDeclared,
-                isPaid: rentaPaidStatus,
-            });
-        }
+        obligations.push({
+            type: 'RENTA',
+            period: rentaPeriod,
+            label: 'Renta Anual',
+            color: getColor(rentaDays, rentaDeclared, rentaPaidStatus, rentaDecl?.internalStatus),
+            daysRemaining: rentaDays,
+            dueDate: rentaDue,
+            declaration: rentaDecl || null,
+            isDeclared: rentaDeclared,
+            isPaid: rentaPaidStatus,
+        });
     }
 
     // 3. ICE Mensual (clientes como Chávez Cordova)
@@ -262,7 +271,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
 
         const icePeriod = getPeriod({ ...client, taxProfile: { ...client.taxProfile!, ivaFrequency: 'Mensual' } }, date);
         const iceFullPeriod = `${icePeriod}:ICE`;
-        const iceDecl = declarations.find(d => d.period === iceFullPeriod || d.period === `${icePeriod}-ICE`);
+        const iceDecl = declarations.find(d => periodsMatch(d.period, iceFullPeriod) || periodsMatch(d.period, `${icePeriod}-ICE`));
         const iceDue = getDueDateForPeriod(client, icePeriod);
         const iceDays = iceDue ? getDaysUntilDue(iceDue) : null;
         const iceDeclared = isDeclared(iceDecl);
@@ -282,7 +291,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
 
         // ICE Anexo (same period)
         const iceAnexoPeriod = `${icePeriod}:ANEXO_ICE`;
-        const iceAnexoDecl = declarations.find(d => d.period === iceAnexoPeriod);
+        const iceAnexoDecl = declarations.find(d => periodsMatch(d.period, iceAnexoPeriod));
         obligations.push({
             type: 'ANEXO',
             period: icePeriod,
@@ -300,7 +309,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
     if (client.taxProfile?.requiresAnexoPvp && (frequency === 'all' || frequency === 'Anual')) {
 
         const pvpPeriod = `${currentYear - 1}:PVP`;
-        const pvpDecl = declarations.find(d => d.period === pvpPeriod);
+        const pvpDecl = declarations.find(d => periodsMatch(d.period, pvpPeriod));
         const pvpDue = new Date(currentYear, 0, 5); // 5 de enero
         const pvpDays = getDaysUntilDue(pvpDue);
         obligations.push({
@@ -320,7 +329,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
     if (client.taxProfile?.hasActiveDevolucionIva && (frequency === 'all' || frequency === 'Mensual')) {
 
         const devPeriod = getPeriod({ ...client, taxProfile: { ...client.taxProfile!, ivaFrequency: 'Mensual' } }, date);
-        const devDecl = declarations.find(d => d.period === `${devPeriod}:DEV`);
+        const devDecl = declarations.find(d => periodsMatch(d.period, `${devPeriod}:DEV`));
         const devDue = getDueDateForPeriod(client, devPeriod);
         const devDays = devDue ? getDaysUntilDue(devDue) : null;
         obligations.push({
@@ -340,7 +349,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
     if (client.taxProfile?.requiresAnexosGastos && (frequency === 'all' || frequency === 'Anual')) {
 
         const gapPeriod = `${currentYear - 1}:GAP`;
-        const gapDecl = declarations.find(d => d.period === gapPeriod);
+        const gapDecl = declarations.find(d => periodsMatch(d.period, gapPeriod));
         const gapDue = new Date(currentYear, 1, 28); // Feb 28
         const gapDays = getDaysUntilDue(gapDue);
         obligations.push({
@@ -379,6 +388,7 @@ export const getClientObligations = (client: Client, date: Date, frequency: 'Men
 export const getObligationsForPeriod = (client: Client, period: string): Array<{ type: TaxObligationType, label: string }> => {
     // Check if period is before the client's start date
     const floors = getClientFloors(client);
+    period = normalizeSemester(period);
 
     const isSemester = period.includes('-S');
     const isYearPeriod = /^\d{4}$/.test(period);
@@ -408,9 +418,6 @@ export const getObligationsForPeriod = (client: Client, period: string): Array<{
         }
         if (client.taxProfile?.requiresAnexoPvp) {
             obligations.push({ type: 'PVP', label: 'Anexo PVP' });
-        }
-        if (client.taxProfile?.hasActiveDevolucionIva) {
-            obligations.push({ type: 'DEVOLUCION', label: 'Dev. IVA' });
         }
         return obligations;
     }
@@ -551,18 +558,19 @@ export const getHistoricalScore = (client: Client, months: number = 6): number[]
 
     for (let i = months - 1; i >= 0; i--) {
         const refDate = subMonths(now, i);
-        const period = getPeriod(client, refDate);
+        const period = normalizeSemester(getPeriod(client, refDate));
         
-        // Skip periods before 2026
-        const isBeforeStart = period.includes('-S') ? period < '2026-S1' : 
-                             (period.length === 4 ? period < '2026' : period < '2026-01');
+        // Skip periods before the client's start (derivado del cliente, no de un año fijo)
+        const floors = getClientFloors(client);
+        const isBeforeStart = period.includes('-S') ? period < floors.semestral : 
+                             (period.length === 4 ? period < floors.annual : period < floors.monthly);
         
         if (isBeforeStart) {
             scores.push(100); // Consider compliant if before system start
             continue;
         }
 
-        const decl = (client.declarations || []).find(d => d.period === period);
+        const decl = (client.declarations || []).find(d => periodsMatch(d.period, period));
         const declared = isDeclared(decl);
         scores.push(declared ? 100 : 0);
     }
@@ -714,7 +722,7 @@ export const getClientDebtSummary = (client: Client, fees: any, date: Date = new
     let totalDebt = 0;
     
     activePeriods.forEach(period => {
-        const decl = (client.declarations || []).find(d => d.period === period);
+        const decl = (client.declarations || []).find(d => periodsMatch(d.period, period));
         const declared = isDeclared(decl);
         const paid = isPaid(decl);
         
@@ -749,7 +757,7 @@ export const getClientUndeclaredSummary = (client: Client, date: Date = new Date
     const overduePeriods: string[] = [];
     
     activePeriods.forEach(period => {
-        const decl = (client.declarations || []).find(d => d.period === period);
+        const decl = (client.declarations || []).find(d => periodsMatch(d.period, period));
         const declared = isDeclared(decl);
         
         if (!declared) {

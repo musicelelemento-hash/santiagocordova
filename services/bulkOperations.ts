@@ -188,7 +188,7 @@ export const processBulkPdfs = async (
                     type = 'PVP';
                 }
 
-                const existingDec = client.declarations.find(d => arePeriodsEqual(d.period, decPeriod));
+                const existingDec = (client.declarations ?? []).find(d => arePeriodsEqual(d.period, decPeriod));
                 
                 let shouldReplace = true;
                 
@@ -221,7 +221,7 @@ export const processBulkPdfs = async (
                         notifiedWhatsAppAt: existingDec?.notifiedWhatsAppAt
                     };
 
-                    const newHistory = [...client.declarations.filter(d => !arePeriodsEqual(d.period, decPeriod)), newDec];
+                    const newHistory = [...(client.declarations ?? []).filter(d => !arePeriodsEqual(d.period, decPeriod)), newDec];
                     updates.declarations = newHistory;
                     
                     if (existingDec && existingDec.proof_file) {

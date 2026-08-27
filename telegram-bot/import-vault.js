@@ -15,14 +15,14 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.error('❌ Faltan variables SUPABASE_URL o SUPABASE_ANON_KEY en .env');
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    console.error('❌ Faltan variables SUPABASE_URL o SUPABASE_SERVICE_KEY en .env');
     process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // --- Rutas ---
 const chromeCsvPath = process.argv[2] || path.join(__dirname, '..', 'Contraseñas de Chrome.csv');

@@ -20,8 +20,6 @@ const safeConfig = firebaseConfig.apiKey ? firebaseConfig : {
     appId: "1:1234567890:web:abcdef123456"
 };
 
-console.log("Firebase INIT Debug -> Using Project:", safeConfig.projectId, "Has Real Key?", !!firebaseConfig.apiKey);
-
 const app = initializeApp(safeConfig);
 const db = getFirestore(app);
 
