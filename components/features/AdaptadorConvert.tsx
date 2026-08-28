@@ -84,11 +84,23 @@ export const AdaptadorConvert: React.FC = () => {
         return '04';
     };
 
+    // Devuelve el primer valor "presente" (respeta 0, que en JS es falsy) o undefined si todos están vacíos.
+    const firstDef = (...vals: any[]) => {
+        for (const v of vals) {
+            if (v !== undefined && v !== null && v !== '') return v;
+        }
+        return undefined;
+    };
+
     const mapCodigoIva = (val: string | number): number => {
-        const v = String(val || '').replace('%', '').trim();
-        if (v === '5' || v === '5.00') return 5; 
-        if (v === '4' || v === '15' || v === '15.00') return 4; 
-        if (v === '0' || v === '0.00' || v.toLowerCase() === 'cero') return 0; 
+        if (val === undefined || val === null || val === '') return 4;
+        const v = String(val).trim();
+        if (v === '5' || v === '5.00' || v === '5%') return 5;
+        if (v === '4' || v === '15' || v === '15.00' || v === '15%') return 4;
+        if (v === '0' || v === '0.00' || v === '0%' || v.toLowerCase() === 'cero' || v.toLowerCase() === '0%') return 0;
+        if (v === '2' || v.toLowerCase() === 'exento' || v.toLowerCase() === 'exenta') return 2;
+        if (v === '3' || v.toLowerCase() === 'no objeto') return 3;
+        if (v === '6' || v.toLowerCase() === 'tarifa 0' || v.toLowerCase() === '0% · no objeto') return 6;
         return 4; // Default Zifact 15% (código 4)
     };
 
@@ -174,14 +186,18 @@ export const AdaptadorConvert: React.FC = () => {
                     });
                 } else {
                     mappedData = jsonData.map((row: any) => {
-                        const rawCod = String(row['Código'] || row['Código Principal'] || '1').trim();
+                        const rawCod = String(firstDef(row['Código'], row['Código Principal']) ?? '1').trim();
                         // Sin ceros iniciales en código principal de productos
                         const codPrincipal = rawCod.replace(/^0+(?=\d)/, '') || '1';
 
-                        const pvpNum = parseFloat(row['PVP'] || row['Precio Unitario'] || row['Precio'] || '0');
-                        const codIvaNum = mapCodigoIva(row['IVA'] || row['Código IVA'] || row['Tarifa IVA'] || '5');
-                        const codIceNum = parseInt(row['ICE'] || row['Código ICE'] || '0', 10) || 0;
-                        const codIrbpnrNum = parseInt(row['Código IRBPNR'] || row['IRBPNR'] || '0', 10) || 0;
+                        const pvpVal = firstDef(row['PVP'], row['Precio Unitario'], row['Precio']);
+                        const pvpNum = pvpVal === undefined ? 0 : parseFloat(String(pvpVal));
+                        const ivaVal = firstDef(row['IVA'], row['Código IVA'], row['Tarifa IVA'], row['Iva']);
+                        const codIvaNum = mapCodigoIva(ivaVal as string | number);
+                        const iceVal = firstDef(row['ICE'], row['Código ICE']);
+                        const codIceNum = iceVal === undefined ? 0 : (parseInt(String(iceVal), 10) || 0);
+                        const irbpnrVal = firstDef(row['Código IRBPNR'], row['IRBPNR']);
+                        const codIrbpnrNum = irbpnrVal === undefined ? 0 : (parseInt(String(irbpnrVal), 10) || 0);
 
                         return {
                             'Nombre': String(row['Descripción'] || row['Nombre'] || row['Descripcion'] || 'Producto General'),
