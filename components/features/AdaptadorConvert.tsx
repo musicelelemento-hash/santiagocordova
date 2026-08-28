@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import * as xlsx from 'xlsx';
-import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { 
     ArrowRightLeft, 
@@ -17,8 +16,7 @@ import {
     ShieldCheck, 
     X,
     Layers,
-    CheckCircle2,
-    Zap
+    CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -304,152 +302,6 @@ function buildClientesAOA(data: any[]): any[][] {
 
 // --- BUILDERS DE VARIANTES DE PRUEBA ZIFACT / FACTEL ---
 
-// Variant XML 2003: XML Spreadsheet 2003 (.xls) - 0% Memoria en PHP
-function buildExcel2003XML(file: ProcessedFile): string {
-    const isProd = file.type === 'productos';
-    const sheetName = isProd ? 'Plantilla' : 'Clientes';
-    const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
-
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <Worksheet ss:Name="${sheetName}">
-  <Table>`;
-
-    rows.forEach((row, rIdx) => {
-        xml += '\n   <Row>';
-        row.forEach(cell => {
-            const val = String(cell ?? '');
-            const isNum = rIdx > 0 && !isNaN(Number(val)) && val.trim() !== '';
-            if (isNum) {
-                xml += `<Cell><Data ss:Type="Number">${val}</Data></Cell>`;
-            } else {
-                const escaped = val.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-                xml += `<Cell><Data ss:Type="String">${escaped}</Data></Cell>`;
-            }
-        });
-        xml += '</Row>';
-    });
-
-    xml += `
-  </Table>
- </Worksheet>
-</Workbook>`;
-
-    return xml;
-}
-
-// Variant HTML Table: HTML Table (.xls) - 0% Memoria en PHP
-function buildHTMLTable(file: ProcessedFile): string {
-    const isProd = file.type === 'productos';
-    const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
-
-    let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${isProd ? 'Plantilla' : 'Clientes'}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
-</head>
-<body>
-<table>`;
-
-    rows.forEach((row, rIdx) => {
-        html += '\n<tr>';
-        row.forEach(cell => {
-            const tag = rIdx === 0 ? 'th' : 'td';
-            const escaped = String(cell ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            html += `<${tag}>${escaped}</${tag}>`;
-        });
-        html += '</tr>';
-    });
-
-    html += `
-</table>
-</body>
-</html>`;
-
-    return html;
-}
-
-// Variant BIFF5: Excel 5.0 / 95 Binary (.xls) con Inline Strings (0% Sobrecarga SST / XF en PHP)
-function buildBIFF5(file: ProcessedFile): Uint8Array {
-    const isProd = file.type === 'productos';
-    const sheetName = isProd ? 'Plantilla' : 'Clientes';
-    const rows = isProd ? buildProductosAOA(file.data) : buildClientesAOA(file.data);
-
-    const worksheet = xlsx.utils.aoa_to_sheet(rows);
-    const lastCol = isProd ? 'H' : 'F';
-    worksheet['!ref'] = `A1:${lastCol}${rows.length}`;
-
-    delete worksheet['!rows'];
-    delete worksheet['!cols'];
-    delete worksheet['!margins'];
-
-    const workbook = xlsx.utils.book_new();
-    workbook.SheetNames = [sheetName];
-    workbook.Sheets = { [sheetName]: worksheet };
-
-    return xlsx.write(workbook, { bookType: 'biff5', type: 'array' });
-}
-
-// Variant 1: 1 Solo Producto Inyectado en BIFF5
-function buildVariant1_SingleProduct(file: ProcessedFile): Uint8Array {
-    const isProd = file.type === 'productos';
-    const sheetName = isProd ? 'Plantilla' : 'Clientes';
-    const rows = isProd ? buildProductosAOA(file.data.slice(0, 1)) : buildClientesAOA(file.data.slice(0, 1));
-
-    const worksheet = xlsx.utils.aoa_to_sheet(rows);
-    const lastCol = isProd ? 'H' : 'F';
-    worksheet['!ref'] = `A1:${lastCol}${rows.length}`;
-
-    delete worksheet['!rows'];
-    delete worksheet['!cols'];
-    delete worksheet['!margins'];
-
-    const workbook = xlsx.utils.book_new();
-    workbook.SheetNames = [sheetName];
-    workbook.Sheets = { [sheetName]: worksheet };
-
-    return xlsx.write(workbook, { bookType: 'biff5', type: 'array' });
-}
-
-// Variant 2: Todos los Productos Inyectados en plantilla original template_Productos.XLS
-function buildVariant2_TemplateInjected(file: ProcessedFile): Uint8Array {
-    try {
-        const bytes = base64ToUint8Array(OFFICIAL_ZIFACT_PRODUCT_TEMPLATE_B64);
-        const workbook = xlsx.read(bytes, { type: 'array', cellStyles: true });
-        const sheet = workbook.Sheets['Plantilla'];
-
-        if (sheet) {
-            Object.keys(sheet).forEach(k => {
-                if (!k.startsWith('!') && parseInt(k.replace(/[^\d]/g, ''), 10) >= 2) {
-                    delete sheet[k];
-                }
-            });
-
-            file.data.forEach((p: any, idx: number) => {
-                const r = idx + 2;
-                sheet[`A${r}`] = { v: String(p['Nombre'] || 'Producto General'), t: 's' };
-                sheet[`B${r}`] = { v: String(p['Codigo Principal'] || (idx + 1)), t: 's' };
-                sheet[`C${r}`] = { v: String(p['Codigo Auxiliar'] || ''), t: 's' };
-                sheet[`D${r}`] = { v: typeof p['Precio Unitario'] === 'number' ? p['Precio Unitario'] : parseFloat(p['Precio Unitario'] || '0') || 0, t: 'n' };
-                sheet[`E${r}`] = { v: typeof p['Codigo IVA'] === 'number' ? p['Codigo IVA'] : parseInt(p['Codigo IVA'] || '4', 10) || 4, t: 'n' };
-                sheet[`F${r}`] = { v: typeof p['Codigo ICE'] === 'number' ? p['Codigo ICE'] : parseInt(p['Codigo ICE'] || '0', 10) || 0, t: 'n' };
-                sheet[`G${r}`] = { v: typeof p['Codigo IRBPNR'] === 'number' ? p['Codigo IRBPNR'] : parseInt(p['Codigo IRBPNR'] || '0', 10) || 0, t: 'n' };
-                sheet[`H${r}`] = { v: String(p['Estado (A/I)'] || 'A'), t: 's' };
-            });
-
-            sheet['!ref'] = `A1:H${file.data.length + 1}`;
-            return xlsx.write(workbook, { bookType: 'biff8', type: 'array' });
-        }
-    } catch (e) {
-        console.warn("Error en V2:", e);
-    }
-    return buildBIFF5(file);
-}
-
 // Variant 3: BIFF8 Limpio Nuevo Libro (bookSST: false, cellStyles: false)
 function buildVariant3_CleanBIFF8(file: ProcessedFile): Uint8Array {
     const isProd = file.type === 'productos';
@@ -498,60 +350,39 @@ function buildVariant5_XLSX(file: ProcessedFile): Uint8Array {
     return xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
 }
 
-    // Descargar Pack de Pruebas completo en ZIP (Formatos Anti-Memoria para ZiFact)
-    const downloadTestPackZip = async (file: ProcessedFile) => {
-        try {
-            const zip = new JSZip();
-            const prefix = file.type === 'productos' ? 'Productos_Zifact' : 'Clientes_Zifact';
+// Variant Clonado (RECOMENDADO): BIFF8 con hoja "Productos" y cabeceras con acentos,
+// replicando la estructura exacta que Zifact SÍ acepta (Productos_Zifact (1).xls).
+// Evita el límite de memoria PHP de Zifact porque no usa formatos BIFF5/minimales que
+// disparan asignaciones gigantes en su parser.
+function buildClonadoProductos(file: ProcessedFile): Uint8Array {
+    const headers = ['Nombre', 'Código Principal', 'Código Auxiliar', 'Precio Unitario', 'Código IVA', 'Código ICE', 'Código IRBPNR', 'Estado (A/I)'];
+    const rows: any[][] = [headers];
 
-            if (file.type === 'productos') {
-                zip.file(`V1_Excel2003_XML.xls`, buildExcel2003XML(file));
-                zip.file(`V2_HTML_Table.xls`, buildHTMLTable(file));
-                zip.file(`V3_Prueba_1_Producto.xls`, buildVariant1_SingleProduct(file));
-                zip.file(`V4_Plantilla_Original_Inyectada.xls`, buildVariant2_TemplateInjected(file));
-                zip.file(`V5_BIFF8_Minimo.xls`, buildVariant3_CleanBIFF8(file));
-                zip.file(`V6_CSV_en_XLS.xls`, buildVariant4_CSVInXLS(file));
-                zip.file(`V7_Excel_Moderno.xlsx`, buildVariant5_XLSX(file));
-                zip.file(`${prefix}_Migrado.csv`, buildVariant4_CSVInXLS(file));
-            } else {
-                zip.file(`${prefix}_Migrado.xls`, buildVariant3_CleanBIFF8(file));
-                zip.file(`${prefix}_Migrado.xlsx`, buildVariant5_XLSX(file));
-                zip.file(`${prefix}_Migrado.csv`, buildVariant4_CSVInXLS(file));
-            }
+    file.data.forEach((item: any) => {
+        rows.push([
+            String(item['Nombre'] || 'Producto General'),
+            String(item['Codigo Principal'] || '1'),
+            String(item['Codigo Auxiliar'] || ''),
+            typeof item['Precio Unitario'] === 'number' ? item['Precio Unitario'] : parseFloat(item['Precio Unitario'] || '0') || 0,
+            typeof item['Codigo IVA'] === 'number' ? item['Codigo IVA'] : parseInt(item['Codigo IVA'] || '4', 10) || 4,
+            typeof item['Codigo ICE'] === 'number' ? item['Codigo ICE'] : parseInt(item['Codigo ICE'] || '0', 10) || 0,
+            typeof item['Codigo IRBPNR'] === 'number' ? item['Codigo IRBPNR'] : parseInt(item['Codigo IRBPNR'] || '0', 10) || 0,
+            String(item['Estado (A/I)'] || 'A')
+        ]);
+    });
 
-            const content = await zip.generateAsync({ type: 'blob' });
-            saveAs(content, `Pack_Formatos_AntiMemoria_${file.name.replace(/\.[^/.]+$/, "")}.zip`);
-        } catch (e: any) {
-            alert("Error al generar Pack de Pruebas ZIP: " + (e?.message || e));
-        }
-    };
+    const worksheet = xlsx.utils.aoa_to_sheet(rows);
+    worksheet['!ref'] = `A1:H${rows.length}`;
+    delete worksheet['!rows'];
+    delete worksheet['!cols'];
+    delete worksheet['!margins'];
 
-    const downloadAllZip = async () => {
-        const successfulFiles = processedFiles.filter(f => f.status === 'success');
-        if (successfulFiles.length === 0) return;
+    const workbook = xlsx.utils.book_new();
+    workbook.SheetNames = ['Productos'];
+    workbook.Sheets = { Productos: worksheet };
 
-        const zip = new JSZip();
-        for (const file of successfulFiles) {
-            const prefix = file.type === 'productos' ? 'Productos_Zifact' : 'Clientes_Zifact';
-            if (file.type === 'productos') {
-                zip.file(`V1_Excel2003_XML.xls`, buildExcel2003XML(file));
-                zip.file(`V2_HTML_Table.xls`, buildHTMLTable(file));
-                zip.file(`V3_Prueba_1_Producto.xls`, buildVariant1_SingleProduct(file));
-                zip.file(`V4_Plantilla_Inyectada.xls`, buildVariant2_TemplateInjected(file));
-                zip.file(`V5_BIFF8_Minimo.xls`, buildVariant3_CleanBIFF8(file));
-                zip.file(`V6_CSV_en_XLS.xls`, buildVariant4_CSVInXLS(file));
-                zip.file(`V7_Excel_Moderno.xlsx`, buildVariant5_XLSX(file));
-                zip.file(`${prefix}_Migrado.csv`, buildVariant4_CSVInXLS(file));
-            } else {
-                zip.file(`${prefix}_Migrado.xls`, buildVariant3_CleanBIFF8(file));
-                zip.file(`${prefix}_Migrado.xlsx`, buildVariant5_XLSX(file));
-                zip.file(`${prefix}_Migrado.csv`, buildVariant4_CSVInXLS(file));
-            }
-        }
-        
-        const content = await zip.generateAsync({ type: 'blob' });
-        saveAs(content, 'Migracion_Zifact_Oficial.zip');
-    };
+    return xlsx.write(workbook, { bookType: 'biff8', type: 'array', bookSST: false, cellStyles: false });
+}
 
     const removeFile = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
@@ -581,17 +412,17 @@ function buildVariant5_XLSX(file: ProcessedFile): Uint8Array {
                         Adaptador Ecuafact <span className="text-[#2B6AFF] font-mono">➔</span> Zifact
                     </h1>
                     <p className="text-sm font-light text-slate-400 mt-1 max-w-xl">
-                        Inyección binaria sobre plantilla oficial `template_Productos.xls` de Zifact (0% errores de memoria).
+                        Convierte Ecuafact a Zifact con la estructura oficial que Zifact importa sin errores de memoria.
                     </p>
                 </div>
 
                 {processedFiles.length > 0 && (
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={downloadAllZip}
-                            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#2B6AFF] via-[#6366F1] to-[#04B17B] text-white text-xs font-bold uppercase tracking-widest hover:scale-[1.03] active:scale-[0.98] transition-all shadow-[0_0_25px_rgba(43,106,255,0.35)] flex items-center gap-2.5"
+                            onClick={() => setProcessedFiles([])}
+                            className="px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/15 text-white text-xs font-bold uppercase tracking-widest transition-all flex items-center gap-2.5"
                         >
-                            <Download size={16} /> Descargar Paquete (.ZIP)
+                            <Trash2 size={16} /> Limpiar
                         </button>
                     </div>
                 )}
@@ -771,96 +602,20 @@ function buildVariant5_XLSX(file: ProcessedFile): Uint8Array {
                                                 >
                                                     <Eye size={14} className="text-[#2B6AFF]" /> Previsualizar ({file.data.length} filas)
                                                 </button>
-
-                                                <button
-                                                    onClick={() => downloadTestPackZip(file)}
-                                                    className="py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-bold text-amber-300 flex items-center gap-2 transition-all shadow-md"
-                                                    title="Descarga un archivo ZIP con las 5 variantes de prueba para ZiFact"
-                                                >
-                                                    <Download size={14} /> 📦 Descargar ZIP de Pruebas (5 Variantes)
-                                                </button>
                                             </div>
 
-                                            {/* Grid de Formatos Anti-Memoria y Variantes de Prueba Directa */}
+                                            {/* Descarga recomendada para productos (estructura que Zifact SI acepta) */}
                                             {file.type === 'productos' ? (
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 pt-1">
-                                                    <button
-                                                        onClick={() => triggerBrowserDownload(buildBIFF5(file), `V1_BIFF5_Excel95_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
-                                                        className="p-2.5 rounded-xl bg-[#04B17B]/20 hover:bg-[#04B17B]/30 border border-[#04B17B]/40 text-left transition-all group shadow-md"
-                                                        title="⭐ RECOMENDADO BIFF5: Excel 5.0/95 legítimo con cadenas inline (0% bucles SST/XF en PHP ZiFact)"
-                                                    >
-                                                        <div className="text-[11px] font-bold text-[#04B17B] group-hover:text-emerald-300 flex items-center gap-1">
-                                                            <Sparkles size={12} /> V1. BIFF5
-                                                        </div>
-                                                        <div className="text-[9px] text-slate-300 truncate">.XLS (Excel 95)</div>
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => triggerBrowserDownload(buildExcel2003XML(file), `V2_Excel2003_XML_${file.name.replace(/\.[^/.]+$/, "")}.xls`, 'application/vnd.ms-excel')}
-                                                        className="p-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-left transition-all group shadow-md"
-                                                        title="⭐ RECOMENDADO ANTI-MEMORIA: Formato XML Spreadsheet 2003 (.xls) con hoja Plantilla, consume < 2MB RAM en PHP"
-                                                    >
-                                                        <div className="text-[11px] font-bold text-emerald-400 group-hover:text-emerald-300 flex items-center gap-1">
-                                                            <Sparkles size={12} /> V2. XML 2003
-                                                        </div>
-                                                        <div className="text-[9px] text-slate-300 truncate">.XLS (XML 2MB)</div>
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => triggerBrowserDownload(buildHTMLTable(file), `V3_HTML_Table_${file.name.replace(/\.[^/.]+$/, "")}.xls`, 'application/vnd.ms-excel')}
-                                                        className="p-2.5 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 text-left transition-all group shadow-md"
-                                                        title="⭐ RECOMENDADO ANTI-MEMORIA: Formato HTML Table (.xls) con hoja Plantilla, consume < 1MB RAM en PHP"
-                                                    >
-                                                        <div className="text-[11px] font-bold text-blue-400 group-hover:text-blue-300 flex items-center gap-1">
-                                                            <Sparkles size={12} /> V3. HTML
-                                                        </div>
-                                                        <div className="text-[9px] text-slate-300 truncate">.XLS (HTML 1MB)</div>
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => triggerBrowserDownload(buildVariant1_SingleProduct(file), `V4_Prueba_1_Producto_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
-                                                        className="p-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-left transition-all group"
-                                                        title="Inyecta 1 solo producto en BIFF5"
-                                                    >
-                                                        <div className="text-[11px] font-bold text-amber-400 group-hover:text-amber-300 flex items-center gap-1">
-                                                            <Zap size={12} /> V4. 1 Ítem
-                                                        </div>
-                                                        <div className="text-[9px] text-slate-400 truncate">.XLS (1 ítem)</div>
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => triggerBrowserDownload(buildVariant2_TemplateInjected(file), `V5_Plantilla_Original_Inyectada_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
-                                                        className="p-2.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-left transition-all group"
-                                                        title="Inyecta todos los productos sobre template_Productos.XLS"
-                                                    >
-                                                        <div className="text-[11px] font-bold text-indigo-400 group-hover:text-indigo-300 flex items-center gap-1">
-                                                            <Download size={12} /> V5. Inyectado
-                                                        </div>
-                                                        <div className="text-[9px] text-slate-400 truncate">.XLS (Plantilla)</div>
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => triggerBrowserDownload(buildVariant4_CSVInXLS(file), `V6_CSV_en_XLS_${file.name.replace(/\.[^/.]+$/, "")}.xls`, 'application/vnd.ms-excel')}
-                                                        className="p-2.5 rounded-xl bg-slate-500/10 hover:bg-slate-500/20 border border-slate-500/30 text-left transition-all group"
-                                                        title="Contenido CSV UTF-8 BOM guardado como .xls"
-                                                    >
-                                                        <div className="text-[11px] font-bold text-slate-300 group-hover:text-white flex items-center gap-1">
-                                                            <Download size={12} /> V6. CSV .xls
-                                                        </div>
-                                                        <div className="text-[9px] text-slate-400 truncate">.XLS (Texto)</div>
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => triggerBrowserDownload(buildVariant5_XLSX(file), `V7_Excel_Moderno_${file.name.replace(/\.[^/.]+$/, "")}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-                                                        className="p-2.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 text-left transition-all group"
-                                                        title="Formato Excel Moderno OpenXML (.xlsx)"
-                                                    >
-                                                        <div className="text-[11px] font-bold text-purple-400 group-hover:text-purple-300 flex items-center gap-1">
-                                                            <Download size={12} /> V7. XLSX
-                                                        </div>
-                                                        <div className="text-[9px] text-slate-400 truncate">.XLSX (Moderno)</div>
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    onClick={() => triggerBrowserDownload(buildClonadoProductos(file), `Productos_Zifact_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
+                                                    className="w-full py-3 px-4 rounded-xl bg-[#04B17B]/20 hover:bg-[#04B17B]/30 border border-[#04B17B]/40 text-left transition-all group shadow-md"
+                                                    title="Recomendado: BIFF8 con hoja 'Productos' y cabeceras con acentos, estructura idéntica a la que Zifact sí importa sin errores de memoria"
+                                                >
+                                                    <div className="text-sm font-bold text-[#04B17B] group-hover:text-emerald-300 flex items-center gap-2">
+                                                        <Sparkles size={16} /> Descargar .XLS (Recomendado)
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-300 mt-0.5">Estructura oficial Zifact — hoja Productos, sin errores de memoria</div>
+                                                </button>
                                             ) : (
                                                 <div className="flex items-center gap-2 pt-1">
                                                     <button
@@ -897,10 +652,10 @@ function buildVariant5_XLSX(file: ProcessedFile): Uint8Array {
                         <ShieldCheck className="text-[#04B17B]" size={24} />
                         <div>
                             <h3 className="text-base font-bold text-white uppercase tracking-wider">
-                                Especificación de Inyección Binaria Zifact
+                                Formato de Salida Zifact
                             </h3>
                             <p className="text-xs text-slate-400 font-light">
-                                Inyección directa sobre el contenedor binario original de `template_Productos (3).xls`.
+                                Productos se generan como BIFF8 con hoja "Productos" y cabeceras con acentos, la estructura exacta que Zifact sí acepta.
                             </p>
                         </div>
                     </div>
@@ -917,10 +672,10 @@ function buildVariant5_XLSX(file: ProcessedFile): Uint8Array {
 
                         <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2">
                             <div className="flex items-center gap-2 text-xs font-bold text-[#6366F1] uppercase tracking-wider">
-                                <CheckCircle2 size={16} /> Productos (Plantilla Oficial)
+                                <CheckCircle2 size={16} /> Productos (Estructura Oficial)
                             </div>
                             <p className="text-xs text-slate-400 leading-relaxed font-light">
-                                Se leen los sectores binarios originales de Zifact e inyectan los productos de Ecuafact sin reconstruir el libro desde cero.
+                                Se genera la hoja "Productos" con las cabeceras con acentos que Zifact espera, evitando el límite de memoria PHP de los formatos binarios experimentales.
                             </p>
                         </div>
                     </div>
