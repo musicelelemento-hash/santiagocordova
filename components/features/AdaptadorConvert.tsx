@@ -373,15 +373,18 @@ function buildClonadoProductos(file: ProcessedFile): Uint8Array {
 
     const worksheet = xlsx.utils.aoa_to_sheet(rows);
     worksheet['!ref'] = `A1:H${rows.length}`;
-    delete worksheet['!rows'];
-    delete worksheet['!cols'];
+    worksheet['!cols'] = Array.from({ length: 8 }, () => ({ wch: 20 }));
+    worksheet['!rows'] = Array.from({ length: rows.length }, () => ({ hpt: 18 }));
     delete worksheet['!margins'];
 
     const workbook = xlsx.utils.book_new();
     workbook.SheetNames = ['Productos'];
     workbook.Sheets = { Productos: worksheet };
 
-    return xlsx.write(workbook, { bookType: 'biff8', type: 'array', bookSST: false, cellStyles: false });
+    // bookSST: true => escribe un Shared String Table (SST) completo, igual que el
+    // archivo que Zifact sí acepta. Con bookSST: false sheetjs escribe strings inline
+    // (LABEL) que el parser PHP de Zifact malinterpreta y dispara el error de memoria.
+    return xlsx.write(workbook, { bookType: 'biff8', type: 'array', bookSST: true, cellStyles: false });
 }
 
     const removeFile = (id: string, e: React.MouseEvent) => {
