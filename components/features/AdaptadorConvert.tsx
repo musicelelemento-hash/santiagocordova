@@ -262,15 +262,29 @@ export const AdaptadorConvert: React.FC = () => {
         }
     });
 
+// Elimina caracteres multibyte (tildes, ñ, etc.) para que los strings del SST sean
+// 100% ASCII. El parser XLS de PhpSpreadsheet (usado por Zifact) tiene un bug (mb_strlen)
+// que descompensa las longitudes con caracteres multibyte y aloca memoria gigante
+// ("Allowed memory size of ... bytes exhausted"). El template oficial que Zifact acepta
+// (template_Productos) usa solo ASCII, por eso importa sin errores.
+function toAscii(s: string): string {
+    const map: Record<string, string> = {
+        'á':'a','é':'e','í':'i','ó':'o','ú':'u','ñ':'n','ü':'u',
+        'Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U','Ñ':'N','Ü':'U',
+        'ä':'a','ö':'o','à':'a','è':'e','ç':'c','´':''
+    };
+    return String(s ?? '').replace(/[áéíóúñüÁÉÍÓÚÑÜäöàèç´]/g, c => map[c] || c).trim();
+}
+
 function buildProductosAOA(data: any[]): any[][] {
     const headers = ['Nombre', 'Codigo Principal', 'Codigo Auxiliar', 'Precio Unitario', 'Codigo IVA', 'Codigo ICE', 'Codigo IRBPNR', 'Estado (A/I)'];
     const rows: any[][] = [headers];
 
     data.forEach(item => {
         rows.push([
-            String(item['Nombre'] || 'Producto General'),
-            String(item['Codigo Principal'] || '1'),
-            String(item['Codigo Auxiliar'] || ''),
+            toAscii(String(item['Nombre'] || 'Producto General')),
+            toAscii(String(item['Codigo Principal'] || '1')),
+            toAscii(String(item['Codigo Auxiliar'] || '')),
             typeof item['Precio Unitario'] === 'number' ? item['Precio Unitario'] : parseFloat(item['Precio Unitario'] || '0') || 0,
             typeof item['Codigo IVA'] === 'number' ? item['Codigo IVA'] : parseInt(item['Codigo IVA'] || '4', 10) || 4,
             typeof item['Codigo ICE'] === 'number' ? item['Codigo ICE'] : parseInt(item['Codigo ICE'] || '0', 10) || 0,
@@ -350,19 +364,20 @@ function buildVariant5_XLSX(file: ProcessedFile): Uint8Array {
     return xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
 }
 
-// Variant Clonado (RECOMENDADO): BIFF8 con hoja "Productos" y cabeceras con acentos,
-// replicando la estructura exacta que Zifact SÍ acepta (Productos_Zifact (1).xls).
-// Evita el límite de memoria PHP de Zifact porque no usa formatos BIFF5/minimales que
-// disparan asignaciones gigantes en su parser.
+// Variant Clonado (RECOMENDADO): BIFF8 con hoja "Plantilla", cabeceras sin acentos y
+// todos los strings transliterados a ASCII puro. Esta es la estructura exacta del
+// template_Productos.xls oficial que Zifact SÍ importa. La transliteración evita el bug
+// mb_strlen del parser XLS de PhpSpreadsheet que aloca memoria gigante con caracteres
+// multibyte (tildes/ñ) en el Shared String Table (SST).
 function buildClonadoProductos(file: ProcessedFile): Uint8Array {
-    const headers = ['Nombre', 'Código Principal', 'Código Auxiliar', 'Precio Unitario', 'Código IVA', 'Código ICE', 'Código IRBPNR', 'Estado (A/I)'];
+    const headers = ['Nombre', 'Codigo Principal', 'Codigo Auxiliar', 'Precio Unitario', 'Codigo IVA', 'Codigo ICE', 'Codigo IRBPNR', 'Estado (A/I)'];
     const rows: any[][] = [headers];
 
     file.data.forEach((item: any) => {
         rows.push([
-            String(item['Nombre'] || 'Producto General'),
-            String(item['Codigo Principal'] || '1'),
-            String(item['Codigo Auxiliar'] || ''),
+            toAscii(String(item['Nombre'] || 'Producto General')),
+            toAscii(String(item['Codigo Principal'] || '1')),
+            toAscii(String(item['Codigo Auxiliar'] || '')),
             typeof item['Precio Unitario'] === 'number' ? item['Precio Unitario'] : parseFloat(item['Precio Unitario'] || '0') || 0,
             typeof item['Codigo IVA'] === 'number' ? item['Codigo IVA'] : parseInt(item['Codigo IVA'] || '4', 10) || 4,
             typeof item['Codigo ICE'] === 'number' ? item['Codigo ICE'] : parseInt(item['Codigo ICE'] || '0', 10) || 0,
@@ -373,18 +388,17 @@ function buildClonadoProductos(file: ProcessedFile): Uint8Array {
 
     const worksheet = xlsx.utils.aoa_to_sheet(rows);
     worksheet['!ref'] = `A1:H${rows.length}`;
-    worksheet['!cols'] = Array.from({ length: 8 }, () => ({ wch: 20 }));
-    worksheet['!rows'] = Array.from({ length: rows.length }, () => ({ hpt: 18 }));
+    delete worksheet['!cols'];
+    delete worksheet['!rows'];
     delete worksheet['!margins'];
 
     const workbook = xlsx.utils.book_new();
-    workbook.SheetNames = ['Productos'];
-    workbook.Sheets = { Productos: worksheet };
+    workbook.SheetNames = ['Plantilla'];
+    workbook.Sheets = { Plantilla: worksheet };
 
-    // bookSST: true => escribe un Shared String Table (SST) completo, igual que el
-    // archivo que Zifact sí acepta. Con bookSST: false sheetjs escribe strings inline
-    // (LABEL) que el parser PHP de Zifact malinterpreta y dispara el error de memoria.
-    return xlsx.write(workbook, { bookType: 'biff8', type: 'array', bookSST: true, cellStyles: false });
+    // bookSST: true => Shared String Table (SST) completo, igual que el archivo que
+    // Zifact sí acepta. Junto con la transliteración a ASCII, evita el bug de memoria.
+    return xlsx.write(workbook, { bookType: 'biff8', type: 'array', bookSST: true, cellStyles: true });
 }
 
     const removeFile = (id: string, e: React.MouseEvent) => {
@@ -612,12 +626,12 @@ function buildClonadoProductos(file: ProcessedFile): Uint8Array {
                                                 <button
                                                     onClick={() => triggerBrowserDownload(buildClonadoProductos(file), `Productos_Zifact_${file.name.replace(/\.[^/.]+$/, "")}.xls`)}
                                                     className="w-full py-3 px-4 rounded-xl bg-[#04B17B]/20 hover:bg-[#04B17B]/30 border border-[#04B17B]/40 text-left transition-all group shadow-md"
-                                                    title="Recomendado: BIFF8 con hoja 'Productos' y cabeceras con acentos, estructura idéntica a la que Zifact sí importa sin errores de memoria"
+                                                    title="Recomendado: BIFF8 con hoja 'Plantilla' y texto en ASCII (sin tildes), la estructura exacta del template_Productos.xls que Zifact sí importa sin el error de memoria PHP"
                                                 >
                                                     <div className="text-sm font-bold text-[#04B17B] group-hover:text-emerald-300 flex items-center gap-2">
                                                         <Sparkles size={16} /> Descargar .XLS (Recomendado)
                                                     </div>
-                                                    <div className="text-[10px] text-slate-300 mt-0.5">Estructura oficial Zifact — hoja Productos, sin errores de memoria</div>
+                                                    <div className="text-[10px] text-slate-300 mt-0.5">Estructura oficial Zifact — hoja Plantilla, ASCII sin tildes, sin errores de memoria</div>
                                                 </button>
                                             ) : (
                                                 <div className="flex items-center gap-2 pt-1">
@@ -658,7 +672,7 @@ function buildClonadoProductos(file: ProcessedFile): Uint8Array {
                                 Formato de Salida Zifact
                             </h3>
                             <p className="text-xs text-slate-400 font-light">
-                                Productos se generan como BIFF8 con hoja "Productos" y cabeceras con acentos, la estructura exacta que Zifact sí acepta.
+                                Productos se generan como BIFF8 con hoja "Plantilla" y texto en ASCII puro (tildes y ñ convertidos a su equivalente), la estructura exacta del template_Productos.xls que Zifact sí acepta.
                             </p>
                         </div>
                     </div>
@@ -678,7 +692,7 @@ function buildClonadoProductos(file: ProcessedFile): Uint8Array {
                                 <CheckCircle2 size={16} /> Productos (Estructura Oficial)
                             </div>
                             <p className="text-xs text-slate-400 leading-relaxed font-light">
-                                Se genera la hoja "Productos" con las cabeceras con acentos que Zifact espera, evitando el límite de memoria PHP de los formatos binarios experimentales.
+                                Se genera la hoja "Plantilla" con texto 100% ASCII (sin tildes), replicando el template_Productos.xls y evitando el bug de memoria PHP (mb_strlen) que disparan los caracteres multibyte del SST.
                             </p>
                         </div>
                     </div>
